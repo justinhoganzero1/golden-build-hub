@@ -32,6 +32,37 @@ const ProfessionalHubPage = () => {
   const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, loading]);
+
+  const toggleMic = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Speech recognition not supported"); return; }
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    rec.onresult = (e: any) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      setInput(transcript);
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => { setIsListening(false); toast.error("Mic error"); };
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  };
 
   const sendMessage = async (msg?: string) => {
     const message = msg || input;
