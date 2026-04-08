@@ -41,6 +41,7 @@ const ProfilePage = () => {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showEnlarged, setShowEnlarged] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => { setEditing(false); toast.success("Profile updated!"); };
