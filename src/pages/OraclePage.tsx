@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Mic, MicOff, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import { useMute } from "@/contexts/MuteContext";
 
 interface Message {
   id: string;
@@ -41,6 +42,7 @@ const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-f
 
 const OraclePage = () => {
   const navigate = useNavigate();
+  const { isMuted, toggleMute } = useMute();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +50,46 @@ const OraclePage = () => {
   const [friends, setFriends] = useState<AIFriend[]>(DEFAULT_FRIENDS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const activeFriends = friends.filter(f => f.active && f.name !== "Oracle");
+
+  // TTS speak function
+  const speakText = useCallback((text: string, voice?: string) => {
+    if (isMuted || !text) return;
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/[#*_`~\[\]()>]/g, "").replace(/\n+/g, ". ").trim();
+    if (!clean) return;
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "en-US";
+    utterance.rate = 0.95;
+    utterance.pitch = 1.1;
+    // Try to pick a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
+    if (preferred) utterance.voice = preferred;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  }, [isMuted]);
+
+  // Load voices (some browsers need this)
+  useEffect(() => {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }, []);
+
+  // Stop speaking when muted
+  useEffect(() => {
+    if (isMuted) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -176,13 +213,21 @@ const OraclePage = () => {
   };
 
   const toggleMic = () => {
-    if (isListening) { setIsListening(false); return; }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast.error("Speech recognition not supported"); return;
+      toast.error("Speech recognition not supported in this browser. Try Chrome.");
+      return;
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
     recognition.onresult = (event: any) => { setIsListening(false); sendMessage(event.results[0][0].transcript); };
     recognition.onerror = () => { setIsListening(false); toast.error("Could not recognize speech"); };
     recognition.onend = () => setIsListening(false);
@@ -246,7 +291,11 @@ const OraclePage = () => {
         }
       }
 
-      // Friends
+      // Speak Oracle's response aloud
+      if (oracleContent) {
+        speakText(oracleContent);
+      }
+
       if (activeFriends.length > 0) {
         try {
           const friendResp = await fetch(FRIENDS_CHAT_URL, {
@@ -376,13 +425,13 @@ const OraclePage = () => {
 
       {/* Mute + Status */}
       <div className="flex flex-col items-center pb-3 gap-2 z-10" style={{ background: "#0a0a0a" }}>
-        <button onClick={() => setMuted(!muted)} className="p-3 rounded-full border border-[#FFAA00]/20 bg-black/50">
-          {muted ? <VolumeX className="w-6 h-6 text-[#FFAA00]" /> : <Volume2 className="w-6 h-6 text-[#FFAA00]" />}
+        <button onClick={toggleMute} className="p-3 rounded-full border border-[#FFAA00]/20 bg-black/50">
+          {isMuted ? <VolumeX className="w-6 h-6 text-[#FFAA00]" /> : <Volume2 className="w-6 h-6 text-[#FFAA00]" />}
         </button>
-        <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{muted ? "Unmute" : "Mute"}</span>
+        <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{isMuted ? "Unmute" : "Mute"}</span>
         <div className="flex items-center gap-2 mt-1">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-xs text-gray-400">READY</span>
+          <div className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-[#FFAA00] animate-pulse" : "bg-green-500"}`} />
+          <span className="text-xs text-gray-400">{isSpeaking ? "SPEAKING" : "READY"}</span>
           <span className="text-xs text-gray-600">|</span>
           <span className="text-xs text-[#FFAA00]">Oracle Active</span>
         </div>
