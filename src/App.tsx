@@ -36,7 +36,7 @@ const AlarmClockPage = lazy(() => import("./pages/AlarmClockPage"));
 const SafetyCenterPage = lazy(() => import("./pages/SafetyCenterPage"));
 const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
 const ElderlyCarePage = lazy(() => import("./pages/ElderlyCarePage"));
-const HapticEscapePage = lazy(() => import("./pages/HapticEscapePage"));
+
 const AvatarGeneratorPage = lazy(() => import("./pages/AvatarGeneratorPage"));
 const ProfessionalHubPage = lazy(() => import("./pages/ProfessionalHubPage"));
 const FamilyHubPage = lazy(() => import("./pages/FamilyHubPage"));
@@ -119,7 +119,7 @@ const App = () => (
                 <Route path="/safety-center" element={<ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary>} />
                 <Route path="/diagnostics" element={<ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary>} />
                 <Route path="/elderly-care" element={<ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary>} />
-                <Route path="/haptic-escape" element={<ErrorBoundary pageName="Haptic Escape"><HapticEscapePage /></ErrorBoundary>} />
+                
                 <Route path="/avatar-generator" element={<ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary>} />
                 <Route path="/professional-hub" element={<ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary>} />
                 <Route path="/family-hub" element={<ErrorBoundary pageName="Family Hub"><FamilyHubPage /></ErrorBoundary>} />
