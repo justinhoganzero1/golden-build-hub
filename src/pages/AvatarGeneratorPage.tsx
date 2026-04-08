@@ -262,8 +262,13 @@ const AvatarGeneratorPage = () => {
             <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
-              <p className="text-gray-500 text-xs">Create & assign AI-powered avatars</p>
+              <p className="text-gray-500 text-xs">
+                {isOwner ? "Owner Mode — No content restrictions" : "M-Rated content only"}
+              </p>
             </div>
+            {isOwner && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[9px] font-bold uppercase">Owner</span>
+            )}
           </div>
           <button onClick={() => navigate("/avatar-gallery")} className="px-3 py-1.5 rounded-xl border border-gray-700 text-purple-400 text-xs font-medium">
             Gallery
