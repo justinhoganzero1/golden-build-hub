@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Mic, MicOff, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import { useMute } from "@/contexts/MuteContext";
 
 interface Message {
   id: string;
