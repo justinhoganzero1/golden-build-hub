@@ -40,11 +40,22 @@ const CreatorsPage = () => {
   }, []);
 
   const loadComments = async () => {
-    const { data } = await supabase
-      .from("creator_comments")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setComments(data);
+    if (isOwner) {
+      // Owner can see all comments including emails via base table
+      const { data } = await supabase
+        .from("creator_comments")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) setComments(data);
+    } else {
+      // Public users read approved comments only — strip email client-side for safety
+      const { data } = await supabase
+        .from("creator_comments")
+        .select("id, commenter_name, message, moderation_status, created_at")
+        .eq("moderation_status", "approved")
+        .order("created_at", { ascending: false });
+      if (data) setComments(data.map((d: any) => ({ ...d, commenter_email: null, ai_moderation_notes: null })));
+    }
   };
 
   const submitComment = async () => {

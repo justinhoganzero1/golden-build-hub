@@ -388,7 +388,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      creator_comments_public: {
+        Row: {
+          commenter_name: string | null
+          created_at: string | null
+          id: string | null
+          message: string | null
+          moderation_status: string | null
+        }
+        Insert: {
+          commenter_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          moderation_status?: string | null
+        }
+        Update: {
+          commenter_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          moderation_status?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
