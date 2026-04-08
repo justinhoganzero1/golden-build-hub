@@ -56,17 +56,26 @@ const RadarDemoPage = () => {
         {location ? (
           <div className="rounded-xl overflow-hidden border border-border mb-4 relative">
             <iframe
-              src={`https://www.google.com/maps?q=${location.lat},${location.lng}&z=15&output=embed`}
-              className="w-full h-48"
+              src={`https://www.google.com/maps/embed/v1/search?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${filter === "all" ? "points+of+interest" : filter}&center=${location.lat},${location.lng}&zoom=14`}
+              className="w-full h-56"
               loading="lazy"
-              title="Your Location"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Nearby Places"
+              style={{ border: 0 }}
             />
-            <div className="absolute top-2 right-2 bg-card/90 px-2 py-1 rounded-lg border border-border">
+            <div className="absolute top-2 right-2 flex gap-1">
+              <button onClick={() => window.open(`https://www.google.com/maps/search/${filter === "all" ? "places" : filter}/@${location.lat},${location.lng},14z`, "_blank")}
+                className="bg-card/90 px-2 py-1 rounded-lg border border-border text-[10px] text-primary font-medium flex items-center gap-1">
+                <Layers className="w-3 h-3" /> Full Map
+              </button>
+            </div>
+            <div className="absolute bottom-2 left-2 bg-card/90 px-2 py-1 rounded-lg border border-border">
               <p className="text-[9px] text-primary flex items-center gap-1"><Navigation className="w-3 h-3" /> {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
             </div>
           </div>
         ) : (
-          <div className="h-48 bg-card border border-border rounded-xl flex items-center justify-center mb-4">
+          <div className="h-56 bg-card border border-border rounded-xl flex items-center justify-center mb-4">
             {loading ? <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <p className="text-sm text-muted-foreground">Enable location access</p>}
           </div>
         )}
