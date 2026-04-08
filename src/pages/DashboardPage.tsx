@@ -67,6 +67,7 @@ const tiles: AppTile[] = [
 ];
 
 const DashboardPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showVault, setShowVault] = useState(false);
   const [showFreebies, setShowFreebies] = useState(false);
