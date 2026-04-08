@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_comments: {
+        Row: {
+          ai_moderation_notes: string | null
+          commenter_email: string | null
+          commenter_name: string
+          created_at: string
+          id: string
+          message: string
+          moderation_status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_moderation_notes?: string | null
+          commenter_email?: string | null
+          commenter_name: string
+          created_at?: string
+          id?: string
+          message: string
+          moderation_status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_moderation_notes?: string | null
+          commenter_email?: string | null
+          commenter_name?: string
+          created_at?: string
+          id?: string
+          message?: string
+          moderation_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       diary_entries: {
         Row: {
           category: string | null
@@ -95,6 +128,45 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      investment_offers: {
+        Row: {
+          ai_notes: string | null
+          ai_score: number | null
+          created_at: string
+          id: string
+          investor_email: string
+          investor_name: string
+          message: string
+          offer_amount: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          ai_score?: number | null
+          created_at?: string
+          id?: string
+          investor_email: string
+          investor_name: string
+          message: string
+          offer_amount?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_notes?: string | null
+          ai_score?: number | null
+          created_at?: string
+          id?: string
+          investor_email?: string
+          investor_name?: string
+          message?: string
+          offer_amount?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
