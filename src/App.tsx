@@ -141,6 +141,7 @@ const App = () => (
             </Suspense>
           </BrowserRouter>
         </TooltipProvider>
+        </MuteProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
