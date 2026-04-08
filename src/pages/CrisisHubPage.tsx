@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cleanTextForSpeech } from "@/lib/utils";
 import { Phone, Shield, AlertTriangle, Heart, MapPin, Globe, Loader2, MessageSquare } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -77,7 +78,7 @@ const CrisisHubPage = () => {
         }
       }
       if (content && "speechSynthesis" in window) {
-        const u = new SpeechSynthesisUtterance(content);
+        const u = new SpeechSynthesisUtterance(cleanTextForSpeech(content));
         u.rate = 1.1; u.volume = 1;
         window.speechSynthesis.speak(u);
       }
