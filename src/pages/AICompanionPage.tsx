@@ -279,8 +279,12 @@ IMPORTANT RULES:
       {/* Header */}
       <div className="px-4 pt-3 pb-2 flex items-center gap-3 z-10">
         <UniversalBackButton />
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-lg">
-          {companion.type === "girlfriend" ? "👩" : "👨"}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-lg overflow-hidden">
+          {partnerAvatar?.image_url ? (
+            <img src={partnerAvatar.image_url} alt={companion.name} className="w-full h-full object-cover" />
+          ) : (
+            companion.type === "girlfriend" ? "👩" : "👨"
+          )}
         </div>
         <div className="flex-1">
           <h2 className="text-sm font-bold text-white">{companion.name}</h2>
