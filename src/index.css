@@ -38,6 +38,8 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
+    --status-active: 160 84% 39%;
+
     --gold: 45 100% 50%;
     --gold-dark: 40 80% 35%;
     --gold-light: 48 100% 65%;
