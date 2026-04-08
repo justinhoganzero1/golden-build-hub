@@ -430,8 +430,8 @@ const OraclePage = () => {
         </button>
         <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{isMuted ? "Unmute" : "Mute"}</span>
         <div className="flex items-center gap-2 mt-1">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-xs text-gray-400">READY</span>
+          <div className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-[#FFAA00] animate-pulse" : "bg-green-500"}`} />
+          <span className="text-xs text-gray-400">{isSpeaking ? "SPEAKING" : "READY"}</span>
           <span className="text-xs text-gray-600">|</span>
           <span className="text-xs text-[#FFAA00]">Oracle Active</span>
         </div>
