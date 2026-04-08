@@ -16,11 +16,6 @@ const OWNER_EMAIL = "justinbretthogan@gmail.com";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  if (!loading && user?.email !== OWNER_EMAIL) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising">("overview");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
@@ -31,6 +26,11 @@ const OwnerDashboardPage = () => {
   const [marketingEmail, setMarketingEmail] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+
+  if (!loading && user?.email !== OWNER_EMAIL) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
 
   useEffect(() => {
     loadSuggestions();
