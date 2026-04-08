@@ -1,14 +1,37 @@
-import { useState } from "react";
-import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const WEARABLES = [
-  { name: "Apple Watch", icon: "⌚" }, { name: "Fitbit", icon: "📟" }, { name: "Samsung Galaxy Watch", icon: "⌚" },
-  { name: "Garmin", icon: "🏃" }, { name: "Google Pixel Watch", icon: "⌚" }, { name: "Whoop", icon: "💪" },
-  { name: "Oura Ring", icon: "💍" }, { name: "Amazfit", icon: "⌚" },
+interface PairedDevice {
+  id: string;
+  name: string;
+  type: string;
+  icon: string;
+  connected: boolean;
+  battery?: number;
+  lastSeen?: string;
+  gattServer?: any;
+}
+
+const WEARABLE_SERVICES: Record<string, { name: string; icon: string; services: string[] }> = {
+  heart_rate: { name: "Heart Rate Monitor", icon: "❤️", services: ["heart_rate"] },
+  fitness: { name: "Fitness Tracker", icon: "🏃", services: ["running_speed_and_cadence", "cycling_speed_and_cadence"] },
+  watch: { name: "Smartwatch", icon: "⌚", services: ["device_information", "battery_service"] },
+  health: { name: "Health Device", icon: "🩺", services: ["health_thermometer", "blood_pressure"] },
+};
+
+const KNOWN_WEARABLES = [
+  { name: "Apple Watch", icon: "⌚", type: "watch" },
+  { name: "Fitbit", icon: "📟", type: "fitness" },
+  { name: "Samsung Galaxy Watch", icon: "⌚", type: "watch" },
+  { name: "Garmin", icon: "🏃", type: "fitness" },
+  { name: "Google Pixel Watch", icon: "⌚", type: "watch" },
+  { name: "Whoop", icon: "💪", type: "fitness" },
+  { name: "Oura Ring", icon: "💍", type: "health" },
+  { name: "Amazfit", icon: "⌚", type: "watch" },
 ];
 
 const THEME_COLORS = [
@@ -69,9 +92,8 @@ const SettingsPage = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("main");
-  const [darkMode, setDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [sound, setSound] = useState(true);
+  const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState("Gold & Black");
   const [language, setLanguage] = useState("English");
@@ -79,10 +101,64 @@ const SettingsPage = () => {
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); navigate("/"); };
 
-  const toggleWearable = (name: string) => {
-    setConnectedDevices(prev => prev.includes(name) ? prev.filter(d => d !== name) : [...prev, name]);
-    toast.success(connectedDevices.includes(name) ? `${name} disconnected` : `${name} connected`);
-  };
+  const scanBluetooth = useCallback(async () => {
+    if (!(navigator as any).bluetooth) {
+      toast.error("Bluetooth not supported in this browser. Use Chrome on Android or desktop.");
+      return;
+    }
+    setIsScanning(true);
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["heart_rate", "battery_service", "device_information", "health_thermometer", "running_speed_and_cadence"],
+      });
+      if (!device) { setIsScanning(false); return; }
+
+      let battery: number | undefined;
+      let gattServer: any;
+      try {
+        gattServer = await device.gatt?.connect();
+        try {
+          const batteryService = await gattServer?.getPrimaryService("battery_service");
+          const batteryChar = await batteryService?.getCharacteristic("battery_level");
+          const val = await batteryChar?.readValue();
+          battery = val?.getUint8(0);
+        } catch { /* device may not support battery service */ }
+      } catch { /* GATT connection optional */ }
+
+      const newDevice: PairedDevice = {
+        id: device.id || Date.now().toString(),
+        name: device.name || "Unknown Device",
+        type: "watch",
+        icon: "⌚",
+        connected: !!gattServer?.connected,
+        battery,
+        lastSeen: new Date().toLocaleTimeString(),
+        gattServer,
+      };
+
+      // Match to known wearable type
+      const known = KNOWN_WEARABLES.find(w => device.name?.toLowerCase().includes(w.name.split(" ")[0].toLowerCase()));
+      if (known) { newDevice.icon = known.icon; newDevice.type = known.type; }
+
+      setPairedDevices(prev => {
+        const exists = prev.find(d => d.id === newDevice.id);
+        if (exists) return prev.map(d => d.id === newDevice.id ? newDevice : d);
+        return [...prev, newDevice];
+      });
+      setConnectedDevices(prev => prev.includes(newDevice.name) ? prev : [...prev, newDevice.name]);
+      toast.success(`${newDevice.name} paired successfully!${battery !== undefined ? ` Battery: ${battery}%` : ""}`);
+    } catch (e: any) {
+      if (e.name !== "NotFoundError") toast.error(e.message || "Bluetooth scan failed");
+    } finally { setIsScanning(false); }
+  }, []);
+
+  const disconnectDevice = useCallback((device: PairedDevice) => {
+    try { device.gattServer?.disconnect(); } catch {}
+    setPairedDevices(prev => prev.filter(d => d.id !== device.id));
+    setConnectedDevices(prev => prev.filter(n => n !== device.name));
+    toast.success(`${device.name} disconnected`);
+  }, []);
 
   const applyTheme = (theme: typeof THEME_COLORS[0]) => {
     const root = document.documentElement;
@@ -150,19 +226,72 @@ const SettingsPage = () => {
           {tab === "wearables" && (
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Wearable Devices</h1>
+              
+              {/* Scan button */}
+              <button onClick={scanBluetooth} disabled={isScanning}
+                className="w-full flex items-center justify-center gap-3 py-4 mb-4 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors disabled:opacity-50">
+                {isScanning ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Bluetooth className="w-5 h-5 text-primary" />}
+                <span className="text-sm font-medium text-primary">{isScanning ? "Scanning for devices..." : "Scan for Bluetooth Devices"}</span>
+              </button>
+
+              {/* Paired devices */}
+              {pairedDevices.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Paired Devices</h3>
+                  <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+                    {pairedDevices.map(device => (
+                      <div key={device.id} className="flex items-center gap-3 px-4 py-3.5">
+                        <span className="text-xl">{device.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground font-medium truncate">{device.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Signal className={`w-3 h-3 ${device.connected ? "text-green-500" : "text-muted-foreground"}`} />
+                            <span className="text-[10px] text-muted-foreground">{device.connected ? "Connected" : "Disconnected"}</span>
+                            {device.battery !== undefined && <span className="text-[10px] text-primary">🔋 {device.battery}%</span>}
+                            {device.lastSeen && <span className="text-[10px] text-muted-foreground">• {device.lastSeen}</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => disconnectDevice(device)} className="p-1.5 rounded-full hover:bg-destructive/10"><X className="w-4 h-4 text-destructive" /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Compatible devices info */}
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Compatible Devices</h3>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-                {WEARABLES.map(w => (
-                  <button key={w.name} onClick={() => toggleWearable(w.name)} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/50 transition-colors text-left">
-                    <span className="text-xl">{w.icon}</span>
-                    <span className="flex-1 text-sm text-foreground">{w.name}</span>
-                    <Toggle value={connectedDevices.includes(w.name)} onChange={() => toggleWearable(w.name)} />
-                  </button>
-                ))}
+                {KNOWN_WEARABLES.map(w => {
+                  const isPaired = pairedDevices.some(d => d.name.toLowerCase().includes(w.name.split(" ")[0].toLowerCase()));
+                  return (
+                    <div key={w.name} className="flex items-center gap-3 px-4 py-3 text-left">
+                      <span className="text-xl">{w.icon}</span>
+                      <span className="flex-1 text-sm text-foreground">{w.name}</span>
+                      {isPaired ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">Paired</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Not paired</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Health data sync info */}
               <div className="mt-3 bg-card border border-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2"><Activity className="w-4 h-4 text-primary" /><h3 className="text-xs font-semibold text-foreground">Health Data Sync</h3></div>
-                <p className="text-[10px] text-muted-foreground">Connected wearables sync heart rate, steps, sleep, and stress data to Mind Hub, Haptic Escape, and wellness features.</p>
+                <p className="text-[10px] text-muted-foreground mb-2">Connected wearables sync heart rate, steps, sleep, and stress data to Mind Hub, Haptic Escape, and wellness features.</p>
+                <div className="flex flex-wrap gap-1">
+                  {["Heart Rate", "Steps", "Sleep", "SpO2", "Stress", "Calories", "Temperature"].map(metric => (
+                    <span key={metric} className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{metric}</span>
+                  ))}
+                </div>
               </div>
+
+              {/* Link another device */}
+              <button onClick={scanBluetooth} className="w-full mt-3 py-3 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+                + Link Another Device
+              </button>
             </>
           )}
 
@@ -205,8 +334,8 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Notifications</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
-                  { label: "Push Notifications", value: notifications, onChange: setNotifications },
-                  { label: "Sound Effects", value: sound, onChange: setSound },
+                  { label: "Push Notifications", value: true, onChange: () => {} },
+                  { label: "Sound Effects", value: true, onChange: () => {} },
                   { label: "Oracle Reminders", value: true, onChange: () => {} },
                   { label: "Calendar Alerts", value: true, onChange: () => {} },
                   { label: "Family Hub Updates", value: true, onChange: () => {} },
@@ -253,8 +382,8 @@ const SettingsPage = () => {
       { icon: <Bell className="w-5 h-5" />, label: "Notifications", action: () => setTab("notifications") },
     ]},
     { title: "Devices", items: [
-      { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${connectedDevices.length} connected`, action: () => setTab("wearables") },
-      { icon: <Bluetooth className="w-5 h-5" />, label: "Bluetooth Devices" },
+      { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${pairedDevices.length} paired`, action: () => setTab("wearables") },
+      { icon: <Bluetooth className="w-5 h-5" />, label: "Scan Bluetooth", action: () => { setTab("wearables"); setTimeout(scanBluetooth, 300); } },
     ]},
     { title: "Preferences", items: [
       { icon: <Palette className="w-5 h-5" />, label: "Theme & Colors", subtitle: currentTheme, action: () => setTab("theme") },
