@@ -406,22 +406,76 @@ const OraclePage = () => {
     if (!agent.active) toast.success(`${agent.emoji} ${agent.name} joined the chat!`);
   };
 
-  const toggleMic = () => {
+  const toggleMic = async () => {
     if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
       toast.error("Speech recognition not supported. Try Chrome.");
       return;
     }
+
+    // Request microphone permission first — must happen in user gesture context
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately — we just needed the permission grant
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        toast.error("Microphone blocked. Please allow microphone access in your browser settings.");
+      } else if (err.name === "NotFoundError") {
+        toast.error("No microphone found on this device.");
+      } else {
+        toast.error("Could not access microphone.");
+      }
+      return;
+    }
+
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SR();
     recognitionRef.current = recognition;
     recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.onresult = (e: any) => { setIsListening(false); sendMessage(e.results[0][0].transcript); };
-    recognition.onerror = () => { setIsListening(false); toast.error("Could not recognize speech"); };
-    recognition.onend = () => setIsListening(false);
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    let finalTranscript = "";
+
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      // Show interim text in input so user sees what Oracle is hearing
+      if (interim) setInput(interim);
+    };
+
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error === "not-allowed") {
+        toast.error("Microphone permission denied. Allow it in browser settings.");
+      } else if (e.error === "no-speech") {
+        toast.info("No speech detected. Tap the mic and try again.");
+      } else if (e.error === "network") {
+        toast.error("Network error with speech recognition. Check your connection.");
+      } else {
+        toast.error("Speech recognition error. Please try again.");
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        setInput("");
+        sendMessage(finalTranscript.trim());
+      }
+    };
+
     setIsListening(true);
+    // Stop Oracle speaking so it doesn't interfere with mic
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
     recognition.start();
   };
 
