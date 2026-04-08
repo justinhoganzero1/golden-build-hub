@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText } from "lucide-react";
+import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText, LayoutGrid } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -248,7 +248,87 @@ const THEME_COLORS: ThemeScheme[] = [
   { name: "Sand Light", primary: "38 50% 55%", secondary: "20 40% 50%", accent: "200 60% 50%", bg: "35 10% 97%", light: true },
 ];
 
-type SettingsTab = "main" | "theme" | "wearables" | "privacy" | "language" | "notifications" | "help";
+type SettingsTab = "main" | "theme" | "layout" | "wearables" | "privacy" | "language" | "notifications" | "help";
+
+interface LayoutOption {
+  name: string;
+  gridCols: number;
+  tileStyle: string;
+  iconSize: string;
+  fontSize: string;
+  gap: string;
+  borderRadius: string;
+  category: string;
+}
+
+const LAYOUT_OPTIONS: LayoutOption[] = [
+  // Grid layouts
+  { name: "Standard 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-xl", category: "Grid" },
+  { name: "Large 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-3", borderRadius: "rounded-xl", category: "Grid" },
+  { name: "Big 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-3", borderRadius: "rounded-2xl", category: "Grid" },
+  { name: "Dense 5x", gridCols: 5, tileStyle: "tiny", iconSize: "w-5 h-5", fontSize: "text-[8px]", gap: "gap-1.5", borderRadius: "rounded-lg", category: "Grid" },
+  { name: "Micro 6x", gridCols: 6, tileStyle: "micro", iconSize: "w-4 h-4", fontSize: "text-[7px]", gap: "gap-1", borderRadius: "rounded-md", category: "Grid" },
+  { name: "Cozy 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[11px]", gap: "gap-4", borderRadius: "rounded-2xl", category: "Grid" },
+  { name: "Spacious 2x", gridCols: 2, tileStyle: "large", iconSize: "w-12 h-12", fontSize: "text-sm", gap: "gap-4", borderRadius: "rounded-3xl", category: "Grid" },
+  { name: "Tight 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-5 h-5", fontSize: "text-[9px]", gap: "gap-1.5", borderRadius: "rounded-lg", category: "Grid" },
+  { name: "Balanced 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-2", borderRadius: "rounded-xl", category: "Grid" },
+  { name: "Ultra Dense 4x", gridCols: 4, tileStyle: "tiny", iconSize: "w-4 h-4", fontSize: "text-[8px]", gap: "gap-1", borderRadius: "rounded-md", category: "Grid" },
+  // Rounded
+  { name: "Bubble 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-full", category: "Rounded" },
+  { name: "Pill 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-2", borderRadius: "rounded-full", category: "Rounded" },
+  { name: "Soft 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-3", borderRadius: "rounded-3xl", category: "Rounded" },
+  { name: "Circle 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-4", borderRadius: "rounded-full", category: "Rounded" },
+  { name: "Capsule 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-5 h-5", fontSize: "text-[9px]", gap: "gap-2", borderRadius: "rounded-3xl", category: "Rounded" },
+  { name: "Orb 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[10px]", gap: "gap-4", borderRadius: "rounded-full", category: "Rounded" },
+  { name: "Dome 2x", gridCols: 2, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-xs", gap: "gap-3", borderRadius: "rounded-3xl", category: "Rounded" },
+  { name: "Smooth 5x", gridCols: 5, tileStyle: "tiny", iconSize: "w-5 h-5", fontSize: "text-[8px]", gap: "gap-1.5", borderRadius: "rounded-2xl", category: "Rounded" },
+  { name: "Cloud 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-[20px]", category: "Rounded" },
+  { name: "Pebble 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-2.5", borderRadius: "rounded-[16px]", category: "Rounded" },
+  // Sharp
+  { name: "Sharp 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-none", category: "Sharp" },
+  { name: "Edge 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-3", borderRadius: "rounded-sm", category: "Sharp" },
+  { name: "Block 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-3", borderRadius: "rounded-none", category: "Sharp" },
+  { name: "Pixel 5x", gridCols: 5, tileStyle: "tiny", iconSize: "w-5 h-5", fontSize: "text-[8px]", gap: "gap-1", borderRadius: "rounded-none", category: "Sharp" },
+  { name: "Tile 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-5 h-5", fontSize: "text-[9px]", gap: "gap-1", borderRadius: "rounded-sm", category: "Sharp" },
+  { name: "Slate 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[11px]", gap: "gap-2", borderRadius: "rounded-sm", category: "Sharp" },
+  { name: "Angular 2x", gridCols: 2, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-sm", gap: "gap-2", borderRadius: "rounded-none", category: "Sharp" },
+  { name: "Crisp 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-2.5", borderRadius: "rounded-[4px]", category: "Sharp" },
+  { name: "Metro 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-1.5", borderRadius: "rounded-none", category: "Sharp" },
+  { name: "Box 6x", gridCols: 6, tileStyle: "micro", iconSize: "w-4 h-4", fontSize: "text-[7px]", gap: "gap-0.5", borderRadius: "rounded-none", category: "Sharp" },
+  // Minimal
+  { name: "Zen 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-6", borderRadius: "rounded-xl", category: "Minimal" },
+  { name: "Clean 2x", gridCols: 2, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-6", borderRadius: "rounded-xl", category: "Minimal" },
+  { name: "Airy 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[10px]", gap: "gap-5", borderRadius: "rounded-2xl", category: "Minimal" },
+  { name: "Breathe 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-4", borderRadius: "rounded-xl", category: "Minimal" },
+  { name: "Simple 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-5", borderRadius: "rounded-xl", category: "Minimal" },
+  { name: "Calm 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-4", borderRadius: "rounded-2xl", category: "Minimal" },
+  { name: "Float 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-5 h-5", fontSize: "text-[9px]", gap: "gap-5", borderRadius: "rounded-2xl", category: "Minimal" },
+  { name: "Whisper 2x", gridCols: 2, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-sm", gap: "gap-6", borderRadius: "rounded-3xl", category: "Minimal" },
+  { name: "Mist 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-5", borderRadius: "rounded-full", category: "Minimal" },
+  { name: "Serene 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-4", borderRadius: "rounded-3xl", category: "Minimal" },
+  // Bold
+  { name: "Impact 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-12 h-12", fontSize: "text-base", gap: "gap-3", borderRadius: "rounded-2xl", category: "Bold" },
+  { name: "Power 3x", gridCols: 3, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-sm", gap: "gap-2", borderRadius: "rounded-xl", category: "Bold" },
+  { name: "Hero 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-14 h-14", fontSize: "text-lg", gap: "gap-4", borderRadius: "rounded-3xl", category: "Bold" },
+  { name: "Mega 1x", gridCols: 1, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-base", gap: "gap-2", borderRadius: "rounded-2xl", category: "Bold" },
+  { name: "Titan 2x", gridCols: 2, tileStyle: "large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-3", borderRadius: "rounded-xl", category: "Bold" },
+  { name: "Giant 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-3", borderRadius: "rounded-2xl", category: "Bold" },
+  { name: "King 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-11 h-11", fontSize: "text-sm", gap: "gap-4", borderRadius: "rounded-xl", category: "Bold" },
+  { name: "Force 3x", gridCols: 3, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-sm", gap: "gap-2.5", borderRadius: "rounded-3xl", category: "Bold" },
+  { name: "Max 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[11px]", gap: "gap-2", borderRadius: "rounded-xl", category: "Bold" },
+  { name: "Thunder 3x", gridCols: 3, tileStyle: "large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-3", borderRadius: "rounded-2xl", category: "Bold" },
+  // Elegant
+  { name: "Luxe 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-[14px]", category: "Elegant" },
+  { name: "Silk 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-3", borderRadius: "rounded-[12px]", category: "Elegant" },
+  { name: "Velvet 2x", gridCols: 2, tileStyle: "large", iconSize: "w-9 h-9", fontSize: "text-xs", gap: "gap-4", borderRadius: "rounded-[18px]", category: "Elegant" },
+  { name: "Pearl 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-4", borderRadius: "rounded-[16px]", category: "Elegant" },
+  { name: "Crystal 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-5 h-5", fontSize: "text-[9px]", gap: "gap-2.5", borderRadius: "rounded-[10px]", category: "Elegant" },
+  { name: "Satin 3x", gridCols: 3, tileStyle: "large", iconSize: "w-8 h-8", fontSize: "text-xs", gap: "gap-3.5", borderRadius: "rounded-[14px]", category: "Elegant" },
+  { name: "Grace 2x", gridCols: 2, tileStyle: "extra-large", iconSize: "w-10 h-10", fontSize: "text-sm", gap: "gap-5", borderRadius: "rounded-[20px]", category: "Elegant" },
+  { name: "Charm 5x", gridCols: 5, tileStyle: "tiny", iconSize: "w-5 h-5", fontSize: "text-[8px]", gap: "gap-2", borderRadius: "rounded-[10px]", category: "Elegant" },
+  { name: "Noble 3x", gridCols: 3, tileStyle: "compact", iconSize: "w-7 h-7", fontSize: "text-[11px]", gap: "gap-3", borderRadius: "rounded-[16px]", category: "Elegant" },
+  { name: "Regal 4x", gridCols: 4, tileStyle: "compact", iconSize: "w-6 h-6", fontSize: "text-[10px]", gap: "gap-3.5", borderRadius: "rounded-[14px]", category: "Elegant" },
+];
 
 const LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Korean", "Chinese", "Portuguese", "Italian", "Arabic", "Hindi", "Russian"];
 
@@ -262,6 +342,16 @@ const SettingsPage = () => {
   const [currentTheme, setCurrentTheme] = useState("Gold & Black");
   const [language, setLanguage] = useState("English");
   const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: false });
+  const [currentLayout, setCurrentLayout] = useState("Standard 4x");
+
+  const applyLayout = (layout: LayoutOption) => {
+    // Store layout in localStorage so DashboardPage can read it
+    localStorage.setItem("solace-layout", JSON.stringify(layout));
+    setCurrentLayout(layout.name);
+    toast.success(`Layout: ${layout.name}`);
+    // Dispatch custom event so dashboard picks it up in real-time
+    window.dispatchEvent(new CustomEvent("solace-layout-change", { detail: layout }));
+  };
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); navigate("/"); };
 
@@ -393,6 +483,32 @@ const SettingsPage = () => {
                   </button>
                 ))}
               </div>
+            </>
+          )}
+
+          {tab === "layout" && (
+            <>
+              <h1 className="text-lg font-bold text-primary mb-4">App Layout</h1>
+              <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentLayout}</span> · {LAYOUT_OPTIONS.length} layouts</p>
+              {["Grid", "Rounded", "Sharp", "Minimal", "Bold", "Elegant"].map(cat => (
+                <div key={cat} className="mb-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{cat}</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LAYOUT_OPTIONS.filter(l => l.category === cat).map(l => (
+                      <button key={l.name} onClick={() => applyLayout(l)} className={`p-2.5 border text-center transition-all ${l.borderRadius} ${currentLayout === l.name ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-card"}`}>
+                        {/* Mini preview */}
+                        <div className={`grid gap-[2px] mb-1.5 mx-auto w-fit`} style={{ gridTemplateColumns: `repeat(${Math.min(l.gridCols, 4)}, 1fr)` }}>
+                          {Array.from({ length: Math.min(l.gridCols * 2, 12) }).map((_, i) => (
+                            <div key={i} className={`w-2 h-2 bg-primary/40 ${l.borderRadius === "rounded-full" ? "rounded-full" : l.borderRadius === "rounded-none" ? "" : "rounded-sm"}`} />
+                          ))}
+                        </div>
+                        <span className="text-[8px] text-foreground leading-tight block">{l.name}</span>
+                        {currentLayout === l.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </>
           )}
 
@@ -560,6 +676,7 @@ const SettingsPage = () => {
     ]},
     { title: "Preferences", items: [
       { icon: <Palette className="w-5 h-5" />, label: "Theme & Colors", subtitle: currentTheme, action: () => setTab("theme") },
+      { icon: <LayoutGrid className="w-5 h-5" />, label: "App Layout", subtitle: currentLayout, action: () => setTab("layout") },
       { icon: <Globe className="w-5 h-5" />, label: "Language", subtitle: language, action: () => setTab("language") },
     ]},
     { title: "About", items: [

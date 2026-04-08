@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -72,6 +73,25 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const isOwner = user?.email === OWNER_EMAIL;
 
+  const [layout, setLayout] = useState(() => {
+    try {
+      const saved = localStorage.getItem("solace-layout");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => setLayout((e as CustomEvent).detail);
+    window.addEventListener("solace-layout-change", handler);
+    return () => window.removeEventListener("solace-layout-change", handler);
+  }, []);
+
+  const gridCols = layout?.gridCols || 4;
+  const iconSize = layout?.iconSize || "w-6 h-6";
+  const labelSize = layout?.fontSize || "text-[10px]";
+  const gridGap = layout?.gap || "gap-3";
+  const tileBR = layout?.borderRadius || "rounded-xl";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Banner */}
@@ -108,15 +128,15 @@ const DashboardPage = () => {
       )}
 
       {/* App Grid */}
-      <div className="grid grid-cols-4 gap-3 px-4 pb-24">
+      <div className={`grid ${gridGap} px-4 pb-24`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
         {tiles.map((tile) => (
           <button
             key={tile.path + tile.label}
             onClick={() => navigate(tile.path)}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-card border border-border hover:border-primary hover:bg-secondary transition-all"
+            className={`flex flex-col items-center gap-2 p-3 ${tileBR} bg-card border border-border hover:border-primary hover:bg-secondary transition-all`}
           >
-            <div className="text-primary">{tile.icon}</div>
-            <span className="text-[10px] text-foreground font-medium text-center leading-tight">
+            <div className={`text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
+            <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
               {tile.label}
             </span>
           </button>
