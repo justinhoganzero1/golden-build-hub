@@ -324,11 +324,12 @@ const SettingsPage = () => {
     toast.success(`${device.name} disconnected`);
   }, []);
 
-  const applyTheme = (theme: typeof THEME_COLORS[0]) => {
+  const applyTheme = (theme: ThemeScheme) => {
     const root = document.documentElement;
     root.style.setProperty("--primary", theme.primary);
+    root.style.setProperty("--secondary", theme.secondary);
+    root.style.setProperty("--accent", theme.accent);
     root.style.setProperty("--background", theme.bg);
-    root.style.setProperty("--accent", theme.primary);
     root.style.setProperty("--ring", theme.primary);
     root.style.setProperty("--gold", theme.primary);
     if (theme.light) {
