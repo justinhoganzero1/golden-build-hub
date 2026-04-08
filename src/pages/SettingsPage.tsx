@@ -382,8 +382,8 @@ const SettingsPage = () => {
       { icon: <Bell className="w-5 h-5" />, label: "Notifications", action: () => setTab("notifications") },
     ]},
     { title: "Devices", items: [
-      { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${connectedDevices.length} connected`, action: () => setTab("wearables") },
-      { icon: <Bluetooth className="w-5 h-5" />, label: "Bluetooth Devices" },
+      { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${pairedDevices.length} paired`, action: () => setTab("wearables") },
+      { icon: <Bluetooth className="w-5 h-5" />, label: "Scan Bluetooth", action: () => { setTab("wearables"); setTimeout(scanBluetooth, 300); } },
     ]},
     { title: "Preferences", items: [
       { icon: <Palette className="w-5 h-5" />, label: "Theme & Colors", subtitle: currentTheme, action: () => setTab("theme") },
