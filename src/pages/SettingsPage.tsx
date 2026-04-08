@@ -676,6 +676,7 @@ const SettingsPage = () => {
     ]},
     { title: "Preferences", items: [
       { icon: <Palette className="w-5 h-5" />, label: "Theme & Colors", subtitle: currentTheme, action: () => setTab("theme") },
+      { icon: <LayoutGrid className="w-5 h-5" />, label: "App Layout", subtitle: currentLayout, action: () => setTab("layout") },
       { icon: <Globe className="w-5 h-5" />, label: "Language", subtitle: language, action: () => setTab("language") },
     ]},
     { title: "About", items: [
