@@ -128,15 +128,15 @@ const DashboardPage = () => {
       )}
 
       {/* App Grid */}
-      <div className="grid grid-cols-4 gap-3 px-4 pb-24">
+      <div className={`grid ${gridGap} px-4 pb-24`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
         {tiles.map((tile) => (
           <button
             key={tile.path + tile.label}
             onClick={() => navigate(tile.path)}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-card border border-border hover:border-primary hover:bg-secondary transition-all"
+            className={`flex flex-col items-center gap-2 p-3 ${tileBR} bg-card border border-border hover:border-primary hover:bg-secondary transition-all`}
           >
-            <div className="text-primary">{tile.icon}</div>
-            <span className="text-[10px] text-foreground font-medium text-center leading-tight">
+            <div className={`text-primary ${iconSize}`}>{tile.icon}</div>
+            <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
               {tile.label}
             </span>
           </button>
