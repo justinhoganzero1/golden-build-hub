@@ -693,12 +693,14 @@ const OraclePage = () => {
         }
       }
 
-      // Speak using the pre-created utterance (gesture chain preserved)
+      // Speak using the pre-created utterance with Oracle's unique voice
       if (oracleContent && utterance) {
         window.speechSynthesis.cancel();
         const clean = cleanTextForSpeech(oracleContent);
         if (clean) {
           utterance.text = clean;
+          const oracleVoice = getVoiceForAgent("Oracle");
+          if (oracleVoice) utterance.voice = oracleVoice;
           window.speechSynthesis.speak(utterance);
         }
       }
@@ -887,13 +889,19 @@ const OraclePage = () => {
 
       {/* Status bar */}
       <div className="flex flex-col items-center pb-3 gap-2 z-10" style={{ background: "#0a0a0a" }}>
-        <button onClick={toggleMute} className="p-3 rounded-full border border-[#FFAA00]/20 bg-black/50">
-          {isMuted ? <VolumeX className="w-6 h-6 text-[#FFAA00]" /> : <Volume2 className="w-6 h-6 text-[#FFAA00]" />}
-        </button>
-        <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{isMuted ? "Unmute" : "Mute"}</span>
-        <div className="flex items-center gap-2 mt-1">
-          <div className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-[#FFAA00] animate-pulse" : "bg-green-500"}`} />
-          <span className="text-xs text-gray-400">{isSpeaking ? "SPEAKING" : "READY"}</span>
+        <div className="flex items-center gap-3">
+          <button onClick={toggleMute} className={`p-2 rounded-full border transition-all ${isMuted ? "border-red-500/40 bg-red-600/20" : "border-green-500/40 bg-green-600/20"}`}>
+            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-green-400" />}
+          </button>
+          {activeAgents.length >= 2 && (
+            <button onClick={() => setShowDebate(p => !p)} className={`px-2 py-1 rounded-full border text-[9px] font-medium transition-all ${showDebate ? "border-orange-500/40 bg-orange-600/20 text-orange-300" : "border-gray-700 bg-gray-800/50 text-gray-500"}`}>
+              {showDebate ? "🔥 Debates On" : "Debates Off"}
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${debateActive ? "bg-orange-500 animate-pulse" : isSpeaking ? "bg-[#FFAA00] animate-pulse" : "bg-green-500"}`} />
+          <span className="text-xs text-gray-400">{debateActive ? "DEBATING" : isSpeaking ? "SPEAKING" : "READY"}</span>
           <span className="text-xs text-gray-600">|</span>
           <span className="text-xs text-[#FFAA00]">Oracle + {activeAgents.length} agents</span>
         </div>
