@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Palette, Sparkles, Loader2, Camera, Download, UserPlus } from "lucide-react";
+import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -19,12 +19,33 @@ const STYLES = [
   { value: "minimalist", label: "Minimalist", desc: "Clean minimal design" },
 ];
 
+const AVATAR_PURPOSES = [
+  { value: "oracle", label: "🔮 Main Oracle", desc: "Replace the Oracle's default appearance" },
+  { value: "profile", label: "👤 My Profile", desc: "Use as your profile picture" },
+  { value: "ai-friend", label: "🤖 AI Friend", desc: "Add as an AI companion in chat" },
+  { value: "partner", label: "💕 Boyfriend / Girlfriend", desc: "A romantic AI companion with a custom personality" },
+];
+
+const VOICE_OPTIONS = [
+  "Warm & Friendly", "Deep & Authoritative", "Soft & Gentle", "Raspy & Edgy",
+  "Bright & Energetic", "Sultry & Smooth", "Gruff & Tough", "Whispery & ASMR",
+  "Booming & Theatrical", "Husky & Mysterious", "Cheerful & Bubbly", "Calm & Meditative",
+  "Sarcastic & Dry", "Passionate & Fiery",
+];
+
+const PERSONALITY_OPTIONS = [
+  "Sweet & Caring", "Bold & Adventurous", "Witty & Sarcastic", "Mysterious & Deep",
+  "Playful & Flirty", "Intellectual & Nerdy", "Protective & Loyal", "Chill & Laid-back",
+  "Romantic & Poetic", "Energetic & Fun",
+];
+
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const AvatarGeneratorPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isCreatingFriend = searchParams.get("friend") === "true";
+
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -32,7 +53,13 @@ const AvatarGeneratorPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  const styleObj = STYLES.find(s => s.value === selectedStyle) || STYLES[0];
+  // New state for purpose, voice, personality
+  const [purpose, setPurpose] = useState(isCreatingFriend ? "ai-friend" : "oracle");
+  const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
+  const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
+  const [avatarName, setAvatarName] = useState("");
+
+  const showVoiceAndPersonality = purpose === "ai-friend" || purpose === "partner";
 
   const generate = async () => {
     const desc = prompt.trim() || "a person";
@@ -106,7 +133,7 @@ const AvatarGeneratorPage = () => {
     const stream = videoRef.current.srcObject as MediaStream;
     stream?.getTracks().forEach(t => t.stop());
     setShowCamera(false);
-    toast.success("Selfie captured! You can now use this as your avatar.");
+    toast.success("Selfie captured!");
   };
 
   const downloadImage = () => {
@@ -117,132 +144,262 @@ const AvatarGeneratorPage = () => {
     a.click();
   };
 
-  const saveAsFriend = () => {
-    if (!imageUrl) { toast.error("Generate an avatar first"); return; }
-    toast.success("Avatar saved as AI Friend! Go to AI Studio to configure.");
-    navigate("/ai-studio");
+  const addAvatar = () => {
+    if (!imageUrl) { toast.error("Generate or capture an avatar first"); return; }
+
+    const name = avatarName.trim() || "My Avatar";
+
+    switch (purpose) {
+      case "oracle":
+        toast.success(`"${name}" set as your Oracle's appearance!`);
+        navigate("/oracle");
+        break;
+      case "profile":
+        toast.success(`"${name}" set as your profile picture!`);
+        navigate("/profile");
+        break;
+      case "ai-friend":
+        toast.success(`"${name}" added as an AI Friend with ${selectedVoice} voice!`);
+        navigate("/ai-studio");
+        break;
+      case "partner":
+        toast.success(`"${name}" added as your AI Partner — ${selectedPersonality}, ${selectedVoice} voice 💕`);
+        navigate("/ai-companion");
+        break;
+    }
   };
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
-        {/* Create AI Friend banner */}
-        {isCreatingFriend && (
-          <div className="bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
-            <UserPlus className="w-6 h-6 text-purple-400" />
-            <div>
-              <h3 className="text-sm font-bold text-white">Create AI Friend</h3>
-              <p className="text-xs text-gray-400">This avatar will be saved as a friend you can chat with!</p>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
           <div>
             <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
-            <p className="text-gray-500 text-xs">Create AI-powered avatars</p>
+            <p className="text-gray-500 text-xs">Create & assign AI-powered avatars</p>
           </div>
         </div>
 
-        {/* Two column layout on larger screens */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left - Controls */}
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="w-5 h-5 text-gray-400" />
-              <h2 className="text-sm font-bold text-white">Describe Your Avatar</h2>
-            </div>
-
-            {/* Style selector */}
-            <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Style</label>
-              <select
-                value={selectedStyle}
-                onChange={e => setSelectedStyle(e.target.value)}
-                className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white appearance-none cursor-pointer"
-              >
-                {STYLES.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}  - {s.desc}</option>
+          <div className="space-y-4">
+            {/* Avatar Purpose */}
+            <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" /> What is this avatar for?
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                {AVATAR_PURPOSES.map(p => (
+                  <button
+                    key={p.value}
+                    onClick={() => setPurpose(p.value)}
+                    className={`text-left p-3 rounded-xl border transition-all text-xs ${
+                      purpose === p.value
+                        ? "border-purple-500 bg-purple-500/10 text-white"
+                        : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
+                    }`}
+                  >
+                    <div className="font-semibold text-sm mb-0.5">{p.label}</div>
+                    <div className="text-[10px] opacity-70">{p.desc}</div>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Description</label>
-              <textarea
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                placeholder="Describe your avatar in detail... e.g. batman, a warrior princess, a cyberpunk hacker"
-                rows={4}
-                className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500 resize-none"
-              />
+            {/* Name & Style */}
+            <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
+              <h2 className="text-sm font-bold text-white">Design Your Avatar</h2>
+
+              {/* Name */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Avatar Name</label>
+                <input
+                  value={avatarName}
+                  onChange={e => setAvatarName(e.target.value)}
+                  placeholder="e.g. Luna, Shadow, Alex..."
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* Style */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Style</label>
+                <select
+                  value={selectedStyle}
+                  onChange={e => setSelectedStyle(e.target.value)}
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white appearance-none cursor-pointer"
+                >
+                  {STYLES.map(s => (
+                    <option key={s.value} value={s.value}>{s.label} - {s.desc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Description</label>
+                <textarea
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  placeholder="Describe your avatar... e.g. a warrior princess with golden armor"
+                  rows={3}
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+
+              {/* Generate / Selfie */}
+              <button
+                onClick={generate}
+                disabled={isLoading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 hover:from-purple-500 hover:to-pink-500 transition-all"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                Generate Avatar
+              </button>
+              <button
+                onClick={takeSelfie}
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500 transition-colors"
+              >
+                <Camera className="w-4 h-4" /> Take a Selfie Instead
+              </button>
             </div>
 
-            {/* Generate button */}
-            <button
-              onClick={generate}
-              disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 hover:from-purple-500 hover:to-pink-500 transition-all"
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              Generate Avatar
-            </button>
+            {/* Voice & Personality — shown for AI Friend / Partner */}
+            {showVoiceAndPersonality && (
+              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
+                <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-purple-400" /> Voice & Personality
+                </h2>
 
-            <div className="flex items-center gap-3 text-gray-600 text-xs">
-              <div className="flex-1 h-px bg-gray-800" />
-              <span>or</span>
-              <div className="flex-1 h-px bg-gray-800" />
-            </div>
+                {/* Voice */}
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Voice Style</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {VOICE_OPTIONS.map(v => (
+                      <button
+                        key={v}
+                        onClick={() => setSelectedVoice(v)}
+                        className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                          selectedVoice === v
+                            ? "bg-purple-600 text-white"
+                            : "bg-[#0f0f0f] border border-gray-700 text-gray-400 hover:border-purple-500"
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Selfie button */}
-            <button
-              onClick={takeSelfie}
-              className="w-full py-3 rounded-xl border border-gray-700 text-purple-400 font-medium flex items-center justify-center gap-2 hover:border-purple-500 transition-colors"
-            >
-              <Camera className="w-5 h-5" />
-              Take a Selfie
-            </button>
+                {/* Personality — only for partner */}
+                {purpose === "partner" && (
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1.5 block flex items-center gap-1">
+                      <Heart className="w-3 h-3 text-pink-400" /> Personality
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PERSONALITY_OPTIONS.map(p => (
+                        <button
+                          key={p}
+                          onClick={() => setSelectedPersonality(p)}
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                            selectedPersonality === p
+                              ? "bg-pink-600 text-white"
+                              : "bg-[#0f0f0f] border border-gray-700 text-gray-400 hover:border-pink-500"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Right - Preview */}
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
-            <div className="aspect-[3/4] rounded-xl bg-[#0f0f0f] border border-gray-800 overflow-hidden flex items-center justify-center">
-              {showCamera ? (
-                <div className="relative w-full h-full">
-                  <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                  <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">
-                    📸 Capture
+          {/* Right - Preview & Add */}
+          <div className="space-y-4">
+            <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
+              <div className="aspect-[3/4] rounded-xl bg-[#0f0f0f] border border-gray-800 overflow-hidden flex items-center justify-center">
+                {showCamera ? (
+                  <div className="relative w-full h-full">
+                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                    <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">
+                      📸 Capture
+                    </button>
+                  </div>
+                ) : isLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+                    <p className="text-xs text-gray-500">Generating your avatar...</p>
+                  </div>
+                ) : imageUrl ? (
+                  <img src={imageUrl} alt="Generated avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-3 text-gray-600">
+                    <Sparkles className="w-16 h-16 text-gray-700" />
+                    <p className="text-xs">Your avatar will appear here</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              {imageUrl && !showCamera && (
+                <div className="flex flex-col gap-2 mt-4">
+                  {/* Main ADD button */}
+                  <button
+                    onClick={addAvatar}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add as {AVATAR_PURPOSES.find(p => p.value === purpose)?.label || "Avatar"}
                   </button>
-                </div>
-              ) : isLoading ? (
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
-                  <p className="text-xs text-gray-500">Generating your avatar...</p>
-                </div>
-              ) : imageUrl ? (
-                <img src={imageUrl} alt="Generated avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex flex-col items-center gap-3 text-gray-600">
-                  <Sparkles className="w-16 h-16 text-gray-700" />
-                  <p className="text-xs">Your avatar will appear here</p>
+
+                  <div className="flex gap-2">
+                    <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-purple-500">
+                      <Download className="w-4 h-4" /> Download
+                    </button>
+                    <button
+                      onClick={() => { setImageUrl(null); setPrompt(""); }}
+                      className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-red-500"
+                    >
+                      🔄 New Avatar
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Action buttons */}
+            {/* Summary card */}
             {imageUrl && !showCamera && (
-              <div className="flex gap-2 mt-3">
-                <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-purple-500">
-                  <Download className="w-4 h-4" /> Save
-                </button>
-                <button onClick={saveAsFriend} className="flex-1 py-2 rounded-xl bg-purple-600 text-white text-sm flex items-center justify-center gap-1.5">
-                  <UserPlus className="w-4 h-4" /> Use as AI Friend
-                </button>
+              <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-4">
+                <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Avatar Summary</h3>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between text-gray-300">
+                    <span className="text-gray-500">Name</span>
+                    <span>{avatarName.trim() || "Unnamed"}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-300">
+                    <span className="text-gray-500">Purpose</span>
+                    <span>{AVATAR_PURPOSES.find(p => p.value === purpose)?.label}</span>
+                  </div>
+                  {showVoiceAndPersonality && (
+                    <div className="flex justify-between text-gray-300">
+                      <span className="text-gray-500">Voice</span>
+                      <span>{selectedVoice}</span>
+                    </div>
+                  )}
+                  {purpose === "partner" && (
+                    <div className="flex justify-between text-gray-300">
+                      <span className="text-gray-500">Personality</span>
+                      <span>{selectedPersonality}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
