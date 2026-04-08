@@ -643,20 +643,6 @@ const OraclePage = () => {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Pre-create utterance in gesture context to satisfy browser security policy
-    let utterance: SpeechSynthesisUtterance | null = null;
-    if (!isMuted) {
-      utterance = new SpeechSynthesisUtterance("");
-      utterance.lang = "en-US";
-      utterance.rate = 0.95;
-      utterance.pitch = 1.1;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
-      if (preferred) utterance.voice = preferred;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-    }
 
     try {
       const allMsgs = [...messages, userMsg];
