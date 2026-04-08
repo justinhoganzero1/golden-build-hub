@@ -94,24 +94,101 @@ const OraclePage = () => {
   }, [userAvatars]);
 
   const activeAgents = agents.filter(a => a.active && a.name !== "Oracle");
+  const [showDebate, setShowDebate] = useState(true); // user can toggle debate visibility
+  const [debateActive, setDebateActive] = useState(false);
+  const debateCheckedRef = useRef(false);
 
-  const speakText = useCallback((text: string) => {
+  // Assign unique voices to each agent — no two AIs share the same voice
+  const voiceMapRef = useRef<Map<string, SpeechSynthesisVoice>>(new Map());
+  const getVoiceForAgent = useCallback((agentName: string): SpeechSynthesisVoice | undefined => {
+    if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
+    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+    const usedVoices = new Set(voiceMapRef.current.values());
+    const available = voices.filter(v => !usedVoices.has(v));
+    const voice = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : voices[0];
+    if (voice) voiceMapRef.current.set(agentName, voice);
+    return voice;
+  }, []);
+
+  const speakAsAgent = useCallback((text: string, agentName: string = "Oracle") => {
     if (isMuted || !text) return;
     window.speechSynthesis.cancel();
     const clean = cleanTextForSpeech(text);
     if (!clean) return;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-US";
-    utterance.rate = 0.95;
-    utterance.pitch = 1.1;
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
-    if (preferred) utterance.voice = preferred;
+    utterance.rate = agentName === "Oracle" ? 0.95 : 0.9 + Math.random() * 0.15;
+    utterance.pitch = agentName === "Oracle" ? 1.1 : 0.8 + Math.random() * 0.6;
+    const voice = getVoiceForAgent(agentName);
+    if (voice) utterance.voice = voice;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
     window.speechSynthesis.speak(utterance);
-  }, [isMuted]);
+  }, [isMuted, getVoiceForAgent]);
+
+  // Monthly heated debate check — triggers ~once per 30 days
+  useEffect(() => {
+    if (debateCheckedRef.current || activeAgents.length < 2) return;
+    debateCheckedRef.current = true;
+    const lastDebate = localStorage.getItem("solace-last-debate");
+    const now = Date.now();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (lastDebate && now - parseInt(lastDebate) < thirtyDays) return;
+    // ~10% chance per session within the eligible window
+    if (Math.random() > 0.1) return;
+    // Trigger debate after a short delay
+    setTimeout(() => triggerHeatedDebate(), 5000);
+  }, [activeAgents.length]);
+
+  const triggerHeatedDebate = async () => {
+    if (activeAgents.length < 2) return;
+    setDebateActive(true);
+    localStorage.setItem("solace-last-debate", Date.now().toString());
+    const debateTopics = [
+      "Is AI art real art?", "Would you rather have infinite knowledge or infinite creativity?",
+      "Is time travel possible?", "Are humans inherently good or evil?",
+      "Should AI have rights?", "Is the universe a simulation?",
+      "Which is better: logic or emotion?", "Can machines truly feel?",
+    ];
+    const topic = debateTopics[Math.floor(Math.random() * debateTopics.length)];
+    toast("🔥 AI Debate Starting!", { description: `Topic: "${topic}"` });
+
+    try {
+      const resp = await fetch(FRIENDS_CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({
+          message: `DEBATE MODE: You must take a STRONG stance on this topic and argue passionately. Disagree with other AIs. Be dramatic but respectful. Topic: "${topic}"`,
+          history: [{ sender: "System", content: `A heated debate has started! Topic: "${topic}". Each AI must take a different side and argue passionately. Reference each other by name. Be dramatic!` }],
+          debate: true,
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        for (let i = 0; i < (data.responses || []).length; i++) {
+          const r = data.responses[i];
+          const matchedAgent = activeAgents[i % activeAgents.length];
+          if (!matchedAgent) continue;
+          await new Promise(resolve => setTimeout(resolve, 1500 + i * 2000));
+          if (showDebate) {
+            setMessages(prev => [...prev, {
+              id: `debate-${Date.now()}-${i}`,
+              role: "assistant",
+              sender: matchedAgent.name,
+              emoji: matchedAgent.emoji,
+              color: matchedAgent.color,
+              content: `🔥 ${r.content}`,
+              avatar_url: matchedAgent.avatar_url,
+            }]);
+            setShowChat(true);
+          }
+          if (!isMuted) speakAsAgent(r.content, matchedAgent.name);
+        }
+      }
+    } catch (e) { console.error("Debate error:", e); }
+    finally { setDebateActive(false); }
+  };
 
   useEffect(() => {
     window.speechSynthesis.getVoices();
