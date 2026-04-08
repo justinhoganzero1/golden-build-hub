@@ -199,13 +199,21 @@ const OraclePage = () => {
   };
 
   const toggleMic = () => {
-    if (isListening) { setIsListening(false); return; }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast.error("Speech recognition not supported"); return;
+      toast.error("Speech recognition not supported in this browser. Try Chrome.");
+      return;
     }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
     recognition.onresult = (event: any) => { setIsListening(false); sendMessage(event.results[0][0].transcript); };
     recognition.onerror = () => { setIsListening(false); toast.error("Could not recognize speech"); };
     recognition.onend = () => setIsListening(false);
