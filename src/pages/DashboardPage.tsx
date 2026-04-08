@@ -9,6 +9,7 @@ import {
   Pill, Gift, Share2, Wrench
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
+import SecurityShield from "@/components/SecurityShield";
 
 interface AppTile {
   label: string;
@@ -80,10 +81,13 @@ const DashboardPage = () => {
         />
       </div>
 
-      {/* Welcome */}
-      <div className="px-4 py-4">
-        <h1 className="text-xl font-bold text-primary">Welcome to Solace</h1>
-        <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
+      {/* Welcome + Security Shield */}
+      <div className="px-4 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-primary">Welcome to Solace</h1>
+          <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
+        </div>
+        <SecurityShield />
       </div>
 
       {/* Owner-only quick link */}
