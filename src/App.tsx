@@ -54,6 +54,8 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const ConsentPage = lazy(() => import("./pages/ConsentPage"));
+const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
+const AICompanionPage = lazy(() => import("./pages/AICompanionPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
