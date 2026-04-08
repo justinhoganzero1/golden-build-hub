@@ -155,7 +155,7 @@ const MindHubPage = () => {
   const speak = useCallback((text: string) => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
+      const u = new SpeechSynthesisUtterance(cleanTextForSpeech(text));
       u.rate = 0.85; u.pitch = 0.95; u.volume = 1;
       const voices = window.speechSynthesis.getVoices();
       const preferred = voices.find(v => v.name.includes("Samantha") || v.name.includes("Google UK English Female") || v.lang === "en-GB");

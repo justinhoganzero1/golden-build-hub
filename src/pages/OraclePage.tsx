@@ -91,7 +91,7 @@ const OraclePage = () => {
   const speakText = useCallback((text: string) => {
     if (isMuted || !text) return;
     window.speechSynthesis.cancel();
-    const clean = text.replace(/[#*_`~\[\]()>]/g, "").replace(/\n+/g, ". ").trim();
+    const clean = cleanTextForSpeech(text);
     if (!clean) return;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-US";
@@ -421,7 +421,7 @@ const OraclePage = () => {
       // Speak using the pre-created utterance (gesture chain preserved)
       if (oracleContent && utterance) {
         window.speechSynthesis.cancel();
-        const clean = oracleContent.replace(/[#*_`~\[\]()>]/g, "").replace(/\n+/g, ". ").trim();
+        const clean = cleanTextForSpeech(oracleContent);
         if (clean) {
           utterance.text = clean;
           window.speechSynthesis.speak(utterance);

@@ -77,7 +77,7 @@ const CrisisHubPage = () => {
         }
       }
       if (content && "speechSynthesis" in window) {
-        const u = new SpeechSynthesisUtterance(content);
+        const u = new SpeechSynthesisUtterance(cleanTextForSpeech(content));
         u.rate = 1.1; u.volume = 1;
         window.speechSynthesis.speak(u);
       }
