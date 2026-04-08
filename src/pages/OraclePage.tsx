@@ -235,7 +235,7 @@ const OraclePage = () => {
           <p className="text-xs text-muted-foreground mb-2">Invite friends to chat (1 free, $1 each to unlock)</p>
           <div className="grid grid-cols-5 gap-2">
             {friends.filter(f => f.name !== "Oracle").map(f => (
-              <button key={f.name} onClick={() => toggleFriend(f.name)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${f.active ? "ring-2" : "opacity-60"}`} style={f.active ? { backgroundColor: f.color + "15", ringColor: f.color } : {}}>
+              <button key={f.name} onClick={() => toggleFriend(f.name)} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${f.active ? "ring-2 ring-primary" : "opacity-60"}`} style={f.active ? { backgroundColor: f.color + "15" } : {}}>
                 <div className="text-xl relative">
                   {f.emoji}
                   {f.locked && <span className="absolute -top-1 -right-1 text-[10px]">🔒</span>}
