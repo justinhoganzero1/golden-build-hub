@@ -364,23 +364,31 @@ const SettingsPage = () => {
           {tab === "theme" && (
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Theme & Colors</h1>
-              <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentTheme}</span></p>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Dark Themes</h3>
-              <div className="grid grid-cols-4 gap-2 mb-4">
+              <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentTheme}</span> · {THEME_COLORS.length} schemes</p>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Dark Themes ({THEME_COLORS.filter(t => !t.light).length})</h3>
+              <div className="grid grid-cols-3 gap-2 mb-4 max-h-[60vh] overflow-y-auto pr-1">
                 {THEME_COLORS.filter(t => !t.light).map(t => (
-                  <button key={t.name} onClick={() => applyTheme(t)} className={`p-2 rounded-xl border text-center ${currentTheme === t.name ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
-                    <div className="w-6 h-6 rounded-full mx-auto mb-1" style={{ background: `hsl(${t.primary})` }} />
-                    <span className="text-[8px] text-foreground">{t.name}</span>
+                  <button key={t.name} onClick={() => applyTheme(t)} className={`p-2 rounded-xl border text-center transition-all ${currentTheme === t.name ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-card"}`}>
+                    <div className="flex justify-center gap-1 mb-1">
+                      <div className="w-5 h-5 rounded-full" style={{ background: `hsl(${t.primary})` }} />
+                      <div className="w-5 h-5 rounded-full" style={{ background: `hsl(${t.secondary})` }} />
+                      <div className="w-5 h-5 rounded-full" style={{ background: `hsl(${t.accent})` }} />
+                    </div>
+                    <span className="text-[8px] text-foreground leading-tight block">{t.name}</span>
                     {currentTheme === t.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
                   </button>
                 ))}
               </div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Light Themes</h3>
-              <div className="grid grid-cols-4 gap-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Light Themes ({THEME_COLORS.filter(t => t.light).length})</h3>
+              <div className="grid grid-cols-3 gap-2">
                 {THEME_COLORS.filter(t => t.light).map(t => (
-                  <button key={t.name} onClick={() => applyTheme(t)} className={`p-2 rounded-xl border text-center ${currentTheme === t.name ? "border-primary bg-primary/10" : "border-border bg-card"}`}>
-                    <div className="w-6 h-6 rounded-full mx-auto mb-1 border border-border" style={{ background: `hsl(${t.primary})` }} />
-                    <span className="text-[8px] text-foreground">{t.name}</span>
+                  <button key={t.name} onClick={() => applyTheme(t)} className={`p-2 rounded-xl border text-center transition-all ${currentTheme === t.name ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-card"}`}>
+                    <div className="flex justify-center gap-1 mb-1">
+                      <div className="w-5 h-5 rounded-full border border-border/50" style={{ background: `hsl(${t.primary})` }} />
+                      <div className="w-5 h-5 rounded-full border border-border/50" style={{ background: `hsl(${t.secondary})` }} />
+                      <div className="w-5 h-5 rounded-full border border-border/50" style={{ background: `hsl(${t.accent})` }} />
+                    </div>
+                    <span className="text-[8px] text-foreground leading-tight block">{t.name}</span>
                     {currentTheme === t.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
                   </button>
                 ))}
