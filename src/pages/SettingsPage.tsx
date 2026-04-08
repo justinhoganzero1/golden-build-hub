@@ -512,7 +512,7 @@ const SettingsPage = () => {
             </>
           )}
 
-
+          {tab === "wearables" && (
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Wearable Devices</h1>
               
