@@ -77,7 +77,20 @@ const OraclePage = () => {
     window.speechSynthesis.speak(utterance);
   }, [isMuted]);
 
+  // Load voices (some browsers need this)
   useEffect(() => {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }, []);
+
+  // Stop speaking when muted
+  useEffect(() => {
+    if (isMuted) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  }, [isMuted]);
+
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
