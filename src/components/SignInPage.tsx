@@ -31,7 +31,7 @@ const SignInPage = () => {
 
         {/* Social Buttons */}
         <button className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
-          <span className="text-lg font-bold">G</span>
+          <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
           Continue with Google
         </button>
         <button className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-4">
@@ -107,10 +107,10 @@ const SignInPage = () => {
 
         {/* Anti-hacker badge */}
         <div className="flex justify-center mt-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-primary text-xs">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full border text-xs" style={{ borderColor: 'hsl(160, 84%, 39%)', color: 'hsl(160, 84%, 39%)' }}>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
             AI ANTI-HACKER ACTIVE
-            <div className="w-2 h-2 rounded-full bg-primary" />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
           </div>
         </div>
       </div>
