@@ -113,7 +113,7 @@ const OraclePage = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Animated orb
+  // Animated orb with state-reactive visuals
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -124,63 +124,169 @@ const OraclePage = () => {
     resize();
     window.addEventListener("resize", resize);
     let t = 0;
+    let swellPhase = 0;
+    let vibrateOffset = { x: 0, y: 0 };
+
     const draw = () => {
-      t += 0.008;
-      const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2, r = Math.min(w, h) * 0.38;
+      t += 0.006;
+      const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
+      const baseR = Math.min(w, h) * 0.36;
+
+      // State-reactive sizing
+      let rScale = 1.0;
+      let glowIntensity = 0.3;
+      let pinkGlow = 0;
+      let vx = 0, vy = 0;
+
+      if (isLoadingRef.current) {
+        // THINKING: smooth swell in and out
+        swellPhase += 0.04;
+        rScale = 1.0 + Math.sin(swellPhase) * 0.12;
+        glowIntensity = 0.4 + Math.sin(swellPhase) * 0.15;
+      } else {
+        swellPhase = 0;
+      }
+
+      if (isListeningRef.current) {
+        // LISTENING: subtle vibration / hum
+        vx = (Math.random() - 0.5) * 4;
+        vy = (Math.random() - 0.5) * 4;
+        glowIntensity = 0.5;
+      }
+
+      if (isSpeakingRef.current) {
+        // SPEAKING: cyberpunk pink backlight synced to speech rhythm
+        const speechPulse = Math.sin(t * 18) * 0.5 + Math.sin(t * 27) * 0.3 + Math.sin(t * 7) * 0.2;
+        const normalizedPulse = (speechPulse + 1) / 2; // 0-1
+        pinkGlow = 0.4 + normalizedPulse * 0.6;
+        rScale = 1.0 + normalizedPulse * 0.08;
+        glowIntensity = 0.5 + normalizedPulse * 0.4;
+      }
+
+      const r = baseR * rScale;
+      const orbCx = cx + vx;
+      const orbCy = cy + vy;
+
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#0a0a0a";
+      ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
-      const glow = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 1.3);
-      glow.addColorStop(0, "rgba(180, 120, 60, 0.15)");
-      glow.addColorStop(0.5, "rgba(120, 60, 30, 0.08)");
-      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = glow;
+
+      // Cyberpunk pink neon backlight (behind orb)
+      if (pinkGlow > 0) {
+        const pinkBg = ctx.createRadialGradient(orbCx, orbCy, r * 0.3, orbCx, orbCy, r * 2.2);
+        pinkBg.addColorStop(0, `hsla(320, 100%, 60%, ${pinkGlow * 0.5})`);
+        pinkBg.addColorStop(0.3, `hsla(330, 100%, 50%, ${pinkGlow * 0.3})`);
+        pinkBg.addColorStop(0.6, `hsla(340, 80%, 40%, ${pinkGlow * 0.12})`);
+        pinkBg.addColorStop(1, "transparent");
+        ctx.fillStyle = pinkBg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Subtle pearl blue ambient glow
+      const ambientGlow = ctx.createRadialGradient(orbCx, orbCy, r * 0.4, orbCx, orbCy, r * 1.6);
+      ambientGlow.addColorStop(0, `hsla(210, 60%, 70%, ${glowIntensity * 0.2})`);
+      ambientGlow.addColorStop(0.4, `hsla(220, 50%, 50%, ${glowIntensity * 0.1})`);
+      ambientGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = ambientGlow;
       ctx.fillRect(0, 0, w, h);
+
+      // Clip to orb circle
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(orbCx, orbCy, r, 0, Math.PI * 2);
       ctx.clip();
-      const sg = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.3, r * 0.1, cx, cy, r);
-      sg.addColorStop(0, "rgba(80, 60, 40, 0.6)");
-      sg.addColorStop(0.4, "rgba(30, 20, 15, 0.8)");
-      sg.addColorStop(0.7, "rgba(15, 10, 8, 0.9)");
-      sg.addColorStop(1, "rgba(5, 3, 2, 1)");
+
+      // Deep internal sphere gradient — pearl blue tones
+      const sg = ctx.createRadialGradient(orbCx - r * 0.25, orbCy - r * 0.3, r * 0.05, orbCx, orbCy, r);
+      sg.addColorStop(0, "hsla(210, 70%, 85%, 0.7)");    // bright pearl highlight
+      sg.addColorStop(0.15, "hsla(215, 60%, 65%, 0.5)");
+      sg.addColorStop(0.35, "hsla(220, 55%, 40%, 0.6)");
+      sg.addColorStop(0.6, "hsla(225, 50%, 25%, 0.8)");
+      sg.addColorStop(0.85, "hsla(230, 45%, 15%, 0.9)");
+      sg.addColorStop(1, "hsla(235, 40%, 8%, 1)");
       ctx.fillStyle = sg;
-      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-      for (let i = 0; i < 5; i++) {
-        const a = t * (0.5 + i * 0.3) + i * 1.2, px = cx + Math.cos(a) * r * 0.3, py = cy + Math.sin(a) * r * 0.25;
-        const nr = r * (0.3 + Math.sin(t + i) * 0.1), ng = ctx.createRadialGradient(px, py, 0, px, py, nr);
-        const hue = (t * 20 + i * 50) % 360;
-        ng.addColorStop(0, `hsla(${hue}, 60%, 50%, 0.2)`);
-        ng.addColorStop(0.5, `hsla(${hue + 30}, 50%, 30%, 0.1)`);
+      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+
+      // Deep swirling nebula layers inside
+      for (let i = 0; i < 7; i++) {
+        const a = t * (0.3 + i * 0.25) + i * 0.9;
+        const px = orbCx + Math.cos(a) * r * (0.2 + Math.sin(t * 0.5 + i) * 0.15);
+        const py = orbCy + Math.sin(a) * r * (0.2 + Math.cos(t * 0.7 + i) * 0.12);
+        const nr = r * (0.25 + Math.sin(t * 0.8 + i * 0.7) * 0.12);
+        const ng = ctx.createRadialGradient(px, py, 0, px, py, nr);
+        // Alternate between blue, teal, and subtle pink hues
+        const hues = [205, 215, 225, 195, 240, 200, 320];
+        const hue = hues[i];
+        const sat = hue === 320 ? 60 : 55;
+        ng.addColorStop(0, `hsla(${hue}, ${sat}%, 60%, ${0.2 + (isSpeakingRef.current ? 0.15 : 0)})`);
+        ng.addColorStop(0.4, `hsla(${hue + 10}, ${sat - 10}%, 35%, 0.12)`);
         ng.addColorStop(1, "transparent");
         ctx.fillStyle = ng;
-        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+        ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
       }
-      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.35);
-      core.addColorStop(0, `hsla(${(t * 30) % 360}, 70%, 70%, 0.4)`);
-      core.addColorStop(0.3, `hsla(${(t * 30 + 30) % 360}, 50%, 40%, 0.2)`);
+
+      // Luminous core
+      const coreHue = isSpeakingRef.current ? 310 : 210;
+      const core = ctx.createRadialGradient(orbCx, orbCy, 0, orbCx, orbCy, r * 0.3);
+      core.addColorStop(0, `hsla(${coreHue}, 80%, 80%, ${0.35 + glowIntensity * 0.3})`);
+      core.addColorStop(0.4, `hsla(${coreHue + 15}, 60%, 50%, 0.15)`);
       core.addColorStop(1, "transparent");
       ctx.fillStyle = core;
-      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-      for (let i = 0; i < 8; i++) {
-        const fa = t * 0.7 + i * 0.8, fd = r * (0.15 + Math.sin(t * 2 + i) * 0.15);
+      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+
+      // Floating particles inside
+      for (let i = 0; i < 12; i++) {
+        const fa = t * 0.5 + i * 0.52;
+        const fd = r * (0.1 + Math.sin(t * 1.5 + i * 0.6) * 0.2);
+        const pSize = 2 + Math.sin(t * 2.5 + i) * 1.5;
         ctx.beginPath();
-        ctx.arc(cx + Math.cos(fa) * fd, cy + Math.sin(fa) * fd, 3 + Math.sin(t * 3 + i) * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${180 + i * 30}, 80%, 70%, ${0.3 + Math.sin(t + i) * 0.2})`;
+        ctx.arc(orbCx + Math.cos(fa) * fd, orbCy + Math.sin(fa) * fd, pSize, 0, Math.PI * 2);
+        const pH = isSpeakingRef.current ? (300 + i * 8) : (200 + i * 10);
+        ctx.fillStyle = `hsla(${pH}, 80%, 75%, ${0.25 + Math.sin(t * 1.2 + i) * 0.15})`;
         ctx.fill();
       }
+
+      // Specular highlight (pearlescent sheen)
+      const spec = ctx.createRadialGradient(orbCx - r * 0.3, orbCy - r * 0.35, r * 0.02, orbCx - r * 0.15, orbCy - r * 0.2, r * 0.5);
+      spec.addColorStop(0, "hsla(210, 100%, 95%, 0.45)");
+      spec.addColorStop(0.3, "hsla(210, 80%, 80%, 0.15)");
+      spec.addColorStop(1, "transparent");
+      ctx.fillStyle = spec;
+      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+
       ctx.restore();
+
+      // Orb edge ring
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(200, 150, 80, 0.15)";
+      ctx.arc(orbCx, orbCy, r, 0, Math.PI * 2);
+      const edgeAlpha = isSpeakingRef.current ? 0.3 + pinkGlow * 0.3 : 0.15;
+      const edgeHue = isSpeakingRef.current ? "320, 80%, 60%" : "210, 60%, 60%";
+      ctx.strokeStyle = `hsla(${edgeHue}, ${edgeAlpha})`;
       ctx.lineWidth = 2;
       ctx.stroke();
+
+      // Outer pink ring when speaking
+      if (pinkGlow > 0.2) {
+        ctx.beginPath();
+        ctx.arc(orbCx, orbCy, r + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(320, 100%, 65%, ${pinkGlow * 0.25})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
       animId = requestAnimationFrame(draw);
     };
     draw();
     return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
   }, []);
+
+  // Refs for animation loop to read state without re-running effect
+  const isLoadingRef = useRef(isLoading);
+  const isListeningRef = useRef(isListening);
+  const isSpeakingRef = useRef(isSpeaking);
+  useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   const toggleAgent = (name: string) => {
     const agent = agents.find(a => a.name === name);
