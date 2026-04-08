@@ -325,6 +325,21 @@ const OraclePage = () => {
     setInput("");
     setIsLoading(true);
 
+    // Pre-create utterance in gesture context to satisfy browser security policy
+    let utterance: SpeechSynthesisUtterance | null = null;
+    if (!isMuted) {
+      utterance = new SpeechSynthesisUtterance("");
+      utterance.lang = "en-US";
+      utterance.rate = 0.95;
+      utterance.pitch = 1.1;
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
+      if (preferred) utterance.voice = preferred;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+    }
+
     try {
       const allMsgs = [...messages, userMsg];
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
@@ -373,7 +388,15 @@ const OraclePage = () => {
         }
       }
 
-      if (oracleContent) speakText(oracleContent);
+      // Speak using the pre-created utterance (gesture chain preserved)
+      if (oracleContent && utterance) {
+        window.speechSynthesis.cancel();
+        const clean = oracleContent.replace(/[#*_`~\[\]()>]/g, "").replace(/\n+/g, ". ").trim();
+        if (clean) {
+          utterance.text = clean;
+          window.speechSynthesis.speak(utterance);
+        }
+      }
 
       // Send to active user-avatar agents (they get routed through the friends endpoint)
       if (activeAgents.length > 0) {
