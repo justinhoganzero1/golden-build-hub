@@ -15,7 +15,7 @@ const MindHubPage = lazy(() => import("./pages/MindHubPage"));
 const CrisisHubPage = lazy(() => import("./pages/CrisisHubPage"));
 const VaultPage = lazy(() => import("./pages/VaultPage"));
 const OraclePage = lazy(() => import("./pages/OraclePage"));
-const ChatOraclePage = lazy(() => import("./pages/ChatOraclePage"));
+
 const SpecialistsPage = lazy(() => import("./pages/SpecialistsPage"));
 const VideoEditorPage = lazy(() => import("./pages/VideoEditorPage"));
 const VideoStudioPage = lazy(() => import("./pages/VideoStudioPage"));
@@ -89,7 +89,7 @@ const App = () => (
                 <Route path="/crisis-hub" element={<ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary>} />
                 <Route path="/vault" element={<ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary>} />
                 <Route path="/oracle" element={<ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary>} />
-                <Route path="/chat-oracle" element={<ErrorBoundary pageName="Chat Oracle"><ChatOraclePage /></ErrorBoundary>} />
+                <Route path="/chat-oracle" element={<ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary>} />
                 <Route path="/specialists" element={<ErrorBoundary pageName="Specialists"><SpecialistsPage /></ErrorBoundary>} />
                 <Route path="/video-editor" element={<ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary>} />
                 <Route path="/video-studio" element={<ErrorBoundary pageName="Video Studio"><VideoStudioPage /></ErrorBoundary>} />

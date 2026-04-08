@@ -18,7 +18,6 @@ interface AppTile {
 
 const tiles: AppTile[] = [
   { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle" },
-  { label: "Chat Oracle", icon: <Mic className="w-6 h-6" />, path: "/chat-oracle" },
   { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub" },
   { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub" },
   { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault" },
@@ -33,7 +32,7 @@ const tiles: AppTile[] = [
   { label: "Photography", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
   { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
   { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
-  { label: "AI Friends", icon: <Users className="w-6 h-6" />, path: "/my-ai-friends" },
+  { label: "AI Friends", icon: <Users className="w-6 h-6" />, path: "/oracle" },
   { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
   { label: "Inventor", icon: <Lightbulb className="w-6 h-6" />, path: "/inventor" },
   { label: "Calendar", icon: <Calendar className="w-6 h-6" />, path: "/calendar" },
