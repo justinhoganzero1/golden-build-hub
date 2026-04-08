@@ -43,7 +43,7 @@ const tiles: AppTile[] = [
   { label: "Safety Center", icon: <Shield className="w-6 h-6" />, path: "/safety-center" },
   { label: "Diagnostics", icon: <Heart className="w-6 h-6" />, path: "/diagnostics" },
   { label: "Elderly Care", icon: <Pill className="w-6 h-6" />, path: "/elderly-care" },
-  { label: "Haptic Escape", icon: <Zap className="w-6 h-6" />, path: "/haptic-escape" },
+  
   { label: "Avatar Gen", icon: <Palette className="w-6 h-6" />, path: "/avatar-generator" },
   { label: "Pro Hub", icon: <BarChart3 className="w-6 h-6" />, path: "/professional-hub" },
   { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub" },

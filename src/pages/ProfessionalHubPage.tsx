@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight, Mic, MicOff } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
@@ -19,7 +20,7 @@ const tools = [
 const SYSTEM_PROMPTS: Record<string, string> = {
   resume: "You are an expert resume writer. Help the user create a professional, ATS-optimized resume. Ask for their experience, skills, and target role. Format the output cleanly.",
   cover: "You are an expert cover letter writer. Help create compelling, personalized cover letters. Ask for the job description and their relevant experience.",
-  interview: "You are an AI interviewer. Conduct a realistic job interview. Ask one question at a time, give feedback on answers, and rate performance. Start by asking what role they're interviewing for.",
+  interview: "You are 'Oracle', a professional AI interviewer conducting a realistic live job interview. You must stay in character as a real interviewer at all times. Ask ONE question at a time. Wait for the candidate's response before asking the next question. After each answer, give brief constructive feedback (strengths and areas to improve), then ask the next question. Cover behavioral, technical, and situational questions relevant to the role. After 5-8 questions, provide a comprehensive performance summary with a score out of 100, key strengths, areas for improvement, and specific tips. Start by warmly greeting the candidate and asking what role they're interviewing for today.",
   career: "You are a career counselor. Help the user map their career trajectory with actionable steps, skill gaps to fill, and timeline suggestions.",
   salary: "You are a salary negotiation expert with market data knowledge. Provide salary insights, negotiation strategies, and market trends for any role/industry.",
   linkedin: "You are a LinkedIn profile optimization expert. Help the user craft a compelling headline, summary, and optimize each section for maximum visibility.",
@@ -31,6 +32,37 @@ const ProfessionalHubPage = () => {
   const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatHistory, loading]);
+
+  const toggleMic = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Speech recognition not supported"); return; }
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    rec.onresult = (e: any) => {
+      let transcript = "";
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      setInput(transcript);
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => { setIsListening(false); toast.error("Mic error"); };
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  };
 
   const sendMessage = async (msg?: string) => {
     const message = msg || input;
@@ -77,10 +109,15 @@ const ProfessionalHubPage = () => {
           <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
             {chatHistory.map((msg, i) => (
               <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === "user" ? "bg-primary/10 text-foreground ml-8" : "bg-card border border-border text-foreground mr-4"}`}>
-                <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                ) : (
+                  <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                )}
               </div>
             ))}
-            {loading && <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Thinking...</div>}
+            {loading && <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="w-4 h-4 animate-spin" /> {activeTool === "interview" ? "Interviewer is thinking..." : "Thinking..."}</div>}
+            <div ref={chatEndRef} />
           </div>
 
           {/* Quick prompts */}
@@ -89,7 +126,12 @@ const ProfessionalHubPage = () => {
               {activeTool === "resume" && ["Help me build a resume for a software engineer", "I'm changing careers to marketing", "Update my resume for a senior role"].map(q => (
                 <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
               ))}
-              {activeTool === "interview" && ["Interview me for a product manager role", "Practice behavioral interview questions", "Prepare me for a technical interview"].map(q => (
+              {activeTool === "interview" && [
+                "Interview me for a software developer role",
+                "I want to practice for a product manager interview",
+                "Conduct a behavioral interview for a team lead position",
+                "Practice a technical interview for a data scientist role"
+              ].map(q => (
                 <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
               ))}
               {activeTool === "salary" && ["What's the average salary for UX designers?", "How to negotiate a raise", "Compare salaries in tech vs finance"].map(q => (
@@ -100,8 +142,13 @@ const ProfessionalHubPage = () => {
 
           <div className="flex gap-2">
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()}
-              placeholder={`Ask about ${tool.title.toLowerCase()}...`}
+              placeholder={activeTool === "interview" ? "Answer the interviewer..." : `Ask about ${tool.title.toLowerCase()}...`}
               className="flex-1 px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm outline-none focus:border-primary" />
+            {activeTool === "interview" && (
+              <button onClick={toggleMic} className={`p-3 rounded-xl border ${isListening ? "bg-red-500/20 border-red-500 text-red-500" : "bg-secondary border-border text-muted-foreground"}`}>
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
             <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="p-3 rounded-xl bg-primary text-primary-foreground disabled:opacity-50">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
