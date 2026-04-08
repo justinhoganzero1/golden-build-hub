@@ -91,6 +91,7 @@ const OraclePage = () => {
     }
   }, [isMuted]);
 
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
