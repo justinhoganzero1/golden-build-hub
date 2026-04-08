@@ -2,18 +2,62 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Solace — Your AI Companion</title>
-    <meta name="description" content="Solace is your all-in-one AI companion app for wellness, productivity, creativity, and more." />
+    <meta name="description" content="Solace is your all-in-one AI companion app for wellness, productivity, creativity, safety, and more." />
     <meta name="theme-color" content="#FFAA00" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Solace" />
+    <meta name="application-name" content="Solace" />
+    <meta name="msapplication-TileColor" content="#080808" />
+    <meta name="format-detection" content="telephone=yes" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="canonical" href="https://solace.app" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="Solace — Your AI Companion" />
-    <meta property="og:description" content="All-in-one AI companion app" />
+    <meta property="og:description" content="All-in-one AI companion for wellness, productivity, creativity, and safety." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512.png" />
+    <meta property="og:site_name" content="Solace" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Solace — Your AI Companion" />
+    <meta name="twitter:description" content="All-in-one AI companion for wellness, productivity, creativity, and safety." />
+    <meta name="twitter:image" content="/icons/icon-512.png" />
+
+    <!-- Play Store -->
+    <meta name="google-play-app" content="app-id=app.solace.ai" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "Solace",
+      "description": "All-in-one AI companion for wellness, productivity, creativity, safety, and more.",
+      "applicationCategory": "LifestyleApplication",
+      "operatingSystem": "Android",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <style>
+      /* Prevent overscroll bounce on mobile */
+      html, body { overscroll-behavior: none; }
+      /* Safe area insets for notched devices */
+      body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    </style>
   </head>
   <body>
     <div id="root"></div>

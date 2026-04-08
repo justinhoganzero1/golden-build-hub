@@ -1,12 +1,16 @@
 {
-  "name": "Solace",
+  "name": "Solace — Your AI Companion",
   "short_name": "Solace",
-  "description": "Your AI companion to do everything",
+  "description": "All-in-one AI companion for wellness, productivity, creativity, safety, and more. Chat with Oracle AI, build avatars, manage your life — all in one place.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080808",
   "theme_color": "#FFAA00",
   "orientation": "portrait-primary",
+  "categories": ["lifestyle", "productivity", "health", "entertainment"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,6 +23,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "app.solace.ai"
     }
   ]
 }
