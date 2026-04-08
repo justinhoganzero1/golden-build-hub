@@ -342,6 +342,16 @@ const SettingsPage = () => {
   const [currentTheme, setCurrentTheme] = useState("Gold & Black");
   const [language, setLanguage] = useState("English");
   const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: false });
+  const [currentLayout, setCurrentLayout] = useState("Standard 4x");
+
+  const applyLayout = (layout: LayoutOption) => {
+    // Store layout in localStorage so DashboardPage can read it
+    localStorage.setItem("solace-layout", JSON.stringify(layout));
+    setCurrentLayout(layout.name);
+    toast.success(`Layout: ${layout.name}`);
+    // Dispatch custom event so dashboard picks it up in real-time
+    window.dispatchEvent(new CustomEvent("solace-layout-change", { detail: layout }));
+  };
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); navigate("/"); };
 
