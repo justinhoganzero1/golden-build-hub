@@ -31,7 +31,7 @@ const SignInPage = () => {
 
         {/* Social Buttons */}
         <button className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
-          <span className="text-lg font-bold">G</span>
+          <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
           Continue with Google
         </button>
         <button className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-4">
