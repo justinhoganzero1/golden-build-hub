@@ -58,6 +58,9 @@ const ConsentPage = lazy(() => import("./pages/ConsentPage"));
 const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
 const AICompanionPage = lazy(() => import("./pages/AICompanionPage"));
 const AvatarGalleryPage = lazy(() => import("./pages/AvatarGalleryPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -135,6 +138,9 @@ const App = () => (
                 <Route path="/owner-dashboard" element={<ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary>} />
                 <Route path="/ai-companion" element={<ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary>} />
                 <Route path="/avatar-gallery" element={<ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary>} />
+                <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
+                <Route path="/terms-of-service" element={<ErrorBoundary pageName="Terms of Service"><TermsOfServicePage /></ErrorBoundary>} />
+                <Route path="/about" element={<ErrorBoundary pageName="About"><AboutPage /></ErrorBoundary>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
