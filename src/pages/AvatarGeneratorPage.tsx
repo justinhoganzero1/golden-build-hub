@@ -77,6 +77,16 @@ const AvatarGeneratorPage = () => {
 
   const generate = async () => {
     const desc = prompt.trim() || "a person";
+    
+    // M-rating content filter for non-owners
+    if (!isOwner) {
+      const blockedTerms = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|bikini|seductive|provocative|undress|strip)\b/i;
+      if (blockedTerms.test(desc)) {
+        toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
+        return;
+      }
+    }
+    
     setIsLoading(true);
     try {
       const stylePrompts: Record<string, string> = {
