@@ -73,6 +73,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwner = user?.email === OWNER_EMAIL;
+  const [shareOpen, setShareOpen] = useState(false);
 
   const [layout, setLayout] = useState(() => {
     try {
