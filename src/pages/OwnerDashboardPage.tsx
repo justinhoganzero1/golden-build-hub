@@ -8,8 +8,14 @@ import {
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 const OwnerDashboardPage = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising">("overview");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
@@ -22,8 +28,18 @@ const OwnerDashboardPage = () => {
   const [emailBody, setEmailBody] = useState("");
 
   useEffect(() => {
+    if (!loading && user?.email !== OWNER_EMAIL) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, user, navigate]);
+
+  useEffect(() => {
     loadSuggestions();
   }, []);
+
+  if (!loading && user?.email !== OWNER_EMAIL) {
+    return null;
+  }
 
   const loadSuggestions = async () => {
     // Load all user suggestions (owner can see all)

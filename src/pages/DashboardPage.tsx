@@ -1,6 +1,3 @@
-import { useState } from "react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,7 +6,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Download, Smartphone, CreditCard, BarChart3,
-  Pill, Gift, Share2, Wrench, Lock, ChevronRight, ChevronDown
+  Pill, Gift, Share2, Wrench
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
 
@@ -63,17 +60,14 @@ const tiles: AppTile[] = [
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
   { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
-  { label: "Owner Hub", icon: <CreditCard className="w-6 h-6" />, path: "/owner-dashboard" },
 ];
+
+const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [showVault, setShowVault] = useState(false);
-  const [showFreebies, setShowFreebies] = useState(false);
-  const [vaultEmail, setVaultEmail] = useState("");
-  const [vaultLevel, setVaultLevel] = useState("viewer");
-  const [freebieEmail, setFreebieEmail] = useState("");
+  const isOwner = user?.email === OWNER_EMAIL;
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,78 +86,20 @@ const DashboardPage = () => {
         <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
       </div>
 
-      {/* Owner Tools - Deep Dark Vault & Freebies */}
-      <div className="px-4 mb-4 space-y-2">
-        {/* Deep Dark Vault */}
-        <button onClick={() => setShowVault(!showVault)} className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 via-yellow-500 to-blue-500 flex items-center justify-center">
-            <Lock className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 text-left">
-            <h3 className="text-sm font-bold bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 bg-clip-text text-transparent">Deep Dark Vault</h3>
-            <p className="text-xs text-muted-foreground">Maximum security file storage</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-primary" />
-        </button>
-        {showVault && (
-          <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-            <p className="text-xs text-muted-foreground">Share vault access with specific users at different security levels.</p>
-            <input value={vaultEmail} onChange={e => setVaultEmail(e.target.value)} placeholder="User email" className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none" />
-            <select value={vaultLevel} onChange={e => setVaultLevel(e.target.value)} className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground">
-              <option value="viewer">Viewer - Read only</option>
-              <option value="editor">Editor - Read & write</option>
-              <option value="admin">Admin - Full access</option>
-            </select>
-            <button className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium">Grant Vault Access</button>
-          </div>
-        )}
-
-        {/* Freebies Manager */}
-        <button onClick={() => setShowFreebies(!showFreebies)} className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-r from-green-500/10 via-blue-500/10 to-purple-500/10">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 via-cyan-500 to-purple-500 flex items-center justify-center">
-            <Gift className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 text-left">
-            <h3 className="text-sm font-bold bg-gradient-to-r from-green-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">Freebies Manager</h3>
-            <p className="text-xs text-muted-foreground">Manage lifetime free access</p>
-          </div>
-          <ChevronDown className="w-5 h-5 text-primary" />
-        </button>
-        {showFreebies && (
-          <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-            <p className="text-xs text-muted-foreground">Grant lifetime free access to users whose suggestions were implemented.</p>
-            <input value={freebieEmail} onChange={e => setFreebieEmail(e.target.value)} placeholder="User email" className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none" />
-            <button
-              onClick={async () => {
-                if (!freebieEmail.trim()) { toast.error("Enter an email address"); return; }
-                if (!user) { toast.error("You must be signed in"); return; }
-                try {
-                  const { error } = await supabase.from("suggestions").insert({
-                    user_id: user.id,
-                    suggestion: `Lifetime access granted to ${freebieEmail.trim()}`,
-                    status: "implemented",
-                    granted_free_access: true,
-                    category: "Freebie",
-                  });
-                  if (error) throw error;
-                  toast.success(`Lifetime free access granted to ${freebieEmail.trim()}! 🎉`);
-                  setFreebieEmail("");
-                } catch (e) {
-                  console.error(e);
-                  toast.error("Failed to grant access");
-                }
-              }}
-              className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
-            >
-              Grant Lifetime Free Access
-            </button>
-            <div className="border-t border-border pt-3">
-              <p className="text-xs font-semibold text-foreground mb-2">Recently Granted</p>
-              <p className="text-xs text-muted-foreground italic">No users granted yet</p>
+      {/* Owner-only quick link */}
+      {isOwner && (
+        <div className="px-4 mb-4">
+          <button onClick={() => navigate("/owner-dashboard")} className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-purple-500 to-blue-500 flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-white" />
             </div>
-          </div>
-        )}
-      </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-sm font-bold bg-gradient-to-r from-primary via-purple-400 to-blue-400 bg-clip-text text-transparent">Owner Dashboard</h3>
+              <p className="text-xs text-muted-foreground">Manage your platform</p>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* App Grid */}
       <div className="grid grid-cols-4 gap-3 px-4 pb-24">
