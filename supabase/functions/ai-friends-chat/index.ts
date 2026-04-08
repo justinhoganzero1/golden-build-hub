@@ -16,7 +16,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { message, history, partners } = await req.json();
+    const { message, history, partners, debate } = await req.json();
     if (!message) {
       return new Response(JSON.stringify({ error: "message is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -74,7 +74,9 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `${friend.personality}\n\nYou are in a group chat with the user and other AI friends (${allNames}). Keep responses SHORT (1-3 sentences). Be yourself and don't repeat what others say. React naturally to the conversation AND to what other AI friends say — agree, disagree, joke, build on their ideas, tease them playfully. Interact with BOTH the user AND the other AIs. Reference other AIs by name when responding to them. Don't use your own name in the response.`,
+              content: debate
+                ? `${friend.personality}\n\nDEBATE MODE: You are in a heated debate with the other AIs (${allNames}). Take a STRONG, passionate stance. Disagree with at least one other AI by name. Be dramatic, expressive, and argue your point fiercely. Use rhetorical devices. Be respectful but intense. Keep it under 3 sentences. Reference other AIs by name.`
+                : `${friend.personality}\n\nYou are in a group chat with the user and other AI friends (${allNames}). Keep responses SHORT (1-3 sentences). Be yourself and don't repeat what others say. React naturally to the conversation AND to what other AI friends say — agree, disagree, joke, build on their ideas, tease them playfully. Interact with BOTH the user AND the other AIs. Reference other AIs by name when responding to them. Don't use your own name in the response.`,
             },
             ...conversationHistory,
             { role: "user", content: message },
