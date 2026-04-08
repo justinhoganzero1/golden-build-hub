@@ -4,7 +4,7 @@ import { useMute } from "@/contexts/MuteContext";
 
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
-  const [pos, setPos] = useState({ x: window.innerWidth - 60, y: window.innerHeight - 140 });
+  const [pos, setPos] = useState({ x: window.innerWidth - 44, y: window.innerHeight - 100 });
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -20,8 +20,8 @@ const MasterMuteButton = () => {
       if (!dragging.current) return;
       hasMoved.current = true;
       setPos({
-        x: clamp(mx - offset.current.x, 4, window.innerWidth - 52),
-        y: clamp(my - offset.current.y, 4, window.innerHeight - 52),
+        x: clamp(mx - offset.current.x, 4, window.innerWidth - 36),
+        y: clamp(my - offset.current.y, 4, window.innerHeight - 36),
       });
     };
 
@@ -56,11 +56,15 @@ const MasterMuteButton = () => {
         }
         toggleMute();
       }}
-      className="fixed z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-shadow cursor-grab active:cursor-grabbing touch-none"
-      style={{ left: pos.x, top: pos.y }}
+      className={`fixed z-50 w-8 h-8 rounded-full shadow-md flex items-center justify-center transition-all duration-200 cursor-grab active:cursor-grabbing touch-none border ${
+        isMuted
+          ? "bg-red-600/90 border-red-500/50 hover:bg-red-500"
+          : "bg-green-600/90 border-green-500/50 hover:bg-green-500"
+      }`}
+      style={{ left: pos.x, top: pos.y, opacity: 0.85 }}
       aria-label={isMuted ? "Unmute" : "Mute"}
     >
-      {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+      {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
     </button>
   );
 };
