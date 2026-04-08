@@ -55,7 +55,7 @@ const AvatarGeneratorPage = () => {
   const saveMedia = useSaveMedia();
 
   // Owner detection — only the app owner can create R/X rated avatars
-  const OWNER_EMAIL = "owner@solace.app"; // Replace with your actual owner email
+  const OWNER_EMAIL = "justinbretthogan@gmail.com";
   const isOwner = user?.email === OWNER_EMAIL;
 
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
