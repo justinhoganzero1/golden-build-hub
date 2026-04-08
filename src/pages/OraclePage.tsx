@@ -626,13 +626,17 @@ const OraclePage = () => {
         }
       }
 
-      // Send to active user-avatar agents (they get routed through the friends endpoint)
+      // Send to active user-avatar agents — include Oracle's response so friends can react to it
       if (activeAgents.length > 0) {
         try {
+          const historyWithOracle = [
+            ...allMsgs.slice(-10).map(m => ({ sender: m.sender, content: m.content })),
+            ...(oracleContent ? [{ sender: "Oracle", content: oracleContent }] : []),
+          ];
           const friendResp = await fetch(FRIENDS_CHAT_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-            body: JSON.stringify({ message: text, history: allMsgs.slice(-10).map(m => ({ sender: m.sender, content: m.content })) }),
+            body: JSON.stringify({ message: text, history: historyWithOracle }),
           });
           if (friendResp.ok) {
             const data = await friendResp.json();
