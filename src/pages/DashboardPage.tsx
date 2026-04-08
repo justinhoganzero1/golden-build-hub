@@ -61,6 +61,8 @@ const tiles: AppTile[] = [
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
   { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
+  { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor" },
+  { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators" },
 ];
 
 const OWNER_EMAIL = "justinbretthogan@gmail.com";
