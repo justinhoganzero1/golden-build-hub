@@ -80,10 +80,12 @@ const App = () => (
   <ErrorBoundary pageName="App Root">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <OfflineBanner />
+        <MuteProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineBanner />
+            <MasterMuteButton />
           <BrowserRouter>
             <Suspense fallback={<Loading />}>
               <Routes>
