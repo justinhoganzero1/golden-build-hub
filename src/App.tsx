@@ -51,7 +51,6 @@ const AppBuilderPage = lazy(() => import("./pages/AppBuilderPage"));
 const POSLearnPage = lazy(() => import("./pages/POSLearnPage"));
 
 const InstallPage = lazy(() => import("./pages/InstallPage"));
-const RadarDemoPage = lazy(() => import("./pages/RadarDemoPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
@@ -129,7 +128,6 @@ const App = () => (
                 <Route path="/pos-learn" element={<ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary>} />
                 
                 <Route path="/install" element={<ErrorBoundary pageName="Install"><InstallPage /></ErrorBoundary>} />
-                <Route path="/radar-demo" element={<ErrorBoundary pageName="Radar Demo"><RadarDemoPage /></ErrorBoundary>} />
                 <Route path="/settings" element={<ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary>} />
                 <Route path="/profile" element={<ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary>} />
                 <Route path="/wallet" element={<ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary>} />
