@@ -334,8 +334,8 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Notifications</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
-                  { label: "Push Notifications", value: notifications, onChange: setNotifications },
-                  { label: "Sound Effects", value: sound, onChange: setSound },
+                  { label: "Push Notifications", value: true, onChange: () => {} },
+                  { label: "Sound Effects", value: true, onChange: () => {} },
                   { label: "Oracle Reminders", value: true, onChange: () => {} },
                   { label: "Calendar Alerts", value: true, onChange: () => {} },
                   { label: "Family Hub Updates", value: true, onChange: () => {} },
