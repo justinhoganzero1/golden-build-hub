@@ -486,7 +486,33 @@ const SettingsPage = () => {
             </>
           )}
 
-          {tab === "wearables" && (
+          {tab === "layout" && (
+            <>
+              <h1 className="text-lg font-bold text-primary mb-4">App Layout</h1>
+              <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentLayout}</span> · {LAYOUT_OPTIONS.length} layouts</p>
+              {["Grid", "Rounded", "Sharp", "Minimal", "Bold", "Elegant"].map(cat => (
+                <div key={cat} className="mb-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">{cat}</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LAYOUT_OPTIONS.filter(l => l.category === cat).map(l => (
+                      <button key={l.name} onClick={() => applyLayout(l)} className={`p-2.5 border text-center transition-all ${l.borderRadius} ${currentLayout === l.name ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-card"}`}>
+                        {/* Mini preview */}
+                        <div className={`grid gap-[2px] mb-1.5 mx-auto w-fit`} style={{ gridTemplateColumns: `repeat(${Math.min(l.gridCols, 4)}, 1fr)` }}>
+                          {Array.from({ length: Math.min(l.gridCols * 2, 12) }).map((_, i) => (
+                            <div key={i} className={`w-2 h-2 bg-primary/40 ${l.borderRadius === "rounded-full" ? "rounded-full" : l.borderRadius === "rounded-none" ? "" : "rounded-sm"}`} />
+                          ))}
+                        </div>
+                        <span className="text-[8px] text-foreground leading-tight block">{l.name}</span>
+                        {currentLayout === l.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Wearable Devices</h1>
               
