@@ -5,6 +5,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineBanner from "@/components/OfflineBanner";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -53,7 +55,16 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const ConsentPage = lazy(() => import("./pages/ConsentPage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    },
+  },
+});
 
 const Loading = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -62,66 +73,69 @@ const Loading = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/mind-hub" element={<MindHubPage />} />
-              <Route path="/crisis-hub" element={<CrisisHubPage />} />
-              <Route path="/vault" element={<VaultPage />} />
-              <Route path="/oracle" element={<OraclePage />} />
-              <Route path="/chat-oracle" element={<ChatOraclePage />} />
-              <Route path="/specialists" element={<SpecialistsPage />} />
-              <Route path="/video-editor" element={<VideoEditorPage />} />
-              <Route path="/video-studio" element={<VideoStudioPage />} />
-              <Route path="/movie-maker" element={<MovieMakerPage />} />
-              <Route path="/media-library" element={<MediaLibraryPage />} />
-              <Route path="/live-vision" element={<LiveVisionPage />} />
-              <Route path="/voice-studio" element={<VoiceStudioPage />} />
-              <Route path="/photography-hub" element={<PhotographyHubPage />} />
-              <Route path="/personal-assistant" element={<PersonalAssistantPage />} />
-              <Route path="/ai-tutor" element={<AITutorPage />} />
-              <Route path="/my-ai-friends" element={<MyAIFriendsPage />} />
-              <Route path="/interpreter" element={<InterpreterPage />} />
-              <Route path="/inventor" element={<InventorPage />} />
-              <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/alarm-clock" element={<AlarmClockPage />} />
-              <Route path="/safety-center" element={<SafetyCenterPage />} />
-              <Route path="/diagnostics" element={<DiagnosticsPage />} />
-              <Route path="/elderly-care" element={<ElderlyCarePage />} />
-              <Route path="/haptic-escape" element={<HapticEscapePage />} />
-              <Route path="/avatar-generator" element={<AvatarGeneratorPage />} />
-              <Route path="/professional-hub" element={<ProfessionalHubPage />} />
-              <Route path="/family-hub" element={<FamilyHubPage />} />
-              <Route path="/magic-hub" element={<MagicHubPage />} />
-              <Route path="/marketing-hub" element={<MarketingHubPage />} />
-              <Route path="/special-occasions" element={<SpecialOccasionsPage />} />
-              <Route path="/suggestion-box" element={<SuggestionBoxPage />} />
-              <Route path="/community-ideas" element={<CommunityIdeasPage />} />
-              <Route path="/referral" element={<ReferralPage />} />
-              <Route path="/subscribe" element={<SubscribePage />} />
-              <Route path="/app-builder" element={<AppBuilderPage />} />
-              <Route path="/pos-learn" element={<POSLearnPage />} />
-              <Route path="/pos-trading" element={<POSTradingPage />} />
-              <Route path="/install" element={<InstallPage />} />
-              <Route path="/radar-demo" element={<RadarDemoPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/wallet" element={<WalletPage />} />
-              <Route path="/consent" element={<ConsentPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ErrorBoundary pageName="App Root">
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <OfflineBanner />
+          <BrowserRouter>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary>} />
+                <Route path="/mind-hub" element={<ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary>} />
+                <Route path="/crisis-hub" element={<ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary>} />
+                <Route path="/vault" element={<ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary>} />
+                <Route path="/oracle" element={<ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary>} />
+                <Route path="/chat-oracle" element={<ErrorBoundary pageName="Chat Oracle"><ChatOraclePage /></ErrorBoundary>} />
+                <Route path="/specialists" element={<ErrorBoundary pageName="Specialists"><SpecialistsPage /></ErrorBoundary>} />
+                <Route path="/video-editor" element={<ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary>} />
+                <Route path="/video-studio" element={<ErrorBoundary pageName="Video Studio"><VideoStudioPage /></ErrorBoundary>} />
+                <Route path="/movie-maker" element={<ErrorBoundary pageName="Movie Maker"><MovieMakerPage /></ErrorBoundary>} />
+                <Route path="/media-library" element={<ErrorBoundary pageName="Media Library"><MediaLibraryPage /></ErrorBoundary>} />
+                <Route path="/live-vision" element={<ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary>} />
+                <Route path="/voice-studio" element={<ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary>} />
+                <Route path="/photography-hub" element={<ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary>} />
+                <Route path="/personal-assistant" element={<ErrorBoundary pageName="Personal Assistant"><PersonalAssistantPage /></ErrorBoundary>} />
+                <Route path="/ai-tutor" element={<ErrorBoundary pageName="AI Tutor"><AITutorPage /></ErrorBoundary>} />
+                <Route path="/my-ai-friends" element={<ErrorBoundary pageName="My AI Friends"><MyAIFriendsPage /></ErrorBoundary>} />
+                <Route path="/interpreter" element={<ErrorBoundary pageName="Interpreter"><InterpreterPage /></ErrorBoundary>} />
+                <Route path="/inventor" element={<ErrorBoundary pageName="Inventor"><InventorPage /></ErrorBoundary>} />
+                <Route path="/calendar" element={<ErrorBoundary pageName="Calendar"><CalendarPage /></ErrorBoundary>} />
+                <Route path="/alarm-clock" element={<ErrorBoundary pageName="Alarm Clock"><AlarmClockPage /></ErrorBoundary>} />
+                <Route path="/safety-center" element={<ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary>} />
+                <Route path="/diagnostics" element={<ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary>} />
+                <Route path="/elderly-care" element={<ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary>} />
+                <Route path="/haptic-escape" element={<ErrorBoundary pageName="Haptic Escape"><HapticEscapePage /></ErrorBoundary>} />
+                <Route path="/avatar-generator" element={<ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary>} />
+                <Route path="/professional-hub" element={<ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary>} />
+                <Route path="/family-hub" element={<ErrorBoundary pageName="Family Hub"><FamilyHubPage /></ErrorBoundary>} />
+                <Route path="/magic-hub" element={<ErrorBoundary pageName="Magic Hub"><MagicHubPage /></ErrorBoundary>} />
+                <Route path="/marketing-hub" element={<ErrorBoundary pageName="Marketing Hub"><MarketingHubPage /></ErrorBoundary>} />
+                <Route path="/special-occasions" element={<ErrorBoundary pageName="Special Occasions"><SpecialOccasionsPage /></ErrorBoundary>} />
+                <Route path="/suggestion-box" element={<ErrorBoundary pageName="Suggestion Box"><SuggestionBoxPage /></ErrorBoundary>} />
+                <Route path="/community-ideas" element={<ErrorBoundary pageName="Community Ideas"><CommunityIdeasPage /></ErrorBoundary>} />
+                <Route path="/referral" element={<ErrorBoundary pageName="Referral"><ReferralPage /></ErrorBoundary>} />
+                <Route path="/subscribe" element={<ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary>} />
+                <Route path="/app-builder" element={<ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary>} />
+                <Route path="/pos-learn" element={<ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary>} />
+                <Route path="/pos-trading" element={<ErrorBoundary pageName="POS Trading"><POSTradingPage /></ErrorBoundary>} />
+                <Route path="/install" element={<ErrorBoundary pageName="Install"><InstallPage /></ErrorBoundary>} />
+                <Route path="/radar-demo" element={<ErrorBoundary pageName="Radar Demo"><RadarDemoPage /></ErrorBoundary>} />
+                <Route path="/settings" element={<ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary>} />
+                <Route path="/profile" element={<ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary>} />
+                <Route path="/wallet" element={<ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary>} />
+                <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
