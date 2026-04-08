@@ -1,13 +1,148 @@
-import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
-const tools = [{ icon: <Briefcase className="w-5 h-5" />, title: "Resume Builder", desc: "AI-powered resume creation" },{ icon: <FileText className="w-5 h-5" />, title: "Cover Letter", desc: "Generate tailored cover letters" },{ icon: <Users className="w-5 h-5" />, title: "Interview Prep", desc: "Practice with AI interviewer" },{ icon: <Calendar className="w-5 h-5" />, title: "Career Planner", desc: "Map your career trajectory" },{ icon: <TrendingUp className="w-5 h-5" />, title: "Salary Insights", desc: "Market salary data and trends" }];
-const ProfessionalHubPage = () => (
-  <div className="min-h-screen bg-background pb-20">
-    <UniversalBackButton />
-    <div className="px-4 pt-14 pb-4">
-      <div className="flex items-center gap-3 mb-4"><div className="p-2 rounded-xl bg-primary/10"><BarChart3 className="w-7 h-7 text-primary" /></div><div><h1 className="text-xl font-bold text-primary">Professional Hub</h1><p className="text-muted-foreground text-xs">Career & business tools</p></div></div>
-      <div className="space-y-3">{tools.map(t => (<button key={t.title} className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover:border-primary transition-colors text-left"><div className="p-2 rounded-lg bg-primary/10 text-primary">{t.icon}</div><div><h3 className="text-sm font-semibold text-foreground">{t.title}</h3><p className="text-xs text-muted-foreground">{t.desc}</p></div></button>))}</div>
+import { toast } from "sonner";
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
+
+type Tool = "resume" | "cover" | "interview" | "career" | "salary" | "linkedin" | null;
+
+const tools = [
+  { id: "resume" as const, icon: <Briefcase className="w-5 h-5" />, title: "Resume Builder", desc: "AI-powered resume creation" },
+  { id: "cover" as const, icon: <FileText className="w-5 h-5" />, title: "Cover Letter", desc: "Generate tailored cover letters" },
+  { id: "interview" as const, icon: <Users className="w-5 h-5" />, title: "Interview Prep", desc: "Practice with AI interviewer" },
+  { id: "career" as const, icon: <Target className="w-5 h-5" />, title: "Career Planner", desc: "Map your career trajectory" },
+  { id: "salary" as const, icon: <TrendingUp className="w-5 h-5" />, title: "Salary Insights", desc: "Market salary data and trends" },
+  { id: "linkedin" as const, icon: <Award className="w-5 h-5" />, title: "LinkedIn Optimizer", desc: "Optimize your professional profile" },
+];
+
+const SYSTEM_PROMPTS: Record<string, string> = {
+  resume: "You are an expert resume writer. Help the user create a professional, ATS-optimized resume. Ask for their experience, skills, and target role. Format the output cleanly.",
+  cover: "You are an expert cover letter writer. Help create compelling, personalized cover letters. Ask for the job description and their relevant experience.",
+  interview: "You are an AI interviewer. Conduct a realistic job interview. Ask one question at a time, give feedback on answers, and rate performance. Start by asking what role they're interviewing for.",
+  career: "You are a career counselor. Help the user map their career trajectory with actionable steps, skill gaps to fill, and timeline suggestions.",
+  salary: "You are a salary negotiation expert with market data knowledge. Provide salary insights, negotiation strategies, and market trends for any role/industry.",
+  linkedin: "You are a LinkedIn profile optimization expert. Help the user craft a compelling headline, summary, and optimize each section for maximum visibility.",
+};
+
+const ProfessionalHubPage = () => {
+  const [activeTool, setActiveTool] = useState<Tool>(null);
+  const [input, setInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState("");
+
+  const sendMessage = async (msg?: string) => {
+    const message = msg || input;
+    if (!message.trim() || !activeTool) return;
+    setInput("");
+    setLoading(true);
+    const newHistory = [...chatHistory, { role: "user", content: message }];
+    setChatHistory(newHistory);
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({
+          messages: [{ role: "system", content: SYSTEM_PROMPTS[activeTool] }, ...newHistory]
+        }),
+      });
+      if (!resp.ok) throw new Error();
+      const text = await resp.text();
+      let content = "";
+      for (const line of text.split("\n")) {
+        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+          try { const j = JSON.parse(line.slice(6)); content += j.choices?.[0]?.delta?.content || ""; } catch {}
+        }
+      }
+      setChatHistory([...newHistory, { role: "assistant", content }]);
+      setResult(content);
+    } catch { toast.error("AI unavailable"); }
+    finally { setLoading(false); }
+  };
+
+  if (activeTool) {
+    const tool = tools.find(t => t.id === activeTool)!;
+    return (
+      <div className="min-h-screen bg-background pb-20">
+        <UniversalBackButton />
+        <div className="px-4 pt-14 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-xl bg-primary/10">{tool.icon}</div>
+            <div><h1 className="text-xl font-bold text-primary">{tool.title}</h1><p className="text-muted-foreground text-xs">{tool.desc}</p></div>
+          </div>
+
+          {/* Chat */}
+          <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === "user" ? "bg-primary/10 text-foreground ml-8" : "bg-card border border-border text-foreground mr-4"}`}>
+                <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+              </div>
+            ))}
+            {loading && <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Thinking...</div>}
+          </div>
+
+          {/* Quick prompts */}
+          {chatHistory.length === 0 && (
+            <div className="grid grid-cols-1 gap-2 mb-4">
+              {activeTool === "resume" && ["Help me build a resume for a software engineer", "I'm changing careers to marketing", "Update my resume for a senior role"].map(q => (
+                <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
+              ))}
+              {activeTool === "interview" && ["Interview me for a product manager role", "Practice behavioral interview questions", "Prepare me for a technical interview"].map(q => (
+                <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
+              ))}
+              {activeTool === "salary" && ["What's the average salary for UX designers?", "How to negotiate a raise", "Compare salaries in tech vs finance"].map(q => (
+                <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()}
+              placeholder={`Ask about ${tool.title.toLowerCase()}...`}
+              className="flex-1 px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm outline-none focus:border-primary" />
+            <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="p-3 rounded-xl bg-primary text-primary-foreground disabled:opacity-50">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
+
+          <button onClick={() => { setActiveTool(null); setChatHistory([]); setResult(""); }}
+            className="w-full mt-4 py-3 bg-secondary text-foreground rounded-xl text-sm font-medium">Back to Hub</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <UniversalBackButton />
+      <div className="px-4 pt-14 pb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-xl bg-primary/10"><BarChart3 className="w-7 h-7 text-primary" /></div>
+          <div><h1 className="text-xl font-bold text-primary">Professional Hub</h1><p className="text-muted-foreground text-xs">Career & business tools powered by AI</p></div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="text-center p-3 bg-card border border-border rounded-xl"><Star className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-sm font-bold text-foreground">3</p><p className="text-[10px] text-muted-foreground">Resumes</p></div>
+          <div className="text-center p-3 bg-card border border-border rounded-xl"><Users className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-sm font-bold text-foreground">7</p><p className="text-[10px] text-muted-foreground">Interviews</p></div>
+          <div className="text-center p-3 bg-card border border-border rounded-xl"><TrendingUp className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-sm font-bold text-foreground">85%</p><p className="text-[10px] text-muted-foreground">Score</p></div>
+        </div>
+
+        <div className="space-y-3">
+          {tools.map(t => (
+            <button key={t.id} onClick={() => setActiveTool(t.id)}
+              className="w-full bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover:border-primary transition-colors text-left">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">{t.icon}</div>
+              <div className="flex-1"><h3 className="text-sm font-semibold text-foreground">{t.title}</h3><p className="text-xs text-muted-foreground">{t.desc}</p></div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
 export default ProfessionalHubPage;
