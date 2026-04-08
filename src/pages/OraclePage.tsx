@@ -836,13 +836,26 @@ const OraclePage = () => {
           {messages.map(msg => (
             <div key={msg.id} className={`flex gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
               {msg.sender !== "user" && (
-                msg.avatar_url ? (
-                  <img src={msg.avatar_url} alt={msg.sender} className="w-7 h-7 rounded-full object-cover shrink-0 border" style={{ borderColor: msg.color }} />
-                ) : (
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0 border" style={{ borderColor: msg.color, backgroundColor: msg.color + "15" }}>
-                    {msg.emoji}
+                <div className="relative group shrink-0">
+                  {msg.avatar_url ? (
+                    <img src={msg.avatar_url} alt={msg.sender} className="w-7 h-7 rounded-full object-cover border cursor-pointer" style={{ borderColor: msg.color }} />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm border cursor-pointer" style={{ borderColor: msg.color, backgroundColor: msg.color + "15" }}>
+                      {msg.emoji}
+                    </div>
+                  )}
+                  {/* Hover enlarged avatar */}
+                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 pointer-events-none">
+                    {msg.avatar_url ? (
+                      <img src={msg.avatar_url} alt={msg.sender} className="w-28 h-28 rounded-2xl object-cover border-2 shadow-xl" style={{ borderColor: msg.color }} />
+                    ) : (
+                      <div className="w-28 h-28 rounded-2xl flex items-center justify-center text-4xl border-2 shadow-xl" style={{ borderColor: msg.color, backgroundColor: msg.color + "25" }}>
+                        {msg.emoji}
+                      </div>
+                    )}
+                    <p className="text-center text-[10px] font-bold mt-1" style={{ color: msg.color }}>{msg.sender}</p>
                   </div>
-                )
+                </div>
               )}
               <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${msg.sender === "user" ? "bg-[#FFAA00] text-black rounded-br-sm" : "rounded-bl-sm"}`}
                 style={msg.sender !== "user" ? { backgroundColor: msg.color + "15", border: `1px solid ${msg.color}30`, color: "#e5e5e5" } : undefined}>
