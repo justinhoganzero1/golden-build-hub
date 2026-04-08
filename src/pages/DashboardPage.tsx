@@ -135,7 +135,7 @@ const DashboardPage = () => {
             onClick={() => navigate(tile.path)}
             className={`flex flex-col items-center gap-2 p-3 ${tileBR} bg-card border border-border hover:border-primary hover:bg-secondary transition-all`}
           >
-            <div className={`text-primary ${iconSize}`}>{tile.icon}</div>
+            <div className={`text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
             <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
               {tile.label}
             </span>
