@@ -1,14 +1,37 @@
-import { useState } from "react";
-import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const WEARABLES = [
-  { name: "Apple Watch", icon: "⌚" }, { name: "Fitbit", icon: "📟" }, { name: "Samsung Galaxy Watch", icon: "⌚" },
-  { name: "Garmin", icon: "🏃" }, { name: "Google Pixel Watch", icon: "⌚" }, { name: "Whoop", icon: "💪" },
-  { name: "Oura Ring", icon: "💍" }, { name: "Amazfit", icon: "⌚" },
+interface PairedDevice {
+  id: string;
+  name: string;
+  type: string;
+  icon: string;
+  connected: boolean;
+  battery?: number;
+  lastSeen?: string;
+  gattServer?: BluetoothRemoteGATTServer;
+}
+
+const WEARABLE_SERVICES: Record<string, { name: string; icon: string; services: string[] }> = {
+  heart_rate: { name: "Heart Rate Monitor", icon: "❤️", services: ["heart_rate"] },
+  fitness: { name: "Fitness Tracker", icon: "🏃", services: ["running_speed_and_cadence", "cycling_speed_and_cadence"] },
+  watch: { name: "Smartwatch", icon: "⌚", services: ["device_information", "battery_service"] },
+  health: { name: "Health Device", icon: "🩺", services: ["health_thermometer", "blood_pressure"] },
+};
+
+const KNOWN_WEARABLES = [
+  { name: "Apple Watch", icon: "⌚", type: "watch" },
+  { name: "Fitbit", icon: "📟", type: "fitness" },
+  { name: "Samsung Galaxy Watch", icon: "⌚", type: "watch" },
+  { name: "Garmin", icon: "🏃", type: "fitness" },
+  { name: "Google Pixel Watch", icon: "⌚", type: "watch" },
+  { name: "Whoop", icon: "💪", type: "fitness" },
+  { name: "Oura Ring", icon: "💍", type: "health" },
+  { name: "Amazfit", icon: "⌚", type: "watch" },
 ];
 
 const THEME_COLORS = [
