@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight, Mic, MicOff } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
