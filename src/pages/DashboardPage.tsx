@@ -136,9 +136,10 @@ const DashboardPage = () => {
             <button
               onClick={async () => {
                 if (!freebieEmail.trim()) { toast.error("Enter an email address"); return; }
+                if (!user) { toast.error("You must be signed in"); return; }
                 try {
                   const { error } = await supabase.from("suggestions").insert({
-                    user_id: "00000000-0000-0000-0000-000000000000",
+                    user_id: user.id,
                     suggestion: `Lifetime access granted to ${freebieEmail.trim()}`,
                     status: "implemented",
                     granted_free_access: true,
