@@ -92,7 +92,7 @@ export function useSaveMedia() {
       if (!user) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("user_media")
-        .insert({ ...media, user_id: user.id });
+        .insert([{ ...media, user_id: user.id }] as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["user-media"] }),
