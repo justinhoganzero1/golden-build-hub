@@ -5,8 +5,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
+import MasterMuteButton from "@/components/MasterMuteButton";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -78,10 +80,12 @@ const App = () => (
   <ErrorBoundary pageName="App Root">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <OfflineBanner />
+        <MuteProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineBanner />
+            <MasterMuteButton />
           <BrowserRouter>
             <Suspense fallback={<Loading />}>
               <Routes>
@@ -137,6 +141,7 @@ const App = () => (
             </Suspense>
           </BrowserRouter>
         </TooltipProvider>
+        </MuteProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
