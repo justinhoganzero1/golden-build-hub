@@ -108,6 +108,10 @@ const ProfilePage = () => {
         toast.success(editMode ? "Photo transformed! 🎨" : "Avatar generated! 🎨");
         setShowAvatarGen(false);
         setEditMode(false);
+      } else {
+        // AI refused or returned no image — show its explanation
+        const reason = data.text || "No image was generated. Try a different description.";
+        toast.error(reason.length > 120 ? reason.slice(0, 120) + "…" : reason);
       }
     } catch {
       toast.error("Failed to generate avatar");
