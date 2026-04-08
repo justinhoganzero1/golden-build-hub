@@ -50,8 +50,13 @@ const AvatarGeneratorPage = () => {
   const [searchParams] = useSearchParams();
   const purchasedProduct = searchParams.get("purchased");
   const isCreatingFriend = searchParams.get("friend") === "true";
+  const purposeFromParam = searchParams.get("purpose");
   const createAvatar = useCreateAvatar();
   const saveMedia = useSaveMedia();
+
+  // Owner detection — only the app owner can create R/X rated avatars
+  const OWNER_EMAIL = "owner@solace.app"; // Replace with your actual owner email
+  const isOwner = user?.email === OWNER_EMAIL;
 
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
   const [prompt, setPrompt] = useState("");
@@ -61,7 +66,7 @@ const AvatarGeneratorPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  const [purpose, setPurpose] = useState(isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle");
+  const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
@@ -72,6 +77,16 @@ const AvatarGeneratorPage = () => {
 
   const generate = async () => {
     const desc = prompt.trim() || "a person";
+    
+    // M-rating content filter for non-owners
+    if (!isOwner) {
+      const blockedTerms = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|bikini|seductive|provocative|undress|strip)\b/i;
+      if (blockedTerms.test(desc)) {
+        toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
+        return;
+      }
+    }
+    
     setIsLoading(true);
     try {
       const stylePrompts: Record<string, string> = {
@@ -96,7 +111,7 @@ const AvatarGeneratorPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ prompt: fullPrompt, ownerBypass: isOwner }),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Failed" }));
@@ -247,8 +262,13 @@ const AvatarGeneratorPage = () => {
             <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
-              <p className="text-gray-500 text-xs">Create & assign AI-powered avatars</p>
+              <p className="text-gray-500 text-xs">
+                {isOwner ? "Owner Mode — No content restrictions" : "M-Rated content only"}
+              </p>
             </div>
+            {isOwner && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[9px] font-bold uppercase">Owner</span>
+            )}
           </div>
           <button onClick={() => navigate("/avatar-gallery")} className="px-3 py-1.5 rounded-xl border border-gray-700 text-purple-400 text-xs font-medium">
             Gallery

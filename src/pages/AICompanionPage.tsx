@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star } from "lucide-react";
+import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star, Palette } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useNavigate } from "react-router-dom";
+import { useUserAvatars } from "@/hooks/useUserAvatars";
 
 interface CompanionMessage {
   id: string;
@@ -39,7 +41,13 @@ const INTERESTS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
 const AICompanionPage = () => {
+  const navigate = useNavigate();
+  const { data: userAvatars = [] } = useUserAvatars();
   const [step, setStep] = useState<"setup" | "chat">("setup");
+
+  // Find partner avatar from user's saved avatars
+  const partnerAvatar = userAvatars.find(a => a.purpose === "partner" && a.is_active);
+
   const [companion, setCompanion] = useState<CompanionProfile>({
     name: "",
     type: "girlfriend",
@@ -194,6 +202,24 @@ IMPORTANT RULES:
           </div>
 
           <div className="space-y-5">
+            {/* Partner Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              {partnerAvatar?.image_url ? (
+                <img src={partnerAvatar.image_url} alt={partnerAvatar.name} className="w-24 h-24 rounded-full object-cover border-2 border-pink-500 shadow-lg shadow-pink-500/30" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-white/5 border-2 border-dashed border-pink-500/40 flex items-center justify-center">
+                  <span className="text-4xl">💕</span>
+                </div>
+              )}
+              <button onClick={() => navigate("/avatar-generator?purpose=partner")}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-600/20 to-purple-600/20 border border-pink-500/30 text-pink-300 text-xs font-medium flex items-center gap-2 hover:border-pink-500/60 transition-all">
+                <Palette className="w-4 h-4" /> {partnerAvatar ? "Change Avatar" : "Create Avatar"}
+              </button>
+              {partnerAvatar && (
+                <p className="text-[10px] text-gray-500">Using: {partnerAvatar.name}</p>
+              )}
+            </div>
+
             {/* Type */}
             <div className="flex gap-3">
               {(["boyfriend", "girlfriend"] as const).map(t => (
@@ -253,8 +279,12 @@ IMPORTANT RULES:
       {/* Header */}
       <div className="px-4 pt-3 pb-2 flex items-center gap-3 z-10">
         <UniversalBackButton />
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-lg">
-          {companion.type === "girlfriend" ? "👩" : "👨"}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-lg overflow-hidden">
+          {partnerAvatar?.image_url ? (
+            <img src={partnerAvatar.image_url} alt={companion.name} className="w-full h-full object-cover" />
+          ) : (
+            companion.type === "girlfriend" ? "👩" : "👨"
+          )}
         </div>
         <div className="flex-1">
           <h2 className="text-sm font-bold text-white">{companion.name}</h2>
@@ -270,8 +300,10 @@ IMPORTANT RULES:
         {messages.map(msg => (
           <div key={msg.id} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "companion" && (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-sm shrink-0">
-                {companion.type === "girlfriend" ? "👩" : "👨"}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-sm shrink-0 overflow-hidden">
+                {partnerAvatar?.image_url ? (
+                  <img src={partnerAvatar.image_url} alt="" className="w-full h-full object-cover" />
+                ) : (companion.type === "girlfriend" ? "👩" : "👨")}
               </div>
             )}
             <div className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm ${msg.role === "user" ? "bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-br-sm" : "bg-white/10 text-gray-100 border border-white/10 rounded-bl-sm"}`}>
@@ -283,8 +315,10 @@ IMPORTANT RULES:
         ))}
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-sm">
-              {companion.type === "girlfriend" ? "👩" : "👨"}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-sm overflow-hidden">
+              {partnerAvatar?.image_url ? (
+                <img src={partnerAvatar.image_url} alt="" className="w-full h-full object-cover" />
+              ) : (companion.type === "girlfriend" ? "👩" : "👨")}
             </div>
             <div className="flex gap-1 px-4 py-3">
               <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" />
