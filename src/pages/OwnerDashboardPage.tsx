@@ -365,6 +365,133 @@ const OwnerDashboardPage = () => {
             ))}
           </div>
         )}
+
+        {/* USERS LIBRARY */}
+        {tab === "library" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-bold text-white">All Users' Media ({filteredLib.length})</h2>
+              <button onClick={() => setLibView(libView === "grid" ? "list" : "grid")} className="p-2 rounded-lg bg-white/5 border border-white/10">
+                {libView === "grid" ? <List className="w-4 h-4 text-gray-400" /> : <Grid className="w-4 h-4 text-gray-400" />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-3 text-gray-500" />
+              <input value={libSearch} onChange={e => setLibSearch(e.target.value)} placeholder="Search all user media..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-600 outline-none" />
+            </div>
+
+            <div className="flex gap-2">
+              {["All", "Images", "Videos", "Audio"].map(f => (
+                <button key={f} onClick={() => setLibFilter(f)}
+                  className={`px-3 py-1.5 rounded-full text-xs transition-colors ${libFilter === f ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" : "bg-white/5 border border-white/10 text-gray-400"}`}>{f}</button>
+              ))}
+            </div>
+
+            {filteredLib.length === 0 ? (
+              <div className="text-center py-20">
+                <Camera className="w-16 h-16 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No user media found</p>
+              </div>
+            ) : libView === "grid" ? (
+              <div className="grid grid-cols-3 gap-2">
+                {filteredLib.map((m: any) => (
+                  <div key={m.id} className="relative">
+                    <button
+                      onClick={() => setLibSelected(m)}
+                      onMouseEnter={() => setHoveredItem(m.id)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      className="w-full aspect-square bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col items-center justify-center gap-1 hover:border-yellow-500/30 transition-all"
+                    >
+                      {m.media_type === "image" && m.url ? (
+                        <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <>
+                          {getMediaIcon(m.media_type)}
+                          <p className="text-[9px] text-gray-500 truncate w-full text-center px-1">{m.title}</p>
+                        </>
+                      )}
+                    </button>
+                    {hoveredItem === m.id && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm rounded-b-xl p-2 text-[9px] text-gray-300 z-10">
+                        <p className="font-medium truncate">{m.title || "Untitled"}</p>
+                        <p className="text-gray-500">By: {m.user_id?.slice(0, 8)}... • {m.source_page}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredLib.map((m: any) => (
+                  <button key={m.id} onClick={() => setLibSelected(m)}
+                    className="w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3 hover:border-yellow-500/30 transition-all text-left group">
+                    {m.media_type === "image" && m.url ? (
+                      <img src={m.url} alt={m.title} className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="p-2 rounded-lg bg-white/10">{getMediaIcon(m.media_type)}</div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm text-white">{m.title || "Untitled"}</p>
+                      <p className="text-[10px] text-gray-500">{m.source_page} • {new Date(m.created_at).toLocaleDateString()}</p>
+                      <p className="text-[9px] text-gray-600">User: {m.user_id?.slice(0, 8)}...</p>
+                    </div>
+                    <Eye className="w-4 h-4 text-gray-600 group-hover:text-yellow-400" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Library item detail dialog */}
+        <Dialog open={!!libSelected} onOpenChange={() => setLibSelected(null)}>
+          <DialogContent className="max-w-[95vw] bg-[#1a1a2e] border-white/10 text-white">
+            <DialogHeader><DialogTitle className="text-base">{libSelected?.title || "Media"}</DialogTitle></DialogHeader>
+            {libSelected && (
+              <div className="space-y-4 mt-2">
+                <div className="aspect-video bg-white/5 rounded-xl flex items-center justify-center overflow-hidden">
+                  {libSelected.media_type === "image" && libSelected.url ? (
+                    <img src={libSelected.url} alt={libSelected.title} className="w-full h-full object-contain" />
+                  ) : libSelected.media_type === "video" ? (
+                    <div className="text-center"><Play className="w-12 h-12 text-purple-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Video</p></div>
+                  ) : (
+                    <div className="text-center"><Music className="w-12 h-12 text-pink-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Audio</p></div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-400">Source: {libSelected.source_page}</p>
+                  <p className="text-xs text-gray-400">Creator: {libSelected.user_id}</p>
+                  <p className="text-[10px] text-gray-500">{new Date(libSelected.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => { if (libSelected.url) { const a = document.createElement("a"); a.href = libSelected.url; a.download = libSelected.title || "media"; a.click(); } toast.success("Downloaded!"); }}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-medium flex items-center justify-center gap-2">
+                    <Download className="w-4 h-4" /> Download
+                  </button>
+                  <button onClick={() => setLibShareItem(libSelected)}
+                    className="py-2.5 px-4 rounded-xl bg-white/10 text-white text-xs font-medium">
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDeleteMedia(libSelected.id)}
+                    className="py-2.5 px-4 rounded-xl bg-red-500/20 text-red-400 text-xs font-medium">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        <ShareDialog
+          open={!!libShareItem}
+          onOpenChange={() => setLibShareItem(null)}
+          title={libShareItem?.title || "Media"}
+          url={libShareItem?.url}
+          imageUrl={libShareItem?.url}
+          description={`Check out this ${libShareItem?.media_type || "media"} from Solace!`}
+        />
       </div>
     </div>
   );
