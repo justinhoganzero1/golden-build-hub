@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star } from "lucide-react";
+import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star, Palette } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useNavigate } from "react-router-dom";
+import { useUserAvatars } from "@/hooks/useUserAvatars";
 
 interface CompanionMessage {
   id: string;
