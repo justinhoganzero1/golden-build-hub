@@ -41,7 +41,7 @@ const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracl
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 
 const OraclePage = () => {
-  const navigate = useNavigate();
+  const { isMuted, toggleMute } = useMute();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,11 +49,32 @@ const OraclePage = () => {
   const [friends, setFriends] = useState<AIFriend[]>(DEFAULT_FRIENDS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const activeFriends = friends.filter(f => f.active && f.name !== "Oracle");
+
+  // TTS speak function
+  const speakText = useCallback((text: string, voice?: string) => {
+    if (isMuted || !text) return;
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/[#*_`~\[\]()>]/g, "").replace(/\n+/g, ". ").trim();
+    if (!clean) return;
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.lang = "en-US";
+    utterance.rate = 0.95;
+    utterance.pitch = 1.1;
+    // Try to pick a good voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
+    if (preferred) utterance.voice = preferred;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  }, [isMuted]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
