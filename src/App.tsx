@@ -61,6 +61,8 @@ const AvatarGalleryPage = lazy(() => import("./pages/AvatarGalleryPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
+const InvestorPage = lazy(() => import("./pages/InvestorPage"));
+const CreatorsPage = lazy(() => import("./pages/CreatorsPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
