@@ -206,6 +206,93 @@ export type Database = {
         }
         Relationships: []
       }
+      user_avatars: {
+        Row: {
+          art_style: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          personality: string | null
+          purpose: string
+          updated_at: string
+          user_id: string
+          voice_style: string | null
+        }
+        Insert: {
+          art_style?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          personality?: string | null
+          purpose?: string
+          updated_at?: string
+          user_id: string
+          voice_style?: string | null
+        }
+        Update: {
+          art_style?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          personality?: string | null
+          purpose?: string
+          updated_at?: string
+          user_id?: string
+          voice_style?: string | null
+        }
+        Relationships: []
+      }
+      user_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string
+          metadata: Json | null
+          source_page: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          metadata?: Json | null
+          source_page?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          metadata?: Json | null
+          source_page?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
