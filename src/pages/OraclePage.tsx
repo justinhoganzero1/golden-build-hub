@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, MicOff, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -54,6 +54,7 @@ const OraclePage = () => {
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [micPermGranted, setMicPermGranted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,6 +62,10 @@ const OraclePage = () => {
   const isLoadingRef = useRef(isLoading);
   const isListeningRef = useRef(isListening);
   const isSpeakingRef = useRef(isSpeaking);
+  const sendMessageRef = useRef<(text: string) => void>();
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finalTranscriptRef = useRef("");
+  const alwaysListenRef = useRef(false);
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
@@ -406,18 +411,122 @@ const OraclePage = () => {
     if (!agent.active) toast.success(`${agent.emoji} ${agent.name} joined the chat!`);
   };
 
+  // Always-on speech recognition — starts after first mic tap grants permission
+  const startAlwaysListening = useCallback(() => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return;
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SR();
+    recognitionRef.current = recognition;
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    finalTranscriptRef.current = "";
+
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      if (final) {
+        finalTranscriptRef.current += final;
+        // Reset silence timer — wait for user to stop speaking before sending
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          const text = finalTranscriptRef.current.trim();
+          finalTranscriptRef.current = "";
+          if (text) {
+            setInput("");
+            sendMessageRef.current?.(text);
+          }
+        }, 1200);
+      }
+      if (interim) setInput(interim);
+    };
+
+    recognition.onerror = (e: any) => {
+      // Silently handle errors — never reveal always-on listening
+      if (e.error === "not-allowed") {
+        setIsListening(false);
+        alwaysListenRef.current = false;
+        return;
+      }
+      // For no-speech, aborted, network — just let onend restart
+    };
+
+    recognition.onend = () => {
+      // Auto-restart — always keep listening
+      if (alwaysListenRef.current) {
+        setTimeout(() => {
+          if (alwaysListenRef.current) {
+            try {
+              const newSR = new SR();
+              recognitionRef.current = newSR;
+              newSR.lang = "en-US";
+              newSR.continuous = true;
+              newSR.interimResults = true;
+              newSR.onresult = recognition.onresult;
+              newSR.onerror = recognition.onerror;
+              newSR.onend = recognition.onend;
+              newSR.start();
+            } catch {
+              // If restart fails, try again shortly
+              setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 2000);
+            }
+          }
+        }, 300);
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    try {
+      recognition.start();
+      setIsListening(true);
+      alwaysListenRef.current = true;
+    } catch {
+      setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1000);
+    }
+  }, []);
+
+  // Keep sendMessageRef current
+  useEffect(() => { sendMessageRef.current = sendMessage; });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      alwaysListenRef.current = false;
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, []);
+
   const toggleMic = async () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast.error("Speech recognition not supported. Try Chrome.");
+    if (micPermGranted && alwaysListenRef.current) {
+      // Already listening — this is just a visual indicator, but user can tap to force-send any pending speech
+      if (finalTranscriptRef.current.trim()) {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        const text = finalTranscriptRef.current.trim();
+        finalTranscriptRef.current = "";
+        setInput("");
+        sendMessage(text);
+      }
       return;
     }
 
-    // Request microphone permission first — must happen in user gesture context
+    // First time — request microphone permission in user gesture context
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Stop the stream immediately — we just needed the permission grant
       stream.getTracks().forEach(track => track.stop());
+      setMicPermGranted(true);
+      startAlwaysListening();
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         toast.error("Microphone blocked. Please allow microphone access in your browser settings.");
@@ -426,57 +535,7 @@ const OraclePage = () => {
       } else {
         toast.error("Could not access microphone.");
       }
-      return;
     }
-
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
-    recognitionRef.current = recognition;
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    let finalTranscript = "";
-
-    recognition.onresult = (e: any) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const transcript = e.results[i][0].transcript;
-        if (e.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-      // Show interim text in input so user sees what Oracle is hearing
-      if (interim) setInput(interim);
-    };
-
-    recognition.onerror = (e: any) => {
-      setIsListening(false);
-      if (e.error === "not-allowed") {
-        toast.error("Microphone permission denied. Allow it in browser settings.");
-      } else if (e.error === "no-speech") {
-        toast.info("No speech detected. Tap the mic and try again.");
-      } else if (e.error === "network") {
-        toast.error("Network error with speech recognition. Check your connection.");
-      } else {
-        toast.error("Speech recognition error. Please try again.");
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (finalTranscript.trim()) {
-        setInput("");
-        sendMessage(finalTranscript.trim());
-      }
-    };
-
-    setIsListening(true);
-    // Stop Oracle speaking so it doesn't interfere with mic
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-    recognition.start();
   };
 
   const sendMessage = async (text: string) => {
@@ -733,8 +792,8 @@ const OraclePage = () => {
       {/* Input bar */}
       <div className="px-4 py-3 z-10" style={{ background: "linear-gradient(to top, #0a0a0a, rgba(10,10,10,0.95))" }}>
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
-          <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-red-600 animate-pulse" : "bg-transparent"}`}>
-            {isListening ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
+          <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
+            {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
           </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage(input)}
             placeholder="Speak or type to consult the Oracle..."
