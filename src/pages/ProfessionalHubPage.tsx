@@ -109,10 +109,15 @@ const ProfessionalHubPage = () => {
           <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto">
             {chatHistory.map((msg, i) => (
               <div key={i} className={`rounded-xl p-3 text-sm ${msg.role === "user" ? "bg-primary/10 text-foreground ml-8" : "bg-card border border-border text-foreground mr-4"}`}>
-                <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                ) : (
+                  <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                )}
               </div>
             ))}
-            {loading && <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Thinking...</div>}
+            {loading && <div className="flex items-center gap-2 text-muted-foreground text-sm"><Loader2 className="w-4 h-4 animate-spin" /> {activeTool === "interview" ? "Interviewer is thinking..." : "Thinking..."}</div>}
+            <div ref={chatEndRef} />
           </div>
 
           {/* Quick prompts */}
@@ -121,7 +126,12 @@ const ProfessionalHubPage = () => {
               {activeTool === "resume" && ["Help me build a resume for a software engineer", "I'm changing careers to marketing", "Update my resume for a senior role"].map(q => (
                 <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
               ))}
-              {activeTool === "interview" && ["Interview me for a product manager role", "Practice behavioral interview questions", "Prepare me for a technical interview"].map(q => (
+              {activeTool === "interview" && [
+                "Interview me for a software developer role",
+                "I want to practice for a product manager interview",
+                "Conduct a behavioral interview for a team lead position",
+                "Practice a technical interview for a data scientist role"
+              ].map(q => (
                 <button key={q} onClick={() => sendMessage(q)} className="bg-card border border-border rounded-lg p-3 text-xs text-muted-foreground hover:border-primary transition-colors text-left">{q}</button>
               ))}
               {activeTool === "salary" && ["What's the average salary for UX designers?", "How to negotiate a raise", "Compare salaries in tech vs finance"].map(q => (
@@ -132,8 +142,13 @@ const ProfessionalHubPage = () => {
 
           <div className="flex gap-2">
             <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()}
-              placeholder={`Ask about ${tool.title.toLowerCase()}...`}
+              placeholder={activeTool === "interview" ? "Answer the interviewer..." : `Ask about ${tool.title.toLowerCase()}...`}
               className="flex-1 px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm outline-none focus:border-primary" />
+            {activeTool === "interview" && (
+              <button onClick={toggleMic} className={`p-3 rounded-xl border ${isListening ? "bg-red-500/20 border-red-500 text-red-500" : "bg-secondary border-border text-muted-foreground"}`}>
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
             <button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="p-3 rounded-xl bg-primary text-primary-foreground disabled:opacity-50">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
