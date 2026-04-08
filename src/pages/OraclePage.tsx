@@ -110,22 +110,34 @@ const OraclePage = () => {
     return voice;
   }, []);
 
-  const speakAsAgent = useCallback((text: string, agentName: string = "Oracle") => {
-    if (isMuted || !text) return;
-    window.speechSynthesis.cancel();
-    const clean = cleanTextForSpeech(text);
-    if (!clean) return;
+  // Speech queue — AIs speak one after another, each can interrupt by cancelling current
+  const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
+  const isSpeakingQueueRef = useRef(false);
+
+  const processSpeechQueue = useCallback(() => {
+    if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
+    const next = speechQueueRef.current.shift();
+    if (!next) return;
+    const clean = cleanTextForSpeech(next.text);
+    if (!clean) { processSpeechQueue(); return; }
+    isSpeakingQueueRef.current = true;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-US";
-    utterance.rate = agentName === "Oracle" ? 0.95 : 0.9 + Math.random() * 0.15;
-    utterance.pitch = agentName === "Oracle" ? 1.1 : 0.8 + Math.random() * 0.6;
-    const voice = getVoiceForAgent(agentName);
+    utterance.rate = next.agentName === "Oracle" ? 0.95 : 0.9 + Math.random() * 0.15;
+    utterance.pitch = next.agentName === "Oracle" ? 1.1 : 0.8 + Math.random() * 0.6;
+    const voice = getVoiceForAgent(next.agentName);
     if (voice) utterance.voice = voice;
     utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onend = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
+    utterance.onerror = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
     window.speechSynthesis.speak(utterance);
   }, [isMuted, getVoiceForAgent]);
+
+  const speakAsAgent = useCallback((text: string, agentName: string = "Oracle") => {
+    if (isMuted || !text) return;
+    speechQueueRef.current.push({ text, agentName });
+    processSpeechQueue();
+  }, [isMuted, processSpeechQueue]);
 
   // Monthly heated debate check — triggers ~once per 30 days
   useEffect(() => {
@@ -624,25 +636,13 @@ const OraclePage = () => {
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
     setMessages(prev => [...prev, userMsg]);
-    setInput("");
+    // Clear speech queue on user interrupt
+    speechQueueRef.current = [];
+    isSpeakingQueueRef.current = false;
     setIsLoading(true);
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // Pre-create utterance in gesture context to satisfy browser security policy
-    let utterance: SpeechSynthesisUtterance | null = null;
-    if (!isMuted) {
-      utterance = new SpeechSynthesisUtterance("");
-      utterance.lang = "en-US";
-      utterance.rate = 0.95;
-      utterance.pitch = 1.1;
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.name.includes("Samantha")) || voices.find(v => v.lang.startsWith("en") && v.name.includes("Female")) || voices.find(v => v.lang.startsWith("en"));
-      if (preferred) utterance.voice = preferred;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-    }
 
     try {
       const allMsgs = [...messages, userMsg];
@@ -693,19 +693,12 @@ const OraclePage = () => {
         }
       }
 
-      // Speak using the pre-created utterance with Oracle's unique voice
-      if (oracleContent && utterance) {
-        window.speechSynthesis.cancel();
-        const clean = cleanTextForSpeech(oracleContent);
-        if (clean) {
-          utterance.text = clean;
-          const oracleVoice = getVoiceForAgent("Oracle");
-          if (oracleVoice) utterance.voice = oracleVoice;
-          window.speechSynthesis.speak(utterance);
-        }
+      // Queue Oracle speech
+      if (oracleContent && !isMuted) {
+        speakAsAgent(oracleContent, "Oracle");
       }
 
-      // Send to active user-avatar agents — include Oracle's response so friends can react to it
+      // Send to active agents and queue their speech sequentially
       if (activeAgents.length > 0) {
         try {
           const historyWithOracle = [
@@ -721,10 +714,9 @@ const OraclePage = () => {
             const data = await friendResp.json();
             for (let i = 0; i < (data.responses || []).length; i++) {
               const r = data.responses[i];
-              // Map friend responses to active agents
               const matchedAgent = activeAgents[i % activeAgents.length];
               if (!matchedAgent) continue;
-              await new Promise(resolve => setTimeout(resolve, 600 + i * 800));
+              await new Promise(resolve => setTimeout(resolve, 400 + i * 500));
               setMessages(prev => [...prev, {
                 id: `agent-${Date.now()}-${i}`,
                 role: "assistant",
@@ -734,6 +726,8 @@ const OraclePage = () => {
                 content: r.content,
                 avatar_url: matchedAgent.avatar_url,
               }]);
+              // Queue each agent's speech — they'll speak one after another
+              speakAsAgent(r.content, matchedAgent.name);
             }
           }
         } catch (e) { console.error("Agent chat error:", e); }

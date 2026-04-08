@@ -6,7 +6,7 @@ import {
   Wallet, Calendar, Clock, Settings, User, Sparkles, Phone,
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
-  Bell, Map, Download, Smartphone, CreditCard, BarChart3,
+  Bell, Map, Smartphone, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
@@ -58,7 +58,7 @@ const tiles: AppTile[] = [
   { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder" },
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
   
-  { label: "Install", icon: <Download className="w-6 h-6" />, path: "/install" },
+  
   
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
