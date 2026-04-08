@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
@@ -129,7 +131,29 @@ const DashboardPage = () => {
           <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <p className="text-xs text-muted-foreground">Grant lifetime free access to users whose suggestions were implemented.</p>
             <input value={freebieEmail} onChange={e => setFreebieEmail(e.target.value)} placeholder="User email" className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none" />
-            <button className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium">Grant Lifetime Free Access</button>
+            <button
+              onClick={async () => {
+                if (!freebieEmail.trim()) { toast.error("Enter an email address"); return; }
+                try {
+                  const { error } = await supabase.from("suggestions").insert({
+                    user_id: "00000000-0000-0000-0000-000000000000",
+                    suggestion: `Lifetime access granted to ${freebieEmail.trim()}`,
+                    status: "implemented",
+                    granted_free_access: true,
+                    category: "Freebie",
+                  });
+                  if (error) throw error;
+                  toast.success(`Lifetime free access granted to ${freebieEmail.trim()}! 🎉`);
+                  setFreebieEmail("");
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Failed to grant access");
+                }
+              }}
+              className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+            >
+              Grant Lifetime Free Access
+            </button>
             <div className="border-t border-border pt-3">
               <p className="text-xs font-semibold text-foreground mb-2">Recently Granted</p>
               <p className="text-xs text-muted-foreground italic">No users granted yet</p>
