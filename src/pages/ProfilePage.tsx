@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const ProfilePage = () => {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showEnlarged, setShowEnlarged] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => { setEditing(false); toast.success("Profile updated!"); };
@@ -128,9 +130,9 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">
             {profileAvatar ? (
-              <img src={profileAvatar} alt="Profile avatar" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
+              <img src={profileAvatar} alt="Profile avatar" onClick={() => setShowEnlarged(true)} className="w-24 h-24 rounded-full object-cover border-2 border-primary cursor-pointer hover:scale-105 transition-transform" />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" onClick={() => setShowEnlarged(true)}>
                 <User className="w-10 h-10 text-primary" />
               </div>
             )}
@@ -254,6 +256,19 @@ const ProfilePage = () => {
           ))}
         </div>
       </div>
+
+      {/* Enlarged avatar dialog */}
+      <Dialog open={showEnlarged} onOpenChange={setShowEnlarged}>
+        <DialogContent className="max-w-sm bg-background border-primary/30 flex items-center justify-center p-6">
+          {profileAvatar ? (
+            <img src={profileAvatar} alt="Profile avatar enlarged" className="w-72 h-72 rounded-full object-cover border-4 border-primary animate-scale-in" />
+          ) : (
+            <div className="w-72 h-72 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center animate-scale-in">
+              <User className="w-24 h-24 text-primary" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <ShareDialog
         open={showShare}
