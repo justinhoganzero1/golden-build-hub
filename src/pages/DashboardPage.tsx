@@ -9,6 +9,7 @@ import {
   Pill, Gift, Share2, Wrench
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
+import SecurityShield from "@/components/SecurityShield";
 
 interface AppTile {
   label: string;
