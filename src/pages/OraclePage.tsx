@@ -277,7 +277,11 @@ const OraclePage = () => {
         }
       }
 
-      // Friends
+      // Speak Oracle's response aloud
+      if (oracleContent) {
+        speakText(oracleContent);
+      }
+
       if (activeFriends.length > 0) {
         try {
           const friendResp = await fetch(FRIENDS_CHAT_URL, {
