@@ -73,6 +73,25 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const isOwner = user?.email === OWNER_EMAIL;
 
+  const [layout, setLayout] = useState(() => {
+    try {
+      const saved = localStorage.getItem("solace-layout");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => setLayout((e as CustomEvent).detail);
+    window.addEventListener("solace-layout-change", handler);
+    return () => window.removeEventListener("solace-layout-change", handler);
+  }, []);
+
+  const gridCols = layout?.gridCols || 4;
+  const iconSize = layout?.iconSize || "w-6 h-6";
+  const labelSize = layout?.fontSize || "text-[10px]";
+  const gridGap = layout?.gap || "gap-3";
+  const tileBR = layout?.borderRadius || "rounded-xl";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Banner */}
