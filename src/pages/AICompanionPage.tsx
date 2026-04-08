@@ -44,6 +44,10 @@ const AICompanionPage = () => {
   const navigate = useNavigate();
   const { data: userAvatars = [] } = useUserAvatars();
   const [step, setStep] = useState<"setup" | "chat">("setup");
+
+  // Find partner avatar from user's saved avatars
+  const partnerAvatar = userAvatars.find(a => a.purpose === "partner" && a.is_active);
+
   const [companion, setCompanion] = useState<CompanionProfile>({
     name: "",
     type: "girlfriend",
