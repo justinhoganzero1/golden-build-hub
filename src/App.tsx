@@ -42,12 +42,12 @@ const MagicHubPage = lazy(() => import("./pages/MagicHubPage"));
 const MarketingHubPage = lazy(() => import("./pages/MarketingHubPage"));
 const SpecialOccasionsPage = lazy(() => import("./pages/SpecialOccasionsPage"));
 const SuggestionBoxPage = lazy(() => import("./pages/SuggestionBoxPage"));
-const CommunityIdeasPage = lazy(() => import("./pages/CommunityIdeasPage"));
+
 const ReferralPage = lazy(() => import("./pages/ReferralPage"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const AppBuilderPage = lazy(() => import("./pages/AppBuilderPage"));
 const POSLearnPage = lazy(() => import("./pages/POSLearnPage"));
-const POSTradingPage = lazy(() => import("./pages/POSTradingPage"));
+
 const InstallPage = lazy(() => import("./pages/InstallPage"));
 const RadarDemoPage = lazy(() => import("./pages/RadarDemoPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -116,12 +116,12 @@ const App = () => (
                 <Route path="/marketing-hub" element={<ErrorBoundary pageName="Marketing Hub"><MarketingHubPage /></ErrorBoundary>} />
                 <Route path="/special-occasions" element={<ErrorBoundary pageName="Special Occasions"><SpecialOccasionsPage /></ErrorBoundary>} />
                 <Route path="/suggestion-box" element={<ErrorBoundary pageName="Suggestion Box"><SuggestionBoxPage /></ErrorBoundary>} />
-                <Route path="/community-ideas" element={<ErrorBoundary pageName="Community Ideas"><CommunityIdeasPage /></ErrorBoundary>} />
+                
                 <Route path="/referral" element={<ErrorBoundary pageName="Referral"><ReferralPage /></ErrorBoundary>} />
                 <Route path="/subscribe" element={<ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary>} />
                 <Route path="/app-builder" element={<ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary>} />
                 <Route path="/pos-learn" element={<ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary>} />
-                <Route path="/pos-trading" element={<ErrorBoundary pageName="POS Trading"><POSTradingPage /></ErrorBoundary>} />
+                
                 <Route path="/install" element={<ErrorBoundary pageName="Install"><InstallPage /></ErrorBoundary>} />
                 <Route path="/radar-demo" element={<ErrorBoundary pageName="Radar Demo"><RadarDemoPage /></ErrorBoundary>} />
                 <Route path="/settings" element={<ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary>} />
