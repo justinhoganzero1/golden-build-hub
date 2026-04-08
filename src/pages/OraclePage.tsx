@@ -399,10 +399,10 @@ const OraclePage = () => {
 
       {/* Mute + Status */}
       <div className="flex flex-col items-center pb-3 gap-2 z-10" style={{ background: "#0a0a0a" }}>
-        <button onClick={() => setMuted(!muted)} className="p-3 rounded-full border border-[#FFAA00]/20 bg-black/50">
-          {muted ? <VolumeX className="w-6 h-6 text-[#FFAA00]" /> : <Volume2 className="w-6 h-6 text-[#FFAA00]" />}
+        <button onClick={toggleMute} className="p-3 rounded-full border border-[#FFAA00]/20 bg-black/50">
+          {isMuted ? <VolumeX className="w-6 h-6 text-[#FFAA00]" /> : <Volume2 className="w-6 h-6 text-[#FFAA00]" />}
         </button>
-        <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{muted ? "Unmute" : "Mute"}</span>
+        <span className="text-[10px] text-[#FFAA00] uppercase tracking-widest">{isMuted ? "Unmute" : "Mute"}</span>
         <div className="flex items-center gap-2 mt-1">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <span className="text-xs text-gray-400">READY</span>
