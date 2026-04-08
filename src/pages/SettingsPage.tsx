@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal } from "lucide-react";
+import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -390,7 +390,9 @@ const SettingsPage = () => {
       { icon: <Globe className="w-5 h-5" />, label: "Language", subtitle: language, action: () => setTab("language") },
     ]},
     { title: "About", items: [
-      { icon: <Smartphone className="w-5 h-5" />, label: "App Version", subtitle: "1.0.0" },
+      { icon: <Smartphone className="w-5 h-5" />, label: "About Solace", action: () => navigate("/about") },
+      { icon: <Shield className="w-5 h-5" />, label: "Privacy Policy", action: () => navigate("/privacy-policy") },
+      { icon: <FileText className="w-5 h-5" />, label: "Terms of Service", action: () => navigate("/terms-of-service") },
       { icon: <HelpCircle className="w-5 h-5" />, label: "Help & Support", action: () => setTab("help") },
     ]},
   ];
