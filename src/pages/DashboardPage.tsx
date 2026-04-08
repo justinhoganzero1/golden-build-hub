@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
@@ -66,6 +67,7 @@ const tiles: AppTile[] = [
 ];
 
 const DashboardPage = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [showVault, setShowVault] = useState(false);
   const [showFreebies, setShowFreebies] = useState(false);
@@ -134,9 +136,10 @@ const DashboardPage = () => {
             <button
               onClick={async () => {
                 if (!freebieEmail.trim()) { toast.error("Enter an email address"); return; }
+                if (!user) { toast.error("You must be signed in"); return; }
                 try {
                   const { error } = await supabase.from("suggestions").insert({
-                    user_id: "00000000-0000-0000-0000-000000000000",
+                    user_id: user.id,
                     suggestion: `Lifetime access granted to ${freebieEmail.trim()}`,
                     status: "implemented",
                     granted_free_access: true,
