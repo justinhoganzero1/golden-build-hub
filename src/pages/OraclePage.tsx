@@ -728,10 +728,9 @@ const OraclePage = () => {
             const data = await friendResp.json();
             for (let i = 0; i < (data.responses || []).length; i++) {
               const r = data.responses[i];
-              // Map friend responses to active agents
               const matchedAgent = activeAgents[i % activeAgents.length];
               if (!matchedAgent) continue;
-              await new Promise(resolve => setTimeout(resolve, 600 + i * 800));
+              await new Promise(resolve => setTimeout(resolve, 400 + i * 500));
               setMessages(prev => [...prev, {
                 id: `agent-${Date.now()}-${i}`,
                 role: "assistant",
@@ -741,6 +740,8 @@ const OraclePage = () => {
                 content: r.content,
                 avatar_url: matchedAgent.avatar_url,
               }]);
+              // Queue each agent's speech — they'll speak one after another
+              speakAsAgent(r.content, matchedAgent.name);
             }
           }
         } catch (e) { console.error("Agent chat error:", e); }
