@@ -542,10 +542,10 @@ const OraclePage = () => {
           }
         } catch (e) { console.error("Agent chat error:", e); }
       }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to connect to Oracle AI");
-    } finally { setIsLoading(false); }
+    } catch (e: any) {
+      if (e?.name === "AbortError") { /* user interrupted, no error needed */ }
+      else { console.error(e); toast.error("Failed to connect to Oracle AI"); }
+    } finally { setIsLoading(false); abortRef.current = null; }
   };
 
   return (
