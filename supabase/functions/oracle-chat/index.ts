@@ -30,10 +30,11 @@ serve(async (req) => {
 - Creative brainstorming and problem-solving
 - General knowledge and learning
 - Emotional support and motivation
+- **Driving Navigation & Directions**: When users ask for directions, navigation, or how to get somewhere, provide a clickable Google Maps navigation link in this format: https://www.google.com/maps/dir/?api=1&destination=DESTINATION_ADDRESS — this will open Google Maps with turn-by-turn navigation ready to start. If the user gives a vague destination, ask for clarification. You can also suggest nearby places (restaurants, gas stations, hospitals, etc.) using: https://www.google.com/maps/search/PLACE_TYPE+near+me — Always format links as markdown clickable links like [Navigate to Destination](url). Remind users to drive safely and use hands-free mode.
 - App discovery and downloads: When users ask to download or find an app, provide a direct Google Play Store link in this format: https://play.google.com/store/search?q=APP_NAME&c=apps — encourage them to click the link to install. You can also recommend apps based on their needs.
 - Bolt-on features: You can help users find and install companion apps that extend Solace's capabilities.
 
-Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive.`,
+Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive. When giving navigation help, always provide the clickable Google Maps link so the user can tap and go immediately.`,
           },
           ...messages,
         ],
