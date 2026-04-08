@@ -6,7 +6,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Download, Smartphone, CreditCard, BarChart3,
-  Pill, Radar, Gift, Share2, Wrench, Lock, ChevronRight, ChevronDown
+  Pill, Gift, Share2, Wrench, Lock, ChevronRight, ChevronDown
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
 
