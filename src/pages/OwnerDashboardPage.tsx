@@ -397,31 +397,159 @@ const OwnerDashboardPage = () => {
         )}
 
         {/* ADVERTISING */}
-        {tab === "advertising" && (
+        {tab === "advertising" && !adPlatformView && (
           <div className="space-y-4">
             <h2 className="text-sm font-bold text-white mb-2">Ad Platform Integration</h2>
-            {[
-              { name: "Google AdMob", status: "Ready", icon: "🟢", desc: "Banner, interstitial, rewarded ads" },
-              { name: "Google Play Store", status: "Setup", icon: "🔵", desc: "Store listing, screenshots, description" },
-              { name: "Apple App Store", status: "Setup", icon: "🍎", desc: "iOS listing, TestFlight" },
-              { name: "Facebook Ads", status: "Ready", icon: "📘", desc: "Audience targeting, pixel tracking" },
-              { name: "Instagram Ads", status: "Ready", icon: "📸", desc: "Story ads, reels promotion" },
-              { name: "TikTok Ads", status: "Ready", icon: "🎵", desc: "In-feed ads, branded effects" },
-              { name: "Twitter/X Ads", status: "Ready", icon: "🐦", desc: "Promoted tweets, trending" },
-              { name: "Website Banner", status: "Active", icon: "🌐", desc: "Your website ad integration" },
-            ].map((ad, i) => (
-              <button key={i} onClick={() => toast.success(`${ad.name} campaign launched!`)} className="w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-yellow-500/30 transition-all">
-                <span className="text-2xl">{ad.icon}</span>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white">{ad.name}</p>
-                  <p className="text-[10px] text-gray-500">{ad.desc}</p>
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Active Campaigns", value: adCampaigns.filter(c => c.status === "Active").length },
+                { label: "Total Budget", value: `$${adCampaigns.reduce((s, c) => s + c.budget, 0).toLocaleString()}` },
+                { label: "Total Spent", value: `$${adCampaigns.reduce((s, c) => s + c.spent, 0).toLocaleString()}` },
+                { label: "Total Clicks", value: adCampaigns.reduce((s, c) => s + c.clicks, 0).toLocaleString() },
+              ].map((s, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-white">{s.value}</p>
+                  <p className="text-[10px] text-gray-500">{s.label}</p>
                 </div>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full ${ad.status === "Active" ? "bg-green-500/20 text-green-400" : ad.status === "Ready" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400"}`}>{ad.status}</span>
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
-            ))}
+              ))}
+            </div>
+
+            {adPlatforms.map((ad) => {
+              const campaigns = adCampaigns.filter(c => c.platform === ad.id);
+              const active = campaigns.filter(c => c.status === "Active").length;
+              return (
+                <button key={ad.id} onClick={() => setAdPlatformView(ad.id)}
+                  className="w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-yellow-500/30 transition-all">
+                  <span className="text-2xl">{ad.icon}</span>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-white">{ad.name}</p>
+                    <p className="text-[10px] text-gray-500">{ad.desc}</p>
+                    {campaigns.length > 0 && (
+                      <p className="text-[10px] text-yellow-400 mt-0.5">{campaigns.length} campaign{campaigns.length !== 1 ? "s" : ""} • {active} active</p>
+                    )}
+                  </div>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full ${active > 0 ? "bg-green-500/20 text-green-400" : campaigns.length > 0 ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                    {active > 0 ? "Active" : campaigns.length > 0 ? "Ready" : "Setup"}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                </button>
+              );
+            })}
           </div>
         )}
+
+        {/* AD PLATFORM DETAIL VIEW */}
+        {tab === "advertising" && adPlatformView && (() => {
+          const platform = adPlatforms.find(p => p.id === adPlatformView)!;
+          const campaigns = adCampaigns.filter(c => c.platform === adPlatformView);
+          const campaignStartIdx = adCampaigns.findIndex(c => c.platform === adPlatformView);
+          return (
+            <div className="space-y-4">
+              <button onClick={() => setAdPlatformView(null)} className="flex items-center gap-2 text-yellow-400 text-sm mb-2">
+                ← Back to platforms
+              </button>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl">{platform.icon}</span>
+                <div>
+                  <h2 className="text-base font-bold text-white">{platform.name}</h2>
+                  <p className="text-xs text-gray-400">{platform.desc}</p>
+                </div>
+              </div>
+
+              {/* Platform stats */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Impressions", value: campaigns.reduce((s, c) => s + c.impressions, 0).toLocaleString() },
+                  { label: "Clicks", value: campaigns.reduce((s, c) => s + c.clicks, 0).toLocaleString() },
+                  { label: "Conversions", value: campaigns.reduce((s, c) => s + c.conversions, 0).toLocaleString() },
+                ].map((s, i) => (
+                  <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-white">{s.value}</p>
+                    <p className="text-[9px] text-gray-500">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Create campaign */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                <h3 className="text-xs font-bold text-white">Create Campaign</h3>
+                <input value={newCampaign.name} onChange={e => setNewCampaign(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Campaign name" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-600 outline-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={newCampaign.budget} onChange={e => setNewCampaign(p => ({ ...p, budget: e.target.value }))}
+                    placeholder="Budget ($)" type="number" className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-600 outline-none" />
+                  <input value={newCampaign.startDate} onChange={e => setNewCampaign(p => ({ ...p, startDate: e.target.value }))}
+                    type="date" className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none" />
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {platform.types.map(t => (
+                    <span key={t} className="text-[9px] px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">{t}</span>
+                  ))}
+                </div>
+                <button onClick={() => createCampaign(adPlatformView)}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 text-yellow-400 text-sm font-medium hover:from-yellow-500/30 hover:to-orange-500/30 transition-all">
+                  + Create Campaign
+                </button>
+              </div>
+
+              {/* Campaign list */}
+              {campaigns.length === 0 ? (
+                <div className="text-center py-10">
+                  <Megaphone className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No campaigns yet</p>
+                  <p className="text-gray-600 text-xs">Create your first campaign above</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold text-white">Campaigns ({campaigns.length})</h3>
+                  {campaigns.map((c, ci) => {
+                    const globalIdx = adCampaigns.indexOf(c);
+                    const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(1) : "0.0";
+                    return (
+                      <div key={ci} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-white">{c.name}</p>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full ${c.status === "Active" ? "bg-green-500/20 text-green-400" : c.status === "Paused" ? "bg-orange-500/20 text-orange-400" : "bg-gray-500/20 text-gray-400"}`}>
+                            {c.status}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1">
+                          {[
+                            { label: "Budget", value: `$${c.budget}` },
+                            { label: "Spent", value: `$${c.spent}` },
+                            { label: "Clicks", value: c.clicks.toLocaleString() },
+                            { label: "CTR", value: `${ctr}%` },
+                          ].map((s, si) => (
+                            <div key={si} className="text-center">
+                              <p className="text-[10px] font-bold text-white">{s.value}</p>
+                              <p className="text-[8px] text-gray-500">{s.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Budget bar */}
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all"
+                            style={{ width: `${c.budget > 0 ? Math.min((c.spent / c.budget) * 100, 100) : 0}%` }} />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => toggleCampaignStatus(globalIdx)}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium border transition-all ${c.status === "Active" ? "bg-orange-500/10 border-orange-500/20 text-orange-400" : "bg-green-500/10 border-green-500/20 text-green-400"}`}>
+                            {c.status === "Active" ? "⏸ Pause" : "▶ Activate"}
+                          </button>
+                          <button onClick={() => deleteCampaign(globalIdx)}
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-red-500/10 border border-red-500/20 text-red-400 transition-all">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* USERS LIBRARY */}
         {tab === "library" && (
