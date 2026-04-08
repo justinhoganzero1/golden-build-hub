@@ -55,6 +55,7 @@ const OraclePage = () => {
   const [showChat, setShowChat] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
   const isLoadingRef = useRef(isLoading);
@@ -425,12 +426,18 @@ const OraclePage = () => {
   };
 
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim()) return;
+    // Interrupt any in-progress response
+    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     // Pre-create utterance in gesture context to satisfy browser security policy
     let utterance: SpeechSynthesisUtterance | null = null;
@@ -453,6 +460,7 @@ const OraclePage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })) }),
+        signal: controller.signal,
       });
 
       if (!oracleResp.ok) {
@@ -534,10 +542,10 @@ const OraclePage = () => {
           }
         } catch (e) { console.error("Agent chat error:", e); }
       }
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to connect to Oracle AI");
-    } finally { setIsLoading(false); }
+    } catch (e: any) {
+      if (e?.name === "AbortError") { /* user interrupted, no error needed */ }
+      else { console.error(e); toast.error("Failed to connect to Oracle AI"); }
+    } finally { setIsLoading(false); abortRef.current = null; }
   };
 
   return (
@@ -676,9 +684,8 @@ const OraclePage = () => {
           </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage(input)}
             placeholder="Speak or type to consult the Oracle..."
-            disabled={isLoading}
             className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none" />
-          <button onClick={() => sendMessage(input)} disabled={!input.trim() || isLoading} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
+          <button onClick={() => sendMessage(input)} disabled={!input.trim()} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
           </button>
         </div>
