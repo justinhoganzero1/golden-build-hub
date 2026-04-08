@@ -58,7 +58,7 @@ const WalletPage = lazy(() => import("./pages/WalletPage"));
 const ConsentPage = lazy(() => import("./pages/ConsentPage"));
 const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
 const AICompanionPage = lazy(() => import("./pages/AICompanionPage"));
-
+const AvatarGalleryPage = lazy(() => import("./pages/AvatarGalleryPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -136,6 +136,7 @@ const App = () => (
                 <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
                 <Route path="/owner-dashboard" element={<ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary>} />
                 <Route path="/ai-companion" element={<ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary>} />
+                <Route path="/avatar-gallery" element={<ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
