@@ -41,6 +41,8 @@ const INTERESTS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
 const AICompanionPage = () => {
+  const navigate = useNavigate();
+  const { data: userAvatars = [] } = useUserAvatars();
   const [step, setStep] = useState<"setup" | "chat">("setup");
   const [companion, setCompanion] = useState<CompanionProfile>({
     name: "",
