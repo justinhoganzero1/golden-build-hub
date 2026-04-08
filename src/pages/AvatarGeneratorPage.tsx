@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
@@ -49,6 +50,8 @@ const AvatarGeneratorPage = () => {
   const [searchParams] = useSearchParams();
   const purchasedProduct = searchParams.get("purchased");
   const isCreatingFriend = searchParams.get("friend") === "true";
+  const createAvatar = useCreateAvatar();
+  const saveMedia = useSaveMedia();
 
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
   const [prompt, setPrompt] = useState("");
@@ -102,8 +105,19 @@ const AvatarGeneratorPage = () => {
       }
       const data = await resp.json();
       if (data.images?.[0]?.image_url?.url) {
-        setImageUrl(data.images[0].image_url.url);
+        const url = data.images[0].image_url.url;
+        setImageUrl(url);
         toast.success("Avatar generated!");
+        // Auto-save to media library
+        if (user) {
+          saveMedia.mutate({
+            media_type: "image",
+            title: avatarName.trim() || "AI Avatar",
+            url,
+            source_page: "Avatar Generator",
+            metadata: { style: selectedStyle, prompt: desc },
+          });
+        }
       } else {
         toast.error("No image returned");
       }
@@ -176,7 +190,6 @@ const AvatarGeneratorPage = () => {
   const addAvatar = () => {
     if (!imageUrl) { toast.error("Generate or capture an avatar first"); return; }
 
-    // Check if paid purpose requires purchase
     if (isPaidPurpose) {
       handleCheckout(purpose === "partner" ? "partner" : "avatar");
       return;
@@ -184,23 +197,32 @@ const AvatarGeneratorPage = () => {
 
     const name = avatarName.trim() || "My Avatar";
 
-    switch (purpose) {
-      case "oracle":
-        toast.success(`"${name}" set as your Oracle's appearance!`);
-        navigate("/oracle");
-        break;
-      case "profile":
-        toast.success(`"${name}" set as your profile picture!`);
-        navigate("/profile");
-        break;
-      case "ai-friend":
-        toast.success(`"${name}" added as an AI Friend with ${selectedVoice} voice!`);
-        navigate("/ai-studio");
-        break;
-      case "partner":
-        toast.success(`"${name}" added as your AI Partner — ${selectedPersonality}, ${selectedVoice} voice 💕`);
-        navigate("/ai-companion");
-        break;
+    // Save to database
+    if (user) {
+      createAvatar.mutate({
+        name,
+        purpose,
+        voice_style: selectedVoice,
+        personality: selectedPersonality,
+        image_url: imageUrl,
+        art_style: selectedStyle,
+        description: prompt.trim() || null,
+        is_default: false,
+      }, {
+        onSuccess: () => {
+          toast.success(`"${name}" saved to your gallery!`);
+          switch (purpose) {
+            case "oracle": navigate("/oracle"); break;
+            case "profile": navigate("/profile"); break;
+            case "ai-friend": navigate("/ai-studio"); break;
+            case "partner": navigate("/ai-companion"); break;
+          }
+        },
+        onError: () => toast.error("Failed to save avatar"),
+      });
+    } else {
+      toast.error("Sign in to save avatars");
+      navigate("/sign-in");
     }
   };
 
@@ -208,34 +230,34 @@ const AvatarGeneratorPage = () => {
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
-        {/* Purchase success banner */}
         {purchasedProduct && (
           <div className="bg-gradient-to-r from-green-600/30 to-emerald-600/30 border border-green-500/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
             <CreditCard className="w-6 h-6 text-green-400" />
             <div>
               <h3 className="text-sm font-bold text-white">Purchase Successful! ✨</h3>
               <p className="text-xs text-gray-400">
-                {purchasedProduct === "partner"
-                  ? "AI Partner Experience unlocked! Create your companion below."
-                  : "Avatar credits added! Generate and add your avatar below."}
+                {purchasedProduct === "partner" ? "AI Partner Experience unlocked!" : "Avatar credits added!"}
               </p>
             </div>
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
-            <p className="text-gray-500 text-xs">Create & assign AI-powered avatars</p>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
+            <div>
+              <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
+              <p className="text-gray-500 text-xs">Create & assign AI-powered avatars</p>
+            </div>
           </div>
+          <button onClick={() => navigate("/avatar-gallery")} className="px-3 py-1.5 rounded-xl border border-gray-700 text-purple-400 text-xs font-medium">
+            Gallery
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left - Controls */}
           <div className="space-y-4">
-            {/* Avatar Purpose */}
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" /> What is this avatar for?
@@ -263,86 +285,51 @@ const AvatarGeneratorPage = () => {
               </div>
             </div>
 
-            {/* Name & Style */}
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
               <h2 className="text-sm font-bold text-white">Design Your Avatar</h2>
-
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Avatar Name</label>
-                <input
-                  value={avatarName}
-                  onChange={e => setAvatarName(e.target.value)}
-                  placeholder="e.g. Luna, Shadow, Alex..."
-                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500"
-                />
+                <input value={avatarName} onChange={e => setAvatarName(e.target.value)} placeholder="e.g. Luna, Shadow, Alex..."
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500" />
               </div>
-
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Style</label>
-                <select
-                  value={selectedStyle}
-                  onChange={e => setSelectedStyle(e.target.value)}
-                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white appearance-none cursor-pointer"
-                >
-                  {STYLES.map(s => (
-                    <option key={s.value} value={s.value}>{s.label} - {s.desc}</option>
-                  ))}
+                <select value={selectedStyle} onChange={e => setSelectedStyle(e.target.value)}
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white appearance-none cursor-pointer">
+                  {STYLES.map(s => <option key={s.value} value={s.value}>{s.label} - {s.desc}</option>)}
                 </select>
               </div>
-
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Description</label>
-                <textarea
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value)}
-                  placeholder="Describe your avatar... e.g. a warrior princess with golden armor"
-                  rows={3}
-                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500 resize-none"
-                />
+                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Describe your avatar..."
+                  rows={3} className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500 resize-none" />
               </div>
-
-              <button
-                onClick={generate}
-                disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50 hover:from-purple-500 hover:to-pink-500 transition-all"
-              >
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                Generate Avatar
+              <button onClick={generate} disabled={isLoading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} Generate Avatar
               </button>
-              <button
-                onClick={takeSelfie}
-                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500 transition-colors"
-              >
+              <button onClick={takeSelfie}
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
             </div>
 
-            {/* Voice & Personality */}
             {showVoiceAndPersonality && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <Mic className="w-4 h-4 text-purple-400" /> Voice & Personality
                 </h2>
-
                 <div>
                   <label className="text-xs text-gray-400 mb-1.5 block">Voice Style</label>
                   <div className="flex flex-wrap gap-1.5">
                     {VOICE_OPTIONS.map(v => (
-                      <button
-                        key={v}
-                        onClick={() => setSelectedVoice(v)}
-                        className={`px-3 py-1.5 rounded-full text-xs transition-all ${
-                          selectedVoice === v
-                            ? "bg-purple-600 text-white"
-                            : "bg-[#0f0f0f] border border-gray-700 text-gray-400 hover:border-purple-500"
-                        }`}
-                      >
+                      <button key={v} onClick={() => setSelectedVoice(v)}
+                        className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedVoice === v ? "bg-purple-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
                         {v}
                       </button>
                     ))}
                   </div>
                 </div>
-
                 {purpose === "partner" && (
                   <div>
                     <label className="text-xs text-gray-400 mb-1.5 block flex items-center gap-1">
@@ -350,15 +337,8 @@ const AvatarGeneratorPage = () => {
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       {PERSONALITY_OPTIONS.map(p => (
-                        <button
-                          key={p}
-                          onClick={() => setSelectedPersonality(p)}
-                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${
-                            selectedPersonality === p
-                              ? "bg-pink-600 text-white"
-                              : "bg-[#0f0f0f] border border-gray-700 text-gray-400 hover:border-pink-500"
-                          }`}
-                        >
+                        <button key={p} onClick={() => setSelectedPersonality(p)}
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedPersonality === p ? "bg-pink-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
                           {p}
                         </button>
                       ))}
@@ -369,7 +349,7 @@ const AvatarGeneratorPage = () => {
             )}
           </div>
 
-          {/* Right - Preview & Add */}
+          {/* Right - Preview */}
           <div className="space-y-4">
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
@@ -377,9 +357,7 @@ const AvatarGeneratorPage = () => {
                 {showCamera ? (
                   <div className="relative w-full h-full">
                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">
-                      📸 Capture
-                    </button>
+                    <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">📸 Capture</button>
                   </div>
                 ) : isLoading ? (
                   <div className="flex flex-col items-center gap-3">
@@ -398,38 +376,24 @@ const AvatarGeneratorPage = () => {
 
               {imageUrl && !showCamera && (
                 <div className="flex flex-col gap-2 mt-4">
-                  {/* Main ADD / PURCHASE button */}
                   {isPaidPurpose ? (
-                    <button
-                      onClick={() => handleCheckout(purpose === "partner" ? "partner" : "avatar")}
-                      disabled={isCheckingOut}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
-                    >
-                      {isCheckingOut ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Lock className="w-5 h-5" />
-                      )}
+                    <button onClick={() => handleCheckout(purpose === "partner" ? "partner" : "avatar")} disabled={isCheckingOut}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-amber-500/20">
+                      {isCheckingOut ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
                       Unlock {currentPurpose?.label} — {currentPurpose?.price}
                     </button>
                   ) : (
-                    <button
-                      onClick={addAvatar}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
-                    >
-                      <Plus className="w-5 h-5" />
+                    <button onClick={addAvatar} disabled={createAvatar.isPending}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 disabled:opacity-50">
+                      {createAvatar.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                       Add as {currentPurpose?.label || "Avatar"}
                     </button>
                   )}
-
                   <div className="flex gap-2">
-                    <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-purple-500">
+                    <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5">
                       <Download className="w-4 h-4" /> Download
                     </button>
-                    <button
-                      onClick={() => { setImageUrl(null); setPrompt(""); }}
-                      className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-red-500"
-                    >
+                    <button onClick={() => { setImageUrl(null); setPrompt(""); }} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5">
                       🔄 New Avatar
                     </button>
                   </div>
@@ -437,37 +401,15 @@ const AvatarGeneratorPage = () => {
               )}
             </div>
 
-            {/* Summary card */}
             {imageUrl && !showCamera && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Avatar Summary</h3>
                 <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between text-gray-300">
-                    <span className="text-gray-500">Name</span>
-                    <span>{avatarName.trim() || "Unnamed"}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-300">
-                    <span className="text-gray-500">Purpose</span>
-                    <span>{currentPurpose?.label}</span>
-                  </div>
-                  {showVoiceAndPersonality && (
-                    <div className="flex justify-between text-gray-300">
-                      <span className="text-gray-500">Voice</span>
-                      <span>{selectedVoice}</span>
-                    </div>
-                  )}
-                  {purpose === "partner" && (
-                    <div className="flex justify-between text-gray-300">
-                      <span className="text-gray-500">Personality</span>
-                      <span>{selectedPersonality}</span>
-                    </div>
-                  )}
-                  {isPaidPurpose && (
-                    <div className="flex justify-between text-amber-400 font-medium pt-1 border-t border-gray-800">
-                      <span>Cost</span>
-                      <span>{currentPurpose?.price}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-gray-300"><span className="text-gray-500">Name</span><span>{avatarName.trim() || "Unnamed"}</span></div>
+                  <div className="flex justify-between text-gray-300"><span className="text-gray-500">Purpose</span><span>{currentPurpose?.label}</span></div>
+                  {showVoiceAndPersonality && <div className="flex justify-between text-gray-300"><span className="text-gray-500">Voice</span><span>{selectedVoice}</span></div>}
+                  {purpose === "partner" && <div className="flex justify-between text-gray-300"><span className="text-gray-500">Personality</span><span>{selectedPersonality}</span></div>}
+                  {isPaidPurpose && <div className="flex justify-between text-amber-400 font-medium pt-1 border-t border-gray-800"><span>Cost</span><span>{currentPurpose?.price}</span></div>}
                 </div>
               </div>
             )}
