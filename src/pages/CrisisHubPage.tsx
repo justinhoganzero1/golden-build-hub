@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { cleanTextForSpeech } from "@/lib/utils";
 import { Phone, Shield, AlertTriangle, Heart, MapPin, Globe, Loader2, MessageSquare } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";

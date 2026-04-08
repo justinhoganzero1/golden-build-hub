@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { cleanTextForSpeech } from "@/lib/utils";
 import { Brain, Smile, Frown, Meh, TrendingUp, Heart, Play, Pause, Volume2, MessageSquare, Wind, Eye, Loader2, Timer, Sparkles, Moon, Sun } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
