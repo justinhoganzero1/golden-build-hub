@@ -13,7 +13,7 @@ interface PairedDevice {
   connected: boolean;
   battery?: number;
   lastSeen?: string;
-  gattServer?: BluetoothRemoteGATTServer;
+  gattServer?: any;
 }
 
 const WEARABLE_SERVICES: Record<string, { name: string; icon: string; services: string[] }> = {
