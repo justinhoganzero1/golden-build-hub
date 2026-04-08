@@ -105,14 +105,27 @@ const DashboardPage = () => {
         />
       </div>
 
-      {/* Welcome + Security Shield */}
+      {/* Welcome + Security Shield + Share */}
       <div className="px-4 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Solace</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
         </div>
-        <SecurityShield />
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShareOpen(true)} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+            <Share2 className="w-5 h-5" />
+          </button>
+          <SecurityShield />
+        </div>
       </div>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        title="Solace App"
+        url="https://golden-vault-builder.lovable.app"
+        description="Check out Solace — your AI companion to do everything! Download it now."
+      />
 
       {/* Owner-only quick link */}
       {isOwner && (
