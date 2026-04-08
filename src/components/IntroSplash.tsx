@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import solaceLogo from "@/assets/solace-logo.png";
+import { Volume2 } from "lucide-react";
+import solaceBanner from "@/assets/solace-banner.jpg";
 
 interface IntroSplashProps {
   onComplete: () => void;
@@ -18,7 +19,7 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
 
   return (
     <div
-      className={`fixed inset-0 z-40 flex flex-col items-center justify-center bg-background transition-opacity duration-500 cursor-pointer ${
+      className={`fixed inset-0 z-40 flex flex-col items-center justify-end transition-opacity duration-500 cursor-pointer ${
         visible ? "opacity-100" : "opacity-0"
       }`}
       onClick={() => {
@@ -26,18 +27,21 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
         setTimeout(onComplete, 500);
       }}
     >
-      <div className="flex flex-col items-center animate-fade-in">
-        <img
-          src={solaceLogo}
-          alt="Solace Logo"
-          className="w-64 h-64 object-contain drop-shadow-[0_0_40px_hsl(45,100%,50%,0.4)]"
-          width={512}
-          height={512}
-        />
-        <h1 className="text-5xl font-bold text-primary tracking-wider mt-[-1rem]" style={{ fontFamily: "'Segoe UI', sans-serif" }}>
-          Solace
-        </h1>
-        <p className="text-foreground text-lg mt-4 font-medium animate-slide-up">
+      {/* Full-bleed banner background */}
+      <img
+        src={solaceBanner}
+        alt="Solace Banner"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Sound toggle top-right */}
+      <button className="absolute top-4 right-4 z-10 text-primary opacity-80 hover:opacity-100 transition-opacity">
+        <Volume2 className="w-6 h-6" />
+      </button>
+
+      {/* Tagline at bottom */}
+      <div className="relative z-10 pb-8 animate-slide-up">
+        <p className="text-2xl md:text-3xl font-bold drop-shadow-lg" style={{ color: 'white' }}>
           Solace, your AI companion to do everything!
         </p>
       </div>

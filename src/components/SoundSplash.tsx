@@ -15,7 +15,7 @@ const SoundSplash = ({ onEnable }: SoundSplashProps) => {
           <div className="absolute inset-0 w-20 h-20 rounded-full border-2 border-primary animate-pulse-ring" />
         </div>
 
-        <h2 className="text-xl font-bold text-foreground">Enable Sound</h2>
+        <h2 className="text-xl font-bold text-foreground" style={{ color: 'white' }}>Enable Sound</h2>
         <p className="text-muted-foreground text-sm">
           SOLACE features immersive audio. Tap to enable.
         </p>

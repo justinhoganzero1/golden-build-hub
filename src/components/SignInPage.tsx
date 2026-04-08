@@ -107,10 +107,10 @@ const SignInPage = () => {
 
         {/* Anti-hacker badge */}
         <div className="flex justify-center mt-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-primary text-xs">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full border text-xs" style={{ borderColor: 'hsl(160, 84%, 39%)', color: 'hsl(160, 84%, 39%)' }}>
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
             AI ANTI-HACKER ACTIVE
-            <div className="w-2 h-2 rounded-full bg-primary" />
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
           </div>
         </div>
       </div>
