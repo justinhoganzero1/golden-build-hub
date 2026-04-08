@@ -286,13 +286,6 @@ const OraclePage = () => {
     return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
   }, []);
 
-  // Refs for animation loop to read state without re-running effect
-  const isLoadingRef = useRef(isLoading);
-  const isListeningRef = useRef(isListening);
-  const isSpeakingRef = useRef(isSpeaking);
-  useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
-  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   const toggleAgent = (name: string) => {
     const agent = agents.find(a => a.name === name);
