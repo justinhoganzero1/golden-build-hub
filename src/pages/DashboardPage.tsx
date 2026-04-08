@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
+import ShareDialog from "@/components/ShareDialog";
 
 interface AppTile {
   label: string;
