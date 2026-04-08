@@ -535,7 +535,7 @@ const OraclePage = () => {
             setInput("");
             sendMessageRef.current?.(text);
           }
-        }, 1200);
+        }, 2000);
       }
       if (interim) setInput(interim);
     };
