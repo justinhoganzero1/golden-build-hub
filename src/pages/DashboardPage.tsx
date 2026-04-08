@@ -48,12 +48,12 @@ const tiles: AppTile[] = [
   { label: "Marketing", icon: <Share2 className="w-6 h-6" />, path: "/marketing-hub" },
   { label: "Occasions", icon: <Gift className="w-6 h-6" />, path: "/special-occasions" },
   { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box" },
-  { label: "Community", icon: <Users className="w-6 h-6" />, path: "/community-ideas" },
+  
   { label: "Referral", icon: <Share2 className="w-6 h-6" />, path: "/referral" },
   { label: "Subscribe", icon: <Star className="w-6 h-6" />, path: "/subscribe" },
   { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder" },
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
-  { label: "POS Trading", icon: <ShoppingCart className="w-6 h-6" />, path: "/pos-trading" },
+  
   { label: "Install", icon: <Download className="w-6 h-6" />, path: "/install" },
   { label: "Radar", icon: <Radar className="w-6 h-6" />, path: "/radar-demo" },
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
