@@ -130,155 +130,185 @@ const OraclePage = () => {
     resize();
     window.addEventListener("resize", resize);
     let t = 0;
-    let swellPhase = 0;
-    let vibrateOffset = { x: 0, y: 0 };
+    let spinAngle = 0;
 
     const draw = () => {
-      t += 0.006;
+      t += 0.008;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
-      const baseR = Math.min(w, h) * 0.36;
+      // Use min dimension to guarantee a perfect circle
+      const baseR = Math.min(w, h) * 0.32;
 
-      // State-reactive sizing
       let rScale = 1.0;
-      let glowIntensity = 0.3;
-      let pinkGlow = 0;
-      let vx = 0, vy = 0;
+      let pinkGlow = 0.15; // always-on subtle pink backlight
+      let spinSpeed = 0;
+      let shimmerAmp = 0;
 
       if (isLoadingRef.current) {
-        // THINKING: smooth swell in and out
-        swellPhase += 0.04;
-        rScale = 1.0 + Math.sin(swellPhase) * 0.12;
-        glowIntensity = 0.4 + Math.sin(swellPhase) * 0.15;
-      } else {
-        swellPhase = 0;
-      }
-
-      if (isListeningRef.current) {
-        // LISTENING: subtle vibration / hum
-        vx = (Math.random() - 0.5) * 4;
-        vy = (Math.random() - 0.5) * 4;
-        glowIntensity = 0.5;
+        // THINKING: gentle breathing swell
+        rScale = 1.0 + Math.sin(t * 3) * 0.06;
+        pinkGlow = 0.25 + Math.sin(t * 3) * 0.1;
       }
 
       if (isSpeakingRef.current) {
-        // SPEAKING: cyberpunk pink backlight synced to speech rhythm
-        const speechPulse = Math.sin(t * 18) * 0.5 + Math.sin(t * 27) * 0.3 + Math.sin(t * 7) * 0.2;
-        const normalizedPulse = (speechPulse + 1) / 2; // 0-1
-        pinkGlow = 0.4 + normalizedPulse * 0.6;
-        rScale = 1.0 + normalizedPulse * 0.08;
-        glowIntensity = 0.5 + normalizedPulse * 0.4;
+        // SPEAKING: swell & pink pulse to simulated speech rhythm
+        const pulse = (Math.sin(t * 20) * 0.4 + Math.sin(t * 31) * 0.35 + Math.sin(t * 11) * 0.25 + 1) / 2;
+        rScale = 1.0 + pulse * 0.1;
+        pinkGlow = 0.45 + pulse * 0.55;
       }
 
+      if (isListeningRef.current) {
+        // LISTENING: spin + shimmer to user voice
+        spinSpeed = 0.025;
+        shimmerAmp = 0.5 + Math.sin(t * 14) * 0.3;
+        pinkGlow = 0.3 + shimmerAmp * 0.3;
+        rScale = 1.0 + Math.sin(t * 12) * 0.03;
+      }
+
+      spinAngle += spinSpeed;
       const r = baseR * rScale;
-      const orbCx = cx + vx;
-      const orbCy = cy + vy;
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
-      // Cyberpunk pink neon backlight (behind orb)
-      if (pinkGlow > 0) {
-        const pinkBg = ctx.createRadialGradient(orbCx, orbCy, r * 0.3, orbCx, orbCy, r * 2.2);
-        pinkBg.addColorStop(0, `hsla(320, 100%, 60%, ${pinkGlow * 0.5})`);
-        pinkBg.addColorStop(0.3, `hsla(330, 100%, 50%, ${pinkGlow * 0.3})`);
-        pinkBg.addColorStop(0.6, `hsla(340, 80%, 40%, ${pinkGlow * 0.12})`);
-        pinkBg.addColorStop(1, "transparent");
-        ctx.fillStyle = pinkBg;
+      // === BRIGHT PINK BACKLIGHT (always visible, pulses with speech) ===
+      for (let layer = 0; layer < 3; layer++) {
+        const spread = r * (1.8 + layer * 0.5);
+        const pg = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, spread);
+        const alpha = pinkGlow * (0.5 - layer * 0.12);
+        pg.addColorStop(0, `hsla(320, 100%, 65%, ${alpha})`);
+        pg.addColorStop(0.35, `hsla(330, 100%, 55%, ${alpha * 0.6})`);
+        pg.addColorStop(0.65, `hsla(340, 90%, 45%, ${alpha * 0.2})`);
+        pg.addColorStop(1, "transparent");
+        ctx.fillStyle = pg;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Subtle pearl blue ambient glow
-      const ambientGlow = ctx.createRadialGradient(orbCx, orbCy, r * 0.4, orbCx, orbCy, r * 1.6);
-      ambientGlow.addColorStop(0, `hsla(210, 60%, 70%, ${glowIntensity * 0.2})`);
-      ambientGlow.addColorStop(0.4, `hsla(220, 50%, 50%, ${glowIntensity * 0.1})`);
-      ambientGlow.addColorStop(1, "transparent");
-      ctx.fillStyle = ambientGlow;
-      ctx.fillRect(0, 0, w, h);
+      // Pink rays radiating outward
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spinAngle * 0.3);
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const rayLen = r * (1.4 + Math.sin(t * 5 + i * 1.2) * 0.3);
+        const rayAlpha = pinkGlow * (0.12 + Math.sin(t * 8 + i) * 0.06);
+        const rg = ctx.createLinearGradient(0, 0, Math.cos(angle) * rayLen, Math.sin(angle) * rayLen);
+        rg.addColorStop(0, `hsla(320, 100%, 70%, ${rayAlpha})`);
+        rg.addColorStop(1, "transparent");
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angle - 0.06) * rayLen, Math.sin(angle - 0.06) * rayLen);
+        ctx.lineTo(Math.cos(angle + 0.06) * rayLen, Math.sin(angle + 0.06) * rayLen);
+        ctx.closePath();
+        ctx.fillStyle = rg;
+        ctx.fill();
+      }
+      ctx.restore();
 
-      // Clip to orb circle
+      // === ORB — perfect circle, clipped ===
       ctx.save();
       ctx.beginPath();
-      ctx.arc(orbCx, orbCy, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.clip();
 
-      // Deep internal sphere gradient — pearl blue tones
-      const sg = ctx.createRadialGradient(orbCx - r * 0.25, orbCy - r * 0.3, r * 0.05, orbCx, orbCy, r);
-      sg.addColorStop(0, "hsla(210, 70%, 85%, 0.7)");    // bright pearl highlight
+      // Deep sphere gradient
+      const sg = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.3, r * 0.05, cx, cy, r);
+      sg.addColorStop(0, "hsla(210, 70%, 85%, 0.7)");
       sg.addColorStop(0.15, "hsla(215, 60%, 65%, 0.5)");
       sg.addColorStop(0.35, "hsla(220, 55%, 40%, 0.6)");
       sg.addColorStop(0.6, "hsla(225, 50%, 25%, 0.8)");
       sg.addColorStop(0.85, "hsla(230, 45%, 15%, 0.9)");
       sg.addColorStop(1, "hsla(235, 40%, 8%, 1)");
       ctx.fillStyle = sg;
-      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-      // Deep swirling nebula layers inside
+      // Swirling nebula layers (rotate with spin)
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spinAngle);
+      ctx.translate(-cx, -cy);
       for (let i = 0; i < 7; i++) {
         const a = t * (0.3 + i * 0.25) + i * 0.9;
-        const px = orbCx + Math.cos(a) * r * (0.2 + Math.sin(t * 0.5 + i) * 0.15);
-        const py = orbCy + Math.sin(a) * r * (0.2 + Math.cos(t * 0.7 + i) * 0.12);
+        const px = cx + Math.cos(a) * r * (0.2 + Math.sin(t * 0.5 + i) * 0.15);
+        const py = cy + Math.sin(a) * r * (0.2 + Math.cos(t * 0.7 + i) * 0.12);
         const nr = r * (0.25 + Math.sin(t * 0.8 + i * 0.7) * 0.12);
         const ng = ctx.createRadialGradient(px, py, 0, px, py, nr);
-        // Alternate between blue, teal, and subtle pink hues
         const hues = [205, 215, 225, 195, 240, 200, 320];
         const hue = hues[i];
-        const sat = hue === 320 ? 60 : 55;
-        ng.addColorStop(0, `hsla(${hue}, ${sat}%, 60%, ${0.2 + (isSpeakingRef.current ? 0.15 : 0)})`);
-        ng.addColorStop(0.4, `hsla(${hue + 10}, ${sat - 10}%, 35%, 0.12)`);
+        const intensity = isSpeakingRef.current ? 0.35 : isListeningRef.current ? 0.28 : 0.2;
+        ng.addColorStop(0, `hsla(${hue}, 55%, 60%, ${intensity})`);
+        ng.addColorStop(0.4, `hsla(${hue + 10}, 45%, 35%, 0.12)`);
         ng.addColorStop(1, "transparent");
         ctx.fillStyle = ng;
-        ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
       }
+      ctx.restore();
 
-      // Luminous core
-      const coreHue = isSpeakingRef.current ? 310 : 210;
-      const core = ctx.createRadialGradient(orbCx, orbCy, 0, orbCx, orbCy, r * 0.3);
-      core.addColorStop(0, `hsla(${coreHue}, 80%, 80%, ${0.35 + glowIntensity * 0.3})`);
+      // Luminous core — pink when speaking
+      const coreHue = isSpeakingRef.current ? 320 : isListeningRef.current ? 280 : 210;
+      const coreAlpha = 0.35 + pinkGlow * 0.3;
+      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.3);
+      core.addColorStop(0, `hsla(${coreHue}, 80%, 80%, ${coreAlpha})`);
       core.addColorStop(0.4, `hsla(${coreHue + 15}, 60%, 50%, 0.15)`);
       core.addColorStop(1, "transparent");
       ctx.fillStyle = core;
-      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-      // Floating particles inside
-      for (let i = 0; i < 12; i++) {
-        const fa = t * 0.5 + i * 0.52;
-        const fd = r * (0.1 + Math.sin(t * 1.5 + i * 0.6) * 0.2);
+      // Floating particles (rotate with spin)
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spinAngle * 1.3);
+      for (let i = 0; i < 14; i++) {
+        const fa = t * 0.5 + i * 0.45;
+        const fd = r * (0.1 + Math.sin(t * 1.5 + i * 0.6) * 0.25);
         const pSize = 2 + Math.sin(t * 2.5 + i) * 1.5;
         ctx.beginPath();
-        ctx.arc(orbCx + Math.cos(fa) * fd, orbCy + Math.sin(fa) * fd, pSize, 0, Math.PI * 2);
-        const pH = isSpeakingRef.current ? (300 + i * 8) : (200 + i * 10);
-        ctx.fillStyle = `hsla(${pH}, 80%, 75%, ${0.25 + Math.sin(t * 1.2 + i) * 0.15})`;
+        ctx.arc(Math.cos(fa) * fd, Math.sin(fa) * fd, pSize, 0, Math.PI * 2);
+        const pH = isSpeakingRef.current ? (310 + i * 8) : isListeningRef.current ? (270 + i * 10) : (200 + i * 10);
+        ctx.fillStyle = `hsla(${pH}, 80%, 75%, ${0.3 + Math.sin(t * 1.2 + i) * 0.2})`;
         ctx.fill();
       }
+      ctx.restore();
 
-      // Specular highlight (pearlescent sheen)
-      const spec = ctx.createRadialGradient(orbCx - r * 0.3, orbCy - r * 0.35, r * 0.02, orbCx - r * 0.15, orbCy - r * 0.2, r * 0.5);
+      // Shimmer effect when listening
+      if (shimmerAmp > 0) {
+        for (let i = 0; i < 20; i++) {
+          const sa = spinAngle * 2 + i * 0.31;
+          const sd = r * (0.3 + Math.sin(t * 6 + i * 0.8) * 0.4);
+          const sx = cx + Math.cos(sa) * sd;
+          const sy = cy + Math.sin(sa) * sd;
+          const ss = 1 + Math.sin(t * 10 + i) * 1;
+          ctx.beginPath();
+          ctx.arc(sx, sy, ss, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${300 + i * 3}, 100%, 85%, ${shimmerAmp * (0.4 + Math.sin(t * 8 + i) * 0.3)})`;
+          ctx.fill();
+        }
+      }
+
+      // Specular highlight
+      const spec = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.02, cx - r * 0.15, cy - r * 0.2, r * 0.5);
       spec.addColorStop(0, "hsla(210, 100%, 95%, 0.45)");
       spec.addColorStop(0.3, "hsla(210, 80%, 80%, 0.15)");
       spec.addColorStop(1, "transparent");
       ctx.fillStyle = spec;
-      ctx.fillRect(orbCx - r, orbCy - r, r * 2, r * 2);
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
       ctx.restore();
 
-      // Orb edge ring
+      // Edge ring
       ctx.beginPath();
-      ctx.arc(orbCx, orbCy, r, 0, Math.PI * 2);
-      const edgeAlpha = isSpeakingRef.current ? 0.3 + pinkGlow * 0.3 : 0.15;
-      const edgeHue = isSpeakingRef.current ? "320, 80%, 60%" : "210, 60%, 60%";
-      ctx.strokeStyle = `hsla(${edgeHue}, ${edgeAlpha})`;
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      const edgeHue = isSpeakingRef.current ? 320 : isListeningRef.current ? 290 : 210;
+      ctx.strokeStyle = `hsla(${edgeHue}, 80%, 60%, ${0.2 + pinkGlow * 0.3})`;
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Outer pink ring when speaking
-      if (pinkGlow > 0.2) {
-        ctx.beginPath();
-        ctx.arc(orbCx, orbCy, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = `hsla(320, 100%, 65%, ${pinkGlow * 0.25})`;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
+      // Outer pink glow ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(320, 100%, 65%, ${pinkGlow * 0.3})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
       animId = requestAnimationFrame(draw);
     };
