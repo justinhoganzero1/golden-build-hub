@@ -98,6 +98,114 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_email: string
+          referrer_id: string
+          reward_granted: boolean | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_email: string
+          referrer_id: string
+          reward_granted?: boolean | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_email?: string
+          referrer_id?: string
+          reward_granted?: boolean | null
+          status?: string
+        }
+        Relationships: []
+      }
+      special_occasions: {
+        Row: {
+          category: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          notes: string | null
+          occasion_date: string
+          remind_days_before: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          notes?: string | null
+          occasion_date: string
+          remind_days_before?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          notes?: string | null
+          occasion_date?: string
+          remind_days_before?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      suggestions: {
+        Row: {
+          ai_quality_score: number | null
+          ai_response: string | null
+          category: string
+          created_at: string
+          granted_free_access: boolean | null
+          id: string
+          status: string
+          suggestion: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_quality_score?: number | null
+          ai_response?: string | null
+          category?: string
+          created_at?: string
+          granted_free_access?: boolean | null
+          id?: string
+          status?: string
+          suggestion: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_quality_score?: number | null
+          ai_response?: string | null
+          category?: string
+          created_at?: string
+          granted_free_access?: boolean | null
+          id?: string
+          status?: string
+          suggestion?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
