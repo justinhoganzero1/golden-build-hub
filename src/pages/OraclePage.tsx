@@ -133,35 +133,57 @@ const OraclePage = () => {
     let t = 0;
     let spinAngle = 0;
 
+    // Star particles array
+    interface StarParticle {
+      angle: number;
+      dist: number;
+      speed: number;
+      size: number;
+      hue: number;
+      life: number;
+      maxLife: number;
+      trail: number;
+    }
+    const stars: StarParticle[] = [];
+    for (let i = 0; i < 60; i++) {
+      stars.push({
+        angle: Math.random() * Math.PI * 2,
+        dist: Math.random() * 0.8,
+        speed: 0.3 + Math.random() * 0.7,
+        size: 1 + Math.random() * 3,
+        hue: 190 + Math.random() * 140,
+        life: Math.random() * 100,
+        maxLife: 60 + Math.random() * 80,
+        trail: 0.3 + Math.random() * 0.5,
+      });
+    }
+
     const draw = () => {
       t += 0.008;
       const w = canvas.width, h = canvas.height, cx = w / 2, cy = h / 2;
-      // Use min dimension to guarantee a perfect circle
       const baseR = Math.min(w, h) * 0.32;
 
       let rScale = 1.0;
-      let pinkGlow = 0.15; // always-on subtle pink backlight
+      let pinkGlow = 0.35; // brighter always-on pink
       let spinSpeed = 0;
       let shimmerAmp = 0;
+      let speechPulse = 0;
 
       if (isLoadingRef.current) {
-        // THINKING: gentle breathing swell
         rScale = 1.0 + Math.sin(t * 3) * 0.06;
-        pinkGlow = 0.25 + Math.sin(t * 3) * 0.1;
+        pinkGlow = 0.5 + Math.sin(t * 3) * 0.15;
       }
 
       if (isSpeakingRef.current) {
-        // SPEAKING: swell & pink pulse to simulated speech rhythm
-        const pulse = (Math.sin(t * 20) * 0.4 + Math.sin(t * 31) * 0.35 + Math.sin(t * 11) * 0.25 + 1) / 2;
-        rScale = 1.0 + pulse * 0.1;
-        pinkGlow = 0.45 + pulse * 0.55;
+        speechPulse = (Math.sin(t * 20) * 0.4 + Math.sin(t * 31) * 0.35 + Math.sin(t * 11) * 0.25 + 1) / 2;
+        rScale = 1.0 + speechPulse * 0.1;
+        pinkGlow = 0.7 + speechPulse * 0.3; // much brighter when speaking
       }
 
       if (isListeningRef.current) {
-        // LISTENING: spin + shimmer to user voice
         spinSpeed = 0.025;
         shimmerAmp = 0.5 + Math.sin(t * 14) * 0.3;
-        pinkGlow = 0.3 + shimmerAmp * 0.3;
+        pinkGlow = 0.55 + shimmerAmp * 0.35;
         rScale = 1.0 + Math.sin(t * 12) * 0.03;
       }
 
@@ -172,34 +194,36 @@ const OraclePage = () => {
       ctx.fillStyle = "#050508";
       ctx.fillRect(0, 0, w, h);
 
-      // === BRIGHT PINK BACKLIGHT (always visible, pulses with speech) ===
-      for (let layer = 0; layer < 3; layer++) {
-        const spread = r * (1.8 + layer * 0.5);
-        const pg = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, spread);
-        const alpha = pinkGlow * (0.5 - layer * 0.12);
-        pg.addColorStop(0, `hsla(320, 100%, 65%, ${alpha})`);
-        pg.addColorStop(0.35, `hsla(330, 100%, 55%, ${alpha * 0.6})`);
-        pg.addColorStop(0.65, `hsla(340, 90%, 45%, ${alpha * 0.2})`);
+      // === ULTRA BRIGHT PINK BACKLIGHT ===
+      for (let layer = 0; layer < 5; layer++) {
+        const spread = r * (1.6 + layer * 0.6);
+        const pg = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, spread);
+        const alpha = pinkGlow * (0.6 - layer * 0.08);
+        pg.addColorStop(0, `hsla(320, 100%, 70%, ${alpha})`);
+        pg.addColorStop(0.25, `hsla(325, 100%, 60%, ${alpha * 0.7})`);
+        pg.addColorStop(0.5, `hsla(330, 100%, 50%, ${alpha * 0.4})`);
+        pg.addColorStop(0.75, `hsla(335, 90%, 40%, ${alpha * 0.15})`);
         pg.addColorStop(1, "transparent");
         ctx.fillStyle = pg;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Pink rays radiating outward
+      // Bright pink rays
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(spinAngle * 0.3);
-      for (let i = 0; i < 12; i++) {
-        const angle = (i / 12) * Math.PI * 2;
-        const rayLen = r * (1.4 + Math.sin(t * 5 + i * 1.2) * 0.3);
-        const rayAlpha = pinkGlow * (0.12 + Math.sin(t * 8 + i) * 0.06);
+      for (let i = 0; i < 16; i++) {
+        const angle = (i / 16) * Math.PI * 2;
+        const rayLen = r * (1.6 + Math.sin(t * 5 + i * 1.2) * 0.4);
+        const rayAlpha = pinkGlow * (0.2 + Math.sin(t * 8 + i) * 0.1);
         const rg = ctx.createLinearGradient(0, 0, Math.cos(angle) * rayLen, Math.sin(angle) * rayLen);
-        rg.addColorStop(0, `hsla(320, 100%, 70%, ${rayAlpha})`);
+        rg.addColorStop(0, `hsla(320, 100%, 75%, ${rayAlpha})`);
+        rg.addColorStop(0.5, `hsla(325, 100%, 60%, ${rayAlpha * 0.3})`);
         rg.addColorStop(1, "transparent");
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(angle - 0.06) * rayLen, Math.sin(angle - 0.06) * rayLen);
-        ctx.lineTo(Math.cos(angle + 0.06) * rayLen, Math.sin(angle + 0.06) * rayLen);
+        ctx.lineTo(Math.cos(angle - 0.08) * rayLen, Math.sin(angle - 0.08) * rayLen);
+        ctx.lineTo(Math.cos(angle + 0.08) * rayLen, Math.sin(angle + 0.08) * rayLen);
         ctx.closePath();
         ctx.fillStyle = rg;
         ctx.fill();
@@ -223,7 +247,7 @@ const OraclePage = () => {
       ctx.fillStyle = sg;
       ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-      // Swirling nebula layers (rotate with spin)
+      // Swirling nebula layers
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(spinAngle);
@@ -245,7 +269,7 @@ const OraclePage = () => {
       }
       ctx.restore();
 
-      // Luminous core — pink when speaking
+      // Luminous core
       const coreHue = isSpeakingRef.current ? 320 : isListeningRef.current ? 280 : 210;
       const coreAlpha = 0.35 + pinkGlow * 0.3;
       const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.3);
@@ -255,7 +279,53 @@ const OraclePage = () => {
       ctx.fillStyle = core;
       ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
 
-      // Floating particles (rotate with spin)
+      // === SWIRLING DISSOLVING STARS ===
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spinAngle * 0.8);
+      const starSpeed = isSpeakingRef.current ? (1 + speechPulse * 2) : isListeningRef.current ? 1.5 : 0.5;
+      for (const star of stars) {
+        star.life += starSpeed * 0.5;
+        if (star.life > star.maxLife) {
+          star.life = 0;
+          star.angle = Math.random() * Math.PI * 2;
+          star.dist = Math.random() * 0.3;
+          star.hue = 190 + Math.random() * 140;
+          star.size = 1 + Math.random() * 3;
+        }
+        const progress = star.life / star.maxLife;
+        const dissolve = progress > 0.7 ? 1 - (progress - 0.7) / 0.3 : progress < 0.1 ? progress / 0.1 : 1;
+        
+        // Spiral outward
+        const curAngle = star.angle + star.life * star.speed * 0.04;
+        const curDist = r * (star.dist + progress * 0.6);
+        const sx = Math.cos(curAngle) * curDist;
+        const sy = Math.sin(curAngle) * curDist;
+        
+        // Size pulses with speech
+        const pulseSize = isSpeakingRef.current
+          ? star.size * (1 + speechPulse * 0.8)
+          : star.size * (1 + Math.sin(t * 2 + star.angle) * 0.2);
+        
+        // Draw star glow
+        const starAlpha = dissolve * (isSpeakingRef.current ? 0.8 : 0.5);
+        const glowR = pulseSize * 3;
+        const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+        glow.addColorStop(0, `hsla(${star.hue}, 90%, 85%, ${starAlpha})`);
+        glow.addColorStop(0.3, `hsla(${star.hue}, 80%, 70%, ${starAlpha * 0.4})`);
+        glow.addColorStop(1, "transparent");
+        ctx.fillStyle = glow;
+        ctx.fillRect(sx - glowR, sy - glowR, glowR * 2, glowR * 2);
+
+        // Core bright point
+        ctx.beginPath();
+        ctx.arc(sx, sy, pulseSize * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${star.hue}, 100%, 95%, ${starAlpha})`;
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Original floating particles
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(spinAngle * 1.3);
@@ -304,10 +374,16 @@ const OraclePage = () => {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Outer pink glow ring
+      // Outer pink glow ring — brighter
       ctx.beginPath();
-      ctx.arc(cx, cy, r + 6, 0, Math.PI * 2);
-      ctx.strokeStyle = `hsla(320, 100%, 65%, ${pinkGlow * 0.3})`;
+      ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(320, 100%, 70%, ${pinkGlow * 0.5})`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 10, 0, Math.PI * 2);
+      ctx.strokeStyle = `hsla(320, 100%, 65%, ${pinkGlow * 0.2})`;
       ctx.lineWidth = 2;
       ctx.stroke();
 
