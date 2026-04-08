@@ -92,9 +92,8 @@ const SettingsPage = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("main");
-  const [darkMode, setDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [sound, setSound] = useState(true);
+  const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState("Gold & Black");
   const [language, setLanguage] = useState("English");
@@ -102,10 +101,64 @@ const SettingsPage = () => {
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); navigate("/"); };
 
-  const toggleWearable = (name: string) => {
-    setConnectedDevices(prev => prev.includes(name) ? prev.filter(d => d !== name) : [...prev, name]);
-    toast.success(connectedDevices.includes(name) ? `${name} disconnected` : `${name} connected`);
-  };
+  const scanBluetooth = useCallback(async () => {
+    if (!(navigator as any).bluetooth) {
+      toast.error("Bluetooth not supported in this browser. Use Chrome on Android or desktop.");
+      return;
+    }
+    setIsScanning(true);
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["heart_rate", "battery_service", "device_information", "health_thermometer", "running_speed_and_cadence"],
+      });
+      if (!device) { setIsScanning(false); return; }
+
+      let battery: number | undefined;
+      let gattServer: any;
+      try {
+        gattServer = await device.gatt?.connect();
+        try {
+          const batteryService = await gattServer?.getPrimaryService("battery_service");
+          const batteryChar = await batteryService?.getCharacteristic("battery_level");
+          const val = await batteryChar?.readValue();
+          battery = val?.getUint8(0);
+        } catch { /* device may not support battery service */ }
+      } catch { /* GATT connection optional */ }
+
+      const newDevice: PairedDevice = {
+        id: device.id || Date.now().toString(),
+        name: device.name || "Unknown Device",
+        type: "watch",
+        icon: "⌚",
+        connected: !!gattServer?.connected,
+        battery,
+        lastSeen: new Date().toLocaleTimeString(),
+        gattServer,
+      };
+
+      // Match to known wearable type
+      const known = KNOWN_WEARABLES.find(w => device.name?.toLowerCase().includes(w.name.split(" ")[0].toLowerCase()));
+      if (known) { newDevice.icon = known.icon; newDevice.type = known.type; }
+
+      setPairedDevices(prev => {
+        const exists = prev.find(d => d.id === newDevice.id);
+        if (exists) return prev.map(d => d.id === newDevice.id ? newDevice : d);
+        return [...prev, newDevice];
+      });
+      setConnectedDevices(prev => prev.includes(newDevice.name) ? prev : [...prev, newDevice.name]);
+      toast.success(`${newDevice.name} paired successfully!${battery !== undefined ? ` Battery: ${battery}%` : ""}`);
+    } catch (e: any) {
+      if (e.name !== "NotFoundError") toast.error(e.message || "Bluetooth scan failed");
+    } finally { setIsScanning(false); }
+  }, []);
+
+  const disconnectDevice = useCallback((device: PairedDevice) => {
+    try { device.gattServer?.disconnect(); } catch {}
+    setPairedDevices(prev => prev.filter(d => d.id !== device.id));
+    setConnectedDevices(prev => prev.filter(n => n !== device.name));
+    toast.success(`${device.name} disconnected`);
+  }, []);
 
   const applyTheme = (theme: typeof THEME_COLORS[0]) => {
     const root = document.documentElement;
