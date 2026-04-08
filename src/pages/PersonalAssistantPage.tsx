@@ -94,7 +94,7 @@ const PersonalAssistantPage = () => {
           </div>
           {response && (
             <div className="mt-3 p-3 bg-primary/5 border border-primary/20 rounded-xl text-sm text-foreground/80 max-h-48 overflow-auto">
-              <ReactMarkdown className="prose prose-sm prose-invert max-w-none">{response}</ReactMarkdown>
+              <div className="prose prose-sm prose-invert max-w-none"><ReactMarkdown>{response}</ReactMarkdown></div>
             </div>
           )}
         </div>

@@ -111,7 +111,7 @@ const MarketingHubPage = () => {
             </div>
             <div className="text-sm text-foreground/80 overflow-auto max-h-64">
               {typeof result === "string" ? (
-                <ReactMarkdown className="prose prose-sm prose-invert max-w-none">{result}</ReactMarkdown>
+                <div className="prose prose-sm prose-invert max-w-none"><ReactMarkdown>{result}</ReactMarkdown></div>
               ) : (
                 <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>
               )}
