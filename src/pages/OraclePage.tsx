@@ -110,22 +110,34 @@ const OraclePage = () => {
     return voice;
   }, []);
 
-  const speakAsAgent = useCallback((text: string, agentName: string = "Oracle") => {
-    if (isMuted || !text) return;
-    window.speechSynthesis.cancel();
-    const clean = cleanTextForSpeech(text);
-    if (!clean) return;
+  // Speech queue — AIs speak one after another, each can interrupt by cancelling current
+  const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
+  const isSpeakingQueueRef = useRef(false);
+
+  const processSpeechQueue = useCallback(() => {
+    if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
+    const next = speechQueueRef.current.shift();
+    if (!next) return;
+    const clean = cleanTextForSpeech(next.text);
+    if (!clean) { processSpeechQueue(); return; }
+    isSpeakingQueueRef.current = true;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-US";
-    utterance.rate = agentName === "Oracle" ? 0.95 : 0.9 + Math.random() * 0.15;
-    utterance.pitch = agentName === "Oracle" ? 1.1 : 0.8 + Math.random() * 0.6;
-    const voice = getVoiceForAgent(agentName);
+    utterance.rate = next.agentName === "Oracle" ? 0.95 : 0.9 + Math.random() * 0.15;
+    utterance.pitch = next.agentName === "Oracle" ? 1.1 : 0.8 + Math.random() * 0.6;
+    const voice = getVoiceForAgent(next.agentName);
     if (voice) utterance.voice = voice;
     utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onend = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
+    utterance.onerror = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
     window.speechSynthesis.speak(utterance);
   }, [isMuted, getVoiceForAgent]);
+
+  const speakAsAgent = useCallback((text: string, agentName: string = "Oracle") => {
+    if (isMuted || !text) return;
+    speechQueueRef.current.push({ text, agentName });
+    processSpeechQueue();
+  }, [isMuted, processSpeechQueue]);
 
   // Monthly heated debate check — triggers ~once per 30 days
   useEffect(() => {
