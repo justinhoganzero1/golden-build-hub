@@ -5,7 +5,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Download, Smartphone, CreditCard, BarChart3,
-  HeartHandshake, Pill, Radar, Gift, Share2, Wrench
+  Pill, Radar, Gift, Share2, Wrench
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
 
@@ -22,7 +22,7 @@ const tiles: AppTile[] = [
   { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub" },
   { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault" },
   { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet" },
-  { label: "Specialists", icon: <HeartHandshake className="w-6 h-6" />, path: "/specialists" },
+  { label: "AI Studio", icon: <Sparkles className="w-6 h-6" />, path: "/ai-studio" },
   { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
   { label: "Video Studio", icon: <Film className="w-6 h-6" />, path: "/video-studio" },
   { label: "Movie Maker", icon: <Film className="w-6 h-6" />, path: "/movie-maker" },
