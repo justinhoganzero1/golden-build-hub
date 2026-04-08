@@ -41,6 +41,7 @@ const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracl
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 
 const OraclePage = () => {
+  const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
