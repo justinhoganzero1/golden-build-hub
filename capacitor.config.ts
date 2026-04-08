@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Solace',
   webDir: 'dist',
   server: {
-    url: "https://cac1cf82-5270-45aa-a923-5d8912216beb.lovableproject.com?forceHideBadge=true",
+    url: "https://golden-vault-builder.lovable.app?forceHideBadge=true",
     cleartext: true
   },
   plugins: {
