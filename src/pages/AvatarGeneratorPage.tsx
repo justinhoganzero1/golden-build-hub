@@ -50,8 +50,13 @@ const AvatarGeneratorPage = () => {
   const [searchParams] = useSearchParams();
   const purchasedProduct = searchParams.get("purchased");
   const isCreatingFriend = searchParams.get("friend") === "true";
+  const purposeFromParam = searchParams.get("purpose");
   const createAvatar = useCreateAvatar();
   const saveMedia = useSaveMedia();
+
+  // Owner detection — only the app owner can create R/X rated avatars
+  const OWNER_EMAIL = "owner@solace.app"; // Replace with your actual owner email
+  const isOwner = user?.email === OWNER_EMAIL;
 
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
   const [prompt, setPrompt] = useState("");
@@ -61,7 +66,7 @@ const AvatarGeneratorPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  const [purpose, setPurpose] = useState(isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle");
+  const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
