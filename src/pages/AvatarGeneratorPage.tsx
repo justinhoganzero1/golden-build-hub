@@ -409,6 +409,48 @@ const AvatarGeneratorPage = () => {
                       Add as {currentPurpose?.label || "Avatar"}
                     </button>
                   )}
+
+                  {/* Quick-add buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => {
+                      if (!imageUrl || !user) { toast.error("Sign in to save"); return; }
+                      createAvatar.mutate({
+                        name: avatarName.trim() || "My Avatar",
+                        purpose: "profile",
+                        voice_style: selectedVoice,
+                        personality: selectedPersonality,
+                        image_url: imageUrl,
+                        art_style: selectedStyle,
+                        description: prompt.trim() || null,
+                        is_default: true,
+                      }, { onSuccess: () => toast.success("Set as profile avatar!") });
+                    }} disabled={createAvatar.isPending}
+                      className="py-2.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:border-purple-500/60 transition-all disabled:opacity-50">
+                      <UserPlus className="w-3.5 h-3.5" /> Use as Profile Avatar
+                    </button>
+                    <button onClick={() => {
+                      if (!imageUrl || !user) { toast.error("Sign in to save"); return; }
+                      createAvatar.mutate({
+                        name: avatarName.trim() || "AI Partner",
+                        purpose: "partner",
+                        voice_style: selectedVoice,
+                        personality: selectedPersonality,
+                        image_url: imageUrl,
+                        art_style: selectedStyle,
+                        description: prompt.trim() || null,
+                        is_default: false,
+                      }, {
+                        onSuccess: () => {
+                          toast.success(`"${avatarName.trim() || "AI Partner"}" added to AI Friends!`);
+                          navigate("/my-ai-friends");
+                        },
+                      });
+                    }} disabled={createAvatar.isPending}
+                      className="py-2.5 rounded-xl border border-pink-500/30 bg-pink-500/10 text-pink-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:border-pink-500/60 transition-all disabled:opacity-50">
+                      <Heart className="w-3.5 h-3.5" /> Add to AI Friends
+                    </button>
+                  </div>
+
                   <div className="flex gap-2">
                     <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5">
                       <Download className="w-4 h-4" /> Download
