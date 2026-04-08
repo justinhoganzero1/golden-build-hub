@@ -74,7 +74,7 @@ serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `${friend.personality}\n\nYou are in a group chat with the user and other AI friends (${allNames}). Keep responses SHORT (1-3 sentences). Be yourself and don't repeat what others say. React naturally to the conversation. Don't use your name in the response.`,
+              content: `${friend.personality}\n\nYou are in a group chat with the user and other AI friends (${allNames}). Keep responses SHORT (1-3 sentences). Be yourself and don't repeat what others say. React naturally to the conversation AND to what other AI friends say — agree, disagree, joke, build on their ideas, tease them playfully. Interact with BOTH the user AND the other AIs. Reference other AIs by name when responding to them. Don't use your own name in the response.`,
             },
             ...conversationHistory,
             { role: "user", content: message },
