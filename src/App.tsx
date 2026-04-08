@@ -21,7 +21,7 @@ const OraclePage = lazy(() => import("./pages/OraclePage"));
 const AIStudioPage = lazy(() => import("./pages/AIStudioPage"));
 const VideoEditorPage = lazy(() => import("./pages/VideoEditorPage"));
 
-const MovieMakerPage = lazy(() => import("./pages/MovieMakerPage"));
+
 const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
 const LiveVisionPage = lazy(() => import("./pages/LiveVisionPage"));
 const VoiceStudioPage = lazy(() => import("./pages/VoiceStudioPage"));
@@ -99,7 +99,7 @@ const App = () => (
                 <Route path="/ai-studio" element={<ErrorBoundary pageName="AI Studio"><AIStudioPage /></ErrorBoundary>} />
                 <Route path="/video-editor" element={<ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary>} />
                 
-                <Route path="/movie-maker" element={<ErrorBoundary pageName="Movie Maker"><MovieMakerPage /></ErrorBoundary>} />
+                
                 <Route path="/media-library" element={<ErrorBoundary pageName="Media Library"><MediaLibraryPage /></ErrorBoundary>} />
                 <Route path="/live-vision" element={<ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary>} />
                 <Route path="/voice-studio" element={<ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary>} />
