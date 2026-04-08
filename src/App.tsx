@@ -20,7 +20,7 @@ const OraclePage = lazy(() => import("./pages/OraclePage"));
 
 const AIStudioPage = lazy(() => import("./pages/AIStudioPage"));
 const VideoEditorPage = lazy(() => import("./pages/VideoEditorPage"));
-const VideoStudioPage = lazy(() => import("./pages/VideoStudioPage"));
+
 const MovieMakerPage = lazy(() => import("./pages/MovieMakerPage"));
 const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
 const LiveVisionPage = lazy(() => import("./pages/LiveVisionPage"));
