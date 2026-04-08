@@ -27,14 +27,19 @@ const OwnerDashboardPage = () => {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
 
-  if (!loading && user?.email !== OWNER_EMAIL) {
-    navigate("/dashboard", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && user?.email !== OWNER_EMAIL) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   useEffect(() => {
     loadSuggestions();
   }, []);
+
+  if (!loading && user?.email !== OWNER_EMAIL) {
+    return null;
+  }
 
   const loadSuggestions = async () => {
     // Load all user suggestions (owner can see all)
