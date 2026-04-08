@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
@@ -5,7 +6,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Download, Smartphone, CreditCard, BarChart3,
-  Pill, Radar, Gift, Share2, Wrench
+  Pill, Radar, Gift, Share2, Wrench, Lock, ChevronRight, ChevronDown
 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
 
