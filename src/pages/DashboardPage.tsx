@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
-  Wallet, Calendar, Clock, Settings, User, Sparkles, Phone,
+  Wallet, Calendar, Clock, Settings, User, Sparkles, Phone, Heart,
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Download, Smartphone, CreditCard, BarChart3,
