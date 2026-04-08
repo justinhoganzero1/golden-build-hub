@@ -111,7 +111,7 @@ const AvatarGeneratorPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ prompt: fullPrompt, ownerBypass: isOwner }),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Failed" }));
