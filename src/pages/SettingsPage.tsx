@@ -226,19 +226,72 @@ const SettingsPage = () => {
           {tab === "wearables" && (
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Wearable Devices</h1>
+              
+              {/* Scan button */}
+              <button onClick={scanBluetooth} disabled={isScanning}
+                className="w-full flex items-center justify-center gap-3 py-4 mb-4 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors disabled:opacity-50">
+                {isScanning ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Bluetooth className="w-5 h-5 text-primary" />}
+                <span className="text-sm font-medium text-primary">{isScanning ? "Scanning for devices..." : "Scan for Bluetooth Devices"}</span>
+              </button>
+
+              {/* Paired devices */}
+              {pairedDevices.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Paired Devices</h3>
+                  <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+                    {pairedDevices.map(device => (
+                      <div key={device.id} className="flex items-center gap-3 px-4 py-3.5">
+                        <span className="text-xl">{device.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground font-medium truncate">{device.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Signal className={`w-3 h-3 ${device.connected ? "text-green-500" : "text-muted-foreground"}`} />
+                            <span className="text-[10px] text-muted-foreground">{device.connected ? "Connected" : "Disconnected"}</span>
+                            {device.battery !== undefined && <span className="text-[10px] text-primary">🔋 {device.battery}%</span>}
+                            {device.lastSeen && <span className="text-[10px] text-muted-foreground">• {device.lastSeen}</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => disconnectDevice(device)} className="p-1.5 rounded-full hover:bg-destructive/10"><X className="w-4 h-4 text-destructive" /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Compatible devices info */}
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Compatible Devices</h3>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-                {WEARABLES.map(w => (
-                  <button key={w.name} onClick={() => toggleWearable(w.name)} className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/50 transition-colors text-left">
-                    <span className="text-xl">{w.icon}</span>
-                    <span className="flex-1 text-sm text-foreground">{w.name}</span>
-                    <Toggle value={connectedDevices.includes(w.name)} onChange={() => toggleWearable(w.name)} />
-                  </button>
-                ))}
+                {KNOWN_WEARABLES.map(w => {
+                  const isPaired = pairedDevices.some(d => d.name.toLowerCase().includes(w.name.split(" ")[0].toLowerCase()));
+                  return (
+                    <div key={w.name} className="flex items-center gap-3 px-4 py-3 text-left">
+                      <span className="text-xl">{w.icon}</span>
+                      <span className="flex-1 text-sm text-foreground">{w.name}</span>
+                      {isPaired ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">Paired</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Not paired</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Health data sync info */}
               <div className="mt-3 bg-card border border-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2"><Activity className="w-4 h-4 text-primary" /><h3 className="text-xs font-semibold text-foreground">Health Data Sync</h3></div>
-                <p className="text-[10px] text-muted-foreground">Connected wearables sync heart rate, steps, sleep, and stress data to Mind Hub, Haptic Escape, and wellness features.</p>
+                <p className="text-[10px] text-muted-foreground mb-2">Connected wearables sync heart rate, steps, sleep, and stress data to Mind Hub, Haptic Escape, and wellness features.</p>
+                <div className="flex flex-wrap gap-1">
+                  {["Heart Rate", "Steps", "Sleep", "SpO2", "Stress", "Calories", "Temperature"].map(metric => (
+                    <span key={metric} className="text-[9px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{metric}</span>
+                  ))}
+                </div>
               </div>
+
+              {/* Link another device */}
+              <button onClick={scanBluetooth} className="w-full mt-3 py-3 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+                + Link Another Device
+              </button>
             </>
           )}
 
