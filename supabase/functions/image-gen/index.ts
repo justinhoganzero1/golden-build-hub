@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { prompt, ownerBypass } = await req.json();
+    const { prompt, ownerBypass, inputImage } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
@@ -31,6 +31,17 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Build messages - support image editing when inputImage is provided
+    let userContent: any;
+    if (inputImage) {
+      userContent = [
+        { type: "text", text: prompt },
+        { type: "image_url", image_url: { url: inputImage } },
+      ];
+    } else {
+      userContent = prompt;
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -39,7 +50,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
     });
