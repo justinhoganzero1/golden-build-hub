@@ -54,6 +54,8 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const WalletPage = lazy(() => import("./pages/WalletPage"));
 const ConsentPage = lazy(() => import("./pages/ConsentPage"));
+const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
+const AICompanionPage = lazy(() => import("./pages/AICompanionPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +130,8 @@ const App = () => (
                 <Route path="/profile" element={<ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary>} />
                 <Route path="/wallet" element={<ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary>} />
                 <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
+                <Route path="/owner-dashboard" element={<ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary>} />
+                <Route path="/ai-companion" element={<ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

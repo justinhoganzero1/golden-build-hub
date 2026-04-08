@@ -59,6 +59,8 @@ const tiles: AppTile[] = [
   { label: "Radar", icon: <Radar className="w-6 h-6" />, path: "/radar-demo" },
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
+  { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
+  { label: "Owner Hub", icon: <CreditCard className="w-6 h-6" />, path: "/owner-dashboard" },
 ];
 
 const DashboardPage = () => {
