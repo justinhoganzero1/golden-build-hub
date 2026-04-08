@@ -1,4 +1,4 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import ShareDialog from "@/components/ShareDialog";
 
 const MediaLibraryPage = () => {
   const { data: mediaItems = [], isLoading } = useUserMedia();
@@ -14,6 +15,7 @@ const MediaLibraryPage = () => {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<any>(null);
+  const [shareItem, setShareItem] = useState<any>(null);
 
   const filtered = mediaItems.filter((m: any) => {
     if (filter === "Images" && m.media_type !== "image") return false;
@@ -133,6 +135,10 @@ const MediaLibraryPage = () => {
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2">
                   <Download className="w-4 h-4" /> Download
                 </button>
+                <button onClick={() => { setShareItem(selected); }}
+                  className="py-2.5 px-4 rounded-xl bg-accent text-accent-foreground text-xs font-medium">
+                  <Share2 className="w-4 h-4" />
+                </button>
                 <button onClick={() => handleDelete(selected.id)}
                   className="py-2.5 px-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium">
                   <Trash2 className="w-4 h-4" />
@@ -142,6 +148,15 @@ const MediaLibraryPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ShareDialog
+        open={!!shareItem}
+        onOpenChange={() => setShareItem(null)}
+        title={shareItem?.title || "Media"}
+        url={shareItem?.url}
+        imageUrl={shareItem?.url}
+        description={`Check out this ${shareItem?.media_type || "media"} from Solace!`}
+      />
     </div>
   );
 };
