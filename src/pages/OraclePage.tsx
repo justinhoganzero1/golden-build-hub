@@ -54,6 +54,7 @@ const OraclePage = () => {
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [micPermGranted, setMicPermGranted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,6 +62,10 @@ const OraclePage = () => {
   const isLoadingRef = useRef(isLoading);
   const isListeningRef = useRef(isListening);
   const isSpeakingRef = useRef(isSpeaking);
+  const sendMessageRef = useRef<(text: string) => void>();
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finalTranscriptRef = useRef("");
+  const alwaysListenRef = useRef(false);
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
