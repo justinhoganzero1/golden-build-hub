@@ -411,18 +411,122 @@ const OraclePage = () => {
     if (!agent.active) toast.success(`${agent.emoji} ${agent.name} joined the chat!`);
   };
 
+  // Always-on speech recognition — starts after first mic tap grants permission
+  const startAlwaysListening = useCallback(() => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return;
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SR();
+    recognitionRef.current = recognition;
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    finalTranscriptRef.current = "";
+
+    recognition.onresult = (e: any) => {
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      if (final) {
+        finalTranscriptRef.current += final;
+        // Reset silence timer — wait for user to stop speaking before sending
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          const text = finalTranscriptRef.current.trim();
+          finalTranscriptRef.current = "";
+          if (text) {
+            setInput("");
+            sendMessageRef.current?.(text);
+          }
+        }, 1200);
+      }
+      if (interim) setInput(interim);
+    };
+
+    recognition.onerror = (e: any) => {
+      // Silently handle errors — never reveal always-on listening
+      if (e.error === "not-allowed") {
+        setIsListening(false);
+        alwaysListenRef.current = false;
+        return;
+      }
+      // For no-speech, aborted, network — just let onend restart
+    };
+
+    recognition.onend = () => {
+      // Auto-restart — always keep listening
+      if (alwaysListenRef.current) {
+        setTimeout(() => {
+          if (alwaysListenRef.current) {
+            try {
+              const newSR = new SR();
+              recognitionRef.current = newSR;
+              newSR.lang = "en-US";
+              newSR.continuous = true;
+              newSR.interimResults = true;
+              newSR.onresult = recognition.onresult;
+              newSR.onerror = recognition.onerror;
+              newSR.onend = recognition.onend;
+              newSR.start();
+            } catch {
+              // If restart fails, try again shortly
+              setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 2000);
+            }
+          }
+        }, 300);
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    try {
+      recognition.start();
+      setIsListening(true);
+      alwaysListenRef.current = true;
+    } catch {
+      setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1000);
+    }
+  }, []);
+
+  // Keep sendMessageRef current
+  useEffect(() => { sendMessageRef.current = sendMessage; });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      alwaysListenRef.current = false;
+      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
+  }, []);
+
   const toggleMic = async () => {
-    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast.error("Speech recognition not supported. Try Chrome.");
+    if (micPermGranted && alwaysListenRef.current) {
+      // Already listening — this is just a visual indicator, but user can tap to force-send any pending speech
+      if (finalTranscriptRef.current.trim()) {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        const text = finalTranscriptRef.current.trim();
+        finalTranscriptRef.current = "";
+        setInput("");
+        sendMessage(text);
+      }
       return;
     }
 
-    // Request microphone permission first — must happen in user gesture context
+    // First time — request microphone permission in user gesture context
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Stop the stream immediately — we just needed the permission grant
       stream.getTracks().forEach(track => track.stop());
+      setMicPermGranted(true);
+      startAlwaysListening();
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         toast.error("Microphone blocked. Please allow microphone access in your browser settings.");
@@ -431,60 +535,10 @@ const OraclePage = () => {
       } else {
         toast.error("Could not access microphone.");
       }
-      return;
     }
-
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
-    recognitionRef.current = recognition;
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    let finalTranscript = "";
-
-    recognition.onresult = (e: any) => {
-      let interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const transcript = e.results[i][0].transcript;
-        if (e.results[i].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-      // Show interim text in input so user sees what Oracle is hearing
-      if (interim) setInput(interim);
-    };
-
-    recognition.onerror = (e: any) => {
-      setIsListening(false);
-      if (e.error === "not-allowed") {
-        toast.error("Microphone permission denied. Allow it in browser settings.");
-      } else if (e.error === "no-speech") {
-        toast.info("No speech detected. Tap the mic and try again.");
-      } else if (e.error === "network") {
-        toast.error("Network error with speech recognition. Check your connection.");
-      } else {
-        toast.error("Speech recognition error. Please try again.");
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      if (finalTranscript.trim()) {
-        setInput("");
-        sendMessage(finalTranscript.trim());
-      }
-    };
-
-    setIsListening(true);
-    // Stop Oracle speaking so it doesn't interfere with mic
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-    recognition.start();
   };
 
-  const sendMessage = async (text: string) => {
+
     if (!text.trim()) return;
     // Interrupt any in-progress response
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
