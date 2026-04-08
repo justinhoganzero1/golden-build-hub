@@ -26,7 +26,7 @@ const tiles: AppTile[] = [
   { label: "AI Studio", icon: <Sparkles className="w-6 h-6" />, path: "/ai-studio" },
   { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
   
-  { label: "Movie Maker", icon: <Film className="w-6 h-6" />, path: "/movie-maker" },
+  
   { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
   { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
   { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
