@@ -56,7 +56,7 @@ const tiles: AppTile[] = [
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
   
   { label: "Install", icon: <Download className="w-6 h-6" />, path: "/install" },
-  { label: "Radar", icon: <Radar className="w-6 h-6" />, path: "/radar-demo" },
+  
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
   { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
