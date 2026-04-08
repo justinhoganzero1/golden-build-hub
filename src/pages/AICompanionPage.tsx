@@ -202,6 +202,24 @@ IMPORTANT RULES:
           </div>
 
           <div className="space-y-5">
+            {/* Partner Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              {partnerAvatar?.image_url ? (
+                <img src={partnerAvatar.image_url} alt={partnerAvatar.name} className="w-24 h-24 rounded-full object-cover border-2 border-pink-500 shadow-lg shadow-pink-500/30" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-white/5 border-2 border-dashed border-pink-500/40 flex items-center justify-center">
+                  <span className="text-4xl">💕</span>
+                </div>
+              )}
+              <button onClick={() => navigate("/avatar-generator?purpose=partner")}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-pink-600/20 to-purple-600/20 border border-pink-500/30 text-pink-300 text-xs font-medium flex items-center gap-2 hover:border-pink-500/60 transition-all">
+                <Palette className="w-4 h-4" /> {partnerAvatar ? "Change Avatar" : "Create Avatar"}
+              </button>
+              {partnerAvatar && (
+                <p className="text-[10px] text-gray-500">Using: {partnerAvatar.name}</p>
+              )}
+            </div>
+
             {/* Type */}
             <div className="flex gap-3">
               {(["boyfriend", "girlfriend"] as const).map(t => (
