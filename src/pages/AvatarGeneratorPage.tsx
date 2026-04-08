@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
-import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart } from "lucide-react";
+import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
@@ -20,10 +22,10 @@ const STYLES = [
 ];
 
 const AVATAR_PURPOSES = [
-  { value: "oracle", label: "🔮 Main Oracle", desc: "Replace the Oracle's default appearance" },
-  { value: "profile", label: "👤 My Profile", desc: "Use as your profile picture" },
-  { value: "ai-friend", label: "🤖 AI Friend", desc: "Add as an AI companion in chat" },
-  { value: "partner", label: "💕 Boyfriend / Girlfriend", desc: "A romantic AI companion with a custom personality" },
+  { value: "oracle", label: "🔮 Main Oracle", desc: "Replace the Oracle's default appearance", paid: false },
+  { value: "profile", label: "👤 My Profile", desc: "Use as your profile picture", paid: false },
+  { value: "ai-friend", label: "🤖 AI Friend", desc: "Add as an AI companion in chat", paid: true, price: "$1" },
+  { value: "partner", label: "💕 Boyfriend / Girlfriend", desc: "A romantic AI companion", paid: true, price: "$5/mo" },
 ];
 
 const VOICE_OPTIONS = [
@@ -43,23 +45,27 @@ const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const AvatarGeneratorPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const purchasedProduct = searchParams.get("purchased");
   const isCreatingFriend = searchParams.get("friend") === "true";
 
   const [selectedStyle, setSelectedStyle] = useState("realistic-full");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  // New state for purpose, voice, personality
-  const [purpose, setPurpose] = useState(isCreatingFriend ? "ai-friend" : "oracle");
+  const [purpose, setPurpose] = useState(isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle");
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
 
   const showVoiceAndPersonality = purpose === "ai-friend" || purpose === "partner";
+  const currentPurpose = AVATAR_PURPOSES.find(p => p.value === purpose);
+  const isPaidPurpose = currentPurpose?.paid && !purchasedProduct;
 
   const generate = async () => {
     const desc = prompt.trim() || "a person";
@@ -144,8 +150,37 @@ const AvatarGeneratorPage = () => {
     a.click();
   };
 
+  const handleCheckout = async (product: string) => {
+    if (!user) {
+      toast.error("Please sign in first");
+      navigate("/sign-in");
+      return;
+    }
+    setIsCheckingOut(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-avatar-checkout", {
+        body: { product },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to start checkout");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
   const addAvatar = () => {
     if (!imageUrl) { toast.error("Generate or capture an avatar first"); return; }
+
+    // Check if paid purpose requires purchase
+    if (isPaidPurpose) {
+      handleCheckout(purpose === "partner" ? "partner" : "avatar");
+      return;
+    }
 
     const name = avatarName.trim() || "My Avatar";
 
@@ -173,6 +208,21 @@ const AvatarGeneratorPage = () => {
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
+        {/* Purchase success banner */}
+        {purchasedProduct && (
+          <div className="bg-gradient-to-r from-green-600/30 to-emerald-600/30 border border-green-500/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
+            <CreditCard className="w-6 h-6 text-green-400" />
+            <div>
+              <h3 className="text-sm font-bold text-white">Purchase Successful! ✨</h3>
+              <p className="text-xs text-gray-400">
+                {purchasedProduct === "partner"
+                  ? "AI Partner Experience unlocked! Create your companion below."
+                  : "Avatar credits added! Generate and add your avatar below."}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
@@ -195,12 +245,17 @@ const AvatarGeneratorPage = () => {
                   <button
                     key={p.value}
                     onClick={() => setPurpose(p.value)}
-                    className={`text-left p-3 rounded-xl border transition-all text-xs ${
+                    className={`text-left p-3 rounded-xl border transition-all text-xs relative ${
                       purpose === p.value
                         ? "border-purple-500 bg-purple-500/10 text-white"
                         : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
                     }`}
                   >
+                    {p.paid && !purchasedProduct && (
+                      <div className="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <Lock className="w-2.5 h-2.5" /> {p.price}
+                      </div>
+                    )}
                     <div className="font-semibold text-sm mb-0.5">{p.label}</div>
                     <div className="text-[10px] opacity-70">{p.desc}</div>
                   </button>
@@ -212,7 +267,6 @@ const AvatarGeneratorPage = () => {
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
               <h2 className="text-sm font-bold text-white">Design Your Avatar</h2>
 
-              {/* Name */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Avatar Name</label>
                 <input
@@ -223,7 +277,6 @@ const AvatarGeneratorPage = () => {
                 />
               </div>
 
-              {/* Style */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Style</label>
                 <select
@@ -237,7 +290,6 @@ const AvatarGeneratorPage = () => {
                 </select>
               </div>
 
-              {/* Description */}
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Description</label>
                 <textarea
@@ -249,7 +301,6 @@ const AvatarGeneratorPage = () => {
                 />
               </div>
 
-              {/* Generate / Selfie */}
               <button
                 onClick={generate}
                 disabled={isLoading}
@@ -266,14 +317,13 @@ const AvatarGeneratorPage = () => {
               </button>
             </div>
 
-            {/* Voice & Personality — shown for AI Friend / Partner */}
+            {/* Voice & Personality */}
             {showVoiceAndPersonality && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <Mic className="w-4 h-4 text-purple-400" /> Voice & Personality
                 </h2>
 
-                {/* Voice */}
                 <div>
                   <label className="text-xs text-gray-400 mb-1.5 block">Voice Style</label>
                   <div className="flex flex-wrap gap-1.5">
@@ -293,7 +343,6 @@ const AvatarGeneratorPage = () => {
                   </div>
                 </div>
 
-                {/* Personality — only for partner */}
                 {purpose === "partner" && (
                   <div>
                     <label className="text-xs text-gray-400 mb-1.5 block flex items-center gap-1">
@@ -347,17 +396,31 @@ const AvatarGeneratorPage = () => {
                 )}
               </div>
 
-              {/* Action buttons */}
               {imageUrl && !showCamera && (
                 <div className="flex flex-col gap-2 mt-4">
-                  {/* Main ADD button */}
-                  <button
-                    onClick={addAvatar}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add as {AVATAR_PURPOSES.find(p => p.value === purpose)?.label || "Avatar"}
-                  </button>
+                  {/* Main ADD / PURCHASE button */}
+                  {isPaidPurpose ? (
+                    <button
+                      onClick={() => handleCheckout(purpose === "partner" ? "partner" : "avatar")}
+                      disabled={isCheckingOut}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                    >
+                      {isCheckingOut ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Lock className="w-5 h-5" />
+                      )}
+                      Unlock {currentPurpose?.label} — {currentPurpose?.price}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={addAvatar}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:from-green-400 hover:to-emerald-500 transition-all shadow-lg shadow-green-500/20"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add as {currentPurpose?.label || "Avatar"}
+                    </button>
+                  )}
 
                   <div className="flex gap-2">
                     <button onClick={downloadImage} className="flex-1 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm flex items-center justify-center gap-1.5 hover:border-purple-500">
@@ -385,7 +448,7 @@ const AvatarGeneratorPage = () => {
                   </div>
                   <div className="flex justify-between text-gray-300">
                     <span className="text-gray-500">Purpose</span>
-                    <span>{AVATAR_PURPOSES.find(p => p.value === purpose)?.label}</span>
+                    <span>{currentPurpose?.label}</span>
                   </div>
                   {showVoiceAndPersonality && (
                     <div className="flex justify-between text-gray-300">
@@ -397,6 +460,12 @@ const AvatarGeneratorPage = () => {
                     <div className="flex justify-between text-gray-300">
                       <span className="text-gray-500">Personality</span>
                       <span>{selectedPersonality}</span>
+                    </div>
+                  )}
+                  {isPaidPurpose && (
+                    <div className="flex justify-between text-amber-400 font-medium pt-1 border-t border-gray-800">
+                      <span>Cost</span>
+                      <span>{currentPurpose?.price}</span>
                     </div>
                   )}
                 </div>
