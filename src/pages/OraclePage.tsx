@@ -636,7 +636,9 @@ const OraclePage = () => {
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
     setMessages(prev => [...prev, userMsg]);
-    setInput("");
+    // Clear speech queue on user interrupt
+    speechQueueRef.current = [];
+    isSpeakingQueueRef.current = false;
     setIsLoading(true);
     const controller = new AbortController();
     abortRef.current = controller;
@@ -705,19 +707,12 @@ const OraclePage = () => {
         }
       }
 
-      // Speak using the pre-created utterance with Oracle's unique voice
-      if (oracleContent && utterance) {
-        window.speechSynthesis.cancel();
-        const clean = cleanTextForSpeech(oracleContent);
-        if (clean) {
-          utterance.text = clean;
-          const oracleVoice = getVoiceForAgent("Oracle");
-          if (oracleVoice) utterance.voice = oracleVoice;
-          window.speechSynthesis.speak(utterance);
-        }
+      // Queue Oracle speech
+      if (oracleContent && !isMuted) {
+        speakAsAgent(oracleContent, "Oracle");
       }
 
-      // Send to active user-avatar agents — include Oracle's response so friends can react to it
+      // Send to active agents and queue their speech sequentially
       if (activeAgents.length > 0) {
         try {
           const historyWithOracle = [
