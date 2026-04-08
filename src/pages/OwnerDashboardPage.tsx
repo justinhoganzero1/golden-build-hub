@@ -94,10 +94,10 @@ const OwnerDashboardPage = () => {
   };
 
   const qualitySuggestions = suggestions.filter(s => (s.ai_quality_score || 0) >= 5 && s.status !== "dismissed");
-  const totalUsers = 247; // Mock
-  const paidUsers = 89;
-  const trialUsers = 158;
-  const revenue = 4523;
+  const totalUsers = 0;
+  const paidUsers = 0;
+  const trialUsers = 0;
+  const revenue = 0;
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
