@@ -538,7 +538,7 @@ const OraclePage = () => {
     }
   };
 
-
+  const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     // Interrupt any in-progress response
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
