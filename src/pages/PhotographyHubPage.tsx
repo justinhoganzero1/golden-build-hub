@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { Camera, Wand2, Loader2, Download, Sparkles } from "lucide-react";
+import { useState, useRef } from "react";
+import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import ShareDialog from "@/components/ShareDialog";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
+const BLOCKED_TERMS = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip)\b/i;
 
 const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
 
@@ -12,20 +14,52 @@ const PhotographyHubPage = () => {
   const [selectedFilter, setSelectedFilter] = useState("None");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  const [showShare, setShowShare] = useState(false);
+  const [mode, setMode] = useState<"generate" | "edit">("generate");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadedPhoto(reader.result as string);
+      setMode("edit");
+      toast.success("Photo uploaded! Describe how to transform it.");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const generatePhoto = async () => {
     if (!prompt.trim()) return;
+    if (BLOCKED_TERMS.test(prompt)) {
+      toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
+      return;
+    }
     setIsGenerating(true);
     setGeneratedImage(null);
     const filterPrompt = selectedFilter !== "None" ? `, ${selectedFilter.toLowerCase()} photography style` : "";
+
     try {
+      const body: any = {
+        prompt: mode === "edit"
+          ? `Edit this photo: ${prompt.trim()}${filterPrompt}. Keep the person recognizable. High quality.`
+          : `Professional high-resolution photograph: ${prompt.trim()}${filterPrompt}. DSLR quality, sharp focus, beautiful composition.`,
+      };
+      if (mode === "edit" && uploadedPhoto) {
+        body.inputImage = uploadedPhoto;
+      }
+
       const resp = await fetch(GEN_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ prompt: `Professional high-resolution photograph: ${prompt.trim()}${filterPrompt}. DSLR quality, sharp focus, beautiful composition.` }),
+        body: JSON.stringify(body),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Failed" }));
@@ -33,9 +67,10 @@ const PhotographyHubPage = () => {
         return;
       }
       const data = await resp.json();
-      if (data.images?.[0]?.image_url?.url) {
-        setGeneratedImage(data.images[0].image_url.url);
-        toast.success("Photo generated!");
+      const imgUrl = data.images?.[0]?.image_url?.url;
+      if (imgUrl) {
+        setGeneratedImage(imgUrl);
+        toast.success(mode === "edit" ? "Photo transformed! ✨" : "Photo generated!");
       }
     } catch (e) {
       console.error(e);
@@ -51,35 +86,79 @@ const PhotographyHubPage = () => {
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-xl bg-primary/10"><Camera className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-bold text-primary">Photography Hub</h1><p className="text-muted-foreground text-xs">AI-powered photo creation</p></div>
+          <div><h1 className="text-xl font-bold text-primary">Photography Hub</h1><p className="text-muted-foreground text-xs">AI-powered photo creation & editing</p></div>
         </div>
 
-        {/* Preview */}
-        {generatedImage && (
-          <div className="aspect-square bg-card border border-primary/30 rounded-xl mb-4 overflow-hidden relative">
-            <img src={generatedImage} alt="Generated photo" className="w-full h-full object-cover" />
-            <button onClick={() => {
-              const a = document.createElement("a");
-              a.href = generatedImage;
-              a.download = `solace-photo-${Date.now()}.png`;
-              a.click();
-            }} className="absolute top-2 right-2 p-2 bg-black/50 rounded-lg"><Download className="w-4 h-4 text-white" /></button>
+        {/* Mode Toggle */}
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setMode("generate")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all ${mode === "generate" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+            <Sparkles className="w-4 h-4" /> Generate New
+          </button>
+          <button onClick={() => { setMode("edit"); if (!uploadedPhoto) fileRef.current?.click(); }}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all ${mode === "edit" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+            <ImagePlus className="w-4 h-4" /> Edit My Photo
+          </button>
+        </div>
+
+        {/* Uploaded Photo Preview */}
+        {mode === "edit" && (
+          <div className="mb-4">
+            {uploadedPhoto ? (
+              <div className="relative aspect-square bg-card border border-primary/30 rounded-xl overflow-hidden mb-2">
+                <img src={uploadedPhoto} alt="Uploaded" className="w-full h-full object-cover" />
+                <button onClick={() => fileRef.current?.click()}
+                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-primary/80 text-primary-foreground rounded-lg text-xs flex items-center gap-1">
+                  <Upload className="w-3 h-3" /> Change
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => fileRef.current?.click()}
+                className="w-full aspect-video bg-card border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors mb-2">
+                <Upload className="w-8 h-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Upload your photo</p>
+                <p className="text-[10px] text-muted-foreground">Tap to select • Max 10MB</p>
+              </button>
+            )}
           </div>
         )}
 
-        {/* Generate */}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+
+        {/* Result Preview */}
+        {generatedImage && (
+          <div className="aspect-square bg-card border border-primary/30 rounded-xl mb-4 overflow-hidden relative">
+            <img src={generatedImage} alt="Generated photo" className="w-full h-full object-cover" />
+            <div className="absolute top-2 right-2 flex gap-2">
+              <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
+              <button onClick={() => {
+                const a = document.createElement("a");
+                a.href = generatedImage;
+                a.download = `solace-photo-${Date.now()}.png`;
+                a.click();
+              }} className="p-2 bg-primary/80 rounded-lg"><Download className="w-4 h-4 text-primary-foreground" /></button>
+            </div>
+          </div>
+        )}
+
+        {/* Prompt Input */}
         <div className="bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Wand2 className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">AI Photo Generator</span>
+            <span className="text-sm font-semibold text-foreground">
+              {mode === "edit" ? "Describe the transformation" : "AI Photo Generator"}
+            </span>
           </div>
           <input value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === "Enter" && generatePhoto()}
-            placeholder="Describe the photo you want (e.g. sunset over mountains)..."
+            placeholder={mode === "edit"
+              ? "e.g. Make me look like a superhero, put me on a beach, make it a painting..."
+              : "Describe the photo you want (e.g. sunset over mountains)..."
+            }
             className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-primary mb-3" />
-          <button onClick={generatePhoto} disabled={isGenerating || !prompt.trim()}
+          <button onClick={generatePhoto} disabled={isGenerating || !prompt.trim() || (mode === "edit" && !uploadedPhoto)}
             className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
             {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {isGenerating ? "Generating..." : "Generate Photo"}
+            {isGenerating ? "Processing..." : mode === "edit" ? "Transform Photo" : "Generate Photo"}
           </button>
         </div>
 
@@ -94,6 +173,15 @@ const PhotographyHubPage = () => {
           ))}
         </div>
       </div>
+
+      <ShareDialog
+        open={showShare}
+        onOpenChange={setShowShare}
+        title="AI Photo"
+        url={generatedImage || undefined}
+        imageUrl={generatedImage || undefined}
+        description="Check out this AI-generated photo from Solace!"
+      />
     </div>
   );
 };

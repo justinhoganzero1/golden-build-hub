@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette } from "lucide-react";
+import { useState, useRef } from "react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import ShareDialog from "@/components/ShareDialog";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic" },
@@ -35,7 +36,27 @@ const ProfilePage = () => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
+  // Photo upload & edit state
+  const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const handleSave = () => { setEditing(false); toast.success("Profile updated!"); };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploadedPhoto(reader.result as string);
+      setEditMode(true);
+      toast.success("Photo uploaded! Describe how to transform it.");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const generateAvatar = async () => {
     const desc = avatarPrompt.trim() || "a friendly person";
@@ -45,17 +66,27 @@ const ProfilePage = () => {
     }
     setAvatarLoading(true);
     try {
-      const stylePrompts: Record<string, string> = {
-        "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Studio lighting, shallow depth of field, 8K quality.`,
-        "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines.`,
-        "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality.`,
-        "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic.`,
-        "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting.`,
-        "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes.`,
-        "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern.`,
-        "chibi": `Cute chibi character of ${desc}. Big head, small body, kawaii style.`,
-      };
-      const fullPrompt = stylePrompts[avatarStyle] || `Avatar portrait of ${desc}`;
+      const body: any = { prompt: "" };
+
+      if (editMode && uploadedPhoto) {
+        // AI edit mode - transform uploaded photo
+        const styleHint = avatarStyle !== "realistic-portrait" ? ` in ${avatarStyle.replace("-", " ")} style` : "";
+        body.prompt = `Transform this photo: ${desc}${styleHint}. Keep the person recognizable. High quality portrait.`;
+        body.inputImage = uploadedPhoto;
+      } else {
+        // Pure generation mode
+        const stylePrompts: Record<string, string> = {
+          "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Studio lighting, shallow depth of field, 8K quality.`,
+          "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines.`,
+          "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality.`,
+          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic.`,
+          "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting.`,
+          "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes.`,
+          "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern.`,
+          "chibi": `Cute chibi character of ${desc}. Big head, small body, kawaii style.`,
+        };
+        body.prompt = stylePrompts[avatarStyle] || `Avatar portrait of ${desc}`;
+      }
 
       const resp = await fetch(GEN_URL, {
         method: "POST",
@@ -63,7 +94,7 @@ const ProfilePage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify(body),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "Failed" }));
@@ -71,10 +102,12 @@ const ProfilePage = () => {
         return;
       }
       const data = await resp.json();
-      if (data.imageUrl) {
-        setProfileAvatar(data.imageUrl);
-        toast.success("Avatar generated! 🎨");
+      const imgUrl = data.images?.[0]?.image_url?.url || data.imageUrl;
+      if (imgUrl) {
+        setProfileAvatar(imgUrl);
+        toast.success(editMode ? "Photo transformed! 🎨" : "Avatar generated! 🎨");
         setShowAvatarGen(false);
+        setEditMode(false);
       }
     } catch {
       toast.error("Failed to generate avatar");
@@ -86,6 +119,7 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
       <div className="px-4 pt-14 pb-4">
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">
@@ -103,6 +137,11 @@ const ProfilePage = () => {
               <Palette className="w-3.5 h-3.5" />
             </button>
           </div>
+          {profileAvatar && (
+            <button onClick={() => setShowShare(true)} className="text-xs text-primary flex items-center gap-1 mb-1">
+              <Share2 className="w-3 h-3" /> Share Avatar
+            </button>
+          )}
           <h2 className="text-lg font-bold text-foreground">{profile.name}</h2>
           <p className="text-xs text-muted-foreground">{profile.bio}</p>
         </div>
@@ -114,7 +153,41 @@ const ProfilePage = () => {
               <Sparkles className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Generate Profile Avatar</h3>
             </div>
-            <p className="text-xs text-muted-foreground">Describe your ideal avatar — M-rated only.</p>
+
+            {/* Upload / Generate Toggle */}
+            <div className="flex gap-2">
+              <button onClick={() => { setEditMode(false); setUploadedPhoto(null); }}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 ${!editMode ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                <Sparkles className="w-3 h-3" /> Generate New
+              </button>
+              <button onClick={() => fileRef.current?.click()}
+                className={`flex-1 py-2 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 ${editMode ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                <ImagePlus className="w-3 h-3" /> Upload & Edit
+              </button>
+            </div>
+
+            {/* Uploaded photo preview */}
+            {editMode && uploadedPhoto && (
+              <div className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                <img src={uploadedPhoto} alt="Uploaded" className="w-full h-full object-cover" />
+                <button onClick={() => fileRef.current?.click()}
+                  className="absolute bottom-1 right-1 px-2 py-1 bg-primary/80 text-primary-foreground rounded text-[9px] flex items-center gap-1">
+                  <Upload className="w-2.5 h-2.5" /> Change
+                </button>
+              </div>
+            )}
+
+            {editMode && !uploadedPhoto && (
+              <button onClick={() => fileRef.current?.click()}
+                className="w-full py-6 border-2 border-dashed border-border rounded-lg flex flex-col items-center gap-1 hover:border-primary transition-colors">
+                <Upload className="w-6 h-6 text-muted-foreground" />
+                <p className="text-[10px] text-muted-foreground">Upload your photo • Max 10MB</p>
+              </button>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              {editMode ? "Describe how to transform your photo — M-rated only." : "Describe your ideal avatar — M-rated only."}
+            </p>
 
             {/* Style pills */}
             <div className="flex flex-wrap gap-1.5">
@@ -136,17 +209,20 @@ const ProfilePage = () => {
             <textarea
               value={avatarPrompt}
               onChange={e => setAvatarPrompt(e.target.value)}
-              placeholder="e.g. A smiling young woman with curly red hair and green eyes..."
+              placeholder={editMode
+                ? "e.g. Make me look like a superhero, turn it into anime style, put me in space..."
+                : "e.g. A smiling young woman with curly red hair and green eyes..."
+              }
               className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground outline-none resize-none h-20"
               maxLength={300}
             />
 
             <button
               onClick={generateAvatar}
-              disabled={avatarLoading}
+              disabled={avatarLoading || (editMode && !uploadedPhoto)}
               className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {avatarLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate Avatar</>}
+              {avatarLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Sparkles className="w-4 h-4" /> {editMode ? "Transform Photo" : "Generate Avatar"}</>}
             </button>
           </div>
         )}
@@ -174,6 +250,15 @@ const ProfilePage = () => {
           ))}
         </div>
       </div>
+
+      <ShareDialog
+        open={showShare}
+        onOpenChange={setShowShare}
+        title="My Avatar"
+        url={profileAvatar || undefined}
+        imageUrl={profileAvatar || undefined}
+        description="Check out my AI avatar from Solace!"
+      />
     </div>
   );
 };
