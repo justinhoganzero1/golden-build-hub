@@ -257,6 +257,19 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      {/* Enlarged avatar dialog */}
+      <Dialog open={showEnlarged} onOpenChange={setShowEnlarged}>
+        <DialogContent className="max-w-sm bg-background border-primary/30 flex items-center justify-center p-6">
+          {profileAvatar ? (
+            <img src={profileAvatar} alt="Profile avatar enlarged" className="w-72 h-72 rounded-full object-cover border-4 border-primary animate-scale-in" />
+          ) : (
+            <div className="w-72 h-72 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center animate-scale-in">
+              <User className="w-24 h-24 text-primary" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ShareDialog
         open={showShare}
         onOpenChange={setShowShare}
