@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, Plus, X, Search, Volume2, ChevronRight, Users, Mic } from "lucide-react";
+import { Sparkles, Plus, X, Search, Volume2, ChevronRight, Users, Mic, MessageCircle } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -258,7 +258,7 @@ const AIStudioPage = () => {
 
         {/* Go to chat button */}
         <button onClick={() => navigate("/oracle")} className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-semibold mb-4 flex items-center justify-center gap-2">
-          <MessageCircleIcon /> Open Oracle Chat
+          <MessageCircle className="w-5 h-5" /> Open Oracle Chat
         </button>
 
         {/* All Avatars list */}
