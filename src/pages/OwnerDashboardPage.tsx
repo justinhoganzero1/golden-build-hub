@@ -101,12 +101,36 @@ const OwnerDashboardPage = () => {
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "library", label: "Users Library", icon: <Camera className="w-4 h-4" /> },
     { key: "suggestions", label: "Ideas", icon: <Sparkles className="w-4 h-4" /> },
     { key: "freebies", label: "Freebies", icon: <Gift className="w-4 h-4" /> },
     { key: "vault", label: "Vault", icon: <Lock className="w-4 h-4" /> },
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
   ] as const;
+
+  const filteredLib = allMedia.filter((m: any) => {
+    if (libFilter === "Images" && m.media_type !== "image") return false;
+    if (libFilter === "Videos" && m.media_type !== "video") return false;
+    if (libFilter === "Audio" && m.media_type !== "audio") return false;
+    if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  const handleDeleteMedia = async (id: string) => {
+    const { error } = await supabase.from("user_media").delete().eq("id", id);
+    if (!error) {
+      toast.success("Deleted");
+      setLibSelected(null);
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+    }
+  };
+
+  const getMediaIcon = (type: string) => {
+    if (type === "image") return <Image className="w-6 h-6 text-blue-400" />;
+    if (type === "video") return <Video className="w-6 h-6 text-purple-400" />;
+    return <Music className="w-6 h-6 text-pink-400" />;
+  };
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
