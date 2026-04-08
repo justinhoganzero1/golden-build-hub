@@ -104,8 +104,8 @@ const SecurityShield = () => {
         className="relative group flex flex-col items-center gap-1"
       >
         <div className="relative">
-          {/* Outer pulse ring */}
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "3s" }} />
+          {/* Outer pulse ring – uses box-shadow so it doesn't affect layout */}
+          <div className="absolute inset-0 rounded-full animate-pulse" style={{ boxShadow: "0 0 12px 4px hsl(var(--primary) / 0.35)", animationDuration: "3s" }} />
           {/* Shield icon */}
           <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-primary via-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-primary/30 border-2 border-primary/50">
             <ShieldCheck className="w-8 h-8 text-primary-foreground" />
