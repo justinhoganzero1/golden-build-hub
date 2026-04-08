@@ -38,6 +38,63 @@ const OwnerDashboardPage = () => {
   const [libShareItem, setLibShareItem] = useState<any>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
+  // Ad platform state
+  const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
+  const [adCampaigns, setAdCampaigns] = useState<{
+    platform: string; name: string; status: string; budget: number; spent: number;
+    impressions: number; clicks: number; conversions: number; startDate: string; endDate: string;
+  }[]>(() => {
+    const saved = localStorage.getItem("solace-ad-campaigns");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newCampaign, setNewCampaign] = useState({ name: "", budget: "", startDate: "", endDate: "" });
+
+  useEffect(() => {
+    localStorage.setItem("solace-ad-campaigns", JSON.stringify(adCampaigns));
+  }, [adCampaigns]);
+
+  const adPlatforms = [
+    { id: "admob", name: "Google AdMob", icon: "🟢", desc: "Banner, interstitial, rewarded ads", types: ["Banner", "Interstitial", "Rewarded Video", "Native"] },
+    { id: "playstore", name: "Google Play Store", icon: "🔵", desc: "Store listing, screenshots, description", types: ["App Install", "Engagement", "Pre-Registration"] },
+    { id: "appstore", name: "Apple App Store", icon: "🍎", desc: "iOS listing, TestFlight", types: ["Search Ads", "Today Tab", "Search Tab"] },
+    { id: "facebook", name: "Facebook Ads", icon: "📘", desc: "Audience targeting, pixel tracking", types: ["Feed", "Stories", "Marketplace", "Video"] },
+    { id: "instagram", name: "Instagram Ads", icon: "📸", desc: "Story ads, reels promotion", types: ["Stories", "Reels", "Feed", "Explore"] },
+    { id: "tiktok", name: "TikTok Ads", icon: "🎵", desc: "In-feed ads, branded effects", types: ["In-Feed", "TopView", "Branded Effect", "Hashtag Challenge"] },
+    { id: "twitter", name: "Twitter/X Ads", icon: "🐦", desc: "Promoted tweets, trending", types: ["Promoted Tweets", "Follower Ads", "Trend Takeover"] },
+    { id: "website", name: "Website Banner", icon: "🌐", desc: "Your website ad integration", types: ["Header Banner", "Sidebar", "Pop-up", "Footer"] },
+  ];
+
+  const createCampaign = (platformId: string) => {
+    if (!newCampaign.name || !newCampaign.budget) {
+      toast.error("Please fill in campaign name and budget");
+      return;
+    }
+    const campaign = {
+      platform: platformId,
+      name: newCampaign.name,
+      status: "Draft",
+      budget: parseFloat(newCampaign.budget),
+      spent: 0,
+      impressions: 0,
+      clicks: 0,
+      conversions: 0,
+      startDate: newCampaign.startDate || new Date().toISOString().split("T")[0],
+      endDate: newCampaign.endDate || "",
+    };
+    setAdCampaigns(prev => [...prev, campaign]);
+    setNewCampaign({ name: "", budget: "", startDate: "", endDate: "" });
+    toast.success(`Campaign "${campaign.name}" created!`);
+  };
+
+  const toggleCampaignStatus = (index: number) => {
+    setAdCampaigns(prev => prev.map((c, i) => i === index ? { ...c, status: c.status === "Active" ? "Paused" : "Active" } : c));
+  };
+
+  const deleteCampaign = (index: number) => {
+    setAdCampaigns(prev => prev.filter((_, i) => i !== index));
+    toast.success("Campaign deleted");
+  };
+
   const { data: allMedia = [] } = useAllUserMedia();
   const qc = useQueryClient();
 
