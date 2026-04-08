@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
