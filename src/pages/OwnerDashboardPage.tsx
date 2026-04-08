@@ -3,20 +3,25 @@ import {
   Shield, Users, Gift, Star, BarChart3, Mail, Megaphone,
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
   TrendingUp, DollarSign, Globe, Smartphone, Bell, Settings,
-  Search, Filter, Send, Crown, Zap
+  Search, Filter, Send, Crown, Zap, Image, Video, Music,
+  Camera, Grid, List, Trash2, Play, Download, Share2
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import { useQueryClient } from "@tanstack/react-query";
+import ShareDialog from "@/components/ShareDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library">("overview");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
   const [freebies, setFreebies] = useState<{ email: string; date: string; reason: string }[]>([]);
@@ -26,6 +31,15 @@ const OwnerDashboardPage = () => {
   const [marketingEmail, setMarketingEmail] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [libView, setLibView] = useState<"grid" | "list">("grid");
+  const [libFilter, setLibFilter] = useState("All");
+  const [libSearch, setLibSearch] = useState("");
+  const [libSelected, setLibSelected] = useState<any>(null);
+  const [libShareItem, setLibShareItem] = useState<any>(null);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  const { data: allMedia = [] } = useAllUserMedia();
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!loading && user?.email !== OWNER_EMAIL) {
