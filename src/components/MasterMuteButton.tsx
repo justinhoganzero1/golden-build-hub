@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useMute } from "@/contexts/MuteContext";
+import { useLocation } from "react-router-dom";
 
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
+  const location = useLocation();
   const [pos, setPos] = useState({ x: window.innerWidth - 44, y: window.innerHeight - 100 });
   const dragging = useRef(false);
   const hasMoved = useRef(false);
@@ -44,6 +46,9 @@ const MasterMuteButton = () => {
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("touchend", handleEnd);
   }, [pos]);
+
+  // Hide on Oracle page — it has its own speaker control
+  if (location.pathname === "/oracle") return null;
 
   return (
     <button
