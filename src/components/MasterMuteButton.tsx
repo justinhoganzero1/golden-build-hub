@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useMute } from "@/contexts/MuteContext";
+import { useLocation } from "react-router-dom";
 
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
