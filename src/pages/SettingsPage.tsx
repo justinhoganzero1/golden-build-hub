@@ -334,7 +334,7 @@ const LAYOUT_OPTIONS: LayoutOption[] = [
 const LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Korean", "Chinese", "Portuguese", "Italian", "Arabic", "Hindi", "Russian"];
 
 const SettingsPage = () => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("main");
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
@@ -344,6 +344,16 @@ const SettingsPage = () => {
   const [language, setLanguage] = useState("English");
   const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: false });
   const [currentLayout, setCurrentLayout] = useState("Standard 4x");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, [user]);
 
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
@@ -665,17 +675,6 @@ const SettingsPage = () => {
     );
   }
 
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-      setIsAdmin(!!data);
-    };
-    checkAdmin();
-  }, [user]);
 
   const sections = [
     { title: "Account", items: [
