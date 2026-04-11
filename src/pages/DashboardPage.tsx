@@ -36,7 +36,7 @@ const tiles: AppTile[] = [
   { label: "Photography", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
   { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
   { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
-  { label: "AI Friends", icon: <Users className="w-6 h-6" />, path: "/oracle" },
+  
   { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
   { label: "Inventor", icon: <Lightbulb className="w-6 h-6" />, path: "/inventor" },
   { label: "Calendar", icon: <Calendar className="w-6 h-6" />, path: "/calendar" },
