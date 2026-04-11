@@ -28,7 +28,7 @@ const VoiceStudioPage = lazy(() => import("./pages/VoiceStudioPage"));
 const PhotographyHubPage = lazy(() => import("./pages/PhotographyHubPage"));
 const PersonalAssistantPage = lazy(() => import("./pages/PersonalAssistantPage"));
 const AITutorPage = lazy(() => import("./pages/AITutorPage"));
-const MyAIFriendsPage = lazy(() => import("./pages/MyAIFriendsPage"));
+
 const InterpreterPage = lazy(() => import("./pages/InterpreterPage"));
 const InventorPage = lazy(() => import("./pages/InventorPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
@@ -109,7 +109,7 @@ const App = () => (
                   <Route path="/photography-hub" element={<ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary>} />
                   <Route path="/personal-assistant" element={<ErrorBoundary pageName="Personal Assistant"><PersonalAssistantPage /></ErrorBoundary>} />
                   <Route path="/ai-tutor" element={<ErrorBoundary pageName="AI Tutor"><AITutorPage /></ErrorBoundary>} />
-                  <Route path="/my-ai-friends" element={<ErrorBoundary pageName="My AI Friends"><MyAIFriendsPage /></ErrorBoundary>} />
+                  
                   <Route path="/interpreter" element={<ErrorBoundary pageName="Interpreter"><InterpreterPage /></ErrorBoundary>} />
                   <Route path="/inventor" element={<ErrorBoundary pageName="Inventor"><InventorPage /></ErrorBoundary>} />
                   <Route path="/calendar" element={<ErrorBoundary pageName="Calendar"><CalendarPage /></ErrorBoundary>} />
