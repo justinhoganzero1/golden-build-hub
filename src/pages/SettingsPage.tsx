@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText, LayoutGrid } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PairedDevice {
   id: string;
@@ -333,7 +334,7 @@ const LAYOUT_OPTIONS: LayoutOption[] = [
 const LANGUAGES = ["English", "Spanish", "French", "German", "Japanese", "Korean", "Chinese", "Portuguese", "Italian", "Arabic", "Hindi", "Russian"];
 
 const SettingsPage = () => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<SettingsTab>("main");
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
@@ -343,6 +344,16 @@ const SettingsPage = () => {
   const [language, setLanguage] = useState("English");
   const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: false });
   const [currentLayout, setCurrentLayout] = useState("Standard 4x");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, [user]);
 
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
@@ -664,11 +675,13 @@ const SettingsPage = () => {
     );
   }
 
+
   const sections = [
     { title: "Account", items: [
       { icon: <User className="w-5 h-5" />, label: "Profile", action: () => navigate("/profile") },
       { icon: <Shield className="w-5 h-5" />, label: "Privacy & Security", action: () => setTab("privacy") },
       { icon: <Bell className="w-5 h-5" />, label: "Notifications", action: () => setTab("notifications") },
+      ...(isAdmin ? [{ icon: <Activity className="w-5 h-5" />, label: "Admin Dashboard", action: () => navigate("/owner-dashboard") }] : []),
     ]},
     { title: "Devices", items: [
       { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${pairedDevices.length} paired`, action: () => setTab("wearables") },
