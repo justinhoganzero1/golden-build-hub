@@ -25,7 +25,7 @@ const STYLES = [
 const AVATAR_PURPOSES = [
   { value: "oracle", label: "🔮 Main Oracle", desc: "Replace the Oracle's default appearance", paid: false },
   { value: "profile", label: "👤 My Profile", desc: "Use as your profile picture", paid: false },
-  { value: "ai-friend", label: "🤖 AI Friend", desc: "Add as an AI companion in chat", paid: true, price: "$1" },
+  { value: "ai-friend", label: "🤖 AI Companion", desc: "Add a realistic AI companion to chat", paid: true, price: "$1" },
   { value: "partner", label: "💕 Boyfriend / Girlfriend", desc: "A romantic AI companion", paid: true, price: "$5/mo" },
 ];
 
@@ -87,11 +87,14 @@ const AvatarGeneratorPage = () => {
       }
     }
     
+    // Force realistic style for AI friend and partner avatars
+    const effectiveStyle = (purpose === "ai-friend" || purpose === "partner") ? "realistic-portrait" : selectedStyle;
+    
     setIsLoading(true);
     try {
       const stylePrompts: Record<string, string> = {
-        "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Studio lighting, shallow depth of field, 8K quality, detailed skin texture.`,
-        "realistic-full": `Ultra-photorealistic full body portrait of ${desc}. Studio lighting, clean dark background, 8K quality, hyper-detailed.`,
+        "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Real human, natural skin, studio lighting, shallow depth of field, 8K quality, detailed skin texture, looks like a real photograph of a real person.`,
+        "realistic-full": `Ultra-photorealistic full body portrait of ${desc}. Real human, natural skin, studio lighting, clean dark background, 8K quality, hyper-detailed, looks like a real photograph.`,
         "anime": `Anime style character art of ${desc}. Vibrant colors, detailed anime eyes, clean lines, professional anime illustration.`,
         "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, clean background, Disney quality.`,
         "comic-book": `Comic book hero illustration of ${desc}. Bold ink lines, dynamic pose, vivid colors, Marvel quality.`,
@@ -103,7 +106,7 @@ const AvatarGeneratorPage = () => {
         "oil-painting": `Classical oil painting portrait of ${desc}. Renaissance style, rich colors, masterwork quality.`,
         "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, limited palette, modern.`,
       };
-      const fullPrompt = stylePrompts[selectedStyle] || `Avatar of ${desc}`;
+      const fullPrompt = stylePrompts[effectiveStyle] || `Avatar of ${desc}`;
 
       const resp = await fetch(GEN_URL, {
         method: "POST",
