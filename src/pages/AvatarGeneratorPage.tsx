@@ -444,8 +444,8 @@ const AvatarGeneratorPage = () => {
                         is_default: false,
                       }, {
                         onSuccess: () => {
-                          toast.success(`"${avatarName.trim() || "AI Partner"}" added to AI Friends!`);
-                          navigate("/my-ai-friends");
+                          toast.success(`"${avatarName.trim() || "AI Companion"}" added to chat!`);
+                          navigate("/oracle");
                         },
                       });
                     }} disabled={createAvatar.isPending}
