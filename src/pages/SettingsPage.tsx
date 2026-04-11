@@ -664,11 +664,24 @@ const SettingsPage = () => {
     );
   }
 
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, [user]);
+
   const sections = [
     { title: "Account", items: [
       { icon: <User className="w-5 h-5" />, label: "Profile", action: () => navigate("/profile") },
       { icon: <Shield className="w-5 h-5" />, label: "Privacy & Security", action: () => setTab("privacy") },
       { icon: <Bell className="w-5 h-5" />, label: "Notifications", action: () => setTab("notifications") },
+      ...(isAdmin ? [{ icon: <Activity className="w-5 h-5" />, label: "Admin Dashboard", action: () => navigate("/owner-dashboard") }] : []),
     ]},
     { title: "Devices", items: [
       { icon: <Watch className="w-5 h-5" />, label: "Wearable Devices", subtitle: `${pairedDevices.length} paired`, action: () => setTab("wearables") },

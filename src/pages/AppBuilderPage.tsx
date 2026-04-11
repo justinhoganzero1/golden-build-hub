@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 
@@ -7,65 +7,120 @@ const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
 interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; }
 
-const TEMPLATES = [
-  { type: "chatbot", icon: <MessageCircle className="w-5 h-5" />, title: "AI Chatbot", desc: "Simple AI chat assistant app" },
-  { type: "todo", icon: <Layers className="w-5 h-5" />, title: "Task Manager", desc: "To-do list with categories" },
-  { type: "calculator", icon: <Code className="w-5 h-5" />, title: "Calculator", desc: "Smart calculator app" },
-  { type: "timer", icon: <Smartphone className="w-5 h-5" />, title: "Timer / Stopwatch", desc: "Countdown and stopwatch" },
-  { type: "notes", icon: <Wand2 className="w-5 h-5" />, title: "Notes App", desc: "Quick notes with search" },
-  { type: "custom", icon: <Plus className="w-5 h-5" />, title: "Custom App", desc: "Describe any app idea" },
-];
+interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; }
 
 const AppBuilderPage = () => {
   const [projects, setProjects] = useState<AppProject[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [appName, setAppName] = useState("");
-  const [appDesc, setAppDesc] = useState("");
-  const [isBuilding, setIsBuilding] = useState(false);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: "assistant", content: "Hi! I'm your App Builder agent. Tell me what kind of app or website you want to build, and I'll create it for you. You can say things like:\n\n• \"Build me a portfolio website\"\n• \"Create an AI chatbot app\"\n• \"Make a fitness tracker dashboard\"\n• \"Build an e-commerce landing page\"\n\nDescribe your vision and I'll build it!" }
+  ]);
+  const [input, setInput] = useState("");
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [currentCode, setCurrentCode] = useState<string | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const buildApp = async () => {
-    if (!appName.trim()) { toast.error("Enter an app name"); return; }
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || isBuilding) return;
+
+    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
     setIsBuilding(true);
+
     try {
-      const template = TEMPLATES.find(t => t.type === selectedTemplate);
+      const conversationContext = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join("\n");
+      
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           type: "assistant",
-          prompt: `Generate a complete, working single-page HTML app. App name: "${appName}". Template: ${template?.title || "custom"}. Description: ${appDesc || template?.desc || "basic app"}. Requirements:
-- Must be a COMPLETE self-contained HTML file with inline CSS and JavaScript
-- Modern dark theme with gold accents (#FFD700)
-- Responsive mobile-first design
-- Fully functional with all interactive features working
-- Include a header with the app name
-- If it's a chatbot, include a mock AI chat that responds with pre-written helpful responses
-- Include proper error handling
-- Make it look professional and polished
-Return ONLY the complete HTML code, nothing else.`
+          prompt: `You are Solace App Builder, an expert AI agent that builds complete, production-quality web applications. You respond conversationally AND generate code.
+
+CONVERSATION SO FAR:
+${conversationContext}
+
+USER'S NEW MESSAGE: "${trimmed}"
+
+${currentCode ? `CURRENT APP CODE (user wants to modify this):\n${currentCode.substring(0, 3000)}` : ""}
+
+INSTRUCTIONS:
+1. First, respond conversationally to the user (2-3 sentences max about what you're building/changing).
+2. Then generate a COMPLETE, self-contained HTML file with:
+   - Modern responsive design (mobile-first)
+   - Dark theme with elegant styling (CSS custom properties)
+   - Fully functional JavaScript with all interactive features
+   - Professional animations and transitions
+   - If they want AI features, include mock AI responses
+   - Include proper meta tags, favicon references
+   - Use modern CSS (flexbox, grid, variables)
+   - Include a header, main content, and footer
+   - Make it look like a real production website
+
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+CHAT: [Your conversational response here]
+CODE_START
+[Complete HTML code here]
+CODE_END
+
+IMPORTANT: The HTML must be 100% self-contained. No external dependencies except Google Fonts (which can be loaded via link tag). Make it look AMAZING.`
         }),
       });
-      if (!resp.ok) { toast.error("Build failed"); return; }
+
+      if (!resp.ok) throw new Error("Build failed");
       const data = await resp.json();
-      const code = data.result || "<html><body><h1>App Build Failed</h1></body></html>";
-      const project: AppProject = {
-        id: Date.now().toString(),
-        name: appName,
-        type: selectedTemplate || "custom",
-        description: appDesc || template?.desc || "",
-        code,
-        created: new Date().toLocaleDateString(),
-      };
-      setProjects(prev => [project, ...prev]);
-      setPreviewProject(project);
-      toast.success(`${appName} built! 🎉`);
-      setShowCreate(false);
-      setAppName("");
-      setAppDesc("");
-      setSelectedTemplate(null);
-    } catch { toast.error("Build failed"); } finally { setIsBuilding(false); }
+      const result = data.result || "";
+
+      let chatText = "Here's your app!";
+      let code = "";
+
+      const chatMatch = result.match(/CHAT:\s*([\s\S]*?)(?:CODE_START|$)/);
+      if (chatMatch) chatText = chatMatch[1].trim();
+
+      const codeMatch = result.match(/CODE_START\s*([\s\S]*?)\s*CODE_END/);
+      if (codeMatch) {
+        code = codeMatch[1].trim();
+      } else if (result.includes("<!DOCTYPE") || result.includes("<html")) {
+        const htmlMatch = result.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
+        if (htmlMatch) code = htmlMatch[1];
+      }
+
+      if (!code && !chatText) chatText = result.substring(0, 500);
+
+      const assistantMsg: ChatMessage = { role: "assistant", content: chatText, code: code || undefined };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      if (code) {
+        setCurrentCode(code);
+        const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
+        const project: AppProject = {
+          id: Date.now().toString(),
+          name: appName,
+          type: "custom",
+          description: trimmed,
+          code,
+          created: new Date().toLocaleDateString(),
+        };
+        setProjects(prev => {
+          const updated = [...prev];
+          const existingIdx = updated.findIndex(p => p.name === appName);
+          if (existingIdx >= 0) { updated[existingIdx] = project; } else { updated.unshift(project); }
+          return updated;
+        });
+        setPreviewProject(project);
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I had trouble building that. Could you try describing your app again?" }]);
+      toast.error("Build failed — try again");
+    } finally {
+      setIsBuilding(false);
+    }
   };
 
   const downloadApp = (project: AppProject) => {
@@ -80,81 +135,106 @@ Return ONLY the complete HTML code, nothing else.`
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background flex flex-col">
       <UniversalBackButton />
-      <div className="px-4 pt-14 pb-4">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="px-4 pt-14 pb-2">
+        <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-primary/10"><Wrench className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-bold text-primary">App Builder</h1><p className="text-muted-foreground text-xs">Build working mini-apps with AI</p></div>
+          <div><h1 className="text-xl font-bold text-primary">App Builder</h1><p className="text-muted-foreground text-xs">Chat with AI to build full websites & apps</p></div>
         </div>
+      </div>
 
-        {/* Preview */}
-        {previewProject && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-foreground">Preview: {previewProject.name}</h3>
-              <div className="flex gap-2">
-                <button onClick={() => downloadApp(previewProject)} className="text-xs text-primary flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
-                <button onClick={() => setPreviewProject(null)} className="text-xs text-muted-foreground"><X className="w-4 h-4" /></button>
+      {/* Preview */}
+      {previewProject && (
+        <div className="px-4 mb-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-xs font-semibold text-foreground">Live Preview: {previewProject.name}</h3>
+            <div className="flex gap-2">
+              <button onClick={() => downloadApp(previewProject)} className="text-xs text-primary flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
+              <button onClick={() => setPreviewProject(null)} className="text-xs text-muted-foreground"><X className="w-4 h-4" /></button>
+            </div>
+          </div>
+          <iframe srcDoc={previewProject.code} className="w-full h-64 rounded-xl border border-border bg-white" sandbox="allow-scripts" title="App Preview" />
+        </div>
+      )}
+
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4" style={{ maxHeight: previewProject ? "calc(100vh - 460px)" : "calc(100vh - 200px)" }}>
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "assistant" && (
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+            )}
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+              msg.role === "user"
+                ? "bg-primary text-primary-foreground rounded-br-md"
+                : "bg-card border border-border text-foreground rounded-bl-md"
+            }`}>
+              <p className="whitespace-pre-wrap">{msg.content}</p>
+              {msg.code && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
+                    <Code className="w-3 h-3" /> App generated ✓
+                  </span>
+                </div>
+              )}
+            </div>
+            {msg.role === "user" && (
+              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 mt-1">
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        ))}
+        {isBuilding && (
+          <div className="flex gap-2 justify-start">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <Bot className="w-4 h-4 text-primary animate-pulse" />
+            </div>
+            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Building your app...
               </div>
             </div>
-            <iframe srcDoc={previewProject.code} className="w-full h-80 rounded-xl border border-border bg-white" sandbox="allow-scripts" title="App Preview" />
           </div>
         )}
+        <div ref={chatEndRef} />
+      </div>
 
-        <button onClick={() => setShowCreate(!showCreate)} className="w-full bg-primary text-primary-foreground rounded-xl p-4 flex items-center justify-center gap-3 font-semibold mb-4">
-          {showCreate ? <><X className="w-5 h-5" /> Cancel</> : <><Plus className="w-5 h-5" /> New Project</>}
-        </button>
-
-        {showCreate && (
-          <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
-            <h3 className="text-sm font-semibold text-foreground">Choose Template</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {TEMPLATES.map(t => (
-                <button key={t.type} onClick={() => setSelectedTemplate(t.type)}
-                  className={`p-3 rounded-xl border text-center ${selectedTemplate === t.type ? "border-primary bg-primary/10" : "border-border bg-secondary/30"}`}>
-                  <div className="text-primary mx-auto mb-1">{t.icon}</div>
-                  <p className="text-[10px] text-foreground font-medium">{t.title}</p>
-                </button>
-              ))}
-            </div>
-            <input value={appName} onChange={e => setAppName(e.target.value)} placeholder="App name" className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary" />
-            <textarea value={appDesc} onChange={e => setAppDesc(e.target.value)} placeholder="Describe your app (optional)" rows={2}
-              className="w-full px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary resize-none" />
-            <button onClick={buildApp} disabled={isBuilding || !appName.trim()}
-              className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-              {isBuilding ? <><Loader2 className="w-4 h-4 animate-spin" /> Building...</> : <><Wand2 className="w-4 h-4" /> Build App</>}
-            </button>
+      {/* Projects bar */}
+      {projects.length > 0 && (
+        <div className="px-4 py-2 border-t border-border bg-card/50">
+          <div className="flex gap-2 overflow-x-auto">
+            {projects.map(p => (
+              <button key={p.id} onClick={() => setPreviewProject(p)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-colors ${
+                  previewProject?.id === p.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary"
+                }`}>
+                <Code className="w-3 h-3" /> {p.name}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* My Projects */}
-        {projects.length > 0 && (
-          <>
-            <h2 className="text-sm font-semibold text-foreground mb-3">My Projects</h2>
-            <div className="space-y-2">
-              {projects.map(p => (
-                <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                  <div className="text-primary">{TEMPLATES.find(t => t.type === p.type)?.icon || <Code className="w-5 h-5" />}</div>
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-foreground">{p.name}</h3>
-                    <p className="text-[10px] text-muted-foreground">{p.created}</p>
-                  </div>
-                  <button onClick={() => setPreviewProject(p)} className="text-xs text-primary"><Play className="w-4 h-4" /></button>
-                  <button onClick={() => downloadApp(p)} className="text-xs text-primary"><Download className="w-4 h-4" /></button>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {projects.length === 0 && !showCreate && (
-          <div className="text-center py-12">
-            <Wrench className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">No projects yet</p>
-            <p className="text-xs text-muted-foreground">Create your first AI-powered app above!</p>
-          </div>
-        )}
+      {/* Input */}
+      <div className="px-4 py-3 border-t border-border bg-card">
+        <div className="flex items-center gap-2">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
+            placeholder="Describe the app you want to build..."
+            className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            disabled={isBuilding}
+          />
+          <button onClick={sendMessage} disabled={isBuilding || !input.trim()}
+            className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 transition-colors">
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );

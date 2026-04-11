@@ -127,20 +127,6 @@ const DashboardPage = () => {
         description="Check out Solace — your AI companion to do everything! Download it now."
       />
 
-      {/* Owner-only quick link */}
-      {isOwner && (
-        <div className="px-4 mb-4">
-          <button onClick={() => navigate("/owner-dashboard")} className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-primary/40 bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-purple-500 to-blue-500 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-sm font-bold bg-gradient-to-r from-primary via-purple-400 to-blue-400 bg-clip-text text-transparent">Owner Dashboard</h3>
-              <p className="text-xs text-muted-foreground">Manage your platform</p>
-            </div>
-          </button>
-        </div>
-      )}
 
       {/* App Grid */}
       <div className={`grid ${gridGap} px-4 pb-24`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
