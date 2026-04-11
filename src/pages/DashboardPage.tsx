@@ -67,12 +67,9 @@ const tiles: AppTile[] = [
   { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators" },
 ];
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
-
 const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isOwner = user?.email === OWNER_EMAIL;
   const [shareOpen, setShareOpen] = useState(false);
 
   const [layout, setLayout] = useState(() => {
