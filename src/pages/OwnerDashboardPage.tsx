@@ -97,18 +97,43 @@ const OwnerDashboardPage = () => {
 
   const { data: allMedia = [] } = useAllUserMedia();
   const qc = useQueryClient();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
-    if (!loading && user?.email !== OWNER_EMAIL) {
+    const checkAdmin = async () => {
+      if (!user) { setAdminChecked(true); return; }
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      setIsAdmin(!!data);
+      setAdminChecked(true);
+    };
+    if (!loading) checkAdmin();
+  }, [loading, user]);
+
+  useEffect(() => {
+    if (adminChecked && !isAdmin) {
       navigate("/dashboard", { replace: true });
     }
-  }, [loading, user, navigate]);
+  }, [adminChecked, isAdmin, navigate]);
 
   useEffect(() => {
     loadSuggestions();
   }, []);
 
-  if (!loading && user?.email !== OWNER_EMAIL) {
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) toast.error(error.message);
+    else { toast.success("Password updated successfully!"); setNewPassword(""); setConfirmPassword(""); }
+    setChangingPassword(false);
+  };
+
+  if (!adminChecked || (adminChecked && !isAdmin)) {
     return null;
   }
 
