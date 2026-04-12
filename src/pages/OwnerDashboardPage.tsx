@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
+// Admin access is controlled via user_roles table (RBAC)
 
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
