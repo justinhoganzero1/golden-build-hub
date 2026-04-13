@@ -93,18 +93,18 @@ const AvatarGeneratorPage = () => {
     setIsLoading(true);
     try {
       const stylePrompts: Record<string, string> = {
-        "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Real human, natural skin, studio lighting, shallow depth of field, 8K quality, detailed skin texture, looks like a real photograph of a real person.`,
-        "realistic-full": `Ultra-photorealistic full body portrait of ${desc}. Real human, natural skin, studio lighting, clean dark background, 8K quality, hyper-detailed, looks like a real photograph.`,
-        "anime": `Anime style character art of ${desc}. Vibrant colors, detailed anime eyes, clean lines, professional anime illustration.`,
-        "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, clean background, Disney quality.`,
-        "comic-book": `Comic book hero illustration of ${desc}. Bold ink lines, dynamic pose, vivid colors, Marvel quality.`,
+        "realistic-portrait": `Ultra-photorealistic 8K UHD portrait headshot of ${desc}. Shot on a Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, skin imperfections, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting with rim light and fill. Shallow depth of field with creamy bokeh. Indistinguishable from a real photograph. Hyperrealistic, award-winning portrait photography.`,
+        "realistic-full": `Ultra-photorealistic 8K UHD full body portrait of ${desc}. Shot on a Hasselblad medium format camera. Real human with natural skin texture, visible pores, realistic fabric materials, accurate body proportions. Professional studio lighting, clean dark background. Hyper-detailed, photojournalistic quality. Looks like a real photograph taken by Annie Leibovitz. Award-winning photography.`,
+        "anime": `Anime style character art of ${desc}. Vibrant colors, detailed anime eyes, clean lines, professional anime illustration, 4K quality.`,
+        "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, clean background, Disney quality, 4K render.`,
+        "comic-book": `Comic book hero illustration of ${desc}. Bold ink lines, dynamic pose, vivid colors, Marvel quality, high detail.`,
         "pixel-art": `Pixel art character of ${desc}. 32-bit style, detailed sprites, retro gaming aesthetic.`,
-        "watercolor": `Watercolor portrait painting of ${desc}. Soft washes, artistic brushstrokes, elegant composition.`,
-        "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic augmentations, rain-slicked, blade runner aesthetic.`,
-        "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, detailed armor/robes, dramatic lighting.`,
-        "chibi": `Cute chibi character of ${desc}. Big head, small body, adorable expression, kawaii style.`,
-        "oil-painting": `Classical oil painting portrait of ${desc}. Renaissance style, rich colors, masterwork quality.`,
-        "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, limited palette, modern.`,
+        "watercolor": `Watercolor portrait painting of ${desc}. Soft washes, artistic brushstrokes, elegant composition, fine art quality.`,
+        "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic augmentations, rain-slicked, blade runner aesthetic, 8K cinematic.`,
+        "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, detailed armor/robes, dramatic lighting, concept art quality.`,
+        "chibi": `Cute chibi character of ${desc}. Big head, small body, adorable expression, kawaii style, high quality.`,
+        "oil-painting": `Classical oil painting portrait of ${desc}. Renaissance style, rich colors, masterwork quality, museum piece.`,
+        "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, limited palette, modern design.`,
       };
       const fullPrompt = stylePrompts[effectiveStyle] || `Avatar of ${desc}`;
 
