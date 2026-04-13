@@ -78,14 +78,14 @@ const ProfilePage = () => {
       } else {
         // Pure generation mode
         const stylePrompts: Record<string, string> = {
-          "realistic-portrait": `Ultra-photorealistic portrait headshot of ${desc}. Studio lighting, shallow depth of field, 8K quality.`,
-          "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines.`,
-          "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality.`,
-          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic.`,
-          "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting.`,
-          "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes.`,
-          "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern.`,
-          "chibi": `Cute chibi character of ${desc}. Big head, small body, kawaii style.`,
+          "realistic-portrait": `Ultra-photorealistic 8K UHD portrait headshot of ${desc}. Shot on Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting. Shallow depth of field. Indistinguishable from a real photograph. Award-winning portrait photography.`,
+          "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines, 4K quality.`,
+          "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality, 4K.`,
+          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic, 8K cinematic.`,
+          "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting, concept art quality.`,
+          "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes, fine art quality.`,
+          "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern design.`,
+          "chibi": `Cute chibi character of ${desc}. Big head, small body, kawaii style, high quality.`,
         };
         body.prompt = stylePrompts[avatarStyle] || `Avatar portrait of ${desc}`;
       }
