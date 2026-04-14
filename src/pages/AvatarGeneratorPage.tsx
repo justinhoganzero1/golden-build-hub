@@ -341,6 +341,31 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <FolderOpen className="w-4 h-4" /> Pick from Library
               </button>
+
+              {/* View Mode Toggle */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">Save As</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setViewMode("holographic-8k")}
+                    className={`p-3 rounded-xl border text-xs text-center transition-all ${
+                      viewMode === "holographic-8k"
+                        ? "border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-md shadow-cyan-500/10"
+                        : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
+                    }`}>
+                    <div className="font-bold text-sm mb-0.5">✨ Holographic 8K</div>
+                    <div className="text-[10px] opacity-70">Premium floating hologram</div>
+                  </button>
+                  <button onClick={() => setViewMode("normal-3d")}
+                    className={`p-3 rounded-xl border text-xs text-center transition-all ${
+                      viewMode === "normal-3d"
+                        ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                        : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
+                    }`}>
+                    <div className="font-bold text-sm mb-0.5">🎨 Normal 3D</div>
+                    <div className="text-[10px] opacity-70">Standard high-quality</div>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {showVoiceAndPersonality && (
