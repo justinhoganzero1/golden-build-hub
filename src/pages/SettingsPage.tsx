@@ -602,14 +602,26 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Privacy & Security</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
-                  { label: "Share Analytics Data", key: "shareData" as const, desc: "Help improve Solace with anonymous usage data" },
-                  { label: "Location Tracking", key: "locationTracking" as const, desc: "For Crisis Hub, Radar, and location-based features" },
-                  { label: "Crash Reports", key: "crashReports" as const, desc: "Auto-send crash reports to improve stability" },
-                  { label: "Personalized Ads", key: "personalizedAds" as const, desc: "Show relevant sponsored content" },
+                  { label: "Share Analytics Data", key: "shareData" as const, desc: "Help improve Solace with anonymous usage data", locked: false },
+                  { label: "Location Tracking", key: "locationTracking" as const, desc: "For Crisis Hub, Radar, and location-based features", locked: false },
+                  { label: "Crash Reports", key: "crashReports" as const, desc: "Auto-send crash reports to improve stability", locked: false },
+                  { label: "Personalized Ads", key: "personalizedAds" as const, desc: subscribed ? "Show relevant sponsored content" : "🔒 Subscribe to any plan to disable ads", locked: !subscribed },
                 ].map(item => (
                   <div key={item.key} className="flex items-center gap-3 px-4 py-3.5">
-                    <div className="flex-1"><p className="text-sm text-foreground">{item.label}</p><p className="text-[10px] text-muted-foreground">{item.desc}</p></div>
-                    <Toggle value={privacySettings[item.key]} onChange={v => setPrivacySettings(p => ({ ...p, [item.key]: v }))} />
+                    <div className="flex-1">
+                      <p className="text-sm text-foreground flex items-center gap-1.5">
+                        {item.label}
+                        {item.locked && <Lock className="w-3 h-3 text-muted-foreground" />}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                    </div>
+                    {item.locked ? (
+                      <button onClick={() => navigate("/subscribe")} className="px-3 py-1 rounded-full text-[10px] font-medium bg-primary text-primary-foreground">
+                        Upgrade
+                      </button>
+                    ) : (
+                      <Toggle value={privacySettings[item.key]} onChange={v => setPrivacySettings(p => ({ ...p, [item.key]: v }))} />
+                    )}
                   </div>
                 ))}
               </div>
