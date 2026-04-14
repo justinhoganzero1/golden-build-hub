@@ -70,6 +70,7 @@ const AvatarGeneratorPage = () => {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
+  const { data: savedVoices = [] } = useSavedVoices();
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
   const [viewMode, setViewMode] = useState<"holographic-8k" | "normal-3d">("holographic-8k");
