@@ -535,7 +535,7 @@ const OraclePage = () => {
             setInput("");
             sendMessageRef.current?.(text);
           }
-        }, 2000);
+        }, 2500);
       }
       if (interim) setInput(interim);
     };
@@ -629,6 +629,7 @@ const OraclePage = () => {
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
+    setInput("");
     // Interrupt any in-progress response
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
     window.speechSynthesis.cancel();

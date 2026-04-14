@@ -1,8 +1,11 @@
 import { useState, useRef } from "react";
-import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus } from "lucide-react";
+import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
+import { useAuth } from "@/contexts/AuthContext";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 const BLOCKED_TERMS = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip)\b/i;
@@ -10,6 +13,8 @@ const BLOCKED_TERMS = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai
 const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
 
 const PhotographyHubPage = () => {
+  const { user } = useAuth();
+  const saveMedia = useSaveMedia();
   const [prompt, setPrompt] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("None");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -17,6 +22,7 @@ const PhotographyHubPage = () => {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [mode, setMode] = useState<"generate" | "edit">("generate");
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +77,16 @@ const PhotographyHubPage = () => {
       if (imgUrl) {
         setGeneratedImage(imgUrl);
         toast.success(mode === "edit" ? "Photo transformed! ✨" : "Photo generated!");
+        // Auto-save to media library
+        if (user) {
+          saveMedia.mutate({
+            media_type: "image",
+            title: `${mode === "edit" ? "Edited" : "Generated"} Photo - ${prompt.slice(0, 50)}`,
+            url: imgUrl,
+            source_page: "photography-hub",
+            metadata: { filter: selectedFilter, mode, prompt },
+          });
+        }
       }
     } catch (e) {
       console.error(e);
@@ -98,6 +114,10 @@ const PhotographyHubPage = () => {
           <button onClick={() => { setMode("edit"); if (!uploadedPhoto) fileRef.current?.click(); }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all ${mode === "edit" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
             <ImagePlus className="w-4 h-4" /> Edit My Photo
+          </button>
+          <button onClick={() => setShowMediaPicker(true)}
+            className="py-2.5 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-card border border-border text-muted-foreground hover:border-primary transition-colors">
+            <FolderOpen className="w-4 h-4" />
           </button>
         </div>
 
@@ -181,6 +201,13 @@ const PhotographyHubPage = () => {
         url={generatedImage || undefined}
         imageUrl={generatedImage || undefined}
         description="Check out this AI-generated photo from Solace!"
+      />
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Pick from Library"
+        onSelect={(url) => { setUploadedPhoto(url); setMode("edit"); toast.success("Image loaded from library!"); }}
       />
     </div>
   );

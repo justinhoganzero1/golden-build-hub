@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic" },
@@ -23,6 +25,7 @@ const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const saveMedia = useSaveMedia();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: "User", email: user?.email || "user@example.com",
@@ -41,6 +44,7 @@ const ProfilePage = () => {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEnlarged, setShowEnlarged] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -168,7 +172,11 @@ const ProfilePage = () => {
               </button>
               <button onClick={() => fileRef.current?.click()}
                 className={`flex-1 py-2 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 ${editMode ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                <ImagePlus className="w-3 h-3" /> Upload & Edit
+                <ImagePlus className="w-3 h-3" /> Upload
+              </button>
+              <button onClick={() => setShowMediaPicker(true)}
+                className="py-2 px-3 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 bg-secondary text-secondary-foreground hover:bg-primary/20 transition-colors">
+                <FolderOpen className="w-3 h-3" /> Library
               </button>
             </div>
 
@@ -277,6 +285,13 @@ const ProfilePage = () => {
         url={profileAvatar || undefined}
         imageUrl={profileAvatar || undefined}
         description="Check out my AI avatar from Solace!"
+      />
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Pick from Library"
+        onSelect={(url) => { setProfileAvatar(url); toast.success("Avatar loaded from library!"); }}
       />
     </div>
   );

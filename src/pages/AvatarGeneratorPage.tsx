@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
-import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard } from "lucide-react";
+import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
@@ -65,7 +66,7 @@ const AvatarGeneratorPage = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
-
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
@@ -335,6 +336,10 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
+              <button onClick={() => setShowMediaPicker(true)}
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
+                <FolderOpen className="w-4 h-4" /> Pick from Library
+              </button>
             </div>
 
             {showVoiceAndPersonality && (
@@ -481,6 +486,13 @@ const AvatarGeneratorPage = () => {
           </div>
         </div>
       </div>
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Use Image from Library"
+        onSelect={(url) => { setImageUrl(url); toast.success("Image loaded from library!"); }}
+      />
     </div>
   );
 };
