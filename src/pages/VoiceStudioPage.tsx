@@ -142,8 +142,8 @@ const VoiceStudioPage = () => {
     if (playing === voice.id) { window.speechSynthesis.cancel(); setPlaying(null); return; }
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(voice.preview);
-    utter.rate = 0.9 + Math.random() * 0.3;
-    utter.pitch = voice.gender === "Female" ? 1.1 + Math.random() * 0.3 : 0.7 + Math.random() * 0.3;
+    utter.rate = 0.75 + Math.random() * 0.15;
+    utter.pitch = voice.gender === "Female" ? 1.05 + Math.random() * 0.2 : 0.8 + Math.random() * 0.2;
     utter.onend = () => setPlaying(null);
     setPlaying(voice.id);
     window.speechSynthesis.speak(utter);

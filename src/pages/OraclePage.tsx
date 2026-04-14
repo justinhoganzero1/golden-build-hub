@@ -133,6 +133,8 @@ const OraclePage = () => {
           avatarId: a.id,
           purpose: a.purpose,
         }));
+      // Clear voice cache so new voice_style assignments take effect
+      voiceMapRef.current.clear();
       return [...existing, ...userAgents];
     });
   }, [userAvatars]);
@@ -146,13 +148,47 @@ const OraclePage = () => {
   const voiceMapRef = useRef<Map<string, SpeechSynthesisVoice>>(new Map());
   const getVoiceForAgent = useCallback((agentName: string): SpeechSynthesisVoice | undefined => {
     if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
-    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+    const allVoices = window.speechSynthesis.getVoices();
+    const englishVoices = allVoices.filter(v => v.lang.startsWith("en"));
+    
+    // Check if this agent has a saved voice_style from Voice Studio
+    const agent = agents.find(a => a.name === agentName);
+    const voiceStyle = agent?.voice_style || "";
+    
+    // Try to match accent/style keywords from the saved voice to a system voice
+    if (voiceStyle) {
+      const styleLower = voiceStyle.toLowerCase();
+      const matchedVoice = allVoices.find(v => {
+        const vName = v.name.toLowerCase();
+        // Match accent keywords like "british", "australian", "indian" etc.
+        if (styleLower.includes("british") && (vName.includes("uk") || vName.includes("british") || vName.includes("daniel"))) return true;
+        if (styleLower.includes("australian") && (vName.includes("australia") || vName.includes("karen"))) return true;
+        if (styleLower.includes("indian") || styleLower.includes("hindi")) return vName.includes("india") || vName.includes("rishi");
+        if (styleLower.includes("irish") && vName.includes("moira")) return true;
+        if (styleLower.includes("scottish") && vName.includes("fiona")) return true;
+        if (styleLower.includes("french") && v.lang.startsWith("fr")) return true;
+        if (styleLower.includes("german") && v.lang.startsWith("de")) return true;
+        if (styleLower.includes("spanish") && v.lang.startsWith("es")) return true;
+        if (styleLower.includes("italian") && v.lang.startsWith("it")) return true;
+        if (styleLower.includes("japanese") && v.lang.startsWith("ja")) return true;
+        if (styleLower.includes("korean") && v.lang.startsWith("ko")) return true;
+        // Match gender from voice style string
+        if (styleLower.includes("female") && vName.includes("female")) return true;
+        if (styleLower.includes("male") && vName.includes("male")) return true;
+        return false;
+      });
+      if (matchedVoice) {
+        voiceMapRef.current.set(agentName, matchedVoice);
+        return matchedVoice;
+      }
+    }
+    
     const usedVoices = new Set(voiceMapRef.current.values());
-    const available = voices.filter(v => !usedVoices.has(v));
-    const voice = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : voices[0];
+    const available = englishVoices.filter(v => !usedVoices.has(v));
+    const voice = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : englishVoices[0];
     if (voice) voiceMapRef.current.set(agentName, voice);
     return voice;
-  }, []);
+  }, [agents]);
 
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
@@ -166,8 +202,11 @@ const OraclePage = () => {
     isSpeakingQueueRef.current = true;
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-US";
-    utterance.rate = next.agentName === oracleName ? 0.95 : 0.9 + Math.random() * 0.15;
-    utterance.pitch = next.agentName === oracleName ? 1.1 : 0.8 + Math.random() * 0.6;
+    // Slower, smoother speech — no jumpiness
+    const agent = agents.find(a => a.name === next.agentName);
+    const hasCustomVoice = !!(agent?.voice_style);
+    utterance.rate = next.agentName === oracleName ? 0.82 : hasCustomVoice ? 0.8 : 0.78 + Math.random() * 0.1;
+    utterance.pitch = next.agentName === oracleName ? 1.05 : 0.85 + Math.random() * 0.25;
     const voice = getVoiceForAgent(next.agentName);
     if (voice) utterance.voice = voice;
     utterance.onstart = () => setIsSpeaking(true);
