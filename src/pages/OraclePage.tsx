@@ -75,6 +75,11 @@ const OraclePage = () => {
   const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
+  const { data: oracleMemories = [] } = useOracleMemories();
+  const saveMemory = useSaveOracleMemory();
+  const { data: adPrefs } = useAdPreferences();
+  const updateAdPrefs = useUpdateAdPreferences();
+  const { subscribed, tier } = useSubscription();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
