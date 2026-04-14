@@ -10,6 +10,11 @@ import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 
 const STYLES = [
+  { value: "3d-8k-realistic", label: "3D 8K Realistic", desc: "Ultra-realistic 3D 8K cinematic render" },
+  { value: "3d-8k-portrait", label: "3D 8K Portrait", desc: "Photorealistic 3D 8K headshot" },
+  { value: "3d-8k-fantasy", label: "3D 8K Fantasy", desc: "Ultra-detailed 3D 8K fantasy character" },
+  { value: "3d-8k-cyberpunk", label: "3D 8K Cyberpunk", desc: "Cinematic 3D 8K neon cyberpunk" },
+  { value: "3d-8k-anime", label: "3D 8K Anime", desc: "Hyper-detailed 3D 8K anime render" },
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
   { value: "realistic-full", label: "Realistic Full Body", desc: "Lifelike full body portrait" },
   { value: "anime", label: "Anime", desc: "Japanese anime style" },
@@ -60,7 +65,7 @@ const AvatarGeneratorPage = () => {
   const OWNER_EMAIL = "justinbretthogan@gmail.com";
   const isOwner = user?.email === OWNER_EMAIL;
 
-  const [selectedStyle, setSelectedStyle] = useState("realistic-full");
+  const [selectedStyle, setSelectedStyle] = useState("3d-8k-realistic");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

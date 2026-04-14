@@ -77,8 +77,8 @@ const generateVoices = (): VoiceProfile[] => {
   const voices: VoiceProfile[] = [];
   const genders: ("Male" | "Female")[] = ["Male", "Female"];
   const names = {
-    Male: ["James", "Oliver", "Raj", "Kenji", "Marcus", "Ahmed", "Lars", "Diego", "Ivan", "Kofi", "Chen", "Pierre", "Hans", "Liam", "Noah", "Ethan", "Kai", "Ravi", "Soren", "Mateo",
-      "Bruno", "Felix", "Hugo", "Oscar", "Leo", "Axel", "Finn", "Rex", "Dante", "Zane", "Blake", "Troy", "Grant", "Clay", "Wade", "Jett", "Knox", "Cash", "Cruz", "Nash",
+    Male: ["Bruno", "James", "Oliver", "Raj", "Kenji", "Marcus", "Ahmed", "Lars", "Diego", "Ivan", "Kofi", "Chen", "Pierre", "Hans", "Liam", "Noah", "Ethan", "Kai", "Ravi", "Soren", "Mateo",
+      "Felix", "Hugo", "Oscar", "Leo", "Axel", "Finn", "Rex", "Dante", "Zane", "Blake", "Troy", "Grant", "Clay", "Wade", "Jett", "Knox", "Cash", "Cruz", "Nash",
       "Reid", "Beau", "Cole", "Drew", "Grey", "Heath", "Lance", "Miles", "Quinn", "Shane"],
     Female: ["Sarah", "Luna", "Priya", "Yuki", "Amara", "Fatima", "Astrid", "Isabella", "Natasha", "Ama", "Mei", "Claire", "Greta", "Emma", "Ava", "Mia", "Zara", "Ananya", "Freya", "Sofia",
       "Vera", "Iris", "Jade", "Opal", "Ruby", "Pearl", "Ivy", "Fern", "Sage", "Wren", "Blair", "Dawn", "Eve", "Hope", "Joy", "Lake", "Mae", "Rain", "Sky", "Star",
