@@ -282,6 +282,13 @@ const ProfilePage = () => {
         imageUrl={profileAvatar || undefined}
         description="Check out my AI avatar from Solace!"
       />
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Pick from Library"
+        onSelect={(url) => { setProfileAvatar(url); toast.success("Avatar loaded from library!"); }}
+      />
     </div>
   );
 };
