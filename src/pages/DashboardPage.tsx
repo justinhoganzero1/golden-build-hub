@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useSubscription, hasAccess as subHasAccess } from "@/hooks/useSubscription";
-import { TileLockBadge } from "@/components/PaywallGate";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles, Phone,
