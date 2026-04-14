@@ -200,6 +200,48 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_voices: {
+        Row: {
+          accent: string | null
+          created_at: string
+          gender: string | null
+          id: string
+          name: string
+          profession: string | null
+          source: string
+          updated_at: string
+          user_id: string
+          voice_config: Json | null
+          voice_style: string | null
+        }
+        Insert: {
+          accent?: string | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          name: string
+          profession?: string | null
+          source?: string
+          updated_at?: string
+          user_id: string
+          voice_config?: Json | null
+          voice_style?: string | null
+        }
+        Update: {
+          accent?: string | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          name?: string
+          profession?: string | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+          voice_config?: Json | null
+          voice_style?: string | null
+        }
+        Relationships: []
+      }
       special_occasions: {
         Row: {
           category: string | null

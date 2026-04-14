@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -69,6 +70,7 @@ const AvatarGeneratorPage = () => {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
+  const { data: savedVoices = [] } = useSavedVoices();
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
   const [viewMode, setViewMode] = useState<"holographic-8k" | "normal-3d">("holographic-8k");
@@ -375,6 +377,23 @@ const AvatarGeneratorPage = () => {
                 </h2>
                 <div>
                   <label className="text-xs text-gray-400 mb-1.5 block">Voice Style</label>
+                  {savedVoices.length > 0 && (
+                    <>
+                      <p className="text-[10px] text-primary font-semibold mb-1">🎙️ My Saved Voices</p>
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {savedVoices.map(v => {
+                          const label = `${v.name} (${v.accent || "Default"} • ${v.voice_style || "Natural"})`;
+                          return (
+                            <button key={v.id} onClick={() => setSelectedVoice(label)}
+                              className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedVoice === label ? "bg-primary text-primary-foreground" : "bg-card border border-primary/30 text-primary"}`}>
+                              {v.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mb-1">Default Voices</p>
+                    </>
+                  )}
                   <div className="flex flex-wrap gap-1.5">
                     {VOICE_OPTIONS.map(v => (
                       <button key={v} onClick={() => setSelectedVoice(v)}
