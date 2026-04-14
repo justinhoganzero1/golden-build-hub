@@ -164,4 +164,38 @@ All colors MUST be HSL.
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-4px); }
   }
+
+  /* ── Holographic 8K Avatar Display ── */
+  .holo-avatar-wrap {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holo-avatar-img {
+    filter: contrast(1.05) saturate(1.1) brightness(1.02);
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  .holo-avatar-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      hsl(180 100% 50% / 0.06) 25%,
+      hsl(270 100% 60% / 0.04) 50%,
+      hsl(45 100% 50% / 0.06) 75%,
+      transparent 100%
+    );
+    z-index: 1;
+    pointer-events: none;
+    animation: holo-sweep 4s ease-in-out infinite;
+  }
+
+  @keyframes holo-sweep {
+    0% { transform: translateX(-100%) rotate(-5deg); }
+    50% { transform: translateX(100%) rotate(5deg); }
+    100% { transform: translateX(-100%) rotate(-5deg); }
+  }
 }
