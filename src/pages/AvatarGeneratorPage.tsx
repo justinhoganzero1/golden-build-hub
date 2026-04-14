@@ -135,7 +135,7 @@ const AvatarGeneratorPage = () => {
             title: avatarName.trim() || "AI Avatar",
             url,
             source_page: "Avatar Generator",
-            metadata: { style: selectedStyle, prompt: desc },
+            metadata: { style: selectedStyle, prompt: desc, viewMode },
           });
         }
       } else {
