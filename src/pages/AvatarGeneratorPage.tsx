@@ -407,7 +407,11 @@ const AvatarGeneratorPage = () => {
           <div className="space-y-4">
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
-              <div className="aspect-[3/4] rounded-xl bg-[#0f0f0f] border border-gray-800 overflow-hidden flex items-center justify-center">
+              <div className={`aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center ${
+                viewMode === "holographic-8k" && imageUrl && !showCamera && !isLoading
+                  ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-purple-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
+                  : "bg-[#0f0f0f] border border-gray-800"
+              }`}>
                 {showCamera ? (
                   <div className="relative w-full h-full">
                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -419,7 +423,22 @@ const AvatarGeneratorPage = () => {
                     <p className="text-xs text-gray-500">Generating your avatar...</p>
                   </div>
                 ) : imageUrl ? (
-                  <img src={imageUrl} alt="Generated avatar" className="w-full h-full object-cover" />
+                  <div className={`relative w-full h-full ${viewMode === "holographic-8k" ? "holo-avatar-wrap" : ""}`}>
+                    <img src={imageUrl} alt="Generated avatar" className={`w-full h-full object-cover ${
+                      viewMode === "holographic-8k" ? "holo-avatar-img" : ""
+                    }`} />
+                    {viewMode === "holographic-8k" && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-purple-500/10 pointer-events-none animate-pulse" style={{ animationDuration: "3s" }} />
+                        <div className="absolute inset-0 pointer-events-none" style={{
+                          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,200,255,0.03) 3px, rgba(0,200,255,0.03) 4px)",
+                        }} />
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[8px] font-bold uppercase backdrop-blur-sm">
+                          ✨ 8K Holographic
+                        </div>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 text-gray-600">
                     <Sparkles className="w-16 h-16 text-gray-700" />
