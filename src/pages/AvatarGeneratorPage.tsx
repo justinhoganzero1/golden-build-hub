@@ -65,7 +65,7 @@ const AvatarGeneratorPage = () => {
   const OWNER_EMAIL = "justinbretthogan@gmail.com";
   const isOwner = user?.email === OWNER_EMAIL;
 
-  const [selectedStyle, setSelectedStyle] = useState("realistic-full");
+  const [selectedStyle, setSelectedStyle] = useState("3d-8k-realistic");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
