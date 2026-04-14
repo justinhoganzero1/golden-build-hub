@@ -25,6 +25,7 @@ const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const ProfilePage = () => {
   const { user } = useAuth();
+  const saveMedia = useSaveMedia();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: "User", email: user?.email || "user@example.com",
@@ -43,6 +44,7 @@ const ProfilePage = () => {
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEnlarged, setShowEnlarged] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
