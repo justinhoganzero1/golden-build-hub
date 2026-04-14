@@ -33,7 +33,7 @@ const tiles: AppTile[] = [
   { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
   { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
   { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
-  { label: "Photography", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
+  { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
   { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
   { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
   
@@ -131,9 +131,9 @@ const DashboardPage = () => {
           <button
             key={tile.path + tile.label}
             onClick={() => navigate(tile.path)}
-            className={`flex flex-col items-center gap-2 p-3 ${tileBR} bg-card border border-border hover:border-primary hover:bg-secondary transition-all`}
+            className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR}`}
           >
-            <div className={`text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
+            <div className={`holo-icon text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
             <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
               {tile.label}
             </span>
@@ -142,25 +142,25 @@ const DashboardPage = () => {
       </div>
 
       {/* Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border flex justify-around py-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around py-3">
         <button onClick={() => navigate("/dashboard")} className="flex flex-col items-center gap-1 text-primary">
-          <Home className="w-5 h-5" />
+          <div className="holo-icon"><Home className="w-5 h-5" /></div>
           <span className="text-[10px]">Home</span>
         </button>
         <button onClick={() => navigate("/oracle")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <MessageCircle className="w-5 h-5" />
+          <div className="holo-icon"><MessageCircle className="w-5 h-5" /></div>
           <span className="text-[10px]">Oracle</span>
         </button>
         <button onClick={() => navigate("/vault")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <Shield className="w-5 h-5" />
+          <div className="holo-icon"><Shield className="w-5 h-5" /></div>
           <span className="text-[10px]">Vault</span>
         </button>
         <button onClick={() => navigate("/settings")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <Settings className="w-5 h-5" />
+          <div className="holo-icon"><Settings className="w-5 h-5" /></div>
           <span className="text-[10px]">Settings</span>
         </button>
         <button onClick={() => navigate("/profile")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <User className="w-5 h-5" />
+          <div className="holo-icon"><User className="w-5 h-5" /></div>
           <span className="text-[10px]">Profile</span>
         </button>
       </div>

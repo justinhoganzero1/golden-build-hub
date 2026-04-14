@@ -10,16 +10,17 @@ import ShareDialog from "@/components/ShareDialog";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
-  { key: "all",           label: "All Creations",     icon: Layers,        color: "from-amber-500/20 to-yellow-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-  { key: "avatar",        label: "Avatars",           icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
-  { key: "photography",   label: "Photography",       icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
-  { key: "ai-studio",     label: "AI Studio",         icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
-  { key: "magic-hub",     label: "Magic Hub",         icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
-  { key: "video-editor",  label: "Video Editor",      icon: Film,          color: "from-orange-500/20 to-amber-500/20", accent: "text-orange-400", border: "border-orange-500/30" },
-  { key: "voice-studio",  label: "Voice Studio",      icon: Mic,           color: "from-teal-500/20 to-cyan-500/20", accent: "text-teal-400", border: "border-teal-500/30" },
-  { key: "oracle",        label: "Oracle",            icon: Globe,         color: "from-yellow-500/20 to-amber-500/20", accent: "text-yellow-400", border: "border-yellow-500/30" },
-  { key: "live-vision",   label: "Live Vision",       icon: Eye,           color: "from-indigo-500/20 to-blue-500/20", accent: "text-indigo-400", border: "border-indigo-500/30" },
-  { key: "other",         label: "Other",             icon: FileText,      color: "from-zinc-500/20 to-slate-500/20", accent: "text-zinc-400", border: "border-zinc-500/30" },
+  { key: "all",           label: "All Creations",                             icon: Layers,        color: "from-amber-500/20 to-yellow-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
+  { key: "avatar",        label: "Avatars",                                   icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
+  { key: "photography",   label: "SOLACE AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
+  { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
+  { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
+  { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
+  { key: "video-editor",  label: "Video Editor",                             icon: Film,          color: "from-orange-500/20 to-amber-500/20", accent: "text-orange-400", border: "border-orange-500/30" },
+  { key: "voice-studio",  label: "Voice Studio",                             icon: Mic,           color: "from-teal-500/20 to-cyan-500/20", accent: "text-teal-400", border: "border-teal-500/30" },
+  { key: "oracle",        label: "Oracle",                                   icon: Globe,         color: "from-yellow-500/20 to-amber-500/20", accent: "text-yellow-400", border: "border-yellow-500/30" },
+  { key: "live-vision",   label: "Live Vision",                              icon: Eye,           color: "from-indigo-500/20 to-blue-500/20", accent: "text-indigo-400", border: "border-indigo-500/30" },
+  { key: "other",         label: "Other",                                    icon: FileText,      color: "from-zinc-500/20 to-slate-500/20", accent: "text-zinc-400", border: "border-zinc-500/30" },
 ] as const;
 
 const TYPE_FILTERS = [
@@ -35,6 +36,7 @@ function getCollectionKey(sourcePage: string | null): string {
   const s = sourcePage.toLowerCase();
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
+  if (s.includes("app-builder") || s.includes("app builder")) return "apps";
   if (s.includes("studio") && !s.includes("voice")) return "ai-studio";
   if (s.includes("magic")) return "magic-hub";
   if (s.includes("video")) return "video-editor";
@@ -149,13 +151,13 @@ const MediaLibraryPage = () => {
               const ColIcon = col.icon;
               return (
                 <button key={col.key} onClick={() => setActiveCollection(col.key)}
-                  className={`relative overflow-hidden rounded-2xl p-3 text-left transition-all duration-200 border ${
+                  className={`holo-tile relative rounded-2xl p-3 text-left ${
                     isActive
                       ? `bg-gradient-to-br ${col.color} ${col.border} shadow-lg shadow-primary/5 scale-[1.02]`
-                      : "bg-card border-border hover:border-primary/30 hover:shadow-md"
+                      : ""
                   }`}>
                   <div className="flex items-center gap-2.5">
-                    <div className={`p-1.5 rounded-xl ${isActive ? `bg-gradient-to-br ${col.color}` : "bg-muted/50"}`}>
+                    <div className={`holo-icon p-1.5 rounded-xl ${isActive ? `bg-gradient-to-br ${col.color}` : "bg-muted/50"}`}>
                       <ColIcon className={`w-4 h-4 ${isActive ? col.accent : "text-muted-foreground"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
