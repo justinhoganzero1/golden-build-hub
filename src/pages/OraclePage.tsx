@@ -301,11 +301,16 @@ const OraclePage = () => {
   }, [navigate, isMuted]);
 
   // ============ PARSE NAVIGATION COMMANDS FROM AI RESPONSE ============
-  const parseAndHandleNavigation = useCallback((content: string): { cleanContent: string; navPath: string | null } => {
+  const parseAndHandleNavigation = useCallback((content: string): { cleanContent: string; navPath: string | null; isBackground: boolean } => {
     const navMatch = content.match(/\[\[NAVIGATE:(\/[^\]]+)\]\]/);
-    const navPath = navMatch ? navMatch[1] : null;
-    const cleanContent = content.replace(/\[\[NAVIGATE:\/[^\]]+\]\]/g, "").trim();
-    return { cleanContent, navPath };
+    const bgMatch = content.match(/\[\[BACKGROUND:(\/[^\]]+)\]\]/);
+    const navPath = navMatch ? navMatch[1] : bgMatch ? bgMatch[1] : null;
+    const isBackground = !!bgMatch && !navMatch;
+    const cleanContent = content
+      .replace(/\[\[NAVIGATE:\/[^\]]+\]\]/g, "")
+      .replace(/\[\[BACKGROUND:\/[^\]]+\]\]/g, "")
+      .trim();
+    return { cleanContent, navPath, isBackground };
   }, []);
 
   // ============ ANIMATED ORB ============
