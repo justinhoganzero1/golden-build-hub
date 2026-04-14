@@ -77,7 +77,7 @@ const EMOJI_OPTIONS = ["🧑‍💼", "👩‍🔬", "🧑‍🍳", "👩‍⚕�
 const COLOR_OPTIONS = ["#9b87f5", "#0EA5E9", "#D946EF", "#F97316", "#EAB308", "#22C55E", "#14B8A6", "#EF4444", "#8B5CF6", "#EC4899"];
 
 const DEFAULT_AVATARS: AvatarConfig[] = [
-  { id: "oracle", name: "Oracle", emoji: "🔮", color: "#9b87f5", field: "AI Researcher", personality: "Wise, all-knowing oracle", voiceId: "george", active: true, locked: false },
+  { id: "oracle", name: "Oracle", emoji: "🔮", color: "#9b87f5", field: "AI Researcher", personality: "Wise, all-knowing oracle", voiceId: "brian", active: true, locked: false },
   { id: "luna", name: "Luna", emoji: "🌙", color: "#9b87f5", field: "Painter", personality: "Creative and artistic", voiceId: "sarah", active: false, locked: false },
   { id: "max", name: "Max", emoji: "🤖", color: "#0EA5E9", field: "Software Engineer", personality: "Analytical and logical", voiceId: "roger", active: false, locked: true },
   { id: "aria", name: "Aria", emoji: "💜", color: "#D946EF", field: "Therapist", personality: "Empathetic and caring", voiceId: "laura", active: false, locked: true },

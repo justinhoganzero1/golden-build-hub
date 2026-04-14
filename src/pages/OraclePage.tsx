@@ -34,7 +34,7 @@ interface ChatAgent {
 }
 
 const DEFAULT_AGENTS: ChatAgent[] = [
-  { name: "Oracle", emoji: "🔮", color: "#9b87f5", personality: "", active: true, locked: false },
+  { name: "Oracle", emoji: "🔮", color: "#9b87f5", personality: "", active: true, locked: false, voice_style: "Bruno (American General • Warm & Friendly)" },
   { name: "Luna", emoji: "🌙", color: "#9b87f5", personality: "creative and artistic", active: false, locked: false },
   { name: "Max", emoji: "🤖", color: "#0EA5E9", personality: "analytical and logical", active: false, locked: true },
   { name: "Aria", emoji: "💜", color: "#D946EF", personality: "empathetic and caring", active: false, locked: true },
