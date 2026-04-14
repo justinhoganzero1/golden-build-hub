@@ -336,6 +336,10 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
+              <button onClick={() => setShowMediaPicker(true)}
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
+                <FolderOpen className="w-4 h-4" /> Pick from Library
+              </button>
             </div>
 
             {showVoiceAndPersonality && (
