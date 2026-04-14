@@ -172,7 +172,11 @@ const ProfilePage = () => {
               </button>
               <button onClick={() => fileRef.current?.click()}
                 className={`flex-1 py-2 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 ${editMode ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
-                <ImagePlus className="w-3 h-3" /> Upload & Edit
+                <ImagePlus className="w-3 h-3" /> Upload
+              </button>
+              <button onClick={() => setShowMediaPicker(true)}
+                className="py-2 px-3 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 bg-secondary text-secondary-foreground hover:bg-primary/20 transition-colors">
+                <FolderOpen className="w-3 h-3" /> Library
               </button>
             </div>
 
