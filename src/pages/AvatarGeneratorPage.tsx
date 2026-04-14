@@ -71,6 +71,7 @@ const AvatarGeneratorPage = () => {
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
+  const [viewMode, setViewMode] = useState<"holographic-8k" | "normal-3d">("holographic-8k");
 
   const showVoiceAndPersonality = purpose === "ai-friend" || purpose === "partner";
   const currentPurpose = AVATAR_PURPOSES.find(p => p.value === purpose);
