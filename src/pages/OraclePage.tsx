@@ -133,6 +133,8 @@ const OraclePage = () => {
           avatarId: a.id,
           purpose: a.purpose,
         }));
+      // Clear voice cache so new voice_style assignments take effect
+      voiceMapRef.current.clear();
       return [...existing, ...userAgents];
     });
   }, [userAvatars]);
