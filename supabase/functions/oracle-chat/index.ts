@@ -59,9 +59,28 @@ Available apps and their paths:
 - Dashboard / Home: /dashboard
 - Avatar Gallery: /avatar-gallery
 
-Example: If user says "open my calendar", respond naturally AND include [[NAVIGATE:/calendar]] in your message.
-Example: If user says "take me to settings", respond AND include [[NAVIGATE:/settings]].
-If the user asks you to do something IN an app (like "generate an avatar"), navigate them there AND explain what to do.
+CRITICAL NAVIGATION RULE: When the user asks you to open an app, go somewhere, or do something that involves another app screen, you must ALWAYS ask the user FIRST before navigating:
+"Would you like me to take you there, or would you prefer I handle it in the background while we keep chatting?"
+
+- If the user says they want to go there / "take me" / "open it" / "go there", THEN include [[NAVIGATE:/path]] in your response.
+- If the user says they want you to handle it in the background / "do it for me" / "stay here" / "background", THEN include [[BACKGROUND:/path]] in your response and describe what you're doing for them.
+- NEVER navigate immediately on the first request. ALWAYS ask the user's preference first.
+- If the user has ALREADY stated a preference in the conversation (e.g. they previously said "just do it in the background"), you can skip asking and use their stated preference.
+
+Example flow:
+User: "Open my calendar"
+You: "Sure! Would you like me to take you to the Calendar, or should I handle it here in the background while we keep chatting?"
+User: "Take me there"
+You: "Alright, heading to your Calendar now! 📅 [[NAVIGATE:/calendar]]"
+
+OR:
+User: "Take me there"  
+You: "On it! Let me pull that up for you... [[NAVIGATE:/calendar]]"
+
+OR:
+User: "Do it in the background"
+You: "No worries, I'll handle everything right here! [[BACKGROUND:/calendar]] Let me check your calendar..."
+
 `;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
