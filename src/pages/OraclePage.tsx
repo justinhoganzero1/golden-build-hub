@@ -301,11 +301,16 @@ const OraclePage = () => {
   }, [navigate, isMuted]);
 
   // ============ PARSE NAVIGATION COMMANDS FROM AI RESPONSE ============
-  const parseAndHandleNavigation = useCallback((content: string): { cleanContent: string; navPath: string | null } => {
+  const parseAndHandleNavigation = useCallback((content: string): { cleanContent: string; navPath: string | null; isBackground: boolean } => {
     const navMatch = content.match(/\[\[NAVIGATE:(\/[^\]]+)\]\]/);
-    const navPath = navMatch ? navMatch[1] : null;
-    const cleanContent = content.replace(/\[\[NAVIGATE:\/[^\]]+\]\]/g, "").trim();
-    return { cleanContent, navPath };
+    const bgMatch = content.match(/\[\[BACKGROUND:(\/[^\]]+)\]\]/);
+    const navPath = navMatch ? navMatch[1] : bgMatch ? bgMatch[1] : null;
+    const isBackground = !!bgMatch && !navMatch;
+    const cleanContent = content
+      .replace(/\[\[NAVIGATE:\/[^\]]+\]\]/g, "")
+      .replace(/\[\[BACKGROUND:\/[^\]]+\]\]/g, "")
+      .trim();
+    return { cleanContent, navPath, isBackground };
   }, []);
 
   // ============ ANIMATED ORB ============
@@ -667,12 +672,17 @@ const OraclePage = () => {
       }
 
       // Handle navigation commands in Oracle response
-      const { cleanContent, navPath } = parseAndHandleNavigation(oracleContent);
+      const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(oracleContent);
       if (navPath) {
         // Update last oracle message to clean content
         setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: cleanContent } : m));
-        // Trigger explosion and navigate
-        setTimeout(() => triggerExplosion(navPath), 1500);
+        if (isBackground) {
+          // Background mode — stay in chat, show a status message
+          toast.success(`${oracleName} is working on it in the background...`);
+        } else {
+          // Navigate mode — explosion transition
+          setTimeout(() => triggerExplosion(navPath), 1500);
+        }
       }
 
       if (oracleContent && !isMuted) speakAsAgent(cleanContent || oracleContent, oracleName);
