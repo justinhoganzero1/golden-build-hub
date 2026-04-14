@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
-import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard } from "lucide-react";
+import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
