@@ -7,6 +7,8 @@ import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
 import { useUserAvatars, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface Message {
   id: string;
