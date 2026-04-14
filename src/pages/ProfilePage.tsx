@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic" },
