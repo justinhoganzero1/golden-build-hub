@@ -33,7 +33,7 @@ const tiles: AppTile[] = [
   { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
   { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
   { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
-  { label: "Photography", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
+  { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
   { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
   { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
   
@@ -131,9 +131,9 @@ const DashboardPage = () => {
           <button
             key={tile.path + tile.label}
             onClick={() => navigate(tile.path)}
-            className={`flex flex-col items-center gap-2 p-3 ${tileBR} bg-card border border-border hover:border-primary hover:bg-secondary transition-all`}
+            className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR}`}
           >
-            <div className={`text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
+            <div className={`holo-icon text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
             <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
               {tile.label}
             </span>
