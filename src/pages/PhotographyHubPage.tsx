@@ -115,6 +115,10 @@ const PhotographyHubPage = () => {
             className={`flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all ${mode === "edit" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
             <ImagePlus className="w-4 h-4" /> Edit My Photo
           </button>
+          <button onClick={() => setShowMediaPicker(true)}
+            className="py-2.5 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-1 bg-card border border-border text-muted-foreground hover:border-primary transition-colors">
+            <FolderOpen className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Uploaded Photo Preview */}
@@ -197,6 +201,13 @@ const PhotographyHubPage = () => {
         url={generatedImage || undefined}
         imageUrl={generatedImage || undefined}
         description="Check out this AI-generated photo from Solace!"
+      />
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Pick from Library"
+        onSelect={(url) => { setUploadedPhoto(url); setMode("edit"); toast.success("Image loaded from library!"); }}
       />
     </div>
   );
