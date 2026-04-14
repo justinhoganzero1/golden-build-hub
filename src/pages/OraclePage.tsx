@@ -7,6 +7,8 @@ import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
 import { useUserAvatars, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface Message {
   id: string;
@@ -73,6 +75,11 @@ const OraclePage = () => {
   const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
+  const { data: oracleMemories = [] } = useOracleMemories();
+  const saveMemory = useSaveOracleMemory();
+  const { data: adPrefs } = useAdPreferences();
+  const updateAdPrefs = useUpdateAdPreferences();
+  const { subscribed, tier } = useSubscription();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -660,6 +667,12 @@ const OraclePage = () => {
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
+          userMemories: formatMemoriesForPrompt(oracleMemories),
+          adContext: {
+            showAds: adPrefs?.ads_enabled ?? true,
+            isSubscribed: subscribed,
+            freeTrialsUsed: adPrefs?.free_trials_used || [],
+          },
         }),
         signal: controller.signal,
       });
@@ -710,21 +723,45 @@ const OraclePage = () => {
         }
       }
 
+      // Parse and save memories from Oracle response
+      const memoryMatches = oracleContent.matchAll(/\[\[MEMORY:(\w+):(.+?)\]\]/g);
+      for (const match of memoryMatches) {
+        const [, memType, memContent] = match;
+        saveMemory.mutate({ memory_type: memType, content: memContent, importance: 7 });
+      }
+
+      // Parse free trial grants
+      const trialMatches = oracleContent.matchAll(/\[\[FREE_TRIAL:(.+?)\]\]/g);
+      for (const match of trialMatches) {
+        const feature = match[1];
+        const currentTrials = adPrefs?.free_trials_used || [];
+        if (!currentTrials.includes(feature)) {
+          updateAdPrefs.mutate({ free_trials_used: [...currentTrials, feature] });
+        }
+      }
+
+      // Strip memory/trial markers from displayed content
+      let cleanedOracleContent = oracleContent
+        .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
+        .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
+        .trim();
+
       // Handle navigation commands in Oracle response
-      const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(oracleContent);
+      const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
+      
+      // Update displayed message with cleaned content
+      const finalDisplayContent = (cleanContent || cleanedOracleContent).replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
+      setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
+
       if (navPath) {
-        // Update last oracle message to clean content
-        setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: cleanContent } : m));
         if (isBackground) {
-          // Background mode — stay in chat, show a status message
           toast.success(`${oracleName} is working on it in the background...`);
         } else {
-          // Navigate mode — explosion transition
           setTimeout(() => triggerExplosion(navPath), 1500);
         }
       }
 
-      if (oracleContent && !isMuted) speakAsAgent(cleanContent || oracleContent, oracleName);
+      if (cleanedOracleContent && !isMuted) speakAsAgent(finalDisplayContent, oracleName);
 
       // Send to active agents
       if (activeAgents.length > 0) {

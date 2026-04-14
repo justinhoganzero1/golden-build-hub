@@ -170,6 +170,39 @@ export type Database = {
         }
         Relationships: []
       }
+      oracle_memories: {
+        Row: {
+          content: string
+          context: string | null
+          created_at: string
+          id: string
+          importance: number
+          memory_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          importance?: number
+          memory_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          importance?: number
+          memory_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
@@ -315,6 +348,39 @@ export type Database = {
           id?: string
           status?: string
           suggestion?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_ad_preferences: {
+        Row: {
+          ads_enabled: boolean
+          created_at: string
+          free_trials_used: Json
+          id: string
+          last_promo_shown_at: string | null
+          promo_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ads_enabled?: boolean
+          created_at?: string
+          free_trials_used?: Json
+          id?: string
+          last_promo_shown_at?: string | null
+          promo_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ads_enabled?: boolean
+          created_at?: string
+          free_trials_used?: Json
+          id?: string
+          last_promo_shown_at?: string | null
+          promo_count?: number
           updated_at?: string
           user_id?: string
         }
