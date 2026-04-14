@@ -66,7 +66,7 @@ const AvatarGeneratorPage = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
-
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
@@ -482,6 +482,13 @@ const AvatarGeneratorPage = () => {
           </div>
         </div>
       </div>
+      <MediaPickerDialog
+        open={showMediaPicker}
+        onOpenChange={setShowMediaPicker}
+        filterType="image"
+        title="Use Image from Library"
+        onSelect={(url) => { setImageUrl(url); toast.success("Image loaded from library!"); }}
+      />
     </div>
   );
 };
