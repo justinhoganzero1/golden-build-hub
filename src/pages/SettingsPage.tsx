@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText, LayoutGrid } from "lucide-react";
+import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText, LayoutGrid, Lock } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface PairedDevice {
   id: string;
@@ -342,7 +343,8 @@ const SettingsPage = () => {
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState("Gold & Black");
   const [language, setLanguage] = useState("English");
-  const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: false });
+  const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: true });
+  const { subscribed } = useSubscription();
   const [currentLayout, setCurrentLayout] = useState("Standard 4x");
   const [isAdmin, setIsAdmin] = useState(false);
 
