@@ -672,12 +672,17 @@ const OraclePage = () => {
       }
 
       // Handle navigation commands in Oracle response
-      const { cleanContent, navPath } = parseAndHandleNavigation(oracleContent);
+      const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(oracleContent);
       if (navPath) {
         // Update last oracle message to clean content
         setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: cleanContent } : m));
-        // Trigger explosion and navigate
-        setTimeout(() => triggerExplosion(navPath), 1500);
+        if (isBackground) {
+          // Background mode — stay in chat, show a status message
+          toast.success(`${oracleName} is working on it in the background...`);
+        } else {
+          // Navigate mode — explosion transition
+          setTimeout(() => triggerExplosion(navPath), 1500);
+        }
       }
 
       if (oracleContent && !isMuted) speakAsAgent(cleanContent || oracleContent, oracleName);
