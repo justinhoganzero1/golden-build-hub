@@ -667,6 +667,12 @@ const OraclePage = () => {
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
+          userMemories: formatMemoriesForPrompt(oracleMemories),
+          adContext: {
+            showAds: adPrefs?.ads_enabled ?? true,
+            isSubscribed: subscribed,
+            freeTrialsUsed: adPrefs?.free_trials_used || [],
+          },
         }),
         signal: controller.signal,
       });
