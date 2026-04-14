@@ -71,6 +71,7 @@ const AvatarGeneratorPage = () => {
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
   const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
+  const [viewMode, setViewMode] = useState<"holographic-8k" | "normal-3d">("holographic-8k");
 
   const showVoiceAndPersonality = purpose === "ai-friend" || purpose === "partner";
   const currentPurpose = AVATAR_PURPOSES.find(p => p.value === purpose);
@@ -134,7 +135,7 @@ const AvatarGeneratorPage = () => {
             title: avatarName.trim() || "AI Avatar",
             url,
             source_page: "Avatar Generator",
-            metadata: { style: selectedStyle, prompt: desc },
+            metadata: { style: selectedStyle, prompt: desc, viewMode },
           });
         }
       } else {
@@ -340,6 +341,31 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <FolderOpen className="w-4 h-4" /> Pick from Library
               </button>
+
+              {/* View Mode Toggle */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">Save As</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setViewMode("holographic-8k")}
+                    className={`p-3 rounded-xl border text-xs text-center transition-all ${
+                      viewMode === "holographic-8k"
+                        ? "border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-md shadow-cyan-500/10"
+                        : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
+                    }`}>
+                    <div className="font-bold text-sm mb-0.5">✨ Holographic 8K</div>
+                    <div className="text-[10px] opacity-70">Premium floating hologram</div>
+                  </button>
+                  <button onClick={() => setViewMode("normal-3d")}
+                    className={`p-3 rounded-xl border text-xs text-center transition-all ${
+                      viewMode === "normal-3d"
+                        ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                        : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
+                    }`}>
+                    <div className="font-bold text-sm mb-0.5">🎨 Normal 3D</div>
+                    <div className="text-[10px] opacity-70">Standard high-quality</div>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {showVoiceAndPersonality && (
@@ -381,7 +407,11 @@ const AvatarGeneratorPage = () => {
           <div className="space-y-4">
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
-              <div className="aspect-[3/4] rounded-xl bg-[#0f0f0f] border border-gray-800 overflow-hidden flex items-center justify-center">
+              <div className={`aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center ${
+                viewMode === "holographic-8k" && imageUrl && !showCamera && !isLoading
+                  ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-purple-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
+                  : "bg-[#0f0f0f] border border-gray-800"
+              }`}>
                 {showCamera ? (
                   <div className="relative w-full h-full">
                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -393,7 +423,22 @@ const AvatarGeneratorPage = () => {
                     <p className="text-xs text-gray-500">Generating your avatar...</p>
                   </div>
                 ) : imageUrl ? (
-                  <img src={imageUrl} alt="Generated avatar" className="w-full h-full object-cover" />
+                  <div className={`relative w-full h-full ${viewMode === "holographic-8k" ? "holo-avatar-wrap" : ""}`}>
+                    <img src={imageUrl} alt="Generated avatar" className={`w-full h-full object-cover ${
+                      viewMode === "holographic-8k" ? "holo-avatar-img" : ""
+                    }`} />
+                    {viewMode === "holographic-8k" && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-purple-500/10 pointer-events-none animate-pulse" style={{ animationDuration: "3s" }} />
+                        <div className="absolute inset-0 pointer-events-none" style={{
+                          background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,200,255,0.03) 3px, rgba(0,200,255,0.03) 4px)",
+                        }} />
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[8px] font-bold uppercase backdrop-blur-sm">
+                          ✨ 8K Holographic
+                        </div>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3 text-gray-600">
                     <Sparkles className="w-16 h-16 text-gray-700" />
