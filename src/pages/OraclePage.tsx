@@ -217,6 +217,8 @@ const OraclePage = () => {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
+  // Premium voice requires any paid subscription
+  const { tier: subTier } = useSubscription();
 
   // Premium ElevenLabs TTS for the Oracle — falls back to browser TTS for friends
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
@@ -274,7 +276,8 @@ const OraclePage = () => {
     isSpeakingQueueRef.current = true;
 
     const isOracle = next.agentName === oracleName;
-    if (isOracle) {
+    const hasPremiumVoice = subTier !== "free";
+    if (isOracle && hasPremiumVoice) {
       const success = await speakWithElevenLabs(clean);
       if (!success) {
         await speakWithBrowserTTS(clean, next.agentName);
