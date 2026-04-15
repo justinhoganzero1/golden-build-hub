@@ -151,23 +151,35 @@ const OraclePage = () => {
   const [debateActive, setDebateActive] = useState(false);
   const debateCheckedRef = useRef(false);
 
-  // Assign unique voices to each agent
+  // Assign unique voices to each agent — prefer high-quality neural/natural voices
   const voiceMapRef = useRef<Map<string, SpeechSynthesisVoice>>(new Map());
   const getVoiceForAgent = useCallback((agentName: string): SpeechSynthesisVoice | undefined => {
     if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
     const allVoices = window.speechSynthesis.getVoices();
     const englishVoices = allVoices.filter(v => v.lang.startsWith("en"));
-    
+
+    // Score voices by quality — neural/natural voices sound far less robotic
+    const scoreVoice = (v: SpeechSynthesisVoice): number => {
+      const n = v.name.toLowerCase();
+      let s = 0;
+      if (n.includes("neural") || n.includes("natural")) s += 50;
+      if (n.includes("online") || n.includes("enhanced")) s += 30;
+      if (n.includes("google")) s += 20;
+      if (n.includes("microsoft")) s += 15;
+      if (n.includes("premium")) s += 25;
+      if (v.localService === false) s += 10; // remote voices are usually better
+      return s;
+    };
+
     // Check if this agent has a saved voice_style from Voice Studio
     const agent = agents.find(a => a.name === agentName);
     const voiceStyle = agent?.voice_style || "";
-    
+
     // Try to match accent/style keywords from the saved voice to a system voice
     if (voiceStyle) {
       const styleLower = voiceStyle.toLowerCase();
-      const matchedVoice = allVoices.find(v => {
+      const candidates = allVoices.filter(v => {
         const vName = v.name.toLowerCase();
-        // Match accent keywords like "british", "australian", "indian" etc.
         if (styleLower.includes("british") && (vName.includes("uk") || vName.includes("british") || vName.includes("daniel"))) return true;
         if (styleLower.includes("australian") && (vName.includes("australia") || vName.includes("karen"))) return true;
         if (styleLower.includes("indian") || styleLower.includes("hindi")) return vName.includes("india") || vName.includes("rishi");
@@ -179,20 +191,23 @@ const OraclePage = () => {
         if (styleLower.includes("italian") && v.lang.startsWith("it")) return true;
         if (styleLower.includes("japanese") && v.lang.startsWith("ja")) return true;
         if (styleLower.includes("korean") && v.lang.startsWith("ko")) return true;
-        // Match gender from voice style string
         if (styleLower.includes("female") && vName.includes("female")) return true;
         if (styleLower.includes("male") && vName.includes("male")) return true;
         return false;
       });
-      if (matchedVoice) {
-        voiceMapRef.current.set(agentName, matchedVoice);
-        return matchedVoice;
+      // Pick the highest quality match
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => scoreVoice(b) - scoreVoice(a));
+        voiceMapRef.current.set(agentName, candidates[0]);
+        return candidates[0];
       }
     }
-    
+
     const usedVoices = new Set(voiceMapRef.current.values());
     const available = englishVoices.filter(v => !usedVoices.has(v));
-    const voice = available.length > 0 ? available[Math.floor(Math.random() * available.length)] : englishVoices[0];
+    // Sort available by quality score — always prefer neural/natural voices
+    available.sort((a, b) => scoreVoice(b) - scoreVoice(a));
+    const voice = available.length > 0 ? available[0] : englishVoices[0];
     if (voice) voiceMapRef.current.set(agentName, voice);
     return voice;
   }, [agents]);
@@ -207,13 +222,17 @@ const OraclePage = () => {
     const clean = cleanTextForSpeech(next.text);
     if (!clean) { processSpeechQueue(); return; }
     isSpeakingQueueRef.current = true;
-    const utterance = new SpeechSynthesisUtterance(clean);
+    // Break long text into natural sentences for smoother delivery
+    const sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [clean];
+    const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
+    const utterance = new SpeechSynthesisUtterance(fullText);
     utterance.lang = "en-US";
-    // Slower, smoother speech — no jumpiness
+    // Warm, natural pacing — conversational not robotic
     const agent = agents.find(a => a.name === next.agentName);
     const hasCustomVoice = !!(agent?.voice_style);
-    utterance.rate = next.agentName === oracleName ? 0.82 : hasCustomVoice ? 0.8 : 0.78 + Math.random() * 0.1;
-    utterance.pitch = next.agentName === oracleName ? 1.05 : 0.85 + Math.random() * 0.25;
+    utterance.rate = next.agentName === oracleName ? 0.88 : hasCustomVoice ? 0.85 : 0.83 + Math.random() * 0.06;
+    utterance.pitch = next.agentName === oracleName ? 1.1 : 0.9 + Math.random() * 0.2;
+    utterance.volume = 0.95;
     const voice = getVoiceForAgent(next.agentName);
     if (voice) utterance.voice = voice;
     utterance.onstart = () => setIsSpeaking(true);
