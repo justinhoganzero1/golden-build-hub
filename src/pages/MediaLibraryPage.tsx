@@ -89,8 +89,12 @@ const MediaLibraryPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Delete this item from your library?")) return;
     const { error } = await supabase.from("user_media").delete().eq("id", id);
-    if (!error) {
+    if (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete: " + error.message);
+    } else {
       toast.success("Deleted");
       setSelected(null);
       qc.invalidateQueries({ queryKey: ["user-media"] });
