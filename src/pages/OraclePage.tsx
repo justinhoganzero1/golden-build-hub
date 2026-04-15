@@ -214,32 +214,78 @@ const OraclePage = () => {
 
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const processSpeechQueue = useCallback(() => {
+  const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
+
+  // Premium ElevenLabs TTS for the Oracle — falls back to browser TTS for friends
+  const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
+    try {
+      const response = await fetch(ELEVENLABS_TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ text, voiceId: "nPczCjzI2devNBz1zQrb" }),
+      });
+      if (!response.ok) return false;
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+      audio.volume = 0.95;
+      setIsSpeaking(true);
+      await audio.play();
+      await new Promise<void>((resolve) => {
+        audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
+      });
+      setIsSpeaking(false);
+      currentAudioRef.current = null;
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Fallback browser TTS for non-Oracle agents
+  const speakWithBrowserTTS = useCallback((text: string, agentName: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+      const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
+      const utterance = new SpeechSynthesisUtterance(fullText);
+      utterance.lang = "en-US";
+      utterance.rate = 0.88;
+      utterance.pitch = 0.95 + Math.random() * 0.15;
+      utterance.volume = 0.95;
+      const voice = getVoiceForAgent(agentName);
+      if (voice) utterance.voice = voice;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => { setIsSpeaking(false); resolve(); };
+      utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+      window.speechSynthesis.speak(utterance);
+    });
+  }, [getVoiceForAgent]);
+
+  const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
     const next = speechQueueRef.current.shift();
     if (!next) return;
     const clean = cleanTextForSpeech(next.text);
     if (!clean) { processSpeechQueue(); return; }
     isSpeakingQueueRef.current = true;
-    // Break long text into natural sentences for smoother delivery
-    const sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [clean];
-    const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
-    const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.lang = "en-US";
-    // Warm, natural pacing — conversational not robotic
-    const agent = agents.find(a => a.name === next.agentName);
-    const hasCustomVoice = !!(agent?.voice_style);
-    utterance.rate = next.agentName === oracleName ? 0.88 : hasCustomVoice ? 0.85 : 0.83 + Math.random() * 0.06;
-    utterance.pitch = next.agentName === oracleName ? 1.1 : 0.9 + Math.random() * 0.2;
-    utterance.volume = 0.95;
-    const voice = getVoiceForAgent(next.agentName);
-    if (voice) utterance.voice = voice;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
-    utterance.onerror = () => { setIsSpeaking(false); isSpeakingQueueRef.current = false; processSpeechQueue(); };
-    window.speechSynthesis.speak(utterance);
-  }, [isMuted, getVoiceForAgent, oracleName]);
+
+    const isOracle = next.agentName === oracleName;
+    if (isOracle) {
+      const success = await speakWithElevenLabs(clean);
+      if (!success) {
+        await speakWithBrowserTTS(clean, next.agentName);
+      }
+    } else {
+      await speakWithBrowserTTS(clean, next.agentName);
+    }
+
+    isSpeakingQueueRef.current = false;
+    processSpeechQueue();
+  }, [isMuted, oracleName, speakWithElevenLabs, speakWithBrowserTTS]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text) return;
