@@ -67,6 +67,7 @@ const plans = [
 const addons = [
   { name: "Extra AI Avatar", price: "$1", priceId: "price_1TJzArLM75X0snyCtNnu2Xqy", description: "Generate one custom AI avatar (one-time)" },
   { name: "Service Credits ($20)", price: "$20", priceId: "price_1T1KcwLM75X0snyC7RESW7pN", description: "Credits for Video Studio, Photography, Marketing AI" },
+  { name: "Premium Neural Voice", price: "Included", priceId: null, description: "Ultra-natural AI voice (ElevenLabs) — included with any paid plan + 10% admin fee on usage" },
 ];
 
 const SubscribePage = () => {
