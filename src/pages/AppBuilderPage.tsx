@@ -1,15 +1,21 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import { useSaveMedia, useUserMedia } from "@/hooks/useUserAvatars";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
-interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; }
+interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; }
 
 interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; }
 
 const AppBuilderPage = () => {
+  const { user } = useAuth();
+  const saveMedia = useSaveMedia();
+  const { data: userMedia } = useUserMedia();
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -19,10 +25,64 @@ const AppBuilderPage = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
+
+  // Load previously saved apps from the media library on mount
+  useEffect(() => {
+    if (loadedFromLibrary || !userMedia) return;
+    const appMedia = userMedia.filter((m: any) => m.source_page === "app-builder" && m.media_type === "app");
+    if (appMedia.length > 0) {
+      const loaded: AppProject[] = appMedia.map((m: any) => {
+        const meta = (m.metadata && typeof m.metadata === "object") ? m.metadata as Record<string, any> : {};
+        return {
+          id: m.id,
+          name: m.title || "My App",
+          type: "custom",
+          description: meta.description || "",
+          code: m.url || "",
+          created: new Date(m.created_at).toLocaleDateString(),
+          mediaId: m.id,
+        };
+      });
+      setProjects(loaded);
+    }
+    setLoadedFromLibrary(true);
+  }, [userMedia, loadedFromLibrary]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Save or update app in media library
+  const saveAppToLibrary = useCallback(async (project: AppProject): Promise<string | undefined> => {
+    if (!user) return;
+    try {
+      if (project.mediaId) {
+        // Update existing record
+        await supabase
+          .from("user_media")
+          .update({
+            title: project.name,
+            url: project.code,
+            metadata: { description: project.description, type: project.type } as any,
+          })
+          .eq("id", project.mediaId);
+        return project.mediaId;
+      } else {
+        // Insert new record
+        const { data } = await saveMedia.mutateAsync({
+          media_type: "app",
+          title: project.name,
+          url: project.code,
+          source_page: "app-builder",
+          metadata: { description: project.description, type: project.type } as any,
+        });
+        return (data as any)?.[0]?.id;
+      }
+    } catch (e) {
+      console.error("Failed to save app to library", e);
+    }
+  }, [user, saveMedia]);
 
   const sendMessage = async () => {
     const trimmed = input.trim();
@@ -99,14 +159,27 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
       if (code) {
         setCurrentCode(code);
         const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
+        
+        // Check if we're updating an existing project
+        const existingProject = projects.find(p => p.name === appName);
+        
         const project: AppProject = {
-          id: Date.now().toString(),
+          id: existingProject?.id || Date.now().toString(),
           name: appName,
           type: "custom",
           description: trimmed,
           code,
           created: new Date().toLocaleDateString(),
+          mediaId: existingProject?.mediaId,
         };
+
+        // Save to media library immediately
+        const mediaId = await saveAppToLibrary(project);
+        if (mediaId) {
+          project.mediaId = mediaId;
+          if (!project.id || project.id === Date.now().toString()) project.id = mediaId;
+        }
+
         setProjects(prev => {
           const updated = [...prev];
           const existingIdx = updated.findIndex(p => p.name === appName);
@@ -114,6 +187,7 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
           return updated;
         });
         setPreviewProject(project);
+        toast.success("App saved to Media Library!");
       }
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I had trouble building that. Could you try describing your app again?" }]);
@@ -208,7 +282,7 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
         <div className="px-4 py-2 border-t border-border bg-card/50">
           <div className="flex gap-2 overflow-x-auto">
             {projects.map(p => (
-              <button key={p.id} onClick={() => setPreviewProject(p)}
+              <button key={p.id} onClick={() => { setPreviewProject(p); setCurrentCode(p.code); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-colors ${
                   previewProject?.id === p.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary"
                 }`}>
