@@ -58,7 +58,6 @@ const AppBuilderPage = () => {
     if (!user) return;
     try {
       if (project.mediaId) {
-        // Update existing record
         await supabase
           .from("user_media")
           .update({
@@ -69,20 +68,25 @@ const AppBuilderPage = () => {
           .eq("id", project.mediaId);
         return project.mediaId;
       } else {
-        // Insert new record
-        const { data } = await saveMedia.mutateAsync({
-          media_type: "app",
-          title: project.name,
-          url: project.code,
-          source_page: "app-builder",
-          metadata: { description: project.description, type: project.type } as any,
-        });
-        return (data as any)?.[0]?.id;
+        const { data, error } = await supabase
+          .from("user_media")
+          .insert([{
+            user_id: user.id,
+            media_type: "app",
+            title: project.name,
+            url: project.code,
+            source_page: "app-builder",
+            metadata: { description: project.description, type: project.type } as any,
+          }])
+          .select("id")
+          .single();
+        if (error) throw error;
+        return data?.id;
       }
     } catch (e) {
       console.error("Failed to save app to library", e);
     }
-  }, [user, saveMedia]);
+  }, [user]);
 
   const sendMessage = async () => {
     const trimmed = input.trim();
