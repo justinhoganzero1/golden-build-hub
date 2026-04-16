@@ -14,7 +14,6 @@ interface ChatMessage { role: "user" | "assistant"; content: string; code?: stri
 
 const AppBuilderPage = () => {
   const { user } = useAuth();
-  const saveMedia = useSaveMedia();
   const { data: userMedia } = useUserMedia();
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
