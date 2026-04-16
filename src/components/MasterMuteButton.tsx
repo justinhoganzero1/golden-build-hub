@@ -10,6 +10,8 @@ const MasterMuteButton = () => {
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const startPos = useRef({ x: 0, y: 0 });
+  const DRAG_THRESHOLD = 5;
 
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 
@@ -17,10 +19,15 @@ const MasterMuteButton = () => {
     dragging.current = true;
     hasMoved.current = false;
     offset.current = { x: clientX - pos.x, y: clientY - pos.y };
+    startPos.current = { x: clientX, y: clientY };
 
     const handleMove = (mx: number, my: number) => {
       if (!dragging.current) return;
-      hasMoved.current = true;
+      const dx = Math.abs(mx - startPos.current.x);
+      const dy = Math.abs(my - startPos.current.y);
+      if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+        hasMoved.current = true;
+      }
       setPos({
         x: clamp(mx - offset.current.x, 4, window.innerWidth - 36),
         y: clamp(my - offset.current.y, 4, window.innerHeight - 36),
