@@ -229,6 +229,7 @@ export default function VoiceStudioPage() {
     }
     toast.success(`👑 ${voiceName} is now the Oracle's master voice`);
   }
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">
       <UniversalBackButton />
