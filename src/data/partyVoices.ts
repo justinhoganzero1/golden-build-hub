@@ -46,8 +46,15 @@ const CHILL = { stability: 0.65, similarity_boost: 0.8, style: 0.3, use_speaker_
 const WILD = { stability: 0.22, similarity_boost: 0.75, style: 0.95, use_speaker_boost: true, speed: 1.18 };
 const SULTRY = { stability: 0.6, similarity_boost: 0.9, style: 0.55, use_speaker_boost: true, speed: 0.9 };
 const DRAMA = { stability: 0.35, similarity_boost: 0.8, style: 0.8, use_speaker_boost: true, speed: 1.05 };
+// Ancient Aliens-style documentary narrator: slow, weighty, mysterious gravitas
+const ANCIENT = { stability: 0.78, similarity_boost: 0.92, style: 0.42, use_speaker_boost: true, speed: 0.78 };
 
 export const PARTY_VOICES: PartyVoice[] = [
+  // Featured — Documentary Narrators (Ancient Aliens style)
+  { id: M_BILL, name: "Ancient Aliens Narrator", gender: "Male", accent: "American", age: "Old", description: "Deep, mysterious documentary narrator — 'What if I told you...' gravitas", use_case: "Documentary", category: "party", vibe: "👽 Ancient Mystery", partySettings: ANCIENT },
+  { id: M_DANIEL, name: "Conspiracy Documentarian", gender: "Male", accent: "British", age: "Middle-aged", description: "Authoritative paranormal investigator voice", use_case: "Documentary", category: "party", vibe: "🛸 Paranormal Doc", partySettings: ANCIENT },
+  { id: M_CALLUM, name: "Cosmic Storyteller", gender: "Male", accent: "Transatlantic", age: "Middle-aged", description: "Intense cosmic-mystery narrator", use_case: "Documentary", category: "party", vibe: "🌌 Cosmic Narrator", partySettings: ANCIENT },
+
   // 1-10 — Club / DJ / Hype
   { id: M_BRIAN, name: "DJ Thunder", gender: "Male", accent: "American", age: "Middle-aged", description: "Booming club MC with megawatt energy", use_case: "Party MC", category: "party", vibe: "🔥 Hype MC", partySettings: WILD },
   { id: M_ROGER, name: "MC Velvet", gender: "Male", accent: "American", age: "Middle-aged", description: "Smooth nightclub host, classy and confident", use_case: "Lounge MC", category: "party", vibe: "🎙 Lounge Host", partySettings: SMOOTH },
