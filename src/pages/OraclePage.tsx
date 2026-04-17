@@ -297,7 +297,7 @@ const OraclePage = () => {
         const pump = () => {
           if (sourceBuffer.updating || queue.length === 0) return;
           const chunk = queue.shift()!;
-          try { sourceBuffer.appendBuffer(chunk); } catch {}
+          try { sourceBuffer.appendBuffer(chunk as BufferSource); } catch {}
         };
         sourceBuffer.addEventListener("updateend", () => {
           if (queue.length) pump();
