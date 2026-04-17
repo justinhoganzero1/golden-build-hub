@@ -257,8 +257,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     return 1.5;
   };
 
-  // ----- Plan scenes -----
-  const planScenes = async () => {
+  // ----- Plan scenes (block of 10). First block gates on billing for non-admins. -----
+  const SCENES_PER_BLOCK = 10;
+  const planScenes = async (opts?: { append?: boolean; blockNumber?: number }) => {
     if (!script.trim()) { toast.error("Add a script first"); return; }
     const mod = moderatePrompt(script);
     if (!mod.ok) { toast.error(mod.reason || "Script blocked by content filter"); return; }
@@ -266,10 +267,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     if (intent && !mod2.ok) { toast.error(mod2.reason || "Direction blocked by content filter"); return; }
     setPlanning(true);
     try {
+      const append = !!opts?.append;
+      const blockNum = opts?.blockNumber ?? (append ? blocksProduced + 1 : 1);
+      const targetDuration = SCENES_PER_BLOCK * CLIP_SECONDS; // ~60s per block of 10
+      const augmentedIntent = append
+        ? `${intent}\n\n[CONTINUATION] Generate ${SCENES_PER_BLOCK} additional scenes that continue the existing story. This is block #${blockNum}. Existing scene count so far: ${scenes.length}.`
+        : intent;
       const resp = await fetch(SCENE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({ script, intent, targetDurationSec: 60 }),
+        body: JSON.stringify({ script, intent: augmentedIntent, targetDurationSec: targetDuration }),
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -279,8 +286,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         return;
       }
       const data = await resp.json();
-      setTitle(data.title || "Untitled Movie");
-      const newScenes: Scene[] = (data.scenes || []).map((s: any) => ({
+      if (!append) setTitle(data.title || "Untitled Movie");
+      const incoming: Scene[] = (data.scenes || []).slice(0, SCENES_PER_BLOCK).map((s: any) => ({
         id: uid(),
         caption: s.caption,
         photo_prompt: s.photo_prompt,
@@ -293,17 +300,55 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         music_prompt: s.music_prompt || s.score_prompt || `Cinematic underscore for: ${s.caption}`,
         music_volume: 0.25,
       }));
-      // Auto-suggest a music prompt from the overall vibe
-      if (data.music_prompt) setMusicPrompt(data.music_prompt);
-      else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
-      // Seed first scene with the photo the user came in with
-      if (seedImage && newScenes[0]) newScenes[0].image_url = seedImage;
-      setScenes(newScenes);
-      toast.success(`${newScenes.length} scenes ready. Generate photos to bring them to life.`);
+      if (!append) {
+        if (data.music_prompt) setMusicPrompt(data.music_prompt);
+        else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
+        if (seedImage && incoming[0]) incoming[0].image_url = seedImage;
+        setScenes(incoming);
+      } else {
+        setScenes(prev => [...prev, ...incoming]);
+      }
+      setBlocksProduced(prev => Math.max(prev, blockNum));
+      toast.success(`Block ${blockNum}: ${incoming.length} scenes ready.`);
     } catch (e) {
       console.error(e); toast.error("Scene planning failed");
     } finally { setPlanning(false); }
   };
+
+  // Pay for & generate the next 10-scene block (admin = free, no Stripe)
+  const purchaseAndGenerateNextBlock = async () => {
+    if (!script.trim()) { toast.error("Add a script first"); return; }
+    const blockNum = nextBlockNumber;
+    if (isAdmin) {
+      toast.info(`Admin: block ${blockNum} is free`);
+      await planScenes({ append: blocksProduced > 0, blockNumber: blockNum });
+      return;
+    }
+    const usd = priceForBlockUSD(blockNum);
+    if (!confirm(`Block ${blockNum}: $${usd} USD for 10 scenes.\n\nAfter payment you'll be returned here. Continue to checkout?`)) return;
+    setPayingBlock(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-block-payment", {
+        body: { blockNumber: blockNum },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast.success(`Checkout opened for block ${blockNum} ($${usd}). After paying, click "I've paid — generate" to continue.`);
+      } else {
+        throw new Error("No checkout URL");
+      }
+    } catch (e: any) {
+      console.error(e); toast.error(e.message || "Could not start checkout");
+    } finally { setPayingBlock(false); }
+  };
+
+  // After Stripe success the user comes back; they then click this to actually generate the paid block
+  const confirmPaidAndGenerateBlock = async () => {
+    const blockNum = nextBlockNumber;
+    await planScenes({ append: blocksProduced > 0, blockNumber: blockNum });
+  };
+
 
   // ----- Generate 8K photo for a scene -----
   const generateScenePhoto = async (sceneId: string, customPrompt?: string) => {
