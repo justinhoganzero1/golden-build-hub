@@ -768,17 +768,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
             drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
-            // caption + speaker tag
-            ctx.fillStyle = "rgba(0,0,0,0.55)";
-            ctx.fillRect(0, canvas.height - 160, canvas.width, 160);
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 36px sans-serif";
-            ctx.textAlign = "center";
-            wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 90, canvas.width - 120, 44);
-            if (scene.speaker && scene.speaker !== "narrator") {
-              ctx.font = "italic 22px sans-serif";
-              ctx.fillStyle = "hsl(45 90% 70%)";
-              ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
+            // Subtitles only render when explicitly enabled by the user (default OFF)
+            if (subtitlesEnabled) {
+              ctx.fillStyle = "rgba(0,0,0,0.55)";
+              ctx.fillRect(0, canvas.height - 160, canvas.width, 160);
+              ctx.fillStyle = "#fff";
+              ctx.font = "bold 36px sans-serif";
+              ctx.textAlign = "center";
+              wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 90, canvas.width - 120, 44);
+              if (scene.speaker && scene.speaker !== "narrator") {
+                ctx.font = "italic 22px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+                ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
+              }
             }
             if (p < 1) requestAnimationFrame(tick);
             else resolve();
@@ -787,6 +789,54 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         });
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
       }
+
+      // ===== END CREDITS ROLL (8s) with theme music =====
+      if (creditsLines.length > 0) {
+        if (themeBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = themeBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.7;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const credDur = 8000;
+        const credStart = performance.now();
+        const lineHeight = 60;
+        const totalRoll = (creditsLines.length * lineHeight) + canvas.height;
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - credStart) / credDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const offset = canvas.height - (p * totalRoll);
+            ctx.textAlign = "center";
+            creditsLines.forEach((line, i) => {
+              const y = offset + (i * lineHeight);
+              if (y < -lineHeight || y > canvas.height + lineHeight) return;
+              if (i === 0) {
+                ctx.font = "bold 64px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 65%)";
+              } else if (line === "" ) {
+                return;
+              } else if (line.startsWith("— ")) {
+                ctx.font = "italic 28px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals"].includes(line)) {
+                ctx.font = "bold 30px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+              } else {
+                ctx.font = "32px sans-serif";
+                ctx.fillStyle = "#fff";
+              }
+              ctx.fillText(line, canvas.width / 2, y);
+            });
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
 
       recorder.stop();
       const blob = await finished;
