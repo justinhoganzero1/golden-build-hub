@@ -224,7 +224,7 @@ const WebWrapperPage = () => {
               <div className="text-xs text-primary font-semibold">{statusText}</div>
               <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-300"
+                  className="h-full bg-primary transition-all duration-300 shadow-[0_0_12px_hsl(var(--primary))]"
                   style={{ width: `${progress}%` }}
                 />
               </div>

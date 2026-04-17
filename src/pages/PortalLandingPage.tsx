@@ -33,6 +33,7 @@ const FEATURES = [
   { icon: Users, title: "AI Companion", desc: "M-rated personalized partner personas with deep memory and personality." },
   { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place." },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down." },
+  { icon: Smartphone, title: "Web Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
