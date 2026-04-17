@@ -307,7 +307,7 @@ const PortalLandingPage = () => {
                 title: "Android",
                 steps: ["Open in Chrome or Edge.", "Tap Install below.", "Confirm in the prompt."],
                 cta: canInstall ? "Install on Android" : "Open install prompt",
-                action: handleInstall,
+                action: () => handleInstall("android"),
                 installedHere: isStandalone && isAndroidUA,
               },
               {
