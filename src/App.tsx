@@ -9,6 +9,7 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
+import PreviewModeBanner from "@/components/PreviewModeBanner";
 import NotFound from "./pages/NotFound";
 const PortalLandingPage = lazy(() => import("./pages/PortalLandingPage"));
 const WelcomePage = lazy(() => import("./pages/WelcomePage"));
