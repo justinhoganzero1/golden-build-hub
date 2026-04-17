@@ -648,6 +648,40 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     if (creditsLines.length === 0) await generateCredits();
   };
 
+  // ----- YouTube Newsroom preset (one-click full show) -----
+  const generateYouTubeShow = async () => {
+    if (!script.trim()) { toast.error("Add your show script first"); return; }
+    setGeneratingNewsroom(true);
+    try {
+      const show = showName || "SOLACE Daily";
+      const host = hostName || "Alex Rivera";
+      const role = hostTitle || "Lead Anchor";
+      setNewsroomMode(true);
+      if (!title) setTitle(show);
+      // Plan scenes if needed
+      if (scenes.length === 0) await planScenes();
+      // Tag every scene as a news segment with lower-thirds
+      setScenes(prev => prev.map((s, i) => ({
+        ...s,
+        is_news_segment: true,
+        lower_third_name: i === 0 || i === prev.length - 1 ? host : (s.speaker || host),
+        lower_third_title: i === 0 || i === prev.length - 1 ? role : "Field Report",
+        speaker: s.speaker || host,
+        voice_style: s.voice_style || "narrator-male-warm",
+        photo_prompt: s.is_news_segment ? s.photo_prompt :
+          (i === 0 || i === prev.length - 1)
+            ? `Professional TV news anchor ${host} at a modern newsroom desk, multiple monitors behind, cinematic studio lighting, "${show}" logo on screen, broadcast quality 8K`
+            : `B-roll cutaway image for news story: ${s.photo_prompt}, photojournalism, broadcast TV news look`,
+      })));
+      // Auto-create intro fanfare + upbeat theme + credits
+      await generateAllExtras();
+      toast.success("YouTube Show preset applied. Generate photos & voices to finish.");
+    } catch (e) {
+      console.error(e); toast.error("Newsroom preset failed");
+    } finally { setGeneratingNewsroom(false); }
+  };
+
+
 
   // ----- Scene CRUD -----
   const addScene = () => {
