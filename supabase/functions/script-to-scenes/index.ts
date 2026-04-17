@@ -22,12 +22,18 @@ serve(async (req) => {
 
     const targetSceneCount = Math.max(2, Math.min(60, Math.round(targetDurationSec / sceneSeconds)));
 
-    const system = `You are a film director. Break the user's script and intent into ${targetSceneCount} cinematic scenes for a movie.
-Each scene gets ONE 8K photoreal photo and one short caption. Each clip is EXACTLY 6 seconds.
-Keep visual continuity (same characters, outfits, lighting where appropriate).
+    const system = `You are a film director + audio designer. Break the user's script and intent into ${targetSceneCount} cinematic scenes for a movie.
+Each scene gets ONE 8K photoreal photo, one short caption, and a narration line spoken aloud during the 6-second clip.
+Keep visual + character continuity (same characters, outfits, lighting where appropriate).
 Photo prompts must be M-rated, vivid, photoreal 8K, with explicit subject + setting + lighting + camera + mood. No nudity / explicit content.
 Motion hints: pick one of pan-left, pan-right, zoom-in, zoom-out, ken-burns, static.
-ALWAYS set duration_sec to 6.`;
+ALWAYS set duration_sec to 6.
+
+AUDIO RULES:
+- "narration": 1-2 sentences (~12-22 words) that fit naturally in 6 seconds. This is what the audience HEARS during the scene. May be narrator voice-over OR a character speaking — match the moment.
+- "speaker": who is talking. Use "narrator" for omniscient narration, or the character name (e.g. "Maya", "the old man"). Be consistent across scenes for the same character.
+- "voice_style": pick one of "narrator-male-warm", "narrator-female-warm", "male-young", "male-deep", "female-young", "female-mature", "child", "elder-male", "elder-female", "villain", "hero" — match the speaker's identity consistently across scenes.
+- "sfx_hint": 2-6 word ambience description (e.g. "desert wind", "city traffic", "ocean waves") — optional but helpful.`;
 
     const user = `SCRIPT:\n${script}\n\nUSER INTENT / DIRECTION:\n${intent || "(none)"}\n\nReturn ${targetSceneCount} scenes.`;
 
@@ -54,12 +60,16 @@ ALWAYS set duration_sec to 6.`;
                   items: {
                     type: "object",
                     properties: {
-                      caption: { type: "string", description: "1-sentence on-screen caption / narration" },
+                      caption: { type: "string", description: "Short on-screen caption" },
                       photo_prompt: { type: "string", description: "Photo generation prompt" },
                       motion: { type: "string", enum: ["pan-left", "pan-right", "zoom-in", "zoom-out", "ken-burns", "static"] },
                       duration_sec: { type: "number" },
+                      narration: { type: "string", description: "1-2 sentence spoken line for this 6s clip" },
+                      speaker: { type: "string", description: "narrator OR character name (consistent across scenes)" },
+                      voice_style: { type: "string", enum: ["narrator-male-warm","narrator-female-warm","male-young","male-deep","female-young","female-mature","child","elder-male","elder-female","villain","hero"] },
+                      sfx_hint: { type: "string", description: "Short ambience description" },
                     },
-                    required: ["caption", "photo_prompt", "motion", "duration_sec"],
+                    required: ["caption", "photo_prompt", "motion", "duration_sec", "narration", "speaker", "voice_style"],
                     additionalProperties: false,
                   },
                 },
