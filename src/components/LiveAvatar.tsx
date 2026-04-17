@@ -34,8 +34,8 @@ const LiveAvatar = ({
 
   // Lipsync — drive mouth from analyser amplitude when speaking, fall back to oscillator
   useEffect(() => {
-    let dataArr: Uint8Array | null = null;
-    if (analyser) dataArr = new Uint8Array(analyser.frequencyBinCount);
+    let dataArr: Uint8Array<ArrayBuffer> | null = null;
+    if (analyser) dataArr = new Uint8Array(new ArrayBuffer(analyser.frequencyBinCount));
     let phase = 0;
 
     const tick = () => {
