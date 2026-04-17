@@ -1,8 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X, Mic, MicOff } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { MessageCircle, Send, X, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
+import { useMute } from "@/contexts/MuteContext";
+
+// Strip markdown, emojis, URLs, and code so TTS sounds natural
+const sanitizeForTTS = (raw: string): string =>
+  raw
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[*_~#>]/g, "")
+    .replace(/[\p{Extended_Pictographic}\u200d]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -25,9 +39,47 @@ const PortalTutorWidget = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const { isMuted } = useMute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const sendRef = useRef<(t: string) => void>();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speak = useCallback(async (raw: string) => {
+    if (!voiceOn || isMuted) return;
+    const text = sanitizeForTTS(raw);
+    if (!text || text.length < 2) return;
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!resp.ok) throw new Error(`tts ${resp.status}`);
+      const blob = await resp.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      audioRef.current = audio;
+      audio.onended = () => URL.revokeObjectURL(audio.src);
+      await audio.play().catch(() => { /* autoplay blocked until user gesture */ });
+    } catch (err) {
+      console.warn("Concierge TTS failed:", err);
+    }
+  }, [voiceOn, isMuted]);
+
+  useEffect(() => {
+    if ((isMuted || !voiceOn) && audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [isMuted, voiceOn]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -102,9 +154,12 @@ const PortalTutorWidget = () => {
           }
         }
       }
+      if (assistantText.trim()) speak(assistantText);
     } catch (err) {
       console.error("tutor error:", err);
-      setMessages((p) => [...p, { role: "assistant", content: "Sorry — I lost connection. Try asking again?" }]);
+      const fallback = "Sorry — I lost connection. Try asking again?";
+      setMessages((p) => [...p, { role: "assistant", content: fallback }]);
+      speak(fallback);
     } finally {
       setLoading(false);
     }
@@ -188,13 +243,23 @@ const PortalTutorWidget = () => {
                 <div className="text-xs text-muted-foreground">Your guide to every feature</div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="rounded-md p-1 hover:bg-secondary text-muted-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setVoiceOn((v) => !v)}
+                aria-label={voiceOn ? "Mute Concierge voice" : "Unmute Concierge voice"}
+                title={voiceOn ? "Voice on — click to mute" : "Voice off — click to enable"}
+                className="rounded-md p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+              >
+                {voiceOn && !isMuted ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="rounded-md p-1 hover:bg-secondary text-muted-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </header>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
