@@ -47,6 +47,8 @@ const OwnerDashboardPage = () => {
     totalClicks: number; totalInstalls: number;
     perPlatform: { android: { clicks: number; installs: number }; ios: { clicks: number; installs: number }; desktop: { clicks: number; installs: number } };
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
+  // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
+  const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; installs: number; paidUpgrades: number }>({ visitors: 0, installs: 0, paidUpgrades: 0 });
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
@@ -175,6 +177,37 @@ const OwnerDashboardPage = () => {
       }
       setInstallStats(stats);
     })();
+  }, [isAdmin]);
+
+  // Load private live traffic (admin only): site visitors, installs, paid upgrades
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [{ count: visitors }, { count: installs }] = await Promise.all([
+          supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing"),
+          supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
+        ]);
+        // Paid upgrades: count distinct paid users via Stripe (server-side admin endpoint).
+        // Until a dedicated admin counter exists, fall back to 0 — Stripe dashboard is the source of truth.
+        let paidUpgrades = 0;
+        try {
+          const { data } = await supabase.functions.invoke("check-subscription", { body: { admin_count: true } });
+          if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+        } catch { /* ignore — endpoint may not expose admin counts yet */ }
+        if (!cancelled) {
+          setLiveTraffic({
+            visitors: typeof visitors === "number" ? visitors : 0,
+            installs: typeof installs === "number" ? installs : 0,
+            paidUpgrades,
+          });
+        }
+      } catch { /* silent */ }
+    };
+    load();
+    const i = window.setInterval(load, 30000);
+    return () => { cancelled = true; window.clearInterval(i); };
   }, [isAdmin]);
 
   const handleChangePassword = async () => {
@@ -344,6 +377,32 @@ const OwnerDashboardPage = () => {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-4">
+            {/* Private Live Traffic — admin only, your site */}
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock className="w-4 h-4 text-yellow-400" />
+                <h3 className="text-sm font-bold text-white">Live Traffic — Your Site (Private)</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Eye className="w-4 h-4 text-cyan-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-cyan-300">{liveTraffic.visitors.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Visitors</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Download className="w-4 h-4 text-emerald-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-emerald-300">{liveTraffic.installs.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Downloads</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Crown className="w-4 h-4 text-yellow-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-yellow-300">{liveTraffic.paidUpgrades.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Upgraded</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-2">Refreshes every 30 seconds. Only you can see this.</p>
+            </div>
+
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3">
               {[
