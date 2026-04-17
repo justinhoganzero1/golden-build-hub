@@ -149,6 +149,8 @@ const StoryWriterPage = () => {
   );
 
   const callAI = async (system: string, prompt: string): Promise<string> => {
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(`${system}\n\n${prompt}`);
+    if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); throw new Error("blocked"); }
     setAiBusy(true);
     try {
       const resp = await fetch(TOOLS_URL, {

@@ -3,6 +3,7 @@ import { Share2, TrendingUp, BarChart3, Mail, Globe, Target, Loader2, Copy, Chec
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
@@ -31,6 +32,8 @@ const MarketingHubPage = () => {
 
   const generate = async () => {
     if (!prompt.trim() || !activeTool) return;
+    const mod = moderatePrompt(prompt);
+    if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); return; }
     setIsLoading(true); setResult(null);
     const tool = tools.find(t => t.type === activeTool);
     try {

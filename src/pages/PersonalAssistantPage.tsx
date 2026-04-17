@@ -24,6 +24,8 @@ const PersonalAssistantPage = () => {
 
   const askAssistant = async () => {
     if (!input.trim()) return;
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(input);
+    if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); return; }
     setIsLoading(true);
     setResponse(null);
     try {

@@ -37,6 +37,37 @@ const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrat
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
 type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
+type CameraAngle = "auto" | "wide" | "medium" | "close-up" | "extreme-close-up" | "low-angle" | "high-angle" | "birds-eye" | "dutch-tilt" | "over-the-shoulder" | "tracking" | "drone";
+type LightingPreset = "auto" | "golden-hour" | "blue-hour" | "high-key" | "low-key" | "noir" | "soft-natural" | "neon-cyberpunk" | "candlelit" | "studio-3-point" | "moonlit" | "harsh-midday";
+
+const CAMERA_ANGLE_PROMPTS: Record<CameraAngle, string> = {
+  "auto": "",
+  "wide": "wide establishing shot, full scene visible",
+  "medium": "medium shot, waist-up framing",
+  "close-up": "close-up shot, head and shoulders, intimate framing",
+  "extreme-close-up": "extreme close-up, eyes-only intensity",
+  "low-angle": "low-angle hero shot looking up, powerful framing",
+  "high-angle": "high-angle shot looking down, vulnerable framing",
+  "birds-eye": "bird's-eye top-down view",
+  "dutch-tilt": "dutch tilt camera angle, off-balance tension",
+  "over-the-shoulder": "over-the-shoulder POV shot",
+  "tracking": "tracking dolly shot, dynamic motion",
+  "drone": "aerial drone shot, sweeping cinematic motion",
+};
+const LIGHTING_PRESET_PROMPTS: Record<LightingPreset, string> = {
+  "auto": "",
+  "golden-hour": "warm golden hour sunlight, long shadows, magic-hour glow",
+  "blue-hour": "cool blue hour twilight, soft ambient light",
+  "high-key": "bright high-key lighting, soft and even, minimal shadows",
+  "low-key": "dramatic low-key lighting, deep shadows, single key light",
+  "noir": "film noir chiaroscuro lighting, hard shadows, venetian-blind patterns",
+  "soft-natural": "soft natural window lighting, diffused and gentle",
+  "neon-cyberpunk": "neon cyberpunk lighting, magenta and cyan rim lights, wet reflections",
+  "candlelit": "warm candlelit interior, flickering amber glow",
+  "studio-3-point": "professional 3-point studio lighting with key, fill, and rim",
+  "moonlit": "cool moonlit night scene, silver-blue rim light",
+  "harsh-midday": "harsh midday sunlight, overhead, high contrast",
+};
 
 interface Scene {
   id: string;
@@ -68,6 +99,11 @@ interface Scene {
   lower_third_name?: string;   // e.g. "Maya Chen"
   lower_third_title?: string;  // e.g. "SOLACE Tech Reporter"
   broll_url?: string;          // optional B-roll image overlay (cutaway)
+  // Director controls (preset-driven, baked into the photo prompt)
+  camera_angle?: CameraAngle;
+  lighting_preset?: LightingPreset;
+  character_action?: string;   // "walks slowly into the room, hand trembling"
+  character_emotion?: string;  // "anxious, breathing fast" — affects expression
 }
 
 interface MovieStudioProps {
@@ -141,11 +177,29 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [showFavouritesPicker, setShowFavouritesPicker] = useState(false);
   const [favouritesTargetId, setFavouritesTargetId] = useState<string | null>(null);
   const [savedTracks, setSavedTracks] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
+  // Cast & guest stars (rendered into opening + end credits)
+  const [starring, setStarring] = useState("");          // "Maya Chen, Jordan Reyes"
+  const [coStarring, setCoStarring] = useState("");      // "Sam Park, Alex Cruz"
+  const [guestStars, setGuestStars] = useState("");      // "and James O'Neill as The Director"
+  // AI 10×6s preview/trailer
+  const [trailerScenes, setTrailerScenes] = useState<Array<{ id: string; image: string; tone?: SceneTone }>>([]);
+  const [generatingTrailer, setGeneratingTrailer] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<string | null>(null);
+
+  // Bake camera + lighting + action + emotion into the final photo prompt
+  const buildScenePhotoPrompt = (s: Scene, override?: string): string => {
+    const base = (override || s.photo_prompt || "").trim();
+    const cam = s.camera_angle && s.camera_angle !== "auto" ? CAMERA_ANGLE_PROMPTS[s.camera_angle] : "";
+    const light = s.lighting_preset && s.lighting_preset !== "auto" ? LIGHTING_PRESET_PROMPTS[s.lighting_preset] : "";
+    const action = s.character_action?.trim() ? `Character action: ${s.character_action.trim()}.` : "";
+    const emotion = s.character_emotion?.trim() ? `Character emotion: ${s.character_emotion.trim()}.` : "";
+    return [base, cam, light, action, emotion, "photoreal 8K resolution, ultra-detailed, cinematic lighting, sharp focus, film still"]
+      .filter(Boolean).join(", ");
+  };
 
   const triggerUpload = (sceneId: string) => {
     uploadTargetRef.current = sceneId;
@@ -200,6 +254,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
       setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
+      setStarring(""); setCoStarring(""); setGuestStars("");
+      setTrailerScenes([]); setGeneratingTrailer(false);
     }
   }, [open]);
 
@@ -355,7 +411,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: true } : s));
     const scene = scenes.find(s => s.id === sceneId);
     if (!scene) return;
-    const finalPrompt = `${customPrompt || scene.photo_prompt}, photoreal 8K resolution, ultra-detailed, cinematic lighting, sharp focus, film still`;
+    const finalPrompt = buildScenePhotoPrompt(scene, customPrompt);
     try {
       const body: any = { prompt: finalPrompt };
       if (scene.image_url) body.inputImage = scene.image_url; // edit existing
@@ -719,6 +775,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       lines.push("Directed by");
       lines.push("The SOLACE Oracle");
       lines.push("");
+      if (starring.trim()) {
+        lines.push("Starring");
+        starring.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
+      if (coStarring.trim()) {
+        lines.push("Co-starring");
+        coStarring.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
+      if (guestStars.trim()) {
+        lines.push("Guest Stars");
+        guestStars.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
       if (intent.trim()) {
         lines.push("Story");
         lines.push(intent.trim().slice(0, 120));
@@ -783,6 +854,52 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } catch (e) {
       console.error(e); toast.error("Newsroom preset failed");
     } finally { setGeneratingNewsroom(false); }
+  };
+
+  // ----- AI-generated 10×6s preview / trailer (best parts of the movie picked by AI) -----
+  // Picks up to 10 scenes from the existing scene list. Oracle scoring favours scenes that
+  // have an image AND a tone of "epic"/"emotional"/"playful"; the user can swap any clip
+  // with the "Use scene N" buttons next to each trailer slot.
+  const generatePreviewTrailer = async () => {
+    if (scenes.length === 0) { toast.error("Plan a movie first"); return; }
+    setGeneratingTrailer(true);
+    try {
+      const candidates = scenes.filter(s => s.image_url);
+      if (candidates.length === 0) {
+        toast.error("Generate at least one scene photo before building a trailer");
+        return;
+      }
+      const tonePriority: Record<SceneTone, number> = {
+        epic: 5, emotional: 4, tense: 4, playful: 3, calm: 2, neutral: 1,
+      };
+      const ranked = [...candidates].sort((a, b) => {
+        const ta = tonePriority[a.tone || "neutral"];
+        const tb = tonePriority[b.tone || "neutral"];
+        return tb - ta;
+      });
+      // Always keep first + last for narrative bookends, then fill from ranked
+      const picks: typeof candidates = [];
+      const add = (s: typeof candidates[number]) => { if (!picks.find(p => p.id === s.id) && picks.length < 10) picks.push(s); };
+      if (candidates[0]) add(candidates[0]);
+      if (candidates[candidates.length - 1]) add(candidates[candidates.length - 1]);
+      ranked.forEach(add);
+      // Re-sort picks by their original scene order so the trailer flows
+      picks.sort((a, b) => scenes.findIndex(s => s.id === a.id) - scenes.findIndex(s => s.id === b.id));
+      setTrailerScenes(picks.map(p => ({ id: p.id, image: p.image_url!, tone: p.tone })));
+      toast.success(`Trailer ready — ${picks.length} clips × 6s with the movie soundtrack`);
+    } catch (e) {
+      console.error(e); toast.error("Trailer generation failed");
+    } finally { setGeneratingTrailer(false); }
+  };
+
+  const swapTrailerClip = (slotIndex: number, sceneId: string) => {
+    const s = scenes.find(x => x.id === sceneId);
+    if (!s?.image_url) return;
+    setTrailerScenes(prev => prev.map((t, i) => i === slotIndex ? { id: s.id, image: s.image_url!, tone: s.tone } : t));
+  };
+
+  const removeTrailerClip = (slotIndex: number) => {
+    setTrailerScenes(prev => prev.filter((_, i) => i !== slotIndex));
   };
 
 
@@ -978,15 +1095,35 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           src.connect(g).connect(audioDest);
           src.start();
         }
-        // Schedule per-scene backing music (overrides global score for this clip if present)
+        // Schedule per-scene backing music with cross-fade between adjacent scenes.
+        // Cross-fade duration is decided by crossfadeFor() (auto = Oracle picks per transition).
         const mbuf = sceneMusicBuffers[idx];
         if (mbuf) {
           const src = audioCtx.createBufferSource();
           src.buffer = mbuf;
           const g = audioCtx.createGain();
-          g.gain.value = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          const targetVol = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          const prev = idx > 0 ? ready[idx - 1] : null;
+          const next = idx < ready.length - 1 ? ready[idx + 1] : null;
+          const fadeInSec = prev ? crossfadeFor(prev, scene) : 0;
+          const fadeOutSec = next ? crossfadeFor(scene, next) : 0;
+          const sceneSec = dur / 1000;
+          const t0 = audioCtx.currentTime;
+          if (fadeInSec > 0) {
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(targetVol, t0 + Math.min(fadeInSec, sceneSec / 2));
+          } else {
+            g.gain.setValueAtTime(targetVol, t0);
+          }
+          if (fadeOutSec > 0) {
+            const fadeStart = t0 + Math.max(0, sceneSec - fadeOutSec);
+            g.gain.setValueAtTime(targetVol, fadeStart);
+            g.gain.linearRampToValueAtTime(0, t0 + sceneSec);
+          }
           src.connect(g).connect(audioDest);
           src.start();
+          // Stop slightly after scene end so cross-fade tail can finish
+          try { src.stop(t0 + sceneSec + 0.05); } catch {}
         }
         const start = performance.now();
         await new Promise<void>(resolve => {
@@ -1076,7 +1213,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               } else if (line.startsWith("— ")) {
                 ctx.font = "italic 28px sans-serif";
                 ctx.fillStyle = "hsl(45 90% 70%)";
-              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals"].includes(line)) {
+              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals", "Starring", "Co-starring", "Guest Stars"].includes(line)) {
                 ctx.font = "bold 30px sans-serif";
                 ctx.fillStyle = "hsl(45 90% 70%)";
               } else {
@@ -1566,10 +1703,50 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                                   {s.music_url === url ? "✓ Selected" : `Use #${i + 1}`}
                                 </Button>
                                 <audio src={url} controls className="h-6 flex-1 min-w-0" />
+                                <Button
+                                  size="sm" variant="ghost" className="h-6 w-6 p-0"
+                                  title="Save to Favourite Tracks"
+                                  onClick={() => saveTrackToFavourites(url, `${title || "Movie"} — ${s.caption} #${i + 1}`)}
+                                >
+                                  <Star className="w-3 h-3 text-primary" />
+                                </Button>
                               </div>
                             ))}
+                            <Button
+                              size="sm" variant="outline" className="h-6 text-[10px] mt-1"
+                              onClick={() => { setFavouritesTargetId(s.id); setShowFavouritesPicker(true); }}
+                            >
+                              <Star className="w-3 h-3 mr-1" /> Pick from Favourites
+                            </Button>
                           </div>
                         )}
+                        {/* Director controls — camera angle, lighting, action, emotion */}
+                        <div className="grid grid-cols-2 gap-1 pt-2 border-t border-border/40">
+                          <label className="text-[10px] text-muted-foreground flex flex-col gap-0.5">
+                            Camera angle
+                            <select
+                              value={s.camera_angle || "auto"}
+                              onChange={e => updateScene(s.id, { camera_angle: e.target.value as CameraAngle })}
+                              className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            >
+                              {Object.keys(CAMERA_ANGLE_PROMPTS).map(k => <option key={k} value={k}>{k}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-[10px] text-muted-foreground flex flex-col gap-0.5">
+                            Lighting
+                            <select
+                              value={s.lighting_preset || "auto"}
+                              onChange={e => updateScene(s.id, { lighting_preset: e.target.value as LightingPreset })}
+                              className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            >
+                              {Object.keys(LIGHTING_PRESET_PROMPTS).map(k => <option key={k} value={k}>{k}</option>)}
+                            </select>
+                          </label>
+                          <Input value={s.character_action || ""} onChange={e => updateScene(s.id, { character_action: e.target.value })}
+                            className="h-6 text-[11px] col-span-2" placeholder="Character action — e.g. 'walks toward camera, reaches out'" />
+                          <Input value={s.character_emotion || ""} onChange={e => updateScene(s.id, { character_emotion: e.target.value })}
+                            className="h-6 text-[11px] col-span-2" placeholder="Character emotion — e.g. 'anxious, breathing fast'" />
+                        </div>
                       </div>
 
                       {editingSceneId === s.id && (

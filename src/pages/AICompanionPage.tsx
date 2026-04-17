@@ -114,6 +114,10 @@ const AICompanionPage = () => {
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
+    const ownerEmail = "justinbretthogan@gmail.com";
+    const isOwner = (typeof window !== "undefined") && (window as any).__solaceUserEmail === ownerEmail;
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(text, { ownerBypass: isOwner });
+    if (!mod.ok) { toast.error(mod.reason || "Message blocked by content filter"); return; }
     const userMsg: CompanionMessage = { id: Date.now().toString(), role: "user", content: text };
     setMessages(prev => [...prev, userMsg]);
     setInput("");

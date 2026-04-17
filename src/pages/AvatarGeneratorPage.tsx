@@ -86,16 +86,11 @@ const AvatarGeneratorPage = () => {
 
   const generate = async () => {
     const desc = prompt.trim() || "a person";
-    
-    // M-rating content filter for non-owners
-    if (!isOwner) {
-      const blockedTerms = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|bikini|seductive|provocative|undress|strip)\b/i;
-      if (blockedTerms.test(desc)) {
-        toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
-        return;
-      }
-    }
-    
+
+    // Centralised content safety filter (owner can bypass M-rating only; CSAM/etc. always blocked)
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(desc, { ownerBypass: isOwner });
+    if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); return; }
+
     // Force realistic style for AI friend and partner avatars
     const effectiveStyle = (purpose === "ai-friend" || purpose === "partner") ? "realistic-portrait" : selectedStyle;
     
