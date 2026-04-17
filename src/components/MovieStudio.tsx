@@ -403,6 +403,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
                           From library
                         </Button>
+                        <Button onClick={() => triggerUpload(s.id)} size="sm" variant="outline" className="h-7 text-xs">
+                          <Upload className="w-3 h-3 mr-1" /> Upload
+                        </Button>
                         <Button onClick={() => previewScene(s)} size="sm" variant="outline" className="h-7 text-xs"
                           disabled={!s.image_url}>
                           <Play className="w-3 h-3 mr-1" /> Preview
