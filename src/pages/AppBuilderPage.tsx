@@ -15,11 +15,12 @@ interface ChatMessage { role: "user" | "assistant"; content: string; code?: stri
 
 const AppBuilderPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: userMedia } = useUserMedia();
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm your App Builder agent. Tell me what kind of app or website you want to build, and I'll create it for you. You can say things like:\n\n• \"Build me a portfolio website\"\n• \"Create an AI chatbot app\"\n• \"Make a fitness tracker dashboard\"\n• \"Build an e-commerce landing page\"\n\nDescribe your vision and I'll build it!" }
+    { role: "assistant", content: "Hi! I'm your Master App Builder agent. I can take you all the way from idea → built app → Play Store → paid customers.\n\nJust tell me what you want and I'll handle:\n• Building the app (HTML/JS, fully working)\n• Adding Stripe paywalls if it's a paid app\n• Wrapping it for Google Play (APK/AAB)\n• Setting up the store listing checklist\n\nTry: \"Build me a paid meditation app for $4.99/month\" or \"Make a free portfolio site I can publish to Play Store\"." }
   ]);
   const [input, setInput] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
@@ -107,7 +108,7 @@ const AppBuilderPage = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           type: "assistant",
-          prompt: `You are Solace App Builder, an expert AI agent that builds complete, production-quality web applications. You respond conversationally AND generate code.
+          prompt: `You are SOLACE Master App Builder — an expert AI agent that builds complete, production-quality web apps AND walks the user from idea all the way to selling on the Play Store.
 
 CONVERSATION SO FAR:
 ${conversationContext}
@@ -117,25 +118,19 @@ USER'S NEW MESSAGE: "${trimmed}"
 ${currentCode ? `CURRENT APP CODE (user wants to modify this):\n${currentCode.substring(0, 3000)}` : ""}
 
 INSTRUCTIONS:
-1. First, respond conversationally to the user (2-3 sentences max about what you're building/changing).
-2. Then generate a COMPLETE, self-contained HTML file with:
-   - Modern responsive design (mobile-first)
-   - Dark theme with elegant styling (CSS custom properties)
-   - Fully functional JavaScript with all interactive features
-   - Professional animations and transitions
-   - If they want AI features, include mock AI responses
-   - Include proper meta tags, favicon references
-   - Use modern CSS (flexbox, grid, variables)
-   - Include a header, main content, and footer
-   - Make it look like a real production website
+1. First, respond conversationally (2-3 sentences). If the user mentions selling, paid, subscription, premium, $, price, monetize, charge — treat the app as PAID.
+2. If PAID, you MUST inject a clean Stripe Checkout paywall on every premium feature: a "Subscribe" or "Buy" button that calls a placeholder \`startCheckout()\` JS function which posts to \`/api/create-checkout\` with the price tier. Show locked badges on premium features and only unlock them when localStorage has \`solace_paid=true\`. Include a clear pricing card with the price the user mentioned (or suggest $4.99/mo if unspecified).
+3. If FREE, no paywall — make every feature open.
+4. Generate a COMPLETE self-contained HTML file: mobile-first, dark theme, responsive, modern animations, real production polish. Include header/main/footer. Include a "Get the App" CTA pointing to a Play Store badge placeholder so it's ready to wrap.
+5. Add a tiny <meta name="solace-app-config"> tag containing JSON: {"paid": true|false, "price": "$X.XX/mo or one-time", "play_ready": true}.
 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
-CHAT: [Your conversational response here]
+CHAT: [Your conversational response — mention paywall + Play Store steps if PAID]
 CODE_START
 [Complete HTML code here]
 CODE_END
 
-IMPORTANT: The HTML must be 100% self-contained. No external dependencies except Google Fonts (which can be loaded via link tag). Make it look AMAZING.`
+IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AMAZING and ready to publish.`
         }),
       });
 
