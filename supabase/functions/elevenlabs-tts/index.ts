@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     } catch {
       body = {};
     }
-    const { text, voiceId, settings, modelId } = body || {};
+    const { text, voiceId, settings, modelId, fast, outputFormat } = body || {};
     if (!text || typeof text !== "string") {
       return new Response(
         JSON.stringify({ error: "TEXT_REQUIRED", fallback: true }),
@@ -33,9 +33,15 @@ Deno.serve(async (req) => {
     }
 
     // Default to "Sarah" — most popular/downloaded female voice on ElevenLabs
-    // (warm, professional, soft American accent)
     const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
-    const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
+    // SPEED: when `fast: true` is sent (Oracle), use Flash v2.5 (~75ms latency vs
+    // ~400ms for multilingual_v2). Quality is still very natural.
+    const selectedModel =
+      modelId ||
+      settings?.model_id ||
+      (fast ? "eleven_flash_v2_5" : "eleven_multilingual_v2");
+    // SPEED: smaller MP3 = faster first-byte. 22kHz/32kbps is fine for voice.
+    const selectedFormat = outputFormat || (fast ? "mp3_22050_32" : "mp3_44100_128");
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
     const voice_settings = {
@@ -49,7 +55,7 @@ Deno.serve(async (req) => {
     let response: Response;
     try {
       response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=mp3_44100_128`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=4`,
         {
           method: "POST",
           headers: {
