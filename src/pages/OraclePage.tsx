@@ -223,13 +223,29 @@ const OraclePage = () => {
   // Premium voice requires any paid subscription
   const { tier: subTier } = useSubscription();
 
-  // Premium ElevenLabs TTS for the Oracle — falls back to browser TTS for friends
+  // Premium ElevenLabs TTS for the Oracle — natural, unhurried, human-like delivery
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
+      // Add gentle natural pauses at sentence boundaries for realistic pacing
+      const paced = text
+        .replace(/([.!?])\s+/g, "$1 … ")
+        .replace(/,\s+/g, ", ")
+        .trim();
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ text, voiceId: "nPczCjzI2devNBz1zQrb" }),
+        body: JSON.stringify({
+          text: paced,
+          voiceId: "nPczCjzI2devNBz1zQrb", // Brian — warm, grounded
+          modelId: "eleven_multilingual_v2", // highest quality
+          settings: {
+            stability: 0.6,
+            similarity_boost: 0.85,
+            style: 0.25,
+            use_speaker_boost: true,
+            speed: 0.88, // unhurried, conversational
+          },
+        }),
       });
       if (!response.ok) return false;
       const audioBlob = await response.blob();
@@ -237,6 +253,7 @@ const OraclePage = () => {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
+      audio.playbackRate = 0.95; // additional slight slowdown client-side
       setIsSpeaking(true);
       await audio.play();
       await new Promise<void>((resolve) => {
