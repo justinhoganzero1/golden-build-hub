@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
+import { useSetMasterAvatar } from "@/hooks/useMasterAvatar";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
@@ -62,6 +63,7 @@ const AvatarGeneratorPage = () => {
   const purposeFromParam = searchParams.get("purpose");
   const createAvatar = useCreateAvatar();
   const saveMedia = useSaveMedia();
+  const setMaster = useSetMasterAvatar();
 
   // Owner detection — only the app owner can create R/X rated avatars
   const OWNER_EMAIL = "justinbretthogan@gmail.com";
@@ -200,7 +202,7 @@ const AvatarGeneratorPage = () => {
     }
   };
 
-  const addAvatar = () => {
+  const addAvatar = (asMaster = false) => {
     if (!imageUrl) { toast.error("Generate or capture an avatar first"); return; }
 
     if (isPaidPurpose) {
@@ -210,11 +212,10 @@ const AvatarGeneratorPage = () => {
 
     const name = avatarName.trim() || "My Avatar";
 
-    // Save to database
     if (user) {
       createAvatar.mutate({
         name,
-        purpose,
+        purpose: asMaster ? "oracle" : purpose,
         voice_style: selectedVoice,
         personality: selectedPersonality,
         image_url: imageUrl,
@@ -222,7 +223,17 @@ const AvatarGeneratorPage = () => {
         description: prompt.trim() || null,
         is_default: false,
       }, {
-        onSuccess: () => {
+        onSuccess: (created) => {
+          if (asMaster && created?.id) {
+            setMaster.mutate(created.id, {
+              onSuccess: () => {
+                toast.success(`👑 "${name}" is now your Master Oracle avatar!`);
+                navigate("/oracle");
+              },
+              onError: () => toast.error("Saved avatar but could not set as master"),
+            });
+            return;
+          }
           toast.success(`"${name}" saved to your gallery!`);
           switch (purpose) {
             case "oracle": navigate("/oracle"); break;
