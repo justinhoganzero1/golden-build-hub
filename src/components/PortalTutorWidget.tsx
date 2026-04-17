@@ -154,9 +154,12 @@ const PortalTutorWidget = () => {
           }
         }
       }
+      if (assistantText.trim()) speak(assistantText);
     } catch (err) {
       console.error("tutor error:", err);
-      setMessages((p) => [...p, { role: "assistant", content: "Sorry — I lost connection. Try asking again?" }]);
+      const fallback = "Sorry — I lost connection. Try asking again?";
+      setMessages((p) => [...p, { role: "assistant", content: fallback }]);
+      speak(fallback);
     } finally {
       setLoading(false);
     }
