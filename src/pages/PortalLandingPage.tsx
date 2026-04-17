@@ -22,6 +22,7 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
+import solaceLogo from "@/assets/solace-logo.png";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends." },
@@ -51,7 +52,7 @@ const PortalLandingPage = () => {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]" />
+            <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="font-bold text-lg tracking-[0.2em] text-primary">SOLACE</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -84,13 +85,14 @@ const PortalLandingPage = () => {
         />
 
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
-          {/* Animated golden shield — matches app */}
+          {/* Animated golden logo — matches app */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/30 blur-2xl animate-pulse" />
-              <Shield
-                className="relative h-20 w-20 text-primary drop-shadow-[0_0_30px_hsl(var(--primary))] animate-glow-pulse"
-                strokeWidth={1.5}
+              <div className="absolute inset-0 rounded-full bg-primary/40 blur-3xl animate-pulse" />
+              <img
+                src={solaceLogo}
+                alt="SOLACE shield logo"
+                className="relative h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_40px_hsl(var(--primary)/0.8)] animate-glow-pulse"
               />
             </div>
           </div>
@@ -275,7 +277,7 @@ const PortalLandingPage = () => {
       <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]" />
+            <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-5">
