@@ -234,7 +234,7 @@ const PortalLandingPage = () => {
               <div className="flex items-center gap-4 mb-4">
                 <img
                   src={webWrapperLogo}
-                  alt="Web Wrapper app logo"
+                  alt="App Wrapper app logo"
                   width={64}
                   height={64}
                   loading="lazy"
