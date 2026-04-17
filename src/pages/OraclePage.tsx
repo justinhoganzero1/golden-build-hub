@@ -691,6 +691,16 @@ const OraclePage = () => {
     };
   }, []);
 
+  // First-visit auto-introduction — Oracle introduces itself + capabilities ONCE
+  const introTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (introTriggeredRef.current) return;
+    if (localStorage.getItem("solace-oracle-introduced")) return;
+    introTriggeredRef.current = true;
+    const t = setTimeout(() => sendMessageRef.current?.("__INTRO__"), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
       if (finalTranscriptRef.current.trim()) {
