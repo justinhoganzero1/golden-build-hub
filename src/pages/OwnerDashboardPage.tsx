@@ -377,6 +377,32 @@ const OwnerDashboardPage = () => {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-4">
+            {/* Private Live Traffic — admin only, your site */}
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock className="w-4 h-4 text-yellow-400" />
+                <h3 className="text-sm font-bold text-white">Live Traffic — Your Site (Private)</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Eye className="w-4 h-4 text-cyan-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-cyan-300">{liveTraffic.visitors.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Visitors</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Download className="w-4 h-4 text-emerald-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-emerald-300">{liveTraffic.installs.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Downloads</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Crown className="w-4 h-4 text-yellow-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-yellow-300">{liveTraffic.paidUpgrades.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Upgraded</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-2">Refreshes every 30 seconds. Only you can see this.</p>
+            </div>
+
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3">
               {[
