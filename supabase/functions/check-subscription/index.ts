@@ -74,11 +74,38 @@ serve(async (req) => {
       logStep("No active subscription");
     }
 
+    // Check for SOLACE Lifetime Unlock one-time payment ($900)
+    const LIFETIME_PRICE_ID = "price_1TN6KvLM75X0snyChMuEU6Eo";
+    const LIFETIME_PRODUCT_ID = "prod_ULnwqViVNhjlMp";
+    let hasLifetime = false;
+    try {
+      const charges = await stripe.charges.list({ customer: customerId, limit: 100 });
+      for (const ch of charges.data) {
+        if (ch.paid && !ch.refunded && ch.status === "succeeded") {
+          // Confirm via the related payment intent's invoice/line items if needed; simplest: scan checkout sessions
+        }
+      }
+      const sessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 100 });
+      for (const s of sessions.data) {
+        if (s.mode === "payment" && s.payment_status === "paid") {
+          const items = await stripe.checkout.sessions.listLineItems(s.id, { limit: 10 });
+          if (items.data.some(li => li.price?.id === LIFETIME_PRICE_ID || li.price?.product === LIFETIME_PRODUCT_ID)) {
+            hasLifetime = true;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      logStep("Lifetime check error", { error: String(e) });
+    }
+    logStep("Lifetime status", { hasLifetime });
+
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      product_id: productId,
-      price_id: priceId,
-      subscription_end: subscriptionEnd,
+      subscribed: hasActiveSub || hasLifetime,
+      product_id: hasLifetime ? LIFETIME_PRODUCT_ID : productId,
+      price_id: hasLifetime ? LIFETIME_PRICE_ID : priceId,
+      subscription_end: hasLifetime ? null : subscriptionEnd,
+      lifetime: hasLifetime,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

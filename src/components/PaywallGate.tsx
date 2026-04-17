@@ -22,6 +22,7 @@ const TIER_RANK: Record<string, number> = {
   biannual: 4,
   annual: 5,
   golden: 6,
+  lifetime: 7,
 };
 
 const TIER_LABELS: Record<string, string> = {
@@ -29,6 +30,7 @@ const TIER_LABELS: Record<string, string> = {
   monthly: "Full Access ($10/mo)",
   quarterly: "Pro ($20)",
   golden: "Golden Heart ($1,200/yr)",
+  lifetime: "Lifetime Unlock ($900)",
 };
 
 export function hasAccess(currentTier: string, requiredTier: string): boolean {

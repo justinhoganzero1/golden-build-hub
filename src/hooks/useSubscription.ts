@@ -11,6 +11,7 @@ export const SUBSCRIPTION_TIERS = {
   biannual: { name: "Full Access (6 Months)", productId: "prod_TzJEfxx8ww6FsQ", priceId: "price_1T1KcPLM75X0snyCq9k8skhN" }, // $40 AUD one-time
   annual: { name: "Full Access (12 Months)", productId: "prod_TzJFsym7iINOgM", priceId: "price_1T1KceLM75X0snyCq9k8skhN" }, // $80 AUD one-time
   golden: { name: "Golden Heart", productId: "prod_TybLpnuJLDhKwt", priceId: "price_1T0e8lLM75X0snyC9PVHfil2" }, // $1200/yr
+  lifetime: { name: "SOLACE Lifetime Unlock", productId: "prod_ULnwqViVNhjlMp", priceId: "price_1TN6KvLM75X0snyChMuEU6Eo" }, // $900 one-time
 } as const;
 
 export function getTierByProductId(productId: string | null): string {
