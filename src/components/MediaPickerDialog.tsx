@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Image, Film, Music, X } from "lucide-react";
-import { useUserMedia } from "@/hooks/useUserAvatars";
+import { Search, Image, Film, Music, X, FolderOpen, Upload } from "lucide-react";
+import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
+import { toast } from "sonner";
 
 interface MediaPickerDialogProps {
   open: boolean;
@@ -13,8 +14,54 @@ interface MediaPickerDialogProps {
 
 const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, title = "Select from Library" }: MediaPickerDialogProps) => {
   const { data: media = [], isLoading } = useUserMedia();
+  const saveMedia = useSaveMedia();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(filterType);
+  const [uploading, setUploading] = useState(false);
+
+  const acceptAttr = filterType === "image" ? "image/*"
+    : filterType === "video" ? "video/*"
+    : filterType === "audio" ? "audio/*"
+    : "image/*,video/*,audio/*";
+
+  const handleBrowse = () => fileInputRef.current?.click();
+
+  const handleFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File too large (max 25MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const mediaType = file.type.startsWith("video") ? "video"
+        : file.type.startsWith("audio") ? "audio" : "image";
+      // Persist to library so it's reusable everywhere
+      try {
+        await saveMedia.mutateAsync({
+          media_type: mediaType,
+          title: file.name,
+          url: dataUrl,
+          source_page: "device-upload",
+        });
+      } catch { /* non-fatal — still let user use the file */ }
+      onSelect(dataUrl, file.name);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not read file");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const filtered = media.filter((m: any) => {
     if (typeFilter && m.media_type !== typeFilter) return false;
@@ -41,6 +88,22 @@ const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, ti
             className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground" />
           {search && <button onClick={() => setSearch("")}><X className="w-3 h-3 text-muted-foreground" /></button>}
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptAttr}
+          onChange={handleFileChosen}
+          className="hidden"
+        />
+        <button
+          onClick={handleBrowse}
+          disabled={uploading}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {uploading ? <Upload className="w-4 h-4 animate-pulse" /> : <FolderOpen className="w-4 h-4" />}
+          {uploading ? "Uploading..." : "Browse from device"}
+        </button>
 
         {!filterType && (
           <div className="flex gap-2">
