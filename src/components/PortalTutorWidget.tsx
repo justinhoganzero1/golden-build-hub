@@ -243,13 +243,23 @@ const PortalTutorWidget = () => {
                 <div className="text-xs text-muted-foreground">Your guide to every feature</div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="rounded-md p-1 hover:bg-secondary text-muted-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setVoiceOn((v) => !v)}
+                aria-label={voiceOn ? "Mute Concierge voice" : "Unmute Concierge voice"}
+                title={voiceOn ? "Voice on — click to mute" : "Voice off — click to enable"}
+                className="rounded-md p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+              >
+                {voiceOn && !isMuted ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="rounded-md p-1 hover:bg-secondary text-muted-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </header>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
