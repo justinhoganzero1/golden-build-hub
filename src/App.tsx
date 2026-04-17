@@ -140,6 +140,7 @@ const App = () => (
         <MuteProvider>
           <TooltipProvider>
             <BrowserRouter>
+              <SpeedAIController />
               <Toaster />
               <Sonner />
               <OfflineBanner />
