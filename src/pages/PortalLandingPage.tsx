@@ -335,7 +335,7 @@ const PortalLandingPage = () => {
                 title: "Desktop",
                 steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit the button below."],
                 cta: canInstall ? "Install on Desktop" : "Install (Chrome/Edge)",
-                action: handleInstall,
+                action: () => handleInstall("desktop"),
                 installedHere: isStandalone && isDesktopUA,
               },
             ];
