@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,8 +11,25 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
 const CLIP_SECONDS = 6;
+
+// Map AI voice_style → ElevenLabs voice IDs (from approved list)
+const VOICE_MAP: Record<string, string> = {
+  "narrator-male-warm": "nPczCjzI2devNBz1zQrb", // Brian
+  "narrator-female-warm": "EXAVITQu4vr4xnSDxMaL", // Sarah
+  "male-young": "TX3LPaxmHKxFdv7VOQHJ", // Liam
+  "male-deep": "JBFqnCBsd6RMkjVDRZzb", // George
+  "female-young": "Xb7hH8MSUJpSbSDYk0k2", // Alice
+  "female-mature": "XrExE9yKIg1WjnnlVkGX", // Matilda
+  "child": "pFZP5JQG7iQjIQuC4Bku", // Lily
+  "elder-male": "pqHfZKP75CvOlQylNhV4", // Bill
+  "elder-female": "FGY2WhTYpPnrIDTdsKH5", // Laura
+  "villain": "onwK4e9ZLuTAKqWW03F9", // Daniel
+  "hero": "bIHbv24MWmeRgasZH58o", // Will
+};
+const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrator-male-warm"];
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
 interface Scene {
@@ -23,6 +40,12 @@ interface Scene {
   duration_sec: number; // always 6
   image_url?: string;
   generating?: boolean;
+  // Audio
+  narration?: string;
+  speaker?: string;
+  voice_style?: string;
+  audio_url?: string; // data URL of generated mp3
+  generatingAudio?: boolean;
 }
 
 interface MovieStudioProps {
