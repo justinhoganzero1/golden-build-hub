@@ -26,16 +26,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Default to "Brian" voice — warm, natural male voice
+    // Default to "Brian" — warm, grounded, natural male voice
     const selectedVoice = voiceId || "nPczCjzI2devNBz1zQrb";
-    const selectedModel = modelId || settings?.model_id || "eleven_turbo_v2_5";
+    // Multilingual v2 = highest quality, most natural human prosody
+    const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
 
+    // Tuned for natural, unhurried, real-world human delivery
     const voice_settings = {
-      stability: settings?.stability ?? 0.45,
-      similarity_boost: settings?.similarity_boost ?? 0.78,
-      style: settings?.style ?? 0.35,
+      stability: settings?.stability ?? 0.6,          // steadier, less jittery
+      similarity_boost: settings?.similarity_boost ?? 0.85,
+      style: settings?.style ?? 0.25,                  // subtle expression, not theatrical
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.95,
+      speed: settings?.speed ?? 0.88,                  // noticeably slower, conversational
     };
 
     const response = await fetch(
