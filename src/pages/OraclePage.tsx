@@ -745,7 +745,7 @@ const OraclePage = () => {
       // Kick the system doctor silently
       try {
         const mod = await import("@/lib/systemDoctor");
-        mod.runSystemDoctor?.().catch(() => {});
+        mod.runFullDiagnostic?.().catch(() => {});
       } catch {}
       const ack: Message = {
         id: Date.now().toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
