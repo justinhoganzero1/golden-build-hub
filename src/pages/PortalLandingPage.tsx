@@ -33,6 +33,7 @@ const FEATURES = [
   { icon: Users, title: "AI Companion", desc: "M-rated personalized partner personas with deep memory and personality." },
   { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place." },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down." },
+  { icon: Smartphone, title: "Web Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
@@ -147,13 +148,28 @@ const PortalLandingPage = () => {
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="holo-tile rounded-xl p-5 text-left">
-              <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-            </div>
-          ))}
+          {FEATURES.map(({ icon: Icon, title, desc, to }) => {
+            const inner = (
+              <>
+                <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
+                <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+              </>
+            );
+            return to ? (
+              <button
+                key={title}
+                onClick={() => navigate(to)}
+                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all"
+              >
+                {inner}
+              </button>
+            ) : (
+              <div key={title} className="holo-tile rounded-xl p-5 text-left">
+                {inner}
+              </div>
+            );
+          })}
         </div>
       </section>
 

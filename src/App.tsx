@@ -66,6 +66,7 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const InvestorPage = lazy(() => import("./pages/InvestorPage"));
 const CreatorsPage = lazy(() => import("./pages/CreatorsPage"));
 const SignInPage = lazy(() => import("./components/SignInPage"));
+const WebWrapperPage = lazy(() => import("./pages/WebWrapperPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -145,6 +146,7 @@ const App = () => (
                   <Route path="/investor" element={<ErrorBoundary pageName="Investor"><InvestorPage /></ErrorBoundary>} />
                   <Route path="/creators" element={<ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
+                  <Route path="/web-wrapper" element={<ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
