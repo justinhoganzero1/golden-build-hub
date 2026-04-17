@@ -474,6 +474,13 @@ const OraclePage = () => {
   useEffect(() => {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
+    // first real Oracle response speaks back in <1s.
+    fetch(ELEVENLABS_TTS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({ text: ".", fast: true, voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
