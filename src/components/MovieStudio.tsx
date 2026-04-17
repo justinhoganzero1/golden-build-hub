@@ -73,6 +73,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [libraryTargetId, setLibraryTargetId] = useState<string | null>(null);
   const [creditsLow, setCreditsLow] = useState(false);
   const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
