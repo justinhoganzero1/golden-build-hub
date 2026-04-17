@@ -449,6 +449,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <input ref={uploadInputRef} type="file" accept="image/*" onChange={handleUploadFile} className="hidden" />
         <MediaPickerDialog
           open={showLibrary}
           onOpenChange={setShowLibrary}
