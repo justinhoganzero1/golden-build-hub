@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, oracleName, navigateCommand, userMemories, adContext } = await req.json();
+    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -18,6 +18,7 @@ serve(async (req) => {
     const showAds = adContext?.showAds ?? true;
     const isSubscribed = adContext?.isSubscribed ?? false;
     const freeTrial = adContext?.freeTrialsUsed || [];
+    const firstMeeting = !!isFirstMeeting;
 
     const appRoutes = `
 NAVIGATION CAPABILITY: You can open any app for the user. When the user asks to open an app or go somewhere, respond with the navigation command embedded in your message using this exact format: [[NAVIGATE:/path]]
