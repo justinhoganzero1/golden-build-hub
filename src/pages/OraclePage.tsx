@@ -981,7 +981,7 @@ const OraclePage = () => {
           .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
           .replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, "i"), "");
       const flushSpeakableSentences = (final = false) => {
-        if (isMutedRef.current) return;
+        if (isMuted) return;
         const pending = oracleContent.slice(spokenUpTo);
         // Match complete sentences ending in . ! ? or newline
         const sentenceRegex = /[^.!?\n]+[.!?\n]+/g;
