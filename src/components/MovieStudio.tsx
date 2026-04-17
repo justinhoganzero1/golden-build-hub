@@ -176,6 +176,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         speaker: s.speaker || "narrator",
         voice_style: s.voice_style || "narrator-male-warm",
         sfx_prompt: s.sfx_prompt || s.ambient || "",
+        music_prompt: s.music_prompt || s.score_prompt || `Cinematic underscore for: ${s.caption}`,
+        music_volume: 0.25,
       }));
       // Auto-suggest a music prompt from the overall vibe
       if (data.music_prompt) setMusicPrompt(data.music_prompt);
