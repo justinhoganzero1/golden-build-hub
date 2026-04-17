@@ -47,14 +47,9 @@ function getCollectionKey(sourcePage: string | null): string {
 }
 
 const MediaLibraryPage = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.email === ADMIN_EMAIL;
-  const [adminGlobalView, setAdminGlobalView] = useState(isAdmin);
-
   const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia();
-  const { data: allMedia = [], isLoading: allLoading } = useAllUserMedia();
-  const mediaItems = isAdmin && adminGlobalView ? allMedia : ownMedia;
-  const isLoading = isAdmin && adminGlobalView ? allLoading : ownLoading;
+  const mediaItems = ownMedia;
+  const isLoading = ownLoading;
 
   const qc = useQueryClient();
   const [view, setView] = useState<"grid" | "list">("grid");
