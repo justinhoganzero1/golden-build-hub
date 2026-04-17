@@ -49,6 +49,8 @@ const OwnerDashboardPage = () => {
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
   // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
   const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; installs: number; paidUpgrades: number }>({ visitors: 0, installs: 0, paidUpgrades: 0 });
+  // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
+  const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
@@ -277,6 +279,7 @@ const OwnerDashboardPage = () => {
     { key: "vault", label: "Vault", icon: <Lock className="w-4 h-4" /> },
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
+    { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
 
