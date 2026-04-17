@@ -26,19 +26,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Default to "Brian" — warm, grounded, natural male voice
-    const selectedVoice = voiceId || "nPczCjzI2devNBz1zQrb";
+    // Default to "Bill" — old, deep, trustworthy documentary narrator
+    // (Ancient Aliens-style: gravelly, mysterious, authoritative)
+    const selectedVoice = voiceId || "pqHfZKP75CvOlQylNhV4";
     // Multilingual v2 = highest quality, most natural human prosody
     const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
-    // Tuned for natural, unhurried, real-world human delivery
+    // Tuned for cinematic documentary narration — slow, weighty, mysterious
     const voice_settings = {
-      stability: settings?.stability ?? 0.72,          // steadier, less jittery
-      similarity_boost: settings?.similarity_boost ?? 0.9,
-      style: settings?.style ?? 0.12,                  // subtle expression, not theatrical
+      stability: settings?.stability ?? 0.78,          // very steady, deliberate
+      similarity_boost: settings?.similarity_boost ?? 0.92,
+      style: settings?.style ?? 0.35,                  // dramatic gravitas
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.82,                  // noticeably slower, conversational
+      speed: settings?.speed ?? 0.78,                  // slow, weighty pacing
     };
 
     const response = await fetch(
