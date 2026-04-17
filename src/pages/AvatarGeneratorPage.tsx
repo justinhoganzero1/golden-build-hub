@@ -414,16 +414,11 @@ const AvatarGeneratorPage = () => {
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
               <div className={`aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center ${
-                viewMode === "holographic-8k" && imageUrl && !showCamera && !isLoading
+                viewMode === "holographic-8k" && imageUrl && !isLoading
                   ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-purple-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
                   : "bg-[#0f0f0f] border border-gray-800"
               }`}>
-                {showCamera ? (
-                  <div className="relative w-full h-full">
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">📸 Capture</button>
-                  </div>
-                ) : isLoading ? (
+                {isLoading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
                     <p className="text-xs text-gray-500">Generating your avatar...</p>
