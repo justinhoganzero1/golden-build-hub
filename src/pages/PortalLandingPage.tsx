@@ -359,11 +359,10 @@ const PortalLandingPage = () => {
             <Button
               size="lg"
               onClick={handleInstall}
-              disabled={isStandalone}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
             >
               <Download className="mr-2 h-5 w-5" />
-              {isStandalone ? "Already installed ✓" : isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
+              {isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
             {/* Native wrapper download — Portal-specific Play Store package */}
