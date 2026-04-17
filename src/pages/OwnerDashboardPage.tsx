@@ -22,7 +22,8 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads">("overview");
+  const [leads, setLeads] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
   const [freebies, setFreebies] = useState<{ email: string; date: string; reason: string }[]>([]);
