@@ -446,6 +446,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       toast.success("Music score ready");
     } catch (e) {
       console.error(e); toast.error("Music generation failed");
+    } finally { setGeneratingMusic(false); }
   };
 
   // ----- Intro fanfare (short upbeat opener) -----
