@@ -229,8 +229,8 @@ const AvatarGeneratorPage = () => {
       createAvatar.mutate({
         name,
         purpose: asMaster ? "oracle" : purpose,
-        voice_style: selectedVoice,
-        personality: selectedPersonality,
+        voice_style: blendedVoice,
+        personality: blendedPersonality,
         image_url: imageUrl,
         art_style: selectedStyle,
         description: prompt.trim() || null,
@@ -391,17 +391,21 @@ const AvatarGeneratorPage = () => {
                   <Mic className="w-4 h-4 text-purple-400" /> Voice & Personality
                 </h2>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1.5 block">Voice Style</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-400">Voice Style <span className="text-[10px] text-purple-300">(pick as many as you like — AI blends them)</span></label>
+                    <button onClick={selectAllVoices} className="text-[10px] text-purple-400 hover:text-purple-300 underline">Use all</button>
+                  </div>
                   {savedVoices.length > 0 && (
                     <>
                       <p className="text-[10px] text-primary font-semibold mb-1">🎙️ My Saved Voices</p>
                       <div className="flex flex-wrap gap-1.5 mb-2">
                         {savedVoices.map(v => {
                           const label = `${v.name} (${v.accent || "Default"} • ${v.voice_style || "Natural"})`;
+                          const active = selectedVoices.includes(label);
                           return (
-                            <button key={v.id} onClick={() => setSelectedVoice(label)}
-                              className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedVoice === label ? "bg-primary text-primary-foreground" : "bg-card border border-primary/30 text-primary"}`}>
-                              {v.name}
+                            <button key={v.id} onClick={() => toggleVoice(label)}
+                              className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-primary text-primary-foreground" : "bg-card border border-primary/30 text-primary"}`}>
+                              {active ? "✓ " : ""}{v.name}
                             </button>
                           );
                         })}
@@ -410,29 +414,42 @@ const AvatarGeneratorPage = () => {
                     </>
                   )}
                   <div className="flex flex-wrap gap-1.5">
-                    {VOICE_OPTIONS.map(v => (
-                      <button key={v} onClick={() => setSelectedVoice(v)}
-                        className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedVoice === v ? "bg-purple-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
-                        {v}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {purpose === "partner" && (
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1.5 block flex items-center gap-1">
-                      <Heart className="w-3 h-3 text-pink-400" /> Personality
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {PERSONALITY_OPTIONS.map(p => (
-                        <button key={p} onClick={() => setSelectedPersonality(p)}
-                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${selectedPersonality === p ? "bg-pink-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
-                          {p}
+                    {VOICE_OPTIONS.map(v => {
+                      const active = selectedVoices.includes(v);
+                      return (
+                        <button key={v} onClick={() => toggleVoice(v)}
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-purple-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
+                          {active ? "✓ " : ""}{v}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                )}
+                  {selectedVoices.length > 1 && (
+                    <p className="text-[10px] text-cyan-300 mt-2">✨ AI will dynamically blend {selectedVoices.length} voices based on the conversation mood.</p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-400 flex items-center gap-1">
+                      <Heart className="w-3 h-3 text-pink-400" /> Personality <span className="text-[10px] text-pink-300">(pick as many — AI shifts based on situation)</span>
+                    </label>
+                    <button onClick={selectAllPersonalities} className="text-[10px] text-pink-400 hover:text-pink-300 underline">Use all</button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PERSONALITY_OPTIONS.map(p => {
+                      const active = selectedPersonalities.includes(p);
+                      return (
+                        <button key={p} onClick={() => togglePersonality(p)}
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-pink-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
+                          {active ? "✓ " : ""}{p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedPersonalities.length > 1 && (
+                    <p className="text-[10px] text-cyan-300 mt-2">✨ AI develops a layered personality, switching tone based on what you need.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -505,8 +522,8 @@ const AvatarGeneratorPage = () => {
                       createAvatar.mutate({
                         name: avatarName.trim() || "My Avatar",
                         purpose: "profile",
-                        voice_style: selectedVoice,
-                        personality: selectedPersonality,
+                        voice_style: blendedVoice,
+                        personality: blendedPersonality,
                         image_url: imageUrl,
                         art_style: selectedStyle,
                         description: prompt.trim() || null,
@@ -521,8 +538,8 @@ const AvatarGeneratorPage = () => {
                       createAvatar.mutate({
                         name: avatarName.trim() || "AI Partner",
                         purpose: "partner",
-                        voice_style: selectedVoice,
-                        personality: selectedPersonality,
+                        voice_style: blendedVoice,
+                        personality: blendedPersonality,
                         image_url: imageUrl,
                         art_style: selectedStyle,
                         description: prompt.trim() || null,
@@ -557,8 +574,8 @@ const AvatarGeneratorPage = () => {
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between text-gray-300"><span className="text-gray-500">Name</span><span>{avatarName.trim() || "Unnamed"}</span></div>
                   <div className="flex justify-between text-gray-300"><span className="text-gray-500">Purpose</span><span>{currentPurpose?.label}</span></div>
-                  {showVoiceAndPersonality && <div className="flex justify-between text-gray-300"><span className="text-gray-500">Voice</span><span>{selectedVoice}</span></div>}
-                  {purpose === "partner" && <div className="flex justify-between text-gray-300"><span className="text-gray-500">Personality</span><span>{selectedPersonality}</span></div>}
+                  {showVoiceAndPersonality && <div className="flex justify-between text-gray-300"><span className="text-gray-500">Voice</span><span className="text-right max-w-[60%] truncate">{blendedVoice}</span></div>}
+                  <div className="flex justify-between text-gray-300"><span className="text-gray-500">Personality</span><span className="text-right max-w-[60%] truncate">{blendedPersonality}</span></div>
                   {isPaidPurpose && <div className="flex justify-between text-amber-400 font-medium pt-1 border-t border-gray-800"><span>Cost</span><span>{currentPurpose?.price}</span></div>}
                 </div>
               </div>
