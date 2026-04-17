@@ -830,6 +830,31 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         </div>
                       </div>
 
+                      {/* SFX block (per-scene ElevenLabs sound effect) */}
+                      <div className="mt-2 p-2 rounded-md bg-accent/5 border border-accent/30 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Waves className="w-3 h-3 text-accent-foreground" />
+                          <span className="text-[10px] font-bold">SOUND EFFECT</span>
+                          {s.sfx_url && <audio src={s.sfx_url} controls className="h-6 max-w-[200px] ml-auto" />}
+                        </div>
+                        <Textarea
+                          value={s.sfx_prompt || ""}
+                          onChange={e => updateScene(s.id, { sfx_prompt: e.target.value, sfx_url: undefined })}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Describe the ambient sound — e.g. 'wind across desert dunes', 'busy cafe with distant traffic', 'ocean waves crashing on rocks'"
+                        />
+                        <div className="flex gap-1">
+                          <Button onClick={() => generateSceneSfx(s.id)} size="sm" variant="secondary" className="h-7 text-xs"
+                            disabled={s.generatingSfx || !s.sfx_prompt?.trim()}>
+                            {s.generatingSfx
+                              ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              : s.sfx_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                            {s.sfx_url ? "Re-generate SFX" : "Generate SFX"}
+                          </Button>
+                        </div>
+                      </div>
+
                       {editingSceneId === s.id && (
                         <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
                           <p className="text-[10px] text-muted-foreground">Tell the AI what to change in this clip's photo:</p>
