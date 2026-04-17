@@ -110,6 +110,52 @@ const PortalTutorWidget = () => {
     }
   };
 
+  // ===== Speech recognition (mic) =====
+  useEffect(() => { sendRef.current = send; });
+
+  const toggleMic = async () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setMessages((p) => [...p, { role: "assistant", content: "Voice input isn't supported in this browser. Try Chrome, Edge, or Safari." }]);
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMessages((p) => [...p, { role: "assistant", content: "I need microphone access to listen. Please allow it in your browser settings." }]);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      setInput(finalText + interim);
+    };
+    rec.onerror = () => { setListening(false); };
+    rec.onend = () => {
+      setListening(false);
+      const text = finalText.trim();
+      if (text) sendRef.current?.(text);
+      setInput("");
+    };
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  };
+
   return (
     <>
       {!open && (
