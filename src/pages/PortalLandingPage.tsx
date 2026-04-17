@@ -39,7 +39,7 @@ const FEATURES = [
   { icon: Users, title: "AI Companion", desc: "M-rated personalized partner personas with deep memory and personality.", to: "/ai-companion" },
   { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place.", to: "/magic-hub" },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
-  { icon: Smartphone, title: "Web Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
+  { icon: Smartphone, title: "App Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
@@ -234,14 +234,14 @@ const PortalLandingPage = () => {
               <div className="flex items-center gap-4 mb-4">
                 <img
                   src={webWrapperLogo}
-                  alt="Web Wrapper app logo"
+                  alt="App Wrapper app logo"
                   width={64}
                   height={64}
                   loading="lazy"
                   className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
                 />
                 <div>
-                  <h3 className="font-semibold text-xl text-foreground">Web Wrapper</h3>
+                  <h3 className="font-semibold text-xl text-foreground">App Wrapper</h3>
                   <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
                 </div>
               </div>
@@ -255,7 +255,7 @@ const PortalLandingPage = () => {
                 className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
               >
                 <Download className="mr-2 h-5 w-5" />
-                Download Web Wrapper
+                Download App Wrapper
               </Button>
             </div>
 
