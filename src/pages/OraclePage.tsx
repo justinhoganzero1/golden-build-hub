@@ -910,6 +910,37 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
+
+    // ── Free-tier daily chat limit (admin & paid users bypass) ──
+    const FREE_DAILY_LIMIT = 25;
+    const isAdmin = (typeof window !== "undefined") &&
+      (localStorage.getItem("solace-admin-email") === "justinbretthogan@gmail.com");
+    const isPaid = subscribed || (tier && tier !== "free");
+    if (!isIntroTrigger && !isPaid && !isAdmin) {
+      const todayKey = `solace-oracle-chat-count-${new Date().toISOString().slice(0, 10)}`;
+      const used = parseInt(localStorage.getItem(todayKey) || "0", 10);
+      if (used >= FREE_DAILY_LIMIT) {
+        const limitMsg: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          sender: oracleName,
+          emoji: "🔒",
+          color: "#FFD700",
+          content: `You've reached today's free chat limit (${FREE_DAILY_LIMIT} messages). Upgrade to a paid plan for unlimited Oracle chat, voice cloning, photo & video generation, and all premium AI features. Tap Subscribe to continue.`,
+        };
+        setShowChat(true);
+        setMessages(prev => [
+          ...prev,
+          { id: (Date.now() - 1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
+          limitMsg,
+        ]);
+        toast.error("Daily free chat limit reached — upgrade to keep going");
+        setTimeout(() => navigate("/subscribe"), 1500);
+        return;
+      }
+      localStorage.setItem(todayKey, String(used + 1));
+    }
+
     // Skip intent regexes for the silent intro trigger
     const lower = isIntroTrigger ? "" : text.toLowerCase();
     const wantsDiagnose = !isIntroTrigger && /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
