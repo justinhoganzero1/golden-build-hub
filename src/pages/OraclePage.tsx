@@ -7,6 +7,9 @@ import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
 import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useDeleteAvatar, useCreateAvatar } from "@/hooks/useUserAvatars";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
@@ -76,6 +79,8 @@ const OraclePage = () => {
   const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
+  const deleteAvatar = useDeleteAvatar();
+  const createAvatar = useCreateAvatar();
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
   const saveMedia = useSaveMedia();
@@ -96,6 +101,8 @@ const OraclePage = () => {
   const [renameInput, setRenameInput] = useState("");
   const [oracleMode, setOracleModeState] = useState(getOracleMode);
   const [showOracleSwap, setShowOracleSwap] = useState(false);
+  const [showOraclePhotoPicker, setShowOraclePhotoPicker] = useState(false);
+  const [showOracleSelfie, setShowOracleSelfie] = useState(false);
   const [explosionActive, setExplosionActive] = useState(false);
   const [pendingNav, setPendingNav] = useState<string | null>(null);
 
@@ -648,6 +655,46 @@ const OraclePage = () => {
     toast.success(avatarId ? "Oracle replaced with your avatar!" : "Switched back to Orb Oracle");
   };
 
+  // Save a chosen image as a brand-new Oracle avatar and switch to it immediately
+  const saveImageAsOraclePhoto = useCallback(async (imageUrl: string, label = "Oracle Photo") => {
+    if (!imageUrl) return;
+    try {
+      const created = await createAvatar.mutateAsync({
+        name: label,
+        purpose: "oracle",
+        voice_style: "Warm & Friendly",
+        personality: "the user's chosen oracle",
+        image_url: imageUrl,
+        art_style: "user-photo",
+        description: "Custom Oracle photo",
+        is_default: false,
+      });
+      setOracleMode("avatar", created.id);
+      setOracleModeState({ mode: "avatar", avatarId: created.id });
+      setShowOraclePhotoPicker(false);
+      setShowOracleSelfie(false);
+      setShowOracleSwap(false);
+      toast.success("Oracle photo updated!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to set Oracle photo");
+    }
+  }, [createAvatar]);
+
+  // Delete an avatar; if it was the active Oracle, fall back to the orb
+  const removeOracleAvatar = useCallback((id: string) => {
+    deleteAvatar.mutate(id, {
+      onSuccess: () => {
+        if (oracleMode.avatarId === id) {
+          setOracleMode("orb");
+          setOracleModeState({ mode: "orb" });
+        }
+        toast.success("Avatar removed");
+      },
+      onError: () => toast.error("Failed to remove avatar"),
+    });
+  }, [deleteAvatar, oracleMode.avatarId]);
+
   // Always-on speech recognition
   const startAlwaysListening = useCallback(() => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return;
@@ -1089,29 +1136,47 @@ const OraclePage = () => {
             </div>
           </button>
 
-          {/* User avatars with oracle/partner purpose */}
-          {userAvatars.filter(a => a.purpose === "oracle" || a.purpose === "partner").map(a => (
-            <button key={a.id} onClick={() => swapOracle(a.id)}
-              className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.avatarId === a.id ? "ring-1 ring-purple-500 bg-purple-500/10" : "opacity-60 hover:opacity-80"}`}>
-              {a.image_url ? (
-                <img src={a.image_url} alt={a.name} className="w-10 h-10 rounded-full object-cover border border-purple-500/30" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-lg border border-pink-500/30">💕</div>
-              )}
-              <div>
-                <p className="text-xs text-white font-medium">{a.name}</p>
-                <p className="text-[9px] text-gray-500">{a.purpose === "partner" ? "Partner" : "Oracle"} Avatar</p>
-              </div>
-            </button>
+          {/* All saved avatars — any can be the Oracle photo */}
+          {userAvatars.map(a => (
+            <div key={a.id}
+              className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.avatarId === a.id ? "ring-1 ring-purple-500 bg-purple-500/10" : "hover:bg-white/5"}`}>
+              <button onClick={() => swapOracle(a.id)} className="flex items-center gap-3 flex-1 text-left">
+                {a.image_url ? (
+                  <img src={a.image_url} alt={a.name} className="w-10 h-10 rounded-full object-cover border border-purple-500/30" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-lg border border-pink-500/30">💕</div>
+                )}
+                <div>
+                  <p className="text-xs text-white font-medium truncate max-w-[140px]">{a.name}</p>
+                  <p className="text-[9px] text-gray-500 capitalize">{a.purpose} avatar</p>
+                </div>
+              </button>
+              <button
+                onClick={() => removeOracleAvatar(a.id)}
+                title="Delete this avatar"
+                className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ))}
 
-          {userAvatars.filter(a => a.purpose === "oracle" || a.purpose === "partner").length === 0 && (
-            <p className="text-[10px] text-gray-600 text-center py-2">Create an Oracle or Partner avatar first</p>
+          {userAvatars.length === 0 && (
+            <p className="text-[10px] text-gray-600 text-center py-2">No avatars yet — upload, snap, or generate one below</p>
           )}
 
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <button onClick={() => setShowOraclePhotoPicker(true)}
+              className="py-2 rounded-xl border border-dashed border-gray-700 text-gray-300 text-[11px] flex items-center justify-center gap-1.5 hover:border-purple-500 hover:text-purple-400">
+              <Plus className="w-3.5 h-3.5" /> Upload photo
+            </button>
+            <button onClick={() => setShowOracleSelfie(true)}
+              className="py-2 rounded-xl border border-dashed border-gray-700 text-gray-300 text-[11px] flex items-center justify-center gap-1.5 hover:border-purple-500 hover:text-purple-400">
+              <Eye className="w-3.5 h-3.5" /> Take selfie
+            </button>
+          </div>
           <button onClick={() => { setShowOracleSwap(false); navigate("/avatar-generator?purpose=oracle"); }}
-            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-xs flex items-center justify-center gap-1.5 mt-2 hover:border-purple-500 hover:text-purple-400">
-            <Plus className="w-3.5 h-3.5" /> Create Oracle Avatar
+            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-[11px] flex items-center justify-center gap-1.5 mt-2 hover:border-purple-500 hover:text-purple-400">
+            <Plus className="w-3.5 h-3.5" /> Generate AI Oracle
           </button>
         </div>
       )}
@@ -1347,6 +1412,26 @@ const OraclePage = () => {
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
+
+      {/* Pick an existing image from the user's media library to become the new Oracle photo */}
+      <MediaPickerDialog
+        open={showOraclePhotoPicker}
+        onOpenChange={setShowOraclePhotoPicker}
+        filterType="image"
+        title="Choose Oracle photo"
+        onSelect={(url) => {
+          if (url) saveImageAsOraclePhoto(url, "Oracle Photo");
+        }}
+      />
+
+      {/* Take a fresh selfie that becomes the new Oracle photo */}
+      <SelfieCaptureDialog
+        open={showOracleSelfie}
+        onOpenChange={setShowOracleSelfie}
+        showAvatarAction={false}
+        title="Selfie for Oracle"
+        onCapture={(dataUrl) => saveImageAsOraclePhoto(dataUrl, "Oracle Selfie")}
+      />
     </div>
   );
 };
