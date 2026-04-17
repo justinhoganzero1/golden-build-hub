@@ -1,16 +1,12 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Shield, Users } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
-import { useAllUserMedia } from "@/hooks/useAllUserMedia";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
-
-const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
