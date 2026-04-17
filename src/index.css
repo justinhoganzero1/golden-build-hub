@@ -199,3 +199,16 @@ All colors MUST be HSL.
     100% { transform: translateX(-100%) rotate(-5deg); }
   }
 }
+
+/* ── Global page centering ──
+   Centers the standard inner page containers used across all pages
+   (PageShell + the px-4 pt-14 pb-4 pattern) without touching every file. */
+@layer utilities {
+  .min-h-screen.bg-background > .px-4.pt-14.pb-4,
+  .min-h-screen.bg-background > .px-4.pt-12.pb-4,
+  .min-h-screen.bg-background > .px-4.pt-16.pb-4 {
+    max-width: 56rem; /* ~max-w-3xl-ish, comfortable reading width */
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
