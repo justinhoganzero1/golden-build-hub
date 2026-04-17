@@ -678,6 +678,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Button onClick={generateAllAudio} variant="secondary" size="sm">
                 <Mic className="w-3 h-3 mr-1" /> Generate all voices
               </Button>
+              <Button onClick={generateAllSfx} variant="secondary" size="sm">
+                <Waves className="w-3 h-3 mr-1" /> Generate all SFX
+              </Button>
               <Button onClick={addScene} variant="outline" size="sm">
                 <Plus className="w-3 h-3 mr-1" /> Add scene
               </Button>
@@ -697,6 +700,37 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                   <Pause className="w-4 h-4 text-white" />
                 </button>
               )}
+            </div>
+
+            {/* Music suite (full-track underscore for the whole movie) */}
+            <div className="rounded-lg p-3 border border-primary/30 bg-primary/5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Music className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary">MUSIC SCORE (ElevenLabs)</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Plays under the entire movie</span>
+              </div>
+              <Textarea
+                value={musicPrompt}
+                onChange={e => setMusicPrompt(e.target.value)}
+                rows={2}
+                className="text-xs"
+                placeholder="e.g. Cinematic orchestral score, slow build, melancholy strings, hopeful finale, 90 BPM"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={generateMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingMusic || !musicPrompt.trim()}>
+                  {generatingMusic
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing...</>
+                    : musicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose</> : <><Sparkles className="w-3 h-3 mr-1" /> Compose music</>}
+                </Button>
+                {musicUrl && <audio src={musicUrl} controls className="h-7 flex-1 min-w-[200px]" />}
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  Music vol
+                  <input type="range" min={0} max={1} step={0.05} value={musicVolume}
+                    onChange={e => setMusicVolume(parseFloat(e.target.value))} className="w-24" />
+                  <span className="w-8 text-right">{Math.round(musicVolume * 100)}%</span>
+                </label>
+              </div>
             </div>
 
             {/* Scene list */}
