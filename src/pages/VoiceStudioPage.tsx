@@ -210,7 +210,62 @@ export default function VoiceStudioPage() {
     }
   }
 
-  return (
+  async function previewParty(p: PartyVoice) {
+    if (!text.trim()) {
+      toast.error("Type some text first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(TTS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          text,
+          voiceId: p.id,
+          modelId: "eleven_multilingual_v2",
+          settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" },
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      audioRef.current?.pause();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      await audio.play();
+      toast.success(`🎉 ${p.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Preview failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function saveParty(p: PartyVoice) {
+    if (!user) {
+      toast.error("Sign in to save voices");
+      return;
+    }
+    try {
+      await saveVoice.mutateAsync({
+        name: `🎉 ${p.name}`,
+        gender: p.gender,
+        source: "elevenlabs-party",
+        voice_config: { voice_id: p.id, settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" } },
+      });
+      toast.success(`Saved ${p.name}`);
+    } catch {
+      toast.error("Could not save voice");
+    }
+  }
+
+  function masterFromParty(p: PartyVoice) {
+    setAsOracleMaster(p.id, p.name, { ...p.partySettings, model_id: "eleven_multilingual_v2" } as VoiceSettings);
+  }
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">
       <UniversalBackButton />
       <div className="max-w-6xl mx-auto pt-12">
