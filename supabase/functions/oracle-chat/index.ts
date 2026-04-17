@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting } = await req.json();
+    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -19,6 +19,37 @@ serve(async (req) => {
     const isSubscribed = adContext?.isSubscribed ?? false;
     const freeTrial = adContext?.freeTrialsUsed || [];
     const firstMeeting = !!isFirstMeeting;
+
+    // === Dynamic personality + voice blending ===
+    // The avatar's personality / voice_style fields can be a single tag or
+    // a comma list prefixed with "AI-blend:". When blended, the AI is told
+    // to dynamically shift tone based on what the user needs in the moment.
+    const rawVoice: string = masterAvatar?.voice_style || "";
+    const rawPers: string = masterAvatar?.personality || "";
+    const parseBlend = (v: string) => {
+      if (!v) return { isBlend: false, items: [] as string[] };
+      const m = v.match(/^AI-blend:\s*(.+)$/i);
+      if (m) return { isBlend: true, items: m[1].split(",").map(s => s.trim()).filter(Boolean) };
+      return { isBlend: false, items: [v] };
+    };
+    const voiceBlend = parseBlend(rawVoice);
+    const persBlend = parseBlend(rawPers);
+    const personalityBlock = (voiceBlend.items.length || persBlend.items.length) ? `
+
+🎭 YOUR DYNAMIC PERSONALITY & VOICE PALETTE:
+${persBlend.items.length ? `- Personality traits available to you: ${persBlend.items.join(" • ")}` : ""}
+${voiceBlend.items.length ? `- Voice styles available to you: ${voiceBlend.items.join(" • ")}` : ""}
+${(persBlend.isBlend || voiceBlend.isBlend) ? `
+You are NOT one fixed personality. You have a LAYERED personality made of all the traits above.
+Read the user's emotional state and the situation in EVERY message, and dynamically shift which trait + voice you lead with:
+- User is sad / anxious / hurting → lead with the gentle, caring, empathetic, soft, calm traits.
+- User is excited / playful / joking → lead with the playful, witty, energetic, cheeky traits.
+- User needs facts / planning / problem-solving → lead with the intellectual, focused, clear, authoritative traits.
+- User is being romantic / flirty (and persona allows) → lead with the romantic, warm, sultry traits.
+- User is in danger or crisis → drop everything else, become calm, protective, action-focused.
+Blend smoothly — never announce the shift. Never list your traits. Just BE the right version of yourself for this moment, then let the next moment reshape you again.
+` : ""}` : "";
+
 
     const appRoutes = `
 NAVIGATION CAPABILITY: You can open any app for the user. When the user asks to open an app or go somewhere, respond with the navigation command embedded in your message using this exact format: [[NAVIGATE:/path]]
@@ -169,7 +200,7 @@ DAILY FEATURE PROMOTION (do this ONCE per conversation, naturally):
 - Some features to promote: AI Studio (create your own AI team!), Video Editor (Hollywood-grade!), AI Companion (your perfect match!), Live Vision (real-time AI camera!), Photography Hub (AI photo magic!)
 ` : ""}
 
-Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive. Always be genuinely warm — not corporate warm, REAL warm. Like a best friend who also happens to be incredibly smart.`;
+Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive. Always be genuinely warm — not corporate warm, REAL warm. Like a best friend who also happens to be incredibly smart.${personalityBlock}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

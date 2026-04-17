@@ -888,6 +888,11 @@ const OraclePage = () => {
             isSubscribed: subscribed,
             freeTrialsUsed: adPrefs?.free_trials_used || [],
           },
+          masterAvatar: oracleAvatar ? {
+            name: oracleAvatar.name,
+            voice_style: oracleAvatar.voice_style,
+            personality: oracleAvatar.personality,
+          } : null,
         }),
         signal: controller.signal,
       });

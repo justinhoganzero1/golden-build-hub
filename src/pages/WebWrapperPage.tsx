@@ -108,8 +108,10 @@ const downloadFile = (filename: string, content: string) => {
 const WebWrapperPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [url, setUrl] = useState("");
-  const [appName, setAppName] = useState("");
+  // Pre-fill from query params: /web-wrapper?url=...&name=...
+  const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const [url, setUrl] = useState(params.get("url") || "");
+  const [appName, setAppName] = useState(params.get("name") || "");
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState(STEPS[0]);
   const [working, setWorking] = useState(false);
