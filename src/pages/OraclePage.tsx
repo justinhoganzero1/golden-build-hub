@@ -281,7 +281,8 @@ const OraclePage = () => {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
-      audio.playbackRate = 0.92;
+      // SPEED: natural cadence at 1.0 — prior 0.92 made Oracle feel sluggish
+      audio.playbackRate = 1.0;
       setIsSpeaking(true);
       try {
         await audio.play();
