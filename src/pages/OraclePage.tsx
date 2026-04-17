@@ -1240,6 +1240,7 @@ const OraclePage = () => {
       <button onClick={() => navigate("/dashboard")} className="fixed bottom-4 right-4 z-20 p-3 rounded-full border-2 border-[#FFAA00] bg-black/80 backdrop-blur">
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
+      <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
     </div>
   );
 };
