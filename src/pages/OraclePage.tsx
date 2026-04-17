@@ -10,6 +10,7 @@ import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAv
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
+import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
 
 interface Message {
   id: string;
@@ -63,10 +64,11 @@ function getDisplayName(defaultName: string): string {
 }
 
 // ============ ORACLE MODE (orb vs avatar) ============
+// Default = "avatar" so the master AI face is shown for new users.
 function getOracleMode(): { mode: "orb" | "avatar"; avatarId?: string } {
   try {
-    return JSON.parse(localStorage.getItem("solace-oracle-mode") || '{"mode":"orb"}');
-  } catch { return { mode: "orb" }; }
+    return JSON.parse(localStorage.getItem("solace-oracle-mode") || '{"mode":"avatar"}');
+  } catch { return { mode: "avatar" }; }
 }
 function setOracleMode(mode: "orb" | "avatar", avatarId?: string) {
   localStorage.setItem("solace-oracle-mode", JSON.stringify({ mode, avatarId }));
@@ -1211,24 +1213,21 @@ const OraclePage = () => {
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         ) : (
           <div className="flex flex-col items-center gap-3 z-10">
-            {oracleAvatar?.image_url ? (
-              <div className="relative">
-                <img src={oracleAvatar.image_url} alt={oracleName}
-                  className={`w-40 h-40 rounded-full object-cover border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
-                  style={{ animation: isSpeaking ? "pulse 1s ease-in-out infinite" : isLoading ? "pulse 2s ease-in-out infinite" : undefined }} />
-                {isListening && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                    {[0, 1, 2].map(i => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center text-5xl border-4 border-purple-500/30">
-                💕
-              </div>
-            )}
+            <div className="relative">
+              <img
+                src={oracleAvatar?.image_url || MASTER_AI_AVATAR}
+                alt={oracleName}
+                className={`w-40 h-40 rounded-full object-cover border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
+                style={{ animation: isSpeaking ? "pulse 1s ease-in-out infinite" : isLoading ? "pulse 2s ease-in-out infinite" : undefined }}
+              />
+              {isListening && (
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                  ))}
+                </div>
+              )}
+            </div>
             <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
           </div>
         )}

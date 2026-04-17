@@ -43,6 +43,24 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
     console.error(`[ErrorBoundary] Stage ${this.state.stage} caught:`, error, errorInfo);
 
+    // Detect stale lazy-loaded chunk (common after a redeploy) and force one hard reload.
+    const msg = (error?.message || "").toLowerCase();
+    const isChunkError =
+      msg.includes("failed to fetch dynamically imported module") ||
+      msg.includes("importing a module script failed") ||
+      msg.includes("loading chunk") ||
+      msg.includes("loading css chunk") ||
+      error?.name === "ChunkLoadError";
+
+    if (isChunkError && !sessionStorage.getItem("solace-chunk-reloaded")) {
+      sessionStorage.setItem("solace-chunk-reloaded", "1");
+      if ("caches" in window) {
+        caches.keys().then(names => names.forEach(n => caches.delete(n)));
+      }
+      window.location.reload();
+      return;
+    }
+
     // Stage 1 & 2: Auto-retry
     if (this.state.retryCount < 2) {
       setTimeout(() => {

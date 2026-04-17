@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X, Sparkles } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
+import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -112,9 +113,13 @@ const PortalTutorWidget = () => {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open SOLACE Concierge"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:scale-105 transition-transform"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary pl-2 pr-5 py-2 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:scale-105 transition-transform"
         >
-          <Sparkles className="h-5 w-5" />
+          <img
+            src={MASTER_AI_AVATAR}
+            alt={MASTER_AI_AVATAR_ALT}
+            className="h-9 w-9 rounded-full object-cover border-2 border-primary-foreground/40"
+          />
           <span className="font-semibold hidden sm:inline">Ask the Concierge</span>
           <MessageCircle className="h-5 w-5 sm:hidden" />
         </button>
@@ -124,7 +129,11 @@ const PortalTutorWidget = () => {
         <div className="fixed inset-x-2 bottom-2 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[400px] z-50 flex flex-col rounded-2xl border border-border bg-card shadow-2xl max-h-[85vh]">
           <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <img
+                src={MASTER_AI_AVATAR}
+                alt={MASTER_AI_AVATAR_ALT}
+                className="h-10 w-10 rounded-full object-cover border-2 border-primary shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
+              />
               <div>
                 <div className="font-semibold text-foreground">SOLACE Concierge</div>
                 <div className="text-xs text-muted-foreground">Your guide to every feature</div>
