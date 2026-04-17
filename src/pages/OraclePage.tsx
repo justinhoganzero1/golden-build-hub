@@ -7,6 +7,9 @@ import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
 import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useDeleteAvatar, useCreateAvatar } from "@/hooks/useUserAvatars";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
@@ -76,6 +79,8 @@ const OraclePage = () => {
   const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
+  const deleteAvatar = useDeleteAvatar();
+  const createAvatar = useCreateAvatar();
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
   const saveMedia = useSaveMedia();
@@ -96,6 +101,8 @@ const OraclePage = () => {
   const [renameInput, setRenameInput] = useState("");
   const [oracleMode, setOracleModeState] = useState(getOracleMode);
   const [showOracleSwap, setShowOracleSwap] = useState(false);
+  const [showOraclePhotoPicker, setShowOraclePhotoPicker] = useState(false);
+  const [showOracleSelfie, setShowOracleSelfie] = useState(false);
   const [explosionActive, setExplosionActive] = useState(false);
   const [pendingNav, setPendingNav] = useState<string | null>(null);
 
