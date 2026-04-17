@@ -196,7 +196,7 @@ const WebWrapperPage = () => {
             Your AI Wrapper Assistant — URL → APK → Play Store
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">
-            <span className="text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">Web Wrapper</span>
+            <span className="text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">App Wrapper</span>
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Turn any website into a native Android app, ready to upload to Google Play.
