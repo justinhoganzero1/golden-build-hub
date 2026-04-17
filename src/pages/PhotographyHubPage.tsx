@@ -24,6 +24,7 @@ const PhotographyHubPage = () => {
   const [showShare, setShowShare] = useState(false);
   const [mode, setMode] = useState<"generate" | "edit">("generate");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
