@@ -92,6 +92,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
   const [generatingMusic, setGeneratingMusic] = useState(false);
+  // Intro / Theme / Credits
+  const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
+  const [themeMusicUrl, setThemeMusicUrl] = useState<string | null>(null);
+  const [creditsLines, setCreditsLines] = useState<string[]>([]);
+  const [generatingIntro, setGeneratingIntro] = useState(false);
+  const [generatingTheme, setGeneratingTheme] = useState(false);
+  const [generatingCredits, setGeneratingCredits] = useState(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
