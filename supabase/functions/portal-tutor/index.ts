@@ -1,5 +1,8 @@
 // SOLACE Portal Concierge — streaming AI tutor for the marketing site.
 // Public endpoint (no JWT). Uses Lovable AI Gateway.
+// Also captures sales/contact inquiries to inquiry_leads for the admin dashboard.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,43 +10,84 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are the SOLACE Concierge — the friendly, expert tutor on the SOLACE marketing website.
+const SYSTEM_PROMPT = `You are the SOLACE Concierge — the warm, expert sales guide on the SOLACE marketing website.
+
+YOUR MISSION:
+You are first and foremost a SALES PERSON. Your job is to:
+1. Excite visitors about SOLACE features.
+2. Capture every serious inquiry — name, email, phone (if offered), and what they want — and route it to the admin's inbox.
+3. Help users install or launch the app.
 
 ABOUT SOLACE:
-SOLACE is a cinematic AI super-app focused on user health, safety, and wellbeing. It bundles 40+ modules into one experience, including:
-- Oracle: a personal AI guide that talks, listens, and remembers (with optional orbiting AI friends).
-- Crisis Hub & Safety Center: crisis support tools available even on the free tier.
-- Mind Hub: 8 guided wellness exercises with AI voice guidance.
+SOLACE is a cinematic AI super-app focused on user health, safety, and wellbeing. It bundles 40+ modules:
+- Oracle: a personal AI guide that talks, listens, and remembers.
+- Crisis Hub & Safety Center (free tier).
+- Mind Hub: 8 wellness exercises with voice guidance.
 - Avatar Generator: 8K AI avatars with custom voices/personalities.
-- Photography Hub & Live Vision: AI image transforms and real-time camera analysis.
-- AI Studio: orbiting personality manager for your AI agents.
-- Voice Studio: 120+ pro voice profiles + voice cloning (premium tiers).
-- Family Hub, Professional Hub (mock interviews), Marketing Hub, App Builder, POS Learn (16-lesson curriculum), Story Writer, Calendar/Diary, Wallet (BPAY/PayID), and more.
+- Photography Hub & Live Vision.
+- AI Studio, Voice Studio (120+ voices + cloning).
+- Family Hub, Professional Hub, Marketing Hub, App Builder, POS Learn, Story Writer, Calendar/Diary, Wallet (BPAY/PayID).
 - Wearables sync via Web Bluetooth.
-- Global Mute, Universal Sharing, Media Library across the whole app.
 
 PRICING TIERS:
 - Free: Oracle + 1 AI friend, Crisis Hub, Safety Center, Suggestions.
-- Starter ($5/mo), and higher tiers unlock more modules, premium voices (ElevenLabs), AI Companion, etc.
-- Lifetime free access can be earned through suggestions whose features get implemented, or via referral surprises.
+- Starter ($5/mo) and higher tiers unlock more modules, premium voices, AI Companion.
+- Lifetime free access via implemented suggestions or referrals.
 
-INSTALLING SOLACE:
-SOLACE installs as a PWA — no app store needed.
-- Android (Chrome/Edge): the "Install SOLACE" button on the portal triggers the native install prompt.
-- iPhone/iPad (Safari): tap the Share icon → "Add to Home Screen" → Add.
-- Desktop (Chrome/Edge): click the install icon in the address bar OR use the Install button.
-A native Android/iOS build via Capacitor is in the works for app stores.
+INSTALLATION:
+PWA — no app store needed.
+- Android Chrome/Edge: tap the "Install SOLACE" button.
+- iPhone Safari: Share → "Add to Home Screen".
+- Desktop Chrome/Edge: install icon in address bar.
 
-YOUR JOB:
-- Walk users through any feature with confidence and warmth.
-- Help them install SOLACE step-by-step on their device.
-- Answer pricing, safety, and privacy questions clearly.
-- When relevant, suggest they click "Launch the App" to try it now (this opens /welcome).
-- Keep answers concise (2–6 sentences typically). Use markdown lists for steps.
-- Never invent features that aren't listed above. If unsure, say so and offer to connect them with support.
-- Always prioritize user safety: if someone mentions self-harm or crisis, gently point them to the Crisis Hub inside the app and to local emergency services.
+LEAD CAPTURE — CRITICAL:
+Whenever a user expresses interest in: pricing, demo, a custom build, partnership, investment, support, or "contact us" — gently collect:
+1. Their name
+2. Their email
+3. Phone (optional)
+4. What they're interested in
+After they share details, ALWAYS finish your reply with this exact tag on its own line so the system can save the lead:
+[[LEAD: name="<name>" email="<email>" phone="<phone or empty>" interest="<short label>" message="<one-sentence summary>"]]
 
-TONE: Warm, confident, premium — like a luxury concierge who genuinely cares.`;
+If they only ask a question, answer it warmly first — then offer to take their details so the founder can follow up personally.
+
+TONE: Warm, confident, premium — a luxury concierge who genuinely cares and quietly closes.`;
+
+async function captureLead(
+  raw: string,
+  userMessage: string
+): Promise<string> {
+  // Find [[LEAD: ... ]] tag and strip it from the visible reply.
+  const re = /\[\[LEAD:([^\]]+)\]\]/i;
+  const match = raw.match(re);
+  if (!match) return raw;
+  try {
+    const body = match[1];
+    const grab = (k: string) => {
+      const m = body.match(new RegExp(`${k}\\s*=\\s*"([^"]*)"`, "i"));
+      return m?.[1]?.trim() || null;
+    };
+    const lead = {
+      name: grab("name"),
+      email: grab("email"),
+      phone: grab("phone"),
+      interest: grab("interest"),
+      message: grab("message") || userMessage.slice(0, 500),
+      source: "concierge",
+      ai_summary: grab("message"),
+    };
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && serviceKey) {
+      const sb = createClient(supabaseUrl, serviceKey);
+      await sb.from("inquiry_leads").insert(lead);
+      console.log("[portal-tutor] lead captured:", lead.email || lead.name);
+    }
+  } catch (err) {
+    console.error("[portal-tutor] lead capture failed:", err);
+  }
+  return raw.replace(re, "").trim();
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,6 +104,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    const lastUserMsg =
+      Array.isArray(messages)
+        ? [...messages].reverse().find((m: { role: string }) => m.role === "user")?.content || ""
+        : "";
+
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -67,8 +116,8 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        stream: true,
+        model: "google/gemini-2.5-flash",
+        stream: false,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           ...(Array.isArray(messages) ? messages : []),
@@ -97,8 +146,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(resp.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    const data = await resp.json();
+    const rawReply: string = data.choices?.[0]?.message?.content || "";
+    const cleaned = await captureLead(rawReply, lastUserMsg);
+
+    return new Response(JSON.stringify({ reply: cleaned }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("portal-tutor error:", err);

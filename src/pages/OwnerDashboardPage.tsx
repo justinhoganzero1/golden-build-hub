@@ -22,7 +22,8 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads">("overview");
+  const [leads, setLeads] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
   const [freebies, setFreebies] = useState<{ email: string; date: string; reason: string }[]>([]);
@@ -300,6 +301,48 @@ const OwnerDashboardPage = () => {
               </div>
               <button onClick={() => setTab("suggestions")} className="text-xs text-yellow-400 font-medium">Review →</button>
             </div>
+          </div>
+        )}
+
+        {/* LEADS — captured by SOLACE Concierge */}
+        {tab === "leads" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="text-lg font-bold text-white">Concierge Leads</h2>
+                <p className="text-xs text-gray-400">Inquiries the Oracle Concierge captured from visitors</p>
+              </div>
+              <span className="text-xs text-amber-400 font-bold">{leads.length} total</span>
+            </div>
+            {leads.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                No leads yet. The Concierge will capture them as visitors ask questions.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {leads.map((l) => (
+                  <div key={l.id} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <p className="text-sm font-bold text-white">{l.name || "Anonymous visitor"}</p>
+                        <p className="text-xs text-amber-400">{l.email || "no email"}{l.phone ? ` · ${l.phone}` : ""}</p>
+                      </div>
+                      <span className="text-[10px] text-gray-500">{new Date(l.created_at).toLocaleString()}</span>
+                    </div>
+                    {l.interest && (
+                      <p className="text-xs text-purple-300 mb-1">Interest: {l.interest}</p>
+                    )}
+                    <p className="text-sm text-gray-300">{l.message}</p>
+                    {l.email && (
+                      <a href={`mailto:${l.email}?subject=Re:%20${encodeURIComponent(l.interest || "Your SOLACE inquiry")}`}
+                        className="inline-block mt-2 px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold">
+                        Reply by Email
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

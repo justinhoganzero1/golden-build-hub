@@ -112,49 +112,13 @@ const PortalTutorWidget = () => {
         setMessages((p) => [...p, { role: "assistant", content: "The tutor is temporarily unavailable. Please try again later." }]);
         return;
       }
-      if (!resp.ok || !resp.body) throw new Error("stream failed");
+      if (!resp.ok) throw new Error("concierge failed");
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let assistantText = "";
-      let started = false;
-      let done = false;
-
-      while (!done) {
-        const { value, done: d } = await reader.read();
-        if (d) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line || line.startsWith(":")) continue;
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") { done = true; break; }
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assistantText += delta;
-              setMessages((p) => {
-                if (!started) {
-                  started = true;
-                  return [...p, { role: "assistant", content: assistantText }];
-                }
-                return p.map((m, i) => (i === p.length - 1 ? { ...m, content: assistantText } : m));
-              });
-            }
-          } catch {
-            buffer = line + "\n" + buffer;
-            break;
-          }
-        }
-      }
-      if (assistantText.trim()) speak(assistantText);
+      const data = await resp.json();
+      const reply: string = (data?.reply || "").trim()
+        || "Thanks — let me get back to you on that. Could you share your name and email so the team can follow up?";
+      setMessages((p) => [...p, { role: "assistant", content: reply }]);
+      speak(reply);
     } catch (err) {
       console.error("tutor error:", err);
       const fallback = "Sorry — I lost connection. Try asking again?";

@@ -125,9 +125,21 @@ const OraclePage = () => {
 
   const oracleName = getDisplayName("Oracle");
 
-  // Merge user avatars into agents list
+  // Merge user avatars into agents list + sync master Oracle avatar from DB
   useEffect(() => {
     if (userAvatars.length === 0) return;
+
+    // 1) Master avatar = is_default + purpose='oracle' (DB-backed, survives logout)
+    const masterOracle = userAvatars.find(a => a.is_default && a.purpose === "oracle");
+    if (masterOracle) {
+      const current = getOracleMode();
+      if (current.mode !== "avatar" || current.avatarId !== masterOracle.id) {
+        setOracleMode("avatar", masterOracle.id);
+        setOracleModeState({ mode: "avatar", avatarId: masterOracle.id });
+      }
+    }
+
+    // 2) Add user avatars as orbiting agents
     setAgents(prev => {
       const existing = prev.filter(a => !a.isUserAvatar);
       const userAgents: ChatAgent[] = userAvatars
@@ -145,7 +157,6 @@ const OraclePage = () => {
           avatarId: a.id,
           purpose: a.purpose,
         }));
-      // Clear voice cache so new voice_style assignments take effect
       voiceMapRef.current.clear();
       return [...existing, ...userAgents];
     });

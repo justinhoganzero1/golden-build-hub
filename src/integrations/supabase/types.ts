@@ -131,6 +131,48 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiry_leads: {
+        Row: {
+          ai_summary: string | null
+          created_at: string
+          email: string | null
+          id: string
+          interest: string | null
+          message: string
+          name: string | null
+          phone: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest?: string | null
+          message: string
+          name?: string | null
+          phone?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest?: string | null
+          message?: string
+          name?: string | null
+          phone?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       investment_offers: {
         Row: {
           ai_notes: string | null
