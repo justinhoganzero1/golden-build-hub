@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 
 const STYLES = [
   { value: "3d-8k-realistic", label: "3D 8K Realistic", desc: "Ultra-realistic 3D 8K cinematic render" },
@@ -70,8 +71,7 @@ const AvatarGeneratorPage = () => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [showCamera, setShowCamera] = useState(false);
+  const [showSelfie, setShowSelfie] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
   const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
@@ -151,31 +151,18 @@ const AvatarGeneratorPage = () => {
     }
   };
 
-  const takeSelfie = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      setShowCamera(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch {
-      toast.error("Camera access denied");
-    }
-  };
-
-  const captureSelfie = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
-    const url = canvas.toDataURL("image/png");
+  const handleSelfieCaptured = (url: string) => {
     setImageUrl(url);
-    const stream = videoRef.current.srcObject as MediaStream;
-    stream?.getTracks().forEach(t => t.stop());
-    setShowCamera(false);
-    toast.success("Selfie captured!");
+    if (user) {
+      saveMedia.mutate({
+        media_type: "image",
+        title: avatarName.trim() || "Selfie",
+        url,
+        source_page: "Avatar Generator",
+        metadata: { source: "selfie" },
+      });
+    }
+    toast.success("Selfie ready!");
   };
 
   const downloadImage = () => {
@@ -335,7 +322,7 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} Generate Avatar
               </button>
-              <button onClick={takeSelfie}
+              <button onClick={() => setShowSelfie(true)}
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
@@ -427,16 +414,11 @@ const AvatarGeneratorPage = () => {
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
               <div className={`aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center ${
-                viewMode === "holographic-8k" && imageUrl && !showCamera && !isLoading
+                viewMode === "holographic-8k" && imageUrl && !isLoading
                   ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-purple-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
                   : "bg-[#0f0f0f] border border-gray-800"
               }`}>
-                {showCamera ? (
-                  <div className="relative w-full h-full">
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    <button onClick={captureSelfie} className="absolute bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-white text-black font-medium text-sm">📸 Capture</button>
-                  </div>
-                ) : isLoading ? (
+                {isLoading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
                     <p className="text-xs text-gray-500">Generating your avatar...</p>
@@ -466,7 +448,7 @@ const AvatarGeneratorPage = () => {
                 )}
               </div>
 
-              {imageUrl && !showCamera && (
+              {imageUrl && (
                 <div className="flex flex-col gap-2 mt-4">
                   {isPaidPurpose ? (
                     <button onClick={() => handleCheckout(purpose === "partner" ? "partner" : "avatar")} disabled={isCheckingOut}
@@ -535,7 +517,7 @@ const AvatarGeneratorPage = () => {
               )}
             </div>
 
-            {imageUrl && !showCamera && (
+            {imageUrl && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Avatar Summary</h3>
                 <div className="space-y-1.5 text-sm">
@@ -556,6 +538,12 @@ const AvatarGeneratorPage = () => {
         filterType="image"
         title="Use Image from Library"
         onSelect={(url) => { setImageUrl(url); toast.success("Image loaded from library!"); }}
+      />
+      <SelfieCaptureDialog
+        open={showSelfie}
+        onOpenChange={setShowSelfie}
+        onCapture={handleSelfieCaptured}
+        title="Take a Selfie"
       />
     </div>
   );
