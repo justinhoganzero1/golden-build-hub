@@ -1,8 +1,22 @@
-import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X, Mic, MicOff } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { MessageCircle, Send, X, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
+import { useMute } from "@/contexts/MuteContext";
+
+// Strip markdown, emojis, URLs, and code so TTS sounds natural
+const sanitizeForTTS = (raw: string): string =>
+  raw
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[*_~#>]/g, "")
+    .replace(/[\p{Extended_Pictographic}\u200d]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -25,9 +39,47 @@ const PortalTutorWidget = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const { isMuted } = useMute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const sendRef = useRef<(t: string) => void>();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speak = useCallback(async (raw: string) => {
+    if (!voiceOn || isMuted) return;
+    const text = sanitizeForTTS(raw);
+    if (!text || text.length < 2) return;
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ text }),
+      });
+      if (!resp.ok) throw new Error(`tts ${resp.status}`);
+      const blob = await resp.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      audioRef.current = audio;
+      audio.onended = () => URL.revokeObjectURL(audio.src);
+      await audio.play().catch(() => { /* autoplay blocked until user gesture */ });
+    } catch (err) {
+      console.warn("Concierge TTS failed:", err);
+    }
+  }, [voiceOn, isMuted]);
+
+  useEffect(() => {
+    if ((isMuted || !voiceOn) && audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [isMuted, voiceOn]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
