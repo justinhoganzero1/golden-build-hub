@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
@@ -9,7 +9,7 @@ import { cleanTextForSpeech } from "@/lib/utils";
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking";
+type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping";
 
 const LiveVisionPage = () => {
   const { user } = useAuth();
@@ -19,6 +19,10 @@ const LiveVisionPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   const drivingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const companionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const watchTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const watchStartRef = useRef<number>(0);
+  const watchObservationsRef = useRef<string[]>([]);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const lastSpokenRef = useRef<string>("");
@@ -33,6 +37,11 @@ const LiveVisionPage = () => {
   const [listening, setListening] = useState(false);
   const [recording, setRecording] = useState(false);
   const [livefeed, setLiveFeed] = useState<string[]>([]);
+  const [companionActive, setCompanionActive] = useState(false);
+  const [watchTarget, setWatchTarget] = useState<string>("");
+  const [watchActive, setWatchActive] = useState(false);
+  const [watchPromptOpen, setWatchPromptOpen] = useState(false);
+  const [watchSummary, setWatchSummary] = useState<string | null>(null);
 
   // ─── Camera control ───
   const startCamera = useCallback(async () => {
