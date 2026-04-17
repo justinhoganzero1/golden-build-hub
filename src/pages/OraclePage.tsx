@@ -239,14 +239,14 @@ const OraclePage = () => {
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           text: paced,
-          voiceId: "nPczCjzI2devNBz1zQrb", // Brian — warm, grounded
+          voiceId: "pqHfZKP75CvOlQylNhV4", // Bill — deep, documentary narrator (Ancient Aliens style)
           modelId: "eleven_multilingual_v2", // highest quality
           settings: {
-            stability: 0.72,
-            similarity_boost: 0.9,
-            style: 0.12,
+            stability: 0.85,        // very steady, authoritative
+            similarity_boost: 0.92, // preserve that deep timbre
+            style: 0.55,            // dramatic, conspiratorial emphasis
             use_speaker_boost: true,
-            speed: 0.82, // slower, more grounded
+            speed: 0.78,            // slow, deliberate documentary cadence
           },
         }),
       });
