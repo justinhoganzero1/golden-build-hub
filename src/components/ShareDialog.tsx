@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Mail, Phone, Share2, Check, ExternalLink } from "lucide-react";
+import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send } from "lucide-react";
 import { toast } from "sonner";
 
 interface ShareDialogProps {
@@ -12,82 +12,185 @@ interface ShareDialogProps {
   description?: string;
 }
 
+// Robust clipboard copy that works in iframes / non-secure contexts
+const robustCopy = async (text: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+  // Fallback: hidden textarea + execCommand
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+};
+
+// Open a URL reliably — try window.open, fallback to top-level navigation via anchor click
+const robustOpen = (href: string): boolean => {
+  try {
+    const w = window.open(href, "_blank", "noopener,noreferrer");
+    if (w) return true;
+  } catch {}
+  try {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: ShareDialogProps) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = url || imageUrl || window.location.href;
+  const shareUrl = url || imageUrl || (typeof window !== "undefined" ? window.location.href : "");
   const shareText = description || `Check out "${title}" on Solace!`;
 
   const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const ok = await robustCopy(shareUrl);
+    if (ok) {
       setCopied(true);
-      toast.success("Link copied!");
+      toast.success("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Failed to copy");
+    } else {
+      toast.error("Couldn't copy automatically. Long-press the link below to copy.");
     }
   };
 
   const shareViaEmail = () => {
-    if (!email.trim()) { toast.error("Enter an email"); return; }
+    if (!email.trim()) { toast.error("Enter an email address"); return; }
     const subject = encodeURIComponent(`Check this out: ${title}`);
     const body = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
-    toast.success("Opening email client...");
-    setEmail("");
+    const ok = robustOpen(`mailto:${email.trim()}?subject=${subject}&body=${body}`);
+    if (ok) {
+      toast.success("Opening your email app…");
+      setEmail("");
+    } else {
+      toast.error("Couldn't open your email app.");
+    }
   };
 
   const shareViaSMS = () => {
     if (!phone.trim()) { toast.error("Enter a phone number"); return; }
     const body = encodeURIComponent(`${shareText} ${shareUrl}`);
-    window.open(`sms:${phone}?body=${body}`, "_blank");
-    toast.success("Opening messaging app...");
-    setPhone("");
-  };
-
-  const nativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text: shareText, url: shareUrl });
-      } catch (e: any) {
-        if (e.name !== "AbortError") toast.error("Share failed");
-      }
+    // iOS uses sms:NUMBER&body= — Android uses sms:NUMBER?body= — use ? which works on both modern OSes
+    const ok = robustOpen(`sms:${phone.trim()}?body=${body}`);
+    if (ok) {
+      toast.success("Opening your messaging app…");
+      setPhone("");
     } else {
-      toast.error("Native sharing not supported on this device");
+      toast.error("Couldn't open your messaging app.");
     }
   };
 
+  const shareWhatsApp = () => {
+    robustOpen(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`);
+  };
+  const shareFacebook = () => {
+    robustOpen(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`);
+  };
+  const shareTwitter = () => {
+    robustOpen(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`);
+  };
+  const shareTelegram = () => {
+    robustOpen(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+  };
+
+  const nativeShare = async () => {
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try {
+        await (navigator as any).share({ title, text: shareText, url: shareUrl });
+        toast.success("Shared!");
+      } catch (e: any) {
+        if (e?.name !== "AbortError") toast.error("Native share failed — try one of the options below.");
+      }
+    } else {
+      toast.error("Native sharing isn't supported here. Use one of the buttons below.");
+    }
+  };
+
+  const hasNativeShare = typeof navigator !== "undefined" && "share" in navigator;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md">
+      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Share2 className="w-5 h-5 text-primary" /> Share "{title}"
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-2">
+        <div className="space-y-3 mt-2">
           {/* Copy Link */}
           <button onClick={copyLink} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-all">
             {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-primary" />}
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left min-w-0">
               <p className="text-sm font-medium text-foreground">{copied ? "Copied!" : "Copy Link"}</p>
               <p className="text-[10px] text-muted-foreground truncate">{shareUrl}</p>
             </div>
           </button>
 
+          {/* Visible selectable URL — manual copy fallback */}
+          <div className="rounded-lg bg-muted/50 border border-border p-2">
+            <p className="text-[10px] text-muted-foreground mb-1">Or copy manually:</p>
+            <input
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.target.select()}
+              className="w-full bg-transparent text-xs text-foreground outline-none select-all"
+            />
+          </div>
+
           {/* Native Share */}
-          {typeof navigator !== "undefined" && "share" in navigator && (
+          {hasNativeShare && (
             <button onClick={nativeShare} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-all">
               <ExternalLink className="w-5 h-5 text-primary" />
               <div className="flex-1 text-left">
                 <p className="text-sm font-medium text-foreground">Share via Apps</p>
-                <p className="text-[10px] text-muted-foreground">WhatsApp, Facebook, Twitter & more</p>
+                <p className="text-[10px] text-muted-foreground">System share sheet</p>
               </div>
             </button>
           )}
+
+          {/* Quick social buttons */}
+          <div className="grid grid-cols-4 gap-2">
+            <button onClick={shareWhatsApp} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-green-500" />
+              <span className="text-[10px] text-foreground">WhatsApp</span>
+            </button>
+            <button onClick={shareFacebook} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Facebook className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] text-foreground">Facebook</span>
+            </button>
+            <button onClick={shareTwitter} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Twitter className="w-5 h-5 text-sky-400" />
+              <span className="text-[10px] text-foreground">Twitter</span>
+            </button>
+            <button onClick={shareTelegram} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Send className="w-5 h-5 text-cyan-400" />
+              <span className="text-[10px] text-foreground">Telegram</span>
+            </button>
+          </div>
 
           {/* Email */}
           <div className="rounded-xl bg-card border border-border p-3 space-y-2">
@@ -96,7 +199,14 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <p className="text-sm font-medium text-foreground">Share via Email</p>
             </div>
             <div className="flex gap-2">
-              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="recipient@email.com" className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <input
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") shareViaEmail(); }}
+                type="email"
+                placeholder="recipient@email.com"
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              />
               <button onClick={shareViaEmail} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Send</button>
             </div>
           </div>
@@ -108,7 +218,14 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <p className="text-sm font-medium text-foreground">Share via SMS</p>
             </div>
             <div className="flex gap-2">
-              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 234 567 890" className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") shareViaSMS(); }}
+                type="tel"
+                placeholder="+1 234 567 890"
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              />
               <button onClick={shareViaSMS} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium">Send</button>
             </div>
           </div>

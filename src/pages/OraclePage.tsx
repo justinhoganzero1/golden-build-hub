@@ -736,6 +736,49 @@ const OraclePage = () => {
     return () => clearTimeout(t);
   }, []);
 
+  // Auto-greet on every open — varies the greeting so it's never the same twice in a row
+  const greetTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (greetTriggeredRef.current) return;
+    // Skip greet on the very first visit (intro handles it)
+    if (!localStorage.getItem("solace-oracle-introduced")) return;
+    greetTriggeredRef.current = true;
+
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 5 ? "late night" : hour < 12 ? "morning" : hour < 17 ? "afternoon" : hour < 21 ? "evening" : "night";
+
+    const greetings = [
+      `Hey there — how are you doing this ${timeOfDay}?`,
+      `Welcome back. How's your ${timeOfDay} going so far?`,
+      `Good to see you again. How are you feeling right now?`,
+      `Hi — what's on your mind this ${timeOfDay}?`,
+      `There you are. How have you been?`,
+      `Hello again. How's everything with you today?`,
+      `Glad you're here. How are things going?`,
+      `Hey — how's your ${timeOfDay} treating you?`,
+      `Welcome back. Anything I can help you with right now?`,
+      `Hi there. How are you holding up today?`,
+      `Good ${timeOfDay}. How are you?`,
+      `Nice to see you. What's going on in your world?`,
+      `Hey — how's your day shaping up?`,
+      `Welcome. How's your heart this ${timeOfDay}?`,
+      `Hi friend. How are you really doing?`,
+    ];
+
+    const lastIdx = parseInt(sessionStorage.getItem("solace-last-greet-idx") || "-1", 10);
+    let idx = Math.floor(Math.random() * greetings.length);
+    if (idx === lastIdx) idx = (idx + 1) % greetings.length;
+    sessionStorage.setItem("solace-last-greet-idx", String(idx));
+    const greeting = greetings[idx];
+
+    const t = setTimeout(() => {
+      // Push greeting directly as an assistant message + speak it
+      setMessages((prev) => [...prev, { role: "assistant", content: greeting } as any]);
+      try { speakAsAgent("oracle", greeting); } catch {}
+    }, 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
       if (finalTranscriptRef.current.trim()) {
