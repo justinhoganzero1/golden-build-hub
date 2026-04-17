@@ -202,6 +202,44 @@ const SubscribePage = () => {
           })}
         </div>
 
+        {/* Lifetime Unlock — one-time $900 */}
+        <div className="mt-6 bg-gradient-to-br from-primary/15 via-amber-500/10 to-primary/5 border-2 border-primary/50 rounded-2xl p-5 relative overflow-hidden">
+          <span className="absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full font-bold bg-primary text-primary-foreground">LIFETIME</span>
+          <div className="flex items-center gap-3 mb-3">
+            <Crown className="w-7 h-7 text-primary" />
+            <div>
+              <h3 className="text-lg font-bold text-foreground">SOLACE Lifetime Unlock</h3>
+              <p className="text-xs text-muted-foreground"><span className="text-2xl font-bold text-primary">$900</span> one-time payment</p>
+            </div>
+          </div>
+          <div className="space-y-2 mb-4">
+            {[
+              "Unlocks every premium feature, forever",
+              "Bypasses all paywalls across the app",
+              "No recurring charges — pay once, own it",
+              "Movie Studio excluded (billed per use, no caps)",
+            ].map(f => (
+              <div key={f} className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-[hsl(var(--status-active))]" />
+                <span className="text-xs text-muted-foreground">{f}</span>
+              </div>
+            ))}
+          </div>
+          {tier === "lifetime" ? (
+            <button className="w-full py-3 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground border border-border" disabled>
+              You own Lifetime ✨
+            </button>
+          ) : (
+            <button
+              onClick={() => handleCheckout("price_1TN6KvLM75X0snyChMuEU6Eo", "payment")}
+              disabled={checkingOut === "price_1TN6KvLM75X0snyChMuEU6Eo"}
+              className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {checkingOut === "price_1TN6KvLM75X0snyChMuEU6Eo" ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Crown className="w-4 h-4" /> Unlock Forever — $900</>}
+            </button>
+          )}
+        </div>
+
         {/* Add-ons */}
         <div className="mt-8">
           <h2 className="text-lg font-bold text-foreground mb-3">Add-ons</h2>
