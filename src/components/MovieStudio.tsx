@@ -254,6 +254,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
       setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
+      setStarring(""); setCoStarring(""); setGuestStars("");
+      setTrailerScenes([]); setGeneratingTrailer(false);
     }
   }, [open]);
 
@@ -409,7 +411,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: true } : s));
     const scene = scenes.find(s => s.id === sceneId);
     if (!scene) return;
-    const finalPrompt = `${customPrompt || scene.photo_prompt}, photoreal 8K resolution, ultra-detailed, cinematic lighting, sharp focus, film still`;
+    const finalPrompt = buildScenePhotoPrompt(scene, customPrompt);
     try {
       const body: any = { prompt: finalPrompt };
       if (scene.image_url) body.inputImage = scene.image_url; // edit existing
