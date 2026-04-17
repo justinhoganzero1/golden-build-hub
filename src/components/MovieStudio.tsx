@@ -124,7 +124,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes([]); setScript(""); setIntent(""); setTitle("");
       setEditingSceneId(null); setEditPrompt(""); setPreviewSceneId(null);
       setExporting(false); setExportProgress(0);
-      setCreditsLow(false); setGenProgress(null);
+      setCreditsLow(false); setGenProgress(null); setAudioProgress(null);
     }
   }, [open]);
 
@@ -153,6 +153,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         photo_prompt: s.photo_prompt,
         motion: s.motion,
         duration_sec: CLIP_SECONDS,
+        narration: s.narration || s.caption,
+        speaker: s.speaker || "narrator",
+        voice_style: s.voice_style || "narrator-male-warm",
       }));
       // Seed first scene with the photo the user came in with
       if (seedImage && newScenes[0]) newScenes[0].image_url = seedImage;
