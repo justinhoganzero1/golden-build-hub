@@ -3,6 +3,7 @@ import { Star, Wand2, Sparkles, Palette, Zap, Gift, Loader2, Copy, CheckCircle, 
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
@@ -35,6 +36,8 @@ const MagicHubPage = () => {
     if (!activeTool) return;
     const userPrompt = prompt.trim() || (activeTool === "surprise" ? "Surprise me with something creative and unexpected!" : "");
     if (!userPrompt) { toast.error("Please enter a prompt"); return; }
+    const mod = moderatePrompt(userPrompt);
+    if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); return; }
     setIsLoading(true);
     setResult(null);
     try {

@@ -42,6 +42,8 @@ const AITutorPage = () => {
   const generateThesis = async () => {
     const topic = selectedSubtopic || customTopic;
     if (!topic || !level) { toast.error("Select a level and topic"); return; }
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(topic);
+    if (!mod.ok) { toast.error(mod.reason || "Topic blocked by content filter"); return; }
     setGenerating(true);
     setResult("");
     setMode("result");
@@ -74,6 +76,8 @@ const AITutorPage = () => {
 
   const askFollowUp = async () => {
     if (!chatInput.trim()) return;
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(chatInput);
+    if (!mod.ok) { toast.error(mod.reason || "Message blocked by content filter"); return; }
     const newHistory = [...chatHistory, { role: "user" as const, content: chatInput }];
     setChatHistory(newHistory);
     setChatInput("");

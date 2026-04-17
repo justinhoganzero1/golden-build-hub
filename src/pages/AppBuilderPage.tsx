@@ -90,6 +90,8 @@ const AppBuilderPage = () => {
   const sendMessage = async () => {
     const trimmed = input.trim();
     if (!trimmed || isBuilding) return;
+    const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
+    if (!mod.ok) { (await import("sonner")).toast.error(mod.reason || "Prompt blocked by content filter"); return; }
 
     const userMsg: ChatMessage = { role: "user", content: trimmed };
     setMessages(prev => [...prev, userMsg]);
