@@ -989,6 +989,7 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
+        <ShareDialog
           open={!!libShareItem}
           onOpenChange={() => setLibShareItem(null)}
           title={libShareItem?.title || "Media"}
