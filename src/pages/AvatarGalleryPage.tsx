@@ -31,12 +31,19 @@ const AvatarGalleryPage = () => {
   };
 
   const handleSetMaster = (avatar: UserAvatar) => {
+    if (avatar.is_default && avatar.purpose === "oracle") {
+      toast.info(`"${avatar.name}" is already your Master Oracle`);
+      return;
+    }
     setMaster.mutate(avatar.id, {
       onSuccess: () => {
         toast.success(`👑 "${avatar.name}" is now your Master Oracle avatar`);
         setSelected(null);
       },
-      onError: () => toast.error("Could not set master avatar"),
+      onError: (e: any) => {
+        console.error("Set master avatar error:", e);
+        toast.error(e?.message || "Could not set master avatar");
+      },
     });
   };
 
@@ -166,11 +173,15 @@ const AvatarGalleryPage = () => {
               </div>
               <button
                 onClick={() => handleSetMaster(selected)}
-                disabled={setMaster.isPending || !!selected.is_default}
+                disabled={setMaster.isPending}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
               >
                 <Crown className="w-4 h-4" />
-                {selected.is_default ? "Master Avatar (Active)" : "Set as Master Avatar"}
+                {setMaster.isPending
+                  ? "Setting…"
+                  : selected.is_default && selected.purpose === "oracle"
+                    ? "✓ Master Oracle (tap to re-confirm)"
+                    : "Set as Master Oracle"}
               </button>
               <div className="flex gap-2">
                 <button
