@@ -660,6 +660,21 @@ const OwnerDashboardPage = () => {
                 ))}
               </div>
             )}
+
+            {hasNextPage && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="px-5 py-2 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 text-sm font-medium hover:bg-yellow-500/25 transition disabled:opacity-50"
+                >
+                  {isFetchingNextPage ? "Loading..." : "Load 60 more"}
+                </button>
+              </div>
+            )}
+            {libLoading && allMedia.length === 0 && (
+              <div className="text-center py-10 text-xs text-gray-500">Loading library...</div>
+            )}
           </div>
         )}
 
