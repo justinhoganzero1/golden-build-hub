@@ -242,6 +242,33 @@ export type Database = {
         }
         Relationships: []
       }
+      oracle_chat_usage: {
+        Row: {
+          created_at: string
+          id: string
+          message_count: number
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oracle_memories: {
         Row: {
           content: string
@@ -621,6 +648,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_oracle_usage: {
+        Args: { _limit: number; _user_id: string }
+        Returns: {
+          daily_limit: number
+          new_count: number
+          over_limit: boolean
+        }[]
       }
       is_owner: { Args: never; Returns: boolean }
     }

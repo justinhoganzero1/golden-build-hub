@@ -100,6 +100,8 @@ const OraclePage = () => {
   const [showOracleSwap, setShowOracleSwap] = useState(false);
   const [explosionActive, setExplosionActive] = useState(false);
   const [pendingNav, setPendingNav] = useState<string | null>(null);
+  // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
+  const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -117,6 +119,32 @@ const OraclePage = () => {
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+
+  // Prefetch the user's current daily Oracle usage so the badge renders before their first message.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const isPaid = subscribed || (tier && tier !== "free");
+        if (isPaid) { setUsage(null); return; }
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        if (user.email?.toLowerCase() === "justinbretthogan@gmail.com") { setUsage(null); return; }
+        const today = new Date().toISOString().slice(0, 10);
+        const { data } = await supabase
+          .from("oracle_chat_usage")
+          .select("message_count")
+          .eq("user_id", user.id)
+          .eq("usage_date", today)
+          .maybeSingle();
+        const count = data?.message_count ?? 0;
+        const limit = 25;
+        if (!cancelled) setUsage({ count, limit, remaining: Math.max(0, limit - count) });
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [subscribed, tier]);
 
   // Get the oracle avatar if in avatar mode
   const oracleAvatar = oracleMode.mode === "avatar" && oracleMode.avatarId
@@ -911,35 +939,9 @@ const OraclePage = () => {
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
 
-    // ── Free-tier daily chat limit (admin & paid users bypass) ──
-    const FREE_DAILY_LIMIT = 25;
-    const isAdmin = (typeof window !== "undefined") &&
-      (localStorage.getItem("solace-admin-email") === "justinbretthogan@gmail.com");
-    const isPaid = subscribed || (tier && tier !== "free");
-    if (!isIntroTrigger && !isPaid && !isAdmin) {
-      const todayKey = `solace-oracle-chat-count-${new Date().toISOString().slice(0, 10)}`;
-      const used = parseInt(localStorage.getItem(todayKey) || "0", 10);
-      if (used >= FREE_DAILY_LIMIT) {
-        const limitMsg: Message = {
-          id: Date.now().toString(),
-          role: "assistant",
-          sender: oracleName,
-          emoji: "🔒",
-          color: "#FFD700",
-          content: `You've reached today's free chat limit (${FREE_DAILY_LIMIT} messages). Upgrade to a paid plan for unlimited Oracle chat, voice cloning, photo & video generation, and all premium AI features. Tap Subscribe to continue.`,
-        };
-        setShowChat(true);
-        setMessages(prev => [
-          ...prev,
-          { id: (Date.now() - 1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
-          limitMsg,
-        ]);
-        toast.error("Daily free chat limit reached — upgrade to keep going");
-        setTimeout(() => navigate("/subscribe"), 1500);
-        return;
-      }
-      localStorage.setItem(todayKey, String(used + 1));
-    }
+    // Free-tier daily chat limit is now enforced server-side in the oracle-chat
+    // edge function (see oracle_chat_usage table). Server returns 402 when over
+    // the limit and exposes X-Oracle-Usage-* headers we read after each call.
 
     // Skip intent regexes for the silent intro trigger
     const lower = isIntroTrigger ? "" : text.toLowerCase();
@@ -1061,10 +1063,45 @@ const OraclePage = () => {
 
       if (!oracleResp.ok) {
         const err = await oracleResp.json().catch(() => ({ error: "Request failed" }));
+        // Server-enforced free daily limit reached
+        if (oracleResp.status === 402 && err?.error === "free_limit_reached") {
+          if (err.usage) {
+            setUsage({ count: err.usage.count, limit: err.usage.limit, remaining: 0 });
+          }
+          const limitMsg: Message = {
+            id: Date.now().toString(),
+            role: "assistant",
+            sender: oracleName,
+            emoji: "🔒",
+            color: "#FFD700",
+            content: err.message || "You've reached today's free chat limit. Upgrade for unlimited Oracle chat.",
+          };
+          setShowChat(true);
+          setMessages(prev => [...prev, limitMsg]);
+          toast.error("Daily free chat limit reached — upgrade to keep going");
+          setTimeout(() => navigate("/subscribe"), 1500);
+          setIsLoading(false);
+          return;
+        }
         toast.error(err.error || "Something went wrong");
         setIsLoading(false);
         return;
       }
+
+      // Read server-reported usage headers (only present for free-tier users)
+      try {
+        const bypassed = oracleResp.headers.get("X-Oracle-Usage-Bypassed");
+        if (bypassed === "false") {
+          const count = parseInt(oracleResp.headers.get("X-Oracle-Usage-Count") || "0", 10);
+          const limit = parseInt(oracleResp.headers.get("X-Oracle-Usage-Limit") || "25", 10);
+          const remaining = parseInt(oracleResp.headers.get("X-Oracle-Usage-Remaining") || "0", 10);
+          if (!Number.isNaN(count) && !Number.isNaN(limit)) {
+            setUsage({ count, limit, remaining });
+          }
+        } else {
+          setUsage(null); // paid/admin — hide badge
+        }
+      } catch {}
 
       let oracleContent = "";
       // SPEED: speak sentence-by-sentence as the stream arrives instead of waiting
@@ -1269,6 +1306,23 @@ const OraclePage = () => {
       <div className="flex items-center justify-between px-4 pt-3 pb-2 z-10">
         <UniversalBackButton />
         <div className="flex items-center gap-2">
+          {/* Free-tier daily message badge — only visible when server tracks usage (free users) */}
+          {usage && (
+            <button
+              onClick={() => navigate("/subscribe")}
+              title="Free daily Oracle chat limit. Tap to upgrade."
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-full border backdrop-blur text-[10px] font-semibold transition-colors ${
+                usage.remaining <= 5
+                  ? "border-red-500/40 bg-red-500/10 text-red-300"
+                  : usage.remaining <= 10
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              }`}
+            >
+              <Crown className="w-3 h-3" />
+              <span>{usage.count} / {usage.limit} free</span>
+            </button>
+          )}
           {/* Oracle Swap button */}
           <button onClick={() => setShowOracleSwap(!showOracleSwap)}
             className="flex items-center gap-1 px-2 py-1.5 rounded-full border border-purple-500/30 bg-black/50 backdrop-blur">

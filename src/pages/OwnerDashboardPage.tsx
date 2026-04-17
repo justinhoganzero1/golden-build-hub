@@ -22,7 +22,11 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder">("overview");
+  // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
+  const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [builderInput, setBuilderInput] = useState("");
+  const [builderLoading, setBuilderLoading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
@@ -233,6 +237,7 @@ const OwnerDashboardPage = () => {
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "builder", label: "AI Builder", icon: <Zap className="w-4 h-4" /> },
     { key: "library", label: "Users Library", icon: <Camera className="w-4 h-4" /> },
     { key: "suggestions", label: "Ideas", icon: <Sparkles className="w-4 h-4" /> },
     { key: "freebies", label: "Freebies", icon: <Gift className="w-4 h-4" /> },
@@ -241,6 +246,52 @@ const OwnerDashboardPage = () => {
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
+
+  // Admin AI Builder — sends messages to the existing ai-tools edge function with a
+  // "site architect" system prompt. Returns engineering plans + code skeletons the admin
+  // can hand to Lovable to implement. (We can only modify THIS site/app — third-party apps
+  // and arbitrary websites on the public internet cannot be remotely edited.)
+  const sendBuilderMessage = async () => {
+    const text = builderInput.trim();
+    if (!text || builderLoading) return;
+    setBuilderInput("");
+    const userMsg = { role: "user" as const, content: text };
+    setBuilderMessages(prev => [...prev, userMsg]);
+    setBuilderLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-tools", {
+        body: {
+          tool: "site-architect",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are SOLACE Site Architect — an elite full-stack engineer with ULTIMATE coding ability for the SOLACE web app. " +
+                "Stack: React 18 + Vite + Tailwind + shadcn/ui + Supabase (Postgres + RLS + Edge Functions in Deno) + Lovable AI Gateway. " +
+                "When the admin asks to add a feature, change behavior, fix a bug, or extend an app inside SOLACE, respond with: " +
+                "(1) a short plan, (2) the exact files to create/edit with full code blocks, (3) any SQL migration needed, " +
+                "(4) RLS policies for any new tables, (5) any edge function changes. " +
+                "IMPORTANT LIMITS: You can only modify THIS SOLACE codebase. You CANNOT remotely modify third-party websites, " +
+                "external apps, or other users' devices on the public internet — say so plainly if asked. " +
+                "For features that need to be deployed to other users, explain that the admin should ship the change here " +
+                "and all signed-in users will receive the update on next page load.",
+            },
+            ...builderMessages,
+            userMsg,
+          ],
+        },
+      });
+      if (error) throw error;
+      const reply = (data?.reply || data?.content || data?.message || "I couldn't generate a response.") as string;
+      setBuilderMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "AI Builder failed");
+      setBuilderMessages(prev => [...prev, { role: "assistant", content: "Sorry — the AI Builder hit an error. Please try again." }]);
+    } finally {
+      setBuilderLoading(false);
+    }
+  };
 
   const filteredLib = allMedia.filter((m: any) => {
     if (libFilter === "Images" && m.media_type !== "image") return false;
@@ -875,6 +926,66 @@ const OwnerDashboardPage = () => {
             >
               Open AI Studio →
             </button>
+          </div>
+        )}
+
+        {/* AI BUILDER — Admin-only ultimate-coding chat for shipping features into SOLACE */}
+        {tab === "builder" && (
+          <div className="space-y-3">
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-5 h-5 text-yellow-400" />
+                <h2 className="text-base font-bold text-white">SOLACE AI Builder</h2>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Ultimate-level coding assistant for this site and every app inside it. Ask it to add features, fix bugs,
+                build new pages, or extend existing apps — it returns full code + SQL + edge function plans.
+                Changes deploy to all signed-in users on next page load. Note: external sites and other users' devices
+                cannot be remotely modified — only this SOLACE app.
+              </p>
+            </div>
+
+            <div className="bg-black/40 border border-white/10 rounded-2xl h-[420px] overflow-y-auto p-3 space-y-3">
+              {builderMessages.length === 0 && (
+                <div className="text-center text-xs text-gray-500 py-8">
+                  Try: <span className="text-yellow-400">"Add a /changelog page that lists every release"</span> or{" "}
+                  <span className="text-yellow-400">"Make Oracle remember favorite color"</span>
+                </div>
+              )}
+              {builderMessages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-100"
+                      : "bg-white/5 border border-white/10 text-gray-200"
+                  }`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {builderLoading && (
+                <div className="text-[11px] text-gray-500">Architect is thinking…</div>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); sendBuilderMessage(); }}
+              className="flex gap-2"
+            >
+              <input
+                value={builderInput}
+                onChange={(e) => setBuilderInput(e.target.value)}
+                placeholder="Describe a feature, fix, or app to build…"
+                className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-yellow-500/50"
+              />
+              <button
+                type="submit"
+                disabled={builderLoading || !builderInput.trim()}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold text-xs disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         )}
 

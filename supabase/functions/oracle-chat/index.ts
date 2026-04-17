@@ -1,9 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const FREE_DAILY_LIMIT = 25;
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -12,6 +16,67 @@ serve(async (req) => {
     const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // ── SERVER-SIDE FREE-TIER DAILY LIMIT (fair, can't be bypassed by clearing localStorage) ──
+    // Only enforce if we can identify the user from their JWT. Anonymous calls fall through (no DB row possible).
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let usageInfo: { count: number; limit: number; remaining: number; over: boolean; bypassed: boolean } = {
+      count: 0, limit: FREE_DAILY_LIMIT, remaining: FREE_DAILY_LIMIT, over: false, bypassed: true,
+    };
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+
+    if (accessToken && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+        const { data: userData } = await admin.auth.getUser(accessToken);
+        userId = userData?.user?.id ?? null;
+        userEmail = userData?.user?.email ?? null;
+
+        if (userId) {
+          // Bypass: admin
+          const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
+
+          // Bypass: paid subscription tier (trust client adContext.isSubscribed when present)
+          const clientSaysSubscribed = !!adContext?.isSubscribed;
+
+          if (!isAdmin && !clientSaysSubscribed) {
+            // Atomically increment + read count
+            const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
+              _user_id: userId,
+              _limit: FREE_DAILY_LIMIT,
+            });
+            if (!rpcErr && rpcData && rpcData.length > 0) {
+              const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
+              usageInfo = {
+                count: row.new_count,
+                limit: row.daily_limit,
+                remaining: Math.max(0, row.daily_limit - row.new_count),
+                over: row.over_limit,
+                bypassed: false,
+              };
+              if (row.over_limit) {
+                return new Response(
+                  JSON.stringify({
+                    error: "free_limit_reached",
+                    message: `You've reached today's free chat limit (${FREE_DAILY_LIMIT} messages). Upgrade for unlimited Oracle chat.`,
+                    usage: usageInfo,
+                  }),
+                  { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+              }
+            }
+          } else {
+            usageInfo.bypassed = true;
+          }
+        }
+      } catch (e) {
+        console.warn("Usage tracking skipped:", e);
+      }
+    }
 
     const name = oracleName || "Oracle";
     const memoriesBlock = userMemories || "";
@@ -243,7 +308,16 @@ Keep responses concise but helpful. Use markdown formatting when appropriate. Be
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        // Expose remaining-message info to the client header so the badge updates after each call.
+        "X-Oracle-Usage-Count": String(usageInfo.count),
+        "X-Oracle-Usage-Limit": String(usageInfo.limit),
+        "X-Oracle-Usage-Remaining": String(usageInfo.remaining),
+        "X-Oracle-Usage-Bypassed": String(usageInfo.bypassed),
+        "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed",
+      },
     });
   } catch (e) {
     console.error("chat error:", e);
