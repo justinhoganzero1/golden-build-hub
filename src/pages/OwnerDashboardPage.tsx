@@ -22,7 +22,7 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio">("overview");
   const [leads, setLeads] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
@@ -239,6 +239,7 @@ const OwnerDashboardPage = () => {
     { key: "vault", label: "Vault", icon: <Lock className="w-4 h-4" /> },
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
+    { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
 
   const filteredLib = allMedia.filter((m: any) => {
