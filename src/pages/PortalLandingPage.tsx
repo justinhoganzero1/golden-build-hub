@@ -134,35 +134,12 @@ const PortalLandingPage = () => {
 
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
-          <div className="flex flex-col items-center mb-6">
-            {/* Logo with its glow centered directly beneath it */}
-            <div className="relative flex justify-center">
-              <img
-                src={solaceLogo}
-                alt="SOLACE shield logo"
-                className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_30px_hsl(200_100%_60%/0.7)]"
-              />
-              {/* Glow centered under the logo */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute left-1/2 -translate-x-1/2 -bottom-6 h-10 w-32 md:w-40 rounded-[50%]"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center, hsl(200 100% 60% / 0.55) 0%, hsl(200 100% 55% / 0.25) 50%, transparent 75%)",
-                  filter: "blur(14px)",
-                }}
-              />
-            </div>
-
-            {/* Blue glowing shield directly under the logo */}
-            <div className="relative mt-6 flex justify-center">
-              <div
-                id="solace-home-logo-glow"
-                className="shield-glow !inset-0 h-20 w-20 md:h-24 md:w-24"
-                aria-hidden="true"
-              />
-              <div className="relative h-20 w-20 md:h-24 md:w-24" />
-            </div>
+          <div className="flex justify-center mb-6">
+            <img
+              src={solaceLogo}
+              alt="SOLACE shield logo"
+              className="h-32 w-32 md:h-40 md:w-40"
+            />
           </div>
 
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-6">
