@@ -683,11 +683,52 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         musicSource.start();
       }
 
-      // Preload all images
+      // Preload scene images first so we can intercut intro
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
         i.onload = () => res(i); i.onerror = rej; i.src = s.image_url!;
       })));
+
+      // ===== INTRO TITLE CARD (4s) with intro fanfare =====
+      if (introBuf || title) {
+        if (introBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = introBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.9;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const introDur = 4000;
+        const introStart = performance.now();
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - introStart) / introDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+            grad.addColorStop(0, `hsla(45, 90%, 60%, ${0.35 * (1 - Math.abs(p - 0.5) * 1.2)})`);
+            grad.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const alpha = p < 0.25 ? p / 0.25 : p > 0.85 ? (1 - p) / 0.15 : 1;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.fillStyle = "hsl(45 90% 65%)";
+            ctx.textAlign = "center";
+            ctx.font = "bold 96px sans-serif";
+            wrapText(ctx, title || "Untitled Movie", canvas.width / 2, canvas.height / 2, canvas.width - 200, 110);
+            ctx.font = "italic 32px sans-serif";
+            ctx.fillStyle = "#fff";
+            ctx.fillText("a SOLACE production", canvas.width / 2, canvas.height / 2 + 100);
+            ctx.globalAlpha = 1;
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
+      // (legacy preload comment)
+
 
       for (let idx = 0; idx < ready.length; idx++) {
         const scene = ready[idx];
