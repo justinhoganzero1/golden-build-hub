@@ -136,7 +136,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes([]); setScript(""); setIntent(""); setTitle("");
       setEditingSceneId(null); setEditPrompt(""); setPreviewSceneId(null);
       setExporting(false); setExportProgress(0);
-      setCreditsLow(false); setGenProgress(null); setAudioProgress(null);
+      setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
+      setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
     }
   }, [open]);
 
