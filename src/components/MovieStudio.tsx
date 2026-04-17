@@ -1095,15 +1095,35 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           src.connect(g).connect(audioDest);
           src.start();
         }
-        // Schedule per-scene backing music (overrides global score for this clip if present)
+        // Schedule per-scene backing music with cross-fade between adjacent scenes.
+        // Cross-fade duration is decided by crossfadeFor() (auto = Oracle picks per transition).
         const mbuf = sceneMusicBuffers[idx];
         if (mbuf) {
           const src = audioCtx.createBufferSource();
           src.buffer = mbuf;
           const g = audioCtx.createGain();
-          g.gain.value = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          const targetVol = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          const prev = idx > 0 ? ready[idx - 1] : null;
+          const next = idx < ready.length - 1 ? ready[idx + 1] : null;
+          const fadeInSec = prev ? crossfadeFor(prev, scene) : 0;
+          const fadeOutSec = next ? crossfadeFor(scene, next) : 0;
+          const sceneSec = dur / 1000;
+          const t0 = audioCtx.currentTime;
+          if (fadeInSec > 0) {
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(targetVol, t0 + Math.min(fadeInSec, sceneSec / 2));
+          } else {
+            g.gain.setValueAtTime(targetVol, t0);
+          }
+          if (fadeOutSec > 0) {
+            const fadeStart = t0 + Math.max(0, sceneSec - fadeOutSec);
+            g.gain.setValueAtTime(targetVol, fadeStart);
+            g.gain.linearRampToValueAtTime(0, t0 + sceneSec);
+          }
           src.connect(g).connect(audioDest);
           src.start();
+          // Stop slightly after scene end so cross-fade tail can finish
+          try { src.stop(t0 + sceneSec + 0.05); } catch {}
         }
         const start = performance.now();
         await new Promise<void>(resolve => {
