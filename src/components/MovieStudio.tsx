@@ -775,6 +775,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       lines.push("Directed by");
       lines.push("The SOLACE Oracle");
       lines.push("");
+      if (starring.trim()) {
+        lines.push("Starring");
+        starring.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
+      if (coStarring.trim()) {
+        lines.push("Co-starring");
+        coStarring.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
+      if (guestStars.trim()) {
+        lines.push("Guest Stars");
+        guestStars.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(n => lines.push(n));
+        lines.push("");
+      }
       if (intent.trim()) {
         lines.push("Story");
         lines.push(intent.trim().slice(0, 120));
