@@ -48,6 +48,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [exportProgress, setExportProgress] = useState(0);
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryTargetId, setLibraryTargetId] = useState<string | null>(null);
+  const [creditsLow, setCreditsLow] = useState(false);
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
@@ -98,6 +100,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes([]); setScript(""); setIntent(""); setTitle("");
       setEditingSceneId(null); setEditPrompt(""); setPreviewSceneId(null);
       setExporting(false); setExportProgress(0);
+      setCreditsLow(false); setGenProgress(null);
     }
   }, [open]);
 
@@ -113,7 +116,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        if (resp.status === 402) toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        if (resp.status === 402) { setCreditsLow(true); toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage."); }
         else if (resp.status === 429) toast.error("Too many requests. Wait a moment and try again.");
         else toast.error(e.error || "Scene planning failed");
         return;
@@ -152,7 +155,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        if (resp.status === 402) toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        if (resp.status === 402) { setCreditsLow(true); toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage."); }
         else if (resp.status === 429) toast.error("Too many requests. Wait a moment and try again.");
         else toast.error(e.error || "Photo generation failed");
         setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: false } : s));
@@ -178,11 +181,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
 
   const generateAll = async () => {
     const pending = scenes.filter(s => !s.image_url).map(s => s.id);
+    if (pending.length === 0) { toast.info("All scenes already have photos"); return; }
     const BATCH = 3;
+    setGenProgress({ done: 0, total: pending.length });
+    let done = 0;
     for (let i = 0; i < pending.length; i += BATCH) {
       const chunk = pending.slice(i, i + BATCH);
-      await Promise.all(chunk.map(id => generateScenePhoto(id)));
+      await Promise.all(chunk.map(async id => {
+        await generateScenePhoto(id);
+        done += 1;
+        setGenProgress({ done, total: pending.length });
+      }));
     }
+    setTimeout(() => setGenProgress(null), 1500);
   };
 
   // ----- Apply AI edit to existing scene clip -----
@@ -329,6 +340,35 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        {creditsLow && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center justify-between gap-3">
+            <span className="text-destructive">AI credits exhausted. Top up to keep generating.</span>
+            <a
+              href="https://lovable.dev/settings/workspace"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+            >
+              Add credits
+            </a>
+          </div>
+        )}
+
+        {genProgress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Generating photos...</span>
+              <span>{genProgress.done} / {genProgress.total}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(genProgress.done / genProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Script */}
         {scenes.length === 0 && (
