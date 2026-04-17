@@ -1,24 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User } from "lucide-react";
+import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
-interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; }
+interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; isPaid?: boolean; pricePoint?: string; }
 
 interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; }
 
 const AppBuilderPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: userMedia } = useUserMedia();
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm your App Builder agent. Tell me what kind of app or website you want to build, and I'll create it for you. You can say things like:\n\n• \"Build me a portfolio website\"\n• \"Create an AI chatbot app\"\n• \"Make a fitness tracker dashboard\"\n• \"Build an e-commerce landing page\"\n\nDescribe your vision and I'll build it!" }
+    { role: "assistant", content: "Hi! I'm your Master App Builder agent. I can take you all the way from idea → built app → Play Store → paid customers.\n\nJust tell me what you want and I'll handle:\n• Building the app (HTML/JS, fully working)\n• Adding Stripe paywalls if it's a paid app\n• Wrapping it for Google Play (APK/AAB)\n• Setting up the store listing checklist\n\nTry: \"Build me a paid meditation app for $4.99/month\" or \"Make a free portfolio site I can publish to Play Store\"." }
   ]);
   const [input, setInput] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
@@ -106,7 +108,7 @@ const AppBuilderPage = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           type: "assistant",
-          prompt: `You are Solace App Builder, an expert AI agent that builds complete, production-quality web applications. You respond conversationally AND generate code.
+          prompt: `You are SOLACE Master App Builder — an expert AI agent that builds complete, production-quality web apps AND walks the user from idea all the way to selling on the Play Store.
 
 CONVERSATION SO FAR:
 ${conversationContext}
@@ -116,25 +118,19 @@ USER'S NEW MESSAGE: "${trimmed}"
 ${currentCode ? `CURRENT APP CODE (user wants to modify this):\n${currentCode.substring(0, 3000)}` : ""}
 
 INSTRUCTIONS:
-1. First, respond conversationally to the user (2-3 sentences max about what you're building/changing).
-2. Then generate a COMPLETE, self-contained HTML file with:
-   - Modern responsive design (mobile-first)
-   - Dark theme with elegant styling (CSS custom properties)
-   - Fully functional JavaScript with all interactive features
-   - Professional animations and transitions
-   - If they want AI features, include mock AI responses
-   - Include proper meta tags, favicon references
-   - Use modern CSS (flexbox, grid, variables)
-   - Include a header, main content, and footer
-   - Make it look like a real production website
+1. First, respond conversationally (2-3 sentences). If the user mentions selling, paid, subscription, premium, $, price, monetize, charge — treat the app as PAID.
+2. If PAID, you MUST inject a clean Stripe Checkout paywall on every premium feature: a "Subscribe" or "Buy" button that calls a placeholder \`startCheckout()\` JS function which posts to \`/api/create-checkout\` with the price tier. Show locked badges on premium features and only unlock them when localStorage has \`solace_paid=true\`. Include a clear pricing card with the price the user mentioned (or suggest $4.99/mo if unspecified).
+3. If FREE, no paywall — make every feature open.
+4. Generate a COMPLETE self-contained HTML file: mobile-first, dark theme, responsive, modern animations, real production polish. Include header/main/footer. Include a "Get the App" CTA pointing to a Play Store badge placeholder so it's ready to wrap.
+5. Add a tiny <meta name="solace-app-config"> tag containing JSON: {"paid": true|false, "price": "$X.XX/mo or one-time", "play_ready": true}.
 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
-CHAT: [Your conversational response here]
+CHAT: [Your conversational response — mention paywall + Play Store steps if PAID]
 CODE_START
 [Complete HTML code here]
 CODE_END
 
-IMPORTANT: The HTML must be 100% self-contained. No external dependencies except Google Fonts (which can be loaded via link tag). Make it look AMAZING.`
+IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AMAZING and ready to publish.`
         }),
       });
 
@@ -164,10 +160,23 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
       if (code) {
         setCurrentCode(code);
         const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
-        
+
+        // Detect paid status from generated <meta name="solace-app-config">
+        let isPaid = false;
+        let pricePoint: string | undefined;
+        const metaMatch = code.match(/<meta\s+name=["']solace-app-config["']\s+content=["']([^"']+)["']/i);
+        if (metaMatch) {
+          try {
+            const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
+            isPaid = !!cfg.paid;
+            pricePoint = cfg.price;
+          } catch { /* ignore */ }
+        }
+        if (!isPaid && /\$\d|subscribe|paywall|premium|paid/i.test(trimmed)) isPaid = true;
+
         // Check if we're updating an existing project
         const existingProject = projects.find(p => p.name === appName);
-        
+
         const project: AppProject = {
           id: existingProject?.id || Date.now().toString(),
           name: appName,
@@ -176,6 +185,8 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
           code,
           created: new Date().toLocaleDateString(),
           mediaId: existingProject?.mediaId,
+          isPaid,
+          pricePoint,
         };
 
         // Save to media library immediately
@@ -234,6 +245,56 @@ IMPORTANT: The HTML must be 100% self-contained. No external dependencies except
             </div>
           </div>
           <iframe srcDoc={previewProject.code} className="w-full h-64 rounded-xl border border-border bg-white" sandbox="allow-scripts" title="App Preview" />
+
+          {/* Publish & Sell panel — Web Wrapper + Stripe shortcuts */}
+          <div className="mt-3 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-amber-500/5 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Rocket className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">Publish & Sell</span>
+                {previewProject.isPaid && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                    <DollarSign className="w-2.5 h-2.5" /> PAID {previewProject.pricePoint || ""}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
+                  const placeholderUrl = `https://${slug}.lovable.app`;
+                  navigate(`/web-wrapper?url=${encodeURIComponent(placeholderUrl)}&name=${encodeURIComponent(previewProject.name)}`);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary/30 transition-colors"
+              >
+                <Smartphone className="w-3.5 h-3.5" /> Wrap for Play Store
+              </button>
+              <button
+                onClick={() => navigate("/subscribe")}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs font-semibold hover:border-primary transition-colors"
+              >
+                <CreditCard className="w-3.5 h-3.5" /> Stripe Setup
+              </button>
+              <button
+                onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
+              >
+                <Globe className="w-3.5 h-3.5" /> Play Console
+              </button>
+              <button
+                onClick={() => downloadApp(previewProject)}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Download HTML
+              </button>
+            </div>
+            {previewProject.isPaid && (
+              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                💳 Stripe paywall code is already injected. Click <b>Stripe Setup</b> to connect your account, then <b>Wrap for Play Store</b> to package & submit.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
