@@ -1,15 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target } from "lucide-react";
+import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target, ShieldCheck, FileSearch, Hash } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { cleanTextForSpeech } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping";
+type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping" | "bodycam" | "investigation";
+type Tab = "general" | "investigations";
+type EvidenceLog = { ts: string; note: string; frame?: string; mode: AnalysisMode };
 
 const LiveVisionPage = () => {
   const { user } = useAuth();
