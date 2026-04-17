@@ -151,31 +151,18 @@ const AvatarGeneratorPage = () => {
     }
   };
 
-  const takeSelfie = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      setShowCamera(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch {
-      toast.error("Camera access denied");
-    }
-  };
-
-  const captureSelfie = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
-    const url = canvas.toDataURL("image/png");
+  const handleSelfieCaptured = (url: string) => {
     setImageUrl(url);
-    const stream = videoRef.current.srcObject as MediaStream;
-    stream?.getTracks().forEach(t => t.stop());
-    setShowCamera(false);
-    toast.success("Selfie captured!");
+    if (user) {
+      saveMedia.mutate({
+        media_type: "image",
+        title: avatarName.trim() || "Selfie",
+        url,
+        source_page: "Avatar Generator",
+        metadata: { source: "selfie" },
+      });
+    }
+    toast.success("Selfie ready!");
   };
 
   const downloadImage = () => {
