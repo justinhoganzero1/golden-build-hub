@@ -349,7 +349,60 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     toast.success("All sound effects generated");
   };
 
-  // ----- Music (full-track underscore via ElevenLabs Music) -----
+  // ----- Per-scene backing music (generates 3 options to choose from) -----
+  const generateSceneMusicOption = async (sceneId: string, prompt: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: CLIP_SECONDS + 4 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else if (resp.status === 429) toast.error("Music rate limit. Wait and retry.");
+        else toast.error("Scene music generation failed");
+        return null;
+      }
+      const blob = await resp.blob();
+      return await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+    } catch (e) { console.error(e); return null; }
+  };
+
+  const generateSceneMusic = async (sceneId: string, count = 3) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const base = (scene.music_prompt || `Cinematic backing track for: ${scene.caption}`).trim();
+    if (!base) { toast.error("Describe the music vibe for this scene first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSceneMusic: true } : s));
+    const variants = [
+      base,
+      `${base} — alternate take, different instrumentation`,
+      `${base} — slower, more emotional version`,
+    ].slice(0, count);
+    const results: string[] = [];
+    for (const v of variants) {
+      const url = await generateSceneMusicOption(sceneId, v);
+      if (url) results.push(url);
+    }
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? { ...s, music_options: results, music_url: s.music_url || results[0], generatingSceneMusic: false }
+      : s));
+    if (results.length === 0) {
+      toast.error("Could not generate music tracks");
+    } else {
+      toast.success(`${results.length} backing tracks ready — choose one`);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - scene music: ${scene.caption}`.slice(0, 200),
+        url: results[0],
+        source_page: "movie-studio",
+        metadata: { kind: "scene-music", sceneId, prompt: base },
+      });
+    }
+  };
+
   const generateMusic = async () => {
     const text = musicPrompt.trim();
     if (!text) { toast.error("Describe the music vibe first"); return; }
