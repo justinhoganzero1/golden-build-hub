@@ -129,6 +129,11 @@ const DashboardPage = () => {
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Solace</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
+          {(tier === "lifetime" || isAdmin) && (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-sm">
+              ✨ Lifetime Member
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShareOpen(true)} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
