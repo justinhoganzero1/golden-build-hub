@@ -553,11 +553,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingMusic(false); }
   };
 
-  // ----- Intro fanfare (short upbeat opener) -----
+  // ----- Intro fanfare (5 selectable styles) -----
+  const INTRO_STYLE_PROMPTS: Record<typeof introStyle, string> = {
+    "epic": `Epic, triumphant orchestral fanfare with rising strings, soaring brass and a powerful timpani hit, 4 seconds, builds energy for the opening of a movie titled "${title || "this movie"}"`,
+    "playful": `Playful, light, jingle-style intro with cheerful piano, ukulele and a bright bell flourish, 4 seconds, fun and welcoming opener for "${title || "this movie"}"`,
+    "cinematic-drone": `Cinematic atmospheric drone opener with deep low strings, a slow-building synth pad and a subtle rising swell, 4 seconds, mysterious tone for "${title || "this movie"}"`,
+    "retro-news": `Retro broadcast news intro with bold horns, urgent percussion and a vintage TV broadcast vibe, 4 seconds, "breaking news" energy for "${title || "this movie"}"`,
+    "trailer-hit": `Modern blockbuster trailer hit with a deep cinematic boom, hybrid percussion and an explosive brass stab, 4 seconds, high-impact intro for "${title || "this movie"}"`,
+  } as any;
+
   const composeIntroMusic = async () => {
     setGeneratingIntro(true);
     try {
-      const prompt = `Short upbeat cinematic intro fanfare, exciting, triumphant orchestral hit with rising strings and brass, 4 seconds, builds energy for a film opening titled "${title || "this movie"}"`;
+      const prompt = INTRO_STYLE_PROMPTS[introStyle];
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
@@ -575,14 +583,46 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setIntroMusicUrl(dataUrl);
       if (user) saveMedia.mutate({
         media_type: "audio",
-        title: `${title || "Movie"} - intro fanfare`,
+        title: `${title || "Movie"} - intro fanfare (${introStyle})`,
         url: dataUrl, source_page: "movie-studio",
-        metadata: { kind: "intro-music" },
+        metadata: { kind: "intro-music", style: introStyle },
       });
-      toast.success("Intro fanfare ready");
+      toast.success(`Intro fanfare ready (${introStyle})`);
     } catch (e) {
       console.error(e); toast.error("Intro music generation failed");
     } finally { setGeneratingIntro(false); }
+  };
+
+  // ----- Outro sting (short "The End" musical sting) -----
+  const composeOutroMusic = async () => {
+    setGeneratingOutro(true);
+    try {
+      const prompt = `Short, warm, conclusive cinematic outro sting for the end of a movie. Gentle strings and a final resolving chord with a soft timpani hit. 4 seconds. "The End" feel for "${title || "this movie"}"`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: 10 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Outro music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setOutroMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - outro sting`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "outro-music" },
+      });
+      toast.success("Outro sting ready");
+    } catch (e) {
+      console.error(e); toast.error("Outro music generation failed");
+    } finally { setGeneratingOutro(false); }
   };
 
   // ----- Theme soundtrack (always upbeat & exciting, plays as the main score) -----
