@@ -179,6 +179,37 @@ const OwnerDashboardPage = () => {
     })();
   }, [isAdmin]);
 
+  // Load private live traffic (admin only): site visitors, installs, paid upgrades
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [{ count: visitors }, { count: installs }] = await Promise.all([
+          supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing"),
+          supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
+        ]);
+        // Paid upgrades: count distinct paid users via Stripe (server-side admin endpoint).
+        // Until a dedicated admin counter exists, fall back to 0 — Stripe dashboard is the source of truth.
+        let paidUpgrades = 0;
+        try {
+          const { data } = await supabase.functions.invoke("check-subscription", { body: { admin_count: true } });
+          if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+        } catch { /* ignore — endpoint may not expose admin counts yet */ }
+        if (!cancelled) {
+          setLiveTraffic({
+            visitors: typeof visitors === "number" ? visitors : 0,
+            installs: typeof installs === "number" ? installs : 0,
+            paidUpgrades,
+          });
+        }
+      } catch { /* silent */ }
+    };
+    load();
+    const i = window.setInterval(load, 30000);
+    return () => { cancelled = true; window.clearInterval(i); };
+  }, [isAdmin]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
