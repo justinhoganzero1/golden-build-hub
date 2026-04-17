@@ -32,9 +32,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Default to "Bill" — old, deep, trustworthy documentary narrator
-    // (Ancient Aliens-style: gravelly, mysterious, authoritative)
-    const selectedVoice = voiceId || "pqHfZKP75CvOlQylNhV4";
+    // Default to "Sarah" — most popular/downloaded female voice on ElevenLabs
+    // (warm, professional, soft American accent)
+    const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
     const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
