@@ -77,13 +77,26 @@ const AvatarGeneratorPage = () => {
   const [showSelfie, setShowSelfie] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [purpose, setPurpose] = useState(purposeFromParam || (isCreatingFriend ? "ai-friend" : purchasedProduct || "oracle"));
-  const [selectedVoice, setSelectedVoice] = useState("Warm & Friendly");
+  // Multi-select voices & personalities. AI dynamically blends them based on the situation.
+  const [selectedVoices, setSelectedVoices] = useState<string[]>(["Warm & Friendly"]);
   const { data: savedVoices = [] } = useSavedVoices();
-  const [selectedPersonality, setSelectedPersonality] = useState("Sweet & Caring");
+  const [selectedPersonalities, setSelectedPersonalities] = useState<string[]>(["Sweet & Caring"]);
+  const toggleVoice = (v: string) => setSelectedVoices(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+  const togglePersonality = (p: string) => setSelectedPersonalities(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  const selectAllVoices = () => setSelectedVoices([...VOICE_OPTIONS]);
+  const selectAllPersonalities = () => setSelectedPersonalities([...PERSONALITY_OPTIONS]);
+  // Persisted strings — prefix tells the Oracle to dynamically blend
+  const blendedVoice = selectedVoices.length > 1
+    ? `AI-blend: ${selectedVoices.join(", ")}`
+    : (selectedVoices[0] || "Warm & Friendly");
+  const blendedPersonality = selectedPersonalities.length > 1
+    ? `AI-blend: ${selectedPersonalities.join(", ")}`
+    : (selectedPersonalities[0] || "Sweet & Caring");
   const [avatarName, setAvatarName] = useState("");
   const [viewMode, setViewMode] = useState<"holographic-8k" | "normal-3d">("holographic-8k");
 
-  const showVoiceAndPersonality = purpose === "ai-friend" || purpose === "partner";
+  // Voice + personality applies to ALL avatar purposes (Oracle/Profile/Friend/Partner)
+  const showVoiceAndPersonality = true;
   const currentPurpose = AVATAR_PURPOSES.find(p => p.value === purpose);
   const isPaidPurpose = currentPurpose?.paid && !purchasedProduct;
 
