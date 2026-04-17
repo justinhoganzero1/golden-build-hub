@@ -169,6 +169,11 @@ const PhotographyHubPage = () => {
               <Pencil className="w-4 h-4" /> Open Edit Studio
               <Sparkles className="w-4 h-4" />
             </button>
+            <button onClick={() => setShowMovieStudio(true)}
+              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+              <Film className="w-4 h-4" /> Turn into Movie (8K · 6s clips)
+              <Sparkles className="w-4 h-4" />
+            </button>
           </div>
         )}
 
