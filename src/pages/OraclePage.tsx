@@ -745,15 +745,13 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
-    // ── Self-diagnose intent: keep CLOSED unless user explicitly asks to see ──
-    const lower = text.toLowerCase();
-    const wantsDiagnose = /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
+    // Skip intent regexes for the silent intro trigger
+    const lower = isIntroTrigger ? "" : text.toLowerCase();
+    const wantsDiagnose = !isIntroTrigger && /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
     const wantsToSee = /(show|open|display|let me see|view|watch).*(diagnos|doctor|panel|report|scan|repair)/i.test(lower);
     if (wantsDiagnose) {
-      // Run diagnostics quietly in the background; only open the panel if user explicitly says "show"
       const explicit = wantsToSee;
       if (explicit) setShowDoctor(true);
-      // Kick the system doctor silently
       try {
         const mod = await import("@/lib/systemDoctor");
         mod.runFullDiagnostic?.().catch(() => {});
