@@ -318,7 +318,7 @@ const LiveVisionPage = () => {
       if (result && result.trim().toUpperCase() !== "QUIET") {
         evidenceHistoryRef.current.push(result);
         if (evidenceHistoryRef.current.length > 8) evidenceHistoryRef.current.shift();
-        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, mode: "bodycam" }, ...prev].slice(0, 50));
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, mode: "bodycam" as AnalysisMode }, ...prev].slice(0, 50));
       }
     };
     tick();
@@ -350,7 +350,7 @@ const LiveVisionPage = () => {
       if (result) {
         evidenceHistoryRef.current.push(result);
         if (evidenceHistoryRef.current.length > 6) evidenceHistoryRef.current.shift();
-        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, frame, mode: "investigation" }, ...prev].slice(0, 30));
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, frame, mode: "investigation" as AnalysisMode }, ...prev].slice(0, 30));
       }
     };
     tick();
