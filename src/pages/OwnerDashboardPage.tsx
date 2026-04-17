@@ -22,7 +22,11 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder">("overview");
+  // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
+  const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const [builderInput, setBuilderInput] = useState("");
+  const [builderLoading, setBuilderLoading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [freebieEmail, setFreebieEmail] = useState("");
@@ -233,6 +237,7 @@ const OwnerDashboardPage = () => {
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "builder", label: "AI Builder", icon: <Zap className="w-4 h-4" /> },
     { key: "library", label: "Users Library", icon: <Camera className="w-4 h-4" /> },
     { key: "suggestions", label: "Ideas", icon: <Sparkles className="w-4 h-4" /> },
     { key: "freebies", label: "Freebies", icon: <Gift className="w-4 h-4" /> },
@@ -241,6 +246,52 @@ const OwnerDashboardPage = () => {
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
+
+  // Admin AI Builder — sends messages to the existing ai-tools edge function with a
+  // "site architect" system prompt. Returns engineering plans + code skeletons the admin
+  // can hand to Lovable to implement. (We can only modify THIS site/app — third-party apps
+  // and arbitrary websites on the public internet cannot be remotely edited.)
+  const sendBuilderMessage = async () => {
+    const text = builderInput.trim();
+    if (!text || builderLoading) return;
+    setBuilderInput("");
+    const userMsg = { role: "user" as const, content: text };
+    setBuilderMessages(prev => [...prev, userMsg]);
+    setBuilderLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-tools", {
+        body: {
+          tool: "site-architect",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are SOLACE Site Architect — an elite full-stack engineer with ULTIMATE coding ability for the SOLACE web app. " +
+                "Stack: React 18 + Vite + Tailwind + shadcn/ui + Supabase (Postgres + RLS + Edge Functions in Deno) + Lovable AI Gateway. " +
+                "When the admin asks to add a feature, change behavior, fix a bug, or extend an app inside SOLACE, respond with: " +
+                "(1) a short plan, (2) the exact files to create/edit with full code blocks, (3) any SQL migration needed, " +
+                "(4) RLS policies for any new tables, (5) any edge function changes. " +
+                "IMPORTANT LIMITS: You can only modify THIS SOLACE codebase. You CANNOT remotely modify third-party websites, " +
+                "external apps, or other users' devices on the public internet — say so plainly if asked. " +
+                "For features that need to be deployed to other users, explain that the admin should ship the change here " +
+                "and all signed-in users will receive the update on next page load.",
+            },
+            ...builderMessages,
+            userMsg,
+          ],
+        },
+      });
+      if (error) throw error;
+      const reply = (data?.reply || data?.content || data?.message || "I couldn't generate a response.") as string;
+      setBuilderMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "AI Builder failed");
+      setBuilderMessages(prev => [...prev, { role: "assistant", content: "Sorry — the AI Builder hit an error. Please try again." }]);
+    } finally {
+      setBuilderLoading(false);
+    }
+  };
 
   const filteredLib = allMedia.filter((m: any) => {
     if (libFilter === "Images" && m.media_type !== "image") return false;
