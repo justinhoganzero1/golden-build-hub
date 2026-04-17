@@ -1419,8 +1419,8 @@ const OraclePage = () => {
         onOpenChange={setShowOraclePhotoPicker}
         filterType="image"
         title="Choose Oracle photo"
-        onSelect={(item) => {
-          if (item?.url) saveImageAsOraclePhoto(item.url, item.title || "Oracle Photo");
+        onSelect={(url) => {
+          if (url) saveImageAsOraclePhoto(url, "Oracle Photo");
         }}
       />
 
