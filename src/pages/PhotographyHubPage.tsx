@@ -218,6 +218,25 @@ const PhotographyHubPage = () => {
         title="Pick from Library"
         onSelect={(url) => { setUploadedPhoto(url); setMode("edit"); toast.success("Image loaded from library!"); }}
       />
+      {generatedImage && (
+        <PhotoEditStudio
+          open={showEditor}
+          onOpenChange={setShowEditor}
+          imageUrl={generatedImage}
+          onSave={(newUrl) => {
+            setGeneratedImage(newUrl);
+            if (user) {
+              saveMedia.mutate({
+                media_type: "image",
+                title: `Edited Photo - ${prompt.slice(0, 50) || "studio edit"}`,
+                url: newUrl,
+                source_page: "photography-hub",
+                metadata: { editedInStudio: true, basePrompt: prompt },
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
