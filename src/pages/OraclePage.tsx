@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
-import { useUserAvatars, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
@@ -78,6 +78,7 @@ const OraclePage = () => {
   const { data: userAvatars = [] } = useUserAvatars();
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
+  const saveMedia = useSaveMedia();
   const { data: adPrefs } = useAdPreferences();
   const updateAdPrefs = useUpdateAdPreferences();
   const { subscribed, tier } = useSubscription();
@@ -733,18 +734,88 @@ const OraclePage = () => {
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     setInput("");
-    // ── Self-diagnose intent: open System Doctor automatically ──
+    // ── Self-diagnose intent: keep CLOSED unless user explicitly asks to see ──
     const lower = text.toLowerCase();
-    if (/(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower)) {
-      setShowDoctor(true);
+    const wantsDiagnose = /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
+    const wantsToSee = /(show|open|display|let me see|view|watch).*(diagnos|doctor|panel|report|scan|repair)/i.test(lower);
+    if (wantsDiagnose) {
+      // Run diagnostics quietly in the background; only open the panel if user explicitly says "show"
+      const explicit = wantsToSee;
+      if (explicit) setShowDoctor(true);
+      // Kick the system doctor silently
+      try {
+        const mod = await import("@/lib/systemDoctor");
+        mod.runFullDiagnostic?.().catch(() => {});
+      } catch {}
       const ack: Message = {
         id: Date.now().toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
-        content: "Running a full system diagnostic now — I'll scan every subsystem and auto-repair anything I can. Watch the panel."
+        content: explicit
+          ? "Running a full system diagnostic now — the panel is open so you can watch."
+          : "On it — I'll run a full diagnostic and quietly auto-repair anything I find. Just say \"show me the report\" if you want to see the details."
       };
       setMessages(prev => [...prev, { id: (Date.now()-1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }, ack]);
+      if (!isMuted) speakAsAgent(ack.content, oracleName);
       return;
     }
-    if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+
+    // ── Background SFX generation intent (ElevenLabs) ──
+    // Triggered by phrases like "make a sound effect of...", "generate sfx ..."
+    const sfxMatch = text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
+    if (sfxMatch && sfxMatch[1]) {
+      const prompt = sfxMatch[1].replace(/[.!?]+$/, "").trim();
+      const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ack: Message = {
+        id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🌊", color: "#FFD700",
+        content: `On it — generating that sound effect quietly in the background. I'll save it straight to your Library.`
+      };
+      setMessages(prev => [...prev, userMsg, ack]);
+      if (!isMuted) speakAsAgent(ack.content, oracleName);
+      // Fire and forget
+      (async () => {
+        try {
+          const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ prompt, duration_seconds: 6, prompt_influence: 0.5 }),
+          });
+          if (!r.ok) { toast.error("Sound effect generation failed"); return; }
+          const blob = await r.blob();
+          const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
+          saveMedia.mutate({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } });
+          toast.success("Sound effect ready in your Library");
+        } catch (e) { console.error(e); toast.error("Sound effect generation failed"); }
+      })();
+      return;
+    }
+
+    // ── Background Music generation intent (ElevenLabs) ──
+    const musicMatch = text.match(/(?:make|create|generate|compose|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:music|song|track|score|melody|beat|tune|soundtrack)\s+(?:of\s+|for\s+|like\s+|that\s+is\s+|that\s+sounds\s+like\s+|in\s+the\s+style\s+of\s+|with\s+)?(.+)/i);
+    if (musicMatch && musicMatch[1]) {
+      const prompt = musicMatch[1].replace(/[.!?]+$/, "").trim();
+      const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ack: Message = {
+        id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎵", color: "#FFD700",
+        content: `Composing that for you in the background — I'll drop the finished track into your Library when it's ready.`
+      };
+      setMessages(prev => [...prev, userMsg, ack]);
+      if (!isMuted) speakAsAgent(ack.content, oracleName);
+      (async () => {
+        try {
+          const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ prompt, duration_seconds: 30 }),
+          });
+          if (!r.ok) { toast.error("Music generation failed"); return; }
+          const blob = await r.blob();
+          const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
+          saveMedia.mutate({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } });
+          toast.success("Music track ready in your Library");
+        } catch (e) { console.error(e); toast.error("Music generation failed"); }
+      })();
+      return;
+    }
+
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setShowChat(true);

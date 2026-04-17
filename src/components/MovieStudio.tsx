@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2 } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,8 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+const SFX_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`;
+const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`;
 const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
 const CLIP_SECONDS = 6;
 
@@ -46,6 +48,10 @@ interface Scene {
   voice_style?: string;
   audio_url?: string; // data URL of generated mp3
   generatingAudio?: boolean;
+  // SFX (per scene)
+  sfx_prompt?: string;
+  sfx_url?: string;
+  generatingSfx?: boolean;
 }
 
 interface MovieStudioProps {
@@ -74,6 +80,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [creditsLow, setCreditsLow] = useState(false);
   const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null);
+  const [sfxProgress, setSfxProgress] = useState<{ done: number; total: number } | null>(null);
+  // Music suite
+  const [musicPrompt, setMusicPrompt] = useState("");
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
+  const [generatingMusic, setGeneratingMusic] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
@@ -124,7 +136,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes([]); setScript(""); setIntent(""); setTitle("");
       setEditingSceneId(null); setEditPrompt(""); setPreviewSceneId(null);
       setExporting(false); setExportProgress(0);
-      setCreditsLow(false); setGenProgress(null); setAudioProgress(null);
+      setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
+      setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
     }
   }, [open]);
 
@@ -156,7 +169,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         narration: s.narration || s.caption,
         speaker: s.speaker || "narrator",
         voice_style: s.voice_style || "narrator-male-warm",
+        sfx_prompt: s.sfx_prompt || s.ambient || "",
       }));
+      // Auto-suggest a music prompt from the overall vibe
+      if (data.music_prompt) setMusicPrompt(data.music_prompt);
+      else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
       // Seed first scene with the photo the user came in with
       if (seedImage && newScenes[0]) newScenes[0].image_url = seedImage;
       setScenes(newScenes);
@@ -279,6 +296,87 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     toast.success("All voices generated");
   };
 
+  // ----- SFX (per scene, ElevenLabs sound-generation) -----
+  const generateSceneSfx = async (sceneId: string, customPrompt?: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const promptText = (customPrompt ?? scene.sfx_prompt ?? "").trim();
+    if (!promptText) { toast.error("Add a sound effect description first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: true } : s));
+    try {
+      const resp = await fetch(SFX_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt: promptText, duration_seconds: CLIP_SECONDS, prompt_influence: 0.5 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Audio credits exhausted."); }
+        else if (resp.status === 429) toast.error("SFX rate limit. Wait and retry.");
+        else toast.error("SFX generation failed");
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: false } : s));
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, sfx_url: dataUrl, generatingSfx: false } : s));
+    } catch (e) {
+      console.error(e); toast.error("SFX generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: false } : s));
+    }
+  };
+
+  const generateAllSfx = async () => {
+    const pending = scenes.filter(s => !s.sfx_url && s.sfx_prompt?.trim()).map(s => s.id);
+    if (pending.length === 0) { toast.info("Add SFX descriptions to scenes first"); return; }
+    setSfxProgress({ done: 0, total: pending.length });
+    let done = 0;
+    for (const id of pending) {
+      await generateSceneSfx(id);
+      done += 1;
+      setSfxProgress({ done, total: pending.length });
+    }
+    setTimeout(() => setSfxProgress(null), 1500);
+    toast.success("All sound effects generated");
+  };
+
+  // ----- Music (full-track underscore via ElevenLabs Music) -----
+  const generateMusic = async () => {
+    const text = musicPrompt.trim();
+    if (!text) { toast.error("Describe the music vibe first"); return; }
+    setGeneratingMusic(true);
+    try {
+      const totalSecs = Math.max(10, scenes.length * CLIP_SECONDS);
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt: text, duration_seconds: totalSecs }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else if (resp.status === 429) toast.error("Music rate limit. Wait and retry.");
+        else toast.error("Music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - score`,
+        url: dataUrl,
+        source_page: "movie-studio",
+        metadata: { kind: "music", prompt: text, durationSec: totalSecs },
+      });
+      toast.success("Music score ready");
+    } catch (e) {
+      console.error(e); toast.error("Music generation failed");
+    } finally { setGeneratingMusic(false); }
+  };
+
   // ----- Scene CRUD -----
   const addScene = () => {
     setScenes(prev => [...prev, {
@@ -290,6 +388,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       narration: "",
       speaker: "narrator",
       voice_style: "narrator-male-warm",
+      sfx_prompt: "",
     }]);
   };
   const removeScene = (id: string) => setScenes(prev => prev.filter(s => s.id !== id));
@@ -350,17 +449,22 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const audioCtx = new AudioCtor();
       const audioDest = audioCtx.createMediaStreamDestination();
 
-      // Decode each scene's audio (if any) up front
-      const audioBuffers: (AudioBuffer | null)[] = await Promise.all(ready.map(async s => {
-        if (!s.audio_url) return null;
+      // Helper: decode an audio data URL into an AudioBuffer
+      const decodeUrl = async (u?: string | null): Promise<AudioBuffer | null> => {
+        if (!u) return null;
         try {
-          const r = await fetch(s.audio_url);
+          const r = await fetch(u);
           const ab = await r.arrayBuffer();
           return await audioCtx.decodeAudioData(ab);
-        } catch (err) {
-          console.warn("audio decode failed", err); return null;
-        }
-      }));
+        } catch (err) { console.warn("audio decode failed", err); return null; }
+      };
+
+      // Decode each scene's narration + sfx, plus global music — in parallel
+      const [voiceBuffers, sfxBuffers, musicBuffer] = await Promise.all([
+        Promise.all(ready.map(s => decodeUrl(s.audio_url))),
+        Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
+        decodeUrl(musicUrl),
+      ]);
 
       // Combine video + audio tracks
       const combined = new MediaStream([
@@ -376,6 +480,18 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       recorder.start();
 
+      // Start music underscore at t=0, ducked under VO
+      let musicSource: AudioBufferSourceNode | null = null;
+      if (musicBuffer) {
+        musicSource = audioCtx.createBufferSource();
+        musicSource.buffer = musicBuffer;
+        musicSource.loop = true;
+        const musicGain = audioCtx.createGain();
+        musicGain.gain.value = Math.max(0, Math.min(1, musicVolume));
+        musicSource.connect(musicGain).connect(audioDest);
+        musicSource.start();
+      }
+
       // Preload all images
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
@@ -387,13 +503,22 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         const img = imgs[idx];
         const dur = scene.duration_sec * 1000;
 
-        // Schedule this scene's narration to play NOW into the audio destination
-        const buf = audioBuffers[idx];
-        if (buf) {
+        // Schedule this scene's narration (full volume)
+        const vbuf = voiceBuffers[idx];
+        if (vbuf) {
           const src = audioCtx.createBufferSource();
-          src.buffer = buf;
-          // If narration is longer than clip, it will get cut by recorder timing; that's intentional.
-          src.connect(audioDest);
+          src.buffer = vbuf;
+          const g = audioCtx.createGain(); g.gain.value = 1.0;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        // Schedule scene SFX (slightly ducked so VO stays clear)
+        const sbuf = sfxBuffers[idx];
+        if (sbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = sbuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.6;
+          src.connect(g).connect(audioDest);
           src.start();
         }
 
@@ -424,6 +549,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
 
       recorder.stop();
       const blob = await finished;
+      try { musicSource?.stop(); } catch {}
       try { audioCtx.close(); } catch {}
 
       const url = URL.createObjectURL(blob);
@@ -508,6 +634,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             </div>
           </div>
         )}
+        {sfxProgress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Waves className="w-3 h-3" /> Generating sound effects...</span>
+              <span>{sfxProgress.done} / {sfxProgress.total}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(sfxProgress.done / sfxProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
         {scenes.length === 0 && (
           <div className="space-y-3">
             <div>
@@ -538,6 +678,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Button onClick={generateAllAudio} variant="secondary" size="sm">
                 <Mic className="w-3 h-3 mr-1" /> Generate all voices
               </Button>
+              <Button onClick={generateAllSfx} variant="secondary" size="sm">
+                <Waves className="w-3 h-3 mr-1" /> Generate all SFX
+              </Button>
               <Button onClick={addScene} variant="outline" size="sm">
                 <Plus className="w-3 h-3 mr-1" /> Add scene
               </Button>
@@ -557,6 +700,37 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                   <Pause className="w-4 h-4 text-white" />
                 </button>
               )}
+            </div>
+
+            {/* Music suite (full-track underscore for the whole movie) */}
+            <div className="rounded-lg p-3 border border-primary/30 bg-primary/5 space-y-2">
+              <div className="flex items-center gap-2">
+                <Music className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary">MUSIC SCORE (ElevenLabs)</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Plays under the entire movie</span>
+              </div>
+              <Textarea
+                value={musicPrompt}
+                onChange={e => setMusicPrompt(e.target.value)}
+                rows={2}
+                className="text-xs"
+                placeholder="e.g. Cinematic orchestral score, slow build, melancholy strings, hopeful finale, 90 BPM"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={generateMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingMusic || !musicPrompt.trim()}>
+                  {generatingMusic
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing...</>
+                    : musicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose</> : <><Sparkles className="w-3 h-3 mr-1" /> Compose music</>}
+                </Button>
+                {musicUrl && <audio src={musicUrl} controls className="h-7 flex-1 min-w-[200px]" />}
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  Music vol
+                  <input type="range" min={0} max={1} step={0.05} value={musicVolume}
+                    onChange={e => setMusicVolume(parseFloat(e.target.value))} className="w-24" />
+                  <span className="w-8 text-right">{Math.round(musicVolume * 100)}%</span>
+                </label>
+              </div>
             </div>
 
             {/* Scene list */}
@@ -652,6 +826,31 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                               ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                               : s.audio_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
                             {s.audio_url ? "Re-voice" : "Generate voice"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* SFX block (per-scene ElevenLabs sound effect) */}
+                      <div className="mt-2 p-2 rounded-md bg-accent/5 border border-accent/30 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Waves className="w-3 h-3 text-accent-foreground" />
+                          <span className="text-[10px] font-bold">SOUND EFFECT</span>
+                          {s.sfx_url && <audio src={s.sfx_url} controls className="h-6 max-w-[200px] ml-auto" />}
+                        </div>
+                        <Textarea
+                          value={s.sfx_prompt || ""}
+                          onChange={e => updateScene(s.id, { sfx_prompt: e.target.value, sfx_url: undefined })}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Describe the ambient sound — e.g. 'wind across desert dunes', 'busy cafe with distant traffic', 'ocean waves crashing on rocks'"
+                        />
+                        <div className="flex gap-1">
+                          <Button onClick={() => generateSceneSfx(s.id)} size="sm" variant="secondary" className="h-7 text-xs"
+                            disabled={s.generatingSfx || !s.sfx_prompt?.trim()}>
+                            {s.generatingSfx
+                              ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              : s.sfx_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                            {s.sfx_url ? "Re-generate SFX" : "Generate SFX"}
                           </Button>
                         </div>
                       </div>
