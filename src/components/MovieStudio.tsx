@@ -52,6 +52,12 @@ interface Scene {
   sfx_prompt?: string;
   sfx_url?: string;
   generatingSfx?: boolean;
+  // Per-scene backing music
+  music_prompt?: string;
+  music_options?: string[]; // up to 3 candidate tracks
+  music_url?: string; // chosen track
+  music_volume?: number; // 0..1
+  generatingSceneMusic?: boolean;
 }
 
 interface MovieStudioProps {
