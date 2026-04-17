@@ -127,7 +127,14 @@ const OwnerDashboardPage = () => {
   }, [adminChecked, isAdmin, navigate]);
 
   useEffect(() => {
-    loadSuggestions();
+    (async () => {
+      const { data } = await supabase
+        .from("suggestions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (data) setSuggestions(data);
+    })();
   }, []);
 
   const handleChangePassword = async () => {
