@@ -45,13 +45,15 @@ All colors MUST be HSL.
     --gold-light: 48 100% 65%;
     --gold-glow: 45 100% 50%;
 
-    /* Accent pops — blue & red — woven into the gold vibe */
+    /* Accent pops — blue, red & white — woven into the gold vibe */
     --accent-blue: 210 100% 60%;
     --accent-blue-glow: 200 100% 65%;
     --accent-blue-deep: 220 90% 45%;
     --accent-red: 0 90% 60%;
     --accent-red-glow: 8 100% 65%;
     --accent-red-deep: 355 85% 45%;
+    --accent-white: 0 0% 100%;
+    --accent-white-soft: 0 0% 92%;
 
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 45 100% 50%;
@@ -71,6 +73,45 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Blue neon border framing every page */
+    box-shadow:
+      inset 0 0 0 2px hsl(var(--accent-blue) / 0.55),
+      inset 0 0 24px hsl(var(--accent-blue-glow) / 0.35),
+      inset 0 0 60px hsl(var(--accent-blue) / 0.18);
+    min-height: 100vh;
+  }
+}
+
+/* Pulsing neon edge — uses a fixed overlay so it sits above scroll content */
+@layer base {
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    border: 2px solid hsl(var(--accent-blue) / 0.7);
+    border-radius: 6px;
+    box-shadow:
+      0 0 12px hsl(var(--accent-blue-glow) / 0.6),
+      0 0 28px hsl(var(--accent-blue) / 0.35),
+      inset 0 0 12px hsl(var(--accent-blue-glow) / 0.4);
+    animation: neon-edge-pulse 3.5s ease-in-out infinite;
+  }
+
+  @keyframes neon-edge-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 10px hsl(var(--accent-blue-glow) / 0.45),
+        0 0 22px hsl(var(--accent-blue) / 0.25),
+        inset 0 0 10px hsl(var(--accent-blue-glow) / 0.3);
+    }
+    50% {
+      box-shadow:
+        0 0 18px hsl(var(--accent-blue-glow) / 0.75),
+        0 0 38px hsl(var(--accent-blue) / 0.45),
+        inset 0 0 18px hsl(var(--accent-blue-glow) / 0.55);
+    }
   }
 }
 
@@ -100,9 +141,11 @@ All colors MUST be HSL.
     background: linear-gradient(
       135deg,
       hsl(var(--accent-red) / 0.0) 0%,
-      hsl(var(--accent-red) / 0.25) 20%,
-      hsl(45 100% 50% / 0.25) 45%,
-      hsl(var(--accent-blue) / 0.28) 70%,
+      hsl(var(--accent-red) / 0.25) 18%,
+      hsl(var(--accent-white) / 0.35) 35%,
+      hsl(45 100% 50% / 0.25) 52%,
+      hsl(var(--accent-white) / 0.30) 68%,
+      hsl(var(--accent-blue) / 0.30) 82%,
       hsl(var(--accent-red) / 0.0) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
