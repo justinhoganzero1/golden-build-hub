@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Image, Film, Music, X } from "lucide-react";
-import { useUserMedia } from "@/hooks/useUserAvatars";
+import { Search, Image, Film, Music, X, FolderOpen, Upload } from "lucide-react";
+import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
+import { toast } from "sonner";
 
 interface MediaPickerDialogProps {
   open: boolean;
