@@ -33,9 +33,12 @@ const ABSOLUTE_BLOCK = [
 // Tier 2 — M-rating block. Owner may bypass for legitimate adult features.
 const M_RATED_BLOCK = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip|fetish|orgasm|masturbat)\b/i;
 
-export type ModerationResult =
-  | { ok: true; cleaned: string }
-  | { ok: false; reason: string; severity: "absolute" | "m-rated" };
+export interface ModerationResult {
+  ok: boolean;
+  cleaned?: string;
+  reason?: string;
+  severity?: "absolute" | "m-rated";
+}
 
 export function moderatePrompt(input: string, opts?: { ownerBypass?: boolean }): ModerationResult {
   const text = (input || "").trim();
