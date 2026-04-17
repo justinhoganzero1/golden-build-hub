@@ -200,7 +200,7 @@ DAILY FEATURE PROMOTION (do this ONCE per conversation, naturally):
 - Some features to promote: AI Studio (create your own AI team!), Video Editor (Hollywood-grade!), AI Companion (your perfect match!), Live Vision (real-time AI camera!), Photography Hub (AI photo magic!)
 ` : ""}
 
-Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive. Always be genuinely warm — not corporate warm, REAL warm. Like a best friend who also happens to be incredibly smart.`;
+Keep responses concise but helpful. Use markdown formatting when appropriate. Be encouraging and positive. Always be genuinely warm — not corporate warm, REAL warm. Like a best friend who also happens to be incredibly smart.${personalityBlock}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
