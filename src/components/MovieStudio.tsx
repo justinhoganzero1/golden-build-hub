@@ -1300,7 +1300,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                   Subtitles are off by default — turn on if you want on-screen captions
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  Intro style:
+                  <select
+                    value={introStyle}
+                    onChange={e => setIntroStyle(e.target.value as any)}
+                    className="h-7 text-xs bg-input border border-border rounded px-1"
+                  >
+                    <option value="epic">Epic fanfare</option>
+                    <option value="playful">Playful jingle</option>
+                    <option value="cinematic-drone">Cinematic drone</option>
+                    <option value="retro-news">Retro news</option>
+                    <option value="trailer-hit">Trailer hit</option>
+                  </select>
+                </label>
                 <Button onClick={composeIntroMusic} size="sm" variant="secondary" className="h-7 text-xs"
                   disabled={generatingIntro}>
                   {generatingIntro
@@ -1315,6 +1329,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                     : themeMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose theme</> : <><Music className="w-3 h-3 mr-1" /> Generate upbeat theme</>}
                 </Button>
                 {themeMusicUrl && <audio src={themeMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={composeOutroMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingOutro}>
+                  {generatingOutro
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Outro...</>
+                    : outroMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose outro</> : <><Music className="w-3 h-3 mr-1" /> Generate "The End" outro</>}
+                </Button>
+                {outroMusicUrl && <audio src={outroMusicUrl} controls className="h-7 max-w-[180px]" />}
                 <Button onClick={generateCredits} size="sm" variant="secondary" className="h-7 text-xs"
                   disabled={generatingCredits}>
                   {generatingCredits
