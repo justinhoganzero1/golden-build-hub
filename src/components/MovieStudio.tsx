@@ -449,17 +449,22 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const audioCtx = new AudioCtor();
       const audioDest = audioCtx.createMediaStreamDestination();
 
-      // Decode each scene's audio (if any) up front
-      const audioBuffers: (AudioBuffer | null)[] = await Promise.all(ready.map(async s => {
-        if (!s.audio_url) return null;
+      // Helper: decode an audio data URL into an AudioBuffer
+      const decodeUrl = async (u?: string | null): Promise<AudioBuffer | null> => {
+        if (!u) return null;
         try {
-          const r = await fetch(s.audio_url);
+          const r = await fetch(u);
           const ab = await r.arrayBuffer();
           return await audioCtx.decodeAudioData(ab);
-        } catch (err) {
-          console.warn("audio decode failed", err); return null;
-        }
-      }));
+        } catch (err) { console.warn("audio decode failed", err); return null; }
+      };
+
+      // Decode each scene's narration + sfx, plus global music — in parallel
+      const [voiceBuffers, sfxBuffers, musicBuffer] = await Promise.all([
+        Promise.all(ready.map(s => decodeUrl(s.audio_url))),
+        Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
+        decodeUrl(musicUrl),
+      ]);
 
       // Combine video + audio tracks
       const combined = new MediaStream([
@@ -475,6 +480,18 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       recorder.start();
 
+      // Start music underscore at t=0, ducked under VO
+      let musicSource: AudioBufferSourceNode | null = null;
+      if (musicBuffer) {
+        musicSource = audioCtx.createBufferSource();
+        musicSource.buffer = musicBuffer;
+        musicSource.loop = true;
+        const musicGain = audioCtx.createGain();
+        musicGain.gain.value = Math.max(0, Math.min(1, musicVolume));
+        musicSource.connect(musicGain).connect(audioDest);
+        musicSource.start();
+      }
+
       // Preload all images
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
@@ -486,13 +503,22 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         const img = imgs[idx];
         const dur = scene.duration_sec * 1000;
 
-        // Schedule this scene's narration to play NOW into the audio destination
-        const buf = audioBuffers[idx];
-        if (buf) {
+        // Schedule this scene's narration (full volume)
+        const vbuf = voiceBuffers[idx];
+        if (vbuf) {
           const src = audioCtx.createBufferSource();
-          src.buffer = buf;
-          // If narration is longer than clip, it will get cut by recorder timing; that's intentional.
-          src.connect(audioDest);
+          src.buffer = vbuf;
+          const g = audioCtx.createGain(); g.gain.value = 1.0;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        // Schedule scene SFX (slightly ducked so VO stays clear)
+        const sbuf = sfxBuffers[idx];
+        if (sbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = sbuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.6;
+          src.connect(g).connect(audioDest);
           src.start();
         }
 
