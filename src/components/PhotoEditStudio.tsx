@@ -7,8 +7,9 @@ import {
   Wand2, Loader2, Sparkles, Sliders, Scissors, RotateCw, FlipHorizontal, FlipVertical,
   Sun, Contrast, Droplet, Palette, Eraser, Maximize2, Image as ImageIcon, Brush,
   Zap, Snowflake, Flame, Camera, Aperture, Wind, Star, Download, Save, X, Undo2,
-  Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon
+  Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon, Box
 } from "lucide-react";
+import Photo3DViewer from "./Photo3DViewer";
 
 interface PhotoEditStudioProps {
   open: boolean;
@@ -17,7 +18,7 @@ interface PhotoEditStudioProps {
   onSave: (newUrl: string) => void;
 }
 
-type Tab = "ai" | "adjust" | "transform" | "filters";
+type Tab = "ai" | "adjust" | "transform" | "filters" | "3d";
 
 // ── AI quick actions ──
 const AI_ACTIONS = [
@@ -82,6 +83,10 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
   const [rotation, setRotation] = useState(0);
   const [flipH, setFlipH] = useState(false);
   const [flipV, setFlipV] = useState(false);
+
+  // 3D view
+  const [depth3D, setDepth3D] = useState(0.35);
+  const [autoOrbit, setAutoOrbit] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = history[historyIndex];
@@ -224,6 +229,7 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
             { k: "adjust", l: "Adjust", I: Sliders },
             { k: "filters", l: "Filters", I: Palette },
             { k: "transform", l: "Transform", I: Crop },
+            { k: "3d", l: "3D View", I: Box },
           ] as const).map(({ k, l, I }) => (
             <button key={k} onClick={() => setTab(k)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
@@ -352,6 +358,43 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
               <button onClick={() => { setRotation(0); setFlipH(false); setFlipV(false); }}
                 className="w-full py-2 bg-muted/50 text-foreground rounded-lg text-xs font-medium border border-border">
                 Reset Transform
+              </button>
+            </div>
+          )}
+
+          {tab === "3d" && (
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/30 rounded-xl p-3">
+                <p className="text-xs text-foreground font-semibold mb-1 flex items-center gap-1.5">
+                  <Box className="w-3.5 h-3.5 text-primary" /> Interactive 3D Photo
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Drag to tilt the photo. Pinch / scroll to zoom. Subjects pop forward — backgrounds recede.
+                </p>
+              </div>
+              <div className="aspect-square w-full rounded-xl overflow-hidden border border-border bg-black">
+                <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Maximize2 className="w-3.5 h-3.5 text-primary" /> Depth Strength
+                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{depth3D.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range" min={0} max={1} step={0.01} value={depth3D}
+                  onChange={e => setDepth3D(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+              <button
+                onClick={() => setAutoOrbit(o => !o)}
+                className={`w-full py-2 rounded-lg text-xs font-medium border ${
+                  autoOrbit ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
+                }`}
+              >
+                {autoOrbit ? "Stop Auto-Orbit" : "Start Auto-Orbit"}
               </button>
             </div>
           )}
