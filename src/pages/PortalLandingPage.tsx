@@ -106,8 +106,6 @@ const PortalLandingPage = () => {
               />
             </div>
           </div>
-            </div>
-          </div>
 
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-6">
             <Zap className="h-3.5 w-3.5 text-primary" />
