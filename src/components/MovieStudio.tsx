@@ -341,6 +341,35 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           </DialogTitle>
         </DialogHeader>
 
+        {creditsLow && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center justify-between gap-3">
+            <span className="text-destructive">AI credits exhausted. Top up to keep generating.</span>
+            <a
+              href="https://lovable.dev/settings/workspace"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:opacity-90"
+            >
+              Add credits
+            </a>
+          </div>
+        )}
+
+        {genProgress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Generating photos...</span>
+              <span>{genProgress.done} / {genProgress.total}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(genProgress.done / genProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Script */}
         {scenes.length === 0 && (
           <div className="space-y-3">
