@@ -113,7 +113,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        toast.error(e.error || "Scene planning failed"); return;
+        if (resp.status === 402) toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        else if (resp.status === 429) toast.error("Too many requests. Wait a moment and try again.");
+        else toast.error(e.error || "Scene planning failed");
+        return;
       }
       const data = await resp.json();
       setTitle(data.title || "Untitled Movie");
