@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import solaceLogo from "@/assets/solace-logo.png";
+import aiAvatar from "@/assets/avatars/dev-female.jpg";
 
 const STEPS = [
   "⚙ Scanning URL structure...",
@@ -162,9 +163,21 @@ const WebWrapperPage = () => {
 
       <main className="max-w-3xl mx-auto px-4 py-10">
         <div className="text-center mb-10">
+          {/* SOLACE AI guide avatar */}
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/30 blur-xl animate-pulse" />
+              <img
+                src={aiAvatar}
+                alt="SOLACE AI Wrapper Assistant"
+                className="relative h-24 w-24 rounded-full object-cover border-2 border-primary shadow-[0_0_30px_hsl(var(--primary)/0.6)]"
+              />
+              <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-primary border-2 border-background shadow-[0_0_10px_hsl(var(--primary))]" />
+            </div>
+          </div>
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-4">
             <Globe className="h-3.5 w-3.5 text-primary" />
-            URL → APK → Play Store
+            Your AI Wrapper Assistant — URL → APK → Play Store
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">
             <span className="text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">Web Wrapper</span>
