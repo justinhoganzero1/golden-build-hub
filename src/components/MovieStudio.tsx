@@ -169,7 +169,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         narration: s.narration || s.caption,
         speaker: s.speaker || "narrator",
         voice_style: s.voice_style || "narrator-male-warm",
+        sfx_prompt: s.sfx_prompt || s.ambient || "",
       }));
+      // Auto-suggest a music prompt from the overall vibe
+      if (data.music_prompt) setMusicPrompt(data.music_prompt);
+      else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
       // Seed first scene with the photo the user came in with
       if (seedImage && newScenes[0]) newScenes[0].image_url = seedImage;
       setScenes(newScenes);
@@ -292,6 +296,87 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     toast.success("All voices generated");
   };
 
+  // ----- SFX (per scene, ElevenLabs sound-generation) -----
+  const generateSceneSfx = async (sceneId: string, customPrompt?: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const promptText = (customPrompt ?? scene.sfx_prompt ?? "").trim();
+    if (!promptText) { toast.error("Add a sound effect description first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: true } : s));
+    try {
+      const resp = await fetch(SFX_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt: promptText, duration_seconds: CLIP_SECONDS, prompt_influence: 0.5 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Audio credits exhausted."); }
+        else if (resp.status === 429) toast.error("SFX rate limit. Wait and retry.");
+        else toast.error("SFX generation failed");
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: false } : s));
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, sfx_url: dataUrl, generatingSfx: false } : s));
+    } catch (e) {
+      console.error(e); toast.error("SFX generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSfx: false } : s));
+    }
+  };
+
+  const generateAllSfx = async () => {
+    const pending = scenes.filter(s => !s.sfx_url && s.sfx_prompt?.trim()).map(s => s.id);
+    if (pending.length === 0) { toast.info("Add SFX descriptions to scenes first"); return; }
+    setSfxProgress({ done: 0, total: pending.length });
+    let done = 0;
+    for (const id of pending) {
+      await generateSceneSfx(id);
+      done += 1;
+      setSfxProgress({ done, total: pending.length });
+    }
+    setTimeout(() => setSfxProgress(null), 1500);
+    toast.success("All sound effects generated");
+  };
+
+  // ----- Music (full-track underscore via ElevenLabs Music) -----
+  const generateMusic = async () => {
+    const text = musicPrompt.trim();
+    if (!text) { toast.error("Describe the music vibe first"); return; }
+    setGeneratingMusic(true);
+    try {
+      const totalSecs = Math.max(10, scenes.length * CLIP_SECONDS);
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt: text, duration_seconds: totalSecs }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else if (resp.status === 429) toast.error("Music rate limit. Wait and retry.");
+        else toast.error("Music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - score`,
+        url: dataUrl,
+        source_page: "movie-studio",
+        metadata: { kind: "music", prompt: text, durationSec: totalSecs },
+      });
+      toast.success("Music score ready");
+    } catch (e) {
+      console.error(e); toast.error("Music generation failed");
+    } finally { setGeneratingMusic(false); }
+  };
+
   // ----- Scene CRUD -----
   const addScene = () => {
     setScenes(prev => [...prev, {
@@ -303,6 +388,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       narration: "",
       speaker: "narrator",
       voice_style: "narrator-male-warm",
+      sfx_prompt: "",
     }]);
   };
   const removeScene = (id: string) => setScenes(prev => prev.filter(s => s.id !== id));
