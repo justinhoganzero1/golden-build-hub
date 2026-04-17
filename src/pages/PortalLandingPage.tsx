@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
+import solaceBanner from "@/assets/solace-banner.jpg";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends." },
@@ -40,7 +41,6 @@ const PortalLandingPage = () => {
   const handleInstall = async () => {
     const outcome = await install();
     if (outcome === "unavailable") {
-      // Fallback: scroll to manual instructions
       document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
     }
   };
@@ -51,8 +51,8 @@ const PortalLandingPage = () => {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg tracking-wide">SOLACE</span>
+            <Shield className="h-6 w-6 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]" />
+            <span className="font-bold text-lg tracking-[0.2em] text-primary">SOLACE</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
@@ -66,65 +66,89 @@ const PortalLandingPage = () => {
         </div>
       </header>
 
-      {/* ── Hero ──────────────────────────────── */}
+      {/* ── Hero (mirrors IntroSplash) ────────── */}
       <section className="relative overflow-hidden">
+        {/* Banner image — same as the app's IntroSplash */}
+        <img
+          src={solaceBanner}
+          alt="SOLACE cinematic banner"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        />
+        {/* Gold radial glow overlay */}
         <div
-          className="absolute inset-0 -z-10 opacity-40"
+          className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at top, hsl(var(--primary) / 0.25) 0%, transparent 60%)",
+              "radial-gradient(ellipse at center, hsl(var(--primary) / 0.25) 0%, hsl(var(--background) / 0.85) 70%)",
           }}
         />
-        <div className="max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs text-muted-foreground mb-6">
+
+        <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
+          {/* Animated golden shield — matches app */}
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary/30 blur-2xl animate-pulse" />
+              <Shield
+                className="relative h-20 w-20 text-primary drop-shadow-[0_0_30px_hsl(var(--primary))] animate-glow-pulse"
+                strokeWidth={1.5}
+              />
+            </div>
+          </div>
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-6">
             <Zap className="h-3.5 w-3.5 text-primary" />
             40+ AI modules · One cinematic super-app
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Your <span className="text-primary">AI Guardian</span>.
+
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg">
+            <span className="text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">SOLACE</span>
             <br />
-            Beautifully unified.
+            <span className="text-foreground text-3xl md:text-5xl font-medium">
+              Your AI companion to do everything
+            </span>
           </h1>
+
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            SOLACE bundles your wellness, creativity, safety, and productivity tools into one
-            cinematic experience — guided by an AI that talks, listens, and genuinely cares.
+            Wellness, creativity, safety, and productivity — unified in one cinematic experience,
+            guided by an AI that talks, listens, and genuinely cares.
           </p>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               size="lg"
               onClick={handleInstall}
               disabled={isStandalone}
-              className="shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+              className="shadow-[0_0_40px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.7)] transition-shadow"
             >
               <Download className="mr-2 h-5 w-5" />
               {isStandalone ? "Already installed" : canInstall ? "Install SOLACE" : "How to install"}
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/welcome")}>
+            <Button size="lg" variant="outline" onClick={() => navigate("/welcome")} className="border-primary/40 hover:border-primary">
               Try it in your browser <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
-          <div className="mt-8 flex justify-center">
+
+          <div className="mt-10 flex justify-center">
             <SecurityShield />
           </div>
         </div>
       </section>
 
-      {/* ── Features ──────────────────────────── */}
+      {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">Everything in one place</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
+            Everything in <span className="text-primary">one place</span>
+          </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Tap any tile in the live app to dive in. Here's a taste of what's inside.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {FEATURES.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="holo-tile rounded-xl p-5 text-left"
-            >
+            <div key={title} className="holo-tile rounded-xl p-5 text-left">
               <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold mb-1">{title}</h3>
+              <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
             </div>
           ))}
@@ -132,47 +156,40 @@ const PortalLandingPage = () => {
       </section>
 
       {/* ── Install ───────────────────────────── */}
-      <section id="install" className="border-y border-border bg-card/40">
+      <section id="install" className="border-y border-primary/20 bg-card/40">
         <div className="max-w-6xl mx-auto px-4 py-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Install in seconds</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              Install in <span className="text-primary">seconds</span>
+            </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              SOLACE installs straight from your browser — no app store, no waiting. Works offline once installed.
+              SOLACE installs straight from your browser — no app store, no waiting.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            <div className="rounded-xl border border-border bg-background p-6">
-              <Smartphone className="h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold mb-2">Android</h3>
-              <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Open this site in <strong>Chrome</strong> or Edge.</li>
-                <li>Tap <strong>Install SOLACE</strong> above.</li>
-                <li>Confirm in the prompt — done.</li>
-              </ol>
-            </div>
-            <div className="rounded-xl border border-border bg-background p-6">
-              <Apple className="h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold mb-2">iPhone / iPad</h3>
-              <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Open this site in <strong>Safari</strong>.</li>
-                <li>Tap the <strong>Share</strong> icon.</li>
-                <li>Choose <strong>Add to Home Screen</strong> → Add.</li>
-              </ol>
-            </div>
-            <div className="rounded-xl border border-border bg-background p-6">
-              <Monitor className="h-8 w-8 text-primary mb-3" />
-              <h3 className="font-semibold mb-2">Desktop</h3>
-              <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-                <li>Use <strong>Chrome, Edge, or Brave</strong>.</li>
-                <li>Click the install icon in the address bar.</li>
-                <li>Or hit the Install button above.</li>
-              </ol>
-            </div>
+            {[
+              { icon: Smartphone, title: "Android", steps: ["Open in Chrome or Edge.", "Tap Install SOLACE above.", "Confirm in the prompt."] },
+              { icon: Apple, title: "iPhone / iPad", steps: ["Open in Safari.", "Tap the Share icon.", "Choose Add to Home Screen."] },
+              { icon: Monitor, title: "Desktop", steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit Install above."] },
+            ].map(({ icon: Icon, title, steps }) => (
+              <div key={title} className="holo-tile rounded-xl p-6">
+                <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
+                <h3 className="font-semibold mb-2 text-foreground">{title}</h3>
+                <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                  {steps.map((s) => <li key={s}>{s}</li>)}
+                </ol>
+              </div>
+            ))}
           </div>
 
           <div className="text-center">
-            <Button size="lg" onClick={handleInstall} disabled={isStandalone}>
+            <Button
+              size="lg"
+              onClick={handleInstall}
+              disabled={isStandalone}
+              className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
+            >
               <Download className="mr-2 h-5 w-5" />
               {isStandalone ? "Already installed ✓" : isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
@@ -186,7 +203,9 @@ const PortalLandingPage = () => {
       {/* ── Pricing ───────────────────────────── */}
       <section id="pricing" className="max-w-6xl mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">Free to start. Power when you need it.</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
+            Free to start. <span className="text-primary">Power when you need it.</span>
+          </h2>
           <p className="text-muted-foreground">
             Crisis support and the Oracle are always free. Premium tiers unlock the full studio.
           </p>
@@ -199,10 +218,10 @@ const PortalLandingPage = () => {
           ].map((tier, i) => (
             <div
               key={tier.name}
-              className={`rounded-xl border p-6 ${i === 1 ? "border-primary shadow-[0_0_30px_hsl(var(--primary)/0.2)]" : "border-border"}`}
+              className={`holo-tile rounded-xl p-6 ${i === 1 ? "ring-2 ring-primary shadow-[0_0_40px_hsl(var(--primary)/0.3)]" : ""}`}
             >
-              <h3 className="font-semibold text-lg mb-1">{tier.name}</h3>
-              <div className="text-3xl font-bold mb-4">{tier.price}</div>
+              <h3 className="font-semibold text-lg mb-1 text-foreground">{tier.name}</h3>
+              <div className="text-3xl font-bold mb-4 text-primary">{tier.price}</div>
               <ul className="space-y-2 text-sm">
                 {tier.perks.map((p) => (
                   <li key={p} className="flex items-start gap-2">
@@ -224,9 +243,11 @@ const PortalLandingPage = () => {
       </section>
 
       {/* ── FAQ ───────────────────────────────── */}
-      <section id="faq" className="border-t border-border bg-card/40">
+      <section id="faq" className="border-t border-primary/20 bg-card/40">
         <div className="max-w-3xl mx-auto px-4 py-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">Common questions</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-10">
+            Common <span className="text-primary">questions</span>
+          </h2>
           <div className="space-y-4">
             {[
               { q: "Do I need to download from an app store?", a: "Not yet. SOLACE installs as a Progressive Web App straight from your browser. Native store builds are in progress." },
@@ -237,9 +258,9 @@ const PortalLandingPage = () => {
             ].map(({ q, a }) => (
               <details
                 key={q}
-                className="group rounded-xl border border-border bg-background p-5 open:shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
+                className="group rounded-xl border border-border bg-background/60 backdrop-blur p-5 open:border-primary/40 open:shadow-[0_0_30px_hsl(var(--primary)/0.15)] transition-all"
               >
-                <summary className="cursor-pointer font-semibold flex items-center justify-between">
+                <summary className="cursor-pointer font-semibold flex items-center justify-between text-foreground">
                   {q}
                   <span className="text-primary group-open:rotate-45 transition-transform">+</span>
                 </summary>
@@ -251,10 +272,10 @@ const PortalLandingPage = () => {
       </section>
 
       {/* ── Footer ────────────────────────────── */}
-      <footer className="border-t border-border">
+      <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Shield className="h-5 w-5 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-5">
