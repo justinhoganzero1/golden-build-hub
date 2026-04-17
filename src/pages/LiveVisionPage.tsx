@@ -577,8 +577,72 @@ const LiveVisionPage = () => {
           )}
         </div>
 
+        {/* Investigations Tab Panel */}
+        {isInvestigator && activeTab === "investigations" && (
+          <div className="space-y-3 mb-4">
+            <div className="bg-card border border-primary/40 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Hash className="w-4 h-4 text-primary" />
+                <input
+                  value={caseId}
+                  onChange={e => setCaseId(e.target.value.toUpperCase())}
+                  placeholder="Case ID (auto-generated)"
+                  className="flex-1 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-primary"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Officer: {user?.email || "—"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={bodyCamActive ? stopBodyCam : startBodyCam}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${
+                  bodyCamActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-br from-primary to-accent text-primary-foreground"
+                }`}>
+                <ShieldCheck className="w-4 h-4" />
+                {bodyCamActive ? "Stop Body Cam" : "Body Cam"}
+              </button>
+              <button onClick={investigationActive ? stopInvestigation : startInvestigation}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${
+                  investigationActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-accent text-accent"
+                }`}>
+                <FileSearch className="w-4 h-4" />
+                {investigationActive ? "Stop Scan" : "Crime Scene"}
+              </button>
+            </div>
+
+            {evidenceLog.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <FileSearch className="w-3.5 h-3.5" /> Evidence Log ({evidenceLog.length})
+                  </h3>
+                  <button onClick={exportEvidenceLog}
+                    className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold">
+                    Export
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {evidenceLog.map((e, i) => (
+                    <div key={i} className="text-xs border-l-2 border-primary/40 pl-2">
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        #{String(evidenceLog.length - i).padStart(3, "0")} • {new Date(e.ts).toLocaleTimeString()} • {e.mode}
+                      </p>
+                      <p className="text-foreground whitespace-pre-wrap leading-relaxed">{e.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-accent/10 border border-accent/30 rounded-xl p-3 text-[11px] text-foreground">
+              <p className="font-semibold mb-1">⚖️ Evidence integrity</p>
+              <p className="text-muted-foreground">All observations are AI-assisted and must be corroborated by the officer. Logs include timestamps and case ID for chain-of-custody.</p>
+            </div>
+          </div>
+        )}
+
         {/* Mode banners */}
-        {cameraActive && (
+        {cameraActive && activeTab === "general" && (
           <div className="grid grid-cols-1 gap-2 mb-3">
             <button onClick={drivingActive ? stopDriving : startDriving}
               className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
