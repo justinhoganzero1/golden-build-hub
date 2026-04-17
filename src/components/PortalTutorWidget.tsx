@@ -244,10 +244,22 @@ const PortalTutorWidget = () => {
             }}
             className="flex items-center gap-2 border-t border-border p-3"
           >
+            <button
+              type="button"
+              onClick={toggleMic}
+              aria-label={listening ? "Stop listening" : "Talk to the Concierge"}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-all ${
+                listening
+                  ? "border-primary bg-primary text-primary-foreground animate-pulse shadow-[0_0_15px_hsl(var(--primary)/0.6)]"
+                  : "border-border bg-background text-muted-foreground hover:text-primary hover:border-primary"
+              }`}
+            >
+              {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </button>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about SOLACE…"
+              placeholder={listening ? "Listening…" : "Ask anything about SOLACE…"}
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <Button type="submit" size="icon" disabled={loading || !input.trim()}>
