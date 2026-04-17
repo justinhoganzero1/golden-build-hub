@@ -131,9 +131,29 @@ const MediaLibraryPage = () => {
             </div>
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground tracking-tight">My Library</h1>
-            <p className="text-muted-foreground text-xs">{mediaItems.length} creations across {Object.keys(collectionCounts).length - 1} collections</p>
+            <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+              {isAdmin && adminGlobalView ? "Admin Library" : "My Library"}
+              {isAdmin && adminGlobalView && <Shield className="w-4 h-4 text-amber-400" />}
+            </h1>
+            <p className="text-muted-foreground text-xs">
+              {isAdmin && adminGlobalView
+                ? `${mediaItems.length} creations across all users`
+                : `${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
+            </p>
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => setAdminGlobalView(!adminGlobalView)}
+              title={adminGlobalView ? "Switch to my media only" : "Switch to all-users admin view"}
+              className={`p-2.5 rounded-xl border transition-all ${
+                adminGlobalView
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                  : "bg-card border-border text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+            </button>
+          )}
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
