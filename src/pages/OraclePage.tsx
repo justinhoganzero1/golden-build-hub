@@ -252,14 +252,14 @@ const OraclePage = () => {
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           text: paced,
-          voiceId: "pqHfZKP75CvOlQylNhV4", // Bill — deep, documentary narrator (Ancient Aliens style)
+          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — most popular female voice on ElevenLabs (warm, professional)
           modelId: "eleven_multilingual_v2", // highest quality
           settings: {
-            stability: 0.85,        // very steady, authoritative
-            similarity_boost: 0.92, // preserve that deep timbre
-            style: 0.55,            // dramatic, conspiratorial emphasis
+            stability: 0.55,        // expressive but steady
+            similarity_boost: 0.85, // preserve Sarah's warm timbre
+            style: 0.35,            // natural, lightly stylized
             use_speaker_boost: true,
-            speed: 0.78,            // slow, deliberate documentary cadence
+            speed: 0.95,            // natural conversational cadence
           },
         }),
       });
