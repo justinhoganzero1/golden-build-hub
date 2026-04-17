@@ -634,6 +634,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             </div>
           </div>
         )}
+        {sfxProgress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Waves className="w-3 h-3" /> Generating sound effects...</span>
+              <span>{sfxProgress.done} / {sfxProgress.total}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(sfxProgress.done / sfxProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
         {scenes.length === 0 && (
           <div className="space-y-3">
             <div>
