@@ -59,6 +59,7 @@ const tiles: AppTile[] = [
   { label: "Subscribe", icon: <Star className="w-6 h-6" />, path: "/subscribe", tier: null },
   { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder", tier: "quarterly" },
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn", tier: "starter" },
+  { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer", tier: "starter" },
   { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings", tier: null },
   { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile", tier: null },
   { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion", tier: "monthly" },

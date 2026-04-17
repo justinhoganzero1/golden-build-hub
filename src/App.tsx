@@ -49,6 +49,7 @@ const ReferralPage = lazy(() => import("./pages/ReferralPage"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const AppBuilderPage = lazy(() => import("./pages/AppBuilderPage"));
 const POSLearnPage = lazy(() => import("./pages/POSLearnPage"));
+const StoryWriterPage = lazy(() => import("./pages/StoryWriterPage"));
 
 
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -128,6 +129,7 @@ const App = () => (
                   <Route path="/subscribe" element={<ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary>} />
                   <Route path="/app-builder" element={<ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary>} />
                   <Route path="/pos-learn" element={<ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary>} />
+                  <Route path="/story-writer" element={<ErrorBoundary pageName="Story Writer"><StoryWriterPage /></ErrorBoundary>} />
                   <Route path="/settings" element={<ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary>} />
                   <Route path="/profile" element={<ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary>} />
                   <Route path="/wallet" element={<ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary>} />
