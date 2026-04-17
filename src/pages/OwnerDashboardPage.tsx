@@ -858,6 +858,26 @@ const OwnerDashboardPage = () => {
           </DialogContent>
         </Dialog>
 
+        {tab === "ai-studio" && (
+          <div className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <Sparkles className="w-6 h-6 text-yellow-400 mt-0.5" />
+              <div>
+                <h2 className="text-lg font-bold text-white">AI Studio (Admin Only — Beta)</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  Hidden from regular users while we polish it. Only admins can preview and iterate here.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/ai-studio")}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold text-sm hover:shadow-lg hover:shadow-yellow-500/30 transition-all"
+            >
+              Open AI Studio →
+            </button>
+          </div>
+        )}
+
         <ShareDialog
           open={!!libShareItem}
           onOpenChange={() => setLibShareItem(null)}

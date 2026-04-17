@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Shield as AdminShield } from "lucide-react";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import {
   Shield,
