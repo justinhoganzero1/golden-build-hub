@@ -245,6 +245,56 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
             </div>
           </div>
           <iframe srcDoc={previewProject.code} className="w-full h-64 rounded-xl border border-border bg-white" sandbox="allow-scripts" title="App Preview" />
+
+          {/* Publish & Sell panel — Web Wrapper + Stripe shortcuts */}
+          <div className="mt-3 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-amber-500/5 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Rocket className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">Publish & Sell</span>
+                {previewProject.isPaid && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                    <DollarSign className="w-2.5 h-2.5" /> PAID {previewProject.pricePoint || ""}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
+                  const placeholderUrl = `https://${slug}.lovable.app`;
+                  navigate(`/web-wrapper?url=${encodeURIComponent(placeholderUrl)}&name=${encodeURIComponent(previewProject.name)}`);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary/30 transition-colors"
+              >
+                <Smartphone className="w-3.5 h-3.5" /> Wrap for Play Store
+              </button>
+              <button
+                onClick={() => navigate("/subscribe")}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs font-semibold hover:border-primary transition-colors"
+              >
+                <CreditCard className="w-3.5 h-3.5" /> Stripe Setup
+              </button>
+              <button
+                onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
+              >
+                <Globe className="w-3.5 h-3.5" /> Play Console
+              </button>
+              <button
+                onClick={() => downloadApp(previewProject)}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> Download HTML
+              </button>
+            </div>
+            {previewProject.isPaid && (
+              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+                💳 Stripe paywall code is already injected. Click <b>Stripe Setup</b> to connect your account, then <b>Wrap for Play Store</b> to package & submit.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
