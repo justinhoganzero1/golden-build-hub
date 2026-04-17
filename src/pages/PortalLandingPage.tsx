@@ -255,7 +255,7 @@ const PortalLandingPage = () => {
                 className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
               >
                 <Download className="mr-2 h-5 w-5" />
-                Download Web Wrapper
+                Download App Wrapper
               </Button>
             </div>
 
