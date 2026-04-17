@@ -160,10 +160,23 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
       if (code) {
         setCurrentCode(code);
         const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
-        
+
+        // Detect paid status from generated <meta name="solace-app-config">
+        let isPaid = false;
+        let pricePoint: string | undefined;
+        const metaMatch = code.match(/<meta\s+name=["']solace-app-config["']\s+content=["']([^"']+)["']/i);
+        if (metaMatch) {
+          try {
+            const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
+            isPaid = !!cfg.paid;
+            pricePoint = cfg.price;
+          } catch { /* ignore */ }
+        }
+        if (!isPaid && /\$\d|subscribe|paywall|premium|paid/i.test(trimmed)) isPaid = true;
+
         // Check if we're updating an existing project
         const existingProject = projects.find(p => p.name === appName);
-        
+
         const project: AppProject = {
           id: existingProject?.id || Date.now().toString(),
           name: appName,
@@ -172,6 +185,8 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
           code,
           created: new Date().toLocaleDateString(),
           mediaId: existingProject?.mediaId,
+          isPaid,
+          pricePoint,
         };
 
         // Save to media library immediately
