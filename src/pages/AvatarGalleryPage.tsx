@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Palette, Plus, Trash2, Star, Users, Heart, Eye, Mic } from "lucide-react";
+import { Palette, Plus, Trash2, Star, Eye, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useNavigate } from "react-router-dom";
 import { useUserAvatars, useDeleteAvatar, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useSetMasterAvatar } from "@/hooks/useMasterAvatar";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -17,6 +18,7 @@ const AvatarGalleryPage = () => {
   const navigate = useNavigate();
   const { data: avatars = [], isLoading } = useUserAvatars();
   const deleteAvatar = useDeleteAvatar();
+  const setMaster = useSetMasterAvatar();
   const [selected, setSelected] = useState<UserAvatar | null>(null);
   const [filter, setFilter] = useState("all");
 
@@ -25,6 +27,16 @@ const AvatarGalleryPage = () => {
   const handleDelete = (id: string) => {
     deleteAvatar.mutate(id, {
       onSuccess: () => { toast.success("Avatar deleted"); setSelected(null); },
+    });
+  };
+
+  const handleSetMaster = (avatar: UserAvatar) => {
+    setMaster.mutate(avatar.id, {
+      onSuccess: () => {
+        toast.success(`👑 "${avatar.name}" is now your Master Oracle avatar`);
+        setSelected(null);
+      },
+      onError: () => toast.error("Could not set master avatar"),
     });
   };
 
@@ -152,6 +164,14 @@ const AvatarGalleryPage = () => {
                   <span>{new Date(selected.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
+              <button
+                onClick={() => handleSetMaster(selected)}
+                disabled={setMaster.isPending || !!selected.is_default}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                <Crown className="w-4 h-4" />
+                {selected.is_default ? "Master Avatar (Active)" : "Set as Master Avatar"}
+              </button>
               <div className="flex gap-2">
                 <button
                   onClick={() => { navigate("/oracle"); setSelected(null); }}
