@@ -242,6 +242,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   // ----- Plan scenes -----
   const planScenes = async () => {
     if (!script.trim()) { toast.error("Add a script first"); return; }
+    const mod = moderatePrompt(script);
+    if (!mod.ok) { toast.error(mod.reason || "Script blocked by content filter"); return; }
+    const mod2 = moderatePrompt(intent || "");
+    if (intent && !mod2.ok) { toast.error(mod2.reason || "Direction blocked by content filter"); return; }
     setPlanning(true);
     try {
       const resp = await fetch(SCENE_URL, {
