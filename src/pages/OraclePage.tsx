@@ -241,20 +241,28 @@ const OraclePage = () => {
         .replace(/,\s+/g, ", ")
         .replace(/\s{3,}/g, "  ")
         .trim();
+      // Master voice — user-selectable from Voice Studio (falls back to Brian)
+      const masterVoiceId = localStorage.getItem("solace-oracle-voice") || "nPczCjzI2devNBz1zQrb";
+      let masterSettings: Record<string, number | boolean> = {
+        stability: 0.72,
+        similarity_boost: 0.9,
+        style: 0.12,
+        use_speaker_boost: true,
+        speed: 0.82,
+      };
+      try {
+        const stored = localStorage.getItem("solace-oracle-voice-settings");
+        if (stored) masterSettings = { ...masterSettings, ...JSON.parse(stored) };
+      } catch { /* ignore */ }
+
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           text: paced,
-          voiceId: "nPczCjzI2devNBz1zQrb", // Brian — warm, grounded
-          modelId: "eleven_multilingual_v2", // highest quality
-          settings: {
-            stability: 0.72,
-            similarity_boost: 0.9,
-            style: 0.12,
-            use_speaker_boost: true,
-            speed: 0.82, // slower, more grounded
-          },
+          voiceId: masterVoiceId,
+          modelId: "eleven_multilingual_v2",
+          settings: masterSettings,
         }),
       });
       if (!response.ok) return false;
