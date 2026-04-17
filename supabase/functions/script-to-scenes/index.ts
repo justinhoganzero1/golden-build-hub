@@ -9,7 +9,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { script, intent, targetDurationSec = 60, sceneSeconds = 6 } = await req.json();
+    const { script, intent, targetDurationSec = 60 } = await req.json();
+    const sceneSeconds = 6; // FIXED: every clip is 6 seconds, 8K quality
     if (!script || typeof script !== "string") {
       return new Response(JSON.stringify({ error: "script is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -22,10 +23,11 @@ serve(async (req) => {
     const targetSceneCount = Math.max(2, Math.min(60, Math.round(targetDurationSec / sceneSeconds)));
 
     const system = `You are a film director. Break the user's script and intent into ${targetSceneCount} cinematic scenes for a movie.
-Each scene gets ONE photo and one short caption. Keep visual continuity (same characters, outfits, lighting where appropriate).
-Photo prompts must be M-rated, vivid, photoreal, with explicit subject + setting + lighting + camera + mood. No nudity / explicit content.
+Each scene gets ONE 8K photoreal photo and one short caption. Each clip is EXACTLY 6 seconds.
+Keep visual continuity (same characters, outfits, lighting where appropriate).
+Photo prompts must be M-rated, vivid, photoreal 8K, with explicit subject + setting + lighting + camera + mood. No nudity / explicit content.
 Motion hints: pick one of pan-left, pan-right, zoom-in, zoom-out, ken-burns, static.
-Durations sum to roughly ${targetDurationSec} seconds.`;
+ALWAYS set duration_sec to 6.`;
 
     const user = `SCRIPT:\n${script}\n\nUSER INTENT / DIRECTION:\n${intent || "(none)"}\n\nReturn ${targetSceneCount} scenes.`;
 

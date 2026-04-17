@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen, Pencil } from "lucide-react";
+import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen, Pencil, Film } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import PhotoEditStudio from "@/components/PhotoEditStudio";
+import MovieStudio from "@/components/MovieStudio";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -25,6 +26,7 @@ const PhotographyHubPage = () => {
   const [mode, setMode] = useState<"generate" | "edit">("generate");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [showMovieStudio, setShowMovieStudio] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,6 +125,13 @@ const PhotographyHubPage = () => {
           </button>
         </div>
 
+        {/* Movie Studio launcher (always available) */}
+        <button onClick={() => setShowMovieStudio(true)}
+          className="w-full mb-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-primary/20 border border-primary/40 text-primary font-semibold text-sm flex items-center justify-center gap-2 hover:from-amber-500/30 hover:to-primary/30 transition-all">
+          <Film className="w-4 h-4" /> Open Movie Studio
+          <span className="text-[10px] text-muted-foreground font-normal">8K · 6s clips</span>
+        </button>
+
         {/* Uploaded Photo Preview */}
         {mode === "edit" && (
           <div className="mb-4">
@@ -165,6 +174,11 @@ const PhotographyHubPage = () => {
             <button onClick={() => setShowEditor(true)}
               className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
               <Pencil className="w-4 h-4" /> Open Edit Studio
+              <Sparkles className="w-4 h-4" />
+            </button>
+            <button onClick={() => setShowMovieStudio(true)}
+              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+              <Film className="w-4 h-4" /> Turn into Movie (8K · 6s clips)
               <Sparkles className="w-4 h-4" />
             </button>
           </div>
@@ -237,6 +251,7 @@ const PhotographyHubPage = () => {
           }}
         />
       )}
+      <MovieStudio open={showMovieStudio} onOpenChange={setShowMovieStudio} seedImage={generatedImage || uploadedPhoto} />
     </div>
   );
 };
