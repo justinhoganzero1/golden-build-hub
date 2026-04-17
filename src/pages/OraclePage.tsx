@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import LiveAvatar from "@/components/LiveAvatar";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
