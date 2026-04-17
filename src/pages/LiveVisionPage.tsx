@@ -446,15 +446,75 @@ const LiveVisionPage = () => {
           )}
         </div>
 
-        {/* Driving Mode banner CTA */}
+        {/* Mode banners */}
         {cameraActive && (
-          <button onClick={drivingActive ? stopDriving : startDriving}
-            className={`w-full mb-3 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-              drivingActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-r from-primary to-accent text-primary-foreground"
-            }`}>
-            <Car className="w-5 h-5" />
-            {drivingActive ? "Stop Driving Mode" : "🚗 Start Driving Mode (hands-free)"}
-          </button>
+          <div className="grid grid-cols-1 gap-2 mb-3">
+            <button onClick={drivingActive ? stopDriving : startDriving}
+              className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                drivingActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+              }`}>
+              <Car className="w-5 h-5" />
+              {drivingActive ? "Stop Driving Mode" : "🚗 Driving Mode (hands-free)"}
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={companionActive ? stopCompanion : startCompanion}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all text-sm ${
+                  companionActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-primary/40 text-primary"
+                }`}>
+                <Sparkles className="w-4 h-4" />
+                {companionActive ? "Stop Companion" : "Companion Mode"}
+              </button>
+              <button onClick={() => watchActive ? stopWatch() : setWatchPromptOpen(true)}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all text-sm ${
+                  watchActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-accent/40 text-accent"
+                }`}>
+                <Target className="w-4 h-4" />
+                {watchActive ? `Stop Watching` : "Watch For…"}
+              </button>
+            </div>
+            {watchActive && (
+              <div className="text-xs text-center text-muted-foreground">
+                Watching for: <span className="text-foreground font-medium">{watchTarget}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Watch-For prompt */}
+        {watchPromptOpen && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur flex items-center justify-center p-4" onClick={() => setWatchPromptOpen(false)}>
+            <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
+                <Target className="w-5 h-5" /> What should I watch for?
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Examples: "milk on the shelves", "the green exit sign", "a free table", "someone wearing red". I'll watch for up to 10 minutes and tell you when I see it.
+              </p>
+              <input
+                autoFocus
+                value={watchTarget}
+                onChange={e => setWatchTarget(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && watchTarget.trim()) { setWatchPromptOpen(false); startWatch(watchTarget); } }}
+                placeholder="Describe what to watch for…"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm mb-3 outline-none focus:border-primary"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setWatchPromptOpen(false)}
+                  className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Cancel</button>
+                <button onClick={() => { if (watchTarget.trim()) { setWatchPromptOpen(false); startWatch(watchTarget); } }}
+                  className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Start Watching</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {watchSummary && !watchActive && (
+          <div className="bg-card border border-accent/40 rounded-xl p-3 mb-3">
+            <h3 className="text-xs font-bold text-accent mb-1 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5" /> Watch Report
+            </h3>
+            <p className="text-sm text-foreground leading-relaxed">{watchSummary}</p>
+          </div>
         )}
 
         {/* Controls */}
