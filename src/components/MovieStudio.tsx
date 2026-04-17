@@ -102,14 +102,31 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
   const [generatingMusic, setGeneratingMusic] = useState(false);
-  // Intro / Theme / Credits
+  // Intro / Theme / Credits / Outro
   const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
   const [themeMusicUrl, setThemeMusicUrl] = useState<string | null>(null);
+  const [outroMusicUrl, setOutroMusicUrl] = useState<string | null>(null);
   const [creditsLines, setCreditsLines] = useState<string[]>([]);
   const [generatingIntro, setGeneratingIntro] = useState(false);
   const [generatingTheme, setGeneratingTheme] = useState(false);
+  const [generatingOutro, setGeneratingOutro] = useState(false);
   const [generatingCredits, setGeneratingCredits] = useState(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
+  const [introStyle, setIntroStyle] = useState<"epic" | "playful" | "cinematic-drone" | "retro-news" | "trailer-hit">("epic");
+  // Scene-block billing (sliding scale; admin = free)
+  const [blocksProduced, setBlocksProduced] = useState(0); // how many 10-scene blocks already paid/produced this session
+  const [payingBlock, setPayingBlock] = useState(false);
+  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  // Sliding scale: block 1 = $5, block 2 = $10, blocks 3..20 = +$20 each (30,50,70..370), block 21+ = $1000
+  const priceForBlockUSD = (n: number): number => {
+    if (n <= 0) return 0;
+    if (n === 1) return 5;
+    if (n === 2) return 10;
+    if (n <= 20) return 10 + (n - 2) * 20;
+    return 1000;
+  };
+  const nextBlockNumber = blocksProduced + 1;
+  const nextBlockPrice = priceForBlockUSD(nextBlockNumber);
   // Newsroom (YouTube show) preset
   const [newsroomMode, setNewsroomMode] = useState(false);
   const [showName, setShowName] = useState("");          // e.g. "SOLACE Daily"
