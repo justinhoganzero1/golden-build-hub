@@ -52,7 +52,7 @@ const tiles: AppTile[] = [
   { label: "Pro Hub", icon: <BarChart3 className="w-6 h-6" />, path: "/professional-hub", tier: "monthly" },
   { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub", tier: "starter" },
   { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub", tier: "starter" },
-  { label: "Marketing", icon: <Share2 className="w-6 h-6" />, path: "/marketing-hub", tier: "monthly" },
+  
   { label: "Occasions", icon: <Gift className="w-6 h-6" />, path: "/special-occasions", tier: "starter" },
   { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box", tier: null },
   { label: "Referral", icon: <Share2 className="w-6 h-6" />, path: "/referral", tier: null },
