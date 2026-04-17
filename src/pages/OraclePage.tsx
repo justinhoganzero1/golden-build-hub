@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
-import { useUserAvatars, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
@@ -78,6 +78,7 @@ const OraclePage = () => {
   const { data: userAvatars = [] } = useUserAvatars();
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
+  const saveMedia = useSaveMedia();
   const { data: adPrefs } = useAdPreferences();
   const updateAdPrefs = useUpdateAdPreferences();
   const { subscribed, tier } = useSubscription();
