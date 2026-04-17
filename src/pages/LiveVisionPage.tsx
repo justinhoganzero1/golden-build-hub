@@ -96,6 +96,8 @@ const LiveVisionPage = () => {
     stopDriving();
     stopCompanion();
     stopWatch();
+    stopBodyCam();
+    stopInvestigation();
     stopListening();
     stopRecording();
     if (streamRef.current) {
