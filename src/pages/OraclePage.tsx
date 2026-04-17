@@ -255,11 +255,11 @@ const OraclePage = () => {
           voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — most popular female voice on ElevenLabs (warm, professional)
           modelId: "eleven_multilingual_v2", // highest quality
           settings: {
-            stability: 0.55,        // expressive but steady
-            similarity_boost: 0.85, // preserve Sarah's warm timbre
-            style: 0.35,            // natural, lightly stylized
+            stability: 0.45,        // expressive, faster generation
+            similarity_boost: 0.80, // preserve Sarah's warm timbre
+            style: 0.25,            // less stylization = faster TTS
             use_speaker_boost: true,
-            speed: 0.95,            // natural conversational cadence
+            speed: 1.05,            // SPEED: snappier, more natural conversational pace
           },
         }),
       });
@@ -281,7 +281,8 @@ const OraclePage = () => {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
-      audio.playbackRate = 0.92;
+      // SPEED: natural cadence at 1.0 — prior 0.92 made Oracle feel sluggish
+      audio.playbackRate = 1.0;
       setIsSpeaking(true);
       try {
         await audio.play();
@@ -969,6 +970,41 @@ const OraclePage = () => {
       }
 
       let oracleContent = "";
+      // SPEED: speak sentence-by-sentence as the stream arrives instead of waiting
+      // for the full response. Cuts perceived latency from ~5-8s to ~1-2s.
+      let spokenUpTo = 0;
+      const stripMarkersForSpeech = (s: string) =>
+        s
+          .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
+          .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
+          .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
+          .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
+          .replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, "i"), "");
+      const flushSpeakableSentences = (final = false) => {
+        if (isMuted) return;
+        const pending = oracleContent.slice(spokenUpTo);
+        // Match complete sentences ending in . ! ? or newline
+        const sentenceRegex = /[^.!?\n]+[.!?\n]+/g;
+        let lastEnd = 0;
+        const toSpeak: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = sentenceRegex.exec(pending)) !== null) {
+          toSpeak.push(m[0]);
+          lastEnd = m.index + m[0].length;
+        }
+        if (toSpeak.length) {
+          spokenUpTo += lastEnd;
+          const chunk = stripMarkersForSpeech(toSpeak.join(" ")).trim();
+          if (chunk) speakAsAgent(chunk, oracleName);
+        }
+        if (final) {
+          const tail = oracleContent.slice(spokenUpTo);
+          const cleaned = stripMarkersForSpeech(tail).trim();
+          if (cleaned) speakAsAgent(cleaned, oracleName);
+          spokenUpTo = oracleContent.length;
+        }
+      };
+
       const reader = oracleResp.body?.getReader();
       if (reader) {
         const decoder = new TextDecoder();
@@ -1001,6 +1037,8 @@ const OraclePage = () => {
                     avatar_url: oracleAvatar?.image_url || undefined,
                   }];
                 });
+                // Speak any complete sentences immediately
+                flushSpeakableSentences(false);
               }
             } catch { buffer = line + "\n" + buffer; break; }
           }
@@ -1032,7 +1070,7 @@ const OraclePage = () => {
 
       // Handle navigation commands in Oracle response
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
-      
+
       // Update displayed message with cleaned content
       const finalDisplayContent = (cleanContent || cleanedOracleContent).replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
       setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
@@ -1045,7 +1083,8 @@ const OraclePage = () => {
         }
       }
 
-      if (cleanedOracleContent && !isMuted) speakAsAgent(finalDisplayContent, oracleName);
+      // SPEED: flush any remaining unspoken tail (sentences already spoken inline above)
+      flushSpeakableSentences(true);
 
       // Send to active agents
       if (activeAgents.length > 0) {

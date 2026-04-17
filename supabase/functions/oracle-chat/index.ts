@@ -209,12 +209,15 @@ Keep responses concise but helpful. Use markdown formatting when appropriate. Be
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        // SPEED: flash-lite is ~3x faster TTFB than flash-preview for chat-style replies
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: personalitySystem },
           ...messages,
         ],
         stream: true,
+        // SPEED: cap output so Oracle doesn't ramble — faster end-to-end speech
+        max_tokens: 400,
       }),
     });
 
