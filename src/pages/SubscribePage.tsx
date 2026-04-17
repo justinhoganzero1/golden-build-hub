@@ -26,7 +26,7 @@ const plans = [
     features: ["Unlimited Oracle chat", "AI Partner experience", "All 42 features", "5GB storage"],
     icon: <Zap className="w-6 h-6" />,
     badge: null,
-    priceId: "price_1TJzBGLM75X0snyCdM2ikY1r",
+    priceId: "price_1TN7wPLGip9LWuvpVYd8PYT8",
     mode: "subscription" as const,
   },
   {
@@ -37,7 +37,7 @@ const plans = [
     features: ["Everything in Starter", "3 AI companions", "10GB storage", "Priority support", "Voice studio access"],
     icon: <Zap className="w-6 h-6" />,
     badge: "POPULAR",
-    priceId: "price_1T1KasLM75X0snyCZxP450ZO",
+    priceId: "price_1TN7wnLGip9LWuvpG7yl9cri",
     mode: "subscription" as const,
   },
   {
@@ -48,7 +48,7 @@ const plans = [
     features: ["Everything in Full Access", "5 AI companions", "AI video generation", "50GB storage", "24/7 VIP support"],
     icon: <Crown className="w-6 h-6" />,
     badge: "BEST VALUE",
-    priceId: "price_1T1Kc9LM75X0snyC3HMqFPm7",
+    priceId: "price_1TN7xCLGip9LWuvpvN75YHXV",
     mode: "payment" as const,
   },
   {
@@ -59,14 +59,17 @@ const plans = [
     features: ["Everything unlimited", "Unlimited AI companions", "Unlimited storage", "Early access to all features", "Custom AI personalities", "White-glove support"],
     icon: <Sparkles className="w-6 h-6" />,
     badge: "ULTIMATE",
-    priceId: "price_1T0e8lLM75X0snyC9PVHfil2",
+    priceId: "price_1TN7yDLGip9LWuvpk9vjhKtj",
     mode: "subscription" as const,
   },
 ];
 
 const addons = [
-  { name: "Extra AI Avatar", price: "$1", priceId: "price_1TJzArLM75X0snyCtNnu2Xqy", description: "Generate one custom AI avatar (one-time)" },
-  { name: "Service Credits ($20)", price: "$20", priceId: "price_1T1KcwLM75X0snyC7RESW7pN", description: "Credits for Video Studio, Photography, Marketing AI" },
+  { name: "Extra AI Avatar Slot", price: "$5", priceId: "price_1TN81JLGip9LWuvprshBcWQf", description: "Add an extra avatar slot to your gallery (one-time)" },
+  { name: "AI Friend Avatar", price: "$3", priceId: "price_1TN81gLGip9LWuvpRH85q0I5", description: "Generate an AI Friend with custom personality and voice (one-time)" },
+  { name: "AI Partner (Companion)", price: "$15/mo", priceId: "price_1TN82nLGip9LWuvppJxgdMAF", description: "M-rated AI Companion with persistent personality (subscription)" },
+  { name: "Service Credits — Small", price: "$10", priceId: "price_1TN83FLGip9LWuvpUfHGFWBi", description: "Credits for Video Studio, Photography, Marketing AI (one-time)" },
+  { name: "Service Credits — Large", price: "$50", priceId: "price_1TN84RLGip9LWuvptVlhv7nx", description: "Bigger credit pack — better value (one-time)" },
   { name: "Premium Neural Voice", price: "Included", priceId: null, description: "Ultra-natural AI voice (ElevenLabs) — included with any paid plan + 10% admin fee on usage" },
 ];
 
@@ -231,11 +234,11 @@ const SubscribePage = () => {
             </button>
           ) : (
             <button
-              onClick={() => handleCheckout("price_1TN6KvLM75X0snyChMuEU6Eo", "payment")}
-              disabled={checkingOut === "price_1TN6KvLM75X0snyChMuEU6Eo"}
+              onClick={() => handleCheckout("price_1TN7ybLGip9LWuvpeExWonbd", "payment")}
+              disabled={checkingOut === "price_1TN7ybLGip9LWuvpeExWonbd"}
               className="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {checkingOut === "price_1TN6KvLM75X0snyChMuEU6Eo" ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Crown className="w-4 h-4" /> Unlock Forever — $900</>}
+              {checkingOut === "price_1TN7ybLGip9LWuvpeExWonbd" ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Crown className="w-4 h-4" /> Unlock Forever — $900</>}
             </button>
           )}
         </div>
