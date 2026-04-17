@@ -80,6 +80,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [creditsLow, setCreditsLow] = useState(false);
   const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null);
+  const [sfxProgress, setSfxProgress] = useState<{ done: number; total: number } | null>(null);
+  // Music suite
+  const [musicPrompt, setMusicPrompt] = useState("");
+  const [musicUrl, setMusicUrl] = useState<string | null>(null);
+  const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
+  const [generatingMusic, setGeneratingMusic] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
