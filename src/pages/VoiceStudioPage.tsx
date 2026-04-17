@@ -16,6 +16,7 @@ import {
   MODELS,
   type PresetName,
 } from "@/data/elevenLabsVoices";
+import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
 
 interface AccountVoice {
   id: string;
@@ -28,7 +29,7 @@ interface AccountVoice {
   use_case: string;
 }
 
-type Tab = "library" | "saved" | "studio";
+type Tab = "library" | "party" | "saved" | "studio";
 type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
