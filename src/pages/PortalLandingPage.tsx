@@ -45,6 +45,8 @@ const FEATURES = [
 const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
+  const { user } = useAuth();
+  const isAdmin = user?.email === "justinbretthogan@gmail.com";
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
   // Pulse the shield-shaped logo glow while the user is typing in the chat
@@ -95,9 +97,21 @@ const PortalLandingPage = () => {
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
           </nav>
-          <Button onClick={() => navigate("/welcome")} variant="default" size="sm">
-            Launch App <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                onClick={() => navigate("/owner-dashboard")}
+                variant="outline"
+                size="sm"
+                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+              >
+                <AdminShield className="mr-1 h-4 w-4" /> Admin
+              </Button>
+            )}
+            <Button onClick={() => navigate("/welcome")} variant="default" size="sm">
+              Launch App <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
