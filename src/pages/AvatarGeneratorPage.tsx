@@ -448,7 +448,7 @@ const AvatarGeneratorPage = () => {
                 )}
               </div>
 
-              {imageUrl && !showCamera && (
+              {imageUrl && (
                 <div className="flex flex-col gap-2 mt-4">
                   {isPaidPurpose ? (
                     <button onClick={() => handleCheckout(purpose === "partner" ? "partner" : "avatar")} disabled={isCheckingOut}
