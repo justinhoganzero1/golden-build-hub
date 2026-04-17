@@ -102,14 +102,31 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
   const [generatingMusic, setGeneratingMusic] = useState(false);
-  // Intro / Theme / Credits
+  // Intro / Theme / Credits / Outro
   const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
   const [themeMusicUrl, setThemeMusicUrl] = useState<string | null>(null);
+  const [outroMusicUrl, setOutroMusicUrl] = useState<string | null>(null);
   const [creditsLines, setCreditsLines] = useState<string[]>([]);
   const [generatingIntro, setGeneratingIntro] = useState(false);
   const [generatingTheme, setGeneratingTheme] = useState(false);
+  const [generatingOutro, setGeneratingOutro] = useState(false);
   const [generatingCredits, setGeneratingCredits] = useState(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
+  const [introStyle, setIntroStyle] = useState<"epic" | "playful" | "cinematic-drone" | "retro-news" | "trailer-hit">("epic");
+  // Scene-block billing (sliding scale; admin = free)
+  const [blocksProduced, setBlocksProduced] = useState(0); // how many 10-scene blocks already paid/produced this session
+  const [payingBlock, setPayingBlock] = useState(false);
+  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  // Sliding scale: block 1 = $5, block 2 = $10, blocks 3..20 = +$20 each (30,50,70..370), block 21+ = $1000
+  const priceForBlockUSD = (n: number): number => {
+    if (n <= 0) return 0;
+    if (n === 1) return 5;
+    if (n === 2) return 10;
+    if (n <= 20) return 10 + (n - 2) * 20;
+    return 1000;
+  };
+  const nextBlockNumber = blocksProduced + 1;
+  const nextBlockPrice = priceForBlockUSD(nextBlockNumber);
   // Newsroom (YouTube show) preset
   const [newsroomMode, setNewsroomMode] = useState(false);
   const [showName, setShowName] = useState("");          // e.g. "SOLACE Daily"
@@ -176,9 +193,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setExporting(false); setExportProgress(0);
       setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
       setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
-      setIntroMusicUrl(null); setThemeMusicUrl(null); setCreditsLines([]);
-      setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingCredits(false);
-      setSubtitlesEnabled(false);
+      setIntroMusicUrl(null); setThemeMusicUrl(null); setOutroMusicUrl(null); setCreditsLines([]);
+      setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingOutro(false); setGeneratingCredits(false);
+      setSubtitlesEnabled(false); setIntroStyle("epic");
+      setBlocksProduced(0); setPayingBlock(false);
       setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
       setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
@@ -239,8 +257,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     return 1.5;
   };
 
-  // ----- Plan scenes -----
-  const planScenes = async () => {
+  // ----- Plan scenes (block of 10). First block gates on billing for non-admins. -----
+  const SCENES_PER_BLOCK = 10;
+  const planScenes = async (opts?: { append?: boolean; blockNumber?: number }) => {
     if (!script.trim()) { toast.error("Add a script first"); return; }
     const mod = moderatePrompt(script);
     if (!mod.ok) { toast.error(mod.reason || "Script blocked by content filter"); return; }
@@ -248,10 +267,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     if (intent && !mod2.ok) { toast.error(mod2.reason || "Direction blocked by content filter"); return; }
     setPlanning(true);
     try {
+      const append = !!opts?.append;
+      const blockNum = opts?.blockNumber ?? (append ? blocksProduced + 1 : 1);
+      const targetDuration = SCENES_PER_BLOCK * CLIP_SECONDS; // ~60s per block of 10
+      const augmentedIntent = append
+        ? `${intent}\n\n[CONTINUATION] Generate ${SCENES_PER_BLOCK} additional scenes that continue the existing story. This is block #${blockNum}. Existing scene count so far: ${scenes.length}.`
+        : intent;
       const resp = await fetch(SCENE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({ script, intent, targetDurationSec: 60 }),
+        body: JSON.stringify({ script, intent: augmentedIntent, targetDurationSec: targetDuration }),
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -261,8 +286,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         return;
       }
       const data = await resp.json();
-      setTitle(data.title || "Untitled Movie");
-      const newScenes: Scene[] = (data.scenes || []).map((s: any) => ({
+      if (!append) setTitle(data.title || "Untitled Movie");
+      const incoming: Scene[] = (data.scenes || []).slice(0, SCENES_PER_BLOCK).map((s: any) => ({
         id: uid(),
         caption: s.caption,
         photo_prompt: s.photo_prompt,
@@ -275,17 +300,55 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         music_prompt: s.music_prompt || s.score_prompt || `Cinematic underscore for: ${s.caption}`,
         music_volume: 0.25,
       }));
-      // Auto-suggest a music prompt from the overall vibe
-      if (data.music_prompt) setMusicPrompt(data.music_prompt);
-      else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
-      // Seed first scene with the photo the user came in with
-      if (seedImage && newScenes[0]) newScenes[0].image_url = seedImage;
-      setScenes(newScenes);
-      toast.success(`${newScenes.length} scenes ready. Generate photos to bring them to life.`);
+      if (!append) {
+        if (data.music_prompt) setMusicPrompt(data.music_prompt);
+        else if (intent.trim()) setMusicPrompt(`Cinematic score matching: ${intent.slice(0, 200)}`);
+        if (seedImage && incoming[0]) incoming[0].image_url = seedImage;
+        setScenes(incoming);
+      } else {
+        setScenes(prev => [...prev, ...incoming]);
+      }
+      setBlocksProduced(prev => Math.max(prev, blockNum));
+      toast.success(`Block ${blockNum}: ${incoming.length} scenes ready.`);
     } catch (e) {
       console.error(e); toast.error("Scene planning failed");
     } finally { setPlanning(false); }
   };
+
+  // Pay for & generate the next 10-scene block (admin = free, no Stripe)
+  const purchaseAndGenerateNextBlock = async () => {
+    if (!script.trim()) { toast.error("Add a script first"); return; }
+    const blockNum = nextBlockNumber;
+    if (isAdmin) {
+      toast.info(`Admin: block ${blockNum} is free`);
+      await planScenes({ append: blocksProduced > 0, blockNumber: blockNum });
+      return;
+    }
+    const usd = priceForBlockUSD(blockNum);
+    if (!confirm(`Block ${blockNum}: $${usd} USD for 10 scenes.\n\nAfter payment you'll be returned here. Continue to checkout?`)) return;
+    setPayingBlock(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-block-payment", {
+        body: { blockNumber: blockNum },
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast.success(`Checkout opened for block ${blockNum} ($${usd}). After paying, click "I've paid — generate" to continue.`);
+      } else {
+        throw new Error("No checkout URL");
+      }
+    } catch (e: any) {
+      console.error(e); toast.error(e.message || "Could not start checkout");
+    } finally { setPayingBlock(false); }
+  };
+
+  // After Stripe success the user comes back; they then click this to actually generate the paid block
+  const confirmPaidAndGenerateBlock = async () => {
+    const blockNum = nextBlockNumber;
+    await planScenes({ append: blocksProduced > 0, blockNumber: blockNum });
+  };
+
 
   // ----- Generate 8K photo for a scene -----
   const generateScenePhoto = async (sceneId: string, customPrompt?: string) => {
@@ -535,11 +598,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingMusic(false); }
   };
 
-  // ----- Intro fanfare (short upbeat opener) -----
+  // ----- Intro fanfare (5 selectable styles) -----
+  const INTRO_STYLE_PROMPTS: Record<typeof introStyle, string> = {
+    "epic": `Epic, triumphant orchestral fanfare with rising strings, soaring brass and a powerful timpani hit, 4 seconds, builds energy for the opening of a movie titled "${title || "this movie"}"`,
+    "playful": `Playful, light, jingle-style intro with cheerful piano, ukulele and a bright bell flourish, 4 seconds, fun and welcoming opener for "${title || "this movie"}"`,
+    "cinematic-drone": `Cinematic atmospheric drone opener with deep low strings, a slow-building synth pad and a subtle rising swell, 4 seconds, mysterious tone for "${title || "this movie"}"`,
+    "retro-news": `Retro broadcast news intro with bold horns, urgent percussion and a vintage TV broadcast vibe, 4 seconds, "breaking news" energy for "${title || "this movie"}"`,
+    "trailer-hit": `Modern blockbuster trailer hit with a deep cinematic boom, hybrid percussion and an explosive brass stab, 4 seconds, high-impact intro for "${title || "this movie"}"`,
+  } as any;
+
   const composeIntroMusic = async () => {
     setGeneratingIntro(true);
     try {
-      const prompt = `Short upbeat cinematic intro fanfare, exciting, triumphant orchestral hit with rising strings and brass, 4 seconds, builds energy for a film opening titled "${title || "this movie"}"`;
+      const prompt = INTRO_STYLE_PROMPTS[introStyle];
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
@@ -557,14 +628,46 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setIntroMusicUrl(dataUrl);
       if (user) saveMedia.mutate({
         media_type: "audio",
-        title: `${title || "Movie"} - intro fanfare`,
+        title: `${title || "Movie"} - intro fanfare (${introStyle})`,
         url: dataUrl, source_page: "movie-studio",
-        metadata: { kind: "intro-music" },
+        metadata: { kind: "intro-music", style: introStyle },
       });
-      toast.success("Intro fanfare ready");
+      toast.success(`Intro fanfare ready (${introStyle})`);
     } catch (e) {
       console.error(e); toast.error("Intro music generation failed");
     } finally { setGeneratingIntro(false); }
+  };
+
+  // ----- Outro sting (short "The End" musical sting) -----
+  const composeOutroMusic = async () => {
+    setGeneratingOutro(true);
+    try {
+      const prompt = `Short, warm, conclusive cinematic outro sting for the end of a movie. Gentle strings and a final resolving chord with a soft timpani hit. 4 seconds. "The End" feel for "${title || "this movie"}"`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: 10 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Outro music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setOutroMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - outro sting`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "outro-music" },
+      });
+      toast.success("Outro sting ready");
+    } catch (e) {
+      console.error(e); toast.error("Outro music generation failed");
+    } finally { setGeneratingOutro(false); }
   };
 
   // ----- Theme soundtrack (always upbeat & exciting, plays as the main score) -----
@@ -640,11 +743,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingCredits(false); }
   };
 
-  // Auto-generate intro + theme + credits in one click — Oracle's "make it complete" button
+  // Auto-generate intro + theme + outro + credits in one click — Oracle's "make it complete" button
   const generateAllExtras = async () => {
     if (!title) toast.info("Tip: set a title first for best intro/credits");
     if (!themeMusicUrl) await composeThemeTrack();
     if (!introMusicUrl) await composeIntroMusic();
+    if (!outroMusicUrl) await composeOutroMusic();
     if (creditsLines.length === 0) await generateCredits();
   };
 
@@ -767,14 +871,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         } catch (err) { console.warn("audio decode failed", err); return null; }
       };
 
-      // Decode narration + sfx + per-scene music + global music + intro + theme — in parallel
-      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer, introBuf, themeBuf] = await Promise.all([
+      // Decode narration + sfx + per-scene music + global music + intro + theme + outro — in parallel
+      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer, introBuf, themeBuf, outroBuf] = await Promise.all([
         Promise.all(ready.map(s => decodeUrl(s.audio_url))),
         Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
         Promise.all(ready.map(s => decodeUrl(s.music_url))),
         decodeUrl(musicUrl),
         decodeUrl(introMusicUrl),
         decodeUrl(themeMusicUrl),
+        decodeUrl(outroMusicUrl),
       ]);
 
       // Combine video + audio tracks
@@ -908,6 +1013,36 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           requestAnimationFrame(tick);
         });
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
+      }
+
+      // ===== "THE END" OUTRO CARD (3s) with outro sting =====
+      if (outroBuf || creditsLines.length > 0) {
+        if (outroBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = outroBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.85;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const outroDur = 3000;
+        const outroStart = performance.now();
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - outroStart) / outroDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const alpha = p < 0.2 ? p / 0.2 : p > 0.8 ? (1 - p) / 0.2 : 1;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.fillStyle = "hsl(45 90% 65%)";
+            ctx.textAlign = "center";
+            ctx.font = "bold 140px serif";
+            ctx.fillText("The End", canvas.width / 2, canvas.height / 2 + 30);
+            ctx.globalAlpha = 1;
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
       }
 
       // ===== END CREDITS ROLL (8s) with theme music =====
@@ -1071,10 +1206,38 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Textarea value={intent} onChange={e => setIntent(e.target.value)} rows={3}
                 placeholder="Tone, style, lead character look, color palette, references..." />
             </div>
-            <Button onClick={planScenes} disabled={planning} className="w-full">
-              {planning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
-              {planning ? "Planning scenes..." : "Plan scenes with AI"}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+              <div className="font-bold text-primary">10-scene block pricing</div>
+              <div className="text-muted-foreground">
+                {isAdmin
+                  ? "Admin account — all blocks are free."
+                  : <>Block 1: <b>$5</b> (launch rate) · Block 2: $10 · Block 3+: +$20/block up to block 20 ($370) · Block 21+: $1000/block. Each block adds 10 more scenes (~60s).</>}
+              </div>
+              <div className="font-bold">
+                Next block ({nextBlockNumber}): {isAdmin ? "FREE" : `$${nextBlockPrice} USD`}
+              </div>
+            </div>
+            <Button
+              onClick={purchaseAndGenerateNextBlock}
+              disabled={planning || payingBlock}
+              className="w-full"
+            >
+              {planning
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Planning scenes...</>
+                : payingBlock
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening checkout...</>
+                  : <><Wand2 className="w-4 h-4 mr-2" /> {isAdmin ? `Generate first 10 scenes (free)` : `Pay $${nextBlockPrice} & generate first 10 scenes`}</>}
             </Button>
+            {!isAdmin && (
+              <Button
+                onClick={confirmPaidAndGenerateBlock}
+                disabled={planning}
+                variant="outline"
+                className="w-full text-xs"
+              >
+                I've paid — generate this block now
+              </Button>
+            )}
           </div>
         )}
 
@@ -1097,6 +1260,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               </Button>
               <Button onClick={() => triggerUpload("__new__")} variant="outline" size="sm">
                 <Upload className="w-3 h-3 mr-1" /> Upload photo
+              </Button>
+              <Button
+                onClick={purchaseAndGenerateNextBlock}
+                disabled={planning || payingBlock}
+                variant="outline"
+                size="sm"
+                className="border-primary/40"
+                title={isAdmin ? "Admin: free" : `Block ${nextBlockNumber}: $${nextBlockPrice}`}
+              >
+                {planning || payingBlock
+                  ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  : <Plus className="w-3 h-3 mr-1" />}
+                {isAdmin
+                  ? `+10 scenes (free)`
+                  : `+10 scenes ($${nextBlockPrice})`}
               </Button>
               <Button onClick={exportMovie} disabled={exporting} size="sm">
                 {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export</>}
@@ -1153,7 +1331,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                   Subtitles are off by default — turn on if you want on-screen captions
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  Intro style:
+                  <select
+                    value={introStyle}
+                    onChange={e => setIntroStyle(e.target.value as any)}
+                    className="h-7 text-xs bg-input border border-border rounded px-1"
+                  >
+                    <option value="epic">Epic fanfare</option>
+                    <option value="playful">Playful jingle</option>
+                    <option value="cinematic-drone">Cinematic drone</option>
+                    <option value="retro-news">Retro news</option>
+                    <option value="trailer-hit">Trailer hit</option>
+                  </select>
+                </label>
                 <Button onClick={composeIntroMusic} size="sm" variant="secondary" className="h-7 text-xs"
                   disabled={generatingIntro}>
                   {generatingIntro
@@ -1168,6 +1360,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                     : themeMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose theme</> : <><Music className="w-3 h-3 mr-1" /> Generate upbeat theme</>}
                 </Button>
                 {themeMusicUrl && <audio src={themeMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={composeOutroMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingOutro}>
+                  {generatingOutro
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Outro...</>
+                    : outroMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose outro</> : <><Music className="w-3 h-3 mr-1" /> Generate "The End" outro</>}
+                </Button>
+                {outroMusicUrl && <audio src={outroMusicUrl} controls className="h-7 max-w-[180px]" />}
                 <Button onClick={generateCredits} size="sm" variant="secondary" className="h-7 text-xs"
                   disabled={generatingCredits}>
                   {generatingCredits
