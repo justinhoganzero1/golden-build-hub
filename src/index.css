@@ -189,11 +189,11 @@ All colors MUST be HSL.
   .holo-tile:hover {
     transform: translateY(-2px) rotateX(2deg);
     box-shadow:
-      0 8px 25px hsl(var(--accent-red) / 0.30),
-      0 0 40px hsl(var(--accent-red-glow) / 0.35),
-      0 0 60px hsl(var(--accent-blue) / 0.20),
-      0 0 90px hsl(var(--accent-red-deep) / 0.25);
-    border-color: hsl(var(--accent-red) / 0.55);
+      0 8px 25px hsl(var(--accent-blue) / 0.35),
+      0 0 40px hsl(var(--accent-blue-glow) / 0.45),
+      0 0 60px hsl(var(--accent-blue-glow) / 0.30),
+      0 0 90px hsl(var(--accent-blue-deep) / 0.30);
+    border-color: hsl(var(--accent-blue) / 0.60);
   }
 
   /* Holographic icon float effect */
