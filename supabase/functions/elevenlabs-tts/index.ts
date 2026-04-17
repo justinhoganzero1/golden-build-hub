@@ -17,7 +17,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { text, voiceId } = await req.json();
+    const body = await req.json();
+    const { text, voiceId, settings, modelId } = body || {};
     if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "text is required" }), {
         status: 400,
@@ -27,6 +28,15 @@ Deno.serve(async (req) => {
 
     // Default to "Brian" voice — warm, natural male voice
     const selectedVoice = voiceId || "nPczCjzI2devNBz1zQrb";
+    const selectedModel = modelId || settings?.model_id || "eleven_turbo_v2_5";
+
+    const voice_settings = {
+      stability: settings?.stability ?? 0.45,
+      similarity_boost: settings?.similarity_boost ?? 0.78,
+      style: settings?.style ?? 0.35,
+      use_speaker_boost: settings?.use_speaker_boost ?? true,
+      speed: settings?.speed ?? 0.95,
+    };
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=mp3_44100_128`,
@@ -38,14 +48,8 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           text: text.substring(0, 5000),
-          model_id: "eleven_turbo_v2_5",
-          voice_settings: {
-            stability: 0.45,
-            similarity_boost: 0.78,
-            style: 0.35,
-            use_speaker_boost: true,
-            speed: 0.95,
-          },
+          model_id: selectedModel,
+          voice_settings,
         }),
       }
     );
