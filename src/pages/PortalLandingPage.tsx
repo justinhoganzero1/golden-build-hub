@@ -241,7 +241,7 @@ const PortalLandingPage = () => {
                   className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
                 />
                 <div>
-                  <h3 className="font-semibold text-xl text-foreground">Web Wrapper</h3>
+                  <h3 className="font-semibold text-xl text-foreground">App Wrapper</h3>
                   <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
                 </div>
               </div>
