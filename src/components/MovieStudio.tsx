@@ -494,7 +494,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           </div>
         )}
 
-        {/* Step 1: Script */}
+        {audioProgress && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><Mic className="w-3 h-3" /> Generating AI voices...</span>
+              <span>{audioProgress.done} / {audioProgress.total}</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(audioProgress.done / audioProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
         {scenes.length === 0 && (
           <div className="space-y-3">
             <div>
@@ -521,6 +534,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Movie title" className="flex-1 min-w-[200px]" />
               <Button onClick={generateAll} variant="secondary" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" /> Generate all photos
+              </Button>
+              <Button onClick={generateAllAudio} variant="secondary" size="sm">
+                <Mic className="w-3 h-3 mr-1" /> Generate all voices
               </Button>
               <Button onClick={addScene} variant="outline" size="sm">
                 <Plus className="w-3 h-3 mr-1" /> Add scene
@@ -604,6 +620,42 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
+                      {/* Narration / voice block */}
+                      <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/20 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Mic className="w-3 h-3 text-primary" />
+                          <span className="text-[10px] font-bold text-primary">VOICE</span>
+                          <Input value={s.speaker || ""} onChange={e => updateScene(s.id, { speaker: e.target.value, audio_url: undefined })}
+                            className="h-6 text-[11px] w-32" placeholder="Speaker (e.g. Maya)" />
+                          <select
+                            value={s.voice_style || "narrator-male-warm"}
+                            onChange={e => updateScene(s.id, { voice_style: e.target.value, audio_url: undefined })}
+                            className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                          >
+                            {Object.keys(VOICE_MAP).map(k => <option key={k} value={k}>{k}</option>)}
+                          </select>
+                          {s.audio_url && (
+                            <audio src={s.audio_url} controls className="h-6 max-w-[180px]" />
+                          )}
+                        </div>
+                        <Textarea
+                          value={s.narration || ""}
+                          onChange={e => updateScene(s.id, { narration: e.target.value, audio_url: undefined })}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="What is spoken during this 6s scene..."
+                        />
+                        <div className="flex gap-1">
+                          <Button onClick={() => generateSceneAudio(s.id)} size="sm" variant="secondary" className="h-7 text-xs"
+                            disabled={s.generatingAudio || !(s.narration || s.caption)}>
+                            {s.generatingAudio
+                              ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              : s.audio_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Volume2 className="w-3 h-3 mr-1" />}
+                            {s.audio_url ? "Re-voice" : "Generate voice"}
+                          </Button>
+                        </div>
+                      </div>
+
                       {editingSceneId === s.id && (
                         <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
                           <p className="text-[10px] text-muted-foreground">Tell the AI what to change in this clip's photo:</p>
