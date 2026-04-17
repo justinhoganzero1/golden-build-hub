@@ -297,6 +297,94 @@ const LiveVisionPage = () => {
     }
   }, [watchActive, finishWatch]);
 
+  // ─── Body-cam Mode (continuous officer log + recording) ───
+  const startBodyCam = useCallback(async () => {
+    if (!isInvestigator) { toast.error("Investigator role required"); return; }
+    if (!cameraActive) await startCamera();
+    const newCase = caseId || `CASE-${Date.now().toString(36).toUpperCase()}`;
+    setCaseId(newCase);
+    setBodyCamActive(true);
+    setEvidenceLog([]);
+    evidenceHistoryRef.current = [];
+    speak(`Body cam active. Case ${newCase}. Recording started.`);
+    // Auto-start video recording
+    setTimeout(() => startRecording(), 400);
+    startListening();
+
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "bodycam", { history: evidenceHistoryRef.current });
+      if (result && result.trim().toUpperCase() !== "QUIET") {
+        evidenceHistoryRef.current.push(result);
+        if (evidenceHistoryRef.current.length > 8) evidenceHistoryRef.current.shift();
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, mode: "bodycam" }, ...prev].slice(0, 50));
+      }
+    };
+    tick();
+    bodyCamTimerRef.current = setInterval(tick, 5000);
+  }, [isInvestigator, cameraActive, startCamera, captureFrame, speak, caseId]);
+
+  const stopBodyCam = useCallback(() => {
+    setBodyCamActive(false);
+    if (bodyCamTimerRef.current) { clearInterval(bodyCamTimerRef.current); bodyCamTimerRef.current = null; }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") stopRecording();
+  }, []);
+
+  // ─── Crime-Scene Investigation Mode (forensic, evidence catalogue) ───
+  const startInvestigation = useCallback(async () => {
+    if (!isInvestigator) { toast.error("Investigator role required"); return; }
+    if (!cameraActive) await startCamera();
+    const newCase = caseId || `CASE-${Date.now().toString(36).toUpperCase()}`;
+    setCaseId(newCase);
+    setInvestigationActive(true);
+    setEvidenceLog([]);
+    evidenceHistoryRef.current = [];
+    speak(`Crime scene investigation mode. Case ${newCase}. Cataloguing evidence.`);
+    startListening();
+
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "investigation", { history: evidenceHistoryRef.current });
+      if (result) {
+        evidenceHistoryRef.current.push(result);
+        if (evidenceHistoryRef.current.length > 6) evidenceHistoryRef.current.shift();
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, frame, mode: "investigation" }, ...prev].slice(0, 30));
+      }
+    };
+    tick();
+    investigationTimerRef.current = setInterval(tick, 8000);
+  }, [isInvestigator, cameraActive, startCamera, captureFrame, speak, caseId]);
+
+  const stopInvestigation = useCallback(() => {
+    setInvestigationActive(false);
+    if (investigationTimerRef.current) { clearInterval(investigationTimerRef.current); investigationTimerRef.current = null; }
+  }, []);
+
+  const exportEvidenceLog = useCallback(() => {
+    if (evidenceLog.length === 0) { toast.error("No evidence logged"); return; }
+    const header = `EVIDENCE LOG\nCase: ${caseId}\nOfficer: ${user?.email || "unknown"}\nGenerated: ${new Date().toISOString()}\n${"=".repeat(60)}\n\n`;
+    const body = evidenceLog.slice().reverse().map((e, i) =>
+      `#${String(i + 1).padStart(3, "0")} [${e.ts}] (${e.mode})\n${e.note}\n`
+    ).join("\n");
+    const text = header + body;
+    if (user) {
+      saveMedia.mutate({
+        media_type: "image",
+        title: `Evidence Log ${caseId}`,
+        url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+        source_page: "live-vision-investigation",
+        metadata: { case_id: caseId, entries: evidenceLog.length },
+      }, { onSuccess: () => toast.success("Evidence log saved to Library") });
+    }
+    // Also trigger download
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${caseId}-evidence.txt`;
+    a.click();
+  }, [evidenceLog, caseId, user, saveMedia]);
 
   // ─── Voice commands ───
   const startListening = useCallback(() => {
