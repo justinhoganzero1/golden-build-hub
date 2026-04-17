@@ -143,6 +143,7 @@ export type Database = {
           offer_amount: string | null
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ai_notes?: string | null
@@ -155,6 +156,7 @@ export type Database = {
           offer_amount?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ai_notes?: string | null
@@ -167,6 +169,7 @@ export type Database = {
           offer_amount?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
