@@ -1,1 +1,4 @@
 project_id = "tpkpfkcnqdyrzpqdoqnp"
+
+[functions.portal-tutor]
+verify_jwt = false
