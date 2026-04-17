@@ -193,9 +193,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setExporting(false); setExportProgress(0);
       setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
       setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
-      setIntroMusicUrl(null); setThemeMusicUrl(null); setCreditsLines([]);
-      setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingCredits(false);
-      setSubtitlesEnabled(false);
+      setIntroMusicUrl(null); setThemeMusicUrl(null); setOutroMusicUrl(null); setCreditsLines([]);
+      setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingOutro(false); setGeneratingCredits(false);
+      setSubtitlesEnabled(false); setIntroStyle("epic");
+      setBlocksProduced(0); setPayingBlock(false);
       setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
       setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
