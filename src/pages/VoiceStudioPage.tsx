@@ -266,6 +266,29 @@ export default function VoiceStudioPage() {
   function masterFromParty(p: PartyVoice) {
     setAsOracleMaster(p.id, p.name, { ...p.partySettings, model_id: "eleven_multilingual_v2" } as VoiceSettings);
   }
+
+  function setAsOracleMaster(voiceId: string, voiceName: string, voiceSettings?: VoiceSettings) {
+    if (!voiceId) {
+      toast.error("No voice ID available");
+      return;
+    }
+    localStorage.setItem("solace-oracle-voice", voiceId);
+    if (voiceSettings) {
+      localStorage.setItem(
+        "solace-oracle-voice-settings",
+        JSON.stringify({
+          stability: voiceSettings.stability,
+          similarity_boost: voiceSettings.similarity_boost,
+          style: voiceSettings.style,
+          use_speaker_boost: voiceSettings.use_speaker_boost,
+          speed: voiceSettings.speed,
+        })
+      );
+    }
+    toast.success(`👑 ${voiceName} is now the Oracle's master voice`);
+  }
+
+  return (
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">
       <UniversalBackButton />
       <div className="max-w-6xl mx-auto pt-12">
