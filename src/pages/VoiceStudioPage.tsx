@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw } from "lucide-react";
+import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -209,6 +209,26 @@ export default function VoiceStudioPage() {
     }
   }
 
+  function setAsOracleMaster(voiceId: string, voiceName: string, voiceSettings?: VoiceSettings) {
+    if (!voiceId) {
+      toast.error("No voice ID available");
+      return;
+    }
+    localStorage.setItem("solace-oracle-voice", voiceId);
+    if (voiceSettings) {
+      localStorage.setItem(
+        "solace-oracle-voice-settings",
+        JSON.stringify({
+          stability: voiceSettings.stability,
+          similarity_boost: voiceSettings.similarity_boost,
+          style: voiceSettings.style,
+          use_speaker_boost: voiceSettings.use_speaker_boost,
+          speed: voiceSettings.speed,
+        })
+      );
+    }
+    toast.success(`👑 ${voiceName} is now the Oracle's master voice`);
+  }
   return (
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">
       <UniversalBackButton />
