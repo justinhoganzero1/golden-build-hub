@@ -141,9 +141,11 @@ All colors MUST be HSL.
     background: linear-gradient(
       135deg,
       hsl(var(--accent-red) / 0.0) 0%,
-      hsl(var(--accent-red) / 0.25) 20%,
-      hsl(45 100% 50% / 0.25) 45%,
-      hsl(var(--accent-blue) / 0.28) 70%,
+      hsl(var(--accent-red) / 0.25) 18%,
+      hsl(var(--accent-white) / 0.35) 35%,
+      hsl(45 100% 50% / 0.25) 52%,
+      hsl(var(--accent-white) / 0.30) 68%,
+      hsl(var(--accent-blue) / 0.30) 82%,
       hsl(var(--accent-red) / 0.0) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
