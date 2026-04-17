@@ -699,15 +699,31 @@ const OraclePage = () => {
       }
       return;
     }
+    // Check API support first
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("Microphone API not available. Use Chrome/Safari over HTTPS.");
+      return;
+    }
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      toast.error("Speech recognition not supported in this browser. Try Chrome.");
+      return;
+    }
     try {
+      // This triggers the browser's native permission prompt
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop());
       setMicPermGranted(true);
+      toast.success("Microphone enabled — Oracle is listening");
       startAlwaysListening();
     } catch (err: any) {
-      if (err.name === "NotAllowedError") toast.error("Microphone blocked.");
-      else if (err.name === "NotFoundError") toast.error("No microphone found.");
-      else toast.error("Could not access microphone.");
+      console.error("Mic error:", err);
+      if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+        toast.error("Microphone blocked. Enable it in your browser/device settings, then tap mic again.");
+      } else if (err.name === "NotFoundError") {
+        toast.error("No microphone found on this device.");
+      } else {
+        toast.error("Could not access microphone: " + (err.message || err.name));
+      }
     }
   };
 
