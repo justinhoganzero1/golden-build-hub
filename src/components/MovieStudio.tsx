@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -34,6 +36,8 @@ const VOICE_MAP: Record<string, string> = {
 const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrator-male-warm"];
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
+type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
+
 interface Scene {
   id: string;
   caption: string;
@@ -58,6 +62,12 @@ interface Scene {
   music_url?: string; // chosen track
   music_volume?: number; // 0..1
   generatingSceneMusic?: boolean;
+  tone?: SceneTone; // used by Oracle to auto-pick best music + cross-fade timing
+  // Newsroom-specific extras
+  is_news_segment?: boolean;
+  lower_third_name?: string;   // e.g. "Maya Chen"
+  lower_third_title?: string;  // e.g. "SOLACE Tech Reporter"
+  broll_url?: string;          // optional B-roll image overlay (cutaway)
 }
 
 interface MovieStudioProps {
