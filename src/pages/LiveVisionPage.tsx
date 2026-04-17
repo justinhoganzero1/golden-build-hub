@@ -516,11 +516,25 @@ const LiveVisionPage = () => {
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-xl bg-primary/10"><Eye className="w-7 h-7 text-primary" /></div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-primary">Live Vision</h1>
             <p className="text-muted-foreground text-xs">AI-powered camera + driving mode</p>
           </div>
         </div>
+
+        {/* Tabs (Investigations only visible to investigators/admins) */}
+        {isInvestigator && (
+          <div className="flex gap-2 mb-4 p-1 bg-card border border-border rounded-xl">
+            <button onClick={() => setActiveTab("general")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === "general" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Eye className="w-3.5 h-3.5 inline mr-1" /> General
+            </button>
+            <button onClick={() => setActiveTab("investigations")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${activeTab === "investigations" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <ShieldCheck className="w-3.5 h-3.5" /> Investigations
+            </button>
+          </div>
+        )}
 
         {/* Camera / Capture View */}
         <div className="aspect-[4/3] bg-card border border-border rounded-2xl overflow-hidden mb-4 relative">
