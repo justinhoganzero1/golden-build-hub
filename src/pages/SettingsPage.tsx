@@ -494,6 +494,8 @@ const SettingsPage = () => {
       root.style.setProperty("--border", `${theme.primary.split(" ")[0]} 60% 20%`);
     }
     setCurrentTheme(theme.name);
+    localStorage.setItem("solace-theme", JSON.stringify(theme));
+    localStorage.setItem("solace-theme-name", theme.name);
     toast.success(`Theme: ${theme.name}`);
   };
 
