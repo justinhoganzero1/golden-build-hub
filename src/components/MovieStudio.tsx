@@ -177,11 +177,29 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [showFavouritesPicker, setShowFavouritesPicker] = useState(false);
   const [favouritesTargetId, setFavouritesTargetId] = useState<string | null>(null);
   const [savedTracks, setSavedTracks] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
+  // Cast & guest stars (rendered into opening + end credits)
+  const [starring, setStarring] = useState("");          // "Maya Chen, Jordan Reyes"
+  const [coStarring, setCoStarring] = useState("");      // "Sam Park, Alex Cruz"
+  const [guestStars, setGuestStars] = useState("");      // "and James O'Neill as The Director"
+  // AI 10×6s preview/trailer
+  const [trailerScenes, setTrailerScenes] = useState<Array<{ id: string; image: string; tone?: SceneTone }>>([]);
+  const [generatingTrailer, setGeneratingTrailer] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<string | null>(null);
+
+  // Bake camera + lighting + action + emotion into the final photo prompt
+  const buildScenePhotoPrompt = (s: Scene, override?: string): string => {
+    const base = (override || s.photo_prompt || "").trim();
+    const cam = s.camera_angle && s.camera_angle !== "auto" ? CAMERA_ANGLE_PROMPTS[s.camera_angle] : "";
+    const light = s.lighting_preset && s.lighting_preset !== "auto" ? LIGHTING_PRESET_PROMPTS[s.lighting_preset] : "";
+    const action = s.character_action?.trim() ? `Character action: ${s.character_action.trim()}.` : "";
+    const emotion = s.character_emotion?.trim() ? `Character emotion: ${s.character_emotion.trim()}.` : "";
+    return [base, cam, light, action, emotion, "photoreal 8K resolution, ultra-detailed, cinematic lighting, sharp focus, film still"]
+      .filter(Boolean).join(", ");
+  };
 
   const triggerUpload = (sceneId: string) => {
     uploadTargetRef.current = sceneId;
