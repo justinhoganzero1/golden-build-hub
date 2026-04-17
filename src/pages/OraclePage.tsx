@@ -88,6 +88,7 @@ const OraclePage = () => {
   const [agents, setAgents] = useState<ChatAgent[]>(DEFAULT_AGENTS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showDoctor, setShowDoctor] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [micPermGranted, setMicPermGranted] = useState(false);
   const [renamingAgent, setRenamingAgent] = useState<string | null>(null);
