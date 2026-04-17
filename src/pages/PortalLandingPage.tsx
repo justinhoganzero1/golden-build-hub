@@ -243,6 +243,30 @@ const PortalLandingPage = () => {
               <Download className="mr-2 h-5 w-5" />
               {isStandalone ? "Already installed ✓" : isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
+
+            {/* Native wrapper download — Portal-specific Play Store package */}
+            <div className="mt-8 max-w-2xl mx-auto holo-tile rounded-xl p-6 border border-primary/30">
+              <div className="flex items-center gap-3 mb-2 justify-center">
+                <Zap className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Want the Portal as a real Android app?</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Generate a ready-to-publish Google Play Store wrapper for the SOLACE Portal in seconds — separate from the main SOLACE app.
+              </p>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => {
+                  const portalUrl = encodeURIComponent(window.location.origin);
+                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("SOLACE Portal")}`);
+                }}
+                className="border-primary/40 hover:border-primary"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Build Portal App Wrapper
+              </Button>
+            </div>
+
             <p className="text-xs text-muted-foreground mt-3">
               Native Android & iOS builds coming soon to Google Play and the App Store.
             </p>
