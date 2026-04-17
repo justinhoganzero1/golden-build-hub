@@ -482,8 +482,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const url = await generateSceneMusicOption(sceneId, v);
       if (url) results.push(url);
     }
+    const picked = autoPickEnabled ? oraclePickBest(results, scenes.find(x => x.id === sceneId)?.tone) : results[0];
     setScenes(prev => prev.map(s => s.id === sceneId
-      ? { ...s, music_options: results, music_url: s.music_url || results[0], generatingSceneMusic: false }
+      ? { ...s, music_options: results, music_url: s.music_url || picked, generatingSceneMusic: false }
       : s));
     if (results.length === 0) {
       toast.error("Could not generate music tracks");
