@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
@@ -9,7 +9,7 @@ import { cleanTextForSpeech } from "@/lib/utils";
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking";
+type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping";
 
 const LiveVisionPage = () => {
   const { user } = useAuth();
@@ -19,6 +19,10 @@ const LiveVisionPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   const drivingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const companionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const watchTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const watchStartRef = useRef<number>(0);
+  const watchObservationsRef = useRef<string[]>([]);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const lastSpokenRef = useRef<string>("");
@@ -33,6 +37,11 @@ const LiveVisionPage = () => {
   const [listening, setListening] = useState(false);
   const [recording, setRecording] = useState(false);
   const [livefeed, setLiveFeed] = useState<string[]>([]);
+  const [companionActive, setCompanionActive] = useState(false);
+  const [watchTarget, setWatchTarget] = useState<string>("");
+  const [watchActive, setWatchActive] = useState(false);
+  const [watchPromptOpen, setWatchPromptOpen] = useState(false);
+  const [watchSummary, setWatchSummary] = useState<string | null>(null);
 
   // ─── Camera control ───
   const startCamera = useCallback(async () => {
@@ -58,6 +67,8 @@ const LiveVisionPage = () => {
 
   const stopCamera = useCallback(() => {
     stopDriving();
+    stopCompanion();
+    stopWatch();
     stopListening();
     stopRecording();
     if (streamRef.current) {
@@ -83,12 +94,12 @@ const LiveVisionPage = () => {
   }, []);
 
   // ─── Vision analysis ───
-  const callVision = async (image: string, mode: AnalysisMode): Promise<string | null> => {
+  const callVision = async (image: string, mode: AnalysisMode, opts?: { target?: string; history?: string[] }): Promise<string | null> => {
     const apiMode = mode === "driving" || mode === "parking" ? "scene" : mode;
     const resp = await fetch(VISION_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-      body: JSON.stringify({ image, mode: apiMode }),
+      body: JSON.stringify({ image, mode: apiMode === "scene" && (mode === "driving" || mode === "parking") ? mode : apiMode, target: opts?.target, history: opts?.history }),
     });
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -172,6 +183,92 @@ const LiveVisionPage = () => {
     }
   }, []);
 
+  // ─── Companion Mode: Oracle is walking with the user ───
+  const startCompanion = useCallback(async () => {
+    if (!cameraActive) await startCamera();
+    setCompanionActive(true);
+    setLiveFeed([]);
+    speak("I'm with you. I'll keep an eye out and chat as we go. Just ask me anything you see.");
+    startListening();
+
+    const recent: string[] = [];
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "companion", { history: recent });
+      if (result && result.trim().toUpperCase() !== "QUIET") {
+        recent.push(result);
+        if (recent.length > 6) recent.shift();
+        setLiveFeed(prev => [result, ...prev].slice(0, 8));
+        speak(result);
+      }
+    };
+    tick();
+    companionTimerRef.current = setInterval(tick, 9000);
+  }, [cameraActive, startCamera, captureFrame, speak]);
+
+  const stopCompanion = useCallback(() => {
+    setCompanionActive(false);
+    if (companionTimerRef.current) { clearInterval(companionTimerRef.current); companionTimerRef.current = null; }
+  }, []);
+
+  // ─── Watch-For Mode: track a target over time ───
+  const finishWatch = useCallback(() => {
+    if (watchTimerRef.current) { clearInterval(watchTimerRef.current); watchTimerRef.current = null; }
+    const obs = watchObservationsRef.current;
+    if (obs.length === 0) {
+      const summary = `I watched for "${watchTarget}" and didn't see it.`;
+      setWatchSummary(summary);
+      speak(summary);
+    } else {
+      const found = obs.filter(o => /^FOUND/i.test(o)).length;
+      const summary = `Watch report for "${watchTarget}": ${obs.length} relevant observations, ${found} confirmed sightings. Most recent: ${obs[obs.length - 1]}`;
+      setWatchSummary(summary);
+      speak(summary);
+    }
+    setWatchActive(false);
+  }, [watchTarget, speak]);
+
+  const startWatch = useCallback(async (target: string, durationMs: number = 10 * 60 * 1000) => {
+    if (!target.trim()) { toast.error("Tell me what to watch for"); return; }
+    if (!cameraActive) await startCamera();
+    setWatchTarget(target);
+    setWatchActive(true);
+    setWatchSummary(null);
+    setLiveFeed([]);
+    watchObservationsRef.current = [];
+    watchStartRef.current = Date.now();
+    const isShoppingLike = /aisle|shelf|grocery|store|item|product|find|where.*is|brand/i.test(target);
+    const mode: AnalysisMode = isShoppingLike ? "shopping" : "watch";
+    speak(`Watching for ${target}. I'll let you know when I see something.`);
+    startListening();
+
+    const tick = async () => {
+      if (Date.now() - watchStartRef.current > durationMs) { finishWatch(); return; }
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, mode, { target, history: watchObservationsRef.current });
+      if (!result) return;
+      const upper = result.trim().toUpperCase();
+      if (upper === "NOT YET" || upper.startsWith("NOT YET")) return;
+      watchObservationsRef.current.push(result);
+      setLiveFeed(prev => [result, ...prev].slice(0, 12));
+      if (/^FOUND/i.test(result)) speak(result);
+      else if (/^AISLE|^MAYBE/i.test(result) && watchObservationsRef.current.length % 2 === 1) speak(result);
+    };
+    tick();
+    watchTimerRef.current = setInterval(tick, 6000);
+  }, [cameraActive, startCamera, captureFrame, speak, finishWatch]);
+
+  const stopWatch = useCallback(() => {
+    if (watchActive) finishWatch();
+    else {
+      if (watchTimerRef.current) { clearInterval(watchTimerRef.current); watchTimerRef.current = null; }
+      setWatchActive(false);
+    }
+  }, [watchActive, finishWatch]);
+
+
   // ─── Voice commands ───
   const startListening = useCallback(() => {
     const SR: any = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
@@ -186,6 +283,10 @@ const LiveVisionPage = () => {
       if (!heard) return;
       // Voice command routing
       if (/stop driving|exit|end driving|stop mode/i.test(heard)) { stopDriving(); speak("Driving mode off."); return; }
+      if (/stop watching|stop watch|end watch|finish watch/i.test(heard)) { stopWatch(); return; }
+      if (/stop companion|end companion/i.test(heard)) { stopCompanion(); speak("Companion mode off."); return; }
+      const watchMatch = heard.match(/(?:watch for|look out for|tell me when you see|find me|look for|help me find)\s+(.+)/i);
+      if (watchMatch) { startWatch(watchMatch[1].trim()); return; }
       if (/take.*photo|capture|snapshot/i.test(heard)) {
         const f = captureFrame();
         if (f) { setCapturedImage(f); saveSnapshotAuto(f); speak("Photo saved."); }
@@ -211,9 +312,9 @@ const LiveVisionPage = () => {
       }
     };
     recog.onerror = () => { setListening(false); };
-    recog.onend = () => { if (drivingActive) { try { recog.start(); } catch {} } };
+    recog.onend = () => { if (drivingActive || companionActive || watchActive) { try { recog.start(); } catch {} } };
     try { recog.start(); recognitionRef.current = recog; setListening(true); } catch {}
-  }, [captureFrame, speak, drivingActive]);
+  }, [captureFrame, speak, drivingActive, companionActive, watchActive, stopDriving, stopWatch, stopCompanion, startWatch]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
@@ -345,15 +446,75 @@ const LiveVisionPage = () => {
           )}
         </div>
 
-        {/* Driving Mode banner CTA */}
+        {/* Mode banners */}
         {cameraActive && (
-          <button onClick={drivingActive ? stopDriving : startDriving}
-            className={`w-full mb-3 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-              drivingActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-r from-primary to-accent text-primary-foreground"
-            }`}>
-            <Car className="w-5 h-5" />
-            {drivingActive ? "Stop Driving Mode" : "🚗 Start Driving Mode (hands-free)"}
-          </button>
+          <div className="grid grid-cols-1 gap-2 mb-3">
+            <button onClick={drivingActive ? stopDriving : startDriving}
+              className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                drivingActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+              }`}>
+              <Car className="w-5 h-5" />
+              {drivingActive ? "Stop Driving Mode" : "🚗 Driving Mode (hands-free)"}
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={companionActive ? stopCompanion : startCompanion}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all text-sm ${
+                  companionActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-primary/40 text-primary"
+                }`}>
+                <Sparkles className="w-4 h-4" />
+                {companionActive ? "Stop Companion" : "Companion Mode"}
+              </button>
+              <button onClick={() => watchActive ? stopWatch() : setWatchPromptOpen(true)}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all text-sm ${
+                  watchActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-accent/40 text-accent"
+                }`}>
+                <Target className="w-4 h-4" />
+                {watchActive ? `Stop Watching` : "Watch For…"}
+              </button>
+            </div>
+            {watchActive && (
+              <div className="text-xs text-center text-muted-foreground">
+                Watching for: <span className="text-foreground font-medium">{watchTarget}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Watch-For prompt */}
+        {watchPromptOpen && (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur flex items-center justify-center p-4" onClick={() => setWatchPromptOpen(false)}>
+            <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-primary mb-2 flex items-center gap-2">
+                <Target className="w-5 h-5" /> What should I watch for?
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Examples: "milk on the shelves", "the green exit sign", "a free table", "someone wearing red". I'll watch for up to 10 minutes and tell you when I see it.
+              </p>
+              <input
+                autoFocus
+                value={watchTarget}
+                onChange={e => setWatchTarget(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && watchTarget.trim()) { setWatchPromptOpen(false); startWatch(watchTarget); } }}
+                placeholder="Describe what to watch for…"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm mb-3 outline-none focus:border-primary"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setWatchPromptOpen(false)}
+                  className="flex-1 py-2 rounded-lg bg-muted text-muted-foreground text-sm font-medium">Cancel</button>
+                <button onClick={() => { if (watchTarget.trim()) { setWatchPromptOpen(false); startWatch(watchTarget); } }}
+                  className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium">Start Watching</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {watchSummary && !watchActive && (
+          <div className="bg-card border border-accent/40 rounded-xl p-3 mb-3">
+            <h3 className="text-xs font-bold text-accent mb-1 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5" /> Watch Report
+            </h3>
+            <p className="text-sm text-foreground leading-relaxed">{watchSummary}</p>
+          </div>
         )}
 
         {/* Controls */}
@@ -403,7 +564,7 @@ const LiveVisionPage = () => {
         </div>
 
         {/* Driving live feed */}
-        {drivingActive && livefeed.length > 0 && (
+        {(drivingActive || companionActive || watchActive) && livefeed.length > 0 && (
           <div className="bg-card border border-primary/30 rounded-xl p-3 mb-4">
             <h3 className="text-xs font-bold text-primary mb-2 flex items-center gap-1.5">
               <Car className="w-3.5 h-3.5" /> Live Drive Feed

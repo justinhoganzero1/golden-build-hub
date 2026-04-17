@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { image, mode } = await req.json();
+    const { image, mode, target, history } = await req.json();
     if (!image) {
       return new Response(JSON.stringify({ error: "image is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -19,6 +19,8 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    const recent = Array.isArray(history) ? history.slice(-6).join(" | ") : "";
+
     const systemPrompt = mode === "text"
       ? "You are an OCR expert. Extract and return ALL text visible in this image. Format it clearly. If no text is found, say 'No text detected.'"
       : mode === "objects"
@@ -27,6 +29,12 @@ serve(async (req) => {
       ? "You are a driving assistant looking for parking. Scan the image for: empty parking spaces, parking signs, time limits, parking restrictions, parking meters, loading zones, no-parking signs, accessible spots. Be VERY concise (max 2 short sentences). If you spot an empty space, say so directly. If parking is restricted, warn clearly. If nothing relevant is visible, just say 'No parking visible.'"
       : mode === "driving"
       ? "You are a driving co-pilot watching the road. Be VERY concise (max 1-2 short sentences). Only mention things the driver MUST know: hazards, pedestrians, red lights, stop signs, lane changes, turns, exits, road signs with text, sudden obstacles. If the road is clear and uneventful, just say 'Road clear.' Never describe scenery, sky, or unimportant details."
+      : mode === "companion"
+      ? `You are the user's friendly AI companion walking with them and seeing through their phone camera. Speak in a warm, casual, conversational tone (1-2 short sentences). Notice useful things: store aisles, products on shelves, signs, prices, exits, queues, friends, interesting people. If you've seen the scene before (recent context: "${recent}"), only speak if something NEW or noteworthy appears, otherwise reply with exactly the word "QUIET". Never describe obvious or repetitive details.`
+      : mode === "watch"
+      ? `You are the user's AI watcher. They asked you to watch for: "${target || 'something specific'}". Look at the image carefully. Reply in 1-2 short sentences:\n- If you SEE the target, start with "FOUND:" then describe where (left/right/center, distance) and any context (e.g. is the person alone, with someone, holding hands, wearing a ring).\n- If you see something RELATED but not exact, start with "MAYBE:" then describe.\n- If not visible, reply with exactly "NOT YET".\nRecent observations: "${recent}". Be objective and respectful. For people-watching tasks, never speculate about identity, only observable behavior.`
+      : mode === "shopping"
+      ? `You are the user's shopping assistant looking through their phone camera. They are looking for: "${target || 'an item'}". Scan shelves, signs, aisle markers, and product labels. Reply in 1-2 short sentences:\n- "FOUND:" if you see the item, with shelf/aisle direction.\n- "AISLE:" if you see a sign pointing to the right category.\n- "NOT YET" if nothing relevant.\nNever invent products that aren't visible.`
       : "You are an AI scene analyst. Describe what you see in this image in detail. Include: objects, people, text, colors, setting, mood, and any notable details. Be concise but thorough.";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -40,7 +48,7 @@ serve(async (req) => {
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: [
-            { type: "text", text: mode === "text" ? "Read all text in this image." : mode === "objects" ? "Identify all objects." : "Analyze this scene." },
+            { type: "text", text: mode === "text" ? "Read all text." : mode === "objects" ? "List all objects." : mode === "watch" || mode === "shopping" ? `Look for: ${target || "the target"}` : "What do you see?" },
             { type: "image_url", image_url: { url: image } },
           ]},
         ],
