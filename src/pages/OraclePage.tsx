@@ -829,12 +829,15 @@ const OraclePage = () => {
 
     try {
       const allMsgs = [...messages, userMsg];
+      const introKey = "solace-oracle-introduced";
+      const isFirstMeeting = !localStorage.getItem(introKey);
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
+          isFirstMeeting,
           userMemories: formatMemoriesForPrompt(oracleMemories),
           adContext: {
             showAds: adPrefs?.ads_enabled ?? true,
@@ -844,6 +847,7 @@ const OraclePage = () => {
         }),
         signal: controller.signal,
       });
+      if (isFirstMeeting) localStorage.setItem(introKey, new Date().toISOString());
 
       if (!oracleResp.ok) {
         const err = await oracleResp.json().catch(() => ({ error: "Request failed" }));
