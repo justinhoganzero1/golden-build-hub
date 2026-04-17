@@ -1412,6 +1412,26 @@ const OraclePage = () => {
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
+
+      {/* Pick an existing image from the user's media library to become the new Oracle photo */}
+      <MediaPickerDialog
+        open={showOraclePhotoPicker}
+        onOpenChange={setShowOraclePhotoPicker}
+        filterType="image"
+        title="Choose Oracle photo"
+        onSelect={(item) => {
+          if (item?.url) saveImageAsOraclePhoto(item.url, item.title || "Oracle Photo");
+        }}
+      />
+
+      {/* Take a fresh selfie that becomes the new Oracle photo */}
+      <SelfieCaptureDialog
+        open={showOracleSelfie}
+        onOpenChange={setShowOracleSelfie}
+        showAvatarAction={false}
+        title="Selfie for Oracle"
+        onCapture={(dataUrl) => saveImageAsOraclePhoto(dataUrl, "Oracle Selfie")}
+      />
     </div>
   );
 };
