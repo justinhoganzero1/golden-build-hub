@@ -1703,10 +1703,50 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                                   {s.music_url === url ? "✓ Selected" : `Use #${i + 1}`}
                                 </Button>
                                 <audio src={url} controls className="h-6 flex-1 min-w-0" />
+                                <Button
+                                  size="sm" variant="ghost" className="h-6 w-6 p-0"
+                                  title="Save to Favourite Tracks"
+                                  onClick={() => saveTrackToFavourites(url, `${title || "Movie"} — ${s.caption} #${i + 1}`)}
+                                >
+                                  <Star className="w-3 h-3 text-primary" />
+                                </Button>
                               </div>
                             ))}
+                            <Button
+                              size="sm" variant="outline" className="h-6 text-[10px] mt-1"
+                              onClick={() => { setFavouritesTargetId(s.id); setShowFavouritesPicker(true); }}
+                            >
+                              <Star className="w-3 h-3 mr-1" /> Pick from Favourites
+                            </Button>
                           </div>
                         )}
+                        {/* Director controls — camera angle, lighting, action, emotion */}
+                        <div className="grid grid-cols-2 gap-1 pt-2 border-t border-border/40">
+                          <label className="text-[10px] text-muted-foreground flex flex-col gap-0.5">
+                            Camera angle
+                            <select
+                              value={s.camera_angle || "auto"}
+                              onChange={e => updateScene(s.id, { camera_angle: e.target.value as CameraAngle })}
+                              className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            >
+                              {Object.keys(CAMERA_ANGLE_PROMPTS).map(k => <option key={k} value={k}>{k}</option>)}
+                            </select>
+                          </label>
+                          <label className="text-[10px] text-muted-foreground flex flex-col gap-0.5">
+                            Lighting
+                            <select
+                              value={s.lighting_preset || "auto"}
+                              onChange={e => updateScene(s.id, { lighting_preset: e.target.value as LightingPreset })}
+                              className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            >
+                              {Object.keys(LIGHTING_PRESET_PROMPTS).map(k => <option key={k} value={k}>{k}</option>)}
+                            </select>
+                          </label>
+                          <Input value={s.character_action || ""} onChange={e => updateScene(s.id, { character_action: e.target.value })}
+                            className="h-6 text-[11px] col-span-2" placeholder="Character action — e.g. 'walks toward camera, reaches out'" />
+                          <Input value={s.character_emotion || ""} onChange={e => updateScene(s.id, { character_emotion: e.target.value })}
+                            className="h-6 text-[11px] col-span-2" placeholder="Character emotion — e.g. 'anxious, breathing fast'" />
+                        </div>
                       </div>
 
                       {editingSceneId === s.id && (
