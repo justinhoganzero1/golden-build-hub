@@ -37,6 +37,37 @@ const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrat
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
 type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
+type CameraAngle = "auto" | "wide" | "medium" | "close-up" | "extreme-close-up" | "low-angle" | "high-angle" | "birds-eye" | "dutch-tilt" | "over-the-shoulder" | "tracking" | "drone";
+type LightingPreset = "auto" | "golden-hour" | "blue-hour" | "high-key" | "low-key" | "noir" | "soft-natural" | "neon-cyberpunk" | "candlelit" | "studio-3-point" | "moonlit" | "harsh-midday";
+
+const CAMERA_ANGLE_PROMPTS: Record<CameraAngle, string> = {
+  "auto": "",
+  "wide": "wide establishing shot, full scene visible",
+  "medium": "medium shot, waist-up framing",
+  "close-up": "close-up shot, head and shoulders, intimate framing",
+  "extreme-close-up": "extreme close-up, eyes-only intensity",
+  "low-angle": "low-angle hero shot looking up, powerful framing",
+  "high-angle": "high-angle shot looking down, vulnerable framing",
+  "birds-eye": "bird's-eye top-down view",
+  "dutch-tilt": "dutch tilt camera angle, off-balance tension",
+  "over-the-shoulder": "over-the-shoulder POV shot",
+  "tracking": "tracking dolly shot, dynamic motion",
+  "drone": "aerial drone shot, sweeping cinematic motion",
+};
+const LIGHTING_PRESET_PROMPTS: Record<LightingPreset, string> = {
+  "auto": "",
+  "golden-hour": "warm golden hour sunlight, long shadows, magic-hour glow",
+  "blue-hour": "cool blue hour twilight, soft ambient light",
+  "high-key": "bright high-key lighting, soft and even, minimal shadows",
+  "low-key": "dramatic low-key lighting, deep shadows, single key light",
+  "noir": "film noir chiaroscuro lighting, hard shadows, venetian-blind patterns",
+  "soft-natural": "soft natural window lighting, diffused and gentle",
+  "neon-cyberpunk": "neon cyberpunk lighting, magenta and cyan rim lights, wet reflections",
+  "candlelit": "warm candlelit interior, flickering amber glow",
+  "studio-3-point": "professional 3-point studio lighting with key, fill, and rim",
+  "moonlit": "cool moonlit night scene, silver-blue rim light",
+  "harsh-midday": "harsh midday sunlight, overhead, high contrast",
+};
 
 interface Scene {
   id: string;
@@ -68,6 +99,11 @@ interface Scene {
   lower_third_name?: string;   // e.g. "Maya Chen"
   lower_third_title?: string;  // e.g. "SOLACE Tech Reporter"
   broll_url?: string;          // optional B-roll image overlay (cutaway)
+  // Director controls (preset-driven, baked into the photo prompt)
+  camera_angle?: CameraAngle;
+  lighting_preset?: LightingPreset;
+  character_action?: string;   // "walks slowly into the room, hand trembling"
+  character_emotion?: string;  // "anxious, breathing fast" — affects expression
 }
 
 interface MovieStudioProps {
