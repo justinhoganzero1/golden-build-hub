@@ -46,7 +46,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
                 onOpenChange(false);
                 navigate("/subscribe");
               }}
-              className="hidden sm:inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-xs hover:opacity-90 transition-opacity"
+              className="hidden sm:inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-xs hover:opacity-90 transition-opacity"
             >
               <Crown className="w-3.5 h-3.5" />
               Upgrade to unlock
@@ -93,7 +93,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
                 onOpenChange(false);
                 navigate("/subscribe");
               }}
-              className="inline-flex items-center gap-1.5 py-2 px-4 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 py-2 px-4 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
             >
               <Crown className="w-4 h-4" />
               Upgrade to unlock {title}

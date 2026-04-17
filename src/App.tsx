@@ -94,6 +94,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
+              <PreviewModeBanner />
               <MasterMuteButton />
               <Suspense fallback={<Loading />}>
                 <Routes>

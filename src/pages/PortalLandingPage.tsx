@@ -348,6 +348,7 @@ const PortalLandingPage = () => {
           title={previewFeature.title}
           desc={previewFeature.desc}
           icon={previewFeature.icon}
+          to={previewFeature.to}
         />
       )}
     </div>
