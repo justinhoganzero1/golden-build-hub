@@ -10,64 +10,112 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
 import PreviewModeBanner from "@/components/PreviewModeBanner";
+import SpeedAIController from "@/components/SpeedAIController";
+import { registerRoutes } from "@/lib/speedAI";
 import NotFound from "./pages/NotFound";
-const PortalLandingPage = lazy(() => import("./pages/PortalLandingPage"));
-const WelcomePage = lazy(() => import("./pages/WelcomePage"));
 
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
-const MindHubPage = lazy(() => import("./pages/MindHubPage"));
-const CrisisHubPage = lazy(() => import("./pages/CrisisHubPage"));
-const VaultPage = lazy(() => import("./pages/VaultPage"));
-const OraclePage = lazy(() => import("./pages/OraclePage"));
+// Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
+const loaders = {
+  "/": () => import("./pages/PortalLandingPage"),
+  "/welcome": () => import("./pages/WelcomePage"),
+  "/dashboard": () => import("./pages/DashboardPage"),
+  "/mind-hub": () => import("./pages/MindHubPage"),
+  "/crisis-hub": () => import("./pages/CrisisHubPage"),
+  "/vault": () => import("./pages/VaultPage"),
+  "/oracle": () => import("./pages/OraclePage"),
+  "/ai-studio": () => import("./pages/AIStudioPage"),
+  "/video-editor": () => import("./pages/VideoEditorPage"),
+  "/media-library": () => import("./pages/MediaLibraryPage"),
+  "/live-vision": () => import("./pages/LiveVisionPage"),
+  "/voice-studio": () => import("./pages/VoiceStudioPage"),
+  "/photography-hub": () => import("./pages/PhotographyHubPage"),
+  "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
+  "/ai-tutor": () => import("./pages/AITutorPage"),
+  "/interpreter": () => import("./pages/InterpreterPage"),
+  "/inventor": () => import("./pages/InventorPage"),
+  "/calendar": () => import("./pages/CalendarPage"),
+  "/alarm-clock": () => import("./pages/AlarmClockPage"),
+  "/safety-center": () => import("./pages/SafetyCenterPage"),
+  "/diagnostics": () => import("./pages/DiagnosticsPage"),
+  "/elderly-care": () => import("./pages/ElderlyCarePage"),
+  "/avatar-generator": () => import("./pages/AvatarGeneratorPage"),
+  "/professional-hub": () => import("./pages/ProfessionalHubPage"),
+  "/family-hub": () => import("./pages/FamilyHubPage"),
+  "/magic-hub": () => import("./pages/MagicHubPage"),
+  "/marketing-hub": () => import("./pages/MarketingHubPage"),
+  "/special-occasions": () => import("./pages/SpecialOccasionsPage"),
+  "/suggestion-box": () => import("./pages/SuggestionBoxPage"),
+  "/referral": () => import("./pages/ReferralPage"),
+  "/subscribe": () => import("./pages/SubscribePage"),
+  "/app-builder": () => import("./pages/AppBuilderPage"),
+  "/pos-learn": () => import("./pages/POSLearnPage"),
+  "/story-writer": () => import("./pages/StoryWriterPage"),
+  "/settings": () => import("./pages/SettingsPage"),
+  "/profile": () => import("./pages/ProfilePage"),
+  "/wallet": () => import("./pages/WalletPage"),
+  "/consent": () => import("./pages/ConsentPage"),
+  "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
+  "/ai-companion": () => import("./pages/AICompanionPage"),
+  "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
+  "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
+  "/terms-of-service": () => import("./pages/TermsOfServicePage"),
+  "/about": () => import("./pages/AboutPage"),
+  "/investor": () => import("./pages/InvestorPage"),
+  "/creators": () => import("./pages/CreatorsPage"),
+  "/sign-in": () => import("./components/SignInPage"),
+  "/web-wrapper": () => import("./pages/WebWrapperPage"),
+} as const;
 
-const AIStudioPage = lazy(() => import("./pages/AIStudioPage"));
-const VideoEditorPage = lazy(() => import("./pages/VideoEditorPage"));
+registerRoutes(loaders);
 
-
-const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
-const LiveVisionPage = lazy(() => import("./pages/LiveVisionPage"));
-const VoiceStudioPage = lazy(() => import("./pages/VoiceStudioPage"));
-const PhotographyHubPage = lazy(() => import("./pages/PhotographyHubPage"));
-const PersonalAssistantPage = lazy(() => import("./pages/PersonalAssistantPage"));
-const AITutorPage = lazy(() => import("./pages/AITutorPage"));
-
-const InterpreterPage = lazy(() => import("./pages/InterpreterPage"));
-const InventorPage = lazy(() => import("./pages/InventorPage"));
-const CalendarPage = lazy(() => import("./pages/CalendarPage"));
-const AlarmClockPage = lazy(() => import("./pages/AlarmClockPage"));
-const SafetyCenterPage = lazy(() => import("./pages/SafetyCenterPage"));
-const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
-const ElderlyCarePage = lazy(() => import("./pages/ElderlyCarePage"));
-
-const AvatarGeneratorPage = lazy(() => import("./pages/AvatarGeneratorPage"));
-const ProfessionalHubPage = lazy(() => import("./pages/ProfessionalHubPage"));
-const FamilyHubPage = lazy(() => import("./pages/FamilyHubPage"));
-const MagicHubPage = lazy(() => import("./pages/MagicHubPage"));
-const MarketingHubPage = lazy(() => import("./pages/MarketingHubPage"));
-const SpecialOccasionsPage = lazy(() => import("./pages/SpecialOccasionsPage"));
-const SuggestionBoxPage = lazy(() => import("./pages/SuggestionBoxPage"));
-
-const ReferralPage = lazy(() => import("./pages/ReferralPage"));
-const SubscribePage = lazy(() => import("./pages/SubscribePage"));
-const AppBuilderPage = lazy(() => import("./pages/AppBuilderPage"));
-const POSLearnPage = lazy(() => import("./pages/POSLearnPage"));
-const StoryWriterPage = lazy(() => import("./pages/StoryWriterPage"));
-
-
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-const WalletPage = lazy(() => import("./pages/WalletPage"));
-const ConsentPage = lazy(() => import("./pages/ConsentPage"));
-const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboardPage"));
-const AICompanionPage = lazy(() => import("./pages/AICompanionPage"));
-const AvatarGalleryPage = lazy(() => import("./pages/AvatarGalleryPage"));
-const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
-const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
-const AboutPage = lazy(() => import("./pages/AboutPage"));
-const InvestorPage = lazy(() => import("./pages/InvestorPage"));
-const CreatorsPage = lazy(() => import("./pages/CreatorsPage"));
-const SignInPage = lazy(() => import("./components/SignInPage"));
-const WebWrapperPage = lazy(() => import("./pages/WebWrapperPage"));
+const PortalLandingPage = lazy(loaders["/"]);
+const WelcomePage = lazy(loaders["/welcome"]);
+const DashboardPage = lazy(loaders["/dashboard"]);
+const MindHubPage = lazy(loaders["/mind-hub"]);
+const CrisisHubPage = lazy(loaders["/crisis-hub"]);
+const VaultPage = lazy(loaders["/vault"]);
+const OraclePage = lazy(loaders["/oracle"]);
+const AIStudioPage = lazy(loaders["/ai-studio"]);
+const VideoEditorPage = lazy(loaders["/video-editor"]);
+const MediaLibraryPage = lazy(loaders["/media-library"]);
+const LiveVisionPage = lazy(loaders["/live-vision"]);
+const VoiceStudioPage = lazy(loaders["/voice-studio"]);
+const PhotographyHubPage = lazy(loaders["/photography-hub"]);
+const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
+const AITutorPage = lazy(loaders["/ai-tutor"]);
+const InterpreterPage = lazy(loaders["/interpreter"]);
+const InventorPage = lazy(loaders["/inventor"]);
+const CalendarPage = lazy(loaders["/calendar"]);
+const AlarmClockPage = lazy(loaders["/alarm-clock"]);
+const SafetyCenterPage = lazy(loaders["/safety-center"]);
+const DiagnosticsPage = lazy(loaders["/diagnostics"]);
+const ElderlyCarePage = lazy(loaders["/elderly-care"]);
+const AvatarGeneratorPage = lazy(loaders["/avatar-generator"]);
+const ProfessionalHubPage = lazy(loaders["/professional-hub"]);
+const FamilyHubPage = lazy(loaders["/family-hub"]);
+const MagicHubPage = lazy(loaders["/magic-hub"]);
+const MarketingHubPage = lazy(loaders["/marketing-hub"]);
+const SpecialOccasionsPage = lazy(loaders["/special-occasions"]);
+const SuggestionBoxPage = lazy(loaders["/suggestion-box"]);
+const ReferralPage = lazy(loaders["/referral"]);
+const SubscribePage = lazy(loaders["/subscribe"]);
+const AppBuilderPage = lazy(loaders["/app-builder"]);
+const POSLearnPage = lazy(loaders["/pos-learn"]);
+const StoryWriterPage = lazy(loaders["/story-writer"]);
+const SettingsPage = lazy(loaders["/settings"]);
+const ProfilePage = lazy(loaders["/profile"]);
+const WalletPage = lazy(loaders["/wallet"]);
+const ConsentPage = lazy(loaders["/consent"]);
+const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
+const AICompanionPage = lazy(loaders["/ai-companion"]);
+const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
+const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
+const TermsOfServicePage = lazy(loaders["/terms-of-service"]);
+const AboutPage = lazy(loaders["/about"]);
+const InvestorPage = lazy(loaders["/investor"]);
+const CreatorsPage = lazy(loaders["/creators"]);
+const SignInPage = lazy(loaders["/sign-in"]);
+const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
