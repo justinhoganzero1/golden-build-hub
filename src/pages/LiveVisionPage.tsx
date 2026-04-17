@@ -114,12 +114,15 @@ const LiveVisionPage = () => {
     if (!videoRef.current || !canvasRef.current) return null;
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    if (!video.videoWidth || !video.videoHeight || video.readyState < 2) return null;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.7);
+    const url = canvas.toDataURL("image/jpeg", 0.7);
+    if (!url || url.length < 200 || url === "data:,") return null;
+    return url;
   }, []);
 
   // ─── Vision analysis ───
