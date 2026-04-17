@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Palette, Plus, Trash2, Star, Users, Heart, Eye, Mic } from "lucide-react";
+import { Palette, Plus, Trash2, Star, Users, Heart, Eye, Mic, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useNavigate } from "react-router-dom";
 import { useUserAvatars, useDeleteAvatar, type UserAvatar } from "@/hooks/useUserAvatars";
@@ -26,6 +26,16 @@ const AvatarGalleryPage = () => {
     deleteAvatar.mutate(id, {
       onSuccess: () => { toast.success("Avatar deleted"); setSelected(null); },
     });
+  };
+
+  const setAsMasterOracle = (avatar: UserAvatar) => {
+    if (!avatar.image_url) {
+      toast.error("This avatar has no image");
+      return;
+    }
+    localStorage.setItem("solace-oracle-mode", JSON.stringify({ mode: "avatar", avatarId: avatar.id }));
+    toast.success(`👑 ${avatar.name} is now your Master Oracle`);
+    setSelected(null);
   };
 
   return (
@@ -152,19 +162,28 @@ const AvatarGalleryPage = () => {
                   <span>{new Date(selected.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => { navigate("/oracle"); setSelected(null); }}
-                  className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium flex items-center justify-center gap-1.5"
+                  onClick={() => setAsMasterOracle(selected)}
+                  disabled={!selected.image_url}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  <Eye className="w-4 h-4" /> Use in Chat
+                  <Crown className="w-4 h-4" /> Set as Master Oracle
                 </button>
-                <button
-                  onClick={() => handleDelete(selected.id)}
-                  className="py-2.5 px-4 rounded-xl bg-red-600/10 text-red-400 text-sm"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { navigate("/oracle"); setSelected(null); }}
+                    className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium flex items-center justify-center gap-1.5"
+                  >
+                    <Eye className="w-4 h-4" /> Use in Chat
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selected.id)}
+                    className="py-2.5 px-4 rounded-xl bg-red-600/10 text-red-400 text-sm"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
