@@ -655,6 +655,46 @@ const OraclePage = () => {
     toast.success(avatarId ? "Oracle replaced with your avatar!" : "Switched back to Orb Oracle");
   };
 
+  // Save a chosen image as a brand-new Oracle avatar and switch to it immediately
+  const saveImageAsOraclePhoto = useCallback(async (imageUrl: string, label = "Oracle Photo") => {
+    if (!imageUrl) return;
+    try {
+      const created = await createAvatar.mutateAsync({
+        name: label,
+        purpose: "oracle",
+        voice_style: "Warm & Friendly",
+        personality: "the user's chosen oracle",
+        image_url: imageUrl,
+        art_style: "user-photo",
+        description: "Custom Oracle photo",
+        is_default: false,
+      });
+      setOracleMode("avatar", created.id);
+      setOracleModeState({ mode: "avatar", avatarId: created.id });
+      setShowOraclePhotoPicker(false);
+      setShowOracleSelfie(false);
+      setShowOracleSwap(false);
+      toast.success("Oracle photo updated!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to set Oracle photo");
+    }
+  }, [createAvatar]);
+
+  // Delete an avatar; if it was the active Oracle, fall back to the orb
+  const removeOracleAvatar = useCallback((id: string) => {
+    deleteAvatar.mutate(id, {
+      onSuccess: () => {
+        if (oracleMode.avatarId === id) {
+          setOracleMode("orb");
+          setOracleModeState({ mode: "orb" });
+        }
+        toast.success("Avatar removed");
+      },
+      onError: () => toast.error("Failed to remove avatar"),
+    });
+  }, [deleteAvatar, oracleMode.avatarId]);
+
   // Always-on speech recognition
   const startAlwaysListening = useCallback(() => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return;
