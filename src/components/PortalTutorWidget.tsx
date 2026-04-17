@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X } from "lucide-react";
+import { MessageCircle, Send, X, Mic, MicOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
@@ -19,12 +19,15 @@ const PortalTutorWidget = () => {
     {
       role: "assistant",
       content:
-        "Hi — I'm your **SOLACE Concierge**. I can walk you through every feature, help you install the app, and answer anything about pricing, safety, or onboarding. What would you like to explore?",
+        "Hi — I'm your **SOLACE Concierge**. Tap the mic to talk to me, or type below. I can walk you through every feature and help you install the app.",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const sendRef = useRef<(t: string) => void>();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
