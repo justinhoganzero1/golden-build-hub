@@ -450,6 +450,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       speaker: "narrator",
       voice_style: "narrator-male-warm",
       sfx_prompt: "",
+      music_prompt: "",
+      music_volume: 0.25,
     }]);
   };
   const removeScene = (id: string) => setScenes(prev => prev.filter(s => s.id !== id));
