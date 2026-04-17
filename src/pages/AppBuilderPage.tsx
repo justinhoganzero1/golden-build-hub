@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User } from "lucide-react";
+import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
-interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; }
+interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; isPaid?: boolean; pricePoint?: string; }
 
 interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; }
 
