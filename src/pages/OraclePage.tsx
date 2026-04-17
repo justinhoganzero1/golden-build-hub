@@ -743,7 +743,8 @@ const OraclePage = () => {
   // ============ SEND MESSAGE ============
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
-    setInput("");
+    const isIntroTrigger = text === "__INTRO__";
+    if (!isIntroTrigger) setInput("");
     // ── Self-diagnose intent: keep CLOSED unless user explicitly asks to see ──
     const lower = text.toLowerCase();
     const wantsDiagnose = /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
