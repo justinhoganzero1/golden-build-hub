@@ -264,14 +264,32 @@ const OraclePage = () => {
         }),
       });
       if (!response.ok) return false;
+      const contentType = response.headers.get("Content-Type") || "";
+      // Edge function may return a JSON fallback signal instead of audio
+      if (contentType.includes("application/json")) {
+        try {
+          const data = await response.json();
+          if (data?.fallback) {
+            console.warn("Premium TTS unavailable, falling back to browser TTS");
+          }
+        } catch {}
+        return false;
+      }
       const audioBlob = await response.blob();
+      if (!audioBlob.type.includes("audio") || audioBlob.size < 100) return false;
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
-       audio.playbackRate = 0.92; // additional slight slowdown client-side
+      audio.playbackRate = 0.92;
       setIsSpeaking(true);
-      await audio.play();
+      try {
+        await audio.play();
+      } catch {
+        URL.revokeObjectURL(audioUrl);
+        setIsSpeaking(false);
+        return false;
+      }
       await new Promise<void>((resolve) => {
         audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
         audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
@@ -279,7 +297,9 @@ const OraclePage = () => {
       setIsSpeaking(false);
       currentAudioRef.current = null;
       return true;
-    } catch {
+    } catch (err) {
+      console.warn("Premium TTS error:", err);
+      setIsSpeaking(false);
       return false;
     }
   }, []);
