@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import { useAllUserMediaPaginated } from "@/hooks/useAllUserMedia";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -95,7 +95,14 @@ const OwnerDashboardPage = () => {
     toast.success("Campaign deleted");
   };
 
-  const { data: allMedia = [] } = useAllUserMedia();
+  const {
+    data: mediaPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: libLoading,
+  } = useAllUserMediaPaginated();
+  const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
   const qc = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminChecked, setAdminChecked] = useState(false);
@@ -204,6 +211,7 @@ const OwnerDashboardPage = () => {
     if (!error) {
       toast.success("Deleted");
       setLibSelected(null);
+      qc.invalidateQueries({ queryKey: ["all-user-media-paginated"] });
       qc.invalidateQueries({ queryKey: ["all-user-media"] });
     }
   };
