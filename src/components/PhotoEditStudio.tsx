@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Wand2, Loader2, Sparkles, Sliders, Scissors, RotateCw, FlipHorizontal, FlipVertical,
   Sun, Contrast, Droplet, Palette, Eraser, Maximize2, Image as ImageIcon, Brush,
   Zap, Snowflake, Flame, Camera, Aperture, Wind, Star, Download, Save, X, Undo2,
   Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon
 } from "lucide-react";
-
-const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 interface PhotoEditStudioProps {
   open: boolean;
@@ -60,6 +60,8 @@ const FILTER_PRESETS = [
 ];
 
 const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStudioProps) => {
+  const { user } = useAuth();
+  const isAdmin = user?.email === "justinbretthogan@gmail.com";
   const [tab, setTab] = useState<Tab>("ai");
   const [history, setHistory] = useState<string[]>([imageUrl]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -113,36 +115,39 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
   const redo = () => historyIndex < history.length - 1 && setHistoryIndex(historyIndex + 1);
 
   const aiEdit = async (prompt: string) => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim()) {
+      toast.error("Type what you want to change first");
+      return;
+    }
+    if (!current) {
+      toast.error("No image loaded to edit");
+      return;
+    }
     setBusy(true);
     try {
-      const resp = await fetch(GEN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          prompt: `Edit this photo: ${prompt}. Keep the main subject recognizable. High quality professional finish.`,
+      const { data, error } = await supabase.functions.invoke("image-gen", {
+        body: {
+          prompt: `Edit the provided photo: ${prompt}. Modify the existing image directly — keep composition, subject, and pose recognizable unless the edit specifically requests otherwise. Return the edited photo as an image.`,
           inputImage: current,
-        }),
+          ownerBypass: isAdmin,
+        },
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        toast.error(err.error || "AI edit failed");
+      if (error) {
+        console.error("image-gen error:", error);
+        toast.error(error.message || "AI edit failed");
         return;
       }
-      const data = await resp.json();
-      const url = data.images?.[0]?.image_url?.url;
+      const url = data?.images?.[0]?.image_url?.url;
       if (url) {
         pushHistory(url);
-        toast.success("Edit applied! ✨");
+        toast.success("Edit applied ✨");
       } else {
-        toast.error("No image returned");
+        const msg = data?.text?.slice(0, 140);
+        toast.error(msg ? `AI replied with text: ${msg}` : "AI didn't return an image — try rephrasing");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("AI edit failed");
+      toast.error(e?.message || "AI edit failed");
     } finally {
       setBusy(false);
     }
