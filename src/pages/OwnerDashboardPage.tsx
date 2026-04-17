@@ -929,7 +929,66 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
-        <ShareDialog
+        {/* AI BUILDER — Admin-only ultimate-coding chat for shipping features into SOLACE */}
+        {tab === "builder" && (
+          <div className="space-y-3">
+            <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap className="w-5 h-5 text-yellow-400" />
+                <h2 className="text-base font-bold text-white">SOLACE AI Builder</h2>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Ultimate-level coding assistant for this site and every app inside it. Ask it to add features, fix bugs,
+                build new pages, or extend existing apps — it returns full code + SQL + edge function plans.
+                Changes deploy to all signed-in users on next page load. Note: external sites and other users' devices
+                cannot be remotely modified — only this SOLACE app.
+              </p>
+            </div>
+
+            <div className="bg-black/40 border border-white/10 rounded-2xl h-[420px] overflow-y-auto p-3 space-y-3">
+              {builderMessages.length === 0 && (
+                <div className="text-center text-xs text-gray-500 py-8">
+                  Try: <span className="text-yellow-400">"Add a /changelog page that lists every release"</span> or{" "}
+                  <span className="text-yellow-400">"Make Oracle remember favorite color"</span>
+                </div>
+              )}
+              {builderMessages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-100"
+                      : "bg-white/5 border border-white/10 text-gray-200"
+                  }`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {builderLoading && (
+                <div className="text-[11px] text-gray-500">Architect is thinking…</div>
+              )}
+            </div>
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); sendBuilderMessage(); }}
+              className="flex gap-2"
+            >
+              <input
+                value={builderInput}
+                onChange={(e) => setBuilderInput(e.target.value)}
+                placeholder="Describe a feature, fix, or app to build…"
+                className="flex-1 px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-yellow-500/50"
+              />
+              <button
+                type="submit"
+                disabled={builderLoading || !builderInput.trim()}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-semibold text-xs disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
+
           open={!!libShareItem}
           onOpenChange={() => setLibShareItem(null)}
           title={libShareItem?.title || "Media"}
