@@ -19,6 +19,7 @@ const COLLECTIONS = [
   { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
   { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
+  { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles,      color: "from-fuchsia-500/20 to-pink-500/20", accent: "text-fuchsia-400", border: "border-fuchsia-500/30" },
   { key: "video-editor",  label: "Video Editor",                             icon: Film,          color: "from-orange-500/20 to-amber-500/20", accent: "text-orange-400", border: "border-orange-500/30" },
   { key: "voice-studio",  label: "Voice Studio",                             icon: Mic,           color: "from-teal-500/20 to-cyan-500/20", accent: "text-teal-400", border: "border-teal-500/30" },
   { key: "oracle",        label: "Oracle",                                   icon: Globe,         color: "from-yellow-500/20 to-amber-500/20", accent: "text-yellow-400", border: "border-yellow-500/30" },
