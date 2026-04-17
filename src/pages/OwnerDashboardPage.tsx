@@ -1005,6 +1005,57 @@ const OwnerDashboardPage = () => {
           </DialogContent>
         </Dialog>
 
+        {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "sources" && (
+          <div className="space-y-4">
+            <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-5 h-5 text-cyan-300" />
+                <h3 className="text-sm font-bold text-white">Where your visitors came from</h3>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-4">
+                Top sources for the last 5,000 visits. Sources include UTM tags (e.g. <span className="text-cyan-300">?utm_source=facebook</span>) and referring sites. "direct" = typed URL or no referrer.
+              </p>
+
+              {trafficSources.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-xs">No traffic data yet — share your link to start tracking.</div>
+              ) : (
+                <div className="space-y-2">
+                  {(() => {
+                    const max = Math.max(...trafficSources.map(s => s.visits), 1);
+                    return trafficSources.map((s, i) => {
+                      const pct = (s.visits / max) * 100;
+                      return (
+                        <div key={s.source + i} className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-white font-medium truncate max-w-[60%]">{s.source}</span>
+                            <span className="text-cyan-300 font-bold">{s.visits.toLocaleString()}</span>
+                          </div>
+                          <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[11px] text-gray-400">
+              <p className="text-white text-xs font-bold mb-2">💡 Tip — track each campaign</p>
+              <p>Share trackable links like:</p>
+              <code className="block mt-2 p-2 bg-black/40 rounded text-cyan-300 break-all">
+                https://golden-vault-builder.lovable.app/?utm_source=facebook&utm_medium=ad&utm_campaign=launch
+              </code>
+              <p className="mt-2">Each one shows up as a separate bar above so you know exactly what's working.</p>
+            </div>
+          </div>
+        )}
+
         {tab === "ai-studio" && (
           <div className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6">
             <div className="flex items-start gap-3 mb-4">
