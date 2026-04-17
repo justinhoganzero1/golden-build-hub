@@ -769,7 +769,7 @@ const OraclePage = () => {
 
     // ── Background SFX generation intent (ElevenLabs) ──
     // Triggered by phrases like "make a sound effect of...", "generate sfx ..."
-    const sfxMatch = text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
+    const sfxMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
     if (sfxMatch && sfxMatch[1]) {
       const prompt = sfxMatch[1].replace(/[.!?]+$/, "").trim();
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
