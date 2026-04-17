@@ -1,0 +1,54 @@
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  try {
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!ELEVENLABS_API_KEY) {
+      return new Response(JSON.stringify({ error: "ElevenLabs API key not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { prompt, duration_seconds } = await req.json().catch(() => ({}));
+    if (!prompt || typeof prompt !== "string") {
+      return new Response(JSON.stringify({ error: "prompt is required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ElevenLabs music duration is in milliseconds, accept seconds and convert
+    const ms = Math.max(10000, Math.min(300000, (Number(duration_seconds) || 30) * 1000));
+
+    const resp = await fetch("https://api.elevenlabs.io/v1/music", {
+      method: "POST",
+      headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: prompt.substring(0, 2000),
+        music_length_ms: ms,
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error("ElevenLabs Music error:", err);
+      return new Response(JSON.stringify({ error: "Music generation failed", details: err }), {
+        status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(resp.body, {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "audio/mpeg", "Cache-Control": "no-cache" },
+    });
+  } catch (e) {
+    console.error("Music error:", e);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
