@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Video, Scissors, Type, Music, Image, Layers, Play, Upload } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import PaywallGate from "@/components/PaywallGate";
 
 const tools = [
   { icon: <Scissors className="w-5 h-5" />, label: "Trim & Cut" },
@@ -13,6 +14,7 @@ const tools = [
 const VideoEditorPage = () => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   return (
+    <PaywallGate requiredTier="monthly" featureName="Video Editor (AI video generation)">
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
@@ -37,6 +39,7 @@ const VideoEditorPage = () => {
         </div>
       </div>
     </div>
+    </PaywallGate>
   );
 };
 

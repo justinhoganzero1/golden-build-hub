@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
+import PaywallGate from "@/components/PaywallGate";
 
 // Realistic 8K avatar imports
 import execMale from "@/assets/avatars/exec-male.jpg";
@@ -241,6 +242,7 @@ const AIStudioPage = () => {
   const voiceName = (vid: string) => CURATED_ELEVENLABS_VOICES.find(v => v.id === vid)?.name || "Voice";
 
   return (
+    <PaywallGate requiredTier="starter" featureName="AI Studio (avatar &amp; voice creation)">
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <audio ref={musicRef} preload="auto" />
@@ -430,6 +432,7 @@ const AIStudioPage = () => {
         </div>
       )}
     </div>
+    </PaywallGate>
   );
 };
 
