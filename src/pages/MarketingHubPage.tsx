@@ -4,6 +4,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { moderatePrompt } from "@/lib/contentSafety";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
@@ -29,6 +30,7 @@ const MarketingHubPage = () => {
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<{type: string; result: string; date: string}[]>([]);
+  const saveMedia = useSaveMedia();
 
   const generate = async () => {
     if (!prompt.trim() || !activeTool) return;
@@ -48,6 +50,16 @@ const MarketingHubPage = () => {
       setResult(r);
       setHistory(prev => [{ type: tool?.title || "", result: r, date: new Date().toLocaleString() }, ...prev].slice(0, 20));
       toast.success("Content generated! 🚀");
+      try {
+        const dataUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(r)}`;
+        await saveMedia.mutateAsync({
+          media_type: "text",
+          title: `${tool?.title || "Marketing"} — ${prompt.trim().slice(0, 60)}`,
+          url: dataUrl,
+          source_page: "marketing-hub",
+          metadata: { tool: activeTool, prompt: prompt.trim() },
+        });
+      } catch { /* non-blocking */ }
     } catch { toast.error("Failed"); } finally { setIsLoading(false); }
   };
 

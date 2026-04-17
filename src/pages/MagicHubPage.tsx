@@ -4,6 +4,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { moderatePrompt } from "@/lib/contentSafety";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 
@@ -31,6 +32,7 @@ const MagicHubPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const saveMedia = useSaveMedia();
 
   const generate = async () => {
     if (!activeTool) return;
@@ -48,8 +50,20 @@ const MagicHubPage = () => {
       });
       if (!resp.ok) { toast.error("Generation failed"); return; }
       const data = await resp.json();
-      setResult(data.result || "No result generated");
+      const out = data.result || "No result generated";
+      setResult(out);
       toast.success("✨ Magic complete!");
+      // Auto-save text creation to library as a data: URL
+      try {
+        const dataUrl = `data:text/markdown;charset=utf-8,${encodeURIComponent(out)}`;
+        await saveMedia.mutateAsync({
+          media_type: "text",
+          title: `${currentTool?.title || "Magic"} — ${userPrompt.slice(0, 60)}`,
+          url: dataUrl,
+          source_page: "magic-hub",
+          metadata: { tool: activeTool, prompt: userPrompt },
+        });
+      } catch { /* non-blocking */ }
     } catch { toast.error("Something went wrong"); } finally { setIsLoading(false); }
   };
 

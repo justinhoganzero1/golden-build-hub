@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import solaceLogo from "@/assets/solace-logo.png";
 import { MASTER_AI_AVATAR as aiAvatar } from "@/assets/master-ai-avatar";
+import { useSaveMedia } from "@/hooks/useUserAvatars";
 
 const STEPS = [
   "⚙ Scanning URL structure...",
@@ -108,6 +109,7 @@ const downloadFile = (filename: string, content: string) => {
 const WebWrapperPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const saveMedia = useSaveMedia();
   // Pre-fill from query params: /web-wrapper?url=...&name=...
   const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
   const [url, setUrl] = useState(params.get("url") || "");
@@ -140,10 +142,22 @@ const WebWrapperPage = () => {
       if (step >= STEPS.length) {
         clearInterval(tick);
         const safeName = appName.trim().replace(/\s+/g, "_");
-        downloadFile(`${safeName}_play_store_wrapper.txt`, buildWrapperContent(url.trim(), appName.trim(), pkgId));
+        const content = buildWrapperContent(url.trim(), appName.trim(), pkgId);
+        downloadFile(`${safeName}_play_store_wrapper.txt`, content);
         setDone(true);
         setWorking(false);
-        toast({ title: "Wrapper generated", description: "Play Store wrapper package downloaded." });
+        toast({ title: "Wrapper generated", description: "Play Store wrapper package downloaded & saved to your library." });
+        // Auto-save wrapper to library
+        try {
+          const dataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`;
+          void saveMedia.mutateAsync({
+            media_type: "text",
+            title: `${appName.trim()} — Play Store Wrapper`,
+            url: dataUrl,
+            source_page: "apps",
+            metadata: { url: url.trim(), package_id: pkgId, app_name: appName.trim(), kind: "wrapper" },
+          });
+        } catch { /* non-blocking */ }
       }
     }, 280);
   };
