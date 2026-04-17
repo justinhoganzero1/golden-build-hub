@@ -156,6 +156,10 @@ const PortalLandingPage = () => {
             </span>
           </h1>
 
+          <div className="flex justify-center mb-6">
+            <VisitorCounter page="landing" />
+          </div>
+
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
             Wellness, creativity, safety, and productivity — unified in one cinematic experience,
             guided by an AI that talks, listens, and genuinely cares.
