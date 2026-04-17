@@ -48,7 +48,7 @@ serve(async (req) => {
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: [
-            { type: "text", text: mode === "text" ? "Read all text in this image." : mode === "objects" ? "Identify all objects." : "Analyze this scene." },
+            { type: "text", text: mode === "text" ? "Read all text." : mode === "objects" ? "List all objects." : mode === "watch" || mode === "shopping" ? `Look for: ${target || "the target"}` : "What do you see?" },
             { type: "image_url", image_url: { url: image } },
           ]},
         ],
