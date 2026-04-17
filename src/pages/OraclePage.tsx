@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import LiveAvatar from "@/components/LiveAvatar";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
@@ -1092,14 +1091,26 @@ const OraclePage = () => {
         {oracleMode.mode === "orb" ? (
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center p-2 z-10">
-            <LiveAvatar
-              imageUrl={oracleAvatar?.image_url}
-              name={oracleName}
-              isSpeaking={isSpeaking}
-              isListening={isListening}
-              isLoading={isLoading}
-            />
+          <div className="flex flex-col items-center gap-3 z-10">
+            {oracleAvatar?.image_url ? (
+              <div className="relative">
+                <img src={oracleAvatar.image_url} alt={oracleName}
+                  className={`w-40 h-40 rounded-full object-cover border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
+                  style={{ animation: isSpeaking ? "pulse 1s ease-in-out infinite" : isLoading ? "pulse 2s ease-in-out infinite" : undefined }} />
+                {isListening && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-40 h-40 rounded-full bg-gradient-to-br from-pink-500/30 to-purple-500/30 flex items-center justify-center text-5xl border-4 border-purple-500/30">
+                💕
+              </div>
+            )}
+            <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
           </div>
         )}
 
