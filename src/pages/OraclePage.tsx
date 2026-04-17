@@ -828,8 +828,8 @@ const OraclePage = () => {
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setShowChat(true);
-    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
-    setMessages(prev => [...prev, userMsg]);
+    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
+    if (!isIntroTrigger) setMessages(prev => [...prev, userMsg]);
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
     setIsLoading(true);
@@ -837,9 +837,9 @@ const OraclePage = () => {
     abortRef.current = controller;
 
     try {
-      const allMsgs = [...messages, userMsg];
+      const allMsgs = isIntroTrigger ? [{ role: "user" as const, sender: "user", emoji: "👤", color: "#FFAA00", content: "Hi", id: "intro" } as Message] : [...messages, userMsg];
       const introKey = "solace-oracle-introduced";
-      const isFirstMeeting = !localStorage.getItem(introKey);
+      const isFirstMeeting = !localStorage.getItem(introKey) || isIntroTrigger;
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
