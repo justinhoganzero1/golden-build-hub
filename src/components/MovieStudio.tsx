@@ -233,6 +233,52 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     setEditingSceneId(null);
   };
 
+  // ----- Audio generation (per-scene narration via ElevenLabs) -----
+  const generateSceneAudio = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const text = (scene.narration || scene.caption || "").trim();
+    if (!text) { toast.error("Add narration text first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: true } : s));
+    try {
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ text, voiceId: voiceFor(scene.voice_style) }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
+        else toast.error("Voice generation failed");
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: false } : s));
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, audio_url: dataUrl, generatingAudio: false } : s));
+    } catch (e) {
+      console.error(e); toast.error("Voice generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: false } : s));
+    }
+  };
+
+  const generateAllAudio = async () => {
+    const pending = scenes.filter(s => !s.audio_url && (s.narration || s.caption)).map(s => s.id);
+    if (pending.length === 0) { toast.info("All scenes already have audio"); return; }
+    setAudioProgress({ done: 0, total: pending.length });
+    let done = 0;
+    // Sequential to be gentle on TTS rate limits
+    for (const id of pending) {
+      await generateSceneAudio(id);
+      done += 1;
+      setAudioProgress({ done, total: pending.length });
+    }
+    setTimeout(() => setAudioProgress(null), 1500);
+    toast.success("All voices generated");
+  };
+
   // ----- Scene CRUD -----
   const addScene = () => {
     setScenes(prev => [...prev, {
@@ -241,6 +287,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       photo_prompt: "Describe this scene...",
       motion: "ken-burns",
       duration_sec: CLIP_SECONDS,
+      narration: "",
+      speaker: "narrator",
+      voice_style: "narrator-male-warm",
     }]);
   };
   const removeScene = (id: string) => setScenes(prev => prev.filter(s => s.id !== id));
@@ -275,23 +324,53 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     setPreviewSceneId(null);
   };
 
-  // ----- Export full movie as WebM -----
+  // ----- Export full movie as WebM (with AI voice audio muxed in) -----
   const exportMovie = async () => {
     const ready = scenes.filter(s => s.image_url);
     if (ready.length === 0) { toast.error("Generate at least one scene photo"); return; }
     if (ready.length !== scenes.length) {
       if (!confirm(`${scenes.length - ready.length} scene(s) missing photos. Export only the ${ready.length} ready ones?`)) return;
     }
+    const missingAudio = ready.filter(s => !s.audio_url).length;
+    if (missingAudio > 0) {
+      const proceed = confirm(`${missingAudio} scene(s) have no AI voice yet. Export silent for those? (Cancel to generate voices first.)`);
+      if (!proceed) return;
+    }
     setExporting(true); setExportProgress(0);
     try {
       const canvas = exportCanvasRef.current!;
       canvas.width = 1920; canvas.height = 1080;
       const ctx = canvas.getContext("2d")!;
-      const stream = canvas.captureStream(30);
-      const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9", videoBitsPerSecond: 8_000_000 });
+
+      // Video stream from canvas
+      const videoStream = canvas.captureStream(30);
+
+      // Audio: build a Web Audio graph, route to a destination MediaStream
+      const AudioCtor: typeof AudioContext = (window.AudioContext || (window as any).webkitAudioContext);
+      const audioCtx = new AudioCtor();
+      const audioDest = audioCtx.createMediaStreamDestination();
+
+      // Decode each scene's audio (if any) up front
+      const audioBuffers: (AudioBuffer | null)[] = await Promise.all(ready.map(async s => {
+        if (!s.audio_url) return null;
+        try {
+          const r = await fetch(s.audio_url);
+          const ab = await r.arrayBuffer();
+          return await audioCtx.decodeAudioData(ab);
+        } catch (err) {
+          console.warn("audio decode failed", err); return null;
+        }
+      }));
+
+      // Combine video + audio tracks
+      const combined = new MediaStream([
+        ...videoStream.getVideoTracks(),
+        ...audioDest.stream.getAudioTracks(),
+      ]);
+
+      const recorder = new MediaRecorder(combined, { mimeType: "video/webm;codecs=vp9,opus", videoBitsPerSecond: 8_000_000 });
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-
       const finished = new Promise<Blob>(res => {
         recorder.onstop = () => res(new Blob(chunks, { type: "video/webm" }));
       });
@@ -307,18 +386,34 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         const scene = ready[idx];
         const img = imgs[idx];
         const dur = scene.duration_sec * 1000;
+
+        // Schedule this scene's narration to play NOW into the audio destination
+        const buf = audioBuffers[idx];
+        if (buf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          // If narration is longer than clip, it will get cut by recorder timing; that's intentional.
+          src.connect(audioDest);
+          src.start();
+        }
+
         const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
             drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
-            // caption
+            // caption + speaker tag
             ctx.fillStyle = "rgba(0,0,0,0.55)";
-            ctx.fillRect(0, canvas.height - 140, canvas.width, 140);
+            ctx.fillRect(0, canvas.height - 160, canvas.width, 160);
             ctx.fillStyle = "#fff";
             ctx.font = "bold 36px sans-serif";
             ctx.textAlign = "center";
-            wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 80, canvas.width - 120, 44);
+            wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 90, canvas.width - 120, 44);
+            if (scene.speaker && scene.speaker !== "narrator") {
+              ctx.font = "italic 22px sans-serif";
+              ctx.fillStyle = "hsl(45 90% 70%)";
+              ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
+            }
             if (p < 1) requestAnimationFrame(tick);
             else resolve();
           };
@@ -329,6 +424,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
 
       recorder.stop();
       const blob = await finished;
+      try { audioCtx.close(); } catch {}
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = `${title || "solace-movie"}-${Date.now()}.webm`;
@@ -343,12 +440,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             title: title || "Solace Movie",
             url: reader.result as string,
             source_page: "movie-studio",
-            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS },
+            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length },
           });
         };
         reader.readAsDataURL(blob);
       }
-      toast.success("Movie exported and saved to library!");
+      toast.success("Movie exported with AI voices and saved to library!");
     } catch (e) {
       console.error(e); toast.error("Export failed");
     } finally { setExporting(false); }
