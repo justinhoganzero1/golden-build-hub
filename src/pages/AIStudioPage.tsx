@@ -136,10 +136,10 @@ const AIStudioPage = () => {
       try {
         let url = sessionStorage.getItem(AXEL_F_CACHE_KEY);
         if (!url) {
-          toast.info("🎵 Cueing the Axel F theme...");
+          toast.info("🎵 Cueing the retro synth groove...");
           const { data, error } = await supabase.functions.invoke("elevenlabs-music", {
             body: {
-              prompt: "Beverly Hills Cop Axel F theme, iconic 80s synth instrumental, upbeat funky synthesizer melody, retro electronic, no vocals",
+              prompt: "An upbeat funky 80s-style synth instrumental featuring a catchy synthesizer melody, retro electronic sounds, and a vibrant, danceable groove with no vocals.",
               duration_seconds: 60,
             },
           });
