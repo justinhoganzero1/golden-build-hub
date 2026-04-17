@@ -856,6 +856,52 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingNewsroom(false); }
   };
 
+  // ----- AI-generated 10×6s preview / trailer (best parts of the movie picked by AI) -----
+  // Picks up to 10 scenes from the existing scene list. Oracle scoring favours scenes that
+  // have an image AND a tone of "epic"/"emotional"/"playful"; the user can swap any clip
+  // with the "Use scene N" buttons next to each trailer slot.
+  const generatePreviewTrailer = async () => {
+    if (scenes.length === 0) { toast.error("Plan a movie first"); return; }
+    setGeneratingTrailer(true);
+    try {
+      const candidates = scenes.filter(s => s.image_url);
+      if (candidates.length === 0) {
+        toast.error("Generate at least one scene photo before building a trailer");
+        return;
+      }
+      const tonePriority: Record<SceneTone, number> = {
+        epic: 5, emotional: 4, tense: 4, playful: 3, calm: 2, neutral: 1,
+      };
+      const ranked = [...candidates].sort((a, b) => {
+        const ta = tonePriority[a.tone || "neutral"];
+        const tb = tonePriority[b.tone || "neutral"];
+        return tb - ta;
+      });
+      // Always keep first + last for narrative bookends, then fill from ranked
+      const picks: typeof candidates = [];
+      const add = (s: typeof candidates[number]) => { if (!picks.find(p => p.id === s.id) && picks.length < 10) picks.push(s); };
+      if (candidates[0]) add(candidates[0]);
+      if (candidates[candidates.length - 1]) add(candidates[candidates.length - 1]);
+      ranked.forEach(add);
+      // Re-sort picks by their original scene order so the trailer flows
+      picks.sort((a, b) => scenes.findIndex(s => s.id === a.id) - scenes.findIndex(s => s.id === b.id));
+      setTrailerScenes(picks.map(p => ({ id: p.id, image: p.image_url!, tone: p.tone })));
+      toast.success(`Trailer ready — ${picks.length} clips × 6s with the movie soundtrack`);
+    } catch (e) {
+      console.error(e); toast.error("Trailer generation failed");
+    } finally { setGeneratingTrailer(false); }
+  };
+
+  const swapTrailerClip = (slotIndex: number, sceneId: string) => {
+    const s = scenes.find(x => x.id === sceneId);
+    if (!s?.image_url) return;
+    setTrailerScenes(prev => prev.map((t, i) => i === slotIndex ? { id: s.id, image: s.image_url!, tone: s.tone } : t));
+  };
+
+  const removeTrailerClip = (slotIndex: number) => {
+    setTrailerScenes(prev => prev.filter((_, i) => i !== slotIndex));
+  };
+
 
 
   // ----- Scene CRUD -----
