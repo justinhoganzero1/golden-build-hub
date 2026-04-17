@@ -108,7 +108,7 @@ const StoryWriterPage = () => {
     const handle = setTimeout(async () => {
       try {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
-        const payload = {
+        const payload: any = {
           user_id: user.id,
           media_type: "story",
           title: story.title || "Untitled Story",
