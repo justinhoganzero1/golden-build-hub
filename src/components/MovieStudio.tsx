@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,47 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetRef = useRef<string | null>(null);
+
+  const triggerUpload = (sceneId: string) => {
+    uploadTargetRef.current = sceneId;
+    uploadInputRef.current?.click();
+  };
+
+  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const targetId = uploadTargetRef.current;
+    e.target.value = ""; // allow re-selecting same file
+    if (!file || !targetId) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Image too large (max 25MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result as string;
+      if (targetId === "__new__") {
+        setScenes(prev => [...prev, {
+          id: uid(),
+          caption: file.name.replace(/\.[^.]+$/, ""),
+          photo_prompt: "Uploaded photo",
+          motion: "ken-burns",
+          duration_sec: CLIP_SECONDS,
+          image_url: url,
+        }]);
+      } else {
+        updateScene(targetId, { image_url: url });
+      }
+      if (user) saveMedia.mutate({
+        media_type: "image",
+        title: file.name,
+        url,
+        source_page: "movie-studio-upload",
+        metadata: { uploadedFromDevice: true },
+      });
+      toast.success("Photo added to movie");
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (!open) {
@@ -310,6 +351,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Button onClick={addScene} variant="outline" size="sm">
                 <Plus className="w-3 h-3 mr-1" /> Add scene
               </Button>
+              <Button onClick={() => triggerUpload("__new__")} variant="outline" size="sm">
+                <Upload className="w-3 h-3 mr-1" /> Upload photo
+              </Button>
               <Button onClick={exportMovie} disabled={exporting} size="sm">
                 {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export</>}
               </Button>
@@ -362,6 +406,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
                           From library
                         </Button>
+                        <Button onClick={() => triggerUpload(s.id)} size="sm" variant="outline" className="h-7 text-xs">
+                          <Upload className="w-3 h-3 mr-1" /> Upload
+                        </Button>
                         <Button onClick={() => previewScene(s)} size="sm" variant="outline" className="h-7 text-xs"
                           disabled={!s.image_url}>
                           <Play className="w-3 h-3 mr-1" /> Preview
@@ -402,6 +449,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <input ref={uploadInputRef} type="file" accept="image/*" onChange={handleUploadFile} className="hidden" />
         <MediaPickerDialog
           open={showLibrary}
           onOpenChange={setShowLibrary}
