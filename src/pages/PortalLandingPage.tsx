@@ -283,16 +283,26 @@ const PortalLandingPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-            {[
+          {(() => {
+            // Detect platform so "Already installed" only shows on the matching card,
+            // and only when this browser session is actually running the installed PWA.
+            const ua = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+            const isAndroidUA = /android/.test(ua);
+            const isIOSUA = /iphone|ipad|ipod/.test(ua) && !/crios|fxios/.test(ua);
+            const isDesktopUA = !isAndroidUA && !isIOSUA;
+
+            const cards = [
               {
+                key: "android",
                 icon: Smartphone,
                 title: "Android",
                 steps: ["Open in Chrome or Edge.", "Tap Install below.", "Confirm in the prompt."],
                 cta: canInstall ? "Install on Android" : "Open install prompt",
                 action: handleInstall,
+                installedHere: isStandalone && isAndroidUA,
               },
               {
+                key: "ios",
                 icon: Apple,
                 title: "iPhone / iPad",
                 steps: ["Open in Safari.", "Tap the Share icon.", "Choose Add to Home Screen."],
@@ -308,43 +318,51 @@ const PortalLandingPage = () => {
                     alert("On your iPhone or iPad: open this page in Safari → tap the Share icon → choose 'Add to Home Screen'.");
                   }
                 },
+                installedHere: isStandalone && isIOSUA,
               },
               {
+                key: "desktop",
                 icon: Monitor,
                 title: "Desktop",
                 steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit the button below."],
                 cta: canInstall ? "Install on Desktop" : "Install (Chrome/Edge)",
                 action: handleInstall,
+                installedHere: isStandalone && isDesktopUA,
               },
-            ].map(({ icon: Icon, title, steps, cta, action }) => (
-              <div key={title} className="holo-tile rounded-xl p-6 flex flex-col">
-                <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
-                <h3 className="font-semibold mb-2 text-foreground">{title}</h3>
-                <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
-                  {steps.map((s) => <li key={s}>{s}</li>)}
-                </ol>
-                <Button
-                  onClick={action}
-                  disabled={isStandalone}
-                  size="sm"
-                  className="mt-4 w-full"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {isStandalone ? "Already installed ✓" : cta}
-                </Button>
+            ];
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                {cards.map(({ key, icon: Icon, title, steps, cta, action, installedHere }) => (
+                  <div key={key} className="holo-tile rounded-xl p-6 flex flex-col">
+                    <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
+                    <h3 className="font-semibold mb-2 text-foreground">{title}</h3>
+                    <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
+                      {steps.map((s) => <li key={s}>{s}</li>)}
+                    </ol>
+                    <Button
+                      onClick={action}
+                      disabled={installedHere}
+                      size="sm"
+                      className="mt-4 w-full"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      {installedHere ? "Already installed ✓" : cta}
+                    </Button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
 
           <div className="text-center">
             <Button
               size="lg"
               onClick={handleInstall}
-              disabled={isStandalone}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
             >
               <Download className="mr-2 h-5 w-5" />
-              {isStandalone ? "Already installed ✓" : isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
+              {isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
             {/* Native wrapper download — Portal-specific Play Store package */}
