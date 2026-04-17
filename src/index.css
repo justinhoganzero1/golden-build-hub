@@ -45,6 +45,14 @@ All colors MUST be HSL.
     --gold-light: 48 100% 65%;
     --gold-glow: 45 100% 50%;
 
+    /* Accent pops — blue & red — woven into the gold vibe */
+    --accent-blue: 210 100% 60%;
+    --accent-blue-glow: 200 100% 65%;
+    --accent-blue-deep: 220 90% 45%;
+    --accent-red: 0 90% 60%;
+    --accent-red-glow: 8 100% 65%;
+    --accent-red-deep: 355 85% 45%;
+
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 45 100% 50%;
     --sidebar-primary: 45 100% 50%;
@@ -91,11 +99,11 @@ All colors MUST be HSL.
     padding: 1px;
     background: linear-gradient(
       135deg,
-      hsl(45 100% 50% / 0.0) 0%,
-      hsl(45 100% 50% / 0.15) 30%,
-      hsl(200 100% 60% / 0.15) 50%,
-      hsl(280 100% 60% / 0.1) 70%,
-      hsl(45 100% 50% / 0.0) 100%
+      hsl(var(--accent-red) / 0.0) 0%,
+      hsl(var(--accent-red) / 0.25) 20%,
+      hsl(45 100% 50% / 0.25) 45%,
+      hsl(var(--accent-blue) / 0.28) 70%,
+      hsl(var(--accent-red) / 0.0) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -113,9 +121,10 @@ All colors MUST be HSL.
   .holo-tile:hover {
     transform: translateY(-2px) rotateX(2deg);
     box-shadow:
-      0 8px 25px hsl(45 100% 50% / 0.12),
-      0 0 60px hsl(45 100% 50% / 0.05);
-    border-color: hsl(45 100% 50% / 0.3);
+      0 8px 25px hsl(45 100% 50% / 0.15),
+      0 0 40px hsl(var(--accent-blue) / 0.18),
+      0 0 60px hsl(var(--accent-red) / 0.12);
+    border-color: hsl(45 100% 50% / 0.35);
   }
 
   /* Holographic icon float effect */
@@ -130,7 +139,8 @@ All colors MUST be HSL.
     transform: translateY(-6px) scale(1.1);
     filter:
       drop-shadow(0 4px 8px hsl(45 100% 50% / 0.5))
-      drop-shadow(0 8px 20px hsl(200 100% 60% / 0.2));
+      drop-shadow(0 6px 14px hsl(var(--accent-blue) / 0.35))
+      drop-shadow(0 8px 20px hsl(var(--accent-red) / 0.25));
   }
 
   /* Holographic shimmer overlay on icon */
@@ -141,9 +151,10 @@ All colors MUST be HSL.
     border-radius: 50%;
     background: radial-gradient(
       ellipse at 30% 30%,
-      hsl(45 100% 70% / 0.15) 0%,
-      hsl(200 100% 60% / 0.08) 40%,
-      transparent 70%
+      hsl(45 100% 70% / 0.18) 0%,
+      hsl(var(--accent-blue) / 0.14) 35%,
+      hsl(var(--accent-red) / 0.10) 60%,
+      transparent 75%
     );
     pointer-events: none;
     opacity: 0;
@@ -183,9 +194,9 @@ All colors MUST be HSL.
     background: linear-gradient(
       135deg,
       transparent 0%,
-      hsl(180 100% 50% / 0.06) 25%,
-      hsl(270 100% 60% / 0.04) 50%,
-      hsl(45 100% 50% / 0.06) 75%,
+      hsl(var(--accent-blue) / 0.10) 25%,
+      hsl(var(--accent-red) / 0.08) 50%,
+      hsl(45 100% 50% / 0.10) 75%,
       transparent 100%
     );
     z-index: 1;
