@@ -183,6 +183,92 @@ const LiveVisionPage = () => {
     }
   }, []);
 
+  // ─── Companion Mode: Oracle is walking with the user ───
+  const startCompanion = useCallback(async () => {
+    if (!cameraActive) await startCamera();
+    setCompanionActive(true);
+    setLiveFeed([]);
+    speak("I'm with you. I'll keep an eye out and chat as we go. Just ask me anything you see.");
+    startListening();
+
+    const recent: string[] = [];
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "companion", { history: recent });
+      if (result && result.trim().toUpperCase() !== "QUIET") {
+        recent.push(result);
+        if (recent.length > 6) recent.shift();
+        setLiveFeed(prev => [result, ...prev].slice(0, 8));
+        speak(result);
+      }
+    };
+    tick();
+    companionTimerRef.current = setInterval(tick, 9000);
+  }, [cameraActive, startCamera, captureFrame, speak]);
+
+  const stopCompanion = useCallback(() => {
+    setCompanionActive(false);
+    if (companionTimerRef.current) { clearInterval(companionTimerRef.current); companionTimerRef.current = null; }
+  }, []);
+
+  // ─── Watch-For Mode: track a target over time ───
+  const finishWatch = useCallback(() => {
+    if (watchTimerRef.current) { clearInterval(watchTimerRef.current); watchTimerRef.current = null; }
+    const obs = watchObservationsRef.current;
+    if (obs.length === 0) {
+      const summary = `I watched for "${watchTarget}" and didn't see it.`;
+      setWatchSummary(summary);
+      speak(summary);
+    } else {
+      const found = obs.filter(o => /^FOUND/i.test(o)).length;
+      const summary = `Watch report for "${watchTarget}": ${obs.length} relevant observations, ${found} confirmed sightings. Most recent: ${obs[obs.length - 1]}`;
+      setWatchSummary(summary);
+      speak(summary);
+    }
+    setWatchActive(false);
+  }, [watchTarget, speak]);
+
+  const startWatch = useCallback(async (target: string, durationMs: number = 10 * 60 * 1000) => {
+    if (!target.trim()) { toast.error("Tell me what to watch for"); return; }
+    if (!cameraActive) await startCamera();
+    setWatchTarget(target);
+    setWatchActive(true);
+    setWatchSummary(null);
+    setLiveFeed([]);
+    watchObservationsRef.current = [];
+    watchStartRef.current = Date.now();
+    const isShoppingLike = /aisle|shelf|grocery|store|item|product|find|where.*is|brand/i.test(target);
+    const mode: AnalysisMode = isShoppingLike ? "shopping" : "watch";
+    speak(`Watching for ${target}. I'll let you know when I see something.`);
+    startListening();
+
+    const tick = async () => {
+      if (Date.now() - watchStartRef.current > durationMs) { finishWatch(); return; }
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, mode, { target, history: watchObservationsRef.current });
+      if (!result) return;
+      const upper = result.trim().toUpperCase();
+      if (upper === "NOT YET" || upper.startsWith("NOT YET")) return;
+      watchObservationsRef.current.push(result);
+      setLiveFeed(prev => [result, ...prev].slice(0, 12));
+      if (/^FOUND/i.test(result)) speak(result);
+      else if (/^AISLE|^MAYBE/i.test(result) && watchObservationsRef.current.length % 2 === 1) speak(result);
+    };
+    tick();
+    watchTimerRef.current = setInterval(tick, 6000);
+  }, [cameraActive, startCamera, captureFrame, speak, finishWatch]);
+
+  const stopWatch = useCallback(() => {
+    if (watchActive) finishWatch();
+    else {
+      if (watchTimerRef.current) { clearInterval(watchTimerRef.current); watchTimerRef.current = null; }
+      setWatchActive(false);
+    }
+  }, [watchActive, finishWatch]);
+
+
   // ─── Voice commands ───
   const startListening = useCallback(() => {
     const SR: any = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
