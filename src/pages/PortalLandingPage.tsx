@@ -25,6 +25,7 @@ import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
+import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
@@ -61,6 +62,7 @@ const PortalLandingPage = () => {
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
+            <a href="#all-apps" className="hover:text-primary transition-colors">All Apps</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
@@ -165,6 +167,86 @@ const PortalLandingPage = () => {
               </button>
             );
           })}
+        </div>
+      </section>
+
+      {/* ── All Apps (special downloads) ───── */}
+      <section id="all-apps" className="border-y border-primary/20 bg-card/40">
+        <div className="max-w-6xl mx-auto px-4 py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              All <span className="text-primary">Apps</span>
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Special downloads from the SOLACE portal — standalone tools that live alongside the main app.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Web Wrapper — featured special download */}
+            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
+              <div className="flex items-center gap-4 mb-4">
+                <img
+                  src={webWrapperLogo}
+                  alt="Web Wrapper app logo"
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
+                />
+                <div>
+                  <h3 className="font-semibold text-xl text-foreground">Web Wrapper</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+                Turn any website into a Play Store-ready Android app. Paste a URL, name your app, and download
+                a wrapper package you can sign and publish — all from the SOLACE portal.
+              </p>
+              <Button
+                size="lg"
+                onClick={() => navigate("/web-wrapper")}
+                className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
+              >
+                <Download className="mr-2 h-5 w-5" />
+                Download Web Wrapper
+              </Button>
+            </div>
+
+            {/* SOLACE Portal wrapper — secondary special download */}
+            <div className="holo-tile rounded-2xl p-6 border border-primary/20 flex flex-col">
+              <div className="flex items-center gap-4 mb-4">
+                <img
+                  src={solaceLogo}
+                  alt="SOLACE Portal logo"
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
+                />
+                <div>
+                  <h3 className="font-semibold text-xl text-foreground">SOLACE Portal App</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+                Generate a standalone Android wrapper for the SOLACE Portal landing page itself — perfect for
+                publishing the marketing portal as its own Play Store app.
+              </p>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  const portalUrl = encodeURIComponent(window.location.origin);
+                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("SOLACE Portal")}`);
+                }}
+                className="border-primary/40 hover:border-primary"
+              >
+                <Download className="mr-2 h-5 w-5" />
+                Build Portal App
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
