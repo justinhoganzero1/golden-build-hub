@@ -1,13 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera } from "lucide-react";
+import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
+import { cleanTextForSpeech } from "@/lib/utils";
 
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-type AnalysisMode = "scene" | "text" | "objects";
+type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking";
 
 const LiveVisionPage = () => {
   const { user } = useAuth();
@@ -15,6 +17,11 @@ const LiveVisionPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const drivingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const lastSpokenRef = useRef<string>("");
 
   const [cameraActive, setCameraActive] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
@@ -22,15 +29,18 @@ const LiveVisionPage = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [drivingActive, setDrivingActive] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [livefeed, setLiveFeed] = useState<string[]>([]);
 
+  // ─── Camera control ───
   const startCamera = useCallback(async () => {
     try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
+        audio: true,
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -47,6 +57,9 @@ const LiveVisionPage = () => {
   }, [facingMode]);
 
   const stopCamera = useCallback(() => {
+    stopDriving();
+    stopListening();
+    stopRecording();
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
@@ -55,9 +68,7 @@ const LiveVisionPage = () => {
     setCameraActive(false);
   }, []);
 
-  useEffect(() => {
-    return () => { stopCamera(); };
-  }, [stopCamera]);
+  useEffect(() => () => stopCamera(), [stopCamera]);
 
   const captureFrame = useCallback((): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
@@ -68,8 +79,21 @@ const LiveVisionPage = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.8);
+    return canvas.toDataURL("image/jpeg", 0.7);
   }, []);
+
+  // ─── Vision analysis ───
+  const callVision = async (image: string, mode: AnalysisMode): Promise<string | null> => {
+    const apiMode = mode === "driving" || mode === "parking" ? "scene" : mode;
+    const resp = await fetch(VISION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ image, mode: apiMode }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.analysis || null;
+  };
 
   const analyzeFrame = async () => {
     const frame = capturedImage || captureFrame();
@@ -77,29 +101,169 @@ const LiveVisionPage = () => {
     if (!capturedImage) setCapturedImage(frame);
     setIsAnalyzing(true);
     setAnalysis(null);
-
     try {
-      const resp = await fetch(VISION_URL, {
+      const result = await callVision(frame, analysisMode);
+      if (result) setAnalysis(result);
+      else toast.error("Analysis failed");
+    } catch (e) { console.error(e); toast.error("Analysis failed"); }
+    finally { setIsAnalyzing(false); }
+  };
+
+  // ─── TTS via ElevenLabs ───
+  const speak = useCallback(async (text: string) => {
+    const clean = cleanTextForSpeech(text);
+    if (!clean || clean === lastSpokenRef.current) return;
+    lastSpokenRef.current = clean;
+    try {
+      const r = await fetch(TTS_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ image: frame, mode: analysisMode }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ text: clean.slice(0, 400), voiceId: "nPczCjzI2devNBz1zQrb" }),
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Failed" }));
-        toast.error(err.error || "Analysis failed");
+      if (r.ok) {
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.volume = 1;
+        await audio.play();
+        audio.onended = () => URL.revokeObjectURL(url);
         return;
       }
-      const data = await resp.json();
-      setAnalysis(data.analysis);
-    } catch (e) {
-      console.error(e);
-      toast.error("Analysis failed");
-    } finally {
-      setIsAnalyzing(false);
+    } catch {}
+    // fallback
+    const u = new SpeechSynthesisUtterance(clean);
+    u.rate = 1; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  }, []);
+
+  // ─── Driving Mode: continuous capture + narrate ───
+  const startDriving = useCallback(async () => {
+    if (!cameraActive) await startCamera();
+    setAnalysisMode("driving");
+    setDrivingActive(true);
+    setLiveFeed([]);
+    speak("Driving mode activated. I'll watch the road and tell you what I see. Just talk to me.");
+    startListening();
+
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame,
+        // alternate between scene + parking watch every other tick
+        Math.random() > 0.5 ? "driving" : "parking"
+      );
+      if (result) {
+        setLiveFeed(prev => [result, ...prev].slice(0, 8));
+        // Only speak if it sounds important (parking, danger, sign, exit, hazard, vehicle)
+        if (/park|space|exit|sign|hazard|danger|stop|red light|pedestrian|turn|lane|warning/i.test(result)) {
+          speak(result);
+        }
+      }
+    };
+    tick();
+    drivingTimerRef.current = setInterval(tick, 7000);
+  }, [cameraActive, startCamera, captureFrame, speak]);
+
+  const stopDriving = useCallback(() => {
+    setDrivingActive(false);
+    if (drivingTimerRef.current) {
+      clearInterval(drivingTimerRef.current);
+      drivingTimerRef.current = null;
     }
+  }, []);
+
+  // ─── Voice commands ───
+  const startListening = useCallback(() => {
+    const SR: any = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SR) { toast.error("Voice recognition not supported"); return; }
+    const recog = new SR();
+    recog.continuous = true;
+    recog.interimResults = false;
+    recog.lang = "en-US";
+    recog.onresult = async (ev: any) => {
+      const last = ev.results[ev.results.length - 1];
+      const heard = last[0].transcript.trim().toLowerCase();
+      if (!heard) return;
+      // Voice command routing
+      if (/stop driving|exit|end driving|stop mode/i.test(heard)) { stopDriving(); speak("Driving mode off."); return; }
+      if (/take.*photo|capture|snapshot/i.test(heard)) {
+        const f = captureFrame();
+        if (f) { setCapturedImage(f); saveSnapshotAuto(f); speak("Photo saved."); }
+        return;
+      }
+      if (/record.*video|start recording/i.test(heard)) { startRecording(); return; }
+      if (/stop recording/i.test(heard)) { stopRecording(); return; }
+      if (/find.*park|car park|parking/i.test(heard)) {
+        const f = captureFrame();
+        if (f) {
+          speak("Looking for a park.");
+          const r = await callVision(f, "parking");
+          if (r) { setAnalysis(r); speak(r); }
+        }
+        return;
+      }
+      // General question about what is seen
+      const f = captureFrame();
+      if (f) {
+        speak("Let me look.");
+        const r = await callVision(f, "scene");
+        if (r) { setAnalysis(r); speak(r); }
+      }
+    };
+    recog.onerror = () => { setListening(false); };
+    recog.onend = () => { if (drivingActive) { try { recog.start(); } catch {} } };
+    try { recog.start(); recognitionRef.current = recog; setListening(true); } catch {}
+  }, [captureFrame, speak, drivingActive]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
+    setListening(false);
+  }, []);
+
+  // ─── Audio + video recording ───
+  const startRecording = useCallback(() => {
+    if (!streamRef.current) { toast.error("Camera not active"); return; }
+    try {
+      chunksRef.current = [];
+      const rec = new MediaRecorder(streamRef.current, { mimeType: "video/webm;codecs=vp8,opus" });
+      rec.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const dataUrl = await new Promise<string>((res, rej) => {
+          const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob);
+        });
+        if (user) {
+          saveMedia.mutate({
+            media_type: "video",
+            title: `Live Vision Clip - ${new Date().toLocaleString()}`,
+            url: dataUrl, source_page: "live-vision",
+            metadata: { kind: "drive-clip" },
+          }, { onSuccess: () => toast.success("Video saved to Library") });
+        }
+        speak("Video saved.");
+      };
+      rec.start();
+      recorderRef.current = rec;
+      setRecording(true);
+      speak("Recording.");
+    } catch (e) { console.error(e); toast.error("Recording failed"); }
+  }, [user, saveMedia, speak]);
+
+  const stopRecording = useCallback(() => {
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      try { recorderRef.current.stop(); } catch {}
+    }
+    setRecording(false);
+  }, []);
+
+  const saveSnapshotAuto = (frame: string) => {
+    if (!user) return;
+    saveMedia.mutate({
+      media_type: "image",
+      title: `Vision Snapshot - ${new Date().toLocaleString()}`,
+      url: frame, source_page: "live-vision",
+      metadata: { mode: analysisMode },
+    });
   };
 
   const saveSnapshot = () => {
@@ -116,18 +280,15 @@ const LiveVisionPage = () => {
     });
   };
 
-  const switchCamera = async () => {
-    setFacingMode(prev => prev === "user" ? "environment" : "user");
-  };
+  const switchCamera = async () => setFacingMode(prev => prev === "user" ? "environment" : "user");
 
-  useEffect(() => {
-    if (cameraActive) startCamera();
-  }, [facingMode]);
+  useEffect(() => { if (cameraActive) startCamera(); }, [facingMode]);
 
   const modes: { value: AnalysisMode; icon: React.ReactNode; label: string }[] = [
     { value: "scene", icon: <Zap className="w-4 h-4" />, label: "Scene" },
-    { value: "text", icon: <Info className="w-4 h-4" />, label: "Text (OCR)" },
+    { value: "text", icon: <Info className="w-4 h-4" />, label: "Text" },
     { value: "objects", icon: <Scan className="w-4 h-4" />, label: "Objects" },
+    { value: "parking", icon: <Car className="w-4 h-4" />, label: "Parking" },
   ];
 
   return (
@@ -139,7 +300,7 @@ const LiveVisionPage = () => {
           <div className="p-2 rounded-xl bg-primary/10"><Eye className="w-7 h-7 text-primary" /></div>
           <div>
             <h1 className="text-xl font-bold text-primary">Live Vision</h1>
-            <p className="text-muted-foreground text-xs">AI-powered camera analysis</p>
+            <p className="text-muted-foreground text-xs">AI-powered camera + driving mode</p>
           </div>
         </div>
 
@@ -152,6 +313,21 @@ const LiveVisionPage = () => {
                 className="absolute top-3 right-3 p-2 rounded-full bg-black/50 backdrop-blur">
                 <SwitchCamera className="w-5 h-5 text-white" />
               </button>
+              {drivingActive && (
+                <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                  <Car className="w-3.5 h-3.5" /> DRIVING MODE
+                </div>
+              )}
+              {recording && (
+                <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                  <Video className="w-3.5 h-3.5" /> REC
+                </div>
+              )}
+              {listening && (
+                <div className="absolute bottom-3 right-3 p-2 rounded-full bg-primary/80">
+                  <Mic className="w-4 h-4 text-primary-foreground animate-pulse" />
+                </div>
+              )}
             </>
           ) : capturedImage ? (
             <>
@@ -169,8 +345,19 @@ const LiveVisionPage = () => {
           )}
         </div>
 
+        {/* Driving Mode banner CTA */}
+        {cameraActive && (
+          <button onClick={drivingActive ? stopDriving : startDriving}
+            className={`w-full mb-3 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+              drivingActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+            }`}>
+            <Car className="w-5 h-5" />
+            {drivingActive ? "Stop Driving Mode" : "🚗 Start Driving Mode (hands-free)"}
+          </button>
+        )}
+
         {/* Controls */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-wrap">
           {!cameraActive ? (
             <button onClick={startCamera}
               className="flex-1 py-4 bg-primary text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2">
@@ -180,16 +367,24 @@ const LiveVisionPage = () => {
             <>
               <button onClick={() => { setCapturedImage(captureFrame()); }}
                 disabled={!!capturedImage}
-                className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                className="flex-1 min-w-[80px] py-3 bg-primary text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
                 <Camera className="w-5 h-5" /> Capture
               </button>
               <button onClick={analyzeFrame} disabled={isAnalyzing}
-                className="flex-1 py-3 bg-accent text-accent-foreground font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
+                className="flex-1 min-w-[80px] py-3 bg-accent text-accent-foreground font-semibold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50">
                 {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Scan className="w-5 h-5" />}
-                {isAnalyzing ? "Analyzing..." : "Analyze"}
+                {isAnalyzing ? "..." : "Analyze"}
+              </button>
+              <button onClick={recording ? stopRecording : startRecording}
+                className={`py-3 px-3 rounded-xl ${recording ? "bg-destructive text-destructive-foreground" : "bg-card border border-border text-foreground"}`}>
+                {recording ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+              </button>
+              <button onClick={listening ? stopListening : startListening}
+                className={`py-3 px-3 rounded-xl ${listening ? "bg-primary text-primary-foreground" : "bg-card border border-border text-foreground"}`}>
+                {listening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
               </button>
               <button onClick={stopCamera}
-                className="py-3 px-4 bg-destructive text-destructive-foreground rounded-xl">
+                className="py-3 px-3 bg-destructive text-destructive-foreground rounded-xl">
                 <X className="w-5 h-5" />
               </button>
             </>
@@ -198,17 +393,33 @@ const LiveVisionPage = () => {
 
         {/* Mode selector */}
         <h2 className="text-sm font-semibold text-foreground mb-2">Analysis Mode</h2>
-        <div className="flex gap-2 mb-4">
+        <div className="grid grid-cols-4 gap-2 mb-4">
           {modes.map(m => (
             <button key={m.value} onClick={() => setAnalysisMode(m.value)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${analysisMode === m.value ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+              className={`py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1 transition-colors ${analysisMode === m.value ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
               {m.icon} {m.label}
             </button>
           ))}
         </div>
 
+        {/* Driving live feed */}
+        {drivingActive && livefeed.length > 0 && (
+          <div className="bg-card border border-primary/30 rounded-xl p-3 mb-4">
+            <h3 className="text-xs font-bold text-primary mb-2 flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5" /> Live Drive Feed
+            </h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {livefeed.map((entry, i) => (
+                <p key={i} className={`text-xs leading-relaxed ${i === 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                  {entry}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Analysis Results */}
-        {analysis && (
+        {analysis && !drivingActive && (
           <div className="bg-card border border-primary/30 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-primary">AI Analysis</h3>
@@ -227,6 +438,20 @@ const LiveVisionPage = () => {
           <div className="bg-card border border-border rounded-xl p-6 flex flex-col items-center gap-3 mb-4">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-sm text-muted-foreground">AI is analyzing the image...</p>
+          </div>
+        )}
+
+        {/* Voice tips when driving */}
+        {drivingActive && (
+          <div className="bg-accent/10 border border-accent/30 rounded-xl p-3 text-xs text-foreground">
+            <p className="font-semibold mb-1">🎙️ Voice commands while driving:</p>
+            <ul className="space-y-0.5 text-muted-foreground">
+              <li>• "Find a park" / "Where can I park?"</li>
+              <li>• "Take a photo" / "Capture"</li>
+              <li>• "Start recording" / "Stop recording"</li>
+              <li>• "What do you see?" — or ask anything</li>
+              <li>• "Stop driving" to exit</li>
+            </ul>
           </div>
         )}
       </div>
