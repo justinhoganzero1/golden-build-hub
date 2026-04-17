@@ -1,15 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target } from "lucide-react";
+import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target, ShieldCheck, FileSearch, Hash } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { cleanTextForSpeech } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 
-type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping";
+type AnalysisMode = "scene" | "text" | "objects" | "driving" | "parking" | "companion" | "watch" | "shopping" | "bodycam" | "investigation";
+type Tab = "general" | "investigations";
+type EvidenceLog = { ts: string; note: string; frame?: string; mode: AnalysisMode };
 
 const LiveVisionPage = () => {
   const { user } = useAuth();
@@ -43,6 +46,30 @@ const LiveVisionPage = () => {
   const [watchPromptOpen, setWatchPromptOpen] = useState(false);
   const [watchSummary, setWatchSummary] = useState<string | null>(null);
 
+  // ─── Investigations tab ───
+  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [isInvestigator, setIsInvestigator] = useState(false);
+  const [bodyCamActive, setBodyCamActive] = useState(false);
+  const [investigationActive, setInvestigationActive] = useState(false);
+  const [evidenceLog, setEvidenceLog] = useState<EvidenceLog[]>([]);
+  const [caseId, setCaseId] = useState<string>("");
+  const bodyCamTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const investigationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const evidenceHistoryRef = useRef<string[]>([]);
+
+  // Check role
+  useEffect(() => {
+    if (!user) { setIsInvestigator(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const roles = (data || []).map((r: any) => r.role);
+      setIsInvestigator(roles.includes("investigator") || roles.includes("admin"));
+    })();
+  }, [user]);
+
   // ─── Camera control ───
   const startCamera = useCallback(async () => {
     try {
@@ -69,6 +96,8 @@ const LiveVisionPage = () => {
     stopDriving();
     stopCompanion();
     stopWatch();
+    stopBodyCam();
+    stopInvestigation();
     stopListening();
     stopRecording();
     if (streamRef.current) {
@@ -268,6 +297,94 @@ const LiveVisionPage = () => {
     }
   }, [watchActive, finishWatch]);
 
+  // ─── Body-cam Mode (continuous officer log + recording) ───
+  const startBodyCam = useCallback(async () => {
+    if (!isInvestigator) { toast.error("Investigator role required"); return; }
+    if (!cameraActive) await startCamera();
+    const newCase = caseId || `CASE-${Date.now().toString(36).toUpperCase()}`;
+    setCaseId(newCase);
+    setBodyCamActive(true);
+    setEvidenceLog([]);
+    evidenceHistoryRef.current = [];
+    speak(`Body cam active. Case ${newCase}. Recording started.`);
+    // Auto-start video recording
+    setTimeout(() => startRecording(), 400);
+    startListening();
+
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "bodycam", { history: evidenceHistoryRef.current });
+      if (result && result.trim().toUpperCase() !== "QUIET") {
+        evidenceHistoryRef.current.push(result);
+        if (evidenceHistoryRef.current.length > 8) evidenceHistoryRef.current.shift();
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, mode: "bodycam" as AnalysisMode }, ...prev].slice(0, 50));
+      }
+    };
+    tick();
+    bodyCamTimerRef.current = setInterval(tick, 5000);
+  }, [isInvestigator, cameraActive, startCamera, captureFrame, speak, caseId]);
+
+  const stopBodyCam = useCallback(() => {
+    setBodyCamActive(false);
+    if (bodyCamTimerRef.current) { clearInterval(bodyCamTimerRef.current); bodyCamTimerRef.current = null; }
+    if (recorderRef.current && recorderRef.current.state !== "inactive") stopRecording();
+  }, []);
+
+  // ─── Crime-Scene Investigation Mode (forensic, evidence catalogue) ───
+  const startInvestigation = useCallback(async () => {
+    if (!isInvestigator) { toast.error("Investigator role required"); return; }
+    if (!cameraActive) await startCamera();
+    const newCase = caseId || `CASE-${Date.now().toString(36).toUpperCase()}`;
+    setCaseId(newCase);
+    setInvestigationActive(true);
+    setEvidenceLog([]);
+    evidenceHistoryRef.current = [];
+    speak(`Crime scene investigation mode. Case ${newCase}. Cataloguing evidence.`);
+    startListening();
+
+    const tick = async () => {
+      const frame = captureFrame();
+      if (!frame) return;
+      const result = await callVision(frame, "investigation", { history: evidenceHistoryRef.current });
+      if (result) {
+        evidenceHistoryRef.current.push(result);
+        if (evidenceHistoryRef.current.length > 6) evidenceHistoryRef.current.shift();
+        setEvidenceLog(prev => [{ ts: new Date().toISOString(), note: result, frame, mode: "investigation" as AnalysisMode }, ...prev].slice(0, 30));
+      }
+    };
+    tick();
+    investigationTimerRef.current = setInterval(tick, 8000);
+  }, [isInvestigator, cameraActive, startCamera, captureFrame, speak, caseId]);
+
+  const stopInvestigation = useCallback(() => {
+    setInvestigationActive(false);
+    if (investigationTimerRef.current) { clearInterval(investigationTimerRef.current); investigationTimerRef.current = null; }
+  }, []);
+
+  const exportEvidenceLog = useCallback(() => {
+    if (evidenceLog.length === 0) { toast.error("No evidence logged"); return; }
+    const header = `EVIDENCE LOG\nCase: ${caseId}\nOfficer: ${user?.email || "unknown"}\nGenerated: ${new Date().toISOString()}\n${"=".repeat(60)}\n\n`;
+    const body = evidenceLog.slice().reverse().map((e, i) =>
+      `#${String(i + 1).padStart(3, "0")} [${e.ts}] (${e.mode})\n${e.note}\n`
+    ).join("\n");
+    const text = header + body;
+    if (user) {
+      saveMedia.mutate({
+        media_type: "image",
+        title: `Evidence Log ${caseId}`,
+        url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+        source_page: "live-vision-investigation",
+        metadata: { case_id: caseId, entries: evidenceLog.length },
+      }, { onSuccess: () => toast.success("Evidence log saved to Library") });
+    }
+    // Also trigger download
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${caseId}-evidence.txt`;
+    a.click();
+  }, [evidenceLog, caseId, user, saveMedia]);
 
   // ─── Voice commands ───
   const startListening = useCallback(() => {
@@ -399,11 +516,25 @@ const LiveVisionPage = () => {
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-xl bg-primary/10"><Eye className="w-7 h-7 text-primary" /></div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-primary">Live Vision</h1>
             <p className="text-muted-foreground text-xs">AI-powered camera + driving mode</p>
           </div>
         </div>
+
+        {/* Tabs (Investigations only visible to investigators/admins) */}
+        {isInvestigator && (
+          <div className="flex gap-2 mb-4 p-1 bg-card border border-border rounded-xl">
+            <button onClick={() => setActiveTab("general")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === "general" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <Eye className="w-3.5 h-3.5 inline mr-1" /> General
+            </button>
+            <button onClick={() => setActiveTab("investigations")}
+              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${activeTab === "investigations" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              <ShieldCheck className="w-3.5 h-3.5" /> Investigations
+            </button>
+          </div>
+        )}
 
         {/* Camera / Capture View */}
         <div className="aspect-[4/3] bg-card border border-border rounded-2xl overflow-hidden mb-4 relative">
@@ -446,8 +577,72 @@ const LiveVisionPage = () => {
           )}
         </div>
 
+        {/* Investigations Tab Panel */}
+        {isInvestigator && activeTab === "investigations" && (
+          <div className="space-y-3 mb-4">
+            <div className="bg-card border border-primary/40 rounded-xl p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Hash className="w-4 h-4 text-primary" />
+                <input
+                  value={caseId}
+                  onChange={e => setCaseId(e.target.value.toUpperCase())}
+                  placeholder="Case ID (auto-generated)"
+                  className="flex-1 bg-background border border-border rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-primary"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">Officer: {user?.email || "—"}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={bodyCamActive ? stopBodyCam : startBodyCam}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${
+                  bodyCamActive ? "bg-destructive text-destructive-foreground" : "bg-gradient-to-br from-primary to-accent text-primary-foreground"
+                }`}>
+                <ShieldCheck className="w-4 h-4" />
+                {bodyCamActive ? "Stop Body Cam" : "Body Cam"}
+              </button>
+              <button onClick={investigationActive ? stopInvestigation : startInvestigation}
+                className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm ${
+                  investigationActive ? "bg-destructive text-destructive-foreground" : "bg-card border border-accent text-accent"
+                }`}>
+                <FileSearch className="w-4 h-4" />
+                {investigationActive ? "Stop Scan" : "Crime Scene"}
+              </button>
+            </div>
+
+            {evidenceLog.length > 0 && (
+              <div className="bg-card border border-border rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <FileSearch className="w-3.5 h-3.5" /> Evidence Log ({evidenceLog.length})
+                  </h3>
+                  <button onClick={exportEvidenceLog}
+                    className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary font-semibold">
+                    Export
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {evidenceLog.map((e, i) => (
+                    <div key={i} className="text-xs border-l-2 border-primary/40 pl-2">
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        #{String(evidenceLog.length - i).padStart(3, "0")} • {new Date(e.ts).toLocaleTimeString()} • {e.mode}
+                      </p>
+                      <p className="text-foreground whitespace-pre-wrap leading-relaxed">{e.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-accent/10 border border-accent/30 rounded-xl p-3 text-[11px] text-foreground">
+              <p className="font-semibold mb-1">⚖️ Evidence integrity</p>
+              <p className="text-muted-foreground">All observations are AI-assisted and must be corroborated by the officer. Logs include timestamps and case ID for chain-of-custody.</p>
+            </div>
+          </div>
+        )}
+
         {/* Mode banners */}
-        {cameraActive && (
+        {cameraActive && activeTab === "general" && (
           <div className="grid grid-cols-1 gap-2 mb-3">
             <button onClick={drivingActive ? stopDriving : startDriving}
               className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
