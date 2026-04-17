@@ -9,8 +9,9 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+const PortalLandingPage = lazy(() => import("./pages/PortalLandingPage"));
+const WelcomePage = lazy(() => import("./pages/WelcomePage"));
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const MindHubPage = lazy(() => import("./pages/MindHubPage"));
@@ -95,7 +96,8 @@ const App = () => (
               <MasterMuteButton />
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
+                  <Route path="/welcome" element={<ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary>} />
                   <Route path="/dashboard" element={<ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary>} />
                   <Route path="/crisis-hub" element={<ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary>} />
