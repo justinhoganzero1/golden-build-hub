@@ -980,7 +980,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         )}
                       </div>
 
-
+                      {editingSceneId === s.id && (
                         <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
                           <p className="text-[10px] text-muted-foreground">Tell the AI what to change in this clip's photo:</p>
                           <Textarea value={editPrompt} onChange={e => setEditPrompt(e.target.value)} rows={2}
