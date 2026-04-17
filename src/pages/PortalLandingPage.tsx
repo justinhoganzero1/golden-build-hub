@@ -25,6 +25,7 @@ import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
+import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
@@ -61,6 +62,7 @@ const PortalLandingPage = () => {
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
+            <a href="#all-apps" className="hover:text-primary transition-colors">All Apps</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
