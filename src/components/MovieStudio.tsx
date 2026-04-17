@@ -1024,7 +1024,62 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               </div>
             </div>
 
-            {/* Scene list */}
+            {/* Intro / Theme / Credits / Subtitles */}
+            <div className="rounded-lg p-3 border border-primary/30 bg-card space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Film className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary">INTRO • THEME • CREDITS</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  Subtitles are off by default — turn on if you want on-screen captions
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={composeIntroMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingIntro}>
+                  {generatingIntro
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Intro music...</>
+                    : introMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose intro</> : <><Sparkles className="w-3 h-3 mr-1" /> Generate intro music</>}
+                </Button>
+                {introMusicUrl && <audio src={introMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={composeThemeTrack} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingTheme}>
+                  {generatingTheme
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Theme...</>
+                    : themeMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose theme</> : <><Music className="w-3 h-3 mr-1" /> Generate upbeat theme</>}
+                </Button>
+                {themeMusicUrl && <audio src={themeMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={generateCredits} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingCredits}>
+                  {generatingCredits
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Credits...</>
+                    : creditsLines.length ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-generate credits</> : <><Pencil className="w-3 h-3 mr-1" /> Generate title & credits</>}
+                </Button>
+                <Button onClick={generateAllExtras} size="sm" className="h-7 text-xs ml-auto">
+                  <Wand2 className="w-3 h-3 mr-1" /> Auto-create all
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+                <input
+                  id="subtitles-toggle"
+                  type="checkbox"
+                  checked={subtitlesEnabled}
+                  onChange={e => setSubtitlesEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="subtitles-toggle" className="text-xs cursor-pointer">
+                  Show subtitles / captions on screen <span className="text-muted-foreground">(off by default)</span>
+                </label>
+              </div>
+              {creditsLines.length > 0 && (
+                <details className="text-[11px]">
+                  <summary className="cursor-pointer text-muted-foreground">Preview credits ({creditsLines.length} lines)</summary>
+                  <div className="mt-1 p-2 rounded bg-muted/30 space-y-0.5 max-h-40 overflow-y-auto">
+                    {creditsLines.map((line, i) => <div key={i}>{line || <>&nbsp;</>}</div>)}
+                  </div>
+                </details>
+              )}
+            </div>
+
             <div className="space-y-2">
               {scenes.map((s, idx) => (
                 <div key={s.id} className="border border-border rounded-lg p-3 bg-card">
