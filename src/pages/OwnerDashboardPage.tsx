@@ -15,6 +15,7 @@ import { useAllUserMediaPaginated } from "@/hooks/useAllUserMedia";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { downloadFileFromUrl } from "@/lib/utils";
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -706,7 +707,16 @@ const OwnerDashboardPage = () => {
                   <p className="text-[10px] text-gray-500">{new Date(libSelected.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => { if (libSelected.url) { const a = document.createElement("a"); a.href = libSelected.url; a.download = libSelected.title || "media"; a.click(); } toast.success("Downloaded!"); }}
+                  <button onClick={async () => {
+                    if (!libSelected.url) return;
+                    try {
+                      await downloadFileFromUrl(libSelected.url, libSelected.title || "media");
+                      toast.success("Downloaded!");
+                    } catch (error) {
+                      console.error(error);
+                      toast.error("Failed to download media");
+                    }
+                  }}
                     className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-medium flex items-center justify-center gap-2">
                     <Download className="w-4 h-4" /> Download
                   </button>

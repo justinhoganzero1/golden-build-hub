@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { cleanTextForSpeech } from "@/lib/utils";
+import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -228,8 +228,11 @@ const OraclePage = () => {
     try {
       // Add gentle natural pauses at sentence boundaries for realistic pacing
       const paced = text
-        .replace(/([.!?])\s+/g, "$1 … ")
+        .replace(/([.!?])\s+/g, "$1  ")
+        .replace(/;\s+/g, "; ")
+        .replace(/:\s+/g, ": ")
         .replace(/,\s+/g, ", ")
+        .replace(/\s{3,}/g, "  ")
         .trim();
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
@@ -239,11 +242,11 @@ const OraclePage = () => {
           voiceId: "nPczCjzI2devNBz1zQrb", // Brian — warm, grounded
           modelId: "eleven_multilingual_v2", // highest quality
           settings: {
-            stability: 0.6,
-            similarity_boost: 0.85,
-            style: 0.25,
+            stability: 0.72,
+            similarity_boost: 0.9,
+            style: 0.12,
             use_speaker_boost: true,
-            speed: 0.88, // unhurried, conversational
+            speed: 0.82, // slower, more grounded
           },
         }),
       });
@@ -253,7 +256,7 @@ const OraclePage = () => {
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
-      audio.playbackRate = 0.95; // additional slight slowdown client-side
+       audio.playbackRate = 0.92; // additional slight slowdown client-side
       setIsSpeaking(true);
       await audio.play();
       await new Promise<void>((resolve) => {
@@ -291,19 +294,21 @@ const OraclePage = () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
     const next = speechQueueRef.current.shift();
     if (!next) return;
-    const clean = cleanTextForSpeech(next.text);
-    if (!clean) { processSpeechQueue(); return; }
+    const premiumClean = cleanTextForPremiumSpeech(next.text);
+    const browserClean = cleanTextForSpeech(next.text);
     isSpeakingQueueRef.current = true;
 
     const isOracle = next.agentName === oracleName;
     const hasPremiumVoice = subTier !== "free";
-    if (isOracle && hasPremiumVoice) {
-      const success = await speakWithElevenLabs(clean);
+    if (isOracle && hasPremiumVoice && premiumClean) {
+      const success = await speakWithElevenLabs(premiumClean);
       if (!success) {
-        await speakWithBrowserTTS(clean, next.agentName);
+        if (browserClean) {
+          await speakWithBrowserTTS(browserClean, next.agentName);
+        }
       }
-    } else {
-      await speakWithBrowserTTS(clean, next.agentName);
+    } else if (browserClean) {
+      await speakWithBrowserTTS(browserClean, next.agentName);
     }
 
     isSpeakingQueueRef.current = false;

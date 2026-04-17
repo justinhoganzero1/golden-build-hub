@@ -9,6 +9,7 @@ import MovieStudio from "@/components/MovieStudio";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { moderatePrompt } from "@/lib/contentSafety";
+import { downloadFileFromUrl } from "@/lib/utils";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -164,11 +165,14 @@ const PhotographyHubPage = () => {
               <img src={generatedImage} alt="Generated photo" className="w-full h-full object-cover" />
               <div className="absolute top-2 right-2 flex gap-2">
                 <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
-                <button onClick={() => {
-                  const a = document.createElement("a");
-                  a.href = generatedImage;
-                  a.download = `solace-photo-${Date.now()}.png`;
-                  a.click();
+                <button onClick={async () => {
+                  try {
+                    await downloadFileFromUrl(generatedImage, `solace-photo-${Date.now()}`);
+                    toast.success("Image downloaded");
+                  } catch (error) {
+                    console.error(error);
+                    toast.error("Failed to download image");
+                  }
                 }} className="p-2 bg-primary/80 rounded-lg"><Download className="w-4 h-4 text-primary-foreground" /></button>
               </div>
             </div>

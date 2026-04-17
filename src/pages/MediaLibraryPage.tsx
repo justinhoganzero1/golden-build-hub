@@ -7,6 +7,7 @@ import { useUserMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
+import { downloadFileFromUrl } from "@/lib/utils";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
@@ -375,14 +376,15 @@ const MediaLibraryPage = () => {
               </div>
 
               <div className="flex gap-2">
-                <button onClick={() => {
-                  if (selected.url) {
-                    const a = document.createElement("a");
-                    a.href = selected.url;
-                    a.download = selected.title || "media";
-                    a.click();
+                <button onClick={async () => {
+                  if (!selected.url) return;
+                  try {
+                    await downloadFileFromUrl(selected.url, selected.title || "media");
+                    toast.success("Downloaded!");
+                  } catch (error) {
+                    console.error(error);
+                    toast.error("Failed to download media");
                   }
-                  toast.success("Downloaded!");
                 }}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
