@@ -239,58 +239,117 @@ const OraclePage = () => {
   // Premium ElevenLabs TTS for the Oracle — natural, unhurried, human-like delivery
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
-      // Add gentle natural pauses at sentence boundaries for realistic pacing
-      const paced = text
-        .replace(/([.!?])\s+/g, "$1  ")
-        .replace(/;\s+/g, "; ")
-        .replace(/:\s+/g, ": ")
-        .replace(/,\s+/g, ", ")
-        .replace(/\s{3,}/g, "  ")
-        .trim();
+      const paced = text.replace(/\s{3,}/g, "  ").trim();
+      if (!paced) return false;
+
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           text: paced,
-          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — most popular female voice on ElevenLabs (warm, professional)
-          modelId: "eleven_multilingual_v2", // highest quality
+          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah
+          // SPEED: tell edge function to use Flash v2.5 + tiny MP3 + latency optimizer
+          fast: true,
           settings: {
-            stability: 0.45,        // expressive, faster generation
-            similarity_boost: 0.80, // preserve Sarah's warm timbre
-            style: 0.25,            // less stylization = faster TTS
+            stability: 0.4,
+            similarity_boost: 0.75,
+            style: 0.0,             // no stylization = fastest
             use_speaker_boost: true,
-            speed: 1.05,            // SPEED: snappier, more natural conversational pace
+            speed: 1.05,
           },
         }),
       });
-      if (!response.ok) return false;
+      if (!response.ok || !response.body) return false;
       const contentType = response.headers.get("Content-Type") || "";
-      // Edge function may return a JSON fallback signal instead of audio
-      if (contentType.includes("application/json")) {
-        try {
-          const data = await response.json();
-          if (data?.fallback) {
-            console.warn("Premium TTS unavailable, falling back to browser TTS");
+      if (contentType.includes("application/json")) return false;
+
+      // === STREAMING PLAYBACK via MediaSource ===
+      // Start playing the first MP3 frames the moment they arrive instead of
+      // waiting for the entire blob. Cuts time-to-first-sound by 1-3 seconds.
+      const mediaSourceSupported =
+        typeof window !== "undefined" &&
+        "MediaSource" in window &&
+        (window as any).MediaSource.isTypeSupported?.("audio/mpeg");
+
+      if (mediaSourceSupported) {
+        const mediaSource = new MediaSource();
+        const audio = new Audio();
+        audio.src = URL.createObjectURL(mediaSource);
+        currentAudioRef.current = audio;
+        audio.volume = 0.95;
+        audio.playbackRate = 1.0;
+
+        const sourceBuffer = await new Promise<SourceBuffer>((resolve, reject) => {
+          mediaSource.addEventListener(
+            "sourceopen",
+            () => {
+              try { resolve(mediaSource.addSourceBuffer("audio/mpeg")); }
+              catch (e) { reject(e); }
+            },
+            { once: true }
+          );
+        });
+
+        const reader = response.body.getReader();
+        const queue: Uint8Array[] = [];
+        let streamDone = false;
+        let started = false;
+        const pump = () => {
+          if (sourceBuffer.updating || queue.length === 0) return;
+          const chunk = queue.shift()!;
+          try { sourceBuffer.appendBuffer(chunk as BufferSource); } catch {}
+        };
+        sourceBuffer.addEventListener("updateend", () => {
+          if (queue.length) pump();
+          else if (streamDone && mediaSource.readyState === "open") {
+            try { mediaSource.endOfStream(); } catch {}
           }
-        } catch {}
-        return false;
+        });
+
+        (async () => {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                streamDone = true;
+                if (!sourceBuffer.updating && queue.length === 0) {
+                  try { mediaSource.endOfStream(); } catch {}
+                }
+                break;
+              }
+              if (value) {
+                queue.push(value);
+                if (!sourceBuffer.updating) pump();
+                if (!started) {
+                  started = true;
+                  setIsSpeaking(true);
+                  audio.play().catch(() => {});
+                }
+              }
+            }
+          } catch (e) { console.warn("TTS stream read error", e); }
+        })();
+
+        await new Promise<void>((resolve) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+        });
+        setIsSpeaking(false);
+        currentAudioRef.current = null;
+        try { URL.revokeObjectURL(audio.src); } catch {}
+        return true;
       }
+
+      // Fallback (Safari iOS etc): blob playback
       const audioBlob = await response.blob();
       if (!audioBlob.type.includes("audio") || audioBlob.size < 100) return false;
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;
       audio.volume = 0.95;
-      // SPEED: natural cadence at 1.0 — prior 0.92 made Oracle feel sluggish
       audio.playbackRate = 1.0;
       setIsSpeaking(true);
-      try {
-        await audio.play();
-      } catch {
-        URL.revokeObjectURL(audioUrl);
-        setIsSpeaking(false);
-        return false;
-      }
+      try { await audio.play(); } catch { URL.revokeObjectURL(audioUrl); setIsSpeaking(false); return false; }
       await new Promise<void>((resolve) => {
         audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
         audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
@@ -415,6 +474,13 @@ const OraclePage = () => {
   useEffect(() => {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
+    // first real Oracle response speaks back in <1s.
+    fetch(ELEVENLABS_TTS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({ text: ".", fast: true, voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
