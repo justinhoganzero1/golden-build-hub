@@ -14,8 +14,54 @@ interface MediaPickerDialogProps {
 
 const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, title = "Select from Library" }: MediaPickerDialogProps) => {
   const { data: media = [], isLoading } = useUserMedia();
+  const saveMedia = useSaveMedia();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string | null>(filterType);
+  const [uploading, setUploading] = useState(false);
+
+  const acceptAttr = filterType === "image" ? "image/*"
+    : filterType === "video" ? "video/*"
+    : filterType === "audio" ? "audio/*"
+    : "image/*,video/*,audio/*";
+
+  const handleBrowse = () => fileInputRef.current?.click();
+
+  const handleFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File too large (max 25MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const mediaType = file.type.startsWith("video") ? "video"
+        : file.type.startsWith("audio") ? "audio" : "image";
+      // Persist to library so it's reusable everywhere
+      try {
+        await saveMedia.mutateAsync({
+          media_type: mediaType,
+          title: file.name,
+          url: dataUrl,
+          source_page: "device-upload",
+        });
+      } catch { /* non-fatal — still let user use the file */ }
+      onSelect(dataUrl, file.name);
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not read file");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const filtered = media.filter((m: any) => {
     if (typeFilter && m.media_type !== typeFilter) return false;
