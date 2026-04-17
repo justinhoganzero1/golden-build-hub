@@ -341,11 +341,23 @@ const SettingsPage = () => {
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
-  const [currentTheme, setCurrentTheme] = useState("Gold & Black");
-  const [language, setLanguage] = useState("English");
-  const [privacySettings, setPrivacySettings] = useState({ shareData: false, locationTracking: true, crashReports: true, personalizedAds: true });
+  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("solace-theme-name") || "Gold & Black");
+  const [language, setLanguage] = useState(() => localStorage.getItem("solace-language") || "English");
+  const [privacySettings, setPrivacySettings] = useState(() => {
+    try {
+      const raw = localStorage.getItem("solace-privacy");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { shareData: false, locationTracking: true, crashReports: true, personalizedAds: true };
+  });
   const { subscribed } = useSubscription();
-  const [currentLayout, setCurrentLayout] = useState("Standard 4x");
+  const [currentLayout, setCurrentLayout] = useState(() => {
+    try {
+      const raw = localStorage.getItem("solace-layout");
+      if (raw) return (JSON.parse(raw).name as string) || "Standard 4x";
+    } catch {}
+    return "Standard 4x";
+  });
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -356,6 +368,39 @@ const SettingsPage = () => {
     };
     checkAdmin();
   }, [user]);
+
+  // Persist non-theme settings
+  useEffect(() => { localStorage.setItem("solace-language", language); }, [language]);
+  useEffect(() => { localStorage.setItem("solace-privacy", JSON.stringify(privacySettings)); }, [privacySettings]);
+
+  // Rehydrate saved theme on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("solace-theme");
+      if (!raw) return;
+      const theme = JSON.parse(raw) as ThemeScheme;
+      const root = document.documentElement;
+      root.style.setProperty("--primary", theme.primary);
+      root.style.setProperty("--secondary", theme.secondary);
+      root.style.setProperty("--accent", theme.accent);
+      root.style.setProperty("--background", theme.bg);
+      root.style.setProperty("--ring", theme.primary);
+      root.style.setProperty("--gold", theme.primary);
+      if (theme.light) {
+        root.style.setProperty("--foreground", "0 0% 10%");
+        root.style.setProperty("--card", "0 0% 100%");
+        root.style.setProperty("--card-foreground", "0 0% 10%");
+        root.style.setProperty("--muted-foreground", "0 0% 40%");
+        root.style.setProperty("--border", `${theme.primary.split(" ")[0]} 20% 80%`);
+      } else {
+        root.style.setProperty("--foreground", theme.primary);
+        root.style.setProperty("--card", theme.bg.replace(/\d+%$/, (m) => `${Math.min(parseInt(m) + 5, 15)}%`));
+        root.style.setProperty("--card-foreground", theme.primary);
+        root.style.setProperty("--muted-foreground", `${theme.primary.split(" ")[0]} 30% 55%`);
+        root.style.setProperty("--border", `${theme.primary.split(" ")[0]} 60% 20%`);
+      }
+    } catch {}
+  }, []);
 
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
