@@ -517,7 +517,7 @@ const AvatarGeneratorPage = () => {
               )}
             </div>
 
-            {imageUrl && !showCamera && (
+            {imageUrl && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Avatar Summary</h3>
                 <div className="space-y-1.5 text-sm">
