@@ -361,6 +361,43 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
               </button>
             </div>
           )}
+
+          {tab === "3d" && (
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/30 rounded-xl p-3">
+                <p className="text-xs text-foreground font-semibold mb-1 flex items-center gap-1.5">
+                  <Box className="w-3.5 h-3.5 text-primary" /> Interactive 3D Photo
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Drag to tilt the photo. Pinch / scroll to zoom. Subjects pop forward — backgrounds recede.
+                </p>
+              </div>
+              <div className="aspect-square w-full rounded-xl overflow-hidden border border-border bg-black">
+                <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Maximize2 className="w-3.5 h-3.5 text-primary" /> Depth Strength
+                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{depth3D.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range" min={0} max={1} step={0.01} value={depth3D}
+                  onChange={e => setDepth3D(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+              <button
+                onClick={() => setAutoOrbit(o => !o)}
+                className={`w-full py-2 rounded-lg text-xs font-medium border ${
+                  autoOrbit ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
+                }`}
+              >
+                {autoOrbit ? "Stop Auto-Orbit" : "Start Auto-Orbit"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer actions */}
