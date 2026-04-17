@@ -283,6 +283,10 @@ const LiveVisionPage = () => {
       if (!heard) return;
       // Voice command routing
       if (/stop driving|exit|end driving|stop mode/i.test(heard)) { stopDriving(); speak("Driving mode off."); return; }
+      if (/stop watching|stop watch|end watch|finish watch/i.test(heard)) { stopWatch(); return; }
+      if (/stop companion|end companion/i.test(heard)) { stopCompanion(); speak("Companion mode off."); return; }
+      const watchMatch = heard.match(/(?:watch for|look out for|tell me when you see|find me|look for|help me find)\s+(.+)/i);
+      if (watchMatch) { startWatch(watchMatch[1].trim()); return; }
       if (/take.*photo|capture|snapshot/i.test(heard)) {
         const f = captureFrame();
         if (f) { setCapturedImage(f); saveSnapshotAuto(f); speak("Photo saved."); }
@@ -308,9 +312,9 @@ const LiveVisionPage = () => {
       }
     };
     recog.onerror = () => { setListening(false); };
-    recog.onend = () => { if (drivingActive) { try { recog.start(); } catch {} } };
+    recog.onend = () => { if (drivingActive || companionActive || watchActive) { try { recog.start(); } catch {} } };
     try { recog.start(); recognitionRef.current = recog; setListening(true); } catch {}
-  }, [captureFrame, speak, drivingActive]);
+  }, [captureFrame, speak, drivingActive, companionActive, watchActive, stopDriving, stopWatch, stopCompanion, startWatch]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
