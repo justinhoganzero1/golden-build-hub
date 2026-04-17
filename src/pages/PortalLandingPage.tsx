@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import {
   Shield,
   Sparkles,
@@ -39,6 +41,7 @@ const FEATURES = [
 const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
+  const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
   const handleInstall = async () => {
     const outcome = await install();
@@ -148,26 +151,18 @@ const PortalLandingPage = () => {
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FEATURES.map(({ icon: Icon, title, desc, to }) => {
-            const inner = (
-              <>
+          {FEATURES.map((feature) => {
+            const { icon: Icon, title, desc } = feature;
+            return (
+              <button
+                key={title}
+                onClick={() => setPreviewFeature(feature)}
+                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all"
+              >
                 <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
                 <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-              </>
-            );
-            return to ? (
-              <button
-                key={title}
-                onClick={() => navigate(to)}
-                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all"
-              >
-                {inner}
               </button>
-            ) : (
-              <div key={title} className="holo-tile rounded-xl p-5 text-left">
-                {inner}
-              </div>
             );
           })}
         </div>
@@ -345,6 +340,16 @@ const PortalLandingPage = () => {
       </footer>
 
       <PortalTutorWidget />
+
+      {previewFeature && (
+        <FeaturePreviewDialog
+          open={!!previewFeature}
+          onOpenChange={(o) => !o && setPreviewFeature(null)}
+          title={previewFeature.title}
+          desc={previewFeature.desc}
+          icon={previewFeature.icon}
+        />
+      )}
     </div>
   );
 };
