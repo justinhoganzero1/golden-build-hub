@@ -110,6 +110,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [generatingTheme, setGeneratingTheme] = useState(false);
   const [generatingCredits, setGeneratingCredits] = useState(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
+  // Newsroom (YouTube show) preset
+  const [newsroomMode, setNewsroomMode] = useState(false);
+  const [showName, setShowName] = useState("");          // e.g. "SOLACE Daily"
+  const [hostName, setHostName] = useState("");          // e.g. "Alex Rivera"
+  const [hostTitle, setHostTitle] = useState("");        // e.g. "Lead Anchor"
+  const [hostAvatarUrl, setHostAvatarUrl] = useState<string | null>(null);
+  const [generatingNewsroom, setGeneratingNewsroom] = useState(false);
+  // Auto-pick + cross-fade
+  const [autoPickEnabled, setAutoPickEnabled] = useState(true); // Oracle picks best per-scene track
+  const [crossfadeMode, setCrossfadeMode] = useState<"auto" | "1s" | "2s" | "off">("auto");
+  // Favourites picker
+  const [showFavouritesPicker, setShowFavouritesPicker] = useState(false);
+  const [favouritesTargetId, setFavouritesTargetId] = useState<string | null>(null);
+  const [savedTracks, setSavedTracks] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
