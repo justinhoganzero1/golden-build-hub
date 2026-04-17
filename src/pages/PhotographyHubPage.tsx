@@ -251,6 +251,7 @@ const PhotographyHubPage = () => {
           }}
         />
       )}
+      <MovieStudio open={showMovieStudio} onOpenChange={setShowMovieStudio} seedImage={generatedImage || uploadedPhoto} />
     </div>
   );
 };
