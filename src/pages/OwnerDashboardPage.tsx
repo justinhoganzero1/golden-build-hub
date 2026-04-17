@@ -39,6 +39,10 @@ const OwnerDashboardPage = () => {
   const [libSelected, setLibSelected] = useState<any>(null);
   const [libShareItem, setLibShareItem] = useState<any>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [installStats, setInstallStats] = useState<{
+    totalClicks: number; totalInstalls: number;
+    perPlatform: { android: { clicks: number; installs: number }; ios: { clicks: number; installs: number }; desktop: { clicks: number; installs: number } };
+  }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
