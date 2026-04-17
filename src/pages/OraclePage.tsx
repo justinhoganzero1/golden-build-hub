@@ -120,6 +120,32 @@ const OraclePage = () => {
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
+  // Prefetch the user's current daily Oracle usage so the badge renders before their first message.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const isPaid = subscribed || (tier && tier !== "free");
+        if (isPaid) { setUsage(null); return; }
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        if (user.email?.toLowerCase() === "justinbretthogan@gmail.com") { setUsage(null); return; }
+        const today = new Date().toISOString().slice(0, 10);
+        const { data } = await supabase
+          .from("oracle_chat_usage")
+          .select("message_count")
+          .eq("user_id", user.id)
+          .eq("usage_date", today)
+          .maybeSingle();
+        const count = data?.message_count ?? 0;
+        const limit = 25;
+        if (!cancelled) setUsage({ count, limit, remaining: Math.max(0, limit - count) });
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [subscribed, tier]);
+
   // Get the oracle avatar if in avatar mode
   const oracleAvatar = oracleMode.mode === "avatar" && oracleMode.avatarId
     ? userAvatars.find(a => a.id === oracleMode.avatarId)
