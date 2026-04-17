@@ -44,6 +44,23 @@ const PortalLandingPage = () => {
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
+  // Pulse the shield-shaped logo glow while the user is typing in the chat
+  useEffect(() => {
+    const el = document.getElementById("solace-home-logo-glow");
+    if (!el) return;
+    let timer: number | undefined;
+    const onTyping = () => {
+      el.classList.add("is-pulsing");
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => el.classList.remove("is-pulsing"), 900);
+    };
+    window.addEventListener("solace-chat-typing", onTyping);
+    return () => {
+      window.removeEventListener("solace-chat-typing", onTyping);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
   const handleInstall = async () => {
     const outcome = await install();
     if (outcome === "unavailable") {
