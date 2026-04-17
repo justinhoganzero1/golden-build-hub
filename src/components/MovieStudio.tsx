@@ -1015,6 +1015,36 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
       }
 
+      // ===== "THE END" OUTRO CARD (3s) with outro sting =====
+      if (outroBuf || creditsLines.length > 0) {
+        if (outroBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = outroBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.85;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const outroDur = 3000;
+        const outroStart = performance.now();
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - outroStart) / outroDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const alpha = p < 0.2 ? p / 0.2 : p > 0.8 ? (1 - p) / 0.2 : 1;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.fillStyle = "hsl(45 90% 65%)";
+            ctx.textAlign = "center";
+            ctx.font = "bold 140px serif";
+            ctx.fillText("The End", canvas.width / 2, canvas.height / 2 + 30);
+            ctx.globalAlpha = 1;
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
       // ===== END CREDITS ROLL (8s) with theme music =====
       if (creditsLines.length > 0) {
         if (themeBuf) {
