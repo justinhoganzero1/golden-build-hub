@@ -89,6 +89,22 @@ const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, ti
           {search && <button onClick={() => setSearch("")}><X className="w-3 h-3 text-muted-foreground" /></button>}
         </div>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={acceptAttr}
+          onChange={handleFileChosen}
+          className="hidden"
+        />
+        <button
+          onClick={handleBrowse}
+          disabled={uploading}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {uploading ? <Upload className="w-4 h-4 animate-pulse" /> : <FolderOpen className="w-4 h-4" />}
+          {uploading ? "Uploading..." : "Browse from device"}
+        </button>
+
         {!filterType && (
           <div className="flex gap-2">
             {[null, "image", "video", "audio"].map(t => (
