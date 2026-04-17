@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic" },
@@ -18,8 +19,6 @@ const STYLES = [
   { value: "minimalist", label: "Minimalist" },
   { value: "chibi", label: "Chibi" },
 ];
-
-const BLOCKED_TERMS = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|bikini|seductive|provocative|undress|strip)\b/i;
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -66,8 +65,9 @@ const ProfilePage = () => {
 
   const generateAvatar = async () => {
     const desc = avatarPrompt.trim() || "a friendly person";
-    if (BLOCKED_TERMS.test(desc)) {
-      toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
+    const moderation = moderatePrompt(desc);
+    if (!moderation.ok) {
+      toast.error(moderation.reason);
       return;
     }
     setAvatarLoading(true);

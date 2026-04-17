@@ -11,6 +11,8 @@ import ShareDialog from "@/components/ShareDialog";
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
   { key: "all",           label: "All Creations",                             icon: Layers,        color: "from-amber-500/20 to-yellow-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
+  { key: "movies",        label: "Movies",                                    icon: Film,          color: "from-rose-500/20 to-red-500/20", accent: "text-rose-400", border: "border-rose-500/30" },
+  { key: "favourite-music", label: "Favourite Tracks",                        icon: Star,          color: "from-amber-500/20 to-orange-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
   { key: "avatar",        label: "Avatars",                                   icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
   { key: "photography",   label: "SOLACE AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
   { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
@@ -30,13 +32,18 @@ const TYPE_FILTERS = [
   { key: "audio",  label: "Audio",     icon: Music },
 ] as const;
 
-/* ── Map source_page strings to collection keys ── */
-function getCollectionKey(sourcePage: string | null): string {
+/* ── Map source_page (and metadata) to collection keys ── */
+function getCollectionKey(sourcePage: string | null, mediaType?: string, metadata?: any): string {
+  // Movies: any video from Movie Studio
+  if (mediaType === "video" && (sourcePage || "").toLowerCase().includes("movie")) return "movies";
+  // Favourite music tracks: explicitly tagged
+  if (metadata?.favourite === true || (sourcePage || "").toLowerCase() === "favourite-music") return "favourite-music";
   if (!sourcePage) return "other";
   const s = sourcePage.toLowerCase();
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
   if (s.includes("app-builder") || s.includes("app builder")) return "apps";
+  if (s.includes("movie")) return "movies"; // catch-all for movie-studio assets
   if (s.includes("studio") && !s.includes("voice")) return "ai-studio";
   if (s.includes("magic")) return "magic-hub";
   if (s.includes("video")) return "video-editor";
@@ -64,7 +71,7 @@ const MediaLibraryPage = () => {
   const collectionCounts = useMemo(() => {
     const counts: Record<string, number> = { all: mediaItems.length };
     mediaItems.forEach((m: any) => {
-      const key = getCollectionKey(m.source_page);
+      const key = getCollectionKey(m.source_page, m.media_type, m.metadata);
       counts[key] = (counts[key] || 0) + 1;
     });
     return counts;
@@ -73,7 +80,7 @@ const MediaLibraryPage = () => {
   /* ── Filtering ── */
   const filtered = useMemo(() => {
     return mediaItems.filter((m: any) => {
-      if (activeCollection !== "all" && getCollectionKey(m.source_page) !== activeCollection) return false;
+      if (activeCollection !== "all" && getCollectionKey(m.source_page, m.media_type, m.metadata) !== activeCollection) return false;
       if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
       if (search && !(m.title || "").toLowerCase().includes(search.toLowerCase())) return false;
       return true;
@@ -295,7 +302,7 @@ const MediaLibraryPage = () => {
         ) : (
           <div className="space-y-2">
             {filtered.map((m: any) => {
-              const colKey = getCollectionKey(m.source_page);
+              const colKey = getCollectionKey(m.source_page, m.media_type, m.metadata);
               const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
               return (
                 <button key={m.id} onClick={() => setSelected(m)}
@@ -351,7 +358,7 @@ const MediaLibraryPage = () => {
               {/* Metadata */}
               <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
-                  const colKey = getCollectionKey(selected.source_page);
+                  const colKey = getCollectionKey(selected.source_page, selected.media_type, selected.metadata);
                   const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
                   return (
                     <span className={`text-[10px] px-2 py-1 rounded-full bg-gradient-to-r ${col.color} ${col.accent} font-medium border ${col.border}`}>

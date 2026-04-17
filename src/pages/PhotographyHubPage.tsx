@@ -8,9 +8,9 @@ import PhotoEditStudio from "@/components/PhotoEditStudio";
 import MovieStudio from "@/components/MovieStudio";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
-const BLOCKED_TERMS = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip)\b/i;
 
 const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
 
@@ -45,8 +45,9 @@ const PhotographyHubPage = () => {
 
   const generatePhoto = async () => {
     if (!prompt.trim()) return;
-    if (BLOCKED_TERMS.test(prompt)) {
-      toast.error("Content must be M-rated. Explicit descriptions are not allowed.");
+    const moderation = moderatePrompt(prompt);
+    if (!moderation.ok) {
+      toast.error(moderation.reason);
       return;
     }
     setIsGenerating(true);
