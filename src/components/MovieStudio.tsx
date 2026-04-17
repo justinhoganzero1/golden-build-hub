@@ -52,6 +52,12 @@ interface Scene {
   sfx_prompt?: string;
   sfx_url?: string;
   generatingSfx?: boolean;
+  // Per-scene backing music
+  music_prompt?: string;
+  music_options?: string[]; // up to 3 candidate tracks
+  music_url?: string; // chosen track
+  music_volume?: number; // 0..1
+  generatingSceneMusic?: boolean;
 }
 
 interface MovieStudioProps {
@@ -170,6 +176,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         speaker: s.speaker || "narrator",
         voice_style: s.voice_style || "narrator-male-warm",
         sfx_prompt: s.sfx_prompt || s.ambient || "",
+        music_prompt: s.music_prompt || s.score_prompt || `Cinematic underscore for: ${s.caption}`,
+        music_volume: 0.25,
       }));
       // Auto-suggest a music prompt from the overall vibe
       if (data.music_prompt) setMusicPrompt(data.music_prompt);
@@ -341,7 +349,60 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     toast.success("All sound effects generated");
   };
 
-  // ----- Music (full-track underscore via ElevenLabs Music) -----
+  // ----- Per-scene backing music (generates 3 options to choose from) -----
+  const generateSceneMusicOption = async (sceneId: string, prompt: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: CLIP_SECONDS + 4 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else if (resp.status === 429) toast.error("Music rate limit. Wait and retry.");
+        else toast.error("Scene music generation failed");
+        return null;
+      }
+      const blob = await resp.blob();
+      return await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+    } catch (e) { console.error(e); return null; }
+  };
+
+  const generateSceneMusic = async (sceneId: string, count = 3) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    const base = (scene.music_prompt || `Cinematic backing track for: ${scene.caption}`).trim();
+    if (!base) { toast.error("Describe the music vibe for this scene first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingSceneMusic: true } : s));
+    const variants = [
+      base,
+      `${base} — alternate take, different instrumentation`,
+      `${base} — slower, more emotional version`,
+    ].slice(0, count);
+    const results: string[] = [];
+    for (const v of variants) {
+      const url = await generateSceneMusicOption(sceneId, v);
+      if (url) results.push(url);
+    }
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? { ...s, music_options: results, music_url: s.music_url || results[0], generatingSceneMusic: false }
+      : s));
+    if (results.length === 0) {
+      toast.error("Could not generate music tracks");
+    } else {
+      toast.success(`${results.length} backing tracks ready — choose one`);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - scene music: ${scene.caption}`.slice(0, 200),
+        url: results[0],
+        source_page: "movie-studio",
+        metadata: { kind: "scene-music", sceneId, prompt: base },
+      });
+    }
+  };
+
   const generateMusic = async () => {
     const text = musicPrompt.trim();
     if (!text) { toast.error("Describe the music vibe first"); return; }
@@ -389,6 +450,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       speaker: "narrator",
       voice_style: "narrator-male-warm",
       sfx_prompt: "",
+      music_prompt: "",
+      music_volume: 0.25,
     }]);
   };
   const removeScene = (id: string) => setScenes(prev => prev.filter(s => s.id !== id));
@@ -459,10 +522,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         } catch (err) { console.warn("audio decode failed", err); return null; }
       };
 
-      // Decode each scene's narration + sfx, plus global music — in parallel
-      const [voiceBuffers, sfxBuffers, musicBuffer] = await Promise.all([
+      // Decode narration + sfx + per-scene music + global music — in parallel
+      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer] = await Promise.all([
         Promise.all(ready.map(s => decodeUrl(s.audio_url))),
         Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
+        Promise.all(ready.map(s => decodeUrl(s.music_url))),
         decodeUrl(musicUrl),
       ]);
 
@@ -521,7 +585,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           src.connect(g).connect(audioDest);
           src.start();
         }
-
+        // Schedule per-scene backing music (overrides global score for this clip if present)
+        const mbuf = sceneMusicBuffers[idx];
+        if (mbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = mbuf;
+          const g = audioCtx.createGain();
+          g.gain.value = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
         const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
@@ -853,6 +926,58 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                             {s.sfx_url ? "Re-generate SFX" : "Generate SFX"}
                           </Button>
                         </div>
+                      </div>
+
+                      {/* Per-scene Backing Music (ElevenLabs Music) */}
+                      <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Music className="w-3 h-3 text-primary" />
+                          <span className="text-[10px] font-bold">SCENE BACKING MUSIC</span>
+                          {s.music_url && <audio src={s.music_url} controls className="h-6 max-w-[200px] ml-auto" />}
+                        </div>
+                        <Textarea
+                          value={s.music_prompt || ""}
+                          onChange={e => updateScene(s.id, { music_prompt: e.target.value })}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Describe the backing track — e.g. 'tense orchestral strings building suspense', 'warm acoustic guitar, hopeful', 'dark synth pulse, 90 bpm'"
+                        />
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <Button onClick={() => generateSceneMusic(s.id, 3)} size="sm" variant="secondary" className="h-7 text-xs"
+                            disabled={s.generatingSceneMusic || !s.music_prompt?.trim()}>
+                            {s.generatingSceneMusic
+                              ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing 3 tracks...</>
+                              : s.music_options?.length
+                                ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose options</>
+                                : <><Sparkles className="w-3 h-3 mr-1" /> Generate 3 tracks</>}
+                          </Button>
+                          <label className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+                            Vol
+                            <input
+                              type="range" min={0} max={1} step={0.05}
+                              value={s.music_volume ?? 0.25}
+                              onChange={e => updateScene(s.id, { music_volume: Number(e.target.value) })}
+                              className="w-20"
+                            />
+                          </label>
+                        </div>
+                        {!!s.music_options?.length && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground">Choose backing track for this scene:</p>
+                            {s.music_options.map((url, i) => (
+                              <div key={i} className={`flex items-center gap-2 p-1 rounded border ${s.music_url === url ? "border-primary bg-primary/10" : "border-border/40"}`}>
+                                <Button
+                                  size="sm" variant={s.music_url === url ? "default" : "outline"}
+                                  className="h-6 text-[10px] px-2"
+                                  onClick={() => updateScene(s.id, { music_url: url })}
+                                >
+                                  {s.music_url === url ? "✓ Selected" : `Use #${i + 1}`}
+                                </Button>
+                                <audio src={url} controls className="h-6 flex-1 min-w-0" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {editingSceneId === s.id && (
