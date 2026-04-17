@@ -446,8 +446,121 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       toast.success("Music score ready");
     } catch (e) {
       console.error(e); toast.error("Music generation failed");
-    } finally { setGeneratingMusic(false); }
   };
+
+  // ----- Intro fanfare (short upbeat opener) -----
+  const composeIntroMusic = async () => {
+    setGeneratingIntro(true);
+    try {
+      const prompt = `Short upbeat cinematic intro fanfare, exciting, triumphant orchestral hit with rising strings and brass, 4 seconds, builds energy for a film opening titled "${title || "this movie"}"`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: 10 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Intro music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setIntroMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - intro fanfare`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "intro-music" },
+      });
+      toast.success("Intro fanfare ready");
+    } catch (e) {
+      console.error(e); toast.error("Intro music generation failed");
+    } finally { setGeneratingIntro(false); }
+  };
+
+  // ----- Theme soundtrack (always upbeat & exciting, plays as the main score) -----
+  const composeThemeTrack = async () => {
+    setGeneratingTheme(true);
+    try {
+      const totalSecs = Math.max(30, scenes.length * CLIP_SECONDS);
+      const prompt = `Upbeat, exciting, energetic cinematic theme soundtrack, driving rhythm, uplifting orchestral and modern hybrid score, adventurous and triumphant, perfect as the main theme for a movie titled "${title || "this movie"}". Keep energy high throughout.`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: totalSecs }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Theme music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setThemeMusicUrl(dataUrl);
+      setMusicUrl(dataUrl); // theme replaces global score
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - theme soundtrack`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "theme-music", durationSec: totalSecs },
+      });
+      toast.success("Upbeat theme soundtrack ready");
+    } catch (e) {
+      console.error(e); toast.error("Theme music generation failed");
+    } finally { setGeneratingTheme(false); }
+  };
+
+  // ----- AI-generated end credits -----
+  const generateCredits = async () => {
+    setGeneratingCredits(true);
+    try {
+      // Reuse the script-to-scenes endpoint? It only does scenes. Use image-gen? No.
+      // Build credits locally from what we know — speakers, title, intent — then ask AI to enrich via a tiny prompt to MUSIC? No. Just compose locally for reliability.
+      const speakers = Array.from(new Set(scenes.map(s => s.speaker).filter(Boolean))) as string[];
+      const lines: string[] = [];
+      lines.push(`${title || "Untitled Movie"}`);
+      lines.push("");
+      lines.push("— A SOLACE Production —");
+      lines.push("");
+      lines.push("Directed by");
+      lines.push("The SOLACE Oracle");
+      lines.push("");
+      if (intent.trim()) {
+        lines.push("Story");
+        lines.push(intent.trim().slice(0, 120));
+        lines.push("");
+      }
+      if (speakers.length > 0) {
+        lines.push("Voice Cast");
+        speakers.forEach(sp => lines.push(sp));
+        lines.push("");
+      }
+      lines.push("Original Score");
+      lines.push("ElevenLabs Music");
+      lines.push("");
+      lines.push("Visuals");
+      lines.push("Generated with AI");
+      lines.push("");
+      lines.push("Made with ♥ on SOLACE");
+      setCreditsLines(lines);
+      toast.success("Credits ready");
+    } catch (e) {
+      console.error(e); toast.error("Credits generation failed");
+    } finally { setGeneratingCredits(false); }
+  };
+
+  // Auto-generate intro + theme + credits in one click — Oracle's "make it complete" button
+  const generateAllExtras = async () => {
+    if (!title) toast.info("Tip: set a title first for best intro/credits");
+    if (!themeMusicUrl) await composeThemeTrack();
+    if (!introMusicUrl) await composeIntroMusic();
+    if (creditsLines.length === 0) await generateCredits();
+  };
+
 
   // ----- Scene CRUD -----
   const addScene = () => {
