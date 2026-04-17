@@ -87,6 +87,7 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
   // 3D view
   const [depth3D, setDepth3D] = useState(0.35);
   const [autoOrbit, setAutoOrbit] = useState(false);
+  const [mode3D, setMode3D] = useState<"parallax" | "ai">("parallax");
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = history[historyIndex];
@@ -364,38 +365,114 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
 
           {tab === "3d" && (
             <div className="space-y-3">
-              <div className="bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/30 rounded-xl p-3">
-                <p className="text-xs text-foreground font-semibold mb-1 flex items-center gap-1.5">
-                  <Box className="w-3.5 h-3.5 text-primary" /> Interactive 3D Photo
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Drag to tilt the photo. Pinch / scroll to zoom. Subjects pop forward — backgrounds recede.
-                </p>
+              {/* Mode toggle */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setMode3D("parallax")}
+                  className={`p-2.5 rounded-xl border text-xs font-medium flex flex-col items-center gap-1 ${
+                    mode3D === "parallax" ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
+                  }`}
+                >
+                  <Box className="w-4 h-4" />
+                  Live Parallax
+                  <span className="text-[9px] text-muted-foreground font-normal">Instant • Free • Subtle tilt</span>
+                </button>
+                <button
+                  onClick={() => setMode3D("ai")}
+                  className={`p-2.5 rounded-xl border text-xs font-medium flex flex-col items-center gap-1 ${
+                    mode3D === "ai" ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  AI Re-Render
+                  <span className="text-[9px] text-muted-foreground font-normal">Photoreal • Full 3D • ~15s</span>
+                </button>
               </div>
-              <div className="aspect-square w-full rounded-xl overflow-hidden border border-border bg-black">
-                <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                    <Maximize2 className="w-3.5 h-3.5 text-primary" /> Depth Strength
-                  </span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{depth3D.toFixed(2)}</span>
-                </div>
-                <input
-                  type="range" min={0} max={1} step={0.01} value={depth3D}
-                  onChange={e => setDepth3D(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
-              </div>
-              <button
-                onClick={() => setAutoOrbit(o => !o)}
-                className={`w-full py-2 rounded-lg text-xs font-medium border ${
-                  autoOrbit ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
-                }`}
-              >
-                {autoOrbit ? "Stop Auto-Orbit" : "Start Auto-Orbit"}
-              </button>
+
+              {mode3D === "parallax" ? (
+                <>
+                  <div className="bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/30 rounded-xl p-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Drag to tilt. Pinch / scroll to zoom. Subjects pop forward — backgrounds recede.
+                    </p>
+                  </div>
+                  <div className="aspect-square w-full rounded-xl overflow-hidden border border-border bg-black">
+                    <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                        <Maximize2 className="w-3.5 h-3.5 text-primary" /> Depth Strength
+                      </span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{depth3D.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range" min={0} max={1} step={0.01} value={depth3D}
+                      onChange={e => setDepth3D(parseFloat(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setAutoOrbit(o => !o)}
+                    className={`w-full py-2 rounded-lg text-xs font-medium border ${
+                      autoOrbit ? "bg-primary/20 border-primary text-primary" : "bg-muted/50 border-border text-foreground"
+                    }`}
+                  >
+                    {autoOrbit ? "Stop Auto-Orbit" : "Start Auto-Orbit"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="bg-gradient-to-r from-primary/15 to-amber-500/15 border border-primary/30 rounded-xl p-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Pick an angle and AI will re-render the same scene from that view. Each angle becomes a new photo in your history.
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold text-foreground">Camera Angles</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: "Left Side", prompt: "Re-render this exact same scene and subject from a camera angle rotated 45 degrees to the LEFT side. Keep the same subject, lighting, style, and background elements — just shift the camera viewpoint to the left so we see the left profile / left side of the scene. Photoreal, consistent." },
+                      { label: "Right Side", prompt: "Re-render this exact same scene and subject from a camera angle rotated 45 degrees to the RIGHT side. Keep the same subject, lighting, style, and background — just shift the camera viewpoint to the right so we see the right profile / right side. Photoreal, consistent." },
+                      { label: "Behind", prompt: "Re-render this exact same scene from BEHIND the subject. Keep the subject, outfit, lighting, and background consistent — show the back of the subject as if the camera moved 180° around. Photoreal." },
+                      { label: "Top Down", prompt: "Re-render this exact same scene from a TOP-DOWN bird's eye view looking straight down. Keep the same subject, outfit, lighting, and elements — just change the camera to overhead. Photoreal." },
+                      { label: "Low Angle", prompt: "Re-render this exact same scene from a dramatic LOW ANGLE looking up at the subject. Keep subject, outfit, lighting and style consistent. Photoreal, cinematic." },
+                      { label: "Wide Shot", prompt: "Re-render this exact same scene as a WIDE establishing shot — pull the camera way back so we see much more of the surrounding environment. Keep subject and style consistent. Photoreal." },
+                      { label: "Close-Up", prompt: "Re-render this exact same scene as a tight CLOSE-UP on the main subject's face/details. Keep lighting, style, mood consistent. Photoreal, sharp focus." },
+                      { label: "Step Inside", prompt: "Re-render this scene from a first-person POV as if the viewer just STEPPED INSIDE the photo and is now standing in the environment looking around. Keep all environment details, lighting and mood consistent. Photoreal, immersive." },
+                      { label: "Dolly Zoom", prompt: "Re-render this scene with a dramatic DOLLY ZOOM / vertigo effect — subject stays the same size but background warps and stretches. Cinematic, photoreal." },
+                    ].map(angle => (
+                      <button
+                        key={angle.label}
+                        onClick={() => aiEdit(angle.prompt)}
+                        disabled={busy}
+                        className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/20 border border-border hover:border-primary/50 transition-all flex flex-col items-center gap-1 disabled:opacity-50"
+                      >
+                        <Camera className="w-4 h-4 text-foreground" />
+                        <span className="text-[10px] text-foreground font-medium text-center leading-tight">{angle.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="bg-muted/30 border border-border rounded-xl p-3">
+                    <p className="text-[11px] text-muted-foreground mb-2">Or describe a custom camera move:</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={customPrompt}
+                        onChange={e => setCustomPrompt(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && !busy && customPrompt.trim()) { aiEdit(`Re-render this exact scene from a new camera angle: ${customPrompt}. Keep the subject, outfit, lighting and style consistent — only change the camera viewpoint. Photoreal.`); setCustomPrompt(""); } }}
+                        placeholder="e.g. from above looking down at 30°"
+                        className="flex-1 px-3 py-2 rounded-lg bg-input border border-border text-foreground text-xs outline-none focus:border-primary"
+                      />
+                      <button
+                        onClick={() => { aiEdit(`Re-render this exact scene from a new camera angle: ${customPrompt}. Keep the subject, outfit, lighting and style consistent — only change the camera viewpoint. Photoreal.`); setCustomPrompt(""); }}
+                        disabled={busy || !customPrompt.trim()}
+                        className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-medium disabled:opacity-50"
+                      >
+                        Render
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
