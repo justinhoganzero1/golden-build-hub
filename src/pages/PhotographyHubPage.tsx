@@ -149,17 +149,24 @@ const PhotographyHubPage = () => {
 
         {/* Result Preview */}
         {generatedImage && (
-          <div className="aspect-square bg-card border border-primary/30 rounded-xl mb-4 overflow-hidden relative">
-            <img src={generatedImage} alt="Generated photo" className="w-full h-full object-cover" />
-            <div className="absolute top-2 right-2 flex gap-2">
-              <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
-              <button onClick={() => {
-                const a = document.createElement("a");
-                a.href = generatedImage;
-                a.download = `solace-photo-${Date.now()}.png`;
-                a.click();
-              }} className="p-2 bg-primary/80 rounded-lg"><Download className="w-4 h-4 text-primary-foreground" /></button>
+          <div className="mb-4">
+            <div className="aspect-square bg-card border border-primary/30 rounded-xl overflow-hidden relative">
+              <img src={generatedImage} alt="Generated photo" className="w-full h-full object-cover" />
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
+                <button onClick={() => {
+                  const a = document.createElement("a");
+                  a.href = generatedImage;
+                  a.download = `solace-photo-${Date.now()}.png`;
+                  a.click();
+                }} className="p-2 bg-primary/80 rounded-lg"><Download className="w-4 h-4 text-primary-foreground" /></button>
+              </div>
             </div>
+            <button onClick={() => setShowEditor(true)}
+              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+              <Pencil className="w-4 h-4" /> Open Edit Studio
+              <Sparkles className="w-4 h-4" />
+            </button>
           </div>
         )}
 
