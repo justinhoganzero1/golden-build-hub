@@ -179,8 +179,65 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setIntroMusicUrl(null); setThemeMusicUrl(null); setCreditsLines([]);
       setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingCredits(false);
       setSubtitlesEnabled(false);
+      setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
+      setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
+      setShowFavouritesPicker(false); setFavouritesTargetId(null);
     }
   }, [open]);
+
+  // Load saved favourite tracks when the studio opens
+  useEffect(() => {
+    if (!open || !user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("user_media")
+        .select("id,title,url,metadata")
+        .eq("user_id", user.id)
+        .eq("media_type", "audio")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const favs = (data || []).filter((d: any) => d.metadata?.favourite === true);
+      setSavedTracks(favs.map((d: any) => ({ id: d.id, title: d.title, url: d.url })));
+    })();
+  }, [open, user]);
+
+  // Save a generated music track to the user's favourites library
+  const saveTrackToFavourites = (url: string, label: string) => {
+    if (!user) { toast.error("Sign in to save favourites"); return; }
+    saveMedia.mutate({
+      media_type: "audio",
+      title: label,
+      url,
+      source_page: "favourite-music",
+      metadata: { favourite: true, kind: "scene-music" },
+    } as any);
+    setSavedTracks(prev => [{ id: `local-${Date.now()}`, title: label, url }, ...prev]);
+    toast.success("Saved to Favourite Tracks");
+  };
+
+  // Oracle auto-pick: choose the best of N music options based on scene tone + theme
+  const oraclePickBest = (options: string[], _tone?: SceneTone): string => {
+    // Simple heuristic for now: variant 0 = baseline (matches prompt closest)
+    // For "tense"/"epic" prefer baseline; for "emotional" prefer slower variant (#2);
+    // for "playful" prefer alternate instrumentation (#1).
+    if (!options.length) return "";
+    if (_tone === "emotional" && options[2]) return options[2];
+    if (_tone === "playful" && options[1]) return options[1];
+    return options[0];
+  };
+
+  // Cross-fade duration (seconds) between scene[i] and scene[i+1]
+  const crossfadeFor = (a: Scene, b: Scene): number => {
+    if (crossfadeMode === "off") return 0;
+    if (crossfadeMode === "1s") return 1;
+    if (crossfadeMode === "2s") return 2;
+    // auto: longer fade on emotional shifts, shorter on cuts
+    const aT = a.tone || "neutral", bT = b.tone || "neutral";
+    if (aT === bT) return 1;
+    if ((aT === "tense" && bT === "calm") || (aT === "calm" && bT === "tense")) return 2.5;
+    if (aT === "emotional" || bT === "emotional") return 2;
+    return 1.5;
+  };
 
   // ----- Plan scenes -----
   const planScenes = async () => {
