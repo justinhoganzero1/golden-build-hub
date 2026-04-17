@@ -26,6 +26,7 @@ import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
+import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
