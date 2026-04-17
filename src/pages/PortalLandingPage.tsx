@@ -62,7 +62,15 @@ const PortalLandingPage = () => {
     };
   }, []);
 
-  const handleInstall = async () => {
+  // Track successful PWA installs (fires once when the browser finishes installing)
+  useEffect(() => {
+    const onInstalled = () => trackInstallEvent("installed");
+    window.addEventListener("appinstalled", onInstalled);
+    return () => window.removeEventListener("appinstalled", onInstalled);
+  }, []);
+
+  const handleInstall = async (platform: InstallPlatform = detectInstallPlatform()) => {
+    trackInstallEvent("click", platform);
     const outcome = await install();
     if (outcome === "unavailable") {
       document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
