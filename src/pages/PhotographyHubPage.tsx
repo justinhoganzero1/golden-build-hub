@@ -125,6 +125,13 @@ const PhotographyHubPage = () => {
           </button>
         </div>
 
+        {/* Movie Studio launcher (always available) */}
+        <button onClick={() => setShowMovieStudio(true)}
+          className="w-full mb-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-primary/20 border border-primary/40 text-primary font-semibold text-sm flex items-center justify-center gap-2 hover:from-amber-500/30 hover:to-primary/30 transition-all">
+          <Film className="w-4 h-4" /> Open Movie Studio
+          <span className="text-[10px] text-muted-foreground font-normal">8K · 6s clips</span>
+        </button>
+
         {/* Uploaded Photo Preview */}
         {mode === "edit" && (
           <div className="mb-4">
