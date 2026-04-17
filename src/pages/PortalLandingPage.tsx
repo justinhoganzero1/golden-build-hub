@@ -25,14 +25,14 @@ import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
 
 const FEATURES = [
-  { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends." },
-  { icon: Heart, title: "Crisis Hub", desc: "Safety-first crisis support tools — free for everyone, no paywall, ever." },
-  { icon: Brain, title: "Mind Hub", desc: "8 guided wellness exercises with AI voice guidance and mood tracking." },
-  { icon: Camera, title: "Photography & Live Vision", desc: "AI image transforms and real-time camera analysis powered by Gemini." },
-  { icon: Mic, title: "Voice Studio", desc: "120+ pro voice profiles plus voice cloning on premium tiers." },
-  { icon: Users, title: "AI Companion", desc: "M-rated personalized partner personas with deep memory and personality." },
-  { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place." },
-  { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down." },
+  { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
+  { icon: Heart, title: "Crisis Hub", desc: "Safety-first crisis support tools — free for everyone, no paywall, ever.", to: "/crisis-hub" },
+  { icon: Brain, title: "Mind Hub", desc: "8 guided wellness exercises with AI voice guidance and mood tracking.", to: "/mind-hub" },
+  { icon: Camera, title: "Photography & Live Vision", desc: "AI image transforms and real-time camera analysis powered by Gemini.", to: "/photography-hub" },
+  { icon: Mic, title: "Voice Studio", desc: "120+ pro voice profiles plus voice cloning on premium tiers.", to: "/voice-studio" },
+  { icon: Users, title: "AI Companion", desc: "M-rated personalized partner personas with deep memory and personality.", to: "/ai-companion" },
+  { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place.", to: "/magic-hub" },
+  { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
   { icon: Smartphone, title: "Web Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
 ];
 
@@ -187,16 +187,53 @@ const PortalLandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             {[
-              { icon: Smartphone, title: "Android", steps: ["Open in Chrome or Edge.", "Tap Install SOLACE above.", "Confirm in the prompt."] },
-              { icon: Apple, title: "iPhone / iPad", steps: ["Open in Safari.", "Tap the Share icon.", "Choose Add to Home Screen."] },
-              { icon: Monitor, title: "Desktop", steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit Install above."] },
-            ].map(({ icon: Icon, title, steps }) => (
-              <div key={title} className="holo-tile rounded-xl p-6">
+              {
+                icon: Smartphone,
+                title: "Android",
+                steps: ["Open in Chrome or Edge.", "Tap Install below.", "Confirm in the prompt."],
+                cta: canInstall ? "Install on Android" : "Open install prompt",
+                action: handleInstall,
+              },
+              {
+                icon: Apple,
+                title: "iPhone / iPad",
+                steps: ["Open in Safari.", "Tap the Share icon.", "Choose Add to Home Screen."],
+                cta: "Show iOS steps",
+                action: () => {
+                  if ((navigator as any).share) {
+                    (navigator as any).share({
+                      title: "Install SOLACE",
+                      text: "Open this in Safari, tap Share, then 'Add to Home Screen' to install SOLACE.",
+                      url: window.location.origin,
+                    }).catch(() => {});
+                  } else {
+                    alert("On your iPhone or iPad: open this page in Safari → tap the Share icon → choose 'Add to Home Screen'.");
+                  }
+                },
+              },
+              {
+                icon: Monitor,
+                title: "Desktop",
+                steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit the button below."],
+                cta: canInstall ? "Install on Desktop" : "Install (Chrome/Edge)",
+                action: handleInstall,
+              },
+            ].map(({ icon: Icon, title, steps, cta, action }) => (
+              <div key={title} className="holo-tile rounded-xl p-6 flex flex-col">
                 <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
                 <h3 className="font-semibold mb-2 text-foreground">{title}</h3>
-                <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
                   {steps.map((s) => <li key={s}>{s}</li>)}
                 </ol>
+                <Button
+                  onClick={action}
+                  disabled={isStandalone}
+                  size="sm"
+                  className="mt-4 w-full"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {isStandalone ? "Already installed ✓" : cta}
+                </Button>
               </div>
             ))}
           </div>
