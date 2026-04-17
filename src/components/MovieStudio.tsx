@@ -51,6 +51,47 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetRef = useRef<string | null>(null);
+
+  const triggerUpload = (sceneId: string) => {
+    uploadTargetRef.current = sceneId;
+    uploadInputRef.current?.click();
+  };
+
+  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const targetId = uploadTargetRef.current;
+    e.target.value = ""; // allow re-selecting same file
+    if (!file || !targetId) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error("Image too large (max 25MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result as string;
+      if (targetId === "__new__") {
+        setScenes(prev => [...prev, {
+          id: uid(),
+          caption: file.name.replace(/\.[^.]+$/, ""),
+          photo_prompt: "Uploaded photo",
+          motion: "ken-burns",
+          duration_sec: CLIP_SECONDS,
+          image_url: url,
+        }]);
+      } else {
+        updateScene(targetId, { image_url: url });
+      }
+      if (user) saveMedia.mutate({
+        media_type: "image",
+        title: file.name,
+        url,
+        source_page: "movie-studio-upload",
+        metadata: { uploadedFromDevice: true },
+      });
+      toast.success("Photo added to movie");
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (!open) {
