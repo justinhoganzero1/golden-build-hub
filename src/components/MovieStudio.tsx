@@ -177,8 +177,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   };
 
   const generateAll = async () => {
-    for (const s of scenes) {
-      if (!s.image_url) await generateScenePhoto(s.id);
+    const pending = scenes.filter(s => !s.image_url).map(s => s.id);
+    const BATCH = 3;
+    for (let i = 0; i < pending.length; i += BATCH) {
+      const chunk = pending.slice(i, i + BATCH);
+      await Promise.all(chunk.map(id => generateScenePhoto(id)));
     }
   };
 
