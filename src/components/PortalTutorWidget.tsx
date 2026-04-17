@@ -62,7 +62,17 @@ const PortalTutorWidget = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          voice_settings: {
+            stability: 0.35,
+            similarity_boost: 0.85,
+            style: 0.65,
+            use_speaker_boost: true,
+            speed: 1.0,
+          },
+          model_id: "eleven_multilingual_v2",
+        }),
       });
       if (!resp.ok) throw new Error(`tts ${resp.status}`);
       const blob = await resp.blob();

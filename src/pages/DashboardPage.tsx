@@ -33,7 +33,7 @@ const tiles: AppTile[] = [
   { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub", tier: null },
   { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault", tier: "starter" },
   { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet", tier: "starter" },
-  { label: "AI Studio", icon: <Sparkles className="w-6 h-6" />, path: "/ai-studio", tier: "monthly" },
+  
   { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor", tier: "monthly" },
   { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library", tier: "starter" },
   { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision", tier: "monthly" },
