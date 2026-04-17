@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Crown, X, ExternalLink } from "lucide-react";
+import { AlertTriangle, Crown, X, ExternalLink, Unlock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface FeaturePreviewDialogProps {
   open: boolean;
@@ -15,7 +17,14 @@ interface FeaturePreviewDialogProps {
 
 const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to }: FeaturePreviewDialogProps) => {
   const navigate = useNavigate();
-  const previewUrl = `${to}${to.includes("?") ? "&" : "?"}preview=1`;
+  const { user } = useAuth();
+  const { subscribed } = useSubscription();
+  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  // Fully interactive only when logged in AND a paying member (or admin)
+  const isInteractive = !!user && (subscribed || isAdmin);
+  const previewUrl = isInteractive
+    ? to
+    : `${to}${to.includes("?") ? "&" : "?"}preview=1`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
