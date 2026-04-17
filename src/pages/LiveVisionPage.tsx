@@ -6,6 +6,7 @@ import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { cleanTextForSpeech } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import PaywallGate from "@/components/PaywallGate";
 
 const VISION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/live-vision`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
@@ -513,6 +514,7 @@ const LiveVisionPage = () => {
   ];
 
   return (
+    <PaywallGate requiredTier="monthly" featureName="Live Vision (real-time AI camera)">
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <canvas ref={canvasRef} className="hidden" />
@@ -815,6 +817,7 @@ const LiveVisionPage = () => {
         )}
       </div>
     </div>
+    </PaywallGate>
   );
 };
 
