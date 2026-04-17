@@ -73,12 +73,17 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    /* Blue neon border framing every page */
+    /* Blue + red neon border framing every page */
     box-shadow:
       inset 0 0 0 2px hsl(var(--accent-blue) / 0.55),
       inset 0 0 24px hsl(var(--accent-blue-glow) / 0.35),
-      inset 0 0 60px hsl(var(--accent-blue) / 0.18);
+      inset 0 0 60px hsl(var(--accent-red) / 0.28),
+      inset 0 0 120px hsl(var(--accent-red-deep) / 0.18);
     min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top left, hsl(var(--accent-red) / 0.08), transparent 55%),
+      radial-gradient(ellipse at bottom right, hsl(var(--accent-red-glow) / 0.10), transparent 60%),
+      radial-gradient(ellipse at center, hsl(var(--accent-blue) / 0.05), transparent 70%);
   }
 }
 
@@ -94,23 +99,28 @@ All colors MUST be HSL.
     border-radius: 6px;
     box-shadow:
       0 0 12px hsl(var(--accent-blue-glow) / 0.6),
-      0 0 28px hsl(var(--accent-blue) / 0.35),
-      inset 0 0 12px hsl(var(--accent-blue-glow) / 0.4);
+      0 0 28px hsl(var(--accent-red) / 0.45),
+      0 0 48px hsl(var(--accent-red-glow) / 0.30),
+      inset 0 0 12px hsl(var(--accent-red) / 0.35);
     animation: neon-edge-pulse 3.5s ease-in-out infinite;
   }
 
   @keyframes neon-edge-pulse {
     0%, 100% {
+      border-color: hsl(var(--accent-blue) / 0.7);
       box-shadow:
         0 0 10px hsl(var(--accent-blue-glow) / 0.45),
-        0 0 22px hsl(var(--accent-blue) / 0.25),
-        inset 0 0 10px hsl(var(--accent-blue-glow) / 0.3);
+        0 0 22px hsl(var(--accent-red) / 0.35),
+        0 0 42px hsl(var(--accent-red-glow) / 0.25),
+        inset 0 0 10px hsl(var(--accent-red) / 0.30);
     }
     50% {
+      border-color: hsl(var(--accent-red) / 0.8);
       box-shadow:
-        0 0 18px hsl(var(--accent-blue-glow) / 0.75),
-        0 0 38px hsl(var(--accent-blue) / 0.45),
-        inset 0 0 18px hsl(var(--accent-blue-glow) / 0.55);
+        0 0 18px hsl(var(--accent-red-glow) / 0.75),
+        0 0 38px hsl(var(--accent-red) / 0.55),
+        0 0 60px hsl(var(--accent-red-deep) / 0.40),
+        inset 0 0 18px hsl(var(--accent-red-glow) / 0.55);
     }
   }
 }
@@ -140,13 +150,13 @@ All colors MUST be HSL.
     padding: 1px;
     background: linear-gradient(
       135deg,
-      hsl(var(--accent-red) / 0.0) 0%,
-      hsl(var(--accent-red) / 0.25) 18%,
+      hsl(var(--accent-red) / 0.45) 0%,
+      hsl(var(--accent-red-glow) / 0.55) 18%,
       hsl(var(--accent-white) / 0.35) 35%,
-      hsl(45 100% 50% / 0.25) 52%,
-      hsl(var(--accent-white) / 0.30) 68%,
+      hsl(45 100% 50% / 0.30) 52%,
+      hsl(var(--accent-red) / 0.45) 68%,
       hsl(var(--accent-blue) / 0.30) 82%,
-      hsl(var(--accent-red) / 0.0) 100%
+      hsl(var(--accent-red-deep) / 0.50) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -164,10 +174,11 @@ All colors MUST be HSL.
   .holo-tile:hover {
     transform: translateY(-2px) rotateX(2deg);
     box-shadow:
-      0 8px 25px hsl(45 100% 50% / 0.15),
-      0 0 40px hsl(var(--accent-blue) / 0.18),
-      0 0 60px hsl(var(--accent-red) / 0.12);
-    border-color: hsl(45 100% 50% / 0.35);
+      0 8px 25px hsl(var(--accent-red) / 0.30),
+      0 0 40px hsl(var(--accent-red-glow) / 0.35),
+      0 0 60px hsl(var(--accent-blue) / 0.20),
+      0 0 90px hsl(var(--accent-red-deep) / 0.25);
+    border-color: hsl(var(--accent-red) / 0.55);
   }
 
   /* Holographic icon float effect */
