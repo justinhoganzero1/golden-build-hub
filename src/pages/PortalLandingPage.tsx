@@ -28,6 +28,7 @@ import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
+import VisitorCounter from "@/components/VisitorCounter";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
 
 const FEATURES = [
@@ -420,7 +421,12 @@ const PortalLandingPage = () => {
             Free to start. <span className="text-primary">Power when you need it.</span>
           </h2>
           <p className="text-muted-foreground">
-            Crisis support and the Oracle are always free. Premium tiers unlock the full studio.
+            Crisis support and the Oracle are free with daily chat limits — conditions apply.
+            Photo &amp; video generation, voice cloning, and other heavy AI features require a paid plan.
+          </p>
+          <p className="text-[11px] text-muted-foreground/70 mt-2">
+            *Free tier includes a daily message cap on Oracle chat. Premium AI generation
+            (images, video, music, cloned voices) is paywalled to cover compute costs.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
