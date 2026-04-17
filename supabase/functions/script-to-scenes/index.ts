@@ -9,7 +9,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { script, intent, targetDurationSec = 60, sceneSeconds = 6 } = await req.json();
+    const { script, intent, targetDurationSec = 60 } = await req.json();
+    const sceneSeconds = 6; // FIXED: every clip is 6 seconds, 8K quality
     if (!script || typeof script !== "string") {
       return new Response(JSON.stringify({ error: "script is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
