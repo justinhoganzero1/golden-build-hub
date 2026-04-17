@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, X, Sparkles } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
+import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
