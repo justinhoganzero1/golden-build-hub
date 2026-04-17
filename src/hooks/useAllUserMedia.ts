@@ -1,22 +1,48 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+const PAGE_SIZE = 60;
+const COLS = "id,user_id,media_type,title,url,thumbnail_url,source_page,metadata,created_at";
+
+// Backward-compatible flat hook (now capped + indexed for speed)
 export const useAllUserMedia = () => {
   const { user } = useAuth();
-
   return useQuery({
     queryKey: ["all-user-media", user?.id],
     queryFn: async () => {
-      // Owner sees all media across all users
       const { data, error } = await supabase
         .from("user_media")
-        .select("id,user_id,media_type,title,url,thumbnail_url,source_page,metadata,created_at")
+        .select(COLS)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
       return data || [];
     },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+};
+
+// Cursor-paginated hook for the admin library
+export const useAllUserMediaPaginated = () => {
+  const { user } = useAuth();
+  return useInfiniteQuery({
+    queryKey: ["all-user-media-paginated", user?.id],
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      let q = supabase
+        .from("user_media")
+        .select(COLS)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      if (pageParam) q = q.lt("created_at", pageParam);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
     enabled: !!user,
     staleTime: 30_000,
   });
