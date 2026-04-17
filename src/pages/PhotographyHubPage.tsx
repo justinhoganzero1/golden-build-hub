@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
-import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
+import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen, Pencil } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import PhotoEditStudio from "@/components/PhotoEditStudio";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 
