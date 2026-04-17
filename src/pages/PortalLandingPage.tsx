@@ -367,7 +367,7 @@ const PortalLandingPage = () => {
           <div className="text-center">
             <Button
               size="lg"
-              onClick={handleInstall}
+              onClick={() => handleInstall()}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
             >
               <Download className="mr-2 h-5 w-5" />
