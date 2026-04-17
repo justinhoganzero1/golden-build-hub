@@ -94,12 +94,18 @@ const PortalLandingPage = () => {
           {/* Animated golden logo — matches app */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/40 blur-3xl animate-pulse" />
+              <div
+                id="solace-home-logo-glow"
+                className="shield-glow"
+                aria-hidden="true"
+              />
               <img
                 src={solaceLogo}
                 alt="SOLACE shield logo"
-                className="relative h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_40px_hsl(var(--primary)/0.8)] animate-glow-pulse"
+                className="relative h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_30px_hsl(200_100%_60%/0.7)]"
               />
+            </div>
+          </div>
             </div>
           </div>
 

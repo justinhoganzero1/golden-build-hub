@@ -280,6 +280,45 @@ All colors MUST be HSL.
   }
 }
 
+/* ── Shield-shaped sky blue glow for the home logo ──
+   Steady by default; pulses only while .is-pulsing is applied. */
+@layer components {
+  .shield-glow {
+    position: absolute;
+    inset: -18%;
+    pointer-events: none;
+    /* Classic heater-shield silhouette (viewBox-style 100x100 path) */
+    clip-path: path('M50 2 L96 14 L96 50 Q96 86 50 98 Q4 86 4 50 L4 14 Z');
+    background: radial-gradient(
+      ellipse at center,
+      hsl(200 100% 70% / 0.85) 0%,
+      hsl(205 100% 60% / 0.55) 35%,
+      hsl(210 100% 55% / 0.30) 65%,
+      transparent 80%
+    );
+    filter: blur(22px);
+    opacity: 0.9;
+    transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+  }
+
+  .shield-glow.is-pulsing {
+    animation: shield-glow-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes shield-glow-pulse {
+    0%, 100% {
+      opacity: 0.7;
+      transform: scale(1);
+      filter: blur(22px);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.08);
+      filter: blur(28px);
+    }
+  }
+}
+
 /* ── Global page centering ──
    Centers the standard inner page containers used across all pages
    (PageShell + the px-4 pt-14 pb-4 pattern) without touching every file. */
