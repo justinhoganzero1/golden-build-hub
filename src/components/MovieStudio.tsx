@@ -595,6 +595,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           src.connect(g).connect(audioDest);
           src.start();
         }
+        const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
