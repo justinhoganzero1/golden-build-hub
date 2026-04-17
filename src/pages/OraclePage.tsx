@@ -798,7 +798,7 @@ const OraclePage = () => {
     }
 
     // ── Background Music generation intent (ElevenLabs) ──
-    const musicMatch = text.match(/(?:make|create|generate|compose|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:music|song|track|score|melody|beat|tune|soundtrack)\s+(?:of\s+|for\s+|like\s+|that\s+is\s+|that\s+sounds\s+like\s+|in\s+the\s+style\s+of\s+|with\s+)?(.+)/i);
+    const musicMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|compose|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:music|song|track|score|melody|beat|tune|soundtrack)\s+(?:of\s+|for\s+|like\s+|that\s+is\s+|that\s+sounds\s+like\s+|in\s+the\s+style\s+of\s+|with\s+)?(.+)/i);
     if (musicMatch && musicMatch[1]) {
       const prompt = musicMatch[1].replace(/[.!?]+$/, "").trim();
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
