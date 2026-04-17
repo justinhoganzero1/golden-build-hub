@@ -30,14 +30,15 @@ Deno.serve(async (req) => {
     const selectedVoice = voiceId || "nPczCjzI2devNBz1zQrb";
     // Multilingual v2 = highest quality, most natural human prosody
     const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
+    const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
     // Tuned for natural, unhurried, real-world human delivery
     const voice_settings = {
-      stability: settings?.stability ?? 0.6,          // steadier, less jittery
-      similarity_boost: settings?.similarity_boost ?? 0.85,
-      style: settings?.style ?? 0.25,                  // subtle expression, not theatrical
+      stability: settings?.stability ?? 0.72,          // steadier, less jittery
+      similarity_boost: settings?.similarity_boost ?? 0.9,
+      style: settings?.style ?? 0.12,                  // subtle expression, not theatrical
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.88,                  // noticeably slower, conversational
+      speed: settings?.speed ?? 0.82,                  // noticeably slower, conversational
     };
 
     const response = await fetch(
@@ -49,7 +50,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: text.substring(0, 5000),
+          text: normalizedText.substring(0, 5000),
           model_id: selectedModel,
           voice_settings,
         }),

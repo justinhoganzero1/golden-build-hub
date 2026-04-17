@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCreateAvatar, useSaveMedia } from "@/hooks/useUserAvatars";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
+import { downloadFileFromUrl } from "@/lib/utils";
 
 const STYLES = [
   { value: "3d-8k-realistic", label: "3D 8K Realistic", desc: "Ultra-realistic 3D 8K cinematic render" },
@@ -165,12 +166,15 @@ const AvatarGeneratorPage = () => {
     toast.success("Selfie ready!");
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     if (!imageUrl) return;
-    const a = document.createElement("a");
-    a.href = imageUrl;
-    a.download = `solace-avatar-${Date.now()}.png`;
-    a.click();
+    try {
+      await downloadFileFromUrl(imageUrl, `solace-avatar-${Date.now()}`);
+      toast.success("Avatar downloaded");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download image");
+    }
   };
 
   const handleCheckout = async (product: string) => {
