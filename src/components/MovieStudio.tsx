@@ -743,11 +743,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingCredits(false); }
   };
 
-  // Auto-generate intro + theme + credits in one click — Oracle's "make it complete" button
+  // Auto-generate intro + theme + outro + credits in one click — Oracle's "make it complete" button
   const generateAllExtras = async () => {
     if (!title) toast.info("Tip: set a title first for best intro/credits");
     if (!themeMusicUrl) await composeThemeTrack();
     if (!introMusicUrl) await composeIntroMusic();
+    if (!outroMusicUrl) await composeOutroMusic();
     if (creditsLines.length === 0) await generateCredits();
   };
 
