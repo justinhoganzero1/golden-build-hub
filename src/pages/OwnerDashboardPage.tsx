@@ -335,6 +335,51 @@ const OwnerDashboardPage = () => {
               </div>
               <button onClick={() => setTab("suggestions")} className="text-xs text-yellow-400 font-medium">Review →</button>
             </div>
+
+            {/* Install Analytics */}
+            {(() => {
+              const conv = installStats.totalClicks > 0
+                ? Math.round((installStats.totalInstalls / installStats.totalClicks) * 100)
+                : 0;
+              const rows = [
+                { key: "android", label: "Android", icon: <Smartphone className="w-4 h-4" />, ...installStats.perPlatform.android },
+                { key: "ios", label: "iOS", icon: <Smartphone className="w-4 h-4" />, ...installStats.perPlatform.ios },
+                { key: "desktop", label: "Desktop", icon: <Globe className="w-4 h-4" />, ...installStats.perPlatform.desktop },
+              ];
+              return (
+                <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Download className="w-5 h-5 text-cyan-400" />
+                    <h3 className="text-sm font-bold text-white">Install Analytics</h3>
+                    <span className="ml-auto text-[10px] text-gray-400">Live</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-cyan-300">{installStats.totalClicks}</p>
+                      <p className="text-[10px] text-gray-400">Clicks</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-emerald-300">{installStats.totalInstalls}</p>
+                      <p className="text-[10px] text-gray-400">Installs</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <p className="text-xl font-bold text-yellow-300">{conv}%</p>
+                      <p className="text-[10px] text-gray-400">Conversion</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {rows.map((r) => (
+                      <div key={r.key} className="flex items-center gap-2 text-xs bg-white/5 rounded-lg px-3 py-2">
+                        <span className="text-cyan-300">{r.icon}</span>
+                        <span className="text-white font-medium w-16">{r.label}</span>
+                        <span className="text-gray-400">Clicks: <span className="text-white">{r.clicks}</span></span>
+                        <span className="text-gray-400 ml-auto">Installs: <span className="text-emerald-300">{r.installs}</span></span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
