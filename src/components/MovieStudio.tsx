@@ -113,7 +113,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        toast.error(e.error || "Scene planning failed"); return;
+        if (resp.status === 402) toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        else if (resp.status === 429) toast.error("Too many requests. Wait a moment and try again.");
+        else toast.error(e.error || "Scene planning failed");
+        return;
       }
       const data = await resp.json();
       setTitle(data.title || "Untitled Movie");
@@ -149,7 +152,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
-        toast.error(e.error || "Photo generation failed"); return;
+        if (resp.status === 402) toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        else if (resp.status === 429) toast.error("Too many requests. Wait a moment and try again.");
+        else toast.error(e.error || "Photo generation failed");
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: false } : s));
+        return;
       }
       const data = await resp.json();
       const url = data.images?.[0]?.image_url?.url;
