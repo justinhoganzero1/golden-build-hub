@@ -351,6 +351,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Button onClick={addScene} variant="outline" size="sm">
                 <Plus className="w-3 h-3 mr-1" /> Add scene
               </Button>
+              <Button onClick={() => triggerUpload("__new__")} variant="outline" size="sm">
+                <Upload className="w-3 h-3 mr-1" /> Upload photo
+              </Button>
               <Button onClick={exportMovie} disabled={exporting} size="sm">
                 {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export</>}
               </Button>
