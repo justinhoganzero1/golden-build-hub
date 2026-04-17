@@ -74,9 +74,9 @@ serve(async (req) => {
       logStep("No active subscription");
     }
 
-    // Check for SOLACE Lifetime Unlock one-time payment ($900)
-    const LIFETIME_PRICE_ID = "price_1TN6KvLM75X0snyChMuEU6Eo";
-    const LIFETIME_PRODUCT_ID = "prod_ULnwqViVNhjlMp";
+    // Check for SOLACE Lifetime Unlock one-time payment ($900) - LIVE
+    const LIFETIME_PRICE_ID = "price_1TN7ybLGip9LWuvpeExWonbd";
+    const LIFETIME_PRODUCT_ID = "prod_ULpd2N2mCZfoMd";
     let hasLifetime = false;
     try {
       const charges = await stripe.charges.list({ customer: customerId, limit: 100 });

@@ -39,8 +39,8 @@ serve(async (req) => {
     // Avatar generation = one-time $1, Partner experience = $5/month subscription
     const isPartner = product === "partner";
     const priceId = isPartner
-      ? "price_1TJzBGLM75X0snyCdM2ikY1r"
-      : "price_1TJzArLM75X0snyCtNnu2Xqy";
+      ? "price_1TN82nLGip9LWuvppJxgdMAF"  // AI Partner $15/mo (LIVE)
+      : "price_1TN81gLGip9LWuvpRH85q0I5"; // AI Friend Avatar $3 (LIVE)
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
