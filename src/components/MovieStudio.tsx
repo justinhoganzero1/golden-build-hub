@@ -549,6 +549,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
 
       recorder.stop();
       const blob = await finished;
+      try { musicSource?.stop(); } catch {}
       try { audioCtx.close(); } catch {}
 
       const url = URL.createObjectURL(blob);
