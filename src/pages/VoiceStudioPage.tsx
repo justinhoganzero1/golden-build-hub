@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw } from "lucide-react";
+import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
