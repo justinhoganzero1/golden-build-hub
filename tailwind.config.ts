@@ -52,6 +52,16 @@ export default {
           dark: "hsl(var(--gold-dark))",
           light: "hsl(var(--gold-light))",
         },
+        "accent-blue": {
+          DEFAULT: "hsl(var(--accent-blue))",
+          glow: "hsl(var(--accent-blue-glow))",
+          deep: "hsl(var(--accent-blue-deep))",
+        },
+        "accent-red": {
+          DEFAULT: "hsl(var(--accent-red))",
+          glow: "hsl(var(--accent-red-glow))",
+          deep: "hsl(var(--accent-red-deep))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
