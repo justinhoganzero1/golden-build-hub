@@ -22,7 +22,7 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources">("overview");
   // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
   const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [builderInput, setBuilderInput] = useState("");
