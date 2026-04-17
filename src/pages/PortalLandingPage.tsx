@@ -154,7 +154,7 @@ const PortalLandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               size="lg"
-              onClick={handleInstall}
+              onClick={() => handleInstall()}
               disabled={isStandalone}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.7)] transition-shadow"
             >
