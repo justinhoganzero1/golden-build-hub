@@ -255,11 +255,11 @@ const OraclePage = () => {
           voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah — most popular female voice on ElevenLabs (warm, professional)
           modelId: "eleven_multilingual_v2", // highest quality
           settings: {
-            stability: 0.55,        // expressive but steady
-            similarity_boost: 0.85, // preserve Sarah's warm timbre
-            style: 0.35,            // natural, lightly stylized
+            stability: 0.45,        // expressive, faster generation
+            similarity_boost: 0.80, // preserve Sarah's warm timbre
+            style: 0.25,            // less stylization = faster TTS
             use_speaker_boost: true,
-            speed: 0.95,            // natural conversational cadence
+            speed: 1.05,            // SPEED: snappier, more natural conversational pace
           },
         }),
       });
