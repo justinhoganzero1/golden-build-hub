@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { moderatePrompt } from "@/lib/contentSafety";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -34,6 +36,8 @@ const VOICE_MAP: Record<string, string> = {
 const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrator-male-warm"];
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
+type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
+
 interface Scene {
   id: string;
   caption: string;
@@ -58,6 +62,12 @@ interface Scene {
   music_url?: string; // chosen track
   music_volume?: number; // 0..1
   generatingSceneMusic?: boolean;
+  tone?: SceneTone; // used by Oracle to auto-pick best music + cross-fade timing
+  // Newsroom-specific extras
+  is_news_segment?: boolean;
+  lower_third_name?: string;   // e.g. "Maya Chen"
+  lower_third_title?: string;  // e.g. "SOLACE Tech Reporter"
+  broll_url?: string;          // optional B-roll image overlay (cutaway)
 }
 
 interface MovieStudioProps {
@@ -100,6 +110,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [generatingTheme, setGeneratingTheme] = useState(false);
   const [generatingCredits, setGeneratingCredits] = useState(false);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
+  // Newsroom (YouTube show) preset
+  const [newsroomMode, setNewsroomMode] = useState(false);
+  const [showName, setShowName] = useState("");          // e.g. "SOLACE Daily"
+  const [hostName, setHostName] = useState("");          // e.g. "Alex Rivera"
+  const [hostTitle, setHostTitle] = useState("");        // e.g. "Lead Anchor"
+  const [hostAvatarUrl, setHostAvatarUrl] = useState<string | null>(null);
+  const [generatingNewsroom, setGeneratingNewsroom] = useState(false);
+  // Auto-pick + cross-fade
+  const [autoPickEnabled, setAutoPickEnabled] = useState(true); // Oracle picks best per-scene track
+  const [crossfadeMode, setCrossfadeMode] = useState<"auto" | "1s" | "2s" | "off">("auto");
+  // Favourites picker
+  const [showFavouritesPicker, setShowFavouritesPicker] = useState(false);
+  const [favouritesTargetId, setFavouritesTargetId] = useState<string | null>(null);
+  const [savedTracks, setSavedTracks] = useState<Array<{ id: string; title: string | null; url: string }>>([]);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
@@ -155,12 +179,73 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setIntroMusicUrl(null); setThemeMusicUrl(null); setCreditsLines([]);
       setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingCredits(false);
       setSubtitlesEnabled(false);
+      setNewsroomMode(false); setShowName(""); setHostName(""); setHostTitle(""); setHostAvatarUrl(null);
+      setGeneratingNewsroom(false); setAutoPickEnabled(true); setCrossfadeMode("auto");
+      setShowFavouritesPicker(false); setFavouritesTargetId(null);
     }
   }, [open]);
+
+  // Load saved favourite tracks when the studio opens
+  useEffect(() => {
+    if (!open || !user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("user_media")
+        .select("id,title,url,metadata")
+        .eq("user_id", user.id)
+        .eq("media_type", "audio")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const favs = (data || []).filter((d: any) => d.metadata?.favourite === true);
+      setSavedTracks(favs.map((d: any) => ({ id: d.id, title: d.title, url: d.url })));
+    })();
+  }, [open, user]);
+
+  // Save a generated music track to the user's favourites library
+  const saveTrackToFavourites = (url: string, label: string) => {
+    if (!user) { toast.error("Sign in to save favourites"); return; }
+    saveMedia.mutate({
+      media_type: "audio",
+      title: label,
+      url,
+      source_page: "favourite-music",
+      metadata: { favourite: true, kind: "scene-music" },
+    } as any);
+    setSavedTracks(prev => [{ id: `local-${Date.now()}`, title: label, url }, ...prev]);
+    toast.success("Saved to Favourite Tracks");
+  };
+
+  // Oracle auto-pick: choose the best of N music options based on scene tone + theme
+  const oraclePickBest = (options: string[], _tone?: SceneTone): string => {
+    // Simple heuristic for now: variant 0 = baseline (matches prompt closest)
+    // For "tense"/"epic" prefer baseline; for "emotional" prefer slower variant (#2);
+    // for "playful" prefer alternate instrumentation (#1).
+    if (!options.length) return "";
+    if (_tone === "emotional" && options[2]) return options[2];
+    if (_tone === "playful" && options[1]) return options[1];
+    return options[0];
+  };
+
+  // Cross-fade duration (seconds) between scene[i] and scene[i+1]
+  const crossfadeFor = (a: Scene, b: Scene): number => {
+    if (crossfadeMode === "off") return 0;
+    if (crossfadeMode === "1s") return 1;
+    if (crossfadeMode === "2s") return 2;
+    // auto: longer fade on emotional shifts, shorter on cuts
+    const aT = a.tone || "neutral", bT = b.tone || "neutral";
+    if (aT === bT) return 1;
+    if ((aT === "tense" && bT === "calm") || (aT === "calm" && bT === "tense")) return 2.5;
+    if (aT === "emotional" || bT === "emotional") return 2;
+    return 1.5;
+  };
 
   // ----- Plan scenes -----
   const planScenes = async () => {
     if (!script.trim()) { toast.error("Add a script first"); return; }
+    const mod = moderatePrompt(script);
+    if (!mod.ok) { toast.error(mod.reason || "Script blocked by content filter"); return; }
+    const mod2 = moderatePrompt(intent || "");
+    if (intent && !mod2.ok) { toast.error(mod2.reason || "Direction blocked by content filter"); return; }
     setPlanning(true);
     try {
       const resp = await fetch(SCENE_URL, {
@@ -397,8 +482,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const url = await generateSceneMusicOption(sceneId, v);
       if (url) results.push(url);
     }
+    const picked = autoPickEnabled ? oraclePickBest(results, scenes.find(x => x.id === sceneId)?.tone) : results[0];
     setScenes(prev => prev.map(s => s.id === sceneId
-      ? { ...s, music_options: results, music_url: s.music_url || results[0], generatingSceneMusic: false }
+      ? { ...s, music_options: results, music_url: s.music_url || picked, generatingSceneMusic: false }
       : s));
     if (results.length === 0) {
       toast.error("Could not generate music tracks");
@@ -561,6 +647,40 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     if (!introMusicUrl) await composeIntroMusic();
     if (creditsLines.length === 0) await generateCredits();
   };
+
+  // ----- YouTube Newsroom preset (one-click full show) -----
+  const generateYouTubeShow = async () => {
+    if (!script.trim()) { toast.error("Add your show script first"); return; }
+    setGeneratingNewsroom(true);
+    try {
+      const show = showName || "SOLACE Daily";
+      const host = hostName || "Alex Rivera";
+      const role = hostTitle || "Lead Anchor";
+      setNewsroomMode(true);
+      if (!title) setTitle(show);
+      // Plan scenes if needed
+      if (scenes.length === 0) await planScenes();
+      // Tag every scene as a news segment with lower-thirds
+      setScenes(prev => prev.map((s, i) => ({
+        ...s,
+        is_news_segment: true,
+        lower_third_name: i === 0 || i === prev.length - 1 ? host : (s.speaker || host),
+        lower_third_title: i === 0 || i === prev.length - 1 ? role : "Field Report",
+        speaker: s.speaker || host,
+        voice_style: s.voice_style || "narrator-male-warm",
+        photo_prompt: s.is_news_segment ? s.photo_prompt :
+          (i === 0 || i === prev.length - 1)
+            ? `Professional TV news anchor ${host} at a modern newsroom desk, multiple monitors behind, cinematic studio lighting, "${show}" logo on screen, broadcast quality 8K`
+            : `B-roll cutaway image for news story: ${s.photo_prompt}, photojournalism, broadcast TV news look`,
+      })));
+      // Auto-create intro fanfare + upbeat theme + credits
+      await generateAllExtras();
+      toast.success("YouTube Show preset applied. Generate photos & voices to finish.");
+    } catch (e) {
+      console.error(e); toast.error("Newsroom preset failed");
+    } finally { setGeneratingNewsroom(false); }
+  };
+
 
 
   // ----- Scene CRUD -----
