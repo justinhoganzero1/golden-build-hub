@@ -1147,7 +1147,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               } else if (line.startsWith("— ")) {
                 ctx.font = "italic 28px sans-serif";
                 ctx.fillStyle = "hsl(45 90% 70%)";
-              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals"].includes(line)) {
+              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals", "Starring", "Co-starring", "Guest Stars"].includes(line)) {
                 ctx.font = "bold 30px sans-serif";
                 ctx.fillStyle = "hsl(45 90% 70%)";
               } else {
