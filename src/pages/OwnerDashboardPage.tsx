@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import { useAllUserMediaPaginated } from "@/hooks/useAllUserMedia";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -95,7 +95,14 @@ const OwnerDashboardPage = () => {
     toast.success("Campaign deleted");
   };
 
-  const { data: allMedia = [] } = useAllUserMedia();
+  const {
+    data: mediaPages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: libLoading,
+  } = useAllUserMediaPaginated();
+  const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
   const qc = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminChecked, setAdminChecked] = useState(false);
@@ -120,7 +127,14 @@ const OwnerDashboardPage = () => {
   }, [adminChecked, isAdmin, navigate]);
 
   useEffect(() => {
-    loadSuggestions();
+    (async () => {
+      const { data } = await supabase
+        .from("suggestions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (data) setSuggestions(data);
+    })();
   }, []);
 
   const handleChangePassword = async () => {
@@ -204,6 +218,7 @@ const OwnerDashboardPage = () => {
     if (!error) {
       toast.success("Deleted");
       setLibSelected(null);
+      qc.invalidateQueries({ queryKey: ["all-user-media-paginated"] });
       qc.invalidateQueries({ queryKey: ["all-user-media"] });
     }
   };
@@ -651,6 +666,21 @@ const OwnerDashboardPage = () => {
                   </button>
                 ))}
               </div>
+            )}
+
+            {hasNextPage && (
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="px-5 py-2 rounded-xl bg-yellow-500/15 border border-yellow-500/40 text-yellow-300 text-sm font-medium hover:bg-yellow-500/25 transition disabled:opacity-50"
+                >
+                  {isFetchingNextPage ? "Loading..." : "Load 60 more"}
+                </button>
+              </div>
+            )}
+            {libLoading && allMedia.length === 0 && (
+              <div className="text-center py-10 text-xs text-gray-500">Loading library...</div>
             )}
           </div>
         )}
