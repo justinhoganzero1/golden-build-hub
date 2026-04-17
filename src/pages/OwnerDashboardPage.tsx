@@ -212,6 +212,40 @@ const OwnerDashboardPage = () => {
     return () => { cancelled = true; window.clearInterval(i); };
   }, [isAdmin]);
 
+  // Load traffic sources (admin only) — aggregates utm_source/referrer for the bar graph
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await supabase
+          .from("page_views")
+          .select("utm_source, referrer")
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        if (!data) return;
+        const counts: Record<string, number> = {};
+        for (const row of data as Array<{ utm_source: string | null; referrer: string | null }>) {
+          let src = row.utm_source?.trim().toLowerCase() || "";
+          if (!src && row.referrer) {
+            try { src = new URL(row.referrer).hostname.replace(/^www\./, "").toLowerCase(); }
+            catch { /* ignore */ }
+          }
+          if (!src) src = "direct";
+          counts[src] = (counts[src] || 0) + 1;
+        }
+        const arr = Object.entries(counts)
+          .map(([source, visits]) => ({ source, visits }))
+          .sort((a, b) => b.visits - a.visits)
+          .slice(0, 12);
+        if (!cancelled) setTrafficSources(arr);
+      } catch { /* silent */ }
+    };
+    load();
+    const i = window.setInterval(load, 60000);
+    return () => { cancelled = true; window.clearInterval(i); };
+  }, [isAdmin]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
