@@ -287,7 +287,11 @@ const PortalTutorWidget = () => {
             </button>
             <input
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Notify the home logo to pulse while the user is typing
+                window.dispatchEvent(new CustomEvent("solace-chat-typing"));
+              }}
               placeholder={listening ? "Listening…" : "Ask anything about SOLACE…"}
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />

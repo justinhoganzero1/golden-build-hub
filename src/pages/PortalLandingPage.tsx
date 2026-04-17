@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import {
@@ -43,6 +43,23 @@ const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
+
+  // Pulse the shield-shaped logo glow while the user is typing in the chat
+  useEffect(() => {
+    const el = document.getElementById("solace-home-logo-glow");
+    if (!el) return;
+    let timer: number | undefined;
+    const onTyping = () => {
+      el.classList.add("is-pulsing");
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => el.classList.remove("is-pulsing"), 900);
+    };
+    window.addEventListener("solace-chat-typing", onTyping);
+    return () => {
+      window.removeEventListener("solace-chat-typing", onTyping);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
 
   const handleInstall = async () => {
     const outcome = await install();
@@ -94,11 +111,15 @@ const PortalLandingPage = () => {
           {/* Animated golden logo — matches app */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/40 blur-3xl animate-pulse" />
+              <div
+                id="solace-home-logo-glow"
+                className="shield-glow"
+                aria-hidden="true"
+              />
               <img
                 src={solaceLogo}
                 alt="SOLACE shield logo"
-                className="relative h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_40px_hsl(var(--primary)/0.8)] animate-glow-pulse"
+                className="relative h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_30px_hsl(200_100%_60%/0.7)]"
               />
             </div>
           </div>
