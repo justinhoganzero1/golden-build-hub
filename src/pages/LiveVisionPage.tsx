@@ -67,6 +67,8 @@ const LiveVisionPage = () => {
 
   const stopCamera = useCallback(() => {
     stopDriving();
+    stopCompanion();
+    stopWatch();
     stopListening();
     stopRecording();
     if (streamRef.current) {
@@ -92,12 +94,12 @@ const LiveVisionPage = () => {
   }, []);
 
   // ─── Vision analysis ───
-  const callVision = async (image: string, mode: AnalysisMode): Promise<string | null> => {
+  const callVision = async (image: string, mode: AnalysisMode, opts?: { target?: string; history?: string[] }): Promise<string | null> => {
     const apiMode = mode === "driving" || mode === "parking" ? "scene" : mode;
     const resp = await fetch(VISION_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-      body: JSON.stringify({ image, mode: apiMode }),
+      body: JSON.stringify({ image, mode: apiMode === "scene" && (mode === "driving" || mode === "parking") ? mode : apiMode, target: opts?.target, history: opts?.history }),
     });
     if (!resp.ok) return null;
     const data = await resp.json();
