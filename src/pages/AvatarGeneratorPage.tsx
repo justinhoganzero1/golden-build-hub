@@ -322,7 +322,7 @@ const AvatarGeneratorPage = () => {
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} Generate Avatar
               </button>
-              <button onClick={takeSelfie}
+              <button onClick={() => setShowSelfie(true)}
                 className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
