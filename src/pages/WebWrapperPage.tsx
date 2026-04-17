@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import solaceLogo from "@/assets/solace-logo.png";
-import aiAvatar from "@/assets/avatars/oracle-blonde.png";
+import { MASTER_AI_AVATAR as aiAvatar } from "@/assets/master-ai-avatar";
 
 const STEPS = [
   "⚙ Scanning URL structure...",
