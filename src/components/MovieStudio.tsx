@@ -522,10 +522,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         } catch (err) { console.warn("audio decode failed", err); return null; }
       };
 
-      // Decode each scene's narration + sfx, plus global music — in parallel
-      const [voiceBuffers, sfxBuffers, musicBuffer] = await Promise.all([
+      // Decode narration + sfx + per-scene music + global music — in parallel
+      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer] = await Promise.all([
         Promise.all(ready.map(s => decodeUrl(s.audio_url))),
         Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
+        Promise.all(ready.map(s => decodeUrl(s.music_url))),
         decodeUrl(musicUrl),
       ]);
 
