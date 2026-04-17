@@ -564,7 +564,7 @@ const LiveVisionPage = () => {
         </div>
 
         {/* Driving live feed */}
-        {drivingActive && livefeed.length > 0 && (
+        {(drivingActive || companionActive || watchActive) && livefeed.length > 0 && (
           <div className="bg-card border border-primary/30 rounded-xl p-3 mb-4">
             <h3 className="text-xs font-bold text-primary mb-2 flex items-center gap-1.5">
               <Car className="w-3.5 h-3.5" /> Live Drive Feed
