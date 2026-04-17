@@ -23,6 +23,10 @@ serve(async (req) => {
       ? "You are an OCR expert. Extract and return ALL text visible in this image. Format it clearly. If no text is found, say 'No text detected.'"
       : mode === "objects"
       ? "You are a computer vision expert. List every distinct object you can identify in this image. Be specific and detailed. Format as a numbered list."
+      : mode === "parking"
+      ? "You are a driving assistant looking for parking. Scan the image for: empty parking spaces, parking signs, time limits, parking restrictions, parking meters, loading zones, no-parking signs, accessible spots. Be VERY concise (max 2 short sentences). If you spot an empty space, say so directly. If parking is restricted, warn clearly. If nothing relevant is visible, just say 'No parking visible.'"
+      : mode === "driving"
+      ? "You are a driving co-pilot watching the road. Be VERY concise (max 1-2 short sentences). Only mention things the driver MUST know: hazards, pedestrians, red lights, stop signs, lane changes, turns, exits, road signs with text, sudden obstacles. If the road is clear and uneventful, just say 'Road clear.' Never describe scenery, sky, or unimportant details."
       : "You are an AI scene analyst. Describe what you see in this image in detail. Include: objects, people, text, colors, setting, mood, and any notable details. Be concise but thorough.";
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

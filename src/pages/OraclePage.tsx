@@ -691,6 +691,16 @@ const OraclePage = () => {
     };
   }, []);
 
+  // First-visit auto-introduction — Oracle introduces itself + capabilities ONCE
+  const introTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (introTriggeredRef.current) return;
+    if (localStorage.getItem("solace-oracle-introduced")) return;
+    introTriggeredRef.current = true;
+    const t = setTimeout(() => sendMessageRef.current?.("__INTRO__"), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
       if (finalTranscriptRef.current.trim()) {
@@ -733,16 +743,15 @@ const OraclePage = () => {
   // ============ SEND MESSAGE ============
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
-    setInput("");
-    // ── Self-diagnose intent: keep CLOSED unless user explicitly asks to see ──
-    const lower = text.toLowerCase();
-    const wantsDiagnose = /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
+    const isIntroTrigger = text === "__INTRO__";
+    if (!isIntroTrigger) setInput("");
+    // Skip intent regexes for the silent intro trigger
+    const lower = isIntroTrigger ? "" : text.toLowerCase();
+    const wantsDiagnose = !isIntroTrigger && /(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower);
     const wantsToSee = /(show|open|display|let me see|view|watch).*(diagnos|doctor|panel|report|scan|repair)/i.test(lower);
     if (wantsDiagnose) {
-      // Run diagnostics quietly in the background; only open the panel if user explicitly says "show"
       const explicit = wantsToSee;
       if (explicit) setShowDoctor(true);
-      // Kick the system doctor silently
       try {
         const mod = await import("@/lib/systemDoctor");
         mod.runFullDiagnostic?.().catch(() => {});
@@ -760,7 +769,7 @@ const OraclePage = () => {
 
     // ── Background SFX generation intent (ElevenLabs) ──
     // Triggered by phrases like "make a sound effect of...", "generate sfx ..."
-    const sfxMatch = text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
+    const sfxMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
     if (sfxMatch && sfxMatch[1]) {
       const prompt = sfxMatch[1].replace(/[.!?]+$/, "").trim();
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
@@ -789,7 +798,7 @@ const OraclePage = () => {
     }
 
     // ── Background Music generation intent (ElevenLabs) ──
-    const musicMatch = text.match(/(?:make|create|generate|compose|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:music|song|track|score|melody|beat|tune|soundtrack)\s+(?:of\s+|for\s+|like\s+|that\s+is\s+|that\s+sounds\s+like\s+|in\s+the\s+style\s+of\s+|with\s+)?(.+)/i);
+    const musicMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|compose|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:music|song|track|score|melody|beat|tune|soundtrack)\s+(?:of\s+|for\s+|like\s+|that\s+is\s+|that\s+sounds\s+like\s+|in\s+the\s+style\s+of\s+|with\s+)?(.+)/i);
     if (musicMatch && musicMatch[1]) {
       const prompt = musicMatch[1].replace(/[.!?]+$/, "").trim();
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
@@ -819,8 +828,8 @@ const OraclePage = () => {
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setShowChat(true);
-    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
-    setMessages(prev => [...prev, userMsg]);
+    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
+    if (!isIntroTrigger) setMessages(prev => [...prev, userMsg]);
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
     setIsLoading(true);
@@ -828,13 +837,16 @@ const OraclePage = () => {
     abortRef.current = controller;
 
     try {
-      const allMsgs = [...messages, userMsg];
+      const allMsgs = isIntroTrigger ? [{ role: "user" as const, sender: "user", emoji: "👤", color: "#FFAA00", content: "Hi", id: "intro" } as Message] : [...messages, userMsg];
+      const introKey = "solace-oracle-introduced";
+      const isFirstMeeting = !localStorage.getItem(introKey) || isIntroTrigger;
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
+          isFirstMeeting,
           userMemories: formatMemoriesForPrompt(oracleMemories),
           adContext: {
             showAds: adPrefs?.ads_enabled ?? true,
@@ -844,6 +856,7 @@ const OraclePage = () => {
         }),
         signal: controller.signal,
       });
+      if (isFirstMeeting) localStorage.setItem(introKey, new Date().toISOString());
 
       if (!oracleResp.ok) {
         const err = await oracleResp.json().catch(() => ({ error: "Request failed" }));
