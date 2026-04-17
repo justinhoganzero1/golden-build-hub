@@ -970,6 +970,41 @@ const OraclePage = () => {
       }
 
       let oracleContent = "";
+      // SPEED: speak sentence-by-sentence as the stream arrives instead of waiting
+      // for the full response. Cuts perceived latency from ~5-8s to ~1-2s.
+      let spokenUpTo = 0;
+      const stripMarkersForSpeech = (s: string) =>
+        s
+          .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
+          .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
+          .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
+          .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
+          .replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, "i"), "");
+      const flushSpeakableSentences = (final = false) => {
+        if (isMutedRef.current) return;
+        const pending = oracleContent.slice(spokenUpTo);
+        // Match complete sentences ending in . ! ? or newline
+        const sentenceRegex = /[^.!?\n]+[.!?\n]+/g;
+        let lastEnd = 0;
+        const toSpeak: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = sentenceRegex.exec(pending)) !== null) {
+          toSpeak.push(m[0]);
+          lastEnd = m.index + m[0].length;
+        }
+        if (toSpeak.length) {
+          spokenUpTo += lastEnd;
+          const chunk = stripMarkersForSpeech(toSpeak.join(" ")).trim();
+          if (chunk) speakAsAgent(chunk, oracleName);
+        }
+        if (final) {
+          const tail = oracleContent.slice(spokenUpTo);
+          const cleaned = stripMarkersForSpeech(tail).trim();
+          if (cleaned) speakAsAgent(cleaned, oracleName);
+          spokenUpTo = oracleContent.length;
+        }
+      };
+
       const reader = oracleResp.body?.getReader();
       if (reader) {
         const decoder = new TextDecoder();
@@ -1002,6 +1037,8 @@ const OraclePage = () => {
                     avatar_url: oracleAvatar?.image_url || undefined,
                   }];
                 });
+                // Speak any complete sentences immediately
+                flushSpeakableSentences(false);
               }
             } catch { buffer = line + "\n" + buffer; break; }
           }
@@ -1033,7 +1070,7 @@ const OraclePage = () => {
 
       // Handle navigation commands in Oracle response
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
-      
+
       // Update displayed message with cleaned content
       const finalDisplayContent = (cleanContent || cleanedOracleContent).replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
       setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
@@ -1046,7 +1083,8 @@ const OraclePage = () => {
         }
       }
 
-      if (cleanedOracleContent && !isMuted) speakAsAgent(finalDisplayContent, oracleName);
+      // SPEED: flush any remaining unspoken tail (sentences already spoken inline above)
+      flushSpeakableSentences(true);
 
       // Send to active agents
       if (activeAgents.length > 0) {
