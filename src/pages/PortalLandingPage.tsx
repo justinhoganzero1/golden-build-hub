@@ -26,6 +26,7 @@ import SecurityShield from "@/components/SecurityShield";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
+import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
@@ -61,7 +62,15 @@ const PortalLandingPage = () => {
     };
   }, []);
 
-  const handleInstall = async () => {
+  // Track successful PWA installs (fires once when the browser finishes installing)
+  useEffect(() => {
+    const onInstalled = () => trackInstallEvent("installed");
+    window.addEventListener("appinstalled", onInstalled);
+    return () => window.removeEventListener("appinstalled", onInstalled);
+  }, []);
+
+  const handleInstall = async (platform: InstallPlatform = detectInstallPlatform()) => {
+    trackInstallEvent("click", platform);
     const outcome = await install();
     if (outcome === "unavailable") {
       document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
@@ -145,7 +154,7 @@ const PortalLandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               size="lg"
-              onClick={handleInstall}
+              onClick={() => handleInstall()}
               disabled={isStandalone}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.7)] transition-shadow"
             >
@@ -298,7 +307,7 @@ const PortalLandingPage = () => {
                 title: "Android",
                 steps: ["Open in Chrome or Edge.", "Tap Install below.", "Confirm in the prompt."],
                 cta: canInstall ? "Install on Android" : "Open install prompt",
-                action: handleInstall,
+                action: () => handleInstall("android"),
                 installedHere: isStandalone && isAndroidUA,
               },
               {
@@ -326,7 +335,7 @@ const PortalLandingPage = () => {
                 title: "Desktop",
                 steps: ["Use Chrome, Edge, or Brave.", "Click the install icon in the address bar.", "Or hit the button below."],
                 cta: canInstall ? "Install on Desktop" : "Install (Chrome/Edge)",
-                action: handleInstall,
+                action: () => handleInstall("desktop"),
                 installedHere: isStandalone && isDesktopUA,
               },
             ];
@@ -358,7 +367,7 @@ const PortalLandingPage = () => {
           <div className="text-center">
             <Button
               size="lg"
-              onClick={handleInstall}
+              onClick={() => handleInstall()}
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
             >
               <Download className="mr-2 h-5 w-5" />
