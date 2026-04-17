@@ -11,67 +11,81 @@ Deno.serve(async (req) => {
   try {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
-      return new Response(JSON.stringify({ error: "ElevenLabs API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Graceful fallback signal — client will use browser TTS instead of crashing
+      return new Response(
+        JSON.stringify({ error: "TTS_UNAVAILABLE", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
     const { text, voiceId, settings, modelId } = body || {};
     if (!text || typeof text !== "string") {
-      return new Response(JSON.stringify({ error: "text is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "TEXT_REQUIRED", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Default to "Bill" — old, deep, trustworthy documentary narrator
     // (Ancient Aliens-style: gravelly, mysterious, authoritative)
     const selectedVoice = voiceId || "pqHfZKP75CvOlQylNhV4";
-    // Multilingual v2 = highest quality, most natural human prosody
     const selectedModel = modelId || settings?.model_id || "eleven_multilingual_v2";
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
-    // Tuned for cinematic documentary narration — slow, weighty, mysterious
     const voice_settings = {
-      stability: settings?.stability ?? 0.78,          // very steady, deliberate
+      stability: settings?.stability ?? 0.78,
       similarity_boost: settings?.similarity_boost ?? 0.92,
-      style: settings?.style ?? 0.35,                  // dramatic gravitas
+      style: settings?.style ?? 0.35,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.78,                  // slow, weighty pacing
+      speed: settings?.speed ?? 0.78,
     };
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=mp3_44100_128`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": ELEVENLABS_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: normalizedText.substring(0, 5000),
-          model_id: selectedModel,
-          voice_settings,
-        }),
-      }
-    );
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=mp3_44100_128`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: normalizedText.substring(0, 5000),
+            model_id: selectedModel,
+            voice_settings,
+          }),
+        }
+      );
+    } catch (netErr) {
+      console.error("ElevenLabs network error:", netErr);
+      return new Response(
+        JSON.stringify({ error: "NETWORK_ERROR", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!response.ok) {
       const err = await response.text();
-      console.error("ElevenLabs error:", err);
-      return new Response(JSON.stringify({ error: "TTS generation failed", details: err }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("ElevenLabs error:", response.status, err);
+      // Always return a soft fallback — never crash the client
+      return new Response(
+        JSON.stringify({ error: "TTS_FAILED", status: response.status, fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (!response.body) {
-      return new Response(JSON.stringify({ error: "No audio stream" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "NO_AUDIO", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(response.body, {
@@ -84,9 +98,9 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("TTS error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "INTERNAL_ERROR", fallback: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
