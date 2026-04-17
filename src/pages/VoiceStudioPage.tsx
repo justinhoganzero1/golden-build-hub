@@ -16,6 +16,7 @@ import {
   MODELS,
   type PresetName,
 } from "@/data/elevenLabsVoices";
+import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
 
 interface AccountVoice {
   id: string;
@@ -28,7 +29,7 @@ interface AccountVoice {
   use_case: string;
 }
 
-type Tab = "library" | "saved" | "studio";
+type Tab = "library" | "party" | "saved" | "studio";
 type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
@@ -209,6 +210,63 @@ export default function VoiceStudioPage() {
     }
   }
 
+  async function previewParty(p: PartyVoice) {
+    if (!text.trim()) {
+      toast.error("Type some text first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch(TTS_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          text,
+          voiceId: p.id,
+          modelId: "eleven_multilingual_v2",
+          settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" },
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      audioRef.current?.pause();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      await audio.play();
+      toast.success(`🎉 ${p.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Preview failed");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function saveParty(p: PartyVoice) {
+    if (!user) {
+      toast.error("Sign in to save voices");
+      return;
+    }
+    try {
+      await saveVoice.mutateAsync({
+        name: `🎉 ${p.name}`,
+        gender: p.gender,
+        source: "elevenlabs-party",
+        voice_config: { voice_id: p.id, settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" } },
+      });
+      toast.success(`Saved ${p.name}`);
+    } catch {
+      toast.error("Could not save voice");
+    }
+  }
+
+  function masterFromParty(p: PartyVoice) {
+    setAsOracleMaster(p.id, p.name, { ...p.partySettings, model_id: "eleven_multilingual_v2" } as VoiceSettings);
+  }
+
   function setAsOracleMaster(voiceId: string, voiceName: string, voiceSettings?: VoiceSettings) {
     if (!voiceId) {
       toast.error("No voice ID available");
@@ -244,19 +302,70 @@ export default function VoiceStudioPage() {
         </header>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-border">
-          {(["library", "saved", "studio"] as Tab[]).map((t) => (
+        <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
+          {(["library", "party", "saved", "studio"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 capitalize transition-colors ${
+              className={`px-4 py-2 capitalize transition-colors whitespace-nowrap ${
                 tab === t ? "border-b-2 border-primary text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : "💾 Saved"}
+              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : "💾 Saved"}
             </button>
           ))}
         </div>
+
+        {/* PARTY */}
+        {tab === "party" && (
+          <div>
+            <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 border border-purple-500/30 rounded-lg p-4 mb-4">
+              <h2 className="font-bold text-lg mb-1">🎉 50 Party Voices</h2>
+              <p className="text-sm text-muted-foreground">
+                Pre-tuned high-energy personas for birthdays, clubs, weddings, Halloween, karaoke and more.
+                Tap <span className="text-primary font-semibold">Preview</span> to hear it, <span className="text-amber-400 font-semibold">👑 Master</span> to make it the Oracle, or <span className="text-primary font-semibold">Save</span> to keep it.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PARTY_VOICES.map((p, i) => (
+                <div key={`${p.id}-${i}`} className="bg-card border border-border rounded-lg p-4 hover:border-purple-500/50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate">{p.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {p.vibe} • {p.gender} • {p.accent}
+                      </p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full whitespace-nowrap ml-2">PARTY</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{p.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => previewParty(p)}
+                      disabled={generating}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
+                    >
+                      <Play size={12} /> Preview
+                    </button>
+                    <button
+                      onClick={() => saveParty(p)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
+                    >
+                      <Save size={12} /> Save
+                    </button>
+                    <button
+                      onClick={() => masterFromParty(p)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20 ml-auto"
+                      title="Set as Oracle's master voice"
+                    >
+                      <Crown size={12} /> Master
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* LIBRARY */}
         {tab === "library" && (
@@ -331,26 +440,19 @@ export default function VoiceStudioPage() {
                     <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full text-muted-foreground">{v.category}</span>
                   </div>
                   {v.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{v.description}</p>}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => generatePreview(v.id, v.name)}
                       disabled={generating}
-                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
                     >
                       <Play size={12} /> Preview
                     </button>
                     <button
                       onClick={() => pickFromLibrary(v)}
-                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
                     >
                       <Settings2 size={12} /> Tune
-                    </button>
-                    <button
-                      onClick={() => setAsOracleMaster(v.id, v.name, settings)}
-                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20 ml-auto"
-                      title="Set as Oracle's master voice"
-                    >
-                      <Crown size={12} /> Master
                     </button>
                   </div>
                 </div>
@@ -391,14 +493,6 @@ export default function VoiceStudioPage() {
                           <UserPlus size={12} /> Assign
                         </button>
                         <button
-                          onClick={() => setAsOracleMaster(vid, v.name, (cfg.settings as VoiceSettings) || undefined)}
-                          disabled={!vid}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20"
-                          title="Set as Oracle's master voice"
-                        >
-                          <Crown size={12} /> Master
-                        </button>
-                        <button
                           onClick={() => deleteVoice.mutate(v.id)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded text-xs ml-auto"
                         >
@@ -422,21 +516,12 @@ export default function VoiceStudioPage() {
                   <h2 className="font-bold text-lg">{studioVoiceName}</h2>
                   <p className="text-xs text-muted-foreground font-mono">{studioVoiceId}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setAsOracleMaster(studioVoiceId, studioVoiceName, settings)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-sm font-medium hover:bg-amber-500/20"
-                    title="Set as Oracle's master voice"
-                  >
-                    <Crown size={14} /> Set as Master
-                  </button>
-                  <button
-                    onClick={handleSaveCurrent}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm"
-                  >
-                    <Save size={14} /> Save
-                  </button>
-                </div>
+                <button
+                  onClick={handleSaveCurrent}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm"
+                >
+                  <Save size={14} /> Save
+                </button>
               </div>
 
               <textarea
