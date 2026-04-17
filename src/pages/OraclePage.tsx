@@ -732,6 +732,17 @@ const OraclePage = () => {
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     setInput("");
+    // ── Self-diagnose intent: open System Doctor automatically ──
+    const lower = text.toLowerCase();
+    if (/(diagnose|self[- ]?diagnos|self[- ]?repair|fix the system|repair the system|system check|system doctor|system health|optimize the system|run diagnostics)/i.test(lower)) {
+      setShowDoctor(true);
+      const ack: Message = {
+        id: Date.now().toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+        content: "Running a full system diagnostic now — I'll scan every subsystem and auto-repair anything I can. Watch the panel."
+      };
+      setMessages(prev => [...prev, { id: (Date.now()-1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }, ack]);
+      return;
+    }
     if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
