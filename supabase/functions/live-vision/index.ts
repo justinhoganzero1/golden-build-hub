@@ -10,9 +10,10 @@ serve(async (req) => {
 
   try {
     const { image, mode, target, history } = await req.json();
-    if (!image) {
-      return new Response(JSON.stringify({ error: "image is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Validate image is a proper data URL with actual base64 payload
+    if (!image || typeof image !== "string" || !/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]{100,}/.test(image)) {
+      return new Response(JSON.stringify({ analysis: "QUIET", skipped: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
