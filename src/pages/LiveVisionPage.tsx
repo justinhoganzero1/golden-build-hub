@@ -46,6 +46,30 @@ const LiveVisionPage = () => {
   const [watchPromptOpen, setWatchPromptOpen] = useState(false);
   const [watchSummary, setWatchSummary] = useState<string | null>(null);
 
+  // ─── Investigations tab ───
+  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [isInvestigator, setIsInvestigator] = useState(false);
+  const [bodyCamActive, setBodyCamActive] = useState(false);
+  const [investigationActive, setInvestigationActive] = useState(false);
+  const [evidenceLog, setEvidenceLog] = useState<EvidenceLog[]>([]);
+  const [caseId, setCaseId] = useState<string>("");
+  const bodyCamTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const investigationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const evidenceHistoryRef = useRef<string[]>([]);
+
+  // Check role
+  useEffect(() => {
+    if (!user) { setIsInvestigator(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const roles = (data || []).map((r: any) => r.role);
+      setIsInvestigator(roles.includes("investigator") || roles.includes("admin"));
+    })();
+  }, [user]);
+
   // ─── Camera control ───
   const startCamera = useCallback(async () => {
     try {
