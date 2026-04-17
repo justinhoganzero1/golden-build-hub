@@ -1175,10 +1175,38 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               <Textarea value={intent} onChange={e => setIntent(e.target.value)} rows={3}
                 placeholder="Tone, style, lead character look, color palette, references..." />
             </div>
-            <Button onClick={planScenes} disabled={planning} className="w-full">
-              {planning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
-              {planning ? "Planning scenes..." : "Plan scenes with AI"}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+              <div className="font-bold text-primary">10-scene block pricing</div>
+              <div className="text-muted-foreground">
+                {isAdmin
+                  ? "Admin account — all blocks are free."
+                  : <>Block 1: <b>$5</b> (launch rate) · Block 2: $10 · Block 3+: +$20/block up to block 20 ($370) · Block 21+: $1000/block. Each block adds 10 more scenes (~60s).</>}
+              </div>
+              <div className="font-bold">
+                Next block ({nextBlockNumber}): {isAdmin ? "FREE" : `$${nextBlockPrice} USD`}
+              </div>
+            </div>
+            <Button
+              onClick={purchaseAndGenerateNextBlock}
+              disabled={planning || payingBlock}
+              className="w-full"
+            >
+              {planning
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Planning scenes...</>
+                : payingBlock
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening checkout...</>
+                  : <><Wand2 className="w-4 h-4 mr-2" /> {isAdmin ? `Generate first 10 scenes (free)` : `Pay $${nextBlockPrice} & generate first 10 scenes`}</>}
             </Button>
+            {!isAdmin && (
+              <Button
+                onClick={confirmPaidAndGenerateBlock}
+                disabled={planning}
+                variant="outline"
+                className="w-full text-xs"
+              >
+                I've paid — generate this block now
+              </Button>
+            )}
           </div>
         )}
 
