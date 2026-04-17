@@ -9,15 +9,15 @@ Deno.serve(async (req) => {
   try {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
-      return new Response(JSON.stringify({ error: "ElevenLabs API key not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ fallback: true, reason: "no_api_key", error: "ElevenLabs API key not configured" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { prompt, duration_seconds } = await req.json().catch(() => ({}));
     if (!prompt || typeof prompt !== "string") {
-      return new Response(JSON.stringify({ error: "prompt is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ fallback: true, reason: "bad_request", error: "prompt is required" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -36,8 +36,8 @@ Deno.serve(async (req) => {
     if (!resp.ok) {
       const err = await resp.text();
       console.error("ElevenLabs Music error:", err);
-      return new Response(JSON.stringify({ error: "Music generation failed", details: err }), {
-        status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ fallback: true, reason: "upstream_error", status: resp.status, error: "Music generation failed", details: err }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -47,8 +47,8 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("Music error:", e);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ fallback: true, reason: "exception", error: e instanceof Error ? e.message : "Internal server error" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

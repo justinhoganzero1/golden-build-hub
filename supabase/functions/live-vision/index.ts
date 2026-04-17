@@ -61,20 +61,12 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited. Please wait." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
+      const t = await response.text().catch(() => "");
       console.error("Vision error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Vision analysis failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const reason = response.status === 429 ? "rate_limited" : response.status === 402 ? "credits_exhausted" : "upstream_error";
+      const message = response.status === 429 ? "Rate limited. Please wait." : response.status === 402 ? "AI credits exhausted." : "Vision analysis failed";
+      return new Response(JSON.stringify({ fallback: true, reason, status: response.status, analysis: "QUIET", error: message }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -86,8 +78,8 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("live-vision error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ fallback: true, reason: "exception", analysis: "QUIET", error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
