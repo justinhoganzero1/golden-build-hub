@@ -143,6 +143,36 @@ const OwnerDashboardPage = () => {
     })();
   }, []);
 
+  // Load install analytics events for the owner dashboard
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      const { data } = await supabase
+        .from("install_events")
+        .select("event_type, platform")
+        .limit(10000);
+      if (!data) return;
+      const stats = {
+        totalClicks: 0, totalInstalls: 0,
+        perPlatform: {
+          android: { clicks: 0, installs: 0 },
+          ios: { clicks: 0, installs: 0 },
+          desktop: { clicks: 0, installs: 0 },
+        },
+      };
+      for (const e of data as Array<{ event_type: string; platform: string }>) {
+        const isInstall = e.event_type === "installed";
+        if (isInstall) stats.totalInstalls++; else stats.totalClicks++;
+        const p = (e.platform === "android" || e.platform === "ios" || e.platform === "desktop") ? e.platform : null;
+        if (p) {
+          if (isInstall) stats.perPlatform[p].installs++;
+          else stats.perPlatform[p].clicks++;
+        }
+      }
+      setInstallStats(stats);
+    })();
+  }, [isAdmin]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
