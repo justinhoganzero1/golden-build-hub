@@ -1,12 +1,16 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Shield, Users } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
+import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
@@ -47,7 +51,15 @@ function getCollectionKey(sourcePage: string | null): string {
 }
 
 const MediaLibraryPage = () => {
-  const { data: mediaItems = [], isLoading } = useUserMedia();
+  const { user } = useAuth();
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  const [adminGlobalView, setAdminGlobalView] = useState(isAdmin);
+
+  const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia();
+  const { data: allMedia = [], isLoading: allLoading } = useAllUserMedia();
+  const mediaItems = isAdmin && adminGlobalView ? allMedia : ownMedia;
+  const isLoading = isAdmin && adminGlobalView ? allLoading : ownLoading;
+
   const qc = useQueryClient();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [activeCollection, setActiveCollection] = useState("all");
@@ -119,9 +131,29 @@ const MediaLibraryPage = () => {
             </div>
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground tracking-tight">My Library</h1>
-            <p className="text-muted-foreground text-xs">{mediaItems.length} creations across {Object.keys(collectionCounts).length - 1} collections</p>
+            <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+              {isAdmin && adminGlobalView ? "Admin Library" : "My Library"}
+              {isAdmin && adminGlobalView && <Shield className="w-4 h-4 text-amber-400" />}
+            </h1>
+            <p className="text-muted-foreground text-xs">
+              {isAdmin && adminGlobalView
+                ? `${mediaItems.length} creations across all users`
+                : `${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
+            </p>
           </div>
+          {isAdmin && (
+            <button
+              onClick={() => setAdminGlobalView(!adminGlobalView)}
+              title={adminGlobalView ? "Switch to my media only" : "Switch to all-users admin view"}
+              className={`p-2.5 rounded-xl border transition-all ${
+                adminGlobalView
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-400"
+                  : "bg-card border-border text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+            </button>
+          )}
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
