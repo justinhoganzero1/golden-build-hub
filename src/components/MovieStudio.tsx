@@ -585,8 +585,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           src.connect(g).connect(audioDest);
           src.start();
         }
-
-        const start = performance.now();
+        // Schedule per-scene backing music (overrides global score for this clip if present)
+        const mbuf = sceneMusicBuffers[idx];
+        if (mbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = mbuf;
+          const g = audioCtx.createGain();
+          g.gain.value = Math.max(0, Math.min(1, scene.music_volume ?? 0.25));
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
