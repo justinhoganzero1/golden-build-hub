@@ -92,6 +92,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
   const [generatingMusic, setGeneratingMusic] = useState(false);
+  // Intro / Theme / Credits
+  const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
+  const [themeMusicUrl, setThemeMusicUrl] = useState<string | null>(null);
+  const [creditsLines, setCreditsLines] = useState<string[]>([]);
+  const [generatingIntro, setGeneratingIntro] = useState(false);
+  const [generatingTheme, setGeneratingTheme] = useState(false);
+  const [generatingCredits, setGeneratingCredits] = useState(false);
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // OFF by default per user spec
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewAnimRef = useRef<number | null>(null);
@@ -144,6 +152,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setExporting(false); setExportProgress(0);
       setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
       setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
+      setIntroMusicUrl(null); setThemeMusicUrl(null); setCreditsLines([]);
+      setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingCredits(false);
+      setSubtitlesEnabled(false);
     }
   }, [open]);
 
@@ -438,6 +449,120 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     } finally { setGeneratingMusic(false); }
   };
 
+  // ----- Intro fanfare (short upbeat opener) -----
+  const composeIntroMusic = async () => {
+    setGeneratingIntro(true);
+    try {
+      const prompt = `Short upbeat cinematic intro fanfare, exciting, triumphant orchestral hit with rising strings and brass, 4 seconds, builds energy for a film opening titled "${title || "this movie"}"`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: 10 }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Intro music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setIntroMusicUrl(dataUrl);
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - intro fanfare`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "intro-music" },
+      });
+      toast.success("Intro fanfare ready");
+    } catch (e) {
+      console.error(e); toast.error("Intro music generation failed");
+    } finally { setGeneratingIntro(false); }
+  };
+
+  // ----- Theme soundtrack (always upbeat & exciting, plays as the main score) -----
+  const composeThemeTrack = async () => {
+    setGeneratingTheme(true);
+    try {
+      const totalSecs = Math.max(30, scenes.length * CLIP_SECONDS);
+      const prompt = `Upbeat, exciting, energetic cinematic theme soundtrack, driving rhythm, uplifting orchestral and modern hybrid score, adventurous and triumphant, perfect as the main theme for a movie titled "${title || "this movie"}". Keep energy high throughout.`;
+      const resp = await fetch(MUSIC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt, duration_seconds: totalSecs }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Music credits exhausted."); }
+        else toast.error("Theme music generation failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setThemeMusicUrl(dataUrl);
+      setMusicUrl(dataUrl); // theme replaces global score
+      if (user) saveMedia.mutate({
+        media_type: "audio",
+        title: `${title || "Movie"} - theme soundtrack`,
+        url: dataUrl, source_page: "movie-studio",
+        metadata: { kind: "theme-music", durationSec: totalSecs },
+      });
+      toast.success("Upbeat theme soundtrack ready");
+    } catch (e) {
+      console.error(e); toast.error("Theme music generation failed");
+    } finally { setGeneratingTheme(false); }
+  };
+
+  // ----- AI-generated end credits -----
+  const generateCredits = async () => {
+    setGeneratingCredits(true);
+    try {
+      // Reuse the script-to-scenes endpoint? It only does scenes. Use image-gen? No.
+      // Build credits locally from what we know — speakers, title, intent — then ask AI to enrich via a tiny prompt to MUSIC? No. Just compose locally for reliability.
+      const speakers = Array.from(new Set(scenes.map(s => s.speaker).filter(Boolean))) as string[];
+      const lines: string[] = [];
+      lines.push(`${title || "Untitled Movie"}`);
+      lines.push("");
+      lines.push("— A SOLACE Production —");
+      lines.push("");
+      lines.push("Directed by");
+      lines.push("The SOLACE Oracle");
+      lines.push("");
+      if (intent.trim()) {
+        lines.push("Story");
+        lines.push(intent.trim().slice(0, 120));
+        lines.push("");
+      }
+      if (speakers.length > 0) {
+        lines.push("Voice Cast");
+        speakers.forEach(sp => lines.push(sp));
+        lines.push("");
+      }
+      lines.push("Original Score");
+      lines.push("ElevenLabs Music");
+      lines.push("");
+      lines.push("Visuals");
+      lines.push("Generated with AI");
+      lines.push("");
+      lines.push("Made with ♥ on SOLACE");
+      setCreditsLines(lines);
+      toast.success("Credits ready");
+    } catch (e) {
+      console.error(e); toast.error("Credits generation failed");
+    } finally { setGeneratingCredits(false); }
+  };
+
+  // Auto-generate intro + theme + credits in one click — Oracle's "make it complete" button
+  const generateAllExtras = async () => {
+    if (!title) toast.info("Tip: set a title first for best intro/credits");
+    if (!themeMusicUrl) await composeThemeTrack();
+    if (!introMusicUrl) await composeIntroMusic();
+    if (creditsLines.length === 0) await generateCredits();
+  };
+
+
   // ----- Scene CRUD -----
   const addScene = () => {
     setScenes(prev => [...prev, {
@@ -522,12 +647,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         } catch (err) { console.warn("audio decode failed", err); return null; }
       };
 
-      // Decode narration + sfx + per-scene music + global music — in parallel
-      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer] = await Promise.all([
+      // Decode narration + sfx + per-scene music + global music + intro + theme — in parallel
+      const [voiceBuffers, sfxBuffers, sceneMusicBuffers, musicBuffer, introBuf, themeBuf] = await Promise.all([
         Promise.all(ready.map(s => decodeUrl(s.audio_url))),
         Promise.all(ready.map(s => decodeUrl(s.sfx_url))),
         Promise.all(ready.map(s => decodeUrl(s.music_url))),
         decodeUrl(musicUrl),
+        decodeUrl(introMusicUrl),
+        decodeUrl(themeMusicUrl),
       ]);
 
       // Combine video + audio tracks
@@ -556,11 +683,52 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         musicSource.start();
       }
 
-      // Preload all images
+      // Preload scene images first so we can intercut intro
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
         i.onload = () => res(i); i.onerror = rej; i.src = s.image_url!;
       })));
+
+      // ===== INTRO TITLE CARD (4s) with intro fanfare =====
+      if (introBuf || title) {
+        if (introBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = introBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.9;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const introDur = 4000;
+        const introStart = performance.now();
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - introStart) / introDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const grad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+            grad.addColorStop(0, `hsla(45, 90%, 60%, ${0.35 * (1 - Math.abs(p - 0.5) * 1.2)})`);
+            grad.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const alpha = p < 0.25 ? p / 0.25 : p > 0.85 ? (1 - p) / 0.15 : 1;
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+            ctx.fillStyle = "hsl(45 90% 65%)";
+            ctx.textAlign = "center";
+            ctx.font = "bold 96px sans-serif";
+            wrapText(ctx, title || "Untitled Movie", canvas.width / 2, canvas.height / 2, canvas.width - 200, 110);
+            ctx.font = "italic 32px sans-serif";
+            ctx.fillStyle = "#fff";
+            ctx.fillText("a SOLACE production", canvas.width / 2, canvas.height / 2 + 100);
+            ctx.globalAlpha = 1;
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
+      // (legacy preload comment)
+
 
       for (let idx = 0; idx < ready.length; idx++) {
         const scene = ready[idx];
@@ -600,17 +768,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
             drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
-            // caption + speaker tag
-            ctx.fillStyle = "rgba(0,0,0,0.55)";
-            ctx.fillRect(0, canvas.height - 160, canvas.width, 160);
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 36px sans-serif";
-            ctx.textAlign = "center";
-            wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 90, canvas.width - 120, 44);
-            if (scene.speaker && scene.speaker !== "narrator") {
-              ctx.font = "italic 22px sans-serif";
-              ctx.fillStyle = "hsl(45 90% 70%)";
-              ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
+            // Subtitles only render when explicitly enabled by the user (default OFF)
+            if (subtitlesEnabled) {
+              ctx.fillStyle = "rgba(0,0,0,0.55)";
+              ctx.fillRect(0, canvas.height - 160, canvas.width, 160);
+              ctx.fillStyle = "#fff";
+              ctx.font = "bold 36px sans-serif";
+              ctx.textAlign = "center";
+              wrapText(ctx, scene.caption, canvas.width / 2, canvas.height - 90, canvas.width - 120, 44);
+              if (scene.speaker && scene.speaker !== "narrator") {
+                ctx.font = "italic 22px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+                ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
+              }
             }
             if (p < 1) requestAnimationFrame(tick);
             else resolve();
@@ -619,6 +789,54 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         });
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
       }
+
+      // ===== END CREDITS ROLL (8s) with theme music =====
+      if (creditsLines.length > 0) {
+        if (themeBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = themeBuf;
+          const g = audioCtx.createGain(); g.gain.value = 0.7;
+          src.connect(g).connect(audioDest);
+          src.start();
+        }
+        const credDur = 8000;
+        const credStart = performance.now();
+        const lineHeight = 60;
+        const totalRoll = (creditsLines.length * lineHeight) + canvas.height;
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - credStart) / credDur);
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const offset = canvas.height - (p * totalRoll);
+            ctx.textAlign = "center";
+            creditsLines.forEach((line, i) => {
+              const y = offset + (i * lineHeight);
+              if (y < -lineHeight || y > canvas.height + lineHeight) return;
+              if (i === 0) {
+                ctx.font = "bold 64px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 65%)";
+              } else if (line === "" ) {
+                return;
+              } else if (line.startsWith("— ")) {
+                ctx.font = "italic 28px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+              } else if (["Directed by", "Story", "Voice Cast", "Original Score", "Visuals"].includes(line)) {
+                ctx.font = "bold 30px sans-serif";
+                ctx.fillStyle = "hsl(45 90% 70%)";
+              } else {
+                ctx.font = "32px sans-serif";
+                ctx.fillStyle = "#fff";
+              }
+              ctx.fillText(line, canvas.width / 2, y);
+            });
+            if (p < 1) requestAnimationFrame(tick);
+            else resolve();
+          };
+          requestAnimationFrame(tick);
+        });
+      }
+
 
       recorder.stop();
       const blob = await finished;
@@ -806,7 +1024,62 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
               </div>
             </div>
 
-            {/* Scene list */}
+            {/* Intro / Theme / Credits / Subtitles */}
+            <div className="rounded-lg p-3 border border-primary/30 bg-card space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Film className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary">INTRO • THEME • CREDITS</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  Subtitles are off by default — turn on if you want on-screen captions
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={composeIntroMusic} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingIntro}>
+                  {generatingIntro
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Intro music...</>
+                    : introMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose intro</> : <><Sparkles className="w-3 h-3 mr-1" /> Generate intro music</>}
+                </Button>
+                {introMusicUrl && <audio src={introMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={composeThemeTrack} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingTheme}>
+                  {generatingTheme
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Theme...</>
+                    : themeMusicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose theme</> : <><Music className="w-3 h-3 mr-1" /> Generate upbeat theme</>}
+                </Button>
+                {themeMusicUrl && <audio src={themeMusicUrl} controls className="h-7 max-w-[180px]" />}
+                <Button onClick={generateCredits} size="sm" variant="secondary" className="h-7 text-xs"
+                  disabled={generatingCredits}>
+                  {generatingCredits
+                    ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Credits...</>
+                    : creditsLines.length ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-generate credits</> : <><Pencil className="w-3 h-3 mr-1" /> Generate title & credits</>}
+                </Button>
+                <Button onClick={generateAllExtras} size="sm" className="h-7 text-xs ml-auto">
+                  <Wand2 className="w-3 h-3 mr-1" /> Auto-create all
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+                <input
+                  id="subtitles-toggle"
+                  type="checkbox"
+                  checked={subtitlesEnabled}
+                  onChange={e => setSubtitlesEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="subtitles-toggle" className="text-xs cursor-pointer">
+                  Show subtitles / captions on screen <span className="text-muted-foreground">(off by default)</span>
+                </label>
+              </div>
+              {creditsLines.length > 0 && (
+                <details className="text-[11px]">
+                  <summary className="cursor-pointer text-muted-foreground">Preview credits ({creditsLines.length} lines)</summary>
+                  <div className="mt-1 p-2 rounded bg-muted/30 space-y-0.5 max-h-40 overflow-y-auto">
+                    {creditsLines.map((line, i) => <div key={i}>{line || <>&nbsp;</>}</div>)}
+                  </div>
+                </details>
+              )}
+            </div>
+
             <div className="space-y-2">
               {scenes.map((s, idx) => (
                 <div key={s.id} className="border border-border rounded-lg p-3 bg-card">
