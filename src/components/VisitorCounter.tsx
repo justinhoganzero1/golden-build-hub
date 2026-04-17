@@ -9,6 +9,7 @@ interface VisitorCounterProps {
 /**
  * Lightweight live visitor counter for the public landing page.
  * - Records one page view per browser session (sessionStorage guard).
+ * - Captures referrer + UTM params so the admin can see traffic sources.
  * - Reads total count from the public.page_views table.
  */
 const VisitorCounter = ({ page = "landing" }: VisitorCounterProps) => {
@@ -21,9 +22,29 @@ const VisitorCounter = ({ page = "landing" }: VisitorCounterProps) => {
       try {
         const sessionKey = `solace-visit-${page}`;
         if (!sessionStorage.getItem(sessionKey)) {
+          // Capture acquisition data
+          const params = new URLSearchParams(window.location.search);
+          const ref = document.referrer || "";
+          let utm_source = params.get("utm_source") || null;
+          const utm_medium = params.get("utm_medium") || null;
+          const utm_campaign = params.get("utm_campaign") || null;
+
+          // Derive a best-guess source from the referrer host if no UTM
+          if (!utm_source && ref) {
+            try {
+              const host = new URL(ref).hostname.replace(/^www\./, "");
+              if (host && host !== window.location.hostname) utm_source = host;
+            } catch { /* ignore */ }
+          }
+          if (!utm_source) utm_source = "direct";
+
           await supabase.from("page_views").insert({
             page,
             user_agent: navigator.userAgent.slice(0, 200),
+            referrer: ref ? ref.slice(0, 500) : null,
+            utm_source: utm_source.slice(0, 100),
+            utm_medium: utm_medium ? utm_medium.slice(0, 100) : null,
+            utm_campaign: utm_campaign ? utm_campaign.slice(0, 100) : null,
           });
           sessionStorage.setItem(sessionKey, "1");
         }

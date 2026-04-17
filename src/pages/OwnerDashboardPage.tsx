@@ -22,7 +22,7 @@ import { downloadFileFromUrl } from "@/lib/utils";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources">("overview");
   // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
   const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [builderInput, setBuilderInput] = useState("");
@@ -49,6 +49,8 @@ const OwnerDashboardPage = () => {
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
   // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
   const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; installs: number; paidUpgrades: number }>({ visitors: 0, installs: 0, paidUpgrades: 0 });
+  // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
+  const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
@@ -210,6 +212,40 @@ const OwnerDashboardPage = () => {
     return () => { cancelled = true; window.clearInterval(i); };
   }, [isAdmin]);
 
+  // Load traffic sources (admin only) — aggregates utm_source/referrer for the bar graph
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await supabase
+          .from("page_views")
+          .select("utm_source, referrer")
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        if (!data) return;
+        const counts: Record<string, number> = {};
+        for (const row of data as Array<{ utm_source: string | null; referrer: string | null }>) {
+          let src = row.utm_source?.trim().toLowerCase() || "";
+          if (!src && row.referrer) {
+            try { src = new URL(row.referrer).hostname.replace(/^www\./, "").toLowerCase(); }
+            catch { /* ignore */ }
+          }
+          if (!src) src = "direct";
+          counts[src] = (counts[src] || 0) + 1;
+        }
+        const arr = Object.entries(counts)
+          .map(([source, visits]) => ({ source, visits }))
+          .sort((a, b) => b.visits - a.visits)
+          .slice(0, 12);
+        if (!cancelled) setTrafficSources(arr);
+      } catch { /* silent */ }
+    };
+    load();
+    const i = window.setInterval(load, 60000);
+    return () => { cancelled = true; window.clearInterval(i); };
+  }, [isAdmin]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
@@ -277,6 +313,7 @@ const OwnerDashboardPage = () => {
     { key: "vault", label: "Vault", icon: <Lock className="w-4 h-4" /> },
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
+    { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
 
@@ -967,6 +1004,57 @@ const OwnerDashboardPage = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "sources" && (
+          <div className="space-y-4">
+            <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-5 h-5 text-cyan-300" />
+                <h3 className="text-sm font-bold text-white">Where your visitors came from</h3>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-4">
+                Top sources for the last 5,000 visits. Sources include UTM tags (e.g. <span className="text-cyan-300">?utm_source=facebook</span>) and referring sites. "direct" = typed URL or no referrer.
+              </p>
+
+              {trafficSources.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-xs">No traffic data yet — share your link to start tracking.</div>
+              ) : (
+                <div className="space-y-2">
+                  {(() => {
+                    const max = Math.max(...trafficSources.map(s => s.visits), 1);
+                    return trafficSources.map((s, i) => {
+                      const pct = (s.visits / max) * 100;
+                      return (
+                        <div key={s.source + i} className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-white font-medium truncate max-w-[60%]">{s.source}</span>
+                            <span className="text-cyan-300 font-bold">{s.visits.toLocaleString()}</span>
+                          </div>
+                          <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[11px] text-gray-400">
+              <p className="text-white text-xs font-bold mb-2">💡 Tip — track each campaign</p>
+              <p>Share trackable links like:</p>
+              <code className="block mt-2 p-2 bg-black/40 rounded text-cyan-300 break-all">
+                https://golden-vault-builder.lovable.app/?utm_source=facebook&utm_medium=ad&utm_campaign=launch
+              </code>
+              <p className="mt-2">Each one shows up as a separate bar above so you know exactly what's working.</p>
+            </div>
+          </div>
+        )}
 
         {tab === "ai-studio" && (
           <div className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6">
