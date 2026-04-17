@@ -1280,6 +1280,23 @@ const OraclePage = () => {
       <div className="flex items-center justify-between px-4 pt-3 pb-2 z-10">
         <UniversalBackButton />
         <div className="flex items-center gap-2">
+          {/* Free-tier daily message badge — only visible when server tracks usage (free users) */}
+          {usage && (
+            <button
+              onClick={() => navigate("/subscribe")}
+              title="Free daily Oracle chat limit. Tap to upgrade."
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-full border backdrop-blur text-[10px] font-semibold transition-colors ${
+                usage.remaining <= 5
+                  ? "border-red-500/40 bg-red-500/10 text-red-300"
+                  : usage.remaining <= 10
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              }`}
+            >
+              <Crown className="w-3 h-3" />
+              <span>{usage.count} / {usage.limit} free</span>
+            </button>
+          )}
           {/* Oracle Swap button */}
           <button onClick={() => setShowOracleSwap(!showOracleSwap)}
             className="flex items-center gap-1 px-2 py-1.5 rounded-full border border-purple-500/30 bg-black/50 backdrop-blur">
