@@ -4,7 +4,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSavedVoices, useSaveVoice, useDeleteSavedVoice, type SavedVoice } from "@/hooks/useSavedVoices";
-import { useUserAvatars } from "@/hooks/useUserAvatars";
+import { useUserAvatars, useSaveMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -40,6 +40,7 @@ export default function VoiceStudioPage() {
   const saveVoice = useSaveVoice();
   const deleteVoice = useDeleteSavedVoice();
   const { data: avatars = [] } = useUserAvatars();
+  const saveMedia = useSaveMedia();
 
   const [tab, setTab] = useState<Tab>("library");
   const [search, setSearch] = useState("");
@@ -143,6 +144,22 @@ export default function VoiceStudioPage() {
       audioRef.current = audio;
       await audio.play();
       if (voiceName) toast.success(`Playing ${voiceName}`);
+      // Auto-save voice clip to library as base64 data URL
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const dataUrl = reader.result as string;
+          if (!dataUrl) return;
+          await saveMedia.mutateAsync({
+            media_type: "audio",
+            title: `${voiceName || studioVoiceName || "Voice"} — ${text.slice(0, 50)}`,
+            url: dataUrl,
+            source_page: "voice-studio",
+            metadata: { voice_id: voiceId, voice_name: voiceName || studioVoiceName, text, settings },
+          });
+        };
+        reader.readAsDataURL(blob);
+      } catch { /* non-blocking */ }
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Preview failed");
