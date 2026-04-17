@@ -539,6 +539,12 @@ const AvatarGeneratorPage = () => {
         title="Use Image from Library"
         onSelect={(url) => { setImageUrl(url); toast.success("Image loaded from library!"); }}
       />
+      <SelfieCaptureDialog
+        open={showSelfie}
+        onOpenChange={setShowSelfie}
+        onCapture={handleSelfieCaptured}
+        title="Take a Selfie"
+      />
     </div>
   );
 };
