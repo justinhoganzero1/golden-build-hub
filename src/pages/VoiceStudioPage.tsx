@@ -224,19 +224,70 @@ export default function VoiceStudioPage() {
         </header>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-border">
-          {(["library", "saved", "studio"] as Tab[]).map((t) => (
+        <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
+          {(["library", "party", "saved", "studio"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 capitalize transition-colors ${
+              className={`px-4 py-2 capitalize transition-colors whitespace-nowrap ${
                 tab === t ? "border-b-2 border-primary text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : "💾 Saved"}
+              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : "💾 Saved"}
             </button>
           ))}
         </div>
+
+        {/* PARTY */}
+        {tab === "party" && (
+          <div>
+            <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 border border-purple-500/30 rounded-lg p-4 mb-4">
+              <h2 className="font-bold text-lg mb-1">🎉 50 Party Voices</h2>
+              <p className="text-sm text-muted-foreground">
+                Pre-tuned high-energy personas for birthdays, clubs, weddings, Halloween, karaoke and more.
+                Tap <span className="text-primary font-semibold">Preview</span> to hear it, <span className="text-amber-400 font-semibold">👑 Master</span> to make it the Oracle, or <span className="text-primary font-semibold">Save</span> to keep it.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {PARTY_VOICES.map((p, i) => (
+                <div key={`${p.id}-${i}`} className="bg-card border border-border rounded-lg p-4 hover:border-purple-500/50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate">{p.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {p.vibe} • {p.gender} • {p.accent}
+                      </p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full whitespace-nowrap ml-2">PARTY</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{p.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => previewParty(p)}
+                      disabled={generating}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
+                    >
+                      <Play size={12} /> Preview
+                    </button>
+                    <button
+                      onClick={() => saveParty(p)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
+                    >
+                      <Save size={12} /> Save
+                    </button>
+                    <button
+                      onClick={() => masterFromParty(p)}
+                      className="flex items-center justify-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20 ml-auto"
+                      title="Set as Oracle's master voice"
+                    >
+                      <Crown size={12} /> Master
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* LIBRARY */}
         {tab === "library" && (
