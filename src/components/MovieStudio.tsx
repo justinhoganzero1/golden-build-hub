@@ -928,7 +928,59 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         </div>
                       </div>
 
-                      {editingSceneId === s.id && (
+                      {/* Per-scene Backing Music (ElevenLabs Music) */}
+                      <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Music className="w-3 h-3 text-primary" />
+                          <span className="text-[10px] font-bold">SCENE BACKING MUSIC</span>
+                          {s.music_url && <audio src={s.music_url} controls className="h-6 max-w-[200px] ml-auto" />}
+                        </div>
+                        <Textarea
+                          value={s.music_prompt || ""}
+                          onChange={e => updateScene(s.id, { music_prompt: e.target.value })}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Describe the backing track — e.g. 'tense orchestral strings building suspense', 'warm acoustic guitar, hopeful', 'dark synth pulse, 90 bpm'"
+                        />
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <Button onClick={() => generateSceneMusic(s.id, 3)} size="sm" variant="secondary" className="h-7 text-xs"
+                            disabled={s.generatingSceneMusic || !s.music_prompt?.trim()}>
+                            {s.generatingSceneMusic
+                              ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing 3 tracks...</>
+                              : s.music_options?.length
+                                ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose options</>
+                                : <><Sparkles className="w-3 h-3 mr-1" /> Generate 3 tracks</>}
+                          </Button>
+                          <label className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+                            Vol
+                            <input
+                              type="range" min={0} max={1} step={0.05}
+                              value={s.music_volume ?? 0.25}
+                              onChange={e => updateScene(s.id, { music_volume: Number(e.target.value) })}
+                              className="w-20"
+                            />
+                          </label>
+                        </div>
+                        {!!s.music_options?.length && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground">Choose backing track for this scene:</p>
+                            {s.music_options.map((url, i) => (
+                              <div key={i} className={`flex items-center gap-2 p-1 rounded border ${s.music_url === url ? "border-primary bg-primary/10" : "border-border/40"}`}>
+                                <Button
+                                  size="sm" variant={s.music_url === url ? "default" : "outline"}
+                                  className="h-6 text-[10px] px-2"
+                                  onClick={() => updateScene(s.id, { music_url: url })}
+                                >
+                                  {s.music_url === url ? "✓ Selected" : `Use #${i + 1}`}
+                                </Button>
+                                <audio src={url} controls className="h-6 flex-1 min-w-0" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+
                         <div className="mt-2 p-2 rounded-md bg-primary/5 border border-primary/30 space-y-2">
                           <p className="text-[10px] text-muted-foreground">Tell the AI what to change in this clip's photo:</p>
                           <Textarea value={editPrompt} onChange={e => setEditPrompt(e.target.value)} rows={2}
