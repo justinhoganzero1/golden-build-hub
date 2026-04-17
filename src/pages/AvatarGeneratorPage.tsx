@@ -472,11 +472,17 @@ const AvatarGeneratorPage = () => {
                       Unlock {currentPurpose?.label} — {currentPurpose?.price}
                     </button>
                   ) : (
-                    <button onClick={addAvatar} disabled={createAvatar.isPending}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 disabled:opacity-50">
-                      {createAvatar.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                      Add as {currentPurpose?.label || "Avatar"}
-                    </button>
+                    <>
+                      <button onClick={() => addAvatar(false)} disabled={createAvatar.isPending}
+                        className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 disabled:opacity-50">
+                        {createAvatar.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                        Add as {currentPurpose?.label || "Avatar"}
+                      </button>
+                      <button onClick={() => addAvatar(true)} disabled={createAvatar.isPending || setMaster.isPending}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-50">
+                        👑 Save & Set as Master Oracle Avatar
+                      </button>
+                    </>
                   )}
 
                   {/* Quick-add buttons */}
