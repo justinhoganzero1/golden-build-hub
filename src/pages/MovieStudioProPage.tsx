@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Film, Wallet, Lock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
