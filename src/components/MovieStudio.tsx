@@ -998,6 +998,71 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     setPreviewSceneId(null);
   };
 
+  // Stitched preview — plays ALL scenes back-to-back with cinematic transitions
+  // in the preview canvas (silent, visual only). Confirms scenes are joined into
+  // one continuous movie before exporting.
+  const previewFullMovie = async () => {
+    const ready = scenes.filter(s => s.image_url);
+    if (ready.length === 0) { toast.error("Generate at least one scene photo first"); return; }
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    setPreviewSceneId("__full__");
+    try {
+      const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
+        const i = new Image(); i.crossOrigin = "anonymous";
+        i.onload = () => res(i); i.onerror = rej; i.src = s.image_url!;
+      })));
+      let cancelled = false;
+      const cancelCheck = () => { if (previewAnimRef.current === -1) cancelled = true; };
+      previewAnimRef.current = 1;
+      for (let idx = 0; idx < ready.length; idx++) {
+        if (cancelled) break;
+        const scene = ready[idx];
+        const img = imgs[idx];
+        const dur = Math.max(2000, scene.duration_sec * 1000);
+        const start = performance.now();
+        await new Promise<void>(resolve => {
+          const tick = (now: number) => {
+            cancelCheck(); if (cancelled) { resolve(); return; }
+            const p = Math.min(1, (now - start) / dur);
+            drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
+            if (p < 1) previewAnimRef.current = requestAnimationFrame(tick);
+            else resolve();
+          };
+          previewAnimRef.current = requestAnimationFrame(tick);
+        });
+        if (cancelled) break;
+        if (idx < ready.length - 1) {
+          const next = ready[idx + 1];
+          const nextImg = imgs[idx + 1];
+          const a = scene.tone || "neutral";
+          const b = next.tone || "neutral";
+          let kind = 0;
+          if (a === b) kind = 0;
+          else if ((a === "tense" && b === "calm") || (a === "calm" && b === "tense")) kind = 1;
+          else if (a === "epic" || b === "epic") kind = 3;
+          else if (a === "playful" || b === "playful") kind = 2;
+          const tDur = 700;
+          const tStart = performance.now();
+          await new Promise<void>(resolve => {
+            const ttick = (now: number) => {
+              cancelCheck(); if (cancelled) { resolve(); return; }
+              const tp = Math.min(1, (now - tStart) / tDur);
+              drawTransition(ctx, img, nextImg, canvas.width, canvas.height, scene.motion, next.motion, tp, kind);
+              if (tp < 1) previewAnimRef.current = requestAnimationFrame(ttick);
+              else resolve();
+            };
+            previewAnimRef.current = requestAnimationFrame(ttick);
+          });
+        }
+      }
+    } finally {
+      setPreviewSceneId(null);
+      previewAnimRef.current = null;
+    }
+  };
+
   // ----- Export full movie as WebM (with AI voice audio muxed in) -----
   const exportMovie = async () => {
     const ready = scenes.filter(s => s.image_url);
