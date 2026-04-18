@@ -286,12 +286,13 @@ const OraclePage = () => {
           voiceId: masterVoiceId,
           // SPEED: tell edge function to use Flash v2.5 + tiny MP3 + latency optimizer
           fast: true,
-          settings: masterSettings ?? {
-            stability: 0.4,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
-            speed: 1.05,
+          settings: {
+            stability: (masterSettings?.stability as number) ?? 0.5,
+            similarity_boost: (masterSettings?.similarity_boost as number) ?? 0.8,
+            style: (masterSettings?.style as number) ?? 0.35,
+            use_speaker_boost: (masterSettings?.use_speaker_boost as boolean) ?? true,
+            // Slow, unhurried pace — never let user-saved speed exceed 0.92
+            speed: Math.min((masterSettings?.speed as number) ?? 0.88, 0.92),
           },
         }),
       });
