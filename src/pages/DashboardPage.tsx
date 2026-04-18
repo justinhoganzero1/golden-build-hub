@@ -14,6 +14,7 @@ import {
 import solaceBanner from "@/assets/solace-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
+import PartyBanner from "@/components/PartyBanner";
 import { toast } from "sonner";
 
 interface AppTile {
