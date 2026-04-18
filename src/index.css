@@ -97,7 +97,7 @@ All colors MUST be HSL.
     z-index: 9999;
     border-radius: 6px;
     /* Chrome border via gradient + mask for a polished metallic edge */
-    padding: 2px;
+    padding: 4px;
     background: linear-gradient(
       135deg,
       hsl(0 0% 95%) 0%,
@@ -117,7 +117,7 @@ All colors MUST be HSL.
       0 0 30px hsl(var(--accent-blue-glow) / 0.35),
       0 0 50px hsl(var(--accent-red-glow) / 0.30),
       inset 0 0 14px hsl(0 0% 100% / 0.25);
-    animation: neon-edge-pulse 3.5s ease-in-out infinite;
+    animation: neon-edge-pulse 8s ease-in-out infinite;
   }
 
   @keyframes neon-edge-pulse {
