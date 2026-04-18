@@ -163,11 +163,22 @@ const PortalLandingPage = () => {
 
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
-          <div className="flex justify-center mb-6">
+          <div className="relative flex justify-center mb-6">
+            {/* Fluro neon-green glow under logo */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-24px] h-20 w-56 md:w-72 rounded-full blur-2xl animate-pulse"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, #39ff14 0%, rgba(57,255,20,0.85) 30%, rgba(57,255,20,0.35) 60%, transparent 80%)",
+                boxShadow:
+                  "0 0 60px 15px #39ff14, 0 0 120px 40px rgba(57,255,20,0.55)",
+              }}
+            />
             <img
               src={solaceLogo}
               alt="SOLACE shield logo"
-              className="h-32 w-32 md:h-40 md:w-40"
+              className="relative z-10 h-32 w-32 md:h-40 md:w-40"
             />
           </div>
 
