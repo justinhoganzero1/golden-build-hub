@@ -318,7 +318,7 @@ export default function VoiceStudioPage() {
     } else {
       localStorage.removeItem("solace-oracle-voice-settings");
     }
-    toast.success(`👑 ${voiceName} is now the Oracle's master voice`);
+    toast.success(`👑 ${voiceName} is now the Oracle's default voice`);
   }
 
   return (
@@ -473,19 +473,26 @@ export default function VoiceStudioPage() {
                     <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full text-muted-foreground">{v.category}</span>
                   </div>
                   {v.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{v.description}</p>}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => generatePreview(v.id, v.name)}
                       disabled={generating}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
+                      className="flex-1 min-w-[80px] flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 text-primary rounded text-xs font-medium hover:bg-primary/20"
                     >
                       <Play size={12} /> Preview
                     </button>
                     <button
                       onClick={() => pickFromLibrary(v)}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
+                      className="flex-1 min-w-[80px] flex items-center justify-center gap-1 px-3 py-1.5 bg-card border border-border rounded text-xs hover:border-primary"
                     >
                       <Settings2 size={12} /> Tune
+                    </button>
+                    <button
+                      onClick={() => setAsOracleMaster(v.id, v.name)}
+                      className="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20"
+                      title="Set as Oracle's default voice"
+                    >
+                      <Crown size={12} /> Set as Oracle Default
                     </button>
                   </div>
                 </div>
@@ -531,7 +538,7 @@ export default function VoiceStudioPage() {
                           className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20"
                           title="Set as Oracle's master voice"
                         >
-                          <Crown size={12} /> Master
+                          <Crown size={12} /> Oracle Default
                         </button>
                         <button
                           onClick={() => deleteVoice.mutate(v.id)}
@@ -563,7 +570,7 @@ export default function VoiceStudioPage() {
                     className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-sm font-medium hover:bg-amber-500/20"
                     title="Use this voice (with current settings) as the Oracle's master voice"
                   >
-                    <Crown size={14} /> Set as Oracle Master
+                    <Crown size={14} /> Set as Oracle Default
                   </button>
                   <button
                     onClick={handleSaveCurrent}
