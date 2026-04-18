@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,7 +114,7 @@ export default function SeoLandingPage() {
   ];
 
   return (
-    <HelmetProvider>
+    <>
       <SEO
         title={variant.title}
         description={variant.description}
@@ -200,6 +199,6 @@ export default function SeoLandingPage() {
           </Button>
         </section>
       </main>
-    </HelmetProvider>
+    </>
   );
 }
