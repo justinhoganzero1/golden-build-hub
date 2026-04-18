@@ -1073,13 +1073,21 @@ const OraclePage = () => {
 
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
-      if (finalTranscriptRef.current.trim()) {
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        const text = finalTranscriptRef.current.trim();
-        finalTranscriptRef.current = "";
-        setInput("");
-        sendMessage(text);
+      // TURN MIC OFF — stop recognizer, clear any pending transcript, no sound/toast.
+      alwaysListenRef.current = false;
+      pausedForSpeechRef.current = false;
+      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+      finalTranscriptRef.current = "";
+      lastAutoSentRef.current = { text: "", at: 0 };
+      if (recognitionRef.current) {
+        try { recognitionRef.current.onend = null; } catch {}
+        try { recognitionRef.current.onresult = null; } catch {}
+        try { recognitionRef.current.stop(); } catch {}
+        try { recognitionRef.current.abort?.(); } catch {}
+        recognitionRef.current = null;
       }
+      setIsListening(false);
+      setInput("");
       return;
     }
     // Check API support first
@@ -1096,7 +1104,6 @@ const OraclePage = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop());
       setMicPermGranted(true);
-      toast.success("Microphone enabled — Oracle is listening");
       startAlwaysListening();
     } catch (err: any) {
       console.error("Mic error:", err);
