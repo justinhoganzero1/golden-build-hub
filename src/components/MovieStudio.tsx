@@ -1340,9 +1340,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-primary/30">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-primary">
-            <Film className="w-5 h-5" /> Movie Studio
+            <Film className="w-5 h-5" /> Cinematic Clip Studio
             <span className="ml-auto text-xs text-muted-foreground font-normal">
-              {scenes.length} scenes · {totalSec}s · 8K · 6s/clip
+              {scenes.length} scenes · {totalSec}s · 8K · 20s/clip
             </span>
           </DialogTitle>
         </DialogHeader>
