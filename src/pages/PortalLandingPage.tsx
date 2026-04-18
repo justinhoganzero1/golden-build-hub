@@ -293,35 +293,36 @@ const PortalLandingPage = () => {
               </Button>
             </div>
 
-            {/* SOLACE Claims — free standalone mini-app */}
+            {/* Movie Studio Pro — paid standalone app */}
             <div className="holo-tile rounded-2xl p-6 border border-primary/30 flex flex-col bg-gradient-to-br from-primary/10 to-transparent">
               <div className="flex items-center gap-4 mb-4">
                 <div className="h-16 w-16 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">
-                  <Shield className="w-8 h-8 text-primary" />
+                  <Sparkles className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-xl text-foreground">SOLACE Claims</h3>
-                  <p className="text-xs text-primary uppercase tracking-wider">Free standalone app</p>
+                  <h3 className="font-semibold text-xl text-foreground">Movie Studio Pro</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Pay-per-render · Wallet</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                A free standalone mini-app for Australians claiming HostPlus income protection or WorkCover QLD.
-                Includes Oracle AI to research forms, draft your claim letter, and guide you call-by-call. No login required.
+                The full cinematic movie maker — script→scenes, AI voiceover, music & SFX mixing, auto-captions, HD export.
+                Build &amp; preview free; only charged from your wallet (compute + 50% service fee, $0.25 minimum) when you export.
+                Includes the SOLACE AI concierge for guidance.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   size="lg"
-                  onClick={() => navigate("/claims-app")}
+                  onClick={() => navigate("/movie-studio-pro")}
                   className="shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
                 >
-                  <Sparkles className="mr-2 h-5 w-5" /> Open Free
+                  <Sparkles className="mr-2 h-5 w-5" /> Open Studio
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
                   onClick={() => {
-                    const url = encodeURIComponent(window.location.origin + "/claims-app");
-                    navigate(`/web-wrapper?url=${url}&name=${encodeURIComponent("SOLACE Claims")}`);
+                    const url = encodeURIComponent(window.location.origin + "/movie-studio-pro");
+                    navigate(`/web-wrapper?url=${url}&name=${encodeURIComponent("Movie Studio Pro")}`);
                   }}
                   className="border-primary/40 hover:border-primary"
                 >
