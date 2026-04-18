@@ -129,11 +129,11 @@ const PhotographyHubPage = () => {
           </button>
         </div>
 
-        {/* Movie Studio launcher (always available, prominent) */}
+        {/* Cinematic Clip Studio launcher (always available, prominent) */}
         <button onClick={() => setShowMovieStudio(true)}
           className="w-full mb-4 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-primary to-amber-500 border-2 border-primary/60 text-primary-foreground font-bold text-base flex items-center justify-center gap-2 shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.7)] transition-all animate-pulse">
-          <Film className="w-5 h-5" /> 🎬 Open Movie Studio
-          <span className="text-[11px] opacity-90 font-medium">8K · 6s clips</span>
+          <Film className="w-5 h-5" /> 🎬 Open Cinematic Clip Studio
+          <span className="text-[11px] opacity-90 font-medium">8K · 20s clips</span>
         </button>
 
         {/* Uploaded Photo Preview */}
@@ -185,7 +185,7 @@ const PhotographyHubPage = () => {
             </button>
             <button onClick={() => setShowMovieStudio(true)}
               className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-              <Film className="w-4 h-4" /> Turn into Movie (8K · 6s clips)
+              <Film className="w-4 h-4" /> Turn into Cinematic Clips (8K · 20s)
               <Sparkles className="w-4 h-4" />
             </button>
           </div>

@@ -220,7 +220,7 @@ const SubscribePage = () => {
               "Unlocks every premium feature, forever",
               "Bypasses all paywalls across the app",
               "No recurring charges — pay once, own it",
-              "Movie Studio excluded (billed per use, no caps)",
+              "Cinematic Clip Studio excluded (billed per use, no caps)",
             ].map(f => (
               <div key={f} className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-[hsl(var(--status-active))]" />
