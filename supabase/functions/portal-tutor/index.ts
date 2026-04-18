@@ -3,6 +3,9 @@
 // Also captures sales/contact inquiries to inquiry_leads for the admin dashboard.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
