@@ -293,16 +293,10 @@ const OraclePage = () => {
     }
   }, [SPEECH_THERAPIST_URL]);
 
-  // Premium ElevenLabs TTS for the Oracle — natural, unhurried, human-like delivery
+  // Premium ElevenLabs TTS for the Oracle — uses the EXACT voice + settings
+  // the user tuned in Voice Studio so the Oracle sounds identical to the preview.
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
-      // Run through the speech therapist first for natural prosody
-      const coached = await coachSpeech(text);
-      const paced = coached.replace(/\s{3,}/g, "  ").trim();
-      if (!paced) return false;
-      // Detect SSML so we can switch to the multilingual model that respects it
-      const hasSSML = /<(break|emphasis|prosody|lang)\b/i.test(paced);
-
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
       const masterVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
       let masterSettings: Record<string, unknown> | null = null;
@@ -311,26 +305,52 @@ const OraclePage = () => {
         if (raw) masterSettings = JSON.parse(raw);
       } catch {}
 
+      // If the user has tuned a master voice in Voice Studio, DO NOT run the
+      // speech-therapist rewrite — it injects SSML which forces a model switch
+      // (turbo → multilingual_v2) and changes how the same voice ID sounds.
+      // Just do gentle pacing so the preview and the Oracle match exactly.
+      const hasCustomMaster = !!masterSettings;
+      const prepared = hasCustomMaster
+        ? text.replace(/\s{3,}/g, "  ").trim()
+        : (await coachSpeech(text)).replace(/\s{3,}/g, "  ").trim();
+      if (!prepared) return false;
+
+      const hasSSML = !hasCustomMaster && /<(break|emphasis|prosody|lang)\b/i.test(prepared);
+
+      // Honor the user-saved model exactly when they tuned one; otherwise use
+      // turbo for low latency (or multilingual when SSML is present).
+      const savedModelId = (masterSettings?.model_id as string | undefined) || undefined;
+      const modelId = hasCustomMaster
+        ? savedModelId
+        : (hasSSML ? "eleven_multilingual_v2" : undefined);
+
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
-          text: paced,
+          text: prepared,
           voiceId: masterVoiceId,
-          // If SSML is present, switch to multilingual_v2 (respects break/emphasis/prosody/lang).
-          // Otherwise keep turbo for low latency.
-          fast: !hasSSML,
-          modelId: hasSSML ? "eleven_multilingual_v2" : undefined,
-          settings: {
-            // Lower stability = more natural pitch movement and emotion
-            stability: (masterSettings?.stability as number) ?? 0.35,
-            similarity_boost: (masterSettings?.similarity_boost as number) ?? 0.85,
-            // Higher style = more expressive, follows CAPS/punctuation cues
-            style: (masterSettings?.style as number) ?? 0.65,
-            use_speaker_boost: (masterSettings?.use_speaker_boost as boolean) ?? true,
-            // Slow, unhurried pace — never let user-saved speed exceed 0.95
-            speed: Math.min((masterSettings?.speed as number) ?? 0.9, 0.95),
-          },
+          // Only enable "fast" mode (which forces turbo + low-bitrate format) when
+          // the user has NOT saved their own settings. Otherwise honor their model.
+          fast: hasCustomMaster ? false : !hasSSML,
+          modelId,
+          settings: hasCustomMaster
+            ? {
+                // Use the user's tuned values verbatim — no caps, no overrides
+                stability: masterSettings?.stability,
+                similarity_boost: masterSettings?.similarity_boost,
+                style: masterSettings?.style,
+                use_speaker_boost: masterSettings?.use_speaker_boost,
+                speed: masterSettings?.speed,
+              }
+            : {
+                // Defaults only when nothing was saved
+                stability: 0.35,
+                similarity_boost: 0.85,
+                style: 0.65,
+                use_speaker_boost: true,
+                speed: 0.9,
+              },
         }),
       });
       if (!response.ok || !response.body) return false;
