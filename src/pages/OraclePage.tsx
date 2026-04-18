@@ -146,7 +146,7 @@ const OraclePage = () => {
       toast.success(`Attached ${file.name} — sent to ${oracleName}`);
       const sizeKb = Math.round(file.size / 1024);
       const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
-      await sendMessage(prompt, { hidden: true });
+      await sendMessage(prompt);
     } catch (err: any) {
       toast.error(err?.message || "Upload failed");
     } finally {
