@@ -512,10 +512,11 @@ const OraclePage = () => {
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
     // first real Oracle response speaks back in <1s.
+    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
     fetch(ELEVENLABS_TTS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-      body: JSON.stringify({ text: ".", fast: true, voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+      body: JSON.stringify({ text: ".", fast: true, voiceId: prewarmVoiceId }),
     }).catch(() => {});
   }, []);
 
