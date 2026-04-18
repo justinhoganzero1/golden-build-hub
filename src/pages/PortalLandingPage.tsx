@@ -100,6 +100,12 @@ const PortalLandingPage = () => {
     };
   }, []);
 
+  // Tag the body so landing-page-only CSS (like the SOLACE wordmark headings) activates
+  useEffect(() => {
+    document.body.setAttribute("data-route", "/");
+    return () => { document.body.removeAttribute("data-route"); };
+  }, []);
+
   // Track successful PWA installs (fires once when the browser finishes installing)
   useEffect(() => {
     const onInstalled = () => trackInstallEvent("installed");
@@ -177,7 +183,7 @@ const PortalLandingPage = () => {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
-            <span className="font-bold text-lg tracking-[0.2em] text-primary">SOLACE</span>
+            <span className="solace-wordmark text-lg">SOLACE</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
@@ -265,10 +271,10 @@ const PortalLandingPage = () => {
             40+ AI modules · One cinematic super-app
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 drop-shadow-lg">
-            <span className="text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]">SOLACE</span>
+          <h1 className="text-5xl md:text-7xl mb-6">
+            <span className="solace-wordmark text-5xl md:text-7xl">SOLACE</span>
             <br />
-            <span className="text-foreground text-3xl md:text-5xl font-medium">
+            <span className="solace-wordmark-soft text-2xl md:text-4xl block mt-4">
               Your AI companion to do everything
             </span>
           </h1>
