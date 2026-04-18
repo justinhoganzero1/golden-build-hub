@@ -145,6 +145,13 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      {/* Lifetime Birthday Party banner */}
+      {tier !== "lifetime" && !isAdmin && (
+        <div className="mx-4 mb-3">
+          <PartyBanner variant="lifetime-birthday" />
+        </div>
+      )}
+
       {/* Free lifetime promo banner */}
       {tier === "free" && !isAdmin && (
         <div className="mx-4 mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30">
