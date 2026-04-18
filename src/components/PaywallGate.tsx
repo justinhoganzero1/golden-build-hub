@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Lock, Sparkles, Star, Crown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 interface PaywallGateProps {
   children: ReactNode;
@@ -46,9 +47,10 @@ const PaywallGate = ({
   const navigate = useNavigate();
   const { tier, loading } = useSubscription();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
 
   if (loading || adminLoading) return <>{children}</>;
-  if (isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
+  if (isPreview || isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
 
   return (
     <div className="relative">
@@ -95,8 +97,9 @@ export default PaywallGate;
 export const TileLockBadge = ({ requiredTier = "starter" }: { requiredTier?: string }) => {
   const { tier, loading } = useSubscription();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
 
-  if (loading || adminLoading || isAdmin || hasAccess(tier, requiredTier)) return null;
+  if (loading || adminLoading || isPreview || isAdmin || hasAccess(tier, requiredTier)) return null;
 
   return (
     <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center z-10">
