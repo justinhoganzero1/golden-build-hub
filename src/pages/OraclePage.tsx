@@ -309,12 +309,14 @@ const OraclePage = () => {
           // SPEED: tell edge function to use Flash v2.5 + tiny MP3 + latency optimizer
           fast: true,
           settings: {
-            stability: (masterSettings?.stability as number) ?? 0.5,
-            similarity_boost: (masterSettings?.similarity_boost as number) ?? 0.8,
-            style: (masterSettings?.style as number) ?? 0.35,
+            // Lower stability = more natural pitch movement and emotion
+            stability: (masterSettings?.stability as number) ?? 0.35,
+            similarity_boost: (masterSettings?.similarity_boost as number) ?? 0.85,
+            // Higher style = more expressive, follows CAPS/punctuation cues
+            style: (masterSettings?.style as number) ?? 0.65,
             use_speaker_boost: (masterSettings?.use_speaker_boost as boolean) ?? true,
-            // Slow, unhurried pace — never let user-saved speed exceed 0.92
-            speed: Math.min((masterSettings?.speed as number) ?? 0.88, 0.92),
+            // Slow, unhurried pace — never let user-saved speed exceed 0.95
+            speed: Math.min((masterSettings?.speed as number) ?? 0.9, 0.95),
           },
         }),
       });
