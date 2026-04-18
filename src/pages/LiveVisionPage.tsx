@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target, ShieldCheck, FileSearch, Hash } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -515,6 +516,12 @@ const LiveVisionPage = () => {
 
   return (
     <PaywallGate requiredTier="monthly" featureName="Live Vision (real-time AI camera)">
+    <>
+    <SEO
+      title="Live Vision — Real-Time AI Camera Analysis"
+      description="SOLACE Live Vision: point your camera, get instant AI analysis — text extraction, object ID, scene description, watch alerts."
+      path="/live-vision"
+    />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <canvas ref={canvasRef} className="hidden" />
@@ -817,6 +824,7 @@ const LiveVisionPage = () => {
         )}
       </div>
     </div>
+    </>
     </PaywallGate>
   );
 };

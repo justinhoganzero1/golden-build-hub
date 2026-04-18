@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import SEO from "@/components/SEO";
 import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -225,6 +226,12 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
   };
 
   return (
+    <>
+    <SEO
+      title="AI App Builder — Build Web Apps By Chatting"
+      description="SOLACE App Builder: describe an app and AI builds it. Full HTML, deploy to Play Store, monetize. Free to start."
+      path="/app-builder"
+    />
     <div className="min-h-screen bg-background flex flex-col">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-2">
@@ -377,6 +384,7 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
         </div>
       </div>
     </div>
+    </>
   );
 };
 export default AppBuilderPage;

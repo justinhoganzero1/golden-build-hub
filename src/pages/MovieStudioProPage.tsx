@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { Film, Wallet, Lock, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,12 @@ const MovieStudioProPage = () => {
   const balanceFmt = `$${((balance ?? 0) / 100).toFixed(2)}`;
 
   return (
+    <>
+    <SEO
+      title="Movie Studio Pro — AI Cinematic Video Editor"
+      description="SOLACE Movie Studio Pro: script→scenes, 8K AI frames, voiceover, music, SFX, captions, HD export. Build films with AI."
+      path="/movie-studio-pro"
+    />
     <PageShell title="🎬 Movie Studio Pro" subtitle="Full cinematic editor — script→scenes, VO, music, SFX, captions, HD export">
       <div className="max-w-4xl mx-auto p-4 space-y-4">
 
@@ -117,6 +124,7 @@ const MovieStudioProPage = () => {
         onOpenChange={(o) => { setStudioOpen(o); if (!o) refreshBalance(); }}
       />
     </PageShell>
+    </>
   );
 };
 

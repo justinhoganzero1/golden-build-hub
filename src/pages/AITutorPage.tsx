@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "@/components/SEO";
 import { GraduationCap, BookOpen, Play, Trophy, Star, Clock, ChevronRight, Loader2, FileText, Send } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -213,6 +214,12 @@ const AITutorPage = () => {
 
   // Home
   return (
+    <>
+    <SEO
+      title="Free AI Tutor — Learn Any Subject With Voice + Text"
+      description="SOLACE AI Tutor: personalized lessons across math, science, languages, coding and more. Voice + text. Free to start."
+      path="/ai-tutor"
+    />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
@@ -242,6 +249,7 @@ const AITutorPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

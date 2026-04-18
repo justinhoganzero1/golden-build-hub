@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import SEO from "@/components/SEO";
 import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -322,6 +323,12 @@ export default function VoiceStudioPage() {
   }
 
   return (
+    <>
+    <SEO
+      title="Voice Studio — 120+ AI Voices, Voice Cloning & TTS"
+      description="SOLACE Voice Studio: 120+ realistic AI voices, voice cloning, custom TTS. Build your perfect AI voice for chat, video and apps."
+      path="/voice-studio"
+    />
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">
       <UniversalBackButton />
       <div className="max-w-6xl mx-auto pt-12">
@@ -734,6 +741,7 @@ export default function VoiceStudioPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
 

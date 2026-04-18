@@ -75,6 +75,11 @@ const loaders = {
   "/free-ai-chat": () => import("./pages/SeoLandingPage"),
   "/ai-girlfriend": () => import("./pages/SeoLandingPage"),
   "/ai-boyfriend": () => import("./pages/SeoLandingPage"),
+  "/character-ai-alternative": () => import("./pages/SeoLandingPage"),
+  "/replika-alternative": () => import("./pages/SeoLandingPage"),
+  "/ai-therapist-free": () => import("./pages/SeoLandingPage"),
+  "/ai-tutor-free": () => import("./pages/SeoLandingPage"),
+  "/free-ai-voice-chat": () => import("./pages/SeoLandingPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -227,6 +232,11 @@ const App = () => (
                   <Route path="/free-ai-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-girlfriend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-boyfriend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/character-ai-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/replika-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-therapist-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-tutor-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/free-ai-voice-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

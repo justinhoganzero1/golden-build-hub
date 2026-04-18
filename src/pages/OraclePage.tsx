@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -1649,6 +1650,12 @@ const OraclePage = () => {
 
   // ============ RENDER ============
   return (
+    <>
+    <SEO
+      title="Oracle AI Chat — Talk to Your Voice AI Companion"
+      description="Chat with Oracle, the SOLACE voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
+      path="/oracle"
+    />
     <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#0a0a0a" }}>
       {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
       {explosionActive && (
@@ -2020,6 +2027,7 @@ const OraclePage = () => {
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
     </div>
+    </>
   );
 };
 
