@@ -1086,6 +1086,8 @@ const OraclePage = () => {
     setIsSpeaking(false);
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
+    // Track for speech-therapist listener-aware tone matching
+    lastUserMessageRef.current = isIntroTrigger ? "" : text;
     if (!isIntroTrigger) setMessages(prev => [...prev, userMsg]);
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
