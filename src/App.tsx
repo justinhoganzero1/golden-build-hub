@@ -198,6 +198,7 @@ const App = () => (
               <AnnouncementBanner />
               <PreviewModeBanner />
               <MasterMuteButton />
+              <MasterOracleLauncher />
               
               <Suspense fallback={<Loading />}>
                 <Routes>
