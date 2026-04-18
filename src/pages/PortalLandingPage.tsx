@@ -28,6 +28,7 @@ import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
 import StickyInstallBar from "@/components/StickyInstallBar";
 import SocialProofBar from "@/components/SocialProofBar";
+import PartyBanner from "@/components/PartyBanner";
 import ExitIntentCapture from "@/components/ExitIntentCapture";
 import solaceBanner from "@/assets/solace-banner.jpg";
 import solaceLogo from "@/assets/solace-logo.png";
