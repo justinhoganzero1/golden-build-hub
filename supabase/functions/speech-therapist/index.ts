@@ -422,6 +422,34 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Jailbreak guard (owner-exempt; anonymous = warn-only) ──
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let isOwner = false;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const sb = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const { data } = await sb.auth.getClaims(authHeader.replace("Bearer ", ""));
+        if (data?.claims) {
+          userId = data.claims.sub ?? null;
+          userEmail = (data.claims.email as string) ?? null;
+          isOwner = userEmail?.toLowerCase() === ADMIN_EMAIL;
+        }
+      } catch (_e) { /* anonymous */ }
+    }
+    const guard = await checkJailbreak({ userId, userEmail, isOwner, message: text });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({ text: guard.message, fallback: false, securityBlock: true, deleted: guard.deleted }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const trimmed = text.length > 4000 ? text.slice(0, 4000) : text;
 
     // -------------- STAGE 1: Bundle D pre-processor --------------
