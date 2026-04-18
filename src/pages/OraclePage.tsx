@@ -261,13 +261,35 @@ const OraclePage = () => {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
+  const SPEECH_THERAPIST_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/speech-therapist`;
   // Premium voice requires any paid subscription
   const { tier: subTier } = useSubscription();
+
+  // Speech-therapist coach — rewrites raw text into prosody-optimized speech
+  // (proper punctuation, breath pauses, tone, pace, exclamation/question lift).
+  // Soft-fails to the original text so TTS never breaks.
+  const coachSpeech = useCallback(async (raw: string, mood = "neutral"): Promise<string> => {
+    try {
+      const resp = await fetch(SPEECH_THERAPIST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ text: raw, mood }),
+      });
+      if (!resp.ok) return raw;
+      const data = await resp.json().catch(() => null);
+      const coached = (data?.text as string | undefined)?.trim();
+      return coached && coached.length > 0 ? coached : raw;
+    } catch {
+      return raw;
+    }
+  }, [SPEECH_THERAPIST_URL]);
 
   // Premium ElevenLabs TTS for the Oracle — natural, unhurried, human-like delivery
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
-      const paced = text.replace(/\s{3,}/g, "  ").trim();
+      // Run through the speech therapist first for natural prosody
+      const coached = await coachSpeech(text);
+      const paced = coached.replace(/\s{3,}/g, "  ").trim();
       if (!paced) return false;
 
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
