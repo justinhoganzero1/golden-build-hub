@@ -42,6 +42,7 @@ const FEATURES = [
   { icon: Wand2, title: "Magic & Marketing Hubs", desc: "AI art, story writing, SEO domination, and ad creation tools in one place.", to: "/magic-hub" },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
   { icon: Smartphone, title: "App Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
+  { icon: Sparkles, title: "Movie Studio Pro", desc: "Full cinematic editor — script→scenes, voiceover, music, SFX, captions, HD export. Pay-per-render.", to: "/movie-studio-pro" },
 ];
 
 const PortalLandingPage = () => {
