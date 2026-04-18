@@ -173,26 +173,39 @@ const PortalLandingPage = () => {
             guided by an AI that talks, listens, and genuinely cares.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* MEGA CTA (BOOSTER #4) — 3x bigger, pulsing, gold glow */}
             <Button
               size="lg"
               onClick={() => handleInstall()}
               disabled={isStandalone}
-              className="shadow-[0_0_40px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.7)] transition-shadow"
+              className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all animate-pulse"
             >
-              <Download className="mr-2 h-5 w-5" />
-              {isStandalone ? "Already installed" : canInstall ? "Install SOLACE" : "How to install"}
+              <Download className="mr-3 h-7 w-7" />
+              {isStandalone ? "Already installed ✓" : canInstall ? "Install SOLACE — Free" : "Install on my phone"}
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/welcome")} className="border-primary/40 hover:border-primary">
-              Try it in your browser <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/welcome")}
+              className="h-14 px-8 text-base border-2 border-primary/40 hover:border-primary"
+            >
+              Try in browser <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            ⚡ Installs in 5 seconds · No app store needed · Works on iPhone, Android & Desktop
+          </p>
 
           <div className="mt-10 flex justify-center">
             <SecurityShield />
           </div>
         </div>
       </section>
+
+      {/* ── Live Social Proof Bar (BOOSTER #3) ── */}
+      <SocialProofBar />
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">
