@@ -874,10 +874,6 @@ const OraclePage = () => {
   const toggleAgent = (name: string) => {
     const agent = agents.find(a => a.name === name);
     if (!agent) return;
-    if (agent.locked) {
-      toast("Unlock " + name + " for $1", { description: "Go to Subscribe to unlock more AI friends.", action: { label: "View Plans", onClick: () => navigate("/subscribe") } });
-      return;
-    }
     setAgents(prev => prev.map(a => a.name === name ? { ...a, active: !a.active } : a));
     if (!agent.active) toast.success(`${agent.emoji} ${agent.name} joined the chat!`);
   };
