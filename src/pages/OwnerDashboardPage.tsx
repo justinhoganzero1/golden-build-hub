@@ -578,6 +578,70 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
+        {/* WEB CRAWLER — Growth engine */}
+        {tab === "crawler" && (
+          <div className="space-y-3">
+            <div className="bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 rounded-xl p-4">
+              <h2 className="text-lg font-bold text-white mb-1">Web Crawler & Outreach</h2>
+              <p className="text-xs text-gray-400 mb-3">Discovers high-value sites (press, partners, directories, investors, backlink targets), extracts contact emails, and AI-drafts personalized outreach for every prospect. Optionally logs each prospect to the Leads tab.</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <select value={crawlerCampaign} onChange={(e) => setCrawlerCampaign(e.target.value as typeof crawlerCampaign)}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+                  <option value="press">Press / Tech Media</option>
+                  <option value="partnership">Partnerships / Integrations</option>
+                  <option value="directory">App Directories</option>
+                  <option value="investor">Investors / VCs</option>
+                  <option value="backlink">Backlink / Guest Posts</option>
+                </select>
+                <input type="number" min={1} max={25} value={crawlerLimit} onChange={(e) => setCrawlerLimit(Math.max(1, Math.min(25, Number(e.target.value) || 8)))}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" placeholder="Limit (1-25)" />
+              </div>
+              <input value={crawlerNiche} onChange={(e) => setCrawlerNiche(e.target.value)}
+                placeholder="Niche / topic (e.g. AI mental health super app)"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-3" />
+              <label className="flex items-center gap-2 text-xs text-gray-300 mb-3 cursor-pointer">
+                <input type="checkbox" checked={crawlerLogToLeads} onChange={(e) => setCrawlerLogToLeads(e.target.checked)} />
+                Auto-log results to the Leads tab
+              </label>
+              <button onClick={runCrawler} disabled={crawlerBusy}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                {crawlerBusy ? "Crawling the web…" : "Discover Prospects & Draft Outreach"}
+              </button>
+            </div>
+            {crawlerResults.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white">{crawlerResults.length} prospects</h3>
+                  <span className="text-[10px] text-amber-400">{crawlerCampaign}</span>
+                </div>
+                {crawlerResults.map((p, i) => (
+                  <div key={i} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <a href={p.url} target="_blank" rel="noreferrer" className="text-sm font-bold text-amber-400 hover:underline truncate">{p.title || p.url}</a>
+                      {p.contact_email && <span className="text-[10px] text-green-400 font-mono shrink-0">{p.contact_email}</span>}
+                    </div>
+                    <p className="text-[10px] text-gray-500 truncate mb-2">{p.url}</p>
+                    {p.outreach_subject && (
+                      <div className="bg-black/40 border border-white/5 rounded-lg p-2 mb-2">
+                        <p className="text-[10px] text-purple-300 mb-1">Subject: <span className="text-white font-medium">{p.outreach_subject}</span></p>
+                        <p className="text-xs text-gray-300 whitespace-pre-wrap">{p.outreach_body}</p>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      {p.contact_email && (
+                        <a href={`mailto:${p.contact_email}?subject=${encodeURIComponent(p.outreach_subject || "")}&body=${encodeURIComponent(p.outreach_body || "")}`}
+                          className="flex-1 text-center px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold">Send Email</a>
+                      )}
+                      <button onClick={() => navigator.clipboard.writeText(`${p.outreach_subject}\n\n${p.outreach_body}`)}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-xs">Copy</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* LEADS — captured by SOLACE Concierge */}
         {tab === "leads" && (
           <div className="space-y-3">
