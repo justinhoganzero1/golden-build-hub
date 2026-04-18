@@ -42,7 +42,17 @@ const AssistantPhonePage = () => {
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (data) setS({ ...DEFAULTS, ...data });
+      if (data) {
+        setS({
+          personal_phone: data.personal_phone ?? "",
+          twilio_number: data.twilio_number ?? "",
+          call_answering_enabled: data.call_answering_enabled,
+          outbound_calls_enabled: data.outbound_calls_enabled,
+          reply_channel: (data.reply_channel === "chat" || data.reply_channel === "sms") ? data.reply_channel : "both",
+          greeting: data.greeting ?? DEFAULTS.greeting,
+          hold_message: data.hold_message ?? DEFAULTS.hold_message,
+        });
+      }
       setLoading(false);
     })();
   }, [user]);
