@@ -133,7 +133,7 @@ const ClaimsAppPage = () => {
           <PaywallGate requiredTier="starter" featureName="Oracle Assisted Calling">
             <button
               onClick={() => navigate(user ? "/claims-assistant" : "/sign-in")}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground text-xs font-bold shadow-lg"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-primary to-primary/70 text-primary-foreground text-xs font-bold shadow-lg"
             >
               <PhoneCall className="w-4 h-4" /> Have Oracle Call For You
               <span className="ml-1 px-1.5 py-0.5 rounded bg-background/20 text-[10px]">AU $0.45/min</span>
