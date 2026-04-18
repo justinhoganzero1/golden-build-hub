@@ -237,10 +237,16 @@ const PortalLandingPage = () => {
       {/* ── Live Social Proof Bar (BOOSTER #3) ── */}
       <SocialProofBar />
 
+      {/* ── Free 14-day download banner ── */}
+      <div className="max-w-6xl mx-auto px-4 pt-6">
+        <PartyBanner variant="free-14-days" />
+      </div>
+
       {/* ── Founding Member Banner ── */}
-      <div className="max-w-6xl mx-auto px-4 pt-8">
+      <div className="max-w-6xl mx-auto px-4 pt-4">
         <PartyBanner variant="founding-member" />
       </div>
+
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">

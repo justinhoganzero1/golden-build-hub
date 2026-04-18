@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Crown, Gift, PartyPopper, Sparkles } from "lucide-react";
 
 interface PartyBannerProps {
-  variant: "lifetime-birthday" | "founding-member";
+  variant: "lifetime-birthday" | "founding-member" | "free-14-days";
   className?: string;
 }
 
@@ -48,6 +48,43 @@ const PartyBanner = ({ variant, className = "" }: PartyBannerProps) => {
           </div>
           <div className="shrink-0 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 shadow-md">
             <Crown className="w-3 h-3" /> Claim
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "free-14-days") {
+    return (
+      <div
+        onClick={() => navigate("/subscribe")}
+        className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-500/30 via-primary/30 to-emerald-500/30 p-4 shadow-[0_0_35px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_55px_hsl(var(--primary)/0.65)] transition-all ${className}`}
+        role="button"
+        aria-label="Free for 14 days — Download SOLACE Now"
+      >
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+          <span className="absolute top-2 left-4 text-lg">⚡</span>
+          <span className="absolute top-3 right-6 text-lg">📲</span>
+          <span className="absolute bottom-2 left-10 text-lg">🎁</span>
+          <span className="absolute bottom-3 right-10 text-lg">🆓</span>
+        </div>
+        <div className="relative flex items-center gap-3">
+          <div className="shrink-0 w-12 h-12 rounded-full bg-emerald-500/30 flex items-center justify-center ring-2 ring-emerald-400/50">
+            <Gift className="w-6 h-6 text-emerald-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
+              <Sparkles className="w-3 h-3" /> Limited · Next 14 Days
+            </div>
+            <h3 className="text-base sm:text-lg font-extrabold text-foreground leading-tight">
+              🆓 FREE for 14 Days — Download &amp; Join Now
+            </h3>
+            <p className="text-[11px] sm:text-xs text-foreground/85 mt-0.5">
+              Full access to every premium feature. No card required to start.
+            </p>
+          </div>
+          <div className="shrink-0 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md whitespace-nowrap">
+            <PartyPopper className="w-3 h-3" /> Get Free
           </div>
         </div>
       </div>

@@ -148,7 +148,8 @@ const DashboardPage = () => {
 
       {/* Lifetime Birthday Party banner */}
       {tier !== "lifetime" && !isAdmin && (
-        <div className="mx-4 mb-3">
+        <div className="mx-4 mb-3 space-y-2">
+          <PartyBanner variant="free-14-days" />
           <PartyBanner variant="lifetime-birthday" />
         </div>
       )}

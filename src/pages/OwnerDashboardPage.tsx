@@ -607,6 +607,27 @@ const OwnerDashboardPage = () => {
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
                 {crawlerBusy ? "Crawling the web…" : "Discover Prospects & Draft Outreach"}
               </button>
+              <button
+                onClick={async () => {
+                  const message = prompt(
+                    "Broadcast message to Telegram / Discord / Slack / Email / 80 webhooks:",
+                    "🆓 SOLACE is FREE for 14 days — download now at https://oracle-lunar.online"
+                  );
+                  if (!message) return;
+                  try {
+                    const { data, error } = await supabase.functions.invoke("growth-broadcast", {
+                      body: { event: "feature", title: "📣 SOLACE Announcement", message, url: "https://oracle-lunar.online" },
+                    });
+                    if (error) throw error;
+                    const ok = (data?.results || []).filter((r: any) => r.ok).map((r: any) => r.label).join(", ");
+                    alert(`Broadcast sent ✓\nDelivered to: ${ok || "(no destinations configured yet — add secrets first)"}`);
+                  } catch (e) {
+                    alert("Broadcast failed: " + String(e));
+                  }
+                }}
+                className="mt-2 w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-bold text-sm flex items-center justify-center gap-2">
+                📣 Broadcast to All Channels
+              </button>
             </div>
             {crawlerResults.length > 0 && (
               <div className="space-y-2">
