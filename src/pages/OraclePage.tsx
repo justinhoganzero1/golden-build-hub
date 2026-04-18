@@ -74,6 +74,15 @@ function setOracleMode(mode: "orb" | "avatar", avatarId?: string) {
   localStorage.setItem("solace-oracle-mode", JSON.stringify({ mode, avatarId }));
 }
 
+function getStoredOracleMasterVoice(): { id?: string; settings?: Record<string, unknown> | null } | null {
+  try {
+    const raw = localStorage.getItem("solace-oracle-master-voice");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 const OraclePage = () => {
   const navigate = useNavigate();
   const { isMuted, toggleMute } = useMute();
@@ -263,7 +272,7 @@ const OraclePage = () => {
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
   const SPEECH_THERAPIST_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/speech-therapist`;
   // Premium voice requires any paid subscription
-  const { tier: subTier } = useSubscription();
+  const { tier: subTier, loading: subLoading } = useSubscription();
 
   // Track the most recent user message so the speech therapist can mirror tone.
   const lastUserMessageRef = useRef<string>("");
@@ -298,12 +307,7 @@ const OraclePage = () => {
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
-      let storedMasterVoice: { id?: string; settings?: Record<string, unknown> | null } | null = null;
-      try {
-        const rawMaster = typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-master-voice") : null;
-        if (rawMaster) storedMasterVoice = JSON.parse(rawMaster);
-      } catch {}
-
+      const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
       const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL");
       let masterSettings: Record<string, unknown> | null = null;
       try {
@@ -494,7 +498,8 @@ const OraclePage = () => {
     isSpeakingQueueRef.current = true;
 
     const isOracle = next.agentName === oracleName;
-    const hasPremiumVoice = subTier !== "free";
+    const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
+    const hasPremiumVoice = subTier !== "free" || (subLoading && hasStoredMasterVoice);
     if (isOracle && hasPremiumVoice && premiumClean) {
       const success = await speakWithElevenLabs(premiumClean);
       if (!success) {
@@ -508,7 +513,7 @@ const OraclePage = () => {
 
     isSpeakingQueueRef.current = false;
     processSpeechQueue();
-  }, [isMuted, oracleName, speakWithElevenLabs, speakWithBrowserTTS]);
+  }, [isMuted, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, subTier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text) return;
@@ -942,6 +947,7 @@ const OraclePage = () => {
   const greetTriggeredRef = useRef(false);
   useEffect(() => {
     if (greetTriggeredRef.current) return;
+    if (subLoading) return;
     // Skip greet on the very first visit (intro handles it)
     if (!localStorage.getItem("solace-oracle-introduced")) return;
     greetTriggeredRef.current = true;
@@ -976,10 +982,10 @@ const OraclePage = () => {
     const t = setTimeout(() => {
       // Push greeting directly as an assistant message + speak it
       setMessages((prev) => [...prev, { role: "assistant", content: greeting } as any]);
-      try { speakAsAgent("oracle", greeting); } catch {}
+      try { speakAsAgent(greeting, oracleName); } catch {}
     }, 1500);
     return () => clearTimeout(t);
-  }, []);
+  }, [oracleName, speakAsAgent, subLoading]);
 
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
