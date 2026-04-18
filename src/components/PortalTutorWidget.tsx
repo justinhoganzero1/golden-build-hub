@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, X, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 import { useMute } from "@/contexts/MuteContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Strip markdown, emojis, URLs, and code so TTS sounds natural
 const sanitizeForTTS = (raw: string): string =>
