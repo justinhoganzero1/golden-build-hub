@@ -291,6 +291,18 @@ Then return ONE of two outputs, nothing else:
   • If score ≤ 4: return exactly "PASS"
   • If score > 4: return the FULLY REWRITTEN text (apply ALL the human-voice rules: short sentences, varied length, SSML <break>/<emphasis>/<prosody>, mood-matched punctuation, key-word stress, breath cues). Do NOT include the score, do NOT include "REWRITE:", do NOT include quotes — just the new text.`;
 
+// Defensive cleanup — strip stray quotes and leaked analysis preambles/labels.
+function stripPreambleAndAnalysis(s: string): string {
+  let out = s.trim();
+  out = out.replace(/^["'`]+|["'`]+$/g, "").trim();
+  // Strip leading "(SILENT ANALYSIS: ...)" or "(auto)" parentheticals
+  out = out.replace(/^\(\s*(silent analysis|analysis|auto|mood|emotion|intent|note)[^)]*\)\s*\n?/i, "").trim();
+  out = out.replace(/^\(\s*[a-z\s,/-]+\s*\)\s*\n?/i, "").trim();
+  // Strip leading labels
+  out = out.replace(/^(rewrite|output|result|coached text|spoken text)\s*[:\-—]\s*/i, "").trim();
+  return out;
+}
+
 async function callLovableAI(
   apiKey: string,
   systemPrompt: string,
