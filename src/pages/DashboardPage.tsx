@@ -38,6 +38,7 @@ const tiles: AppTile[] = [
   { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet", tier: "starter" },
   
   { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor", tier: "monthly" },
+  { label: "YT Show Studio", icon: <Film className="w-6 h-6" />, path: "/youtube-show-studio", tier: "monthly" },
   { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library", tier: "starter" },
   { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision", tier: "monthly" },
   { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio", tier: "monthly" },
