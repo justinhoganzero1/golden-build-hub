@@ -1075,6 +1075,36 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const proceed = confirm(`${missingAudio} scene(s) have no AI voice yet. Export silent for those? (Cancel to generate voices first.)`);
       if (!proceed) return;
     }
+
+    // ===== MANDATORY WALLET CHARGE (admin bypass) =====
+    if (!isAdmin) {
+      try {
+        const { data: est } = await supabase.functions.invoke("movie-render-charge", {
+          body: { scene_count: ready.length, hd: true, with_captions: subtitlesEnabled, action: "estimate" },
+        });
+        if (!est) { toast.error("Could not estimate render cost"); return; }
+        const priceFmt = `$${(est.total_cents / 100).toFixed(2)}`;
+        const balFmt = `$${(est.balance_cents / 100).toFixed(2)}`;
+        if (!est.sufficient) {
+          toast.error(`Insufficient wallet balance. Need ${priceFmt}, you have ${balFmt}. Top up in Wallet.`);
+          return;
+        }
+        if (!confirm(`This export will charge ${priceFmt} from your wallet (balance: ${balFmt}). Proceed?`)) return;
+        const { data: chg, error: chgErr } = await supabase.functions.invoke("movie-render-charge", {
+          body: { scene_count: ready.length, hd: true, with_captions: subtitlesEnabled, action: "charge" },
+        });
+        if (chgErr || !chg?.success) {
+          toast.error(chg?.error === "insufficient_balance" ? "Wallet ran out — top up first" : "Charge failed, export cancelled");
+          return;
+        }
+        toast.success(`Charged ${priceFmt}. New balance: $${(chg.new_balance_cents / 100).toFixed(2)}`);
+      } catch (e) {
+        console.error("[movie-render-charge]", e);
+        toast.error("Billing service unavailable, export cancelled");
+        return;
+      }
+    }
+
     setExporting(true); setExportProgress(0);
     try {
       const canvas = exportCanvasRef.current!;

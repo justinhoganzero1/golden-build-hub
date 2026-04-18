@@ -44,11 +44,11 @@ const MovieStudioProPage = () => {
       <div className="max-w-4xl mx-auto p-4 space-y-4">
 
         {/* Wallet status */}
-        <Card className="p-4 bg-gradient-to-br from-amber-500/10 via-card to-card border-amber-500/30">
+        <Card className="p-4 bg-gradient-to-br from-primary/10 via-card to-card border-primary/30">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-amber-500" />
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Render Wallet Balance</p>
@@ -70,7 +70,7 @@ const MovieStudioProPage = () => {
 
         {/* Pricing breakdown */}
         <Card className="p-4">
-          <h3 className="text-sm font-bold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> What you get</h3>
+          <h3 className="text-sm font-bold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> What you get</h3>
           <ul className="text-xs space-y-1.5 text-muted-foreground">
             <li>• <strong className="text-foreground">Script → Scenes:</strong> AI writes, generates 8K cinematic frames, voices each line</li>
             <li>• <strong className="text-foreground">Multi-track timeline:</strong> video, voiceover, music, SFX, text overlays</li>
@@ -102,7 +102,7 @@ const MovieStudioProPage = () => {
         <Button
           onClick={() => setStudioOpen(true)}
           size="lg"
-          className="w-full h-16 text-base font-bold bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
         >
           <Film className="w-6 h-6 mr-3" /> Open Movie Studio Pro
         </Button>
