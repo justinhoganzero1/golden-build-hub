@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Shield as AdminShield } from "lucide-react";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import {
@@ -82,7 +81,6 @@ const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
-  const { isAdmin } = useIsAdmin();
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
   // Pulse the shield-shaped logo glow while the user is typing in the chat
@@ -137,17 +135,6 @@ const PortalLandingPage = () => {
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              onClick={() => navigate(isAdmin ? "/owner-dashboard" : "/auth?redirect=/owner-dashboard")}
-              variant="outline"
-              size="sm"
-              title="Owner access (admin only)"
-              aria-label="Owner access"
-              className="border-yellow-500/70 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 shadow-[0_0_12px_hsl(45_100%_50%/0.4)] font-semibold"
-            >
-              <AdminShield className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Owner</span>
-            </Button>
             <Button onClick={() => navigate("/welcome")} variant="default" size="sm">
               <span className="hidden sm:inline">Launch App</span>
               <span className="sm:hidden">Launch</span>
@@ -604,10 +591,20 @@ const PortalLandingPage = () => {
             <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-5">
             <a href="/privacy-policy" className="hover:text-primary">Privacy</a>
             <a href="/terms-of-service" className="hover:text-primary">Terms</a>
             <a href="/about" className="hover:text-primary">About</a>
+            <button
+              type="button"
+              onClick={() => navigate(user ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+              aria-label="Owner access"
+              title="Owner access"
+            >
+              <AdminShield className="h-3.5 w-3.5" />
+              <span>Owner</span>
+            </button>
             <span className="inline-flex items-center gap-1 text-xs">
               <Lock className="h-3.5 w-3.5" /> AI Anti-Hacker Active
             </span>

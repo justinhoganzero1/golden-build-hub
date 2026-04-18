@@ -209,6 +209,7 @@ const App = () => (
                   <Route path="/investor" element={<ErrorBoundary pageName="Investor"><InvestorPage /></ErrorBoundary>} />
                   <Route path="/creators" element={<ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
+                  <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary>} />
                   
                   <Route path="/claims-assistant" element={<ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary>} />

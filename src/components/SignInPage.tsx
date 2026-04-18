@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
@@ -13,13 +13,28 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const isOwnerAccess = redirectPath === "/owner-dashboard";
+  const ownerEmail = "justinbretthogan@gmail.com";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
+      toast.error("Owner access only accepts the approved admin email.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (isSignUp) {
+        if (isOwnerAccess) {
+          toast.error("Owner access is sign-in only.");
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -30,7 +45,7 @@ const SignInPage = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/dashboard");
+        navigate(redirectPath);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -41,14 +56,14 @@ const SignInPage = () => {
 
   const handleGoogleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
     if (result?.error) toast.error(String(result.error));
   };
 
   const handleAppleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
     if (result?.error) toast.error(String(result.error));
   };
@@ -60,9 +75,14 @@ const SignInPage = () => {
       </div>
 
       <div className="w-full max-w-md border border-border rounded-2xl p-8 bg-card animate-slide-up">
-        <h2 className="text-2xl font-bold text-primary text-center mb-6">
-          {isSignUp ? "Create Account" : "Sign In"}
+        <h2 className="text-2xl font-bold text-primary text-center mb-2">
+          {isOwnerAccess ? "Owner Sign In" : isSignUp ? "Create Account" : "Sign In"}
         </h2>
+        {isOwnerAccess && (
+          <p className="text-center text-sm text-muted-foreground mb-6">
+            Approved owner account only.
+          </p>
+        )}
 
         <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
           <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
@@ -131,19 +151,21 @@ const SignInPage = () => {
             disabled={loading}
             className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50"
           >
-            {loading ? "Loading..." : (isSignUp ? "Create Account" : "Sign In")} <ArrowRight className="w-4 h-4" />
+            {loading ? "Loading..." : isOwnerAccess ? "Sign In as Owner" : isSignUp ? "Create Account" : "Sign In"} <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <p className="text-center text-muted-foreground text-sm mt-4">
-          {isSignUp ? "Already have an account?" : "New here?"}{" "}
-          <span
-            className="text-primary cursor-pointer hover:underline"
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp ? "Sign in" : "Create an account"}
-          </span>
-        </p>
+        {!isOwnerAccess && (
+          <p className="text-center text-muted-foreground text-sm mt-4">
+            {isSignUp ? "Already have an account?" : "New here?"}{" "}
+            <span
+              className="text-primary cursor-pointer hover:underline"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Sign in" : "Create an account"}
+            </span>
+          </p>
+        )}
 
         <div className="flex justify-center mt-4">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full border text-xs" style={{ borderColor: 'hsl(160, 84%, 39%)', color: 'hsl(160, 84%, 39%)' }}>
