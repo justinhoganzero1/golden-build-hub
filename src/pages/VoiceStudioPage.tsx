@@ -510,6 +510,14 @@ export default function VoiceStudioPage() {
                           <UserPlus size={12} /> Assign
                         </button>
                         <button
+                          onClick={() => setAsOracleMaster(vid, v.name, (cfg.settings as VoiceSettings) || undefined)}
+                          disabled={!vid}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20"
+                          title="Set as Oracle's master voice"
+                        >
+                          <Crown size={12} /> Master
+                        </button>
+                        <button
                           onClick={() => deleteVoice.mutate(v.id)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded text-xs ml-auto"
                         >
@@ -528,18 +536,28 @@ export default function VoiceStudioPage() {
         {tab === "studio" && (
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="font-bold text-lg">{studioVoiceName}</h2>
-                  <p className="text-xs text-muted-foreground font-mono">{studioVoiceId}</p>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <div className="min-w-0">
+                  <h2 className="font-bold text-lg truncate">{studioVoiceName}</h2>
+                  <p className="text-xs text-muted-foreground font-mono truncate">{studioVoiceId}</p>
                 </div>
-                <button
-                  onClick={handleSaveCurrent}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm"
-                >
-                  <Save size={14} /> Save
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAsOracleMaster(studioVoiceId, studioVoiceName, settings)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-sm font-medium hover:bg-amber-500/20"
+                    title="Use this voice (with current settings) as the Oracle's master voice"
+                  >
+                    <Crown size={14} /> Set as Oracle Master
+                  </button>
+                  <button
+                    onClick={handleSaveCurrent}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm"
+                  >
+                    <Save size={14} /> Save
+                  </button>
+                </div>
               </div>
+
 
               <textarea
                 value={text}
