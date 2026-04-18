@@ -317,8 +317,10 @@ const OraclePage = () => {
         body: JSON.stringify({
           text: paced,
           voiceId: masterVoiceId,
-          // SPEED: tell edge function to use Flash v2.5 + tiny MP3 + latency optimizer
-          fast: true,
+          // If SSML is present, switch to multilingual_v2 (respects break/emphasis/prosody/lang).
+          // Otherwise keep turbo for low latency.
+          fast: !hasSSML,
+          modelId: hasSSML ? "eleven_multilingual_v2" : undefined,
           settings: {
             // Lower stability = more natural pitch movement and emotion
             stability: (masterSettings?.stability as number) ?? 0.35,
