@@ -139,6 +139,14 @@ const DashboardPage = () => {
               ✨ Lifetime Member
             </span>
           )}
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/admin/editor")}
+              className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
+            >
+              ✏️ Live Editor
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setShareOpen(true)} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
