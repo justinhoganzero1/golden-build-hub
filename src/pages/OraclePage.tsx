@@ -128,6 +128,12 @@ const OraclePage = () => {
   const alwaysListenRef = useRef(false);
   // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
   const echoCooldownUntilRef = useRef(0);
+  // Wake-word voice channel — Oracle stays silently armed and only responds
+  // after the user says "hey solace". Closes on "thanks solace" / "goodbye solace"
+  // or after 20s of silence. Reopens on the next "hey solace".
+  const [voiceChannelOpen, setVoiceChannelOpen] = useState(false);
+  const voiceChannelOpenRef = useRef(false);
+  const voiceChannelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks whether we paused the recognizer because Oracle is speaking, so we can resume after.
   const pausedForSpeechRef = useRef(false);
   const explosionAudioRef = useRef<HTMLAudioElement | null>(null);
