@@ -47,9 +47,10 @@ const PaywallGate = ({
   const navigate = useNavigate();
   const { tier, loading } = useSubscription();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
 
   if (loading || adminLoading) return <>{children}</>;
-  if (isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
+  if (isPreview || isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
 
   return (
     <div className="relative">
