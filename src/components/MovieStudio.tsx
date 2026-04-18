@@ -17,7 +17,7 @@ const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tt
 const SFX_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`;
 const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`;
 const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
-const CLIP_SECONDS = 6;
+const CLIP_SECONDS = 20; // 20-second cinematic blocks per scene
 
 // Map AI voice_style → ElevenLabs voice IDs (from approved list)
 const VOICE_MAP: Record<string, string> = {
