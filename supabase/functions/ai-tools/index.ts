@@ -1,4 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +22,36 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // 🛡️ JAILBREAK GUARD
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    if (token && SUPABASE_URL && SERVICE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+        const { data } = await admin.auth.getUser(token);
+        userId = data?.user?.id ?? null;
+        userEmail = data?.user?.email ?? null;
+      } catch (_) { /* ignore */ }
+    }
+    const guard = await checkJailbreak({
+      userId, userEmail,
+      isOwner: userEmail?.toLowerCase() === ADMIN_EMAIL,
+      message: prompt,
+    });
+    if (guard.blocked) {
+      return new Response(JSON.stringify({
+        result: guard.message,
+        security: { warning_number: guard.warningNumber, account_deleted: guard.deleted },
+      }), {
+        status: guard.deleted ? 410 : 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const systemPrompts: Record<string, string> = {
       "email": "You are an expert email marketing copywriter. Generate professional, engaging email campaigns. Return a JSON object with keys: subject, preheader, body (as HTML), cta_text.",

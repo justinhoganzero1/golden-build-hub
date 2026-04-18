@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,6 +85,32 @@ serve(async (req) => {
       } catch (e) {
         console.warn("Usage tracking skipped:", e);
       }
+    }
+
+    // 🛡️ JAILBREAK GUARD — 3 strikes then auto-delete account
+    const isOwnerEmail = userEmail?.toLowerCase() === ADMIN_EMAIL;
+    const lastUserMsg = latestUserMessage(messages || []);
+    const guard = await checkJailbreak({
+      userId,
+      userEmail,
+      isOwner: isOwnerEmail,
+      message: lastUserMsg,
+    });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: guard.message } }],
+          security: {
+            warning_number: guard.warningNumber,
+            account_deleted: guard.deleted,
+            detected: guard.detectedPhrase,
+          },
+        }),
+        {
+          status: guard.deleted ? 410 : 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const name = oracleName || "Oracle";

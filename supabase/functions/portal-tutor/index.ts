@@ -3,6 +3,9 @@
 // Also captures sales/contact inquiries to inquiry_leads for the admin dashboard.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,6 +113,36 @@ Deno.serve(async (req) => {
       Array.isArray(messages)
         ? [...messages].reverse().find((m: { role: string }) => m.role === "user")?.content || ""
         : "";
+
+    // 🛡️ JAILBREAK GUARD — identify user if a JWT was passed
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    if (token && SUPABASE_URL && SERVICE_KEY) {
+      try {
+        const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+        const { data } = await admin.auth.getUser(token);
+        userId = data?.user?.id ?? null;
+        userEmail = data?.user?.email ?? null;
+      } catch (_) { /* ignore */ }
+    }
+    const guard = await checkJailbreak({
+      userId, userEmail,
+      isOwner: userEmail?.toLowerCase() === ADMIN_EMAIL,
+      message: typeof lastUserMsg === "string" ? lastUserMsg : "",
+    });
+    if (guard.blocked) {
+      return new Response(JSON.stringify({
+        reply: guard.message,
+        security: { warning_number: guard.warningNumber, account_deleted: guard.deleted },
+      }), {
+        status: guard.deleted ? 410 : 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
