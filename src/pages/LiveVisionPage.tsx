@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target, ShieldCheck, FileSearch, Hash } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
