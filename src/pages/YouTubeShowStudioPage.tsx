@@ -58,7 +58,7 @@ const YouTubeShowStudioPage = () => {
   const [results, setResults] = useState<YTItem[]>([]);
   const [generatingScript, setGeneratingScript] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
-  const { voices: savedVoices } = useSavedVoices();
+  const { data: savedVoices = [] } = useSavedVoices();
 
   // hydrate
   useEffect(() => {
