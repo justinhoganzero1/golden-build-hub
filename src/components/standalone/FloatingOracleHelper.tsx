@@ -40,7 +40,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         body: JSON.stringify({
           messages: next,
           oracleName: "Eric",
-          adContext: `User is using the standalone "${appName}" app. Help them get the most out of it. Suggest installing the full SOLACE app for more features.`,
+          adContext: { publicSite: true },
         }),
       });
       if (!resp.ok || !resp.body) throw new Error("stream failed");
