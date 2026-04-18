@@ -19,6 +19,7 @@ import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import FloatingOracleHelper from "@/components/standalone/FloatingOracleHelper";
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -1321,6 +1322,7 @@ const OwnerDashboardPage = () => {
           description={`Check out this ${libShareItem?.media_type || "media"} from Solace!`}
         />
       </div>
+      <FloatingOracleHelper appName="Owner Dashboard — Master Oracle (full admin knowledge of Solace)" />
     </div>
   );
 };
