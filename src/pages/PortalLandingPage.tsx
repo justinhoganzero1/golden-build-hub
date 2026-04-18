@@ -573,6 +573,9 @@ const PortalLandingPage = () => {
 
       <PortalTutorWidget />
 
+      {/* ── Exit-Intent Email Capture (BOOSTER #5) ── */}
+      <ExitIntentCapture />
+
       {previewFeature && (
         <FeaturePreviewDialog
           open={!!previewFeature}
