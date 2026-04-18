@@ -122,7 +122,7 @@ const ClaimsAppPage = () => {
           <p className="text-sm text-muted-foreground mb-4">
             Oracle researches the right forms, drafts your claim letter, and tells you exactly what to send. No login required to chat.
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <a href="tel:1300467875" className="flex items-center justify-center gap-2 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold">
               <Phone className="w-3 h-3" /> HostPlus
             </a>
@@ -130,6 +130,18 @@ const ClaimsAppPage = () => {
               <Phone className="w-3 h-3" /> WorkCover QLD
             </a>
           </div>
+          <PaywallGate requiredTier="starter" featureName="Oracle Assisted Calling">
+            <button
+              onClick={() => navigate(user ? "/claims-assistant" : "/sign-in")}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground text-xs font-bold shadow-lg"
+            >
+              <PhoneCall className="w-4 h-4" /> Have Oracle Call For You
+              <span className="ml-1 px-1.5 py-0.5 rounded bg-background/20 text-[10px]">AU $0.45/min</span>
+            </button>
+            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+              Oracle dials, navigates the IVR, and patches you through. Billed at Twilio cost + 50% service fee.
+            </p>
+          </PaywallGate>
         </div>
       </section>
 
