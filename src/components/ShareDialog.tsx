@@ -78,7 +78,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const [copied, setCopied] = useState(false);
 
   // Always share the public production domain — never the lovable preview/editor URL.
-  const PUBLIC_ORIGIN = "https://golden-vault-builder.lovable.app";
+  const PUBLIC_ORIGIN = "https://oracle-lunar.online";
   const rawUrl = url || imageUrl || (typeof window !== "undefined" ? window.location.href : "");
   const shareUrl = (() => {
     try {
