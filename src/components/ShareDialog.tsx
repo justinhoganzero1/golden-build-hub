@@ -39,24 +39,37 @@ const robustCopy = async (text: string): Promise<boolean> => {
   }
 };
 
-// Open a URL reliably — try window.open, fallback to top-level navigation via anchor click
-const robustOpen = (href: string): boolean => {
-  try {
-    const w = window.open(href, "_blank", "noopener,noreferrer");
-    if (w) return true;
-  } catch {}
+// Open a URL reliably across web, in-app webviews, and Capacitor native.
+// Strategy: anchor-click first (preserves user-gesture, avoids popup blockers),
+// then Capacitor Browser plugin if present, then window.open as last resort.
+const robustOpen = async (href: string): Promise<boolean> => {
+  // 1. Anchor click — most reliable for user-gesture-initiated opens (WhatsApp, FB, etc.)
   try {
     const a = document.createElement("a");
     a.href = href;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    setTimeout(() => { try { document.body.removeChild(a); } catch {} }, 100);
     return true;
-  } catch {
-    return false;
-  }
+  } catch {}
+  // 2. Capacitor native Browser (when running as installed app)
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: href });
+      return true;
+    }
+  } catch {}
+  // 3. Last resort
+  try {
+    const w = window.open(href, "_blank", "noopener,noreferrer");
+    if (w) return true;
+  } catch {}
+  return false;
 };
 
 const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: ShareDialogProps) => {
