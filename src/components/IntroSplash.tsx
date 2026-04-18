@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
 import solaceBanner from "@/assets/solace-banner.jpg";
+import { useSiteContent } from "@/hooks/useSiteContent";
 
 interface IntroSplashProps {
   onComplete: () => void;
