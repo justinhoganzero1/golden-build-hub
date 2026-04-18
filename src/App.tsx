@@ -80,6 +80,25 @@ const loaders = {
   "/ai-therapist-free": () => import("./pages/SeoLandingPage"),
   "/ai-tutor-free": () => import("./pages/SeoLandingPage"),
   "/free-ai-voice-chat": () => import("./pages/SeoLandingPage"),
+  "/ai-app-builder": () => import("./pages/SeoLandingPage"),
+  "/ai-image-generator-free": () => import("./pages/SeoLandingPage"),
+  "/ai-video-generator": () => import("./pages/SeoLandingPage"),
+  "/ai-music-generator": () => import("./pages/SeoLandingPage"),
+  "/ai-coder": () => import("./pages/SeoLandingPage"),
+  "/ai-3d-app-builder": () => import("./pages/SeoLandingPage"),
+  "/ai-name-generator": () => import("./pages/SeoLandingPage"),
+  "/ai-tagline-generator": () => import("./pages/SeoLandingPage"),
+  "/ai-business-idea-generator": () => import("./pages/SeoLandingPage"),
+  "/ai-horoscope-free": () => import("./pages/SeoLandingPage"),
+  "/ai-logo-ideas": () => import("./pages/SeoLandingPage"),
+  "/ai-companion-app": () => import("./pages/SeoLandingPage"),
+  "/replika-vs-solace": () => import("./pages/SeoLandingPage"),
+  "/ai-life-coach-free": () => import("./pages/SeoLandingPage"),
+  "/ai-elderly-care": () => import("./pages/SeoLandingPage"),
+  "/ai-crisis-support": () => import("./pages/SeoLandingPage"),
+  "/ai-photo-editor": () => import("./pages/SeoLandingPage"),
+  "/free-seo-tools": () => import("./pages/SeoLandingPage"),
+  "/ai-email-writer": () => import("./pages/SeoLandingPage"),
   "/store/:accountId": () => import("./pages/StorefrontPage"),
 } as const;
 
@@ -241,6 +260,25 @@ const App = () => (
                   <Route path="/ai-therapist-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-tutor-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-ai-voice-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-app-builder" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-image-generator-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-video-generator" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-music-generator" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-coder" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-3d-app-builder" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-name-generator" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-tagline-generator" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-business-idea-generator" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-horoscope-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-logo-ideas" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-companion-app" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/replika-vs-solace" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-life-coach-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-elderly-care" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-crisis-support" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-photo-editor" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/free-seo-tools" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-email-writer" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps" element={<ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps/:slug" element={<ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary>} />

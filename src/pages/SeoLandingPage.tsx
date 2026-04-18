@@ -412,7 +412,7 @@ export default function SeoLandingPage() {
             {variant.h1}
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{variant.tagline}</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Button size="lg" onClick={() => navigate("/ai-companion")} className="text-base">
               <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
             </Button>
@@ -420,6 +420,12 @@ export default function SeoLandingPage() {
               Install the App
             </Button>
           </div>
+          <RealSocialProof />
+        </section>
+
+        {/* Lead magnet — instant free value, no signup */}
+        <section className="container mx-auto px-4 pb-8 max-w-2xl">
+          <LeadMagnetWidget inline />
         </section>
 
         {/* Features */}
