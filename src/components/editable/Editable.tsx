@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { createElement, ReactNode } from "react";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 /**
@@ -10,18 +10,18 @@ export const EditableText = ({
   page,
   slot,
   fallback,
-  as: Tag = "span",
+  as = "span",
   className,
 }: {
   page: string;
   slot: string;
   fallback: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: string;
   className?: string;
 }) => {
   const { get } = useSiteContent();
   const value = get(page, slot, fallback);
-  return <Tag className={className}>{value as ReactNode}</Tag>;
+  return createElement(as, { className }, value as ReactNode);
 };
 
 export const EditableImage = ({
