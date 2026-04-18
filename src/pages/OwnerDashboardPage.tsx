@@ -19,14 +19,14 @@ import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
+import AdvertiserInquiriesPanel from "@/components/admin/AdvertiserInquiriesPanel";
 
 // Admin access is controlled via user_roles table (RBAC)
 
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
   // Web Crawler state (admin growth engine)
   const [crawlerCampaign, setCrawlerCampaign] = useState<"press" | "partnership" | "directory" | "investor" | "backlink">("press");
   const [crawlerNiche, setCrawlerNiche] = useState("AI mental health super app");
@@ -371,6 +371,7 @@ const OwnerDashboardPage = () => {
     { key: "vault", label: "Vault", icon: <Lock className="w-4 h-4" /> },
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
+    { key: "advertisers", label: "Advertisers", icon: <Megaphone className="w-4 h-4" /> },
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
@@ -1322,7 +1323,7 @@ const OwnerDashboardPage = () => {
           description={`Check out this ${libShareItem?.media_type || "media"} from Solace!`}
         />
       </div>
-      <MasterOracleLauncher />
+      
     </div>
   );
 };

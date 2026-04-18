@@ -69,7 +69,7 @@ const AdvertisePage = () => {
       <SEO
         title="Advertise on SOLACE — Reach engaged AI super-app users"
         description="Promote your brand on SOLACE. Sponsored tiles, banners, newsletter & in-app promos to a high-intent AI audience."
-        canonical="/advertise"
+        path="/advertise"
       />
       <div className="max-w-3xl mx-auto px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
