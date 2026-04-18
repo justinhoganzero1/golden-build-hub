@@ -39,24 +39,37 @@ const robustCopy = async (text: string): Promise<boolean> => {
   }
 };
 
-// Open a URL reliably — try window.open, fallback to top-level navigation via anchor click
-const robustOpen = (href: string): boolean => {
-  try {
-    const w = window.open(href, "_blank", "noopener,noreferrer");
-    if (w) return true;
-  } catch {}
+// Open a URL reliably across web, in-app webviews, and Capacitor native.
+// Strategy: anchor-click first (preserves user-gesture, avoids popup blockers),
+// then Capacitor Browser plugin if present, then window.open as last resort.
+const robustOpen = async (href: string): Promise<boolean> => {
+  // 1. Anchor click — most reliable for user-gesture-initiated opens (WhatsApp, FB, etc.)
   try {
     const a = document.createElement("a");
     a.href = href;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    setTimeout(() => { try { document.body.removeChild(a); } catch {} }, 100);
     return true;
-  } catch {
-    return false;
-  }
+  } catch {}
+  // 2. Capacitor native Browser (when running as installed app)
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: href });
+      return true;
+    }
+  } catch {}
+  // 3. Last resort
+  try {
+    const w = window.open(href, "_blank", "noopener,noreferrer");
+    if (w) return true;
+  } catch {}
+  return false;
 };
 
 const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: ShareDialogProps) => {
@@ -78,43 +91,35 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     }
   };
 
-  const shareViaEmail = () => {
+  const shareViaEmail = async () => {
     if (!email.trim()) { toast.error("Enter an email address"); return; }
     const subject = encodeURIComponent(`Check this out: ${title}`);
     const body = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
-    const ok = robustOpen(`mailto:${email.trim()}?subject=${subject}&body=${body}`);
-    if (ok) {
-      toast.success("Opening your email app…");
-      setEmail("");
-    } else {
-      toast.error("Couldn't open your email app.");
-    }
+    const ok = await robustOpen(`mailto:${email.trim()}?subject=${subject}&body=${body}`);
+    if (ok) { toast.success("Opening your email app…"); setEmail(""); }
+    else toast.error("Couldn't open your email app.");
   };
 
-  const shareViaSMS = () => {
+  const shareViaSMS = async () => {
     if (!phone.trim()) { toast.error("Enter a phone number"); return; }
     const body = encodeURIComponent(`${shareText} ${shareUrl}`);
-    // iOS uses sms:NUMBER&body= — Android uses sms:NUMBER?body= — use ? which works on both modern OSes
-    const ok = robustOpen(`sms:${phone.trim()}?body=${body}`);
-    if (ok) {
-      toast.success("Opening your messaging app…");
-      setPhone("");
-    } else {
-      toast.error("Couldn't open your messaging app.");
-    }
+    const ok = await robustOpen(`sms:${phone.trim()}?body=${body}`);
+    if (ok) { toast.success("Opening your messaging app…"); setPhone(""); }
+    else toast.error("Couldn't open your messaging app.");
   };
 
   const shareWhatsApp = () => {
-    robustOpen(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`);
+    void robustOpen(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`);
+    toast.success("Opening WhatsApp…");
   };
   const shareFacebook = () => {
-    robustOpen(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`);
+    void robustOpen(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`);
   };
   const shareTwitter = () => {
-    robustOpen(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`);
+    void robustOpen(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`);
   };
   const shareTelegram = () => {
-    robustOpen(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+    void robustOpen(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
   };
 
   const nativeShare = async () => {
