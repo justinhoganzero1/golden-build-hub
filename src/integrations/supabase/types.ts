@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertiser_inquiries: {
+        Row: {
+          ad_type: string | null
+          ai_notes: string | null
+          budget: string | null
+          company: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          message: string
+          phone: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          ad_type?: string | null
+          ai_notes?: string | null
+          budget?: string | null
+          company: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          ad_type?: string | null
+          ai_notes?: string | null
+          budget?: string | null
+          company?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           category: string | null
