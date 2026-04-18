@@ -33,39 +33,10 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
 
   const run = async () => {
     if (!prompt.trim() || loading) return;
-    setLoading(true);
-    setResult(null);
-    setShowSaveCTA(false);
-    try {
-      const r = await fetch(FN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ tool, prompt: prompt.trim() }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Failed");
-      setResult(d.result);
-      // Track non-blocking
-      supabase.from("lead_magnet_uses").insert({
-        tool,
-        prompt: prompt.trim().slice(0, 200),
-        result_preview: (d.result || "").slice(0, 200),
-        visitor_id: localStorage.getItem("solace_visitor_id") || crypto.randomUUID(),
-      }).then(() => {
-        if (!localStorage.getItem("solace_visitor_id")) {
-          localStorage.setItem("solace_visitor_id", crypto.randomUUID());
-        }
-      });
-      // Show save CTA after 800ms — soft conversion prompt, not blocking
-      setTimeout(() => setShowSaveCTA(true), 800);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setLoading(false);
-    }
+    // Fort Knox: signup required to use ANY AI tool. No anonymous calls.
+    toast.info("Create your free account to use this tool — 30 days Tier 3 unlocked instantly 🎉");
+    navigate(`/sign-in?redirect=${encodeURIComponent("/dashboard")}`);
+    return;
   };
 
   const copy = () => {
@@ -81,7 +52,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h3 className="font-bold text-foreground">Free AI Tool — No Signup</h3>
+          <h3 className="font-bold text-foreground">Free AI Tools — Sign Up to Try</h3>
         </div>
         {onClose && (
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
@@ -120,7 +91,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
         disabled={loading || !prompt.trim()}
         className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <>Generate Free <ArrowRight className="w-4 h-4" /></>}
+        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <>Sign up free → Generate <ArrowRight className="w-4 h-4" /></>}
       </button>
 
       {result && (
