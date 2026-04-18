@@ -39,8 +39,11 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
         <Volume2 className="w-6 h-6" />
       </button>
 
-      {/* Tagline at bottom */}
-      <div className="relative z-10 pb-8 animate-slide-up">
+      {/* Tagline + free-trial banner at bottom */}
+      <div className="relative z-10 pb-8 animate-slide-up flex flex-col items-center gap-3 px-4">
+        <div className="px-4 py-2 rounded-full bg-gradient-to-r from-primary/90 to-amber-500/90 text-primary-foreground text-sm font-bold shadow-[0_0_25px_hsl(var(--primary)/0.5)] border border-primary/40">
+          🎁 Sign up free — 30 days of full access, no card required
+        </div>
         <p className="text-2xl md:text-3xl font-bold drop-shadow-lg" style={{ color: 'white' }}>
           Solace, your AI companion to do everything!
         </p>
