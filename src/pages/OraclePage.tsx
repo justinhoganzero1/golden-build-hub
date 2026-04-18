@@ -145,8 +145,8 @@ const OraclePage = () => {
       finalTranscriptRef.current = "";
       if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     } else {
-      // Block recognition for ~1.5s after speech ends to avoid catching trailing speaker audio.
-      echoCooldownUntilRef.current = Date.now() + 1500;
+      // Block recognition for ~2.5s after speech ends to avoid catching trailing speaker audio / echo.
+      echoCooldownUntilRef.current = Date.now() + 2500;
       if (pausedForSpeechRef.current) {
         pausedForSpeechRef.current = false;
         // Recognizer's onend handler will auto-restart it.
