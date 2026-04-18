@@ -217,23 +217,12 @@ const AIStudioPage = () => {
   };
 
   const selectForStage = (avatar: AvatarConfig) => {
-    if (avatar.locked) {
-      toast("Unlock " + avatar.name + " for $1", {
-        description: "Upgrade or pay $1 to add this AI friend.",
-        action: { label: "View Plans", onClick: () => navigate("/subscribe") },
-      });
-      return;
-    }
     setSelectedAvatar(avatar);
   };
 
   const toggleActive = (id: string) => {
     const av = avatars.find(a => a.id === id);
     if (!av) return;
-    if (av.locked) {
-      toast("Unlock for $1", { action: { label: "Subscribe", onClick: () => navigate("/subscribe") } });
-      return;
-    }
     setAvatars(prev => prev.map(a => a.id === id ? { ...a, active: !a.active } : a));
     toast.success(av.active ? `${av.name} removed from chat` : `${av.name} added to chat`);
   };

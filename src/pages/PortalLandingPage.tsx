@@ -75,7 +75,7 @@ const FEATURES = [
   { icon: ShoppingBag, title: "POS Learn", desc: "16-lesson curriculum to master point-of-sale and retail tech.", to: "/pos-learn" },
   { icon: Wand2, title: "App Builder", desc: "Conversational generator — describe an app, export a working PWA.", to: "/app-builder" },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
-  { icon: Smartphone, title: "App Wrapper", desc: "Turn any website into a Play Store-ready Android app — paste a URL, get an APK package.", to: "/web-wrapper" },
+  { icon: Smartphone, title: "App Wrapper", desc: "Wrap any app ready for the Play Store — paste a URL, get a signed APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
@@ -300,8 +300,8 @@ const PortalLandingPage = () => {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Turn any website into a Play Store-ready Android app. Paste a URL, name your app, and download
-                a wrapper package you can sign and publish — all from the SOLACE portal.
+                Wrap any app ready for the Play Store. Paste a URL, name your app, and download
+                a signed wrapper package you can publish — all from the SOLACE portal.
               </p>
               <Button
                 size="lg"
