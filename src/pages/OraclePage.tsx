@@ -265,15 +265,24 @@ const OraclePage = () => {
   // Premium voice requires any paid subscription
   const { tier: subTier } = useSubscription();
 
-  // Speech-therapist coach — rewrites raw text into prosody-optimized speech
-  // (proper punctuation, breath pauses, tone, pace, exclamation/question lift).
-  // Soft-fails to the original text so TTS never breaks.
-  const coachSpeech = useCallback(async (raw: string, mood = "neutral"): Promise<string> => {
+  // Track the most recent user message so the speech therapist can mirror tone.
+  const lastUserMessageRef = useRef<string>("");
+
+  // Speech-therapist coach — runs the full 20-layer human voice stack
+  // (emotional intelligence, human quirks, prosody/melody, pronunciation cleanup,
+  // self-listen QA). Soft-fails to the original text so TTS never breaks.
+  const coachSpeech = useCallback(async (raw: string, mood = "auto"): Promise<string> => {
     try {
       const resp = await fetch(SPEECH_THERAPIST_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ text: raw, mood }),
+        body: JSON.stringify({
+          text: raw,
+          mood,
+          persona: "oracle",
+          userContext: lastUserMessageRef.current || "",
+          qa: true,
+        }),
       });
       if (!resp.ok) return raw;
       const data = await resp.json().catch(() => null);
@@ -291,6 +300,8 @@ const OraclePage = () => {
       const coached = await coachSpeech(text);
       const paced = coached.replace(/\s{3,}/g, "  ").trim();
       if (!paced) return false;
+      // Detect SSML so we can switch to the multilingual model that respects it
+      const hasSSML = /<(break|emphasis|prosody|lang)\b/i.test(paced);
 
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
       const masterVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
