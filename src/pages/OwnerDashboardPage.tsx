@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -252,7 +253,7 @@ const OwnerDashboardPage = () => {
     setChangingPassword(false);
   };
 
-  if (!adminChecked || (adminChecked && !isAdmin)) {
+  if (loading || adminLoading || !isAdmin) {
     return null;
   }
 
