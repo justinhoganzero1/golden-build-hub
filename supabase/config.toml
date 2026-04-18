@@ -2,3 +2,18 @@ project_id = "tpkpfkcnqdyrzpqdoqnp"
 
 [functions.portal-tutor]
 verify_jwt = false
+
+# Twilio voice webhooks — must be public (Twilio doesn't send a JWT).
+[functions.oracle-call-inbound]
+verify_jwt = false
+
+[functions.oracle-call-gather]
+verify_jwt = false
+
+# /oracle-call-reply and /oracle-call-outbound have a public ?mode=twiml branch
+# but also handle authenticated user requests; they validate JWTs in code.
+[functions.oracle-call-reply]
+verify_jwt = false
+
+[functions.oracle-call-outbound]
+verify_jwt = false

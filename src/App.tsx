@@ -9,6 +9,7 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
+import CallControlBanner from "@/components/CallControlBanner";
 import PreviewModeBanner from "@/components/PreviewModeBanner";
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
@@ -64,6 +65,7 @@ const loaders = {
   "/creators": () => import("./pages/CreatorsPage"),
   "/sign-in": () => import("./components/SignInPage"),
   "/web-wrapper": () => import("./pages/WebWrapperPage"),
+  "/assistant-phone": () => import("./pages/AssistantPhonePage"),
 } as const;
 
 registerRoutes(loaders);
@@ -116,6 +118,7 @@ const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const WebWrapperPage = lazy(loaders["/web-wrapper"]);
+const AssistantPhonePage = lazy(loaders["/assistant-phone"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -146,6 +149,7 @@ const App = () => (
               <OfflineBanner />
               <PreviewModeBanner />
               <MasterMuteButton />
+              <CallControlBanner />
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
@@ -198,6 +202,7 @@ const App = () => (
                   <Route path="/creators" element={<ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary>} />
+                  <Route path="/assistant-phone" element={<ErrorBoundary pageName="Assistant Phone"><AssistantPhonePage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

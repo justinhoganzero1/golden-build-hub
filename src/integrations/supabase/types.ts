@@ -59,6 +59,60 @@ export type Database = {
         }
         Relationships: []
       }
+      call_sessions: {
+        Row: {
+          caller_name: string | null
+          caller_number: string | null
+          created_at: string
+          direction: string
+          ended_at: string | null
+          hold_started_at: string | null
+          id: string
+          intent: string | null
+          last_caller_message: string | null
+          pending_user_reply: string | null
+          status: string
+          transcript: Json
+          twilio_call_sid: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caller_name?: string | null
+          caller_number?: string | null
+          created_at?: string
+          direction: string
+          ended_at?: string | null
+          hold_started_at?: string | null
+          id?: string
+          intent?: string | null
+          last_caller_message?: string | null
+          pending_user_reply?: string | null
+          status?: string
+          transcript?: Json
+          twilio_call_sid?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          caller_name?: string | null
+          caller_number?: string | null
+          created_at?: string
+          direction?: string
+          ended_at?: string | null
+          hold_started_at?: string | null
+          id?: string
+          intent?: string | null
+          last_caller_message?: string | null
+          pending_user_reply?: string | null
+          status?: string
+          transcript?: Json
+          twilio_call_sid?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       creator_comments: {
         Row: {
           ai_moderation_notes: string | null
@@ -513,6 +567,48 @@ export type Database = {
           id?: string
           last_promo_shown_at?: string | null
           promo_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_assistant_settings: {
+        Row: {
+          call_answering_enabled: boolean
+          created_at: string
+          greeting: string
+          hold_message: string
+          id: string
+          outbound_calls_enabled: boolean
+          personal_phone: string | null
+          reply_channel: string
+          twilio_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          call_answering_enabled?: boolean
+          created_at?: string
+          greeting?: string
+          hold_message?: string
+          id?: string
+          outbound_calls_enabled?: boolean
+          personal_phone?: string | null
+          reply_channel?: string
+          twilio_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          call_answering_enabled?: boolean
+          created_at?: string
+          greeting?: string
+          hold_message?: string
+          id?: string
+          outbound_calls_enabled?: boolean
+          personal_phone?: string | null
+          reply_channel?: string
+          twilio_number?: string | null
           updated_at?: string
           user_id?: string
         }
