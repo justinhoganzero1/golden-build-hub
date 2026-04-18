@@ -108,6 +108,9 @@ interface Scene {
   lighting_preset?: LightingPreset;
   character_action?: string;   // "walks slowly into the room, hand trembling"
   character_emotion?: string;  // "anxious, breathing fast" — affects expression
+  // Motion-video engine (per scene). Default = gemini (free, via Lovable AI).
+  video_engine?: "gemini" | "runway";
+  video_seconds?: 5 | 10;
 }
 
 interface MovieStudioProps {
@@ -450,26 +453,37 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     }
   };
 
-  // ----- Generate REAL AI video clip for a scene (Runway image-to-video) -----
+  // ----- Generate REAL AI motion video for a scene -----
+  // Engine = "gemini" (free, default) or "runway" (premium quality, requires RUNWAY_API_KEY).
+  // Length = 5 or 10 seconds per scene (set on the scene card).
   const generateSceneVideo = async (sceneId: string) => {
     const scene = scenes.find(s => s.id === sceneId);
     if (!scene?.image_url) { toast.error("Generate the scene photo first"); return; }
+    const engine = scene.video_engine || "gemini";
+    const seconds = (scene.video_seconds || 5) as 5 | 10;
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: true } : s));
+    const motionPrompt = `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim();
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/runway-image-to-video`, {
+      const path = engine === "runway" ? "runway-image-to-video" : "gemini-video";
+      const ratio = engine === "runway" ? "1280:768" : "16:9";
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
         body: JSON.stringify({
           image_url: scene.image_url,
-          prompt: `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim(),
-          duration: 10, // Runway gen3a_turbo max — we'll loop for the 20s scene
-          ratio: "1280:768",
+          prompt: motionPrompt,
+          duration: seconds,
+          ratio,
         }),
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         if (data.error === "RUNWAY_API_KEY missing") {
-          toast.error("Add a RUNWAY_API_KEY in project secrets to enable real AI video.", { duration: 6000 });
+          toast.error("Add a RUNWAY_API_KEY in project secrets to enable Runway. Switch to Gemini engine for free video.", { duration: 6000 });
+        } else if (resp.status === 402) {
+          toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
+        } else if (resp.status === 429) {
+          toast.error("Too many video requests — wait a moment and try again.");
         } else {
           toast.error(data.error || "Video generation failed");
         }
@@ -479,12 +493,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, video_url: data.video_url, generatingVideo: false } : s));
       if (user && data.video_url) saveMedia.mutate({
         media_type: "video",
-        title: `Movie clip - ${scene.caption.slice(0, 40)}`,
+        title: `Movie clip [${engine}] - ${scene.caption.slice(0, 40)}`,
         url: data.video_url,
         source_page: "movie-studio",
-        metadata: { sceneId, source: "runway" },
+        metadata: { sceneId, source: engine, seconds },
       });
-      toast.success("Real video clip generated");
+      toast.success(`${engine === "runway" ? "Runway" : "Gemini"} video clip generated (${seconds}s)`);
     } catch (e) {
       console.error(e); toast.error("Video generation failed");
       setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
@@ -1752,10 +1766,30 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           size="sm"
                           className="h-7 text-xs bg-primary text-primary-foreground hover:opacity-90"
                           disabled={!s.image_url || s.generatingVideo}
-                          title="Turn this scene's image into a real animated video clip (Runway AI)"
+                          title={`Turn this image into a real moving video clip (${s.video_engine || "gemini"} · ${s.video_seconds || 5}s)`}
                         >
                           🎬 {s.generatingVideo ? "Animating…" : s.video_url ? "Re-animate" : "Real video"}
                         </Button>
+                        <select
+                          value={s.video_engine || "gemini"}
+                          onChange={e => updateScene(s.id, { video_engine: e.target.value as "gemini" | "runway" })}
+                          className="h-7 text-[10px] rounded-md border border-border bg-background px-1"
+                          title="Video engine"
+                          disabled={s.generatingVideo}
+                        >
+                          <option value="gemini">Gemini (free)</option>
+                          <option value="runway">Runway (premium)</option>
+                        </select>
+                        <select
+                          value={s.video_seconds || 5}
+                          onChange={e => updateScene(s.id, { video_seconds: Number(e.target.value) as 5 | 10 })}
+                          className="h-7 text-[10px] rounded-md border border-border bg-background px-1"
+                          title="Clip length"
+                          disabled={s.generatingVideo}
+                        >
+                          <option value={5}>5s</option>
+                          <option value={10}>10s</option>
+                        </select>
                         <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
                           From library
                         </Button>
