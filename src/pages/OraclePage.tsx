@@ -145,8 +145,8 @@ const OraclePage = () => {
       finalTranscriptRef.current = "";
       if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     } else {
-      // Block recognition for ~1.5s after speech ends to avoid catching trailing speaker audio.
-      echoCooldownUntilRef.current = Date.now() + 1500;
+      // Block recognition for ~2.5s after speech ends to avoid catching trailing speaker audio / echo.
+      echoCooldownUntilRef.current = Date.now() + 2500;
       if (pausedForSpeechRef.current) {
         pausedForSpeechRef.current = false;
         // Recognizer's onend handler will auto-restart it.
@@ -909,15 +909,22 @@ const OraclePage = () => {
         finalTranscriptRef.current += final;
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
-          // Re-check at fire time in case speech started during the 2.5s window
+          // Re-check at fire time in case speech started during the silence window
           if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
             finalTranscriptRef.current = "";
             return;
           }
           const text = finalTranscriptRef.current.trim();
           finalTranscriptRef.current = "";
-          if (text) { setInput(""); sendMessageRef.current?.(text); }
-        }, 2500);
+          // Sensitivity guard: ignore short stray utterances (background noise, single words, "uh", "ok", etc.)
+          const wordCount = text.split(/\s+/).filter(Boolean).length;
+          if (!text || text.length < 8 || wordCount < 3) {
+            setInput("");
+            return;
+          }
+          setInput("");
+          sendMessageRef.current?.(text);
+        }, 4000);
       }
       if (interim) setInput(interim);
     };
