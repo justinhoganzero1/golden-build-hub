@@ -886,6 +886,16 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
+        {/* ADVERTISER INQUIRIES — submissions from /advertise */}
+        {tab === "advertisers" && (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <AdvertiserInquiriesPanel />
+            <div className="mt-3 text-xs text-gray-400">
+              Public form lives at <code className="text-yellow-400">/advertise</code> — share that link anywhere.
+            </div>
+          </div>
+        )}
+
         {/* ADVERTISING */}
         {tab === "advertising" && !adPlatformView && (
           <div className="space-y-4">
