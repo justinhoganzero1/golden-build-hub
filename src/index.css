@@ -319,7 +319,30 @@ All colors MUST be HSL.
   }
 }
 
-/* ── Global page centering ──
+/* ── SOLACE wordmark family ──
+   Cinematic serif (Cinzel) with wide tracking + gold glow that matches
+   the SOLACE logo wordmark. Use .solace-wordmark on any heading or text
+   that should feel like the brand mark itself. */
+@layer components {
+  .solace-wordmark {
+    font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: hsl(var(--primary));
+    text-shadow:
+      0 0 12px hsl(var(--primary) / 0.55),
+      0 0 28px hsl(var(--primary) / 0.30),
+      0 2px 4px rgba(0, 0, 0, 0.6);
+  }
+  .solace-wordmark-soft {
+    font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: hsl(var(--foreground));
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.18), 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+}
    Centers the standard inner page containers used across all pages
    (PageShell + the px-4 pt-14 pb-4 pattern) without touching every file. */
 @layer utilities {
