@@ -1247,6 +1247,43 @@ const OraclePage = () => {
       return;
     }
 
+    // ── Background IMAGE generation intent (Gemini image) ──
+    // Triggered by "make/draw/paint/generate an image/picture/photo of ..."
+    const imgMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me\s+)?(?:a|an|some))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene)\s+(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+|in\s+the\s+style\s+of\s+)?(.+)/i);
+    if (imgMatch && imgMatch[2]) {
+      const prompt = imgMatch[2].replace(/[.!?]+$/, "").trim();
+      const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ack: Message = {
+        id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎨", color: "#FFD700",
+        content: `On it — painting that for you in the background. I'll drop the finished image into your Library.`
+      };
+      setShowChat(true);
+      setMessages(prev => [...prev, userMsg, ack]);
+      if (!isMuted) speakAsAgent(ack.content, oracleName);
+      (async () => {
+        try {
+          const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ prompt }),
+          });
+          if (!r.ok) { toast.error("Image generation failed"); return; }
+          const data = await r.json();
+          const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+          if (!imgUrl) { toast.error("No image returned"); return; }
+          saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+          toast.success("Image ready in your Library");
+          const done: Message = {
+            id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🖼️", color: "#FFD700",
+            content: `Done — your new image is saved. Open the Media Library any time to grab it.`
+          };
+          setMessages(prev => [...prev, done]);
+          if (!isMuted) speakAsAgent(done.content, oracleName);
+        } catch (e) { console.error(e); toast.error("Image generation failed"); }
+      })();
+      return;
+    }
+
     // ── Background SFX generation intent (ElevenLabs) ──
     // Triggered by phrases like "make a sound effect of...", "generate sfx ..."
     const sfxMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|produce|i need|give me)(?:\s+(?:a|an|some))?\s+(?:sfx|sound\s*effect|sound)\s+(?:of\s+|for\s+|like\s+|that\s+sounds\s+like\s+)?(.+)/i);
