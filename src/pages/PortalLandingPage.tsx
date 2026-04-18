@@ -120,25 +120,25 @@ const PortalLandingPage = () => {
       {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
       <StickyInstallBar />
 
-      {/* ── Limited-time free offer bubble (top-left) ── */}
+      {/* ── Limited-time free offer bubble (top-left, round) ── */}
       <button
         type="button"
         onClick={() => navigate("/subscribe")}
-        className="fixed top-3 left-3 z-50 max-w-[14rem] md:max-w-[18rem] rounded-2xl border-2 border-yellow-400/80 bg-black/90 backdrop-blur-md px-3 py-2 text-left shadow-[0_0_25px_rgba(250,204,21,0.55)] hover:shadow-[0_0_40px_rgba(250,204,21,0.85)] transition-all animate-pulse"
+        className="fixed top-24 left-4 z-50 h-32 w-32 md:h-36 md:w-36 rounded-full border-2 border-yellow-400/80 backdrop-blur-md flex flex-col items-center justify-center text-center px-3 shadow-[0_0_25px_rgba(250,204,21,0.55)] hover:shadow-[0_0_40px_rgba(250,204,21,0.85)] transition-all animate-pulse"
         style={{
           background:
-            "linear-gradient(135deg, #000 0%, #1a1300 50%, #000 100%)",
+            "radial-gradient(circle at 30% 30%, #1a1300 0%, #000 70%)",
         }}
         aria-label="Limited time free offer"
       >
-        <div className="text-[10px] md:text-xs font-black tracking-wider text-yellow-400 leading-tight">
-          🎁 LIMITED TIME — FREE
+        <div className="text-[9px] md:text-[10px] font-black tracking-wider text-yellow-400 leading-tight">
+          🎁 FREE
         </div>
-        <div className="text-[9px] md:text-[10px] font-semibold text-yellow-200/90 leading-snug mt-0.5">
-          Download &amp; become a member totally free
+        <div className="text-[8px] md:text-[9px] font-semibold text-yellow-200/90 leading-tight mt-1">
+          Download &amp; become a member
         </div>
-        <div className="text-[10px] md:text-xs font-extrabold text-yellow-300 mt-1">
-          Only 14 days remaining ⏳
+        <div className="text-[9px] md:text-[10px] font-extrabold text-yellow-300 mt-1">
+          14 days left ⏳
         </div>
       </button>
 
