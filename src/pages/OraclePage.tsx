@@ -789,6 +789,13 @@ const OraclePage = () => {
     finalTranscriptRef.current = "";
 
     recognition.onresult = (e: any) => {
+      // Echo guard — drop anything captured while Oracle (or any agent) is speaking through the speakers,
+      // otherwise the mic picks up its own TTS and feeds it back as a "user" message.
+      if (isSpeakingRef.current || isSpeakingQueueRef.current) {
+        finalTranscriptRef.current = "";
+        if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+        return;
+      }
       let interim = "", final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript;
@@ -799,6 +806,11 @@ const OraclePage = () => {
         finalTranscriptRef.current += final;
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
+          // Re-check at fire time in case speech started during the 2.5s window
+          if (isSpeakingRef.current || isSpeakingQueueRef.current) {
+            finalTranscriptRef.current = "";
+            return;
+          }
           const text = finalTranscriptRef.current.trim();
           finalTranscriptRef.current = "";
           if (text) { setInput(""); sendMessageRef.current?.(text); }
