@@ -371,6 +371,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_magnet_uses: {
+        Row: {
+          converted_to_signup: boolean | null
+          created_at: string
+          id: string
+          prompt: string | null
+          result_preview: string | null
+          tool: string
+          visitor_id: string | null
+        }
+        Insert: {
+          converted_to_signup?: boolean | null
+          created_at?: string
+          id?: string
+          prompt?: string | null
+          result_preview?: string | null
+          tool: string
+          visitor_id?: string | null
+        }
+        Update: {
+          converted_to_signup?: boolean | null
+          created_at?: string
+          id?: string
+          prompt?: string | null
+          result_preview?: string | null
+          tool?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       oracle_chat_usage: {
         Row: {
           created_at: string
@@ -533,6 +563,45 @@ export type Database = {
           user_id?: string
           voice_config?: Json | null
           voice_style?: string | null
+        }
+        Relationships: []
+      }
+      site_edits: {
+        Row: {
+          after_text: string
+          before_text: string | null
+          change_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          page: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          after_text: string
+          before_text?: string | null
+          change_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          page: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          after_text?: string
+          before_text?: string | null
+          change_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          page?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
