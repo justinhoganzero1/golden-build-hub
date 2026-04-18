@@ -891,6 +891,24 @@ const OraclePage = () => {
     recognition.interimResults = true;
     finalTranscriptRef.current = "";
 
+    const restartWhenSafe = () => {
+      if (!alwaysListenRef.current) {
+        setIsListening(false);
+        return;
+      }
+      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
+        setTimeout(restartWhenSafe, 600);
+        return;
+      }
+      try {
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsListening(true);
+      } catch {
+        setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1200);
+      }
+    };
+
     recognition.onresult = (e: any) => {
       // Echo guard — drop anything captured while Oracle (or any agent) is speaking through the speakers,
       // otherwise the mic picks up its own TTS and feeds it back as a "user" message.
@@ -930,27 +948,30 @@ const OraclePage = () => {
     };
 
     recognition.onerror = (e: any) => {
-      if (e.error === "not-allowed") { setIsListening(false); alwaysListenRef.current = false; return; }
+      if (e.error === "not-allowed") {
+        setIsListening(false);
+        alwaysListenRef.current = false;
+        return;
+      }
+      if (e.error === "aborted") return;
     };
 
     recognition.onend = () => {
-      if (alwaysListenRef.current) {
-        setTimeout(() => {
-          if (alwaysListenRef.current) {
-            try {
-              const newSR = new SR();
-              recognitionRef.current = newSR;
-              newSR.lang = "en-US"; newSR.continuous = true; newSR.interimResults = true;
-              newSR.onresult = recognition.onresult; newSR.onerror = recognition.onerror; newSR.onend = recognition.onend;
-              newSR.start();
-            } catch { setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 2000); }
-          }
-        }, 300);
-      } else { setIsListening(false); }
+      if (!alwaysListenRef.current) {
+        setIsListening(false);
+        return;
+      }
+      setIsListening(false);
+      restartWhenSafe();
     };
 
-    try { recognition.start(); setIsListening(true); alwaysListenRef.current = true; }
-    catch { setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1000); }
+    alwaysListenRef.current = true;
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1000);
+    }
   }, []);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
