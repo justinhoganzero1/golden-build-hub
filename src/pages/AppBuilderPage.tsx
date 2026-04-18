@@ -21,7 +21,7 @@ const AppBuilderPage = () => {
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm your Master App Builder agent. I can take you all the way from idea → built app → Play Store → paid customers.\n\nJust tell me what you want and I'll handle:\n• Building the app (HTML/JS, fully working)\n• Adding Stripe paywalls if it's a paid app\n• Wrapping it for Google Play (APK/AAB)\n• Setting up the store listing checklist\n\nTry: \"Build me a paid meditation app for $4.99/month\" or \"Make a free portfolio site I can publish to Play Store\"." }
+    { role: "assistant", content: "Hi! I'm your **Master App Builder v2** — I ship production-grade super-apps in one shot.\n\nEvery app I build comes with:\n• 📱 PWA install (works offline, add-to-home-screen)\n• 💳 Stripe paywalls + tiered pricing (if paid)\n• 🤖 Built-in AI chat bubble\n• 📊 Analytics + SEO + JSON-LD schema\n• 🚀 Share-to-X / Instagram / WhatsApp\n• 🎨 Glassmorphism dark theme, 60fps animations\n• ▶️ One-click wrap → Google Play Store\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or \"Make a free recipe finder PWA.\"" }
   ]);
   const [input, setInput] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
