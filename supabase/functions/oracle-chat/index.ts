@@ -87,6 +87,32 @@ serve(async (req) => {
       }
     }
 
+    // 🛡️ JAILBREAK GUARD — 3 strikes then auto-delete account
+    const isOwnerEmail = userEmail?.toLowerCase() === ADMIN_EMAIL;
+    const lastUserMsg = latestUserMessage(messages || []);
+    const guard = await checkJailbreak({
+      userId,
+      userEmail,
+      isOwner: isOwnerEmail,
+      message: lastUserMsg,
+    });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: guard.message } }],
+          security: {
+            warning_number: guard.warningNumber,
+            account_deleted: guard.deleted,
+            detected: guard.detectedPhrase,
+          },
+        }),
+        {
+          status: guard.deleted ? 410 : 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const name = oracleName || "Oracle";
     const memoriesBlock = userMemories || "";
     const showAds = adContext?.showAds ?? true;
