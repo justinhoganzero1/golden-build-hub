@@ -70,6 +70,11 @@ const loaders = {
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
+  "/ai-chat-companion": () => import("./pages/SeoLandingPage"),
+  "/ai-friend": () => import("./pages/SeoLandingPage"),
+  "/free-ai-chat": () => import("./pages/SeoLandingPage"),
+  "/ai-girlfriend": () => import("./pages/SeoLandingPage"),
+  "/ai-boyfriend": () => import("./pages/SeoLandingPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -127,6 +132,7 @@ const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
+const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -216,6 +222,11 @@ const App = () => (
                   <Route path="/personal-vault" element={<ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary>} />
                   <Route path="/claims-app" element={<ErrorBoundary pageName="SOLACE Claims App"><ClaimsAppPage /></ErrorBoundary>} />
                   <Route path="/movie-studio-pro" element={<ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary>} />
+                  <Route path="/ai-chat-companion" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-friend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/free-ai-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-girlfriend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-boyfriend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
