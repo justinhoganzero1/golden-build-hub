@@ -15,6 +15,7 @@ import solaceBanner from "@/assets/solace-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import PartyBanner from "@/components/PartyBanner";
+import WelcomeModal from "@/components/WelcomeModal";
 import { toast } from "sonner";
 
 interface AppTile {
@@ -122,6 +123,7 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <WelcomeModal />
       {/* Banner */}
       <div className="w-full overflow-hidden">
         <img src={solaceBanner} alt="Solace Banner" className="w-full h-40 object-cover" />
