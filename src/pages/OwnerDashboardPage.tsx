@@ -23,7 +23,14 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
+  // Web Crawler state (admin growth engine)
+  const [crawlerCampaign, setCrawlerCampaign] = useState<"press" | "partnership" | "directory" | "investor" | "backlink">("press");
+  const [crawlerNiche, setCrawlerNiche] = useState("AI mental health super app");
+  const [crawlerLimit, setCrawlerLimit] = useState(8);
+  const [crawlerLogToLeads, setCrawlerLogToLeads] = useState(true);
+  const [crawlerBusy, setCrawlerBusy] = useState(false);
+  const [crawlerResults, setCrawlerResults] = useState<Array<{ url: string; title?: string; description?: string; contact_email?: string | null; outreach_subject?: string; outreach_body?: string; category?: string }>>([]);
   // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
   const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [builderInput, setBuilderInput] = useState("");
@@ -147,6 +154,19 @@ const OwnerDashboardPage = () => {
       if (data) setSuggestions(data);
     })();
   }, []);
+
+  // Load concierge + crawler leads for the Leads tab
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      const { data } = await supabase
+        .from("inquiry_leads")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (data) setLeads(data);
+    })();
+  }, [isAdmin]);
 
   // Load install analytics events for the owner dashboard
   useEffect(() => {
@@ -303,6 +323,8 @@ const OwnerDashboardPage = () => {
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "leads", label: "Leads", icon: <Mail className="w-4 h-4" /> },
+    { key: "crawler", label: "Web Crawler", icon: <Search className="w-4 h-4" /> },
     { key: "builder", label: "AI Builder", icon: <Zap className="w-4 h-4" /> },
     { key: "library", label: "Users Library", icon: <Camera className="w-4 h-4" /> },
     { key: "suggestions", label: "Ideas", icon: <Sparkles className="w-4 h-4" /> },
@@ -313,6 +335,34 @@ const OwnerDashboardPage = () => {
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
+
+  const runCrawler = async () => {
+    if (crawlerBusy) return;
+    setCrawlerBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("web-crawler-outreach", {
+        body: {
+          action: "discover",
+          campaign: crawlerCampaign,
+          niche: crawlerNiche,
+          limit: crawlerLimit,
+          logToLeads: crawlerLogToLeads,
+        },
+      });
+      if (error) throw error;
+      const list = (data as { prospects?: typeof crawlerResults })?.prospects || [];
+      setCrawlerResults(list);
+      toast.success(`Found ${list.length} prospects${crawlerLogToLeads ? " — logged to Leads" : ""}`);
+      if (crawlerLogToLeads) {
+        const { data: l } = await supabase.from("inquiry_leads").select("*").order("created_at", { ascending: false }).limit(200);
+        if (l) setLeads(l);
+      }
+    } catch (err) {
+      toast.error("Crawler failed: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setCrawlerBusy(false);
+    }
+  };
 
   // Admin AI Builder — sends messages to the existing ai-tools edge function with a
   // "site architect" system prompt. Returns engineering plans + code skeletons the admin
@@ -525,6 +575,70 @@ const OwnerDashboardPage = () => {
                 </div>
               );
             })()}
+          </div>
+        )}
+
+        {/* WEB CRAWLER — Growth engine */}
+        {tab === "crawler" && (
+          <div className="space-y-3">
+            <div className="bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 rounded-xl p-4">
+              <h2 className="text-lg font-bold text-white mb-1">Web Crawler & Outreach</h2>
+              <p className="text-xs text-gray-400 mb-3">Discovers high-value sites (press, partners, directories, investors, backlink targets), extracts contact emails, and AI-drafts personalized outreach for every prospect. Optionally logs each prospect to the Leads tab.</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <select value={crawlerCampaign} onChange={(e) => setCrawlerCampaign(e.target.value as typeof crawlerCampaign)}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+                  <option value="press">Press / Tech Media</option>
+                  <option value="partnership">Partnerships / Integrations</option>
+                  <option value="directory">App Directories</option>
+                  <option value="investor">Investors / VCs</option>
+                  <option value="backlink">Backlink / Guest Posts</option>
+                </select>
+                <input type="number" min={1} max={25} value={crawlerLimit} onChange={(e) => setCrawlerLimit(Math.max(1, Math.min(25, Number(e.target.value) || 8)))}
+                  className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white" placeholder="Limit (1-25)" />
+              </div>
+              <input value={crawlerNiche} onChange={(e) => setCrawlerNiche(e.target.value)}
+                placeholder="Niche / topic (e.g. AI mental health super app)"
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-3" />
+              <label className="flex items-center gap-2 text-xs text-gray-300 mb-3 cursor-pointer">
+                <input type="checkbox" checked={crawlerLogToLeads} onChange={(e) => setCrawlerLogToLeads(e.target.checked)} />
+                Auto-log results to the Leads tab
+              </label>
+              <button onClick={runCrawler} disabled={crawlerBusy}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                {crawlerBusy ? "Crawling the web…" : "Discover Prospects & Draft Outreach"}
+              </button>
+            </div>
+            {crawlerResults.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white">{crawlerResults.length} prospects</h3>
+                  <span className="text-[10px] text-amber-400">{crawlerCampaign}</span>
+                </div>
+                {crawlerResults.map((p, i) => (
+                  <div key={i} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <a href={p.url} target="_blank" rel="noreferrer" className="text-sm font-bold text-amber-400 hover:underline truncate">{p.title || p.url}</a>
+                      {p.contact_email && <span className="text-[10px] text-green-400 font-mono shrink-0">{p.contact_email}</span>}
+                    </div>
+                    <p className="text-[10px] text-gray-500 truncate mb-2">{p.url}</p>
+                    {p.outreach_subject && (
+                      <div className="bg-black/40 border border-white/5 rounded-lg p-2 mb-2">
+                        <p className="text-[10px] text-purple-300 mb-1">Subject: <span className="text-white font-medium">{p.outreach_subject}</span></p>
+                        <p className="text-xs text-gray-300 whitespace-pre-wrap">{p.outreach_body}</p>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      {p.contact_email && (
+                        <a href={`mailto:${p.contact_email}?subject=${encodeURIComponent(p.outreach_subject || "")}&body=${encodeURIComponent(p.outreach_body || "")}`}
+                          className="flex-1 text-center px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold">Send Email</a>
+                      )}
+                      <button onClick={() => navigator.clipboard.writeText(`${p.outreach_subject}\n\n${p.outreach_body}`)}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-xs">Copy</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
