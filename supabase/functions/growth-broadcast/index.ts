@@ -104,6 +104,47 @@ async function sendGenericWebhooks(title: string, body: string, payload: Payload
   ));
 }
 
+// === Search engine discovery: pings Google, Bing, Yandex, Seznam, IndexNow ===
+async function pingSearchEngines(payload: Payload) {
+  const sitemap = `${APP_URL}/sitemap.xml`;
+  const targetUrl = payload.url || APP_URL;
+  const sitemapPings = [
+    `https://www.google.com/ping?sitemap=${encodeURIComponent(sitemap)}`,
+    `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemap)}`,
+    `https://webmaster.yandex.com/ping?sitemap=${encodeURIComponent(sitemap)}`,
+  ];
+  await Promise.allSettled(sitemapPings.map(u => fetch(u, { method: "GET" })));
+
+  // IndexNow — single key shared across Bing, Yandex, Seznam, Naver
+  const indexNowKey = Deno.env.get("INDEXNOW_KEY");
+  if (indexNowKey) {
+    const host = new URL(APP_URL).host;
+    const urlList = [targetUrl, APP_URL, `${APP_URL}/portal`, `${APP_URL}/dashboard`];
+    await Promise.allSettled([
+      fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host,
+          key: indexNowKey,
+          keyLocation: `${APP_URL}/${indexNowKey}.txt`,
+          urlList,
+        }),
+      }),
+      fetch("https://www.bing.com/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host, key: indexNowKey, keyLocation: `${APP_URL}/${indexNowKey}.txt`, urlList }),
+      }),
+      fetch("https://yandex.com/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host, key: indexNowKey, keyLocation: `${APP_URL}/${indexNowKey}.txt`, urlList }),
+      }),
+    ]);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -117,6 +158,7 @@ Deno.serve(async (req) => {
       safe("slack", () => sendSlack(title, body)),
       safe("email", () => sendEmail(title, body)),
       safe("webhooks", () => sendGenericWebhooks(title, body, payload)),
+      safe("search-engines", () => pingSearchEngines(payload)),
     ]);
 
     return new Response(JSON.stringify({ ok: true, title, body, results }), {
