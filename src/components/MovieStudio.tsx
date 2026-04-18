@@ -1649,8 +1649,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           {s.image_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
                           {s.image_url ? "Re-gen" : "Generate"}
                         </Button>
-                        <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
-                          From library
+                        <Button
+                          onClick={() => generateSceneVideo(s.id)}
+                          size="sm"
+                          className="h-7 text-xs bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
+                          disabled={!s.image_url || s.generatingVideo}
+                          title="Turn this scene's image into a real animated video clip (Runway AI)"
+                        >
+                          🎬 {s.generatingVideo ? "Animating…" : s.video_url ? "Re-animate" : "Real video"}
+                        </Button>
                         </Button>
                         <Button onClick={() => triggerUpload(s.id)} size="sm" variant="outline" className="h-7 text-xs">
                           <Upload className="w-3 h-3 mr-1" /> Upload
