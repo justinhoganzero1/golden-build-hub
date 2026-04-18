@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles, Phone,
@@ -77,7 +78,7 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { tier, loading: subLoading } = useSubscription();
   const [shareOpen, setShareOpen] = useState(false);
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const { isAdmin } = useIsAdmin();
 
   const [layout, setLayout] = useState(() => {
     try {

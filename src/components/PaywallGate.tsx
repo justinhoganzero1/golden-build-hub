@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, Sparkles, Star, Crown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface PaywallGateProps {
   children: ReactNode;
@@ -45,12 +45,9 @@ const PaywallGate = ({
 }: PaywallGateProps) => {
   const navigate = useNavigate();
   const { tier, loading } = useSubscription();
-  const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
-  // Admin bypass
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
-
-  if (loading) return <>{children}</>;
+  if (loading || adminLoading) return <>{children}</>;
   if (isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
 
   return (
@@ -97,10 +94,9 @@ export default PaywallGate;
 /** Tile-level lock badge for the dashboard grid */
 export const TileLockBadge = ({ requiredTier = "starter" }: { requiredTier?: string }) => {
   const { tier, loading } = useSubscription();
-  const { user } = useAuth();
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
-  if (loading || isAdmin || hasAccess(tier, requiredTier)) return null;
+  if (loading || adminLoading || isAdmin || hasAccess(tier, requiredTier)) return null;
 
   return (
     <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center z-10">
