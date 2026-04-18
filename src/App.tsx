@@ -120,6 +120,7 @@ const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 const AssistantPhonePage = lazy(loaders["/assistant-phone"]);
+const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
