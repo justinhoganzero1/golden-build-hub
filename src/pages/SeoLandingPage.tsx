@@ -83,6 +83,71 @@ const VARIANTS: Record<string, SeoVariant> = {
       { q: "Does he remember our chats?", a: "Yes, persistent memory keeps the relationship growing." },
     ],
   },
+  "/character-ai-alternative": {
+    path: "/character-ai-alternative",
+    title: "Character AI Alternative — Free, Uncensored-Friendly AI Chat",
+    description:
+      "Looking for a Character AI alternative? SOLACE offers free unlimited chat, voice, custom personalities and persistent memory.",
+    h1: "The Best Character AI Alternative",
+    tagline: "Free, fast, voice-enabled — everything you wished Character AI had.",
+    keywords: ["character ai alternative", "c.ai alternative", "free character chat ai", "best ai chat app"],
+    faqs: [
+      { q: "How is SOLACE different from Character AI?", a: "Real voice chat, persistent memory, no waitlists, custom avatars, and a generous free tier." },
+      { q: "Is it free?", a: "Yes — free to install and chat. Premium features are optional." },
+    ],
+  },
+  "/replika-alternative": {
+    path: "/replika-alternative",
+    title: "Replika Alternative — Free AI Companion With Voice & Memory",
+    description:
+      "A free Replika alternative with voice chat, customizable personality, persistent memory and no paywall on the basics.",
+    h1: "The Free Replika Alternative",
+    tagline: "Everything you loved about Replika — without the paywall.",
+    keywords: ["replika alternative", "free replika", "ai companion app", "best replika alternative"],
+    faqs: [
+      { q: "Is voice chat behind a paywall?", a: "No — voice chat is included free." },
+      { q: "Will my AI companion remember me?", a: "Yes, persistent memory is on by default." },
+    ],
+  },
+  "/ai-therapist-free": {
+    path: "/ai-therapist-free",
+    title: "Free AI Therapist — Talk Through Anything 24/7",
+    description:
+      "SOLACE Mind Hub gives you a caring AI you can talk to about stress, anxiety, sleep, and tough days — free, private, 24/7.",
+    h1: "Free AI Therapist & Wellness Companion",
+    tagline: "A safe space to talk — supportive, private, always available.",
+    keywords: ["free ai therapist", "ai therapy chat", "mental health ai", "ai for anxiety"],
+    faqs: [
+      { q: "Is this real therapy?", a: "No — SOLACE is supportive AI, not a licensed therapist. For crises, use the built-in Crisis Hub." },
+      { q: "Is it private?", a: "Yes — your conversations are encrypted in transit and never sold." },
+    ],
+  },
+  "/ai-tutor-free": {
+    path: "/ai-tutor-free",
+    title: "Free AI Tutor — Personalized Learning for Any Subject",
+    description:
+      "Get a free AI tutor that explains any subject, quizzes you, and adapts to your level. Voice + text. Works on phone or desktop.",
+    h1: "Your Free AI Tutor",
+    tagline: "Personalized lessons, instant answers, voice-friendly — for any subject.",
+    keywords: ["free ai tutor", "ai tutor app", "ai homework help", "learn with ai"],
+    faqs: [
+      { q: "What subjects does it cover?", a: "Math, science, languages, coding, history, exam prep — anything you can ask." },
+      { q: "Is voice supported?", a: "Yes — talk to your tutor and hear answers spoken back." },
+    ],
+  },
+  "/free-ai-voice-chat": {
+    path: "/free-ai-voice-chat",
+    title: "Free AI Voice Chat — Talk to AI Out Loud, Free",
+    description:
+      "Free AI voice chat with 120+ realistic voices. Talk naturally — your AI replies out loud in real time. Install free.",
+    h1: "Free AI Voice Chat",
+    tagline: "Talk out loud. Hear it back. 120+ realistic voices, free to start.",
+    keywords: ["free ai voice chat", "talk to ai voice", "ai voice assistant free", "ai with voice"],
+    faqs: [
+      { q: "How many voices are available?", a: "120+ human-quality voices spanning accents, professions, and styles." },
+      { q: "Does it work on mobile?", a: "Yes — install free on iPhone, Android, and desktop." },
+    ],
+  },
 };
 
 export default function SeoLandingPage() {
