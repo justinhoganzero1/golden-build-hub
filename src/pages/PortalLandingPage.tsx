@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Shield as AdminShield } from "lucide-react";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import {
@@ -47,7 +48,7 @@ const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const { isAdmin } = useIsAdmin();
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
   // Pulse the shield-shaped logo glow while the user is typing in the chat

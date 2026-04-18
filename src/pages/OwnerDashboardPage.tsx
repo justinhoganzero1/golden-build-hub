@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -118,27 +119,23 @@ const OwnerDashboardPage = () => {
   } = useAllUserMediaPaginated();
   const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
   const qc = useQueryClient();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminChecked, setAdminChecked] = useState(false);
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) { setAdminChecked(true); return; }
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-      setIsAdmin(!!data);
-      setAdminChecked(true);
-    };
-    if (!loading) checkAdmin();
-  }, [loading, user]);
-
-  useEffect(() => {
-    if (adminChecked && !isAdmin) {
+    // Only redirect once we've fully resolved auth + admin status,
+    // and only if the user is signed in but not an admin.
+    if (loading || adminLoading) return;
+    if (!user) {
+      navigate("/sign-in?redirect=/owner-dashboard", { replace: true });
+      return;
+    }
+    if (!isAdmin) {
       navigate("/dashboard", { replace: true });
     }
-  }, [adminChecked, isAdmin, navigate]);
+  }, [loading, adminLoading, isAdmin, user, navigate]);
 
   useEffect(() => {
     (async () => {
@@ -256,7 +253,7 @@ const OwnerDashboardPage = () => {
     setChangingPassword(false);
   };
 
-  if (!adminChecked || (adminChecked && !isAdmin)) {
+  if (loading || adminLoading || !isAdmin) {
     return null;
   }
 
