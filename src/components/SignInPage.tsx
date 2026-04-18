@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ const SignInPage = () => {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/dashboard");
+        navigate(redirectPath);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -41,14 +43,14 @@ const SignInPage = () => {
 
   const handleGoogleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
     if (result?.error) toast.error(String(result.error));
   };
 
   const handleAppleSignIn = async () => {
     const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
     if (result?.error) toast.error(String(result.error));
   };

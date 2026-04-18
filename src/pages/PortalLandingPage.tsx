@@ -599,7 +599,7 @@ const PortalLandingPage = () => {
             <a href="/about" className="hover:text-primary">About</a>
             <button
               type="button"
-              onClick={() => navigate(isAdmin ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              onClick={() => navigate(user ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
               className="inline-flex items-center gap-1 hover:text-primary transition-colors"
               aria-label="Owner access"
               title="Owner access"
