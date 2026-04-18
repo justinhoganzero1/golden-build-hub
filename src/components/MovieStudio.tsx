@@ -74,9 +74,13 @@ interface Scene {
   caption: string;
   photo_prompt: string;
   motion: Motion;
-  duration_sec: number; // always 6
+  duration_sec: number; // 20s default cinematic block
   image_url?: string;
   generating?: boolean;
+  // Real AI video (Runway image-to-video). When present, MP4 plays during preview
+  // and is composited into export instead of the canvas Ken Burns.
+  video_url?: string;
+  generatingVideo?: boolean;
   // Audio
   narration?: string;
   speaker?: string;
