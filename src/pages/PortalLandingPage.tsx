@@ -164,7 +164,18 @@ const PortalLandingPage = () => {
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
           <div className="relative flex justify-center mb-6">
-            {/* Rotating rainbow AI glow under logo */}
+            {/* Bright neon-blue base glow (bottom layer) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-44px] h-36 w-[22rem] md:w-[28rem] rounded-full blur-3xl animate-pulse"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, #00bfff 0%, rgba(0,191,255,0.85) 30%, rgba(30,144,255,0.4) 60%, transparent 80%)",
+                boxShadow:
+                  "0 0 80px 25px #00bfff, 0 0 160px 60px rgba(0,191,255,0.55)",
+              }}
+            />
+            {/* Rotating rainbow AI glow (middle layer) */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-28px] h-24 w-64 md:w-80 rounded-full blur-2xl opacity-90 animate-[spin_6s_linear_infinite]"
@@ -173,7 +184,7 @@ const PortalLandingPage = () => {
                   "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14ff5e, #00d4ff, #6a00ff, #ff00d4, #ff0040)",
               }}
             />
-            {/* Soft outer rainbow halo (pulsing) */}
+            {/* Soft outer rainbow halo (top layer, counter-pulse) */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-40px] h-32 w-80 md:w-96 rounded-full blur-3xl opacity-70 animate-pulse"
@@ -185,7 +196,7 @@ const PortalLandingPage = () => {
             <img
               src={solaceLogo}
               alt="SOLACE shield logo"
-              className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(255,255,255,0.45)]"
+              className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(0,191,255,0.6)]"
             />
           </div>
 
