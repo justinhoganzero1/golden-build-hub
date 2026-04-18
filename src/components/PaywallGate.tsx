@@ -97,8 +97,9 @@ export default PaywallGate;
 export const TileLockBadge = ({ requiredTier = "starter" }: { requiredTier?: string }) => {
   const { tier, loading } = useSubscription();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
 
-  if (loading || adminLoading || isAdmin || hasAccess(tier, requiredTier)) return null;
+  if (loading || adminLoading || isPreview || isAdmin || hasAccess(tier, requiredTier)) return null;
 
   return (
     <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center z-10">
