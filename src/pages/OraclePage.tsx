@@ -1342,35 +1342,7 @@ const OraclePage = () => {
       return;
     }
 
-    // ── Place an outbound phone call on the user's behalf ──
-    // Triggers: "call +14155550123 about ..." | "phone +1... and tell them ..."
-    const callMatch = isIntroTrigger ? null : text.match(/(?:call|phone|dial|ring)\s+(\+\d[\d\s\-().]{6,18})\s+(?:about|and (?:tell|say|ask)|to (?:tell|say|ask)|regarding|re)\s+(.+)/i);
-    if (callMatch) {
-      const to = callMatch[1].replace(/[\s\-().]/g, "");
-      const intent = callMatch[2].replace(/[.!?]+$/, "").trim();
-      const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
-      setShowChat(true);
-      setMessages(prev => [...prev, userMsg]);
-      try {
-        const { placeOutboundCall } = await import("@/hooks/useActiveCallSession");
-        await placeOutboundCall(to, intent);
-        const ack: Message = {
-          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "📞", color: "#FFD700",
-          content: `Calling ${to} now about: ${intent}. I'll mute them and check with you when they reply.`,
-        };
-        setMessages(prev => [...prev, ack]);
-        if (!isMuted) speakAsAgent(ack.content, oracleName);
-      } catch (e) {
-        const err = e as Error;
-        const ack: Message = {
-          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "⚠️", color: "#FFD700",
-          content: `I couldn't place that call: ${err.message}. Open Assistant Phone settings to enable outbound calling.`,
-        };
-        setMessages(prev => [...prev, ack]);
-        if (!isMuted) speakAsAgent(ack.content, oracleName);
-      }
-      return;
-    }
+    // ── Outbound phone calling is currently vaulted (Twilio disabled) ──
 
     window.speechSynthesis.cancel();
     setIsSpeaking(false);

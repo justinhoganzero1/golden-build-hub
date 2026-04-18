@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import PaywallGate from "@/components/PaywallGate";
-import AssistedCallDialog from "@/components/AssistedCallDialog";
+// Vaulted: AssistedCallDialog (Twilio) — disabled until telephony returns.
 
 // Standalone "SOLACE Claims" mini-app:
 // - Free, focused on HostPlus + WorkCover QLD claims
