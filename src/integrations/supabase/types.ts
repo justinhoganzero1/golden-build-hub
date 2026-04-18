@@ -158,6 +158,36 @@ export type Database = {
         }
         Relationships: []
       }
+      connect_accounts: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       creator_comments: {
         Row: {
           ai_moderation_notes: string | null
