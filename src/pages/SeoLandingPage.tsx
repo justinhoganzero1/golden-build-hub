@@ -3,6 +3,8 @@ import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MessageCircle, Heart, Mic, Shield, Sparkles, Check } from "lucide-react";
+import LeadMagnetWidget from "@/components/LeadMagnetWidget";
+import RealSocialProof from "@/components/RealSocialProof";
 
 interface SeoVariant {
   path: string;
