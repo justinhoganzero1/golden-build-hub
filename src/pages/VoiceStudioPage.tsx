@@ -289,18 +289,34 @@ export default function VoiceStudioPage() {
       toast.error("No voice ID available");
       return;
     }
-    localStorage.setItem("solace-oracle-voice", voiceId);
-    if (voiceSettings) {
-      localStorage.setItem(
-        "solace-oracle-voice-settings",
-        JSON.stringify({
+    const normalizedSettings = voiceSettings
+      ? {
           stability: voiceSettings.stability,
           similarity_boost: voiceSettings.similarity_boost,
           style: voiceSettings.style,
           use_speaker_boost: voiceSettings.use_speaker_boost,
           speed: voiceSettings.speed,
-        })
+          model_id: voiceSettings.model_id,
+        }
+      : null;
+
+    localStorage.setItem("solace-oracle-voice", voiceId);
+    localStorage.setItem(
+      "solace-oracle-master-voice",
+      JSON.stringify({
+        id: voiceId,
+        name: voiceName,
+        settings: normalizedSettings,
+        updated_at: new Date().toISOString(),
+      })
+    );
+    if (normalizedSettings) {
+      localStorage.setItem(
+        "solace-oracle-voice-settings",
+        JSON.stringify(normalizedSettings)
       );
+    } else {
+      localStorage.removeItem("solace-oracle-voice-settings");
     }
     toast.success(`👑 ${voiceName} is now the Oracle's master voice`);
   }

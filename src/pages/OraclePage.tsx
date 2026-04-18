@@ -298,10 +298,18 @@ const OraclePage = () => {
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
     try {
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
-      const masterVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
+      let storedMasterVoice: { id?: string; settings?: Record<string, unknown> | null } | null = null;
+      try {
+        const rawMaster = typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-master-voice") : null;
+        if (rawMaster) storedMasterVoice = JSON.parse(rawMaster);
+      } catch {}
+
+      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL");
       let masterSettings: Record<string, unknown> | null = null;
       try {
-        const raw = typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-voice-settings") : null;
+        const raw = storedMasterVoice?.settings
+          ? JSON.stringify(storedMasterVoice.settings)
+          : (typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-voice-settings") : null);
         if (raw) masterSettings = JSON.parse(raw);
       } catch {}
 
