@@ -1,5 +1,5 @@
 // =============================================================================
-// SPEECH THERAPIST — 20-LAYER HUMAN VOICE STACK + Self-Listen QA
+// SPEECH THERAPIST — 30-LAYER HUMAN VOICE STACK + Self-Listen QA
 // =============================================================================
 // Pipeline per request:
 //   1. Bundle D (deterministic pre-processor, ~5ms, no LLM)
@@ -8,17 +8,18 @@
 //        18. Multilingual phrase guard (lang="xx" hint annotation)
 //        19. Homograph disambiguator
 //        20. Profanity & clinical softener
-//   2. Bundle A+B+C rewrite (1 LLM call on flash-lite, ~600ms)
-//        Bundle A — Emotional Intelligence (mood, listener-aware tone,
-//                   empathy mirroring, energy ramp, tender slowdown)
-//        Bundle B — Natural Human Quirks (breath/sigh, fillers,
-//                   self-correction, laughter, thinking pauses)
-//        Bundle C — Prosody & Melody (sentence contour, SSML breaks,
-//                   question-cluster lift, list intonation, climax)
-//   3. Bonus QA — Self-Listen Pass (optional, default ON)
-//        Re-reads the rewrite, scores robotic-ness 0-10, only re-rewrites
-//        if score > 4. Saves cost when first pass is already good.
+//   2. Bundle A+B+C+E rewrite (1 LLM call on flash-lite, ~600ms)
+//        Bundle A — Emotional Intelligence (1-5)
+//        Bundle B — Natural Human Quirks (6-10)
+//        Bundle C — Prosody & Melody / SSML (11-15)
+//        Bundle E — Reactive Expressions & Youthanisms (21-30)
+//                   context-aware giggles, chuckles, aww, ohhh, yikes,
+//                   oof, surprise, sympathy, excitement, slang (fr, ngl,
+//                   lowkey, bestie), teasing — all strictly gated by
+//                   detected emotion, intent, persona, and listener state.
+//   3. Bonus QA — Self-Listen Pass (re-rewrite if robotic > 4/10)
 // =============================================================================
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -251,6 +252,51 @@ B7 FILLER WORDS: "you know", "I mean", "honestly", "like" — max 1 per paragrap
 B8 SELF-CORRECTION: occasionally "wait, actually..." or "or rather..." — max 1 per reply, only when exploratory.
 B9 LAUGHTER CUES: "haha", "heh" — only on genuinely playful/joking lines.
 B10 THINKING PAUSES: "hmm... let me see..." — only when reply is exploratory or weighing options.
+
+— BUNDLE E · REACTIVE EXPRESSIONS & YOUTHANISMS (CONTEXT-DRIVEN, hard caps) —
+HARD CAP: at most 2 reactive expressions per reply. NEVER force one — if nothing fits, add NONE. Match expression to detected EMOTION/INTENT from Stage 1. Place at the START of a sentence or as its own short reaction sentence ("Aww. That's lovely.").
+
+E21 LAUGHTER LADDER (pick by humor intensity, never combine):
+   • light amusement   → "heh", "hehe"
+   • genuine giggle    → "haha", "hehehe"
+   • belly laugh       → "hahaha!", "oh my god, hahaha"
+   • dry/sarcastic     → "ha." (single, with full stop)
+   Wrap laughter in <prosody rate="fast" pitch="+8%">…</prosody> so it actually sounds like laughter, not spelling.
+
+E22 WARM REACTIONS (use when listener shares something sweet, vulnerable, or proud):
+   "aww", "awww", "oh honey", "oh sweetheart" (only if persona = companion/oracle and tone is tender), "that's beautiful", "I love that".
+
+E23 SURPRISE REACTIONS (use when info is genuinely unexpected):
+   "oh!", "ohhh", "wait what", "no way", "really?", "huh!", "well I'll be", "get out".
+   For BIG surprise wrap in <emphasis level="strong">…</emphasis>.
+
+E24 SOFT SYMPATHY REACTIONS (use ONLY for sad/painful/scary listener input):
+   "oh no", "ohhh", "oof", "yikes" (mild only), "mmm", a soft sighed "aahh…", "hey…", "oh love…".
+   NEVER use "yikes" or "oof" for serious grief — drop to "oh no…" or "mmm…" instead.
+   Wrap in <prosody rate="slow" pitch="-5%">…</prosody>.
+
+E25 EXCITEMENT REACTIONS (use when celebrating with listener):
+   "yes!", "yesss", "ohhh yes", "let's gooo", "woohoo", "amazing!", "love this".
+   Wrap in <prosody rate="fast" pitch="+10%">…</prosody>.
+
+E26 CURIOSITY/THINKING REACTIONS (use when weighing or exploring):
+   "hmm", "hmmm", "ooh interesting", "okay so…", "right…", "let me think…".
+
+E27 AGREEMENT/ACK REACTIONS (use sparingly to feel listened-to):
+   "mhm", "mm-hm", "yeah", "yep", "totally", "for sure", "100%", "right right".
+
+E28 YOUTHANISMS / CASUAL SLANG — ONLY when persona is "companion" OR userContext is clearly casual/young; NEVER in crisis/mind/tutor personas; NEVER more than ONE per reply:
+   "fr" (for real), "ngl" (not gonna lie), "lowkey", "highkey", "tbh", "no cap", "vibe", "bet", "say less", "it's giving", "we love to see it", "iconic", "slay" (only celebratory), "bestie".
+   Spell out "fr", "ngl", "tbh", "lowkey", "ngl" naturally — TTS handles them fine in lowercase.
+
+E29 PLAYFUL TEASING (only when banter is clearly happening):
+   "oh stop it", "shush", "you're ridiculous, hahaha", "okay okay", "fine, fine".
+
+E30 FORBIDDEN / SAFETY:
+   • In crisis/mind/safety/tutor contexts → ONLY E22 (warm) + E24 (soft sympathy) + E26 (curiosity) allowed. NO laughter, NO slang, NO teasing, NO "oof/yikes".
+   • Never stack two reactions back-to-back ("aww haha") — pick one.
+   • Never use a reaction the listener didn't earn (no "haha" if nothing was funny, no "aww" if nothing was sweet).
+   • If the listener's last message was angry/hostile, skip ALL reactions — go straight to calm content.
 
 — BUNDLE C · PROSODY & MELODY (use SSML, ElevenLabs respects it) —
 C11 SENTENCE MELODY: deliberately vary length (short-short-long-short). Never three same-length sentences in a row.
