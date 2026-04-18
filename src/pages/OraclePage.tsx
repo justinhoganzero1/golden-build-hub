@@ -1870,6 +1870,18 @@ const OraclePage = () => {
 
       {/* Orb / Avatar area */}
       <div className={`relative flex-1 flex items-center justify-center transition-all ${showChat ? "max-h-[35%]" : ""}`}>
+        {/* Wake-word indicator: small pulsing dot on the orb when listening for "hey solace" */}
+        {isListening && (
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
+            <span
+              className={`w-2 h-2 rounded-full ${voiceChannelOpen ? "bg-emerald-400" : "bg-amber-400"}`}
+              style={{ animation: "pulse 1.4s ease-in-out infinite" }}
+            />
+            <span className="text-[10px] text-muted-foreground">
+              {voiceChannelOpen ? "Channel open" : 'Say "hey solace"'}
+            </span>
+          </div>
+        )}
         {oracleMode.mode === "orb" ? (
           <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         ) : (
