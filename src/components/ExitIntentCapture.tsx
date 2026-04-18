@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Sparkles, Gift, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
  * or after 30s of inactivity on mobile.
  * Logs captured emails to inquiry_leads with source='exit_intent'.
  */
-const ExitIntentCapture = () => {
+const ExitIntentCapture = forwardRef<HTMLDivElement, Record<string, never>>((_, ref) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -72,8 +72,9 @@ const ExitIntentCapture = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md border-primary/40 shadow-[0_0_60px_hsl(var(--primary)/0.4)]">
+    <div ref={ref}>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md border-primary/40 shadow-[0_0_60px_hsl(var(--primary)/0.4)]">
         <DialogHeader>
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 ring-2 ring-primary animate-pulse">
             <Gift className="h-7 w-7 text-primary" />
@@ -121,9 +122,12 @@ const ExitIntentCapture = () => {
             We'll never spam you. Unsubscribe anytime.
           </p>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
-};
+});
+
+ExitIntentCapture.displayName = "ExitIntentCapture";
 
 export default ExitIntentCapture;
