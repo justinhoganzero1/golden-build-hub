@@ -270,18 +270,26 @@ const OraclePage = () => {
       const paced = text.replace(/\s{3,}/g, "  ").trim();
       if (!paced) return false;
 
+      // Read the master voice the user picked in Voice Studio (falls back to Sarah)
+      const masterVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
+      let masterSettings: Record<string, unknown> | null = null;
+      try {
+        const raw = typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-voice-settings") : null;
+        if (raw) masterSettings = JSON.parse(raw);
+      } catch {}
+
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           text: paced,
-          voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah
+          voiceId: masterVoiceId,
           // SPEED: tell edge function to use Flash v2.5 + tiny MP3 + latency optimizer
           fast: true,
-          settings: {
+          settings: masterSettings ?? {
             stability: 0.4,
             similarity_boost: 0.75,
-            style: 0.0,             // no stylization = fastest
+            style: 0.0,
             use_speaker_boost: true,
             speed: 1.05,
           },
@@ -504,10 +512,11 @@ const OraclePage = () => {
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
     // first real Oracle response speaks back in <1s.
+    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
     fetch(ELEVENLABS_TTS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-      body: JSON.stringify({ text: ".", fast: true, voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+      body: JSON.stringify({ text: ".", fast: true, voiceId: prewarmVoiceId }),
     }).catch(() => {});
   }, []);
 
