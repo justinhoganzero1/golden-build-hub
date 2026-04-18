@@ -1,23 +1,29 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Sparkles, X } from "lucide-react";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 /**
- * Admin-only launcher that opens the REAL master Oracle (/oracle) in a
- * full-screen overlay iframe. This guarantees the Owner Dashboard uses the
- * exact same Oracle as the rest of the app — same voice, memory, uploads
- * (up to 1GB), navigation, avatars, and admin privileges — with zero
- * duplication of logic.
+ * Admin-only floating launcher that opens the REAL master Oracle (/oracle)
+ * full-screen, so every admin page uses the exact same Oracle (same memory,
+ * voice, 1GB uploads, navigation, avatars). Self-hides for non-admins and
+ * on the Oracle page itself to avoid duplication.
  */
 export const MasterOracleLauncher = () => {
+  const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  if (!isAdmin) return null;
+  if (pathname === "/oracle" || pathname === "/chat-oracle") return null;
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
         aria-label="Open Master Oracle"
-        className="fixed bottom-5 right-5 z-50 group flex items-center gap-2 pl-1 pr-4 py-1 rounded-full bg-gradient-to-br from-amber-500 to-primary text-primary-foreground shadow-2xl shadow-primary/40 hover:scale-105 transition-transform"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-1 pr-4 py-1 rounded-full bg-gradient-to-br from-amber-500 to-primary text-primary-foreground shadow-2xl shadow-primary/40 hover:scale-105 transition-transform"
       >
         <span className="relative">
           <img
@@ -40,7 +46,9 @@ export const MasterOracleLauncher = () => {
               <img src={MASTER_AI_AVATAR} alt="" className="w-7 h-7 rounded-full object-cover" />
               <div>
                 <div className="text-sm font-semibold">Master Oracle — Admin Mode</div>
-                <div className="text-[11px] text-muted-foreground">Full app control · Uploads up to 1GB · Voice · Memory</div>
+                <div className="text-[11px] text-muted-foreground">
+                  Full app control · Uploads up to 1GB · Voice · Memory
+                </div>
               </div>
             </div>
             <button

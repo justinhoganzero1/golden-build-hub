@@ -16,6 +16,7 @@ import { registerRoutes } from "@/lib/speedAI";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -104,6 +105,7 @@ const loaders = {
   "/free-seo-tools": () => import("./pages/SeoLandingPage"),
   "/ai-email-writer": () => import("./pages/SeoLandingPage"),
   "/store/:accountId": () => import("./pages/StorefrontPage"),
+  "/advertise": () => import("./pages/AdvertisePage"),
 } as const;
 
 registerRoutes(loaders);
@@ -167,6 +169,7 @@ const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
 const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
+const AdvertisePage = lazy(loaders["/advertise"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -198,6 +201,7 @@ const App = () => (
               <AnnouncementBanner />
               <PreviewModeBanner />
               <MasterMuteButton />
+              <MasterOracleLauncher />
               
               <Suspense fallback={<Loading />}>
                 <Routes>
@@ -291,6 +295,7 @@ const App = () => (
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps" element={<ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps/:slug" element={<RequireAuth><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/advertise" element={<ErrorBoundary pageName="Advertise"><AdvertisePage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
