@@ -130,18 +130,23 @@ const PortalLandingPage = () => {
             "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
         }}
         aria-label="Limited time free — install SOLACE"
+        style={{
+          background:
+            "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
+          fontFamily: "'Pacifico', 'Caveat', 'Comic Sans MS', cursive",
+        }}
       >
-        <div className="text-xs md:text-sm font-black tracking-wider text-yellow-300 leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-          🎁 FREE
+        <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+          🎉 FREE!
         </div>
-        <div className="text-[10px] md:text-xs font-bold text-white leading-tight mt-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-          Download &amp; become a member
+        <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          Join the party ✨
         </div>
-        <div className="text-xs md:text-sm font-extrabold text-yellow-300 mt-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-          14 days left ⏳
+        <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+          14 days! 🥳
         </div>
-        <div className="text-[9px] md:text-[10px] font-semibold text-white/90 mt-1 underline">
-          Tap to install
+        <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
+          Tap to install 🎈
         </div>
       </button>
 
