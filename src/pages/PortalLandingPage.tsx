@@ -300,8 +300,8 @@ const PortalLandingPage = () => {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Turn any website into a Play Store-ready Android app. Paste a URL, name your app, and download
-                a wrapper package you can sign and publish — all from the SOLACE portal.
+                Wrap any app ready for the Play Store. Paste a URL, name your app, and download
+                a signed wrapper package you can publish — all from the SOLACE portal.
               </p>
               <Button
                 size="lg"
