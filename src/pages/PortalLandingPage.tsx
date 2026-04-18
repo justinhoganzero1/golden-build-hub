@@ -163,6 +163,14 @@ const PortalLandingPage = () => {
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
+            <button
+              type="button"
+              onClick={() => navigate(user ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+              aria-label="Owner access"
+            >
+              <AdminShield className="h-3.5 w-3.5" /> Owner
+            </button>
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button onClick={() => navigate("/welcome")} variant="default" size="sm">
