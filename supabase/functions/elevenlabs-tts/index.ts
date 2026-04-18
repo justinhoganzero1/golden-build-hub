@@ -44,12 +44,17 @@ Deno.serve(async (req) => {
     const selectedFormat = outputFormat || (fast ? "mp3_22050_32" : "mp3_44100_128");
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
+    // Tuned for natural breath, rhythm, and intonation rises/falls.
+    //  - Lower stability  → more expressive pitch movement (rises & falls)
+    //  - Higher similarity → keeps voice identity consistent
+    //  - Moderate style    → adds emotional inflection without over-acting
+    //  - Speed ~0.92       → unhurried, lets pauses breathe
     const voice_settings = {
-      stability: settings?.stability ?? 0.78,
-      similarity_boost: settings?.similarity_boost ?? 0.92,
-      style: settings?.style ?? 0.35,
+      stability: settings?.stability ?? 0.45,
+      similarity_boost: settings?.similarity_boost ?? 0.9,
+      style: settings?.style ?? 0.55,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.78,
+      speed: settings?.speed ?? 0.92,
     };
 
     let response: Response;
