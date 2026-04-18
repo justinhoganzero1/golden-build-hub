@@ -662,6 +662,105 @@ export type Database = {
         }
         Relationships: []
       }
+      user_claims: {
+        Row: {
+          address: string | null
+          ai_draft: string | null
+          ai_research: Json | null
+          bank_account: string | null
+          body_parts: string | null
+          claim_type: string
+          created_at: string
+          date_of_birth: string | null
+          doctor_name: string | null
+          doctor_phone: string | null
+          email: string | null
+          employer: string | null
+          employment_start: string | null
+          full_name: string | null
+          hospital: string | null
+          id: string
+          income_amount: string | null
+          injury_date: string | null
+          injury_description: string | null
+          job_title: string | null
+          last_worked_date: string | null
+          member_number: string | null
+          notes: string | null
+          phone: string | null
+          provider: string
+          status: string
+          super_member_number: string | null
+          updated_at: string
+          user_id: string
+          workcover_claim_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          ai_draft?: string | null
+          ai_research?: Json | null
+          bank_account?: string | null
+          body_parts?: string | null
+          claim_type?: string
+          created_at?: string
+          date_of_birth?: string | null
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          email?: string | null
+          employer?: string | null
+          employment_start?: string | null
+          full_name?: string | null
+          hospital?: string | null
+          id?: string
+          income_amount?: string | null
+          injury_date?: string | null
+          injury_description?: string | null
+          job_title?: string | null
+          last_worked_date?: string | null
+          member_number?: string | null
+          notes?: string | null
+          phone?: string | null
+          provider?: string
+          status?: string
+          super_member_number?: string | null
+          updated_at?: string
+          user_id: string
+          workcover_claim_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          ai_draft?: string | null
+          ai_research?: Json | null
+          bank_account?: string | null
+          body_parts?: string | null
+          claim_type?: string
+          created_at?: string
+          date_of_birth?: string | null
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          email?: string | null
+          employer?: string | null
+          employment_start?: string | null
+          full_name?: string | null
+          hospital?: string | null
+          id?: string
+          income_amount?: string | null
+          injury_date?: string | null
+          injury_description?: string | null
+          job_title?: string | null
+          last_worked_date?: string | null
+          member_number?: string | null
+          notes?: string | null
+          phone?: string | null
+          provider?: string
+          status?: string
+          super_member_number?: string | null
+          updated_at?: string
+          user_id?: string
+          workcover_claim_number?: string | null
+        }
+        Relationships: []
+      }
       user_media: {
         Row: {
           created_at: string
