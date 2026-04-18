@@ -136,19 +136,22 @@ const PortalLandingPage = () => {
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {isAdmin && (
               <Button
                 onClick={() => navigate("/owner-dashboard")}
                 variant="outline"
                 size="sm"
-                className="border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+                className="border-yellow-500/70 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20 shadow-[0_0_12px_hsl(45_100%_50%/0.4)] font-semibold"
               >
-                <AdminShield className="mr-1 h-4 w-4" /> Admin
+                <AdminShield className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Admin</span>
               </Button>
             )}
             <Button onClick={() => navigate("/welcome")} variant="default" size="sm">
-              Launch App <ArrowRight className="ml-1 h-4 w-4" />
+              <span className="hidden sm:inline">Launch App</span>
+              <span className="sm:hidden">Launch</span>
+              <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>
