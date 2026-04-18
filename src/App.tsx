@@ -9,6 +9,7 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
+import CallControlBanner from "@/components/CallControlBanner";
 import PreviewModeBanner from "@/components/PreviewModeBanner";
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
@@ -64,6 +65,7 @@ const loaders = {
   "/creators": () => import("./pages/CreatorsPage"),
   "/sign-in": () => import("./components/SignInPage"),
   "/web-wrapper": () => import("./pages/WebWrapperPage"),
+  "/assistant-phone": () => import("./pages/AssistantPhonePage"),
 } as const;
 
 registerRoutes(loaders);
