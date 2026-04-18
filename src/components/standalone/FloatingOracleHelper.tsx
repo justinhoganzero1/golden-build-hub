@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { isDemoMode, DEMO_REPLY } from "@/lib/demoMode";
 
 /**
  * Floating Oracle helper button + chat panel for standalone apps.
@@ -29,6 +30,10 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
     const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
+    if (isDemoMode()) {
+      setMessages((p) => [...p, { role: "assistant", content: DEMO_REPLY }]);
+      return;
+    }
     setLoading(true);
     try {
       const resp = await fetch(ORACLE_URL, {

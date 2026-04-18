@@ -1,15 +1,24 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isDemoMode } from "@/lib/demoMode";
+import DemoGate from "@/components/DemoGate";
 
 /**
  * Fort Knox auth gate.
- * Wraps any route/page that requires a signed-in user.
- * Anonymous visitors are sent to /sign-in with a redirect-back param.
+ * 1. In the browser preview (not installed PWA / not native), shows a
+ *    "download the app" wall — the website is a plastic display only.
+ * 2. In the installed app, anonymous visitors are sent to /sign-in.
+ * 3. Signed-in users in the installed app see the real feature.
  */
 const RequireAuth = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
+
+  // Step 1: web preview = locked dummy
+  if (isDemoMode()) {
+    return <DemoGate>{null}</DemoGate>;
+  }
 
   if (loading) {
     return (
