@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, Sparkles, Download, Phone, FileText, Lock, ArrowRight, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { Shield, Sparkles, Download, Phone, FileText, Lock, ArrowRight, Send, Loader2, CheckCircle2, PhoneCall } from "lucide-react";
 import solaceLogo from "@/assets/solace-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import PaywallGate from "@/components/PaywallGate";
 
 // Standalone "SOLACE Claims" mini-app:
 // - Free, focused on HostPlus + WorkCover QLD claims
