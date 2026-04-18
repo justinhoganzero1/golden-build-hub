@@ -23,7 +23,14 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
+  // Web Crawler state (admin growth engine)
+  const [crawlerCampaign, setCrawlerCampaign] = useState<"press" | "partnership" | "directory" | "investor" | "backlink">("press");
+  const [crawlerNiche, setCrawlerNiche] = useState("AI mental health super app");
+  const [crawlerLimit, setCrawlerLimit] = useState(8);
+  const [crawlerLogToLeads, setCrawlerLogToLeads] = useState(true);
+  const [crawlerBusy, setCrawlerBusy] = useState(false);
+  const [crawlerResults, setCrawlerResults] = useState<Array<{ url: string; title?: string; description?: string; contact_email?: string | null; outreach_subject?: string; outreach_body?: string; category?: string }>>([]);
   // Admin AI Builder chat state (Lovable AI gateway via ai-tools edge function)
   const [builderMessages, setBuilderMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [builderInput, setBuilderInput] = useState("");
@@ -303,6 +310,8 @@ const OwnerDashboardPage = () => {
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
+    { key: "leads", label: "Leads", icon: <Mail className="w-4 h-4" /> },
+    { key: "crawler", label: "Web Crawler", icon: <Search className="w-4 h-4" /> },
     { key: "builder", label: "AI Builder", icon: <Zap className="w-4 h-4" /> },
     { key: "library", label: "Users Library", icon: <Camera className="w-4 h-4" /> },
     { key: "suggestions", label: "Ideas", icon: <Sparkles className="w-4 h-4" /> },
@@ -313,6 +322,34 @@ const OwnerDashboardPage = () => {
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
+
+  const runCrawler = async () => {
+    if (crawlerBusy) return;
+    setCrawlerBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("web-crawler-outreach", {
+        body: {
+          action: "discover",
+          campaign: crawlerCampaign,
+          niche: crawlerNiche,
+          limit: crawlerLimit,
+          logToLeads: crawlerLogToLeads,
+        },
+      });
+      if (error) throw error;
+      const list = (data as { prospects?: typeof crawlerResults })?.prospects || [];
+      setCrawlerResults(list);
+      toast.success(`Found ${list.length} prospects${crawlerLogToLeads ? " — logged to Leads" : ""}`);
+      if (crawlerLogToLeads) {
+        const { data: l } = await supabase.from("inquiry_leads").select("*").order("created_at", { ascending: false }).limit(200);
+        if (l) setLeads(l);
+      }
+    } catch (err) {
+      toast.error("Crawler failed: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setCrawlerBusy(false);
+    }
+  };
 
   // Admin AI Builder — sends messages to the existing ai-tools edge function with a
   // "site architect" system prompt. Returns engineering plans + code skeletons the admin
