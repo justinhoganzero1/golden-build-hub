@@ -140,6 +140,8 @@ const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
+const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
+const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -240,6 +242,8 @@ const App = () => (
                   <Route path="/ai-tutor-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-ai-voice-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
+                  <Route path="/apps" element={<ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary>} />
+                  <Route path="/apps/:slug" element={<ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
