@@ -131,34 +131,9 @@ const ClaimsAppPage = () => {
               <Phone className="w-3 h-3" /> WorkCover QLD
             </a>
           </div>
-          <PaywallGate requiredTier="starter" featureName="Oracle Assisted Calling">
-            <AssistedCallDialog
-              destination="+611300467875"
-              destinationLabel="HostPlus"
-              trigger={
-                <div className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-primary to-primary/70 text-primary-foreground text-xs font-bold shadow-lg cursor-pointer">
-                  <PhoneCall className="w-4 h-4" /> Have Oracle Call HostPlus
-                  <span className="ml-1 px-1.5 py-0.5 rounded bg-background/20 text-[10px]">~AU $0.45/min</span>
-                </div>
-              }
-            />
-            <div className="h-2" />
-            <AssistedCallDialog
-              destination="+611300362128"
-              destinationLabel="WorkCover QLD"
-              trigger={
-                <div className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-card border border-primary/40 text-foreground text-xs font-bold cursor-pointer">
-                  <PhoneCall className="w-4 h-4" /> Have Oracle Call WorkCover QLD
-                  <span className="ml-1 px-1.5 py-0.5 rounded bg-primary/20 text-[10px]">~AU $0.45/min</span>
-                </div>
-              }
-            />
-            <p className="text-[10px] text-muted-foreground text-center mt-2">
-              Billed at Twilio cost + 50% service fee, metered per second from your wallet.
-            </p>
-          </PaywallGate>
-        </div>
-      </section>
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
+            Use the buttons above to dial directly. (AI-assisted calling is temporarily vaulted.)
+          </p>
 
       {/* Chat */}
       <section className="px-4 max-w-3xl mx-auto">
