@@ -220,25 +220,19 @@ export default function StripeRevenuePanel() {
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-  sub,
-}: {
+const Stat = React.forwardRef<HTMLDivElement, {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
-}) {
-  return (
-    <Card className="p-3 bg-background/40 border-amber-500/10">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        {icon}
-        {label}
-      </div>
-      <p className="text-lg font-semibold mt-1">{value}</p>
-      {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
-    </Card>
-  );
-}
+}>(({ icon, label, value, sub }, ref) => (
+  <Card ref={ref} className="p-3 bg-background/40 border-amber-500/10">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      {icon}
+      {label}
+    </div>
+    <p className="text-lg font-semibold mt-1">{value}</p>
+    {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+  </Card>
+));
+Stat.displayName = "Stat";
