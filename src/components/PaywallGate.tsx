@@ -80,7 +80,7 @@ const PaywallGate = ({
               Upgrade Now
             </button>
             <p className="text-[11px] text-primary font-semibold">
-              💎 One-time $900 Lifetime Unlock — every premium feature, forever (Movie Studio billed per use).
+              💎 One-time $900 Lifetime Unlock — every premium feature, forever (Cinematic Clip Studio billed per use).
             </p>
             <p className="text-xs text-muted-foreground">
               💡 Or submit a winning idea in the Suggestion Box for <span className="text-primary font-semibold">FREE lifetime access!</span>
