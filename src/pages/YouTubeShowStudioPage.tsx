@@ -362,7 +362,7 @@ Rules:
           </Card>
         </div>
 
-        <MovieStudio open={studioOpen} onOpenChange={setStudioOpen} onBalanceChange={() => { /* refresh handled inside */ }} />
+        <MovieStudio open={studioOpen} onOpenChange={setStudioOpen} />
       </div>
     </PaywallGate>
   );
