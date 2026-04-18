@@ -14,6 +14,7 @@ import {
 import solaceBanner from "@/assets/solace-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
+import PartyBanner from "@/components/PartyBanner";
 import { toast } from "sonner";
 
 interface AppTile {
@@ -144,6 +145,13 @@ const DashboardPage = () => {
           <SecurityShield />
         </div>
       </div>
+
+      {/* Lifetime Birthday Party banner */}
+      {tier !== "lifetime" && !isAdmin && (
+        <div className="mx-4 mb-3">
+          <PartyBanner variant="lifetime-birthday" />
+        </div>
+      )}
 
       {/* Free lifetime promo banner */}
       {tier === "free" && !isAdmin && (
