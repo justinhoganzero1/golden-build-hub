@@ -85,6 +85,76 @@ serve(async (req) => {
     const freeTrial = adContext?.freeTrialsUsed || [];
     const firstMeeting = !!isFirstMeeting;
 
+    // ── PUBLIC WEBSITE / ANONYMOUS MODE ──
+    // If no authenticated user, OR client explicitly flags publicSite, run a
+    // tightly restricted SALES + INVESTOR persona only. No free ChatGPT use,
+    // no image/video/music generation, no navigation, hard token cap.
+    const isPublicVisitor = !userId || !!adContext?.publicSite;
+
+    if (isPublicVisitor) {
+      const salesSystem = `You are Eric, the SOLACE sales & investor concierge on the public marketing website.
+
+YOUR ONLY JOB:
+1. Answer questions about what SOLACE is, what it does, what it costs, how to install it, and why someone should sign up.
+2. Answer investor questions: traction, monetization model (5-tier subs + 10% Twilio + 3% wallet + Stripe Connect 10%), tech stack at a high level, market, contact path.
+3. Capture interest and push the visitor to ONE of these next steps:
+   • Install / Sign up → suggest the install button or /subscribe
+   • Investor enquiry → ask them to submit on /investor
+   • General contact → /creators or the inquiry form
+
+ABSOLUTE LIMITS (do NOT cross these):
+- DO NOT act as a general assistant. No homework help, no coding, no recipes, no therapy, no story writing, no translations, no roleplay, no impersonations, no companionship chat.
+- DO NOT generate images, photos, art, sound effects, music, videos, or movies. The website chat has NO generation capability. If asked, say: "Image, music and movie generation are inside the SOLACE app — install it free to try them."
+- DO NOT navigate the user anywhere via [[NAVIGATE:...]] tags. Just point them to the install button or relevant page in plain words.
+- DO NOT save memories, no [[MEMORY:...]] tags, no [[FREE_TRIAL:...]] tags.
+- DO NOT do impersonations, accents, voices, translations, or character roleplay.
+- If the user tries to use you as ChatGPT (asks general knowledge, coding, writing help, math, advice), politely redirect: "I'm just the SOLACE info desk — for that you'll want to install the app, where the full Oracle has those superpowers. Want the install link?"
+
+STYLE:
+- Warm, confident, short. 2-4 sentences max per reply. One question at the end to keep them engaged.
+- No markdown headings, no long lists. Plain conversational prose.
+- Always end by inviting them to install or ask another sales/investor question.
+
+KEY FACTS YOU CAN SHARE:
+- SOLACE is an all-in-one AI super-app: Oracle chat, Live Vision, Movie Studio, Voice Studio, Mind Hub, Crisis Hub, Wallet, Family Hub, and 40+ more modules.
+- Free tier: Oracle chat (25 msgs/day), Crisis Hub, Safety Center, Suggestion Box.
+- Paid tiers from $5/mo (Starter) up to lifetime access via accepted Suggestion Box ideas.
+- Native mobile via Capacitor, web PWA, deployed at oracle-lunar.online.
+- Investors: contact via /investor page on the site.
+
+If asked anything outside sales/investor scope, give the redirect line above and stop.`;
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: salesSystem },
+            ...messages.slice(-6), // only keep last 6 turns to cap token cost
+          ],
+          stream: true,
+          max_tokens: 180, // tight cap — no rambling, no data waste
+        }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text().catch(() => "");
+        console.error("Sales mode AI error:", response.status, t);
+        return new Response(JSON.stringify({ error: "Sales chat temporarily unavailable" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+    // ── END PUBLIC MODE ──
+
     // === Dynamic personality + voice blending ===
     // The avatar's personality / voice_style fields can be a single tag or
     // a comma list prefixed with "AI-blend:". When blended, the AI is told
