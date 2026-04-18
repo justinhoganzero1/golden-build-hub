@@ -77,7 +77,20 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const [phone, setPhone] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = url || imageUrl || (typeof window !== "undefined" ? window.location.href : "");
+  // Always share the public production domain — never the lovable preview/editor URL.
+  const PUBLIC_ORIGIN = "https://golden-vault-builder.lovable.app";
+  const rawUrl = url || imageUrl || (typeof window !== "undefined" ? window.location.href : "");
+  const shareUrl = (() => {
+    try {
+      const u = new URL(rawUrl, PUBLIC_ORIGIN);
+      if (u.hostname.includes("lovable.app") || u.hostname.includes("lovableproject.com") || u.hostname.includes("lovable.dev")) {
+        return `${PUBLIC_ORIGIN}${u.pathname}${u.search}${u.hash}`;
+      }
+      return u.toString();
+    } catch {
+      return `${PUBLIC_ORIGIN}/`;
+    }
+  })();
   const shareText = description || `Check out "${title}" on Solace!`;
 
   const copyLink = async () => {
