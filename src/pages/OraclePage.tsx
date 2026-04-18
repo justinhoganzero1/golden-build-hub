@@ -1254,13 +1254,13 @@ const OraclePage = () => {
       // for the full response. Cuts perceived latency from ~5-8s to ~1-2s.
       let spokenUpTo = 0;
       // Strip self-naming anywhere a sentence starts (very start, after . ! ? newline)
-      // e.g. "Oracle: Hi" / "Oracle, hello" / "I'm Oracle. Ready?" → cleaned for both display + speech
+      // e.g. "Oracle: Hi" / "Oracle here," / "I'm Oracle" / "This is Oracle" → cleaned for both display + speech
       const escapedName = oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const selfNameRegex = new RegExp(
-        `(^|[.!?\\n]\\s*)(?:I[' ]?m\\s+|This is\\s+|As\\s+)?${escapedName}\\s*[:,\\-–—]?\\s*`,
+        `(^|[.!?\\n]\\s*)(?:["“”'‘’(\\[]\\s*)?(?:I\\s*(?:am|'m)\\s+|This is\\s+|It(?:\\s+)?'s\\s+|It is\\s+|As\\s+)?${escapedName}(?:\\s+here)?\\s*[:,\\-–—]?\\s*`,
         "gi"
       );
-      const stripSelfNaming = (s: string) => s.replace(selfNameRegex, "$1");
+      const stripSelfNaming = (s: string) => s.replace(selfNameRegex, "$1").trimStart();
       const stripMarkersForSpeech = (s: string) =>
         stripSelfNaming(
           s
