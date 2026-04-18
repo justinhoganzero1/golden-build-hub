@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StripeConnectPanel from "@/components/StripeConnectPanel";
+import StripeRevenuePanel from "@/components/StripeRevenuePanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -498,6 +499,9 @@ const OwnerDashboardPage = () => {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-4">
+            {/* Live Stripe revenue (admin only) */}
+            <StripeRevenuePanel />
+
             {/* Stripe Connect demo (admin view) */}
             <StripeConnectPanel />
 
