@@ -43,8 +43,19 @@ const SignInPage = () => {
         if (error) throw error;
         toast.success("Check your email to confirm your account!");
       } else {
+        // Hard email gate for owner dashboard — only the owner email can sign in to /owner-dashboard
+        if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
+          toast.error("Admin access is restricted to the owner account.");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // Mark this tab as a fresh admin login so the dashboard guard lets it through once.
+        if (isOwnerAccess) {
+          sessionStorage.setItem("admin-fresh-login", "1");
+          sessionStorage.removeItem("admin-pending-login");
+        }
         navigate(redirectPath);
       }
     } catch (error: any) {
