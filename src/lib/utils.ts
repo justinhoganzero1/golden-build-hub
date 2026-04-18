@@ -117,21 +117,70 @@ export function cleanTextForSpeech(input: string): string {
   return text.trim();
 }
 
-/** Preserve punctuation for premium neural TTS so rhythm and pauses stay human */
+/**
+ * Preserve and enrich punctuation for premium neural TTS so rhythm,
+ * breath pauses, and prosody (rises/falls) sound human.
+ *
+ * Strategy:
+ *  - Keep sentence-ending punctuation (. ! ?) — drives natural intonation rises/falls
+ *  - Convert paragraph breaks → " ... " (long breath)
+ *  - Normalise commas/semicolons/colons → consistent short pauses
+ *  - Insert a soft pause after long run-on clauses (>14 words without punctuation)
+ *  - Add a micro-pause after conjunctions (and, but, so, because) at clause starts
+ *  - Ensure every sentence ends with terminal punctuation (so the model knows to fall/rise)
+ */
 export function cleanTextForPremiumSpeech(input: string): string {
   let text = stripMarkdownUrlsAndEmoji(input);
 
+  // 1. Strip markdown noise but keep prosody punctuation
   text = text
     .replace(/[*_`~]/g, "")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/^[-•]\s+/gm, "")
     .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/\s*\n+\s*/g, ". ");
+    .replace(/[‘’]/g, "'");
 
-  text = applyPhoneticReplacements(text)
-    .replace(/\s{2,}/g, " ")
+  // 2. Paragraph breaks → long breath pause
+  text = text.replace(/\s*\n{2,}\s*/g, " ... ");
+  // Single line break → sentence break
+  text = text.replace(/\s*\n+\s*/g, ". ");
+
+  // 3. Phonetic swaps (Dr. → Doctor, etc.)
+  text = applyPhoneticReplacements(text);
+
+  // 4. Normalise spacing around punctuation so the model breathes evenly
+  text = text
+    .replace(/\s+([,;:.!?])/g, "$1")          // no space before punctuation
+    .replace(/([,;:])([^\s])/g, "$1 $2")      // ensure space after , ; :
+    .replace(/([.!?])([A-Za-z])/g, "$1 $2");  // space after sentence end
+
+  // 5. Insert a comma-pause after lead-in conjunctions for natural rhythm
+  //    "So I went..." → "So, I went..."
+  text = text.replace(
+    /\b(So|And|But|Because|However|Now|Well|Look|Listen|See|Honestly|Actually)\s+(?=[A-Za-z])/g,
+    "$1, "
+  );
+
+  // 6. Break very long run-on clauses (>14 words, no internal punctuation)
+  //    by adding a comma after roughly the 8th word — gives a breath spot.
+  text = text.replace(/([^.!?]+?)(?=[.!?]|$)/g, (clause) => {
+    const words = clause.trim().split(/\s+/);
+    if (words.length > 14 && !/[,;:]/.test(clause)) {
+      const mid = Math.floor(words.length / 2);
+      words[mid] = words[mid] + ",";
+      return " " + words.join(" ");
+    }
+    return clause;
+  });
+
+  // 7. Ensure the whole utterance ends with terminal punctuation
+  text = text.trim();
+  if (text && !/[.!?…]$/.test(text)) text += ".";
+
+  // 8. Collapse extra whitespace and clamp ellipses
+  text = text
     .replace(/\.{4,}/g, "...")
+    .replace(/\s{2,}/g, " ")
     .trim();
 
   return text;
