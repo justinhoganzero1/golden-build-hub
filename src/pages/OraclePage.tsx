@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -114,7 +114,46 @@ const OraclePage = () => {
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = "";
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) { toast.error("File too large (max 25MB)"); return; }
+    setUploading(true);
+    try {
+      const dataUrl: string = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onloadend = () => res(fr.result as string);
+        fr.onerror = rej;
+        fr.readAsDataURL(file);
+      });
+      const mediaType = file.type.startsWith("video") ? "video"
+        : file.type.startsWith("audio") ? "audio"
+        : file.type.startsWith("image") ? "image" : "image";
+      try {
+        await saveMedia.mutateAsync({
+          media_type: mediaType,
+          title: file.name,
+          url: dataUrl,
+          source_page: "oracle-upload",
+          metadata: { kind: "upload", mime: file.type, size: file.size },
+        });
+      } catch { /* non-fatal */ }
+      toast.success(`Attached ${file.name} — sent to ${oracleName}`);
+      const sizeKb = Math.round(file.size / 1024);
+      const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
+      await sendMessage(prompt);
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -1993,8 +2032,23 @@ const OraclePage = () => {
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
           </button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={uploading}
+            title="Attach photo or file"
+            className="p-2 rounded-full bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-50 transition-colors"
+          >
+            <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
+          </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage(input)}
-            placeholder={`Speak or type to consult ${oracleName}...`}
+            placeholder={`Speak, type, or attach for ${oracleName}...`}
             className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none" />
           <button onClick={() => sendMessage(input)} disabled={!input.trim()} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
