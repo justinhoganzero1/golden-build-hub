@@ -136,7 +136,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
       )}
 
       {showSaveCTA && result && (
-        <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-primary/20 to-amber-500/10 border border-primary/40">
+        <div className="mt-3 p-3 rounded-lg bg-primary/15 border border-primary/40">
           <p className="text-xs text-foreground mb-2">💾 Want to save this and unlock <b>50+ more AI tools</b> free?</p>
           <button
             onClick={() => navigate("/sign-in")}

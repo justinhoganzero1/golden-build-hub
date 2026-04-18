@@ -42,7 +42,7 @@ export default function RealSocialProof() {
         </span>
       )}
       <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border">
-        <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
+        <TrendingUp className="w-3.5 h-3.5 text-primary" />
         Live data
       </span>
     </div>
