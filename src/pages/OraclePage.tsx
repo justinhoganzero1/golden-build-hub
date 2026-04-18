@@ -1182,7 +1182,7 @@ const OraclePage = () => {
               if (content) {
                 oracleContent += content;
                 // Strip self-naming prefix
-                let displayContent = oracleContent.replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
+                let displayContent = stripSelfNaming(oracleContent);
                 setMessages(prev => {
                   const last = prev[prev.length - 1];
                   if (last?.sender === oracleName) return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: displayContent } : m);
@@ -1227,7 +1227,7 @@ const OraclePage = () => {
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
 
       // Update displayed message with cleaned content
-      const finalDisplayContent = (cleanContent || cleanedOracleContent).replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
+      const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
       setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
 
       if (navPath) {
