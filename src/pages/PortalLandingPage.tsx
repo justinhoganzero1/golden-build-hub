@@ -164,21 +164,28 @@ const PortalLandingPage = () => {
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
           <div className="relative flex justify-center mb-6">
-            {/* Fluro neon-green glow under logo */}
+            {/* Rotating rainbow AI glow under logo */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-24px] h-20 w-56 md:w-72 rounded-full blur-2xl animate-pulse"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-28px] h-24 w-64 md:w-80 rounded-full blur-2xl opacity-90 animate-[spin_6s_linear_infinite]"
               style={{
                 background:
-                  "radial-gradient(ellipse at center, #39ff14 0%, rgba(57,255,20,0.85) 30%, rgba(57,255,20,0.35) 60%, transparent 80%)",
-                boxShadow:
-                  "0 0 60px 15px #39ff14, 0 0 120px 40px rgba(57,255,20,0.55)",
+                  "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14ff5e, #00d4ff, #6a00ff, #ff00d4, #ff0040)",
+              }}
+            />
+            {/* Soft outer rainbow halo (pulsing) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-40px] h-32 w-80 md:w-96 rounded-full blur-3xl opacity-70 animate-pulse"
+              style={{
+                background:
+                  "conic-gradient(from 180deg, #ff00d4, #6a00ff, #00d4ff, #14ff5e, #ffe600, #ff8a00, #ff0040, #ff00d4)",
               }}
             />
             <img
               src={solaceLogo}
               alt="SOLACE shield logo"
-              className="relative z-10 h-32 w-32 md:h-40 md:w-40"
+              className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(255,255,255,0.45)]"
             />
           </div>
 
