@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StripeConnectPanel from "@/components/StripeConnectPanel";
 import { Code, User, Mail, Send, Trash2, MessageSquare, Sparkles, Globe, Smartphone, Shield, Brain, Zap } from "lucide-react";
 import { toast } from "sonner";
 
@@ -115,6 +116,11 @@ const CreatorsPage = () => {
           </div>
           <h1 className="text-2xl font-bold text-primary">Creator Studio</h1>
           <p className="text-muted-foreground text-sm mt-1">Built by a Passionate Developer</p>
+        </div>
+
+        {/* Stripe Connect demo panel — onboard, list products, take payments */}
+        <div className="mb-6">
+          <StripeConnectPanel />
         </div>
 
         {/* About Creator */}

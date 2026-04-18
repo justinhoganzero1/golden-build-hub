@@ -80,6 +80,7 @@ const loaders = {
   "/ai-therapist-free": () => import("./pages/SeoLandingPage"),
   "/ai-tutor-free": () => import("./pages/SeoLandingPage"),
   "/free-ai-voice-chat": () => import("./pages/SeoLandingPage"),
+  "/store/:accountId": () => import("./pages/StorefrontPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -138,6 +139,7 @@ const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
+const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -237,6 +239,7 @@ const App = () => (
                   <Route path="/ai-therapist-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-tutor-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-ai-voice-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

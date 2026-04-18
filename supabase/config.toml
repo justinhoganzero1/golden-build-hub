@@ -17,3 +17,11 @@ verify_jwt = false
 
 [functions.oracle-call-outbound]
 verify_jwt = false
+
+# Stripe Connect storefront — public so anonymous buyers can list & checkout.
+# connect-products validates auth in-code for the "create" action.
+[functions.connect-products]
+verify_jwt = false
+
+[functions.connect-checkout]
+verify_jwt = false
