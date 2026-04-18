@@ -620,6 +620,75 @@ export type Database = {
         }
         Relationships: []
       }
+      site_announcements: {
+        Row: {
+          active: boolean
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          id: string
+          message: string
+          style: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          id?: string
+          message: string
+          style?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          id?: string
+          message?: string
+          style?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          notes: string | null
+          page: string
+          slot: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          page: string
+          slot: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          page?: string
+          slot?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       site_edits: {
         Row: {
           after_text: string
