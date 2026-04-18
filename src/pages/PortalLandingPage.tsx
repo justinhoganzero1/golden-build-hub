@@ -120,25 +120,28 @@ const PortalLandingPage = () => {
       {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
       <StickyInstallBar />
 
-      {/* ── Limited-time free offer bubble (top-left, round) ── */}
+      {/* ── Limited-time free offer bubble (top-left, round, neon-pink) ── */}
       <button
         type="button"
-        onClick={() => navigate("/subscribe")}
-        className="fixed top-24 left-4 z-50 h-32 w-32 md:h-36 md:w-36 rounded-full border-2 border-yellow-400/80 backdrop-blur-md flex flex-col items-center justify-center text-center px-3 shadow-[0_0_25px_rgba(250,204,21,0.55)] hover:shadow-[0_0_40px_rgba(250,204,21,0.85)] transition-all animate-pulse"
+        onClick={() => handleInstall()}
+        className="fixed top-28 left-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(255,20,147,0.85),0_0_80px_rgba(250,204,21,0.5)] hover:shadow-[0_0_60px_rgba(255,20,147,1),0_0_120px_rgba(250,204,21,0.7)] transition-all animate-pulse"
         style={{
           background:
-            "radial-gradient(circle at 30% 30%, #1a1300 0%, #000 70%)",
+            "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
         }}
-        aria-label="Limited time free offer"
+        aria-label="Limited time free — install SOLACE"
       >
-        <div className="text-[9px] md:text-[10px] font-black tracking-wider text-yellow-400 leading-tight">
+        <div className="text-xs md:text-sm font-black tracking-wider text-yellow-300 leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
           🎁 FREE
         </div>
-        <div className="text-[8px] md:text-[9px] font-semibold text-yellow-200/90 leading-tight mt-1">
+        <div className="text-[10px] md:text-xs font-bold text-white leading-tight mt-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
           Download &amp; become a member
         </div>
-        <div className="text-[9px] md:text-[10px] font-extrabold text-yellow-300 mt-1">
+        <div className="text-xs md:text-sm font-extrabold text-yellow-300 mt-1.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
           14 days left ⏳
+        </div>
+        <div className="text-[9px] md:text-[10px] font-semibold text-white/90 mt-1 underline">
+          Tap to install
         </div>
       </button>
 
