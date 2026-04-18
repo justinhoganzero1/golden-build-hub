@@ -1119,13 +1119,22 @@ const OraclePage = () => {
       // SPEED: speak sentence-by-sentence as the stream arrives instead of waiting
       // for the full response. Cuts perceived latency from ~5-8s to ~1-2s.
       let spokenUpTo = 0;
+      // Strip self-naming anywhere a sentence starts (very start, after . ! ? newline)
+      // e.g. "Oracle: Hi" / "Oracle, hello" / "I'm Oracle. Ready?" → cleaned for both display + speech
+      const escapedName = oracleName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const selfNameRegex = new RegExp(
+        `(^|[.!?\\n]\\s*)(?:I[' ]?m\\s+|This is\\s+|As\\s+)?${escapedName}\\s*[:,\\-–—]?\\s*`,
+        "gi"
+      );
+      const stripSelfNaming = (s: string) => s.replace(selfNameRegex, "$1");
       const stripMarkersForSpeech = (s: string) =>
-        s
-          .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
-          .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
-          .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
-          .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
-          .replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, "i"), "");
+        stripSelfNaming(
+          s
+            .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
+            .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
+            .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
+            .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
+        );
       const flushSpeakableSentences = (final = false) => {
         if (isMuted) return;
         const pending = oracleContent.slice(spokenUpTo);
@@ -1173,7 +1182,7 @@ const OraclePage = () => {
               if (content) {
                 oracleContent += content;
                 // Strip self-naming prefix
-                let displayContent = oracleContent.replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
+                let displayContent = stripSelfNaming(oracleContent);
                 setMessages(prev => {
                   const last = prev[prev.length - 1];
                   if (last?.sender === oracleName) return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: displayContent } : m);
@@ -1218,7 +1227,7 @@ const OraclePage = () => {
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
 
       // Update displayed message with cleaned content
-      const finalDisplayContent = (cleanContent || cleanedOracleContent).replace(new RegExp(`^\\s*${oracleName}\\s*[:\\-–—]\\s*`, 'i'), '');
+      const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
       setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
 
       if (navPath) {
