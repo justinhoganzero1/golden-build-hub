@@ -128,13 +128,9 @@ const PortalLandingPage = () => {
         style={{
           background:
             "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
-        }}
-        aria-label="Limited time free — install SOLACE"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
           fontFamily: "'Pacifico', 'Caveat', 'Comic Sans MS', cursive",
         }}
+        aria-label="Limited time free — install SOLACE"
       >
         <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
           🎉 FREE!
