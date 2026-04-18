@@ -28,7 +28,7 @@ export const StandaloneAppShell = ({ slug, title, tagline, fullAppPath, children
       <SEO
         title={`${title} — Standalone SOLACE App`}
         description={tagline}
-        canonicalPath={`/apps/${slug}`}
+        path={`/apps/${slug}`}
       />
       <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
