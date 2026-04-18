@@ -35,7 +35,7 @@ const STYLES = [
 const AVATAR_PURPOSES = [
   { value: "oracle", label: "🔮 Main Oracle", desc: "Replace the Oracle's default appearance", paid: false },
   { value: "profile", label: "👤 My Profile", desc: "Use as your profile picture", paid: false },
-  { value: "ai-friend", label: "🤖 AI Companion", desc: "Add a realistic AI companion to chat", paid: true, price: "$1" },
+  { value: "ai-friend", label: "🤖 AI Companion", desc: "Add a realistic AI companion to chat", paid: false },
   { value: "partner", label: "💕 Boyfriend / Girlfriend", desc: "A romantic AI companion", paid: true, price: "$5/mo" },
 ];
 
