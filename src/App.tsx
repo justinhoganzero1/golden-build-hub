@@ -162,6 +162,7 @@ const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
+const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
