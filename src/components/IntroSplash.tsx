@@ -9,6 +9,9 @@ interface IntroSplashProps {
 
 const IntroSplash = ({ onComplete }: IntroSplashProps) => {
   const [visible, setVisible] = useState(true);
+  const { get } = useSiteContent();
+  const banner = get("landing", "free_trial_banner", "🎁 Sign up free — 30 days of full access, no card required");
+  const tagline = get("landing", "hero_tagline", "Solace, your AI companion to do everything!");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,8 +48,11 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
         <div className="px-4 py-2 rounded-full bg-gradient-to-r from-primary/90 to-amber-500/90 text-primary-foreground text-sm font-bold shadow-[0_0_25px_hsl(var(--primary)/0.5)] border border-primary/40">
           🎁 Sign up free — 30 days of full access, no card required
         </div>
-        <p className="text-2xl md:text-3xl font-bold drop-shadow-lg" style={{ color: 'white' }}>
-          Solace, your AI companion to do everything!
+        <div className="px-4 py-2 rounded-full bg-gradient-to-r from-primary/90 to-amber-500/90 text-primary-foreground text-sm font-bold shadow-[0_0_25px_hsl(var(--primary)/0.5)] border border-primary/40">
+          {banner}
+        </div>
+        <p className="text-2xl md:text-3xl font-bold drop-shadow-lg text-foreground">
+          {tagline}
         </p>
       </div>
     </div>
