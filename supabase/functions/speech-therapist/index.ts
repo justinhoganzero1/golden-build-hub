@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    coached = coached.replace(/^["'`]+|["'`]+$/g, "").trim();
+    coached = stripPreambleAndAnalysis(coached);
 
     // -------------- STAGE 3: Self-Listen QA (optional) --------------
     let qaApplied = false;
@@ -403,7 +403,7 @@ Deno.serve(async (req) => {
         900,
       );
       if (qaResult && qaResult.trim().toUpperCase() !== "PASS" && qaResult.length > 20) {
-        coached = qaResult.replace(/^["'`]+|["'`]+$/g, "").trim();
+        coached = stripPreambleAndAnalysis(qaResult);
         qaApplied = true;
       }
     }
