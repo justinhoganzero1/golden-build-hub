@@ -100,6 +100,12 @@ const PortalLandingPage = () => {
     };
   }, []);
 
+  // Tag the body so landing-page-only CSS (like the SOLACE wordmark headings) activates
+  useEffect(() => {
+    document.body.setAttribute("data-route", "/");
+    return () => { document.body.removeAttribute("data-route"); };
+  }, []);
+
   // Track successful PWA installs (fires once when the browser finishes installing)
   useEffect(() => {
     const onInstalled = () => trackInstallEvent("installed");
