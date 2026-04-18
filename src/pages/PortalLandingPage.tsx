@@ -120,6 +120,28 @@ const PortalLandingPage = () => {
       {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
       <StickyInstallBar />
 
+      {/* ── Limited-time free offer bubble (top-left) ── */}
+      <button
+        type="button"
+        onClick={() => navigate("/subscribe")}
+        className="fixed top-3 left-3 z-50 max-w-[14rem] md:max-w-[18rem] rounded-2xl border-2 border-yellow-400/80 bg-black/90 backdrop-blur-md px-3 py-2 text-left shadow-[0_0_25px_rgba(250,204,21,0.55)] hover:shadow-[0_0_40px_rgba(250,204,21,0.85)] transition-all animate-pulse"
+        style={{
+          background:
+            "linear-gradient(135deg, #000 0%, #1a1300 50%, #000 100%)",
+        }}
+        aria-label="Limited time free offer"
+      >
+        <div className="text-[10px] md:text-xs font-black tracking-wider text-yellow-400 leading-tight">
+          🎁 LIMITED TIME — FREE
+        </div>
+        <div className="text-[9px] md:text-[10px] font-semibold text-yellow-200/90 leading-snug mt-0.5">
+          Download &amp; become a member totally free
+        </div>
+        <div className="text-[10px] md:text-xs font-extrabold text-yellow-300 mt-1">
+          Only 14 days remaining ⏳
+        </div>
+      </button>
+
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
