@@ -91,6 +91,74 @@ async function sendEmail(title: string, body: string) {
   if (!r.ok) throw new Error(`resend ${r.status}: ${await r.text()}`);
 }
 
+// === X (Twitter) v2 — posts a tweet using OAuth 1.0a user context ===
+async function sendTwitter(title: string, body: string, url?: string) {
+  const ck = Deno.env.get("TWITTER_CONSUMER_KEY");
+  const cs = Deno.env.get("TWITTER_CONSUMER_SECRET");
+  const at = Deno.env.get("TWITTER_ACCESS_TOKEN");
+  const ats = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET");
+  if (!ck || !cs || !at || !ats) return;
+
+  const text = `${title}\n${body}`.slice(0, 275) + (url ? `\n${url}` : "");
+  const endpoint = "https://api.x.com/2/tweets";
+  const method = "POST";
+
+  // OAuth 1.0a signature (no body params in signature for JSON POST)
+  const oauth: Record<string, string> = {
+    oauth_consumer_key: ck,
+    oauth_nonce: crypto.randomUUID().replace(/-/g, ""),
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_token: at,
+    oauth_version: "1.0",
+  };
+  const enc = (s: string) => encodeURIComponent(s).replace(/[!*'()]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+  const paramStr = Object.keys(oauth).sort().map(k => `${enc(k)}=${enc(oauth[k])}`).join("&");
+  const baseStr = `${method}&${enc(endpoint)}&${enc(paramStr)}`;
+  const signingKey = `${enc(cs)}&${enc(ats)}`;
+  const keyData = new TextEncoder().encode(signingKey);
+  const msgData = new TextEncoder().encode(baseStr);
+  const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-1" }, false, ["sign"]);
+  const sigBytes = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
+  const signature = btoa(String.fromCharCode(...new Uint8Array(sigBytes)));
+  oauth.oauth_signature = signature;
+
+  const authHeader = "OAuth " + Object.keys(oauth).sort().map(k => `${enc(k)}="${enc(oauth[k])}"`).join(", ");
+  const r = await fetch(endpoint, {
+    method,
+    headers: { Authorization: authHeader, "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!r.ok) throw new Error(`twitter ${r.status}: ${await r.text()}`);
+}
+
+// === Instagram Graph API — posts an image+caption to a Business/Creator account ===
+async function sendInstagram(title: string, body: string, url?: string, imageUrl?: string) {
+  const token = Deno.env.get("INSTAGRAM_ACCESS_TOKEN");
+  const igUserId = Deno.env.get("INSTAGRAM_BUSINESS_ACCOUNT_ID");
+  if (!token || !igUserId) return;
+  // Instagram requires an image — fall back to a default brand image if none supplied
+  const image = imageUrl || Deno.env.get("INSTAGRAM_DEFAULT_IMAGE_URL") || `${APP_URL}/icon-512.png`;
+  const caption = `${title}\n\n${body}${url ? `\n\n${url}` : ""}`.slice(0, 2200);
+
+  // Step 1: create media container
+  const createRes = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: image, caption, access_token: token }),
+  });
+  if (!createRes.ok) throw new Error(`instagram create ${createRes.status}: ${await createRes.text()}`);
+  const { id: creationId } = await createRes.json();
+
+  // Step 2: publish container
+  const pubRes = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creation_id: creationId, access_token: token }),
+  });
+  if (!pubRes.ok) throw new Error(`instagram publish ${pubRes.status}: ${await pubRes.text()}`);
+}
+
 async function sendGenericWebhooks(title: string, body: string, payload: Payload) {
   const list = Deno.env.get("BROADCAST_WEBHOOKS");
   if (!list) return;
@@ -152,11 +220,14 @@ Deno.serve(async (req) => {
     const payload: Payload = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const { title, body } = buildText(payload);
 
+    const imageUrl = (payload.meta as any)?.imageUrl as string | undefined;
     const results = await Promise.all([
       safe("telegram", () => sendTelegram(title, body)),
       safe("discord", () => sendDiscord(title, body)),
       safe("slack", () => sendSlack(title, body)),
       safe("email", () => sendEmail(title, body)),
+      safe("twitter", () => sendTwitter(title, body, payload.url)),
+      safe("instagram", () => sendInstagram(title, body, payload.url, imageUrl)),
       safe("webhooks", () => sendGenericWebhooks(title, body, payload)),
       safe("search-engines", () => pingSearchEngines(payload)),
     ]);
