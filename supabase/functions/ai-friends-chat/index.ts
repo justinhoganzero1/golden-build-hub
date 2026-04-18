@@ -1,4 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +25,37 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "message is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── Jailbreak guard (3-strike, owner-exempt) ──
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let isOwner = false;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const sb = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const { data } = await sb.auth.getClaims(authHeader.replace("Bearer ", ""));
+        if (data?.claims) {
+          userId = data.claims.sub ?? null;
+          userEmail = (data.claims.email as string) ?? null;
+          isOwner = userEmail?.toLowerCase() === ADMIN_EMAIL;
+        }
+      } catch (_e) { /* anonymous */ }
+    }
+    const guard = await checkJailbreak({ userId, userEmail, isOwner, message });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({
+          responses: [{ sender: "Solace Security", emoji: "🛡️", color: "#F97316", content: guard.message }],
+          deleted: guard.deleted,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

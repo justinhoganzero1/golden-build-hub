@@ -21,6 +21,11 @@
 // =============================================================================
 
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -414,6 +419,34 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "text is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Jailbreak guard (owner-exempt; anonymous = warn-only) ──
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let isOwner = false;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const sb = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const { data } = await sb.auth.getClaims(authHeader.replace("Bearer ", ""));
+        if (data?.claims) {
+          userId = data.claims.sub ?? null;
+          userEmail = (data.claims.email as string) ?? null;
+          isOwner = userEmail?.toLowerCase() === ADMIN_EMAIL;
+        }
+      } catch (_e) { /* anonymous */ }
+    }
+    const guard = await checkJailbreak({ userId, userEmail, isOwner, message: text });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({ text: guard.message, fallback: false, securityBlock: true, deleted: guard.deleted }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

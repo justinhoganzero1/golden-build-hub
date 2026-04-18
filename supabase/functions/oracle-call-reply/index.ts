@@ -3,6 +3,9 @@
 // to redirect the live call to that TwiML — which unmutes them and reads the reply.
 // JWT-protected: only the authenticated user who owns the session can reply.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,6 +95,8 @@ Deno.serve(async (req) => {
       });
     }
     const userId = claimsData.claims.sub;
+    const userEmail = (claimsData.claims.email as string) ?? null;
+    const isOwner = userEmail?.toLowerCase() === ADMIN_EMAIL;
     const body = await req.json();
     const { session_id, reply } = body;
     if (!session_id || !reply || typeof reply !== "string") {
@@ -99,6 +104,15 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ── Jailbreak guard on the user's reply that will be spoken to a live caller ──
+    const guard = await checkJailbreak({ userId, userEmail, isOwner, message: reply });
+    if (guard.blocked) {
+      return new Response(
+        JSON.stringify({ error: "security_block", message: guard.message, deleted: guard.deleted }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const admin = createClient(
