@@ -541,6 +541,17 @@ const OraclePage = () => {
 
   const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
+    // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>) before
+    // starting the next queued utterance. Prevents the "two voices at once" bug
+    // where ElevenLabs streaming and browser speechSynthesis could overlap.
+    try { window.speechSynthesis?.cancel(); } catch {}
+    try {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.src = "";
+        currentAudioRef.current = null;
+      }
+    } catch {}
     const next = speechQueueRef.current.shift();
     if (!next) return;
     const premiumClean = cleanTextForPremiumSpeech(next.text);
