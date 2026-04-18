@@ -86,7 +86,8 @@ const ReferralPage = () => {
             <span className="text-lg font-mono font-bold text-primary tracking-widest">{referralCode}</span>
             <button onClick={handleCopy}><Copy className="w-4 h-4 text-primary" /></button>
           </div>
-          <p className="text-[10px] text-muted-foreground">When your referral becomes a paid member, you get surprise paywall access!</p>
+          <p className="text-[10px] text-muted-foreground">When your friend pays for any plan and stays subscribed 7 days, you get +30 days of Tier 3 (Full Access). Stacks with every friend!</p>
+          <button onClick={checkRewards} className="mt-3 text-[11px] text-primary underline">Check rewards now</button>
         </div>
 
         {/* Stats */}
