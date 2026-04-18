@@ -155,6 +155,19 @@ const OwnerDashboardPage = () => {
     })();
   }, []);
 
+  // Load concierge + crawler leads for the Leads tab
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      const { data } = await supabase
+        .from("inquiry_leads")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (data) setLeads(data);
+    })();
+  }, [isAdmin]);
+
   // Load install analytics events for the owner dashboard
   useEffect(() => {
     if (!isAdmin) return;
