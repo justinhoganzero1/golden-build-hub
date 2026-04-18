@@ -668,6 +668,45 @@ export type Database = {
         }
         Relationships: []
       }
+      security_alerts: {
+        Row: {
+          action_taken: string
+          alert_type: string
+          created_at: string
+          detected_phrase: string | null
+          id: string
+          severity: string
+          user_email: string | null
+          user_id: string | null
+          user_message: string
+          warning_number: number
+        }
+        Insert: {
+          action_taken?: string
+          alert_type?: string
+          created_at?: string
+          detected_phrase?: string | null
+          id?: string
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_message: string
+          warning_number?: number
+        }
+        Update: {
+          action_taken?: string
+          alert_type?: string
+          created_at?: string
+          detected_phrase?: string | null
+          id?: string
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_message?: string
+          warning_number?: number
+        }
+        Relationships: []
+      }
       site_announcements: {
         Row: {
           active: boolean
@@ -1191,6 +1230,11 @@ export type Database = {
       }
     }
     Functions: {
+      count_user_jailbreak_attempts: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      delete_user_account: { Args: { _user_id: string }; Returns: boolean }
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
       grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
       has_active_reward: { Args: { _user_id: string }; Returns: boolean }
