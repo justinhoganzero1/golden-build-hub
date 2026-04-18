@@ -39,4 +39,13 @@ const initNative = async () => {
 
 initNative();
 
+// Default Oracle name = "Eric" (per user preference). Users can still rename via Oracle UI.
+try {
+  const names = JSON.parse(localStorage.getItem("solace-agent-names") || "{}");
+  if (!names.Oracle) {
+    names.Oracle = "Eric";
+    localStorage.setItem("solace-agent-names", JSON.stringify(names));
+  }
+} catch {}
+
 createRoot(document.getElementById("root")!).render(<App />);
