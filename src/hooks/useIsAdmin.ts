@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_EMAIL = "justinbretthogan@gmail.com";
-
 /**
  * Single source of truth for "is this user an admin?".
- * Checks the user_roles RBAC table (preferred) AND falls back to the
- * hardcoded admin email so the owner never gets locked out even if the
- * role row is missing or RLS hiccups.
+ * Authoritative check: queries the `user_roles` RBAC table via Supabase.
+ * Email is NOT trusted — anyone could theoretically sign up with any address.
+ * Database RLS (`is_owner()` / `has_role()`) is the ultimate gatekeeper for data;
+ * this hook only governs UI visibility.
  */
 export function useIsAdmin() {
   const { user, loading: authLoading } = useAuth();
@@ -23,23 +22,19 @@ export function useIsAdmin() {
         if (!cancelled) { setIsAdmin(false); setLoading(false); }
         return;
       }
-      // Email fallback — instant, never blocked by RLS
-      const emailMatch =
-        (user.email || "").trim().toLowerCase() === ADMIN_EMAIL;
-      if (emailMatch && !cancelled) setIsAdmin(true);
-
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
           .eq("role", "admin")
           .maybeSingle();
-        if (!cancelled) setIsAdmin(emailMatch || !!data);
+        if (!cancelled) {
+          setIsAdmin(!error && !!data);
+          setLoading(false);
+        }
       } catch {
-        if (!cancelled) setIsAdmin(emailMatch);
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) { setIsAdmin(false); setLoading(false); }
       }
     };
     check();
