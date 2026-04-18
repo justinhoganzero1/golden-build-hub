@@ -741,6 +741,7 @@ export default function VoiceStudioPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
 

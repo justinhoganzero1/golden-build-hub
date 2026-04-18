@@ -249,6 +249,7 @@ const AITutorPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

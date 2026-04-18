@@ -383,6 +383,7 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
         </div>
       </div>
     </div>
+    </>
   );
 };
 export default AppBuilderPage;

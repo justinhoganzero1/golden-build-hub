@@ -823,6 +823,7 @@ const LiveVisionPage = () => {
         )}
       </div>
     </div>
+    </>
     </PaywallGate>
   );
 };

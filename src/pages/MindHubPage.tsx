@@ -380,6 +380,7 @@ const MindHubPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

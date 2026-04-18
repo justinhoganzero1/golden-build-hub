@@ -123,6 +123,7 @@ const MovieStudioProPage = () => {
         onOpenChange={(o) => { setStudioOpen(o); if (!o) refreshBalance(); }}
       />
     </PageShell>
+    </>
   );
 };
 
