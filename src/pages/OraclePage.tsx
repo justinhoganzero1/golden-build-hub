@@ -126,11 +126,33 @@ const OraclePage = () => {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef("");
   const alwaysListenRef = useRef(false);
+  // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
+  const echoCooldownUntilRef = useRef(0);
+  // Tracks whether we paused the recognizer because Oracle is speaking, so we can resume after.
+  const pausedForSpeechRef = useRef(false);
   const explosionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+    // Pause mic while speaking to physically prevent echo capture.
+    if (isSpeaking) {
+      if (alwaysListenRef.current && recognitionRef.current && !pausedForSpeechRef.current) {
+        pausedForSpeechRef.current = true;
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      finalTranscriptRef.current = "";
+      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    } else {
+      // Block recognition for ~1.5s after speech ends to avoid catching trailing speaker audio.
+      echoCooldownUntilRef.current = Date.now() + 1500;
+      if (pausedForSpeechRef.current) {
+        pausedForSpeechRef.current = false;
+        // Recognizer's onend handler will auto-restart it.
+      }
+    }
+  }, [isSpeaking]);
 
   // Prefetch the user's current daily Oracle usage so the badge renders before their first message.
   useEffect(() => {
@@ -872,7 +894,7 @@ const OraclePage = () => {
     recognition.onresult = (e: any) => {
       // Echo guard — drop anything captured while Oracle (or any agent) is speaking through the speakers,
       // otherwise the mic picks up its own TTS and feeds it back as a "user" message.
-      if (isSpeakingRef.current || isSpeakingQueueRef.current) {
+      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
         finalTranscriptRef.current = "";
         if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
         return;
@@ -888,7 +910,7 @@ const OraclePage = () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
           // Re-check at fire time in case speech started during the 2.5s window
-          if (isSpeakingRef.current || isSpeakingQueueRef.current) {
+          if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
             finalTranscriptRef.current = "";
             return;
           }
