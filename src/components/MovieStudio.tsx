@@ -1149,6 +1149,33 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           };
           requestAnimationFrame(tick);
         });
+
+        // ----- Cinematic transition into next scene (~700ms) -----
+        if (idx < ready.length - 1) {
+          const nextScene = ready[idx + 1];
+          const nextImg = imgs[idx + 1];
+          if (nextImg) {
+            // Pick transition based on tone shift
+            const a = scene.tone || "neutral";
+            const b = nextScene.tone || "neutral";
+            let kind = 0; // crossfade default
+            if (a === b) kind = 0;
+            else if ((a === "tense" && b === "calm") || (a === "calm" && b === "tense")) kind = 1; // dip
+            else if (a === "epic" || b === "epic") kind = 3; // zoom-through
+            else if (a === "playful" || b === "playful") kind = 2; // whip pan
+            const tDur = 700;
+            const tStart = performance.now();
+            await new Promise<void>(resolve => {
+              const ttick = (now: number) => {
+                const tp = Math.min(1, (now - tStart) / tDur);
+                drawTransition(ctx, img, nextImg, canvas.width, canvas.height, scene.motion, nextScene.motion, tp, kind);
+                if (tp < 1) requestAnimationFrame(ttick);
+                else resolve();
+              };
+              requestAnimationFrame(ttick);
+            });
+          }
+        }
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
       }
 
