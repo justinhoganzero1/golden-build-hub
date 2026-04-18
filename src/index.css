@@ -117,7 +117,7 @@ All colors MUST be HSL.
       0 0 30px hsl(var(--accent-blue-glow) / 0.35),
       0 0 50px hsl(var(--accent-red-glow) / 0.30),
       inset 0 0 14px hsl(0 0% 100% / 0.25);
-    animation: neon-edge-pulse 8s ease-in-out infinite;
+    /* animation disabled — steady glow */
   }
 
   @keyframes neon-edge-pulse {
