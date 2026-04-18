@@ -59,6 +59,51 @@ export type Database = {
         }
         Relationships: []
       }
+      call_charges: {
+        Row: {
+          created_at: string
+          destination: string
+          duration_seconds: number
+          id: string
+          rate_per_minute_cents: number
+          service_fee_cents: number
+          status: string
+          total_billed_cents: number
+          twilio_call_sid: string | null
+          twilio_cost_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          duration_seconds?: number
+          id?: string
+          rate_per_minute_cents?: number
+          service_fee_cents?: number
+          status?: string
+          total_billed_cents?: number
+          twilio_call_sid?: string | null
+          twilio_cost_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          duration_seconds?: number
+          id?: string
+          rate_per_minute_cents?: number
+          service_fee_cents?: number
+          status?: string
+          total_billed_cents?: number
+          twilio_call_sid?: string | null
+          twilio_cost_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       call_sessions: {
         Row: {
           caller_name: string | null
@@ -821,6 +866,33 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_balances: {
+        Row: {
+          balance_cents: number
+          created_at: string
+          currency: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       creator_comments_public: {
@@ -865,6 +937,25 @@ export type Database = {
         }[]
       }
       is_owner: { Args: never; Returns: boolean }
+      wallet_charge_call: {
+        Args: {
+          _destination: string
+          _duration_seconds: number
+          _twilio_call_sid: string
+          _twilio_cost_cents: number
+          _user_id: string
+        }
+        Returns: {
+          charge_id: string
+          insufficient: boolean
+          new_balance_cents: number
+          total_billed_cents: number
+        }[]
+      }
+      wallet_topup: {
+        Args: { _amount_cents: number; _user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "investigator"
