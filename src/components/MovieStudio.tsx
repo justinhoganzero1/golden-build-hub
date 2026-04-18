@@ -17,7 +17,7 @@ const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tt
 const SFX_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`;
 const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`;
 const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
-const CLIP_SECONDS = 6;
+const CLIP_SECONDS = 20; // 20-second cinematic blocks per scene
 
 // Map AI voice_style → ElevenLabs voice IDs (from approved list)
 const VOICE_MAP: Record<string, string> = {
@@ -74,9 +74,13 @@ interface Scene {
   caption: string;
   photo_prompt: string;
   motion: Motion;
-  duration_sec: number; // always 6
+  duration_sec: number; // 20s default cinematic block
   image_url?: string;
   generating?: boolean;
+  // Real AI video (Runway image-to-video). When present, MP4 plays during preview
+  // and is composited into export instead of the canvas Ken Burns.
+  video_url?: string;
+  generatingVideo?: boolean;
   // Audio
   narration?: string;
   speaker?: string;
@@ -445,6 +449,48 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: false } : s));
     }
   };
+
+  // ----- Generate REAL AI video clip for a scene (Runway image-to-video) -----
+  const generateSceneVideo = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene?.image_url) { toast.error("Generate the scene photo first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: true } : s));
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/runway-image-to-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({
+          image_url: scene.image_url,
+          prompt: `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim(),
+          duration: 10, // Runway gen3a_turbo max — we'll loop for the 20s scene
+          ratio: "1280:768",
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (data.error === "RUNWAY_API_KEY missing") {
+          toast.error("Add a RUNWAY_API_KEY in project secrets to enable real AI video.", { duration: 6000 });
+        } else {
+          toast.error(data.error || "Video generation failed");
+        }
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
+        return;
+      }
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, video_url: data.video_url, generatingVideo: false } : s));
+      if (user && data.video_url) saveMedia.mutate({
+        media_type: "video",
+        title: `Movie clip - ${scene.caption.slice(0, 40)}`,
+        url: data.video_url,
+        source_page: "movie-studio",
+        metadata: { sceneId, source: "runway" },
+      });
+      toast.success("Real video clip generated");
+    } catch (e) {
+      console.error(e); toast.error("Video generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
+    }
+  };
+
 
   const generateAll = async () => {
     const pending = scenes.filter(s => !s.image_url).map(s => s.id);
@@ -1149,6 +1195,33 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           };
           requestAnimationFrame(tick);
         });
+
+        // ----- Cinematic transition into next scene (~700ms) -----
+        if (idx < ready.length - 1) {
+          const nextScene = ready[idx + 1];
+          const nextImg = imgs[idx + 1];
+          if (nextImg) {
+            // Pick transition based on tone shift
+            const a = scene.tone || "neutral";
+            const b = nextScene.tone || "neutral";
+            let kind = 0; // crossfade default
+            if (a === b) kind = 0;
+            else if ((a === "tense" && b === "calm") || (a === "calm" && b === "tense")) kind = 1; // dip
+            else if (a === "epic" || b === "epic") kind = 3; // zoom-through
+            else if (a === "playful" || b === "playful") kind = 2; // whip pan
+            const tDur = 700;
+            const tStart = performance.now();
+            await new Promise<void>(resolve => {
+              const ttick = (now: number) => {
+                const tp = Math.min(1, (now - tStart) / tDur);
+                drawTransition(ctx, img, nextImg, canvas.width, canvas.height, scene.motion, nextScene.motion, tp, kind);
+                if (tp < 1) requestAnimationFrame(ttick);
+                else resolve();
+              };
+              requestAnimationFrame(ttick);
+            });
+          }
+        }
         setExportProgress(Math.round(((idx + 1) / ready.length) * 100));
       }
 
@@ -1576,6 +1649,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           {s.image_url ? <RefreshCw className="w-3 h-3 mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
                           {s.image_url ? "Re-gen" : "Generate"}
                         </Button>
+                        <Button
+                          onClick={() => generateSceneVideo(s.id)}
+                          size="sm"
+                          className="h-7 text-xs bg-primary text-primary-foreground hover:opacity-90"
+                          disabled={!s.image_url || s.generatingVideo}
+                          title="Turn this scene's image into a real animated video clip (Runway AI)"
+                        >
+                          🎬 {s.generatingVideo ? "Animating…" : s.video_url ? "Re-animate" : "Real video"}
+                        </Button>
                         <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
                           From library
                         </Button>
@@ -1799,27 +1881,135 @@ function drawMotionFrame(
   motion: Motion, p: number,
 ) {
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-  // Ease-in-out so motion feels cinematic, not robotic linear
+  // Cinematic ease-in-out
   const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-  // cover-fit base, OVER-SIZED so we always have room to pan/zoom without showing black bars
+  // Cover-fit, oversized so motion never reveals edges
   const iar = img.width / img.height; const car = W / H;
   let bw = W, bh = H;
   if (iar > car) { bh = H; bw = H * iar; } else { bw = W; bh = W / iar; }
-  // Pre-scale base by 1.25 so even pans never reveal edges
-  bw *= 1.25; bh *= 1.25;
-  // motion offsets — significantly amplified so motion is visible on small screens
+  bw *= 1.3; bh *= 1.3;
   let scale = 1, dx = 0, dy = 0;
   switch (motion) {
-    case "zoom-in":   scale = 1 + 0.35 * ease; break;
-    case "zoom-out":  scale = 1.35 - 0.35 * ease; break;
-    case "pan-left":  dx = -0.22 * W * ease; break;
-    case "pan-right": dx =  0.22 * W * ease; break;
-    case "ken-burns": scale = 1 + 0.22 * ease; dx = -0.12 * W * ease; dy = -0.07 * H * ease; break;
-    case "static":    // even "static" gets a subtle ken-burns drift so it never looks frozen
-                      scale = 1 + 0.06 * ease; dx = -0.03 * W * ease; break;
+    case "zoom-in":   scale = 1 + 0.40 * ease; break;
+    case "zoom-out":  scale = 1.40 - 0.40 * ease; break;
+    case "pan-left":  dx = -0.25 * W * ease; break;
+    case "pan-right": dx =  0.25 * W * ease; break;
+    case "ken-burns": scale = 1 + 0.25 * ease; dx = -0.14 * W * ease; dy = -0.08 * H * ease; break;
+    case "static":    scale = 1 + 0.08 * ease; dx = -0.04 * W * ease; break;
   }
   const dw = bw * scale, dh = bh * scale;
-  ctx.drawImage(img, (W - dw) / 2 + dx, (H - dh) / 2 + dy, dw, dh);
+  const px = (W - dw) / 2 + dx;
+  const py = (H - dh) / 2 + dy;
+
+  // ---- Cinematic stack ----
+  // 1) Subtle chromatic aberration: draw red & blue offset copies under main image
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 0.10;
+  ctx.drawImage(img, px - 3, py, dw, dh); // red-ish ghost
+  ctx.drawImage(img, px + 3, py, dw, dh); // blue-ish ghost
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+
+  // 2) Main image
+  ctx.drawImage(img, px, py, dw, dh);
+
+  // 3) Vignette
+  const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vg.addColorStop(0, "rgba(0,0,0,0)");
+  vg.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 4) Cinematic teal-orange tint (very light)
+  ctx.globalCompositeOperation = "overlay";
+  ctx.globalAlpha = 0.12;
+  const tint = ctx.createLinearGradient(0, 0, W, H);
+  tint.addColorStop(0, "rgba(0,80,120,1)");
+  tint.addColorStop(1, "rgba(255,140,60,1)");
+  ctx.fillStyle = tint;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+
+  // 5) Drifting light leak (animated by p)
+  const leakX = W * (0.2 + 0.6 * p);
+  const leak = ctx.createRadialGradient(leakX, H * 0.3, 10, leakX, H * 0.3, W * 0.5);
+  leak.addColorStop(0, "rgba(255,200,120,0.18)");
+  leak.addColorStop(1, "rgba(255,200,120,0)");
+  ctx.fillStyle = leak;
+  ctx.fillRect(0, 0, W, H);
+
+  // 6) Film grain — cheap noise dots
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = "#fff";
+  const grainCount = 220;
+  for (let i = 0; i < grainCount; i++) {
+    const gx = Math.random() * W;
+    const gy = Math.random() * H;
+    ctx.fillRect(gx, gy, 1.5, 1.5);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Cinematic transition between two scene frames during export.
+// kind: 0=crossfade, 1=dip-to-black, 2=whip-pan, 3=zoom-through
+function drawTransition(
+  ctx: CanvasRenderingContext2D,
+  imgA: HTMLImageElement,
+  imgB: HTMLImageElement,
+  W: number, H: number,
+  motionA: Motion, motionB: Motion,
+  p: number, // 0→1 across the transition
+  kind: number,
+) {
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  if (kind === 1) {
+    // Dip to black: A fades out first half, B fades in second half
+    if (p < 0.5) {
+      drawMotionFrame(ctx, imgA, W, H, motionA, 1);
+      ctx.fillStyle = `rgba(0,0,0,${p * 2})`; ctx.fillRect(0, 0, W, H);
+    } else {
+      drawMotionFrame(ctx, imgB, W, H, motionB, 0);
+      ctx.fillStyle = `rgba(0,0,0,${(1 - p) * 2})`; ctx.fillRect(0, 0, W, H);
+    }
+  } else if (kind === 2) {
+    // Whip pan: A slides left, B slides in from right, with motion blur
+    ctx.save();
+    ctx.translate(-W * ease, 0);
+    drawMotionFrame(ctx, imgA, W, H, motionA, 1);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(W * (1 - ease), 0);
+    drawMotionFrame(ctx, imgB, W, H, motionB, 0);
+    ctx.restore();
+    // motion blur streak
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    for (let i = 0; i < 8; i++) ctx.fillRect(0, (H / 8) * i, W, 2);
+    ctx.globalAlpha = 1;
+  } else if (kind === 3) {
+    // Zoom through: A scales up & fades, B scales from small to normal
+    ctx.save();
+    const sa = 1 + ease * 0.6;
+    ctx.translate(W / 2, H / 2); ctx.scale(sa, sa); ctx.translate(-W / 2, -H / 2);
+    ctx.globalAlpha = 1 - ease;
+    drawMotionFrame(ctx, imgA, W, H, motionA, 1);
+    ctx.restore();
+    ctx.save();
+    const sb = 0.6 + ease * 0.4;
+    ctx.translate(W / 2, H / 2); ctx.scale(sb, sb); ctx.translate(-W / 2, -H / 2);
+    ctx.globalAlpha = ease;
+    drawMotionFrame(ctx, imgB, W, H, motionB, 0);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  } else {
+    // Crossfade (default)
+    drawMotionFrame(ctx, imgA, W, H, motionA, 1);
+    ctx.globalAlpha = ease;
+    drawMotionFrame(ctx, imgB, W, H, motionB, 0);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
