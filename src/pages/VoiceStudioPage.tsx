@@ -510,6 +510,14 @@ export default function VoiceStudioPage() {
                           <UserPlus size={12} /> Assign
                         </button>
                         <button
+                          onClick={() => setAsOracleMaster(vid, v.name, (cfg.settings as VoiceSettings) || undefined)}
+                          disabled={!vid}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded text-xs font-medium hover:bg-amber-500/20"
+                          title="Set as Oracle's master voice"
+                        >
+                          <Crown size={12} /> Master
+                        </button>
+                        <button
                           onClick={() => deleteVoice.mutate(v.id)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-destructive/10 text-destructive rounded text-xs ml-auto"
                         >
