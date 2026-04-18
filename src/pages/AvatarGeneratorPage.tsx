@@ -515,8 +515,49 @@ const AvatarGeneratorPage = () => {
                     </>
                   )}
 
-                  {/* Quick-add buttons */}
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Quick-assign — set this avatar as a specific companion type instantly */}
+                  <div className="pt-1">
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 font-bold">⚡ Quick-Assign Companion</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { kind: "girlfriend", label: "💖 Girlfriend", color: "pink" },
+                        { kind: "boyfriend", label: "💙 Boyfriend", color: "blue" },
+                        { kind: "bestie", label: "🤗 Bestie", color: "purple" },
+                      ].map(c => (
+                        <button
+                          key={c.kind}
+                          onClick={() => {
+                            if (!imageUrl || !user) { toast.error("Sign in to save"); return; }
+                            const name = avatarName.trim() || c.label.replace(/[^\w\s]/g, "").trim();
+                            createAvatar.mutate({
+                              name,
+                              purpose: c.kind === "bestie" ? "ai-friend" : "partner",
+                              voice_style: blendedVoice,
+                              personality: `${c.kind}: ${blendedPersonality}`,
+                              image_url: imageUrl,
+                              art_style: selectedStyle,
+                              description: prompt.trim() || null,
+                              is_default: false,
+                            }, {
+                              onSuccess: () => {
+                                toast.success(`${name} is now your ${c.kind}!`);
+                                navigate(c.kind === "bestie" ? "/ai-studio" : "/ai-companion");
+                              },
+                              onError: () => toast.error("Failed to save"),
+                            });
+                          }}
+                          disabled={createAvatar.isPending}
+                          className={`py-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-50 ${
+                            c.color === "pink" ? "border-pink-500/40 bg-pink-500/10 text-pink-300 hover:border-pink-500" :
+                            c.color === "blue" ? "border-blue-500/40 bg-blue-500/10 text-blue-300 hover:border-blue-500" :
+                            "border-purple-500/40 bg-purple-500/10 text-purple-300 hover:border-purple-500"
+                          }`}
+                        >
+                          <span className="text-base leading-none">{c.label.split(" ")[0]}</span>
+                          <span className="text-[10px]">{c.label.split(" ")[1]}</span>
+                        </button>
+                      ))}
+                    </div>
                     <button onClick={() => {
                       if (!imageUrl || !user) { toast.error("Sign in to save"); return; }
                       createAvatar.mutate({
@@ -530,29 +571,8 @@ const AvatarGeneratorPage = () => {
                         is_default: true,
                       }, { onSuccess: () => toast.success("Set as profile avatar!") });
                     }} disabled={createAvatar.isPending}
-                      className="py-2.5 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:border-purple-500/60 transition-all disabled:opacity-50">
+                      className="w-full mt-2 py-2 rounded-xl border border-gray-700 text-gray-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:border-gray-500 transition-all disabled:opacity-50">
                       <UserPlus className="w-3.5 h-3.5" /> Use as Profile Avatar
-                    </button>
-                    <button onClick={() => {
-                      if (!imageUrl || !user) { toast.error("Sign in to save"); return; }
-                      createAvatar.mutate({
-                        name: avatarName.trim() || "AI Partner",
-                        purpose: "partner",
-                        voice_style: blendedVoice,
-                        personality: blendedPersonality,
-                        image_url: imageUrl,
-                        art_style: selectedStyle,
-                        description: prompt.trim() || null,
-                        is_default: false,
-                      }, {
-                        onSuccess: () => {
-                          toast.success(`"${avatarName.trim() || "AI Companion"}" added to chat!`);
-                          navigate("/oracle");
-                        },
-                      });
-                    }} disabled={createAvatar.isPending}
-                      className="py-2.5 rounded-xl border border-pink-500/30 bg-pink-500/10 text-pink-300 text-xs font-medium flex items-center justify-center gap-1.5 hover:border-pink-500/60 transition-all disabled:opacity-50">
-                      <Heart className="w-3.5 h-3.5" /> Add to AI Friends
                     </button>
                   </div>
 
