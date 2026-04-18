@@ -1347,10 +1347,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
           </DialogTitle>
         </DialogHeader>
 
-        {/* Movie Studio exemption notice — applies to ALL tiers including Lifetime */}
+        {/* Cinematic Clip Studio exemption notice — applies to ALL tiers including Lifetime */}
         <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
           <p>
-            <span className="font-bold text-primary">⚠️ Movie Studio is pay-per-use</span> and is <span className="font-semibold">not included</span> in any subscription or the $900 Lifetime Unlock. Each scene generates real images, AI voices, music and SFX through third-party providers (ElevenLabs, image-gen, etc.), so each clip is billed individually. Generate as many as you like — there's no cap.
+            <span className="font-bold text-primary">⚠️ Cinematic Clip Studio is pay-per-use</span> and is <span className="font-semibold">not included</span> in any subscription or the $900 Lifetime Unlock. Each scene generates real images, AI voices, music and SFX through third-party providers (ElevenLabs, image-gen, etc.), so each clip is billed individually. Generate as many as you like — there's no cap.
           </p>
         </div>
 
