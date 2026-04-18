@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Lock, Sparkles, Star, Crown } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 interface PaywallGateProps {
   children: ReactNode;
