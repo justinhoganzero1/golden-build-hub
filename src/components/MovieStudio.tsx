@@ -1558,8 +1558,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                   ? `+10 scenes (free)`
                   : `+10 scenes ($${nextBlockPrice})`}
               </Button>
-              <Button onClick={exportMovie} disabled={exporting} size="sm">
-                {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export</>}
+              <Button onClick={previewFullMovie} disabled={exporting || previewSceneId === "__full__"} size="sm" variant="secondary" title="Play all scenes back-to-back with transitions (silent preview)">
+                {previewSceneId === "__full__" ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Playing…</> : <><Play className="w-3 h-3 mr-1" /> Preview full movie</>}
+              </Button>
+              <Button onClick={exportMovie} disabled={exporting} size="sm" title="Stitches every scene + transitions + voice + music + SFX into ONE continuous video file">
+                {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export stitched movie</>}
               </Button>
             </div>
 
