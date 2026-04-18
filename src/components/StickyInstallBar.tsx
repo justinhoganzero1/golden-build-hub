@@ -46,7 +46,7 @@ const StickyInstallBar = () => {
     platform === "ios" ? "iPhone & iPad" : platform === "android" ? "Android" : "Desktop";
 
   return (
-    <div className="sticky top-0 z-50 w-full bg-gradient-to-r from-primary via-amber-500 to-primary text-primary-foreground shadow-[0_4px_30px_hsl(var(--primary)/0.5)] animate-fade-in">
+    <div className="sticky top-0 z-50 w-full bg-primary text-primary-foreground shadow-[0_4px_30px_hsl(var(--primary)/0.5)] animate-fade-in" style={{ backgroundImage: "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 50%, hsl(var(--primary)) 100%)" }}>
       <div className="max-w-6xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles className="h-4 w-4 shrink-0 animate-pulse" />
