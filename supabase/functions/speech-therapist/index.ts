@@ -1,5 +1,5 @@
 // =============================================================================
-// SPEECH THERAPIST — 20-LAYER HUMAN VOICE STACK + Self-Listen QA
+// SPEECH THERAPIST — 30-LAYER HUMAN VOICE STACK + Self-Listen QA
 // =============================================================================
 // Pipeline per request:
 //   1. Bundle D (deterministic pre-processor, ~5ms, no LLM)
@@ -8,17 +8,18 @@
 //        18. Multilingual phrase guard (lang="xx" hint annotation)
 //        19. Homograph disambiguator
 //        20. Profanity & clinical softener
-//   2. Bundle A+B+C rewrite (1 LLM call on flash-lite, ~600ms)
-//        Bundle A — Emotional Intelligence (mood, listener-aware tone,
-//                   empathy mirroring, energy ramp, tender slowdown)
-//        Bundle B — Natural Human Quirks (breath/sigh, fillers,
-//                   self-correction, laughter, thinking pauses)
-//        Bundle C — Prosody & Melody (sentence contour, SSML breaks,
-//                   question-cluster lift, list intonation, climax)
-//   3. Bonus QA — Self-Listen Pass (optional, default ON)
-//        Re-reads the rewrite, scores robotic-ness 0-10, only re-rewrites
-//        if score > 4. Saves cost when first pass is already good.
+//   2. Bundle A+B+C+E rewrite (1 LLM call on flash-lite, ~600ms)
+//        Bundle A — Emotional Intelligence (1-5)
+//        Bundle B — Natural Human Quirks (6-10)
+//        Bundle C — Prosody & Melody / SSML (11-15)
+//        Bundle E — Reactive Expressions & Youthanisms (21-30)
+//                   context-aware giggles, chuckles, aww, ohhh, yikes,
+//                   oof, surprise, sympathy, excitement, slang (fr, ngl,
+//                   lowkey, bestie), teasing — all strictly gated by
+//                   detected emotion, intent, persona, and listener state.
+//   3. Bonus QA — Self-Listen Pass (re-rewrite if robotic > 4/10)
 // =============================================================================
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
