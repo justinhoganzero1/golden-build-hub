@@ -15,6 +15,7 @@ import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -57,6 +58,7 @@ const loaders = {
   "/wallet": () => import("./pages/WalletPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
+  "/admin/editor": () => import("./pages/AdminEditorPage"),
   "/ai-companion": () => import("./pages/AICompanionPage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
@@ -190,6 +192,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
+              <AnnouncementBanner />
               <PreviewModeBanner />
               <MasterMuteButton />
               
@@ -236,6 +239,7 @@ const App = () => (
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
                   <Route path="/owner-dashboard" element={<RequireAuth><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/admin/editor" element={<RequireAuth><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
