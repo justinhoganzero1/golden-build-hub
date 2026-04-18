@@ -593,10 +593,20 @@ const PortalLandingPage = () => {
             <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-5">
             <a href="/privacy-policy" className="hover:text-primary">Privacy</a>
             <a href="/terms-of-service" className="hover:text-primary">Terms</a>
             <a href="/about" className="hover:text-primary">About</a>
+            <button
+              type="button"
+              onClick={() => navigate(isAdmin ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+              aria-label="Owner access"
+              title="Owner access"
+            >
+              <AdminShield className="h-3.5 w-3.5" />
+              <span>Owner</span>
+            </button>
             <span className="inline-flex items-center gap-1 text-xs">
               <Lock className="h-3.5 w-3.5" /> AI Anti-Hacker Active
             </span>
