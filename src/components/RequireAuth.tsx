@@ -17,7 +17,7 @@ const RequireAuth = ({ children }: { children: ReactNode }) => {
 
   // Step 1: web preview = locked dummy
   if (isDemoMode()) {
-    return <DemoGate />;
+    return <DemoGate>{null}</DemoGate>;
   }
 
   if (loading) {
