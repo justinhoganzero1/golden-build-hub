@@ -7,6 +7,7 @@ import {
   Camera, Grid, List, Trash2, Play, Download, Share2
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StripeConnectPanel from "@/components/StripeConnectPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -461,6 +462,9 @@ const OwnerDashboardPage = () => {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-4">
+            {/* Stripe Connect demo (admin view) */}
+            <StripeConnectPanel />
+
             {/* Private Live Traffic — admin only, your site */}
             <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
