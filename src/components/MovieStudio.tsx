@@ -1652,12 +1652,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                         <Button
                           onClick={() => generateSceneVideo(s.id)}
                           size="sm"
-                          className="h-7 text-xs bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:opacity-90"
+                          className="h-7 text-xs bg-primary text-primary-foreground hover:opacity-90"
                           disabled={!s.image_url || s.generatingVideo}
                           title="Turn this scene's image into a real animated video clip (Runway AI)"
                         >
                           🎬 {s.generatingVideo ? "Animating…" : s.video_url ? "Re-animate" : "Real video"}
                         </Button>
+                        <Button onClick={() => { setLibraryTargetId(s.id); setShowLibrary(true); }} size="sm" variant="outline" className="h-7 text-xs">
+                          From library
                         </Button>
                         <Button onClick={() => triggerUpload(s.id)} size="sm" variant="outline" className="h-7 text-xs">
                           <Upload className="w-3 h-3 mr-1" /> Upload
