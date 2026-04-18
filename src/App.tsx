@@ -67,6 +67,7 @@ const loaders = {
   "/web-wrapper": () => import("./pages/WebWrapperPage"),
   "/assistant-phone": () => import("./pages/AssistantPhonePage"),
   "/claims-assistant": () => import("./pages/ClaimsAssistantPage"),
+  "/personal-vault": () => import("./pages/PersonalVaultPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -121,6 +122,7 @@ const SignInPage = lazy(loaders["/sign-in"]);
 const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 const AssistantPhonePage = lazy(loaders["/assistant-phone"]);
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
+const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -206,6 +208,7 @@ const App = () => (
                   <Route path="/web-wrapper" element={<ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary>} />
                   <Route path="/assistant-phone" element={<ErrorBoundary pageName="Assistant Phone"><AssistantPhonePage /></ErrorBoundary>} />
                   <Route path="/claims-assistant" element={<ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary>} />
+                  <Route path="/personal-vault" element={<ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

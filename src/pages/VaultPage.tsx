@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { CreditCard, Lock, Plus, Eye, EyeOff, Copy, Trash2, Shield, Key, Globe } from "lucide-react";
+import { CreditCard, Lock, Plus, Eye, EyeOff, Copy, Trash2, Shield, Key, Globe, FileText, ChevronRight } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 interface VaultItem {
   id: string;
@@ -85,6 +86,23 @@ const VaultPage = () => {
           <span className="text-xs text-muted-foreground">Vault locked • Biometric ready</span>
           <Lock className="w-3 h-3 text-primary ml-auto" />
         </div>
+      </div>
+
+      {/* Personal Vault entry — claim & identity details */}
+      <div className="px-4 mb-4">
+        <Link
+          to="/personal-vault"
+          className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30"
+        >
+          <div className="p-2 rounded-lg bg-primary/20">
+            <FileText className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-foreground">Personal Vault</h3>
+            <p className="text-[11px] text-muted-foreground">Claim, identity, medical & employment — used by Oracle</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-primary" />
+        </Link>
       </div>
 
       {/* Filters */}
