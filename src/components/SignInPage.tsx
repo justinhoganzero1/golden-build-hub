@@ -35,13 +35,25 @@ const SignInPage = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const refCode = searchParams.get("ref") || localStorage.getItem("solace-ref-code") || null;
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account!");
+        // Fire-and-forget: grant the 30-day Tier 3 welcome trial + attach referral.
+        // If session is already active (auto-confirm on), this runs immediately;
+        // otherwise AuthContext picks it up after email confirmation.
+        if (signUpData.session) {
+          supabase.functions.invoke("grant-signup-reward", {
+            body: { referralCode: refCode },
+          }).catch(() => {});
+          localStorage.removeItem("solace-ref-code");
+        } else if (refCode) {
+          localStorage.setItem("solace-ref-code", refCode);
+        }
+        toast.success("Welcome! You've unlocked 30 days of Tier 3 free 🎉");
       } else {
         // Hard email gate for owner dashboard — only the owner email can sign in to /owner-dashboard
         if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
