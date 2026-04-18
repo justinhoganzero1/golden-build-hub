@@ -293,7 +293,7 @@ const App = () => (
                   <Route path="/free-seo-tools" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-email-writer" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
-                  <Route path="/apps" element={<ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary>} />
+                  <Route path="/apps" element={<RequireAuth><ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/apps/:slug" element={<RequireAuth><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></RequireAuth>} />
                   <Route path="/advertise" element={<ErrorBoundary pageName="Advertise"><AdvertisePage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
