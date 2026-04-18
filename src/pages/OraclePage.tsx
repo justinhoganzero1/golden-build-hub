@@ -122,7 +122,7 @@ const OraclePage = () => {
     const file = e.target.files?.[0];
     if (e.target) e.target.value = "";
     if (!file) return;
-    if (file.size > 25 * 1024 * 1024) { toast.error("File too large (max 25MB)"); return; }
+    if (file.size > 1024 * 1024 * 1024) { toast.error("File too large (max 1 GB)"); return; }
     setUploading(true);
     try {
       const dataUrl: string = await new Promise((res, rej) => {
