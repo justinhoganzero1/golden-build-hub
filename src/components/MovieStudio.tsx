@@ -450,6 +450,48 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     }
   };
 
+  // ----- Generate REAL AI video clip for a scene (Runway image-to-video) -----
+  const generateSceneVideo = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene?.image_url) { toast.error("Generate the scene photo first"); return; }
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: true } : s));
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/runway-image-to-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({
+          image_url: scene.image_url,
+          prompt: `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim(),
+          duration: 10, // Runway gen3a_turbo max — we'll loop for the 20s scene
+          ratio: "1280:768",
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        if (data.error === "RUNWAY_API_KEY missing") {
+          toast.error("Add a RUNWAY_API_KEY in project secrets to enable real AI video.", { duration: 6000 });
+        } else {
+          toast.error(data.error || "Video generation failed");
+        }
+        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
+        return;
+      }
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, video_url: data.video_url, generatingVideo: false } : s));
+      if (user && data.video_url) saveMedia.mutate({
+        media_type: "video",
+        title: `Movie clip - ${scene.caption.slice(0, 40)}`,
+        url: data.video_url,
+        source_page: "movie-studio",
+        metadata: { sceneId, source: "runway" },
+      });
+      toast.success("Real video clip generated");
+    } catch (e) {
+      console.error(e); toast.error("Video generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
+    }
+  };
+
+
   const generateAll = async () => {
     const pending = scenes.filter(s => !s.image_url).map(s => s.id);
     if (pending.length === 0) { toast.info("All scenes already have photos"); return; }
