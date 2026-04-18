@@ -73,6 +73,7 @@ const loaders = {
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
+  "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
   "/ai-chat-companion": () => import("./pages/SeoLandingPage"),
   "/ai-friend": () => import("./pages/SeoLandingPage"),
   "/free-ai-chat": () => import("./pages/SeoLandingPage"),
