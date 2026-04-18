@@ -134,6 +134,8 @@ const ClaimsAppPage = () => {
           <p className="text-[10px] text-muted-foreground text-center mt-2">
             Use the buttons above to dial directly. (AI-assisted calling is temporarily vaulted.)
           </p>
+        </div>
+      </section>
 
       {/* Chat */}
       <section className="px-4 max-w-3xl mx-auto">
