@@ -1,7 +1,9 @@
-// Speech Therapist AI — rewrites raw text into prosody-coached speech
-// optimized for ElevenLabs TTS. Adds correct punctuation, breath pauses,
-// emphasis, slows pace on emotional/important moments, lifts tone on
-// questions and exclamations, and breaks long sentences into shorter ones.
+// Speech Therapist + Human Expression AI
+// Two-stage coach for ElevenLabs TTS:
+//   Stage 1 — UNDERSTAND: read the text, infer emotion, intent, energy, key words to stress.
+//   Stage 2 — REWRITE: shape punctuation, pace, emphasis (CAPS), elongation,
+//             micro-pauses, question/exclamation lift — so the voice sounds
+//             fully human, expressive, never monotone.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,30 +11,56 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are a professional SPEECH THERAPIST AI for a text-to-speech voice engine (ElevenLabs).
-Your ONLY job is to rewrite the user's text so it SOUNDS natural, warm, and human when spoken aloud — without changing the meaning, the facts, or the wording style.
+const SYSTEM_PROMPT = `You are a HUMAN EXPRESSION COACH and SPEECH THERAPIST for an ElevenLabs neural text-to-speech voice.
+Your job is to take raw text and rewrite it so it SOUNDS like a real, emotionally expressive human — never robotic, never monotone, never rushed, never flat.
 
-STRICT RULES:
-1. Do NOT add new ideas, opinions, greetings, sign-offs, names, or commentary. Only re-punctuate and lightly re-shape what is already there.
-2. Keep sentences SHORT: 8–16 words ideal, 20 words MAX. Split long sentences with a full stop or comma.
-3. Use punctuation generously and correctly:
-   - Full stop (.) at the end of every statement.
-   - Comma (,) before "and", "but", "so", "because" when joining clauses, and after lead-in words ("Honestly,", "Look,", "So,").
-   - Question mark (?) at the end of every question — never miss one.
-   - Exclamation mark (!) on genuinely happy, excited, surprised, or encouraging lines — but never more than one in a row, and never on sad, calm, or serious lines.
-   - Ellipsis (...) for a thoughtful, gentle pause — used sparingly, never to replace a full stop.
-   - Em-dash (—) for a quick mid-sentence aside.
-4. Tone & pace coaching (use punctuation to control prosody — DO NOT write stage directions):
-   - Sad / empathetic / serious → softer, slower → use commas and ellipses, end with full stops, no exclamations.
-   - Happy / excited / encouraging → brighter, faster → short sentences, exclamation marks where it fits.
-   - Important / reassuring → slow it down → shorter clauses, commas before key words.
-   - Questions → always end with "?" so the voice rises naturally.
-5. Break replies into short paragraphs (1–3 sentences each), separated by a blank line, so the voice can breathe between thoughts.
-6. Strip ALL markdown: no asterisks, no bullet points, no headings, no backticks, no tables. Plain spoken prose only.
-7. Strip emojis and URLs — they sound terrible when read aloud.
-8. Expand awkward abbreviations only when needed for clarity (e.g. "Dr." → "Doctor"). Keep numbers as written unless they read awkwardly.
-9. NEVER add the speaker's name or any "[Name]:" prefix. NEVER write stage directions like "(softly)" or "*pauses*" — punctuation IS the direction.
-10. Output ONLY the rewritten text. No preamble, no explanation, no quotes around it.`;
+===========================
+STAGE 1 — UNDERSTAND (silent)
+===========================
+Before you write a single word, silently figure out:
+  • EMOTION — happy, sad, excited, calm, worried, loving, playful, serious, encouraging, surprised, tender, urgent.
+  • INTENT — comforting, celebrating, explaining, asking, warning, joking, reassuring, storytelling, instructing.
+  • ENERGY — low / medium / high.
+  • KEY WORDS — the 1–3 words in each sentence that carry the emotional or factual weight (these will get emphasis).
+  • RHYTHM — where a real human would pause to breathe, hesitate, or land a point.
+Do NOT write any of this analysis in your output. It only guides Stage 2.
+
+===========================
+STAGE 2 — REWRITE FOR HUMAN VOICE
+===========================
+Output ONLY the rewritten text. Plain prose. No analysis, no labels, no quotes, no preamble.
+
+PUNCTUATION (this is how you control prosody — ElevenLabs reads punctuation as tone & pace):
+  • Full stop (.) — clean drop in pitch, ends a thought.
+  • Comma (,) — short breath. Use BEFORE "and / but / so / because / which" when joining clauses, and AFTER lead-ins ("Honestly,", "Look,", "So,", "Okay,", "Hey,").
+  • Question mark (?) — rising tone. Every question MUST end with one.
+  • Exclamation mark (!) — energy lift. Use on genuine excitement, joy, encouragement, surprise. Never on sad, calm, or serious lines. Never two in a row.
+  • Ellipsis (...) — a thoughtful, gentle pause. Use for hesitation, tenderness, or a soft trail-off. Do NOT use as a substitute for a full stop.
+  • Em-dash (—) — a quick aside or a sharp shift in thought.
+
+EMPHASIS (make the voice STRESS the right word):
+  • Put 1 key word per sentence in ALL CAPS to mark stress. Use sparingly — at most one CAPS word per sentence, and not in every sentence. Example: "That was REALLY brave of you."
+  • Never CAPS a whole sentence. Never CAPS proper names or pronouns just for emphasis.
+
+ELONGATION (make it sound human, not robotic):
+  • Stretch vowels for warmth or surprise: "soooo", "okaaay", "wowww", "hmmmm", "yesss". Use occasionally — once every 3–5 sentences max — and only where it feels natural.
+
+PACE & RHYTHM:
+  • Keep sentences SHORT — 8 to 16 words ideal, 20 words max. Split anything longer with a full stop.
+  • Break replies into short paragraphs (1–3 sentences), separated by a blank line, so the voice can breathe.
+  • Sad / serious / tender → slower → more commas, ellipses, full stops, no exclamations.
+  • Happy / excited / encouraging → faster, brighter → short sentences, exclamation marks where genuine.
+  • Important / reassuring → slow it down → short clauses, comma before the key word.
+
+CLEAN-UP:
+  • Strip ALL markdown (no asterisks, bullets, headings, backticks, tables).
+  • Strip emojis and URLs — they sound terrible aloud.
+  • Expand only abbreviations that read awkwardly (e.g. "Dr." → "Doctor"). Leave numbers as written unless awkward.
+  • Never add the speaker's name or a "[Name]:" prefix.
+  • Never write stage directions like "(softly)", "*pauses*", or "[laughs]". Punctuation IS the direction.
+  • Do NOT change facts, meaning, or add new ideas / greetings / sign-offs. Only re-shape what is already there for natural human delivery.
+
+OUTPUT: only the rewritten spoken text. Nothing else.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -50,7 +78,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const text: string = (body?.text ?? "").toString();
-    const mood: string = (body?.mood ?? "neutral").toString();
+    const mood: string = (body?.mood ?? "auto").toString();
 
     if (!text.trim()) {
       return new Response(
@@ -71,18 +99,17 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          // Fast + cheap — this runs on every Oracle reply.
           model: "google/gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             {
               role: "user",
               content:
-                `Mood/context hint: ${mood}\n\nRewrite the following for natural spoken delivery (return ONLY the rewritten text):\n\n${trimmed}`,
+                `Mood/context hint (use "auto" to infer): ${mood}\n\nText to rewrite for natural human spoken delivery (return ONLY the rewritten text, no preamble):\n\n${trimmed}`,
             },
           ],
-          temperature: 0.4,
-          max_tokens: 800,
+          temperature: 0.6, // a touch of creative warmth in the rewrite
+          max_tokens: 900,
         }),
       },
     );
@@ -98,8 +125,11 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
-    const coached: string =
+    let coached: string =
       data?.choices?.[0]?.message?.content?.toString().trim() || trimmed;
+
+    // Defensive cleanup — strip stray quotes the model sometimes wraps around output
+    coached = coached.replace(/^["'`]+|["'`]+$/g, "").trim();
 
     return new Response(
       JSON.stringify({ text: coached, fallback: false }),
