@@ -515,6 +515,12 @@ const LiveVisionPage = () => {
 
   return (
     <PaywallGate requiredTier="monthly" featureName="Live Vision (real-time AI camera)">
+    <>
+    <SEO
+      title="Live Vision — Real-Time AI Camera Analysis"
+      description="SOLACE Live Vision: point your camera, get instant AI analysis — text extraction, object ID, scene description, watch alerts."
+      path="/live-vision"
+    />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <canvas ref={canvasRef} className="hidden" />

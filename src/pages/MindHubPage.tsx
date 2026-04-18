@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import SEO from "@/components/SEO";
 import { cleanTextForSpeech } from "@/lib/utils";
 import { Brain, Smile, Frown, Meh, TrendingUp, Heart, Play, Pause, Volume2, MessageSquare, Wind, Eye, Loader2, Timer, Sparkles, Moon, Sun } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -311,6 +312,12 @@ const MindHubPage = () => {
   }
 
   return (
+    <>
+    <SEO
+      title="Mind Hub — Free AI Mental Wellness & Therapy Companion"
+      description="SOLACE Mind Hub: free guided breathing, meditation, mood tracking and a caring AI to talk through anxiety and stress. 24/7."
+      path="/mind-hub"
+    />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">

@@ -2027,6 +2027,7 @@ const OraclePage = () => {
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
     </div>
+    </>
   );
 };
 

@@ -225,6 +225,12 @@ IMPORTANT: HTML must be 100% self-contained except Google Fonts. Make it look AM
   };
 
   return (
+    <>
+    <SEO
+      title="AI App Builder — Build Web Apps By Chatting"
+      description="SOLACE App Builder: describe an app and AI builds it. Full HTML, deploy to Play Store, monetize. Free to start."
+      path="/app-builder"
+    />
     <div className="min-h-screen bg-background flex flex-col">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-2">
