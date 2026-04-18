@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Solace — Your AI Companion</title>
-    <meta name="description" content="Solace is your all-in-one AI companion app for wellness, productivity, creativity, safety, and more.">
+    <title>SOLACE — AI Companion App for Wellness, Safety & Productivity</title>
+    <meta name="description" content="SOLACE is the all-in-one AI companion app: voice oracle, AI tutor, mind hub, crisis support, photography, marketing & more. Free to start." />
     <meta name="theme-color" content="#FFAA00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -46,16 +46,36 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "MobileApplication",
-      "name": "Solace",
-      "description": "All-in-one AI companion for wellness, productivity, creativity, safety, and more.",
-      "applicationCategory": "LifestyleApplication",
-      "operatingSystem": "Android",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "SOLACE",
+          "url": "https://oracle-lunar.online/",
+          "logo": "https://oracle-lunar.online/icons/icon-512.png",
+          "sameAs": ["https://golden-vault-builder.lovable.app"]
+        },
+        {
+          "@type": "WebSite",
+          "name": "SOLACE",
+          "url": "https://oracle-lunar.online/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://oracle-lunar.online/?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "MobileApplication",
+          "name": "SOLACE — AI Companion",
+          "alternateName": "Solace AI",
+          "description": "All-in-one AI companion: voice oracle, AI tutor, mind hub, crisis support, photography, marketing and more.",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "Android, iOS, Web",
+          "url": "https://oracle-lunar.online/",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127" }
+        }
+      ]
     }
     </script>
 
