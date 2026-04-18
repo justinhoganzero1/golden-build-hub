@@ -1,5 +1,8 @@
 // Claims Assistant: research claim requirements + draft claim letter
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +78,25 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { action, claim_id, provider = "hostplus", claim_data } = body;
+
+    // ── Jailbreak guard on any free-text fields the user submits ──
+    const userId = (claimsAuth.claims.sub as string) ?? null;
+    const userEmail = (claimsAuth.claims.email as string) ?? null;
+    const isOwner = userEmail?.toLowerCase() === ADMIN_EMAIL;
+    const probe = [
+      claim_data?.injury_description,
+      claim_data?.notes,
+      claim_data?.body_parts,
+    ].filter((x: any) => typeof x === "string" && x.length > 0).join("\n");
+    if (probe) {
+      const guard = await checkJailbreak({ userId, userEmail, isOwner, message: probe });
+      if (guard.blocked) {
+        return new Response(
+          JSON.stringify({ error: "security_block", message: guard.message, deleted: guard.deleted }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     if (action === "research") {
       const res = await research(provider);
