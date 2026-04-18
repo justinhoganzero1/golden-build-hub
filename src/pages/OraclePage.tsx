@@ -131,6 +131,33 @@ const OraclePage = () => {
   // Tracks whether we paused the recognizer because Oracle is speaking, so we can resume after.
   const pausedForSpeechRef = useRef(false);
   const explosionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const lastAutoSentRef = useRef<{ text: string; at: number }>({ text: "", at: 0 });
+
+  const normalizeCapturedText = useCallback((value: string) => value.replace(/\s+/g, " ").trim().toLowerCase(), []);
+
+  const mergeCapturedTranscript = useCallback((existing: string, incoming: string) => {
+    const current = existing.replace(/\s+/g, " ").trim();
+    const next = incoming.replace(/\s+/g, " ").trim();
+    if (!next) return current;
+    if (!current) return next;
+
+    const normalizedCurrent = normalizeCapturedText(current);
+    const normalizedNext = normalizeCapturedText(next);
+
+    if (normalizedCurrent === normalizedNext || normalizedCurrent.endsWith(normalizedNext)) return current;
+    if (normalizedNext.startsWith(normalizedCurrent)) return next;
+
+    const maxOverlap = Math.min(current.length, next.length);
+    for (let i = maxOverlap; i > 0; i--) {
+      const currentTail = normalizeCapturedText(current.slice(-i));
+      const nextHead = normalizeCapturedText(next.slice(0, i));
+      if (currentTail && currentTail === nextHead) {
+        return `${current} ${next.slice(i)}`.replace(/\s+/g, " ").trim();
+      }
+    }
+
+    return `${current} ${next}`.replace(/\s+/g, " ").trim();
+  }, [normalizeCapturedText]);
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
@@ -924,7 +951,7 @@ const OraclePage = () => {
         else interim += transcript;
       }
       if (final) {
-        finalTranscriptRef.current += final;
+        finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
           // Re-check at fire time in case speech started during the silence window
@@ -932,7 +959,7 @@ const OraclePage = () => {
             finalTranscriptRef.current = "";
             return;
           }
-          const text = finalTranscriptRef.current.trim();
+          const text = finalTranscriptRef.current.replace(/\s+/g, " ").trim();
           finalTranscriptRef.current = "";
           // Sensitivity guard: ignore short stray utterances (background noise, single words, "uh", "ok", etc.)
           const wordCount = text.split(/\s+/).filter(Boolean).length;
@@ -940,6 +967,12 @@ const OraclePage = () => {
             setInput("");
             return;
           }
+          const normalized = normalizeCapturedText(text);
+          if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
+            setInput("");
+            return;
+          }
+          lastAutoSentRef.current = { text: normalized, at: Date.now() };
           setInput("");
           sendMessageRef.current?.(text);
         }, 4000);
