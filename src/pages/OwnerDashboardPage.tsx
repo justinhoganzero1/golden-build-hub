@@ -132,14 +132,50 @@ const OwnerDashboardPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Hardened admin gate:
+  // 1) Hard email allowlist — ONLY justinbretthogan@gmail.com is permitted, no matter what.
+  // 2) On the public web (not the installed native app), force a fresh sign-in every visit
+  //    by signing out any cached session and sending the visitor to /sign-in.
+  //    This prevents the admin tab from "auto-opening" on the website.
+  const ADMIN_EMAIL = "justinbretthogan@gmail.com";
   useEffect(() => {
-    // Only redirect once we've fully resolved auth + admin status,
-    // and only if the user is signed in but not an admin.
     if (loading || adminLoading) return;
+
+    const isNativeApp =
+      typeof window !== "undefined" &&
+      // Capacitor injects this global on the installed Android/iOS app
+      (!!(window as any).Capacitor?.isNativePlatform?.() ||
+        // Standalone PWA also counts as installed
+        window.matchMedia?.("(display-mode: standalone)")?.matches);
+
+    // PUBLIC WEB → always force a fresh login. Never auto-open the admin dashboard.
+    if (!isNativeApp) {
+      const sessionFlag = sessionStorage.getItem("admin-fresh-login");
+      if (!sessionFlag) {
+        // Wipe any cached Supabase session so the website can never auto-sign-in to admin
+        supabase.auth.signOut().finally(() => {
+          sessionStorage.setItem("admin-pending-login", "1");
+          navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });
+        });
+        return;
+      }
+    }
+
     if (!user) {
-      navigate("/sign-in?redirect=/owner-dashboard", { replace: true });
+      navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });
       return;
     }
+
+    // Hard email allowlist — block anyone else immediately, even if RBAC ever leaks.
+    const email = (user.email || "").trim().toLowerCase();
+    if (email !== ADMIN_EMAIL) {
+      supabase.auth.signOut().finally(() => {
+        toast.error("Admin access denied.");
+        navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });
+      });
+      return;
+    }
+
     if (!isAdmin) {
       navigate("/dashboard", { replace: true });
     }
