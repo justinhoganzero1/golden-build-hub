@@ -1083,6 +1083,104 @@ const OraclePage = () => {
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
 
+    // ── PHONE CONTROL CONSENT GATE (3-prompt confirmation) ──
+    // Oracle must ask the user three separate times before being granted
+    // "full phone control" mode. Once granted, the flag persists for the
+    // session (cleared on tab close).
+    if (!isIntroTrigger) {
+      const askTextRe = /(take|get|have|gain|give you|grant you|you (can )?control|full control|control of (my )?phone|control my phone|run my phone|operate my phone|full access to (my )?phone|take over (my )?phone)/i;
+      const yesRe = /^(yes|yeah|yep|yup|sure|ok(ay)?|i agree|agreed|do it|go ahead|confirm(ed)?|i consent|grant(ed)?|approve(d)?|i'?m sure|absolutely|definitely)\b/i;
+      const noRe = /^(no|nope|cancel|stop|never mind|nevermind|abort|don'?t)\b/i;
+
+      const stage = parseInt(sessionStorage.getItem("solace-phone-control-stage") || "0", 10);
+      const alreadyGranted = sessionStorage.getItem("solace-phone-control-granted") === "1";
+      const userMsgPC: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+
+      // Initial request
+      if (!alreadyGranted && stage === 0 && askTextRe.test(text)) {
+        sessionStorage.setItem("solace-phone-control-stage", "1");
+        const ack: Message = {
+          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+          content: "Before I take full control of your phone, I need to confirm this with you three times. This grants me permission to make calls, send messages, open apps, navigate, use the camera, and act on your behalf. First confirmation — do you want me to take full control of your phone? Please say yes or no.",
+        };
+        setShowChat(true);
+        setMessages(prev => [...prev, userMsgPC, ack]);
+        if (!isMuted) speakAsAgent(ack.content, oracleName);
+        return;
+      }
+
+      // Mid-confirmation flow
+      if (!alreadyGranted && stage > 0 && stage < 3) {
+        if (noRe.test(text)) {
+          sessionStorage.removeItem("solace-phone-control-stage");
+          const ack: Message = {
+            id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+            content: "Understood — I won't take control of your phone. We can keep going as normal.",
+          };
+          setShowChat(true);
+          setMessages(prev => [...prev, userMsgPC, ack]);
+          if (!isMuted) speakAsAgent(ack.content, oracleName);
+          return;
+        }
+        if (yesRe.test(text)) {
+          const next = stage + 1;
+          sessionStorage.setItem("solace-phone-control-stage", String(next));
+          const prompts = [
+            "Second confirmation — are you absolutely sure you want me to have full control of your phone? Say yes to continue.",
+            "Final confirmation — this is the third and last check. Say yes and I will take full control of your phone for this session.",
+          ];
+          const ack: Message = {
+            id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+            content: prompts[stage - 1] || prompts[0],
+          };
+          setShowChat(true);
+          setMessages(prev => [...prev, userMsgPC, ack]);
+          if (!isMuted) speakAsAgent(ack.content, oracleName);
+          return;
+        }
+      }
+
+      // Final grant
+      if (!alreadyGranted && stage === 3 && yesRe.test(text)) {
+        sessionStorage.setItem("solace-phone-control-granted", "1");
+        sessionStorage.removeItem("solace-phone-control-stage");
+        toast.success("Full phone control granted for this session");
+        const ack: Message = {
+          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "👑", color: "#FFD700",
+          content: "Confirmed three times. I now have full control of your phone for this session. Just tell me what you need — make a call, send a message, open an app, navigate somewhere — and I'll take care of it. You can revoke this any time by saying 'revoke phone control'.",
+        };
+        setShowChat(true);
+        setMessages(prev => [...prev, userMsgPC, ack]);
+        if (!isMuted) speakAsAgent(ack.content, oracleName);
+        return;
+      }
+      if (!alreadyGranted && stage === 3 && noRe.test(text)) {
+        sessionStorage.removeItem("solace-phone-control-stage");
+        const ack: Message = {
+          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+          content: "No problem — phone control was not granted. Nothing changes.",
+        };
+        setShowChat(true);
+        setMessages(prev => [...prev, userMsgPC, ack]);
+        if (!isMuted) speakAsAgent(ack.content, oracleName);
+        return;
+      }
+
+      // Revoke
+      if (alreadyGranted && /(revoke|cancel|disable|turn off|stop)\s+(phone\s+)?control/i.test(text)) {
+        sessionStorage.removeItem("solace-phone-control-granted");
+        toast("Phone control revoked");
+        const ack: Message = {
+          id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
+          content: "Phone control revoked. I'm back to normal assistant mode.",
+        };
+        setShowChat(true);
+        setMessages(prev => [...prev, userMsgPC, ack]);
+        if (!isMuted) speakAsAgent(ack.content, oracleName);
+        return;
+      }
+    }
+
     // Free-tier daily chat limit is now enforced server-side in the oracle-chat
     // edge function (see oracle_chat_usage table). Server returns 402 when over
     // the limit and exposes X-Oracle-Usage-* headers we read after each call.
