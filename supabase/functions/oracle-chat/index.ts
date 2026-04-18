@@ -160,6 +160,7 @@ Available apps and their paths:
 - Creators: /creators
 - Dashboard / Home: /dashboard
 - Avatar Gallery: /avatar-gallery
+- Claims Assistant (HostPlus / WorkCover QLD pay-protection / income protection / insurance claims): /claims-assistant
 
 CRITICAL NAVIGATION RULE: When the user asks you to open an app, go somewhere, or do something that involves another app screen, you must ALWAYS ask the user FIRST before navigating:
 "Would you like me to take you there, or would you prefer I handle it in the background while we keep chatting?"
