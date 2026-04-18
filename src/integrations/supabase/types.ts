@@ -497,30 +497,84 @@ export type Database = {
       referrals: {
         Row: {
           created_at: string
+          friend_subscribed_at: string | null
+          granted_to_user_id: string | null
           id: string
+          qualifies_at: string | null
+          qualifying_subscription_id: string | null
           referral_code: string
           referred_email: string
           referrer_id: string
           reward_granted: boolean | null
+          reward_granted_at: string | null
           status: string
         }
         Insert: {
           created_at?: string
+          friend_subscribed_at?: string | null
+          granted_to_user_id?: string | null
           id?: string
+          qualifies_at?: string | null
+          qualifying_subscription_id?: string | null
           referral_code: string
           referred_email: string
           referrer_id: string
           reward_granted?: boolean | null
+          reward_granted_at?: string | null
           status?: string
         }
         Update: {
           created_at?: string
+          friend_subscribed_at?: string | null
+          granted_to_user_id?: string | null
           id?: string
+          qualifies_at?: string | null
+          qualifying_subscription_id?: string | null
           referral_code?: string
           referred_email?: string
           referrer_id?: string
           reward_granted?: boolean | null
+          reward_granted_at?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      reward_grants: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string
+          id: string
+          reason: string
+          reward_type: string
+          source_referral_id: string | null
+          starts_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at: string
+          id?: string
+          reason: string
+          reward_type?: string
+          source_referral_id?: string | null
+          starts_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string
+          id?: string
+          reason?: string
+          reward_type?: string
+          source_referral_id?: string | null
+          starts_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1020,6 +1074,9 @@ export type Database = {
       }
     }
     Functions: {
+      grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
+      grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
+      has_active_reward: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

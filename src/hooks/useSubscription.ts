@@ -29,6 +29,11 @@ export interface SubscriptionState {
   subscriptionEnd: string | null;
   loading: boolean;
   error: string | null;
+  // Reward (free Tier 3 trial) overlay
+  rewardActive: boolean;
+  rewardExpiresAt: string | null;
+  rewardReason: string | null;
+  effectiveTier: string;
 }
 
 export function useSubscription() {
@@ -40,21 +45,42 @@ export function useSubscription() {
     subscriptionEnd: null,
     loading: true,
     error: null,
+    rewardActive: false,
+    rewardExpiresAt: null,
+    rewardReason: null,
+    effectiveTier: "free",
   });
 
   const checkSubscription = useCallback(async () => {
     if (!user) {
-      setState(prev => ({ ...prev, subscribed: false, tier: "free", loading: false }));
+      setState(prev => ({ ...prev, subscribed: false, tier: "free", effectiveTier: "free", loading: false }));
       return;
     }
 
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      
+
+      const [{ data, error }, { data: rewardData }] = await Promise.all([
+        supabase.functions.invoke("check-subscription"),
+        supabase
+          .from("reward_grants")
+          .select("expires_at, reason")
+          .eq("user_id", user.id)
+          .eq("active", true)
+          .gt("expires_at", new Date().toISOString())
+          .order("expires_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
       if (error) throw error;
 
       const tier = getTierByProductId(data?.product_id);
+      const rewardActive = !!rewardData;
+      const tierRank = ["free", "starter", "monthly", "quarterly", "biannual", "annual", "golden", "lifetime"];
+      const paidRank = tierRank.indexOf(tier);
+      const effectiveTier = rewardActive && paidRank < 2 ? "monthly" : tier;
+
       setState({
         subscribed: data?.subscribed || false,
         tier,
@@ -62,6 +88,10 @@ export function useSubscription() {
         subscriptionEnd: data?.subscription_end || null,
         loading: false,
         error: null,
+        rewardActive,
+        rewardExpiresAt: rewardData?.expires_at || null,
+        rewardReason: rewardData?.reason || null,
+        effectiveTier,
       });
     } catch (err: any) {
       setState(prev => ({

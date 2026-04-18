@@ -50,13 +50,23 @@ const ReferralPage = () => {
   const paid = referrals.filter(r => r.status === "paid").length;
   const rewarded = referrals.filter(r => r.reward_granted).length;
 
+  const checkRewards = async () => {
+    toast.info("Checking your friends' subscriptions...");
+    const { data, error } = await supabase.functions.invoke("process-referral-rewards");
+    if (error) { toast.error("Couldn't check rewards right now"); return; }
+    if (data?.rewarded > 0) toast.success(`🎉 ${data.rewarded} new reward${data.rewarded > 1 ? "s" : ""} unlocked!`);
+    else if (data?.waiting > 0) toast.info(`${data.waiting} friend(s) subscribed — reward unlocks after their 7-day window`);
+    else toast.info("No rewards ready yet — invite more friends!");
+    loadReferrals();
+  };
+
   const REWARDS = [
-    { threshold: 1, reward: "1 Week Free Premium", unlocked: referrals.length >= 1 },
-    { threshold: 3, reward: "1 Month Free Premium", unlocked: referrals.length >= 3 },
-    { threshold: 5, reward: "Free AI Friend Unlock", unlocked: referrals.length >= 5 },
-    { threshold: 10, reward: "3 Months Free Premium", unlocked: referrals.length >= 10 },
-    { threshold: 25, reward: "1 Year Free Premium", unlocked: referrals.length >= 25 },
-    { threshold: 50, reward: "Lifetime Free Access! 🏆", unlocked: referrals.length >= 50 },
+    { threshold: 1, reward: "+1 Month Free Tier 3 (Full Access)", unlocked: rewarded >= 1 },
+    { threshold: 3, reward: "+3 Months Free Tier 3 (stacks)", unlocked: rewarded >= 3 },
+    { threshold: 5, reward: "Free AI Friend Unlock", unlocked: rewarded >= 5 },
+    { threshold: 10, reward: "+10 Months Free Tier 3", unlocked: rewarded >= 10 },
+    { threshold: 25, reward: "1 Year Free Premium", unlocked: rewarded >= 25 },
+    { threshold: 50, reward: "Lifetime Free Access! 🏆", unlocked: rewarded >= 50 },
   ];
 
   return (
@@ -76,7 +86,8 @@ const ReferralPage = () => {
             <span className="text-lg font-mono font-bold text-primary tracking-widest">{referralCode}</span>
             <button onClick={handleCopy}><Copy className="w-4 h-4 text-primary" /></button>
           </div>
-          <p className="text-[10px] text-muted-foreground">When your referral becomes a paid member, you get surprise paywall access!</p>
+          <p className="text-[10px] text-muted-foreground">When your friend pays for any plan and stays subscribed 7 days, you get +30 days of Tier 3 (Full Access). Stacks with every friend!</p>
+          <button onClick={checkRewards} className="mt-3 text-[11px] text-primary underline">Check rewards now</button>
         </div>
 
         {/* Stats */}
