@@ -1799,19 +1799,24 @@ function drawMotionFrame(
   motion: Motion, p: number,
 ) {
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-  // cover-fit base
+  // Ease-in-out so motion feels cinematic, not robotic linear
+  const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  // cover-fit base, OVER-SIZED so we always have room to pan/zoom without showing black bars
   const iar = img.width / img.height; const car = W / H;
   let bw = W, bh = H;
   if (iar > car) { bh = H; bw = H * iar; } else { bw = W; bh = W / iar; }
-  // motion offsets
+  // Pre-scale base by 1.25 so even pans never reveal edges
+  bw *= 1.25; bh *= 1.25;
+  // motion offsets — significantly amplified so motion is visible on small screens
   let scale = 1, dx = 0, dy = 0;
   switch (motion) {
-    case "zoom-in": scale = 1 + 0.15 * p; break;
-    case "zoom-out": scale = 1.15 - 0.15 * p; break;
-    case "pan-left": dx = -0.1 * W * p; break;
-    case "pan-right": dx = 0.1 * W * p; break;
-    case "ken-burns": scale = 1 + 0.1 * p; dx = -0.05 * W * p; dy = -0.03 * H * p; break;
-    case "static": break;
+    case "zoom-in":   scale = 1 + 0.35 * ease; break;
+    case "zoom-out":  scale = 1.35 - 0.35 * ease; break;
+    case "pan-left":  dx = -0.22 * W * ease; break;
+    case "pan-right": dx =  0.22 * W * ease; break;
+    case "ken-burns": scale = 1 + 0.22 * ease; dx = -0.12 * W * ease; dy = -0.07 * H * ease; break;
+    case "static":    // even "static" gets a subtle ken-burns drift so it never looks frozen
+                      scale = 1 + 0.06 * ease; dx = -0.03 * W * ease; break;
   }
   const dw = bw * scale, dh = bh * scale;
   ctx.drawImage(img, (W - dw) / 2 + dx, (H - dh) / 2 + dy, dw, dh);
