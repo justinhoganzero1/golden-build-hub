@@ -46,6 +46,23 @@ const PortalTutorWidget = () => {
   const sendRef = useRef<(t: string) => void>();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Browser TTS fallback so the Concierge ALWAYS speaks even if ElevenLabs fails
+  const speakBrowser = useCallback((text: string) => {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      synth.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1.0;
+      utter.pitch = 1.05;
+      const voices = synth.getVoices();
+      const preferred = voices.find((v) => /female|samantha|sarah|google.*english/i.test(v.name))
+        || voices.find((v) => v.lang?.startsWith("en"));
+      if (preferred) utter.voice = preferred;
+      synth.speak(utter);
+    } catch { /* ignore */ }
+  }, []);
+
   const speak = useCallback(async (raw: string) => {
     if (!voiceOn || isMuted) return;
     const text = sanitizeForTTS(raw);
@@ -64,27 +81,39 @@ const PortalTutorWidget = () => {
         },
         body: JSON.stringify({
           text,
-          // Faster TTS settings: lower stability + style = quicker generation
-          voice_settings: {
-            stability: 0.35,
-            similarity_boost: 0.80,
-            style: 0.25,
+          // MASTER VOICE: Sarah (EXAVITQu4vr4xnSDxMaL) — same default as the Solace app
+          voiceId: "EXAVITQu4vr4xnSDxMaL",
+          modelId: "eleven_flash_v2_5",
+          fast: true,
+          settings: {
+            stability: 0.45,
+            similarity_boost: 0.9,
+            style: 0.55,
             use_speaker_boost: true,
-            speed: 1.05,
+            speed: 1.0,
           },
-          model_id: "eleven_multilingual_v2",
         }),
       });
       if (!resp.ok) throw new Error(`tts ${resp.status}`);
+      // Edge function returns JSON `{ fallback: true }` on failure instead of audio
+      const ct = resp.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        speakBrowser(text);
+        return;
+      }
       const blob = await resp.blob();
       const audio = new Audio(URL.createObjectURL(blob));
       audioRef.current = audio;
       audio.onended = () => URL.revokeObjectURL(audio.src);
-      await audio.play().catch(() => { /* autoplay blocked until user gesture */ });
+      await audio.play().catch(() => {
+        // Autoplay blocked — fall back to browser TTS which is allowed after user gesture
+        speakBrowser(text);
+      });
     } catch (err) {
-      console.warn("Concierge TTS failed:", err);
+      console.warn("Concierge TTS failed, using browser voice:", err);
+      speakBrowser(text);
     }
-  }, [voiceOn, isMuted]);
+  }, [voiceOn, isMuted, speakBrowser]);
 
   useEffect(() => {
     if ((isMuted || !voiceOn) && audioRef.current) {
