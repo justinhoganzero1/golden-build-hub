@@ -68,6 +68,7 @@ const loaders = {
   "/assistant-phone": () => import("./pages/AssistantPhonePage"),
   "/claims-assistant": () => import("./pages/ClaimsAssistantPage"),
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
+  "/claims-app": () => import("./pages/ClaimsAppPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -123,6 +124,7 @@ const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 const AssistantPhonePage = lazy(loaders["/assistant-phone"]);
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
+const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -209,6 +211,7 @@ const App = () => (
                   <Route path="/assistant-phone" element={<ErrorBoundary pageName="Assistant Phone"><AssistantPhonePage /></ErrorBoundary>} />
                   <Route path="/claims-assistant" element={<ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary>} />
                   <Route path="/personal-vault" element={<ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary>} />
+                  <Route path="/claims-app" element={<ErrorBoundary pageName="SOLACE Claims App"><ClaimsAppPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
