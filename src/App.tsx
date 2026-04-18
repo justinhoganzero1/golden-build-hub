@@ -80,6 +80,7 @@ const loaders = {
   "/ai-therapist-free": () => import("./pages/SeoLandingPage"),
   "/ai-tutor-free": () => import("./pages/SeoLandingPage"),
   "/free-ai-voice-chat": () => import("./pages/SeoLandingPage"),
+  "/store/:accountId": () => import("./pages/StorefrontPage"),
 } as const;
 
 registerRoutes(loaders);
