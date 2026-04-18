@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useMute } from "@/contexts/MuteContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -85,6 +86,7 @@ function getStoredOracleMasterVoice(): { id?: string; settings?: Record<string, 
 
 const OraclePage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isMuted, toggleMute } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
   const { data: oracleMemories = [] } = useOracleMemories();
@@ -92,7 +94,7 @@ const OraclePage = () => {
   const saveMedia = useSaveMedia();
   const { data: adPrefs } = useAdPreferences();
   const updateAdPrefs = useUpdateAdPreferences();
-  const { subscribed, tier } = useSubscription();
+  const { subscribed, tier, loading: subLoading } = useSubscription();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -111,6 +113,7 @@ const OraclePage = () => {
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
+  const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -271,8 +274,6 @@ const OraclePage = () => {
 
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
   const SPEECH_THERAPIST_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/speech-therapist`;
-  // Premium voice requires any paid subscription
-  const { tier: subTier, loading: subLoading } = useSubscription();
 
   // Track the most recent user message so the speech therapist can mirror tone.
   const lastUserMessageRef = useRef<string>("");
@@ -499,7 +500,7 @@ const OraclePage = () => {
 
     const isOracle = next.agentName === oracleName;
     const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
-    const hasPremiumVoice = subTier !== "free" || (subLoading && hasStoredMasterVoice);
+    const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
     if (isOracle && hasPremiumVoice && premiumClean) {
       const success = await speakWithElevenLabs(premiumClean);
       if (!success) {
@@ -513,7 +514,7 @@ const OraclePage = () => {
 
     isSpeakingQueueRef.current = false;
     processSpeechQueue();
-  }, [isMuted, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, subTier]);
+  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text) return;
