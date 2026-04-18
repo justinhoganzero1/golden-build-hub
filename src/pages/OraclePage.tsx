@@ -1993,8 +1993,23 @@ const OraclePage = () => {
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
           </button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={uploading}
+            title="Attach photo or file"
+            className="p-2 rounded-full bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-50 transition-colors"
+          >
+            <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
+          </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage(input)}
-            placeholder={`Speak or type to consult ${oracleName}...`}
+            placeholder={`Speak, type, or attach for ${oracleName}...`}
             className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none" />
           <button onClick={() => sendMessage(input)} disabled={!input.trim()} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
