@@ -30,6 +30,15 @@ serve(async (req) => {
     if (ue || !ud.user?.email) throw new Error("Not authenticated");
     const user = ud.user;
 
+    // Admin bypass — owner generates GIFs free
+    const { data: roleRow } = await supa
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!roleRow;
+
     const body = await req.json().catch(() => ({}));
     const { source_avatar_id, source_image_url, prompt, title } = body ?? {};
     if (!source_image_url || !prompt || String(prompt).trim().length < 4) {
