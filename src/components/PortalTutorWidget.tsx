@@ -56,6 +56,8 @@ const PortalTutorWidget = () => {
   const [voiceOn, setVoiceOn] = useState(true);
   const [micPermission, setMicPermission] = useState<MicPermissionState>("unknown");
   const [inputLevel, setInputLevel] = useState(0);
+  const [speechLevel, setSpeechLevel] = useState(0);
+  const [speaking, setSpeaking] = useState(false);
   const { isMuted } = useMute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -66,6 +68,73 @@ const PortalTutorWidget = () => {
   const meterAnalyserRef = useRef<AnalyserNode | null>(null);
   const meterDataRef = useRef<Uint8Array | null>(null);
   const meterRafRef = useRef<number | null>(null);
+  const speechCtxRef = useRef<AudioContext | null>(null);
+  const speechAnalyserRef = useRef<AnalyserNode | null>(null);
+  const speechDataRef = useRef<Uint8Array | null>(null);
+  const speechRafRef = useRef<number | null>(null);
+  const speechSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const speechSrcAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopSpeechMeter = useCallback(() => {
+    if (speechRafRef.current) cancelAnimationFrame(speechRafRef.current);
+    speechRafRef.current = null;
+    try { speechSourceRef.current?.disconnect(); } catch {}
+    try { speechCtxRef.current?.close(); } catch {}
+    speechSourceRef.current = null;
+    speechCtxRef.current = null;
+    speechAnalyserRef.current = null;
+    speechDataRef.current = null;
+    speechSrcAudioRef.current = null;
+    setSpeechLevel(0);
+    setSpeaking(false);
+  }, []);
+
+  const attachSpeechMeter = useCallback((audio: HTMLAudioElement) => {
+    // Tear down any prior graph BEFORE we create a new MediaElementSource —
+    // each <audio> element can only be attached to one source node.
+    stopSpeechMeter();
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    try {
+      const ctx = new Ctx();
+      const source = ctx.createMediaElementSource(audio);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.78;
+      const data = new Uint8Array(analyser.fftSize);
+      // Keep audio audible via the speakers AND tap it for the meter.
+      source.connect(analyser);
+      source.connect(ctx.destination);
+
+      speechCtxRef.current = ctx;
+      speechAnalyserRef.current = analyser;
+      speechDataRef.current = data;
+      speechSourceRef.current = source;
+      speechSrcAudioRef.current = audio;
+      setSpeaking(true);
+
+      const tick = () => {
+        const a = speechAnalyserRef.current;
+        const d = speechDataRef.current;
+        if (!a || !d) return;
+        a.getByteTimeDomainData(d as any);
+        let sum = 0;
+        for (let i = 0; i < d.length; i++) {
+          const s = (d[i] - 128) / 128;
+          sum += s * s;
+        }
+        const rms = Math.sqrt(sum / d.length);
+        // Boost low-amplitude TTS so the glow reads even on quiet syllables.
+        const level = Math.max(0, Math.min(1, (rms - 0.008) / 0.16));
+        setSpeechLevel((prev) => prev * 0.55 + level * 0.45);
+        speechRafRef.current = requestAnimationFrame(tick);
+      };
+      speechRafRef.current = requestAnimationFrame(tick);
+    } catch (err) {
+      // CORS or already-attached element — fail silently, just no glow.
+      console.warn("speech meter attach failed:", err);
+    }
+  }, [stopSpeechMeter]);
 
   const stopMeter = useCallback(() => {
     if (meterRafRef.current) cancelAnimationFrame(meterRafRef.current);
@@ -127,6 +196,25 @@ const PortalTutorWidget = () => {
       const preferred = voices.find((v) => /female|samantha|sarah|google.*english/i.test(v.name))
         || voices.find((v) => v.lang?.startsWith("en"));
       if (preferred) utter.voice = preferred;
+      // Browser TTS can't be tapped by Web Audio, so fake a soft pulsing glow
+      // so the avatar still feels alive.
+      let pulseRaf: number | null = null;
+      const startedAt = performance.now();
+      const pulse = () => {
+        const t = (performance.now() - startedAt) / 1000;
+        const v = 0.45 + Math.sin(t * 6) * 0.25 + Math.sin(t * 13) * 0.12;
+        setSpeechLevel(Math.max(0.2, Math.min(1, v)));
+        pulseRaf = requestAnimationFrame(pulse);
+      };
+      utter.onstart = () => { setSpeaking(true); pulse(); };
+      const stop = () => {
+        if (pulseRaf) cancelAnimationFrame(pulseRaf);
+        pulseRaf = null;
+        setSpeechLevel(0);
+        setSpeaking(false);
+      };
+      utter.onend = stop;
+      utter.onerror = stop;
       synth.speak(utter);
     } catch {}
   }, []);
@@ -140,6 +228,7 @@ const PortalTutorWidget = () => {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
+      stopSpeechMeter();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const resp = await fetch(url, {
         method: "POST",
@@ -169,16 +258,24 @@ const PortalTutorWidget = () => {
       }
       const blob = await resp.blob();
       const audio = new Audio(URL.createObjectURL(blob));
+      audio.crossOrigin = "anonymous";
       audioRef.current = audio;
-      audio.onended = () => URL.revokeObjectURL(audio.src);
+      const cleanup = () => {
+        URL.revokeObjectURL(audio.src);
+        stopSpeechMeter();
+      };
+      audio.onended = cleanup;
+      audio.onerror = cleanup;
+      attachSpeechMeter(audio);
       await audio.play().catch(() => {
+        stopSpeechMeter();
         speakBrowser(text);
       });
     } catch (err) {
       console.warn("Concierge TTS failed, using browser voice:", err);
       speakBrowser(text);
     }
-  }, [voiceOn, isMuted, speakBrowser]);
+  }, [voiceOn, isMuted, speakBrowser, attachSpeechMeter, stopSpeechMeter]);
 
   const requestMicAccess = useCallback(async (announceFailure = true) => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -216,8 +313,9 @@ const PortalTutorWidget = () => {
   useEffect(() => {
     if ((isMuted || !voiceOn) && audioRef.current) {
       audioRef.current.pause();
+      stopSpeechMeter();
     }
-  }, [isMuted, voiceOn]);
+  }, [isMuted, voiceOn, stopSpeechMeter]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -229,8 +327,9 @@ const PortalTutorWidget = () => {
     return () => {
       try { recognitionRef.current?.stop?.(); } catch {}
       stopMeter();
+      stopSpeechMeter();
     };
-  }, [stopMeter]);
+  }, [stopMeter, stopSpeechMeter]);
 
   useEffect(() => {
     if (open) return;
@@ -355,6 +454,7 @@ const PortalTutorWidget = () => {
   };
 
   const glowLevel = listening ? Math.max(0.18, Math.min(1, inputLevel)) : 0;
+  const pinkLevel = speaking ? Math.max(0.25, Math.min(1, speechLevel)) : 0;
 
   return (
     <>
@@ -379,8 +479,12 @@ const PortalTutorWidget = () => {
           <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <div
-                className="oracle-listening-shell"
-                style={{ ["--oracle-listening-level" as string]: glowLevel.toString() }}
+                className="oracle-listening-shell oracle-speaking-shell"
+                data-speaking={speaking ? "true" : "false"}
+                style={{
+                  ["--oracle-listening-level" as string]: glowLevel.toString(),
+                  ["--oracle-speaking-level" as string]: pinkLevel.toString(),
+                }}
               >
                 <img
                   src={MASTER_AI_AVATAR}
@@ -391,7 +495,7 @@ const PortalTutorWidget = () => {
               <div>
                 <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
                 <div className="text-xs text-muted-foreground">
-                  {listening ? "Listening now — speak naturally" : "Your guide to every feature"}
+                  {speaking ? "Speaking…" : listening ? "Listening now — speak naturally" : "Your guide to every feature"}
                 </div>
               </div>
             </div>
