@@ -6,8 +6,10 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import { useScribe } from "@elevenlabs/react";
 import { useMute } from "@/contexts/MuteContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -167,6 +169,7 @@ const OraclePage = () => {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef("");
   const alwaysListenRef = useRef(false);
+  const scribeModeRef = useRef(false);
   // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
   const echoCooldownUntilRef = useRef(0);
   // Wake-word voice channel — Oracle stays silently armed and only responds
@@ -208,9 +211,76 @@ const OraclePage = () => {
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+  const handleCapturedVoiceText = useCallback((rawText: string) => {
+    const text = rawText.replace(/\s+/g, " ").trim();
+    if (!text) { setInput(""); return; }
+
+    const lower = text.toLowerCase();
+    const wakeMatch = lower.match(/\bhey[, ]+oracle-lunar\b[ ,.!?-]*/);
+    if (wakeMatch) {
+      voiceChannelOpenRef.current = true;
+      setVoiceChannelOpen(true);
+      if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
+      voiceChannelTimerRef.current = setTimeout(() => {
+        voiceChannelOpenRef.current = false;
+        setVoiceChannelOpen(false);
+      }, 20000);
+      const remainder = text.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
+      setInput("");
+      if (remainder.split(/\s+/).filter(Boolean).length >= 1) {
+        sendMessageRef.current?.(remainder);
+      }
+      return;
+    }
+
+    if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+oracle-lunar\b/.test(lower)
+        || /\b(oracle lunar|oracle-lunar)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
+      voiceChannelOpenRef.current = false;
+      setVoiceChannelOpen(false);
+      if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
+      setInput("");
+      return;
+    }
+
+    if (text.length < 2) { setInput(""); return; }
+
+    const normalized = normalizeCapturedText(text);
+    if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
+      setInput("");
+      return;
+    }
+    lastAutoSentRef.current = { text: normalized, at: Date.now() };
+
+    if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
+    voiceChannelTimerRef.current = setTimeout(() => {
+      voiceChannelOpenRef.current = false;
+      setVoiceChannelOpen(false);
+    }, 20000);
+
+    setInput("");
+    sendMessageRef.current?.(text);
+  }, [normalizeCapturedText]);
+
+  const scribe = useScribe({
+    modelId: "scribe_v2_realtime",
+    commitStrategy: "vad" as any,
+    onPartialTranscript: (data: any) => {
+      if (!alwaysListenRef.current || !scribeModeRef.current) return;
+      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
+      const partial = (data?.text ?? "").trim();
+      if (partial) setInput(partial);
+    },
+    onCommittedTranscript: (data: any) => {
+      if (!alwaysListenRef.current || !scribeModeRef.current) return;
+      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
+      const committed = (data?.text ?? "").trim();
+      if (!committed) return;
+      handleCapturedVoiceText(committed);
+    },
+  } as any);
+
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
-    // Pause mic while speaking to physically prevent echo capture.
     if (isSpeaking) {
       if (alwaysListenRef.current && recognitionRef.current && !pausedForSpeechRef.current) {
         pausedForSpeechRef.current = true;
@@ -219,11 +289,9 @@ const OraclePage = () => {
       finalTranscriptRef.current = "";
       if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     } else {
-      // Block recognition for ~2.5s after speech ends to avoid catching trailing speaker audio / echo.
       echoCooldownUntilRef.current = Date.now() + 2500;
       if (pausedForSpeechRef.current) {
         pausedForSpeechRef.current = false;
-        // Recognizer's onend handler will auto-restart it.
       }
     }
   }, [isSpeaking]);
@@ -1135,10 +1203,12 @@ const OraclePage = () => {
   useEffect(() => {
     return () => {
       alwaysListenRef.current = false;
+      scribeModeRef.current = false;
       if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+      try { scribe.disconnect(); } catch {}
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
-  }, []);
+  }, [scribe]);
 
   // First-visit auto-introduction — Oracle introduces itself + capabilities ONCE
   const introTriggeredRef = useRef(false);
@@ -1196,8 +1266,8 @@ const OraclePage = () => {
 
   const toggleMic = async () => {
     if (micPermGranted && alwaysListenRef.current) {
-      // TURN MIC OFF — stop recognizer, clear any pending transcript, no sound/toast.
       alwaysListenRef.current = false;
+      scribeModeRef.current = false;
       pausedForSpeechRef.current = false;
       if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
       finalTranscriptRef.current = "";
@@ -1209,24 +1279,50 @@ const OraclePage = () => {
         try { recognitionRef.current.abort?.(); } catch {}
         recognitionRef.current = null;
       }
+      try { await scribe.disconnect(); } catch {}
       setIsListening(false);
       setInput("");
       return;
     }
-    // Check API support first
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error("Microphone API not available. Use Chrome/Safari over HTTPS.");
       return;
     }
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      toast.error("Speech recognition not supported in this browser. Try Chrome.");
-      return;
-    }
     try {
-      // This triggers the browser's native permission prompt
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       stream.getTracks().forEach(track => track.stop());
       setMicPermGranted(true);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("elevenlabs-stt-token");
+        if (error || !data?.token) throw new Error(error?.message ?? "No speech token");
+        scribeModeRef.current = true;
+        alwaysListenRef.current = true;
+        await scribe.connect({
+          token: data.token,
+          microphone: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        } as any);
+        setIsListening(true);
+        return;
+      } catch (scribeErr) {
+        console.warn("Realtime STT unavailable, falling back to browser recognition", scribeErr);
+        scribeModeRef.current = false;
+      }
+
+      if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+        toast.error("Speech recognition not supported in this browser. Try Chrome.");
+        return;
+      }
       startAlwaysListening();
     } catch (err: any) {
       console.error("Mic error:", err);
