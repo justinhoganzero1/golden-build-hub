@@ -19,7 +19,12 @@ const MODE_COLORS: Record<string, string> = {
 
 const MODE_ICON: Record<string, string> = { quiet: "🟢", normal: "🟡", street: "🟠", chaos: "🔴" };
 
-export default function AudioFilterHUD({ status, onEnroll }: Props) {
+interface ExtendedProps extends Props {
+  learnedCount?: number;
+  currentMatchLabel?: string | null;
+}
+
+export default function AudioFilterHUD({ status, onEnroll, learnedCount, currentMatchLabel }: ExtendedProps) {
   if (!status) return null;
 
   return (
@@ -29,7 +34,7 @@ export default function AudioFilterHUD({ status, onEnroll }: Props) {
         <span className="font-bold text-[11px] bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
           MLSC ACTIVE
         </span>
-        <span className="ml-auto text-muted-foreground">{MLSC_TOTAL_LAYERS}/{MLSC_TOTAL_LAYERS} layers</span>
+        <span className="ml-auto text-muted-foreground">{MLSC_TOTAL_LAYERS.toLocaleString()} layers</span>
       </div>
 
       <div className={`flex items-center gap-1 rounded border px-2 py-0.5 ${MODE_COLORS[status.mode]}`}>
@@ -54,6 +59,14 @@ export default function AudioFilterHUD({ status, onEnroll }: Props) {
         </div>
         <span className="text-muted-foreground">{Math.round(status.voiceMatch * 100)}%</span>
       </div>
+
+      {typeof learnedCount === "number" && (
+        <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+          <span className="text-primary">🧠</span>
+          <span>{learnedCount} sounds learned</span>
+          {currentMatchLabel && <span className="ml-auto text-primary truncate max-w-[120px]">{currentMatchLabel}</span>}
+        </div>
+      )}
 
       {(status.sirenDetected || status.tvDetected) && (
         <div className="flex items-center gap-1 text-rose-300">

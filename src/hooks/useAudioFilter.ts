@@ -18,6 +18,7 @@ export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
   const tier: FilterTier = "elite";
   const pipelineRef = useRef<AudioFilterPipeline | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [status, setStatus] = useState<AudioFilterStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [needsEnrollment, setNeedsEnrollment] = useState(false);
@@ -27,10 +28,7 @@ export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
     let cancelled = false;
     setError(null);
 
-    // Voiceprint enrollment prompt — recommended but optional.
-    if (!loadVoicePrint()) {
-      setNeedsEnrollment(true);
-    }
+    if (!loadVoicePrint()) setNeedsEnrollment(true);
 
     const pipeline = new AudioFilterPipeline({
       tier,
@@ -40,7 +38,11 @@ export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
     pipelineRef.current = pipeline;
 
     pipeline.start()
-      .then((s) => { if (!cancelled) setStream(s); })
+      .then((s) => {
+        if (cancelled) return;
+        setStream(s);
+        setAnalyser(pipeline.getAnalyser());
+      })
       .catch((e) => { if (!cancelled) setError(e?.message || "Mic failed"); });
 
     return () => {
@@ -48,6 +50,7 @@ export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
       pipeline.stop();
       pipelineRef.current = null;
       setStream(null);
+      setAnalyser(null);
       setStatus(null);
     };
   }, [enabled, tier, forcedMode]);
@@ -56,5 +59,5 @@ export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
     pipelineRef.current?.setOracleSpeaking(v);
   }, []);
 
-  return { stream, status, tier, error, needsEnrollment, setNeedsEnrollment, setOracleSpeaking };
+  return { stream, analyser, status, tier, error, needsEnrollment, setNeedsEnrollment, setOracleSpeaking };
 }

@@ -3,12 +3,14 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Shield, Mic, Trash2, Crown, Volume2 } from "lucide-react";
+import { Shield, Mic, Trash2, Volume2, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAudioFilter } from "@/hooks/useAudioFilter";
-import { tierMaxLayer, clearVoicePrint, loadVoicePrint, type FilterMode } from "@/lib/audioFilter";
+import { useNoiseLearning } from "@/hooks/useNoiseLearning";
+import { clearVoicePrint, loadVoicePrint, MLSC_TOTAL_LAYERS, type FilterMode } from "@/lib/audioFilter";
 import VoiceEnrollmentDialog from "@/components/VoiceEnrollmentDialog";
 import AudioFilterHUD from "@/components/AudioFilterHUD";
+import MlscLogo from "@/components/MlscLogo";
 import { toast } from "sonner";
 
 const LAYERS: { idx: number; name: string; tier: string }[] = [
