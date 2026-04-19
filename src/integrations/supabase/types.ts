@@ -1621,6 +1621,10 @@ export type Database = {
       }
     }
     Functions: {
+      _reschedule_cron: {
+        Args: { _command: string; _name: string; _schedule: string }
+        Returns: undefined
+      }
       claim_next_render_job: {
         Args: { _worker_id: string }
         Returns: {
