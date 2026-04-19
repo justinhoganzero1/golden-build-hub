@@ -313,8 +313,9 @@ const PortalTutorWidget = () => {
   useEffect(() => {
     if ((isMuted || !voiceOn) && audioRef.current) {
       audioRef.current.pause();
+      stopSpeechMeter();
     }
-  }, [isMuted, voiceOn]);
+  }, [isMuted, voiceOn, stopSpeechMeter]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -326,8 +327,9 @@ const PortalTutorWidget = () => {
     return () => {
       try { recognitionRef.current?.stop?.(); } catch {}
       stopMeter();
+      stopSpeechMeter();
     };
-  }, [stopMeter]);
+  }, [stopMeter, stopSpeechMeter]);
 
   useEffect(() => {
     if (open) return;
