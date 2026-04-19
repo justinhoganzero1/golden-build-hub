@@ -1,5 +1,5 @@
 // Project dashboard for Movie Studio Pro: live realtime updates, per-scene progress, retry failed scenes,
-// trailer + YouTube publish actions when project completes.
+// inline MP4 player, character bible editor, trailer + YouTube publish actions when project completes.
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,8 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Film, Clock, DollarSign, AlertTriangle, RefreshCw, Crown, Youtube, Play, RotateCw } from "lucide-react";
+import { Loader2, Film, Clock, DollarSign, AlertTriangle, RefreshCw, Crown, Youtube, Play, RotateCw, Users } from "lucide-react";
 import { toast } from "sonner";
+import MovieInlinePlayer from "./MovieInlinePlayer";
+import CharacterBibleEditor from "./CharacterBibleEditor";
 
 interface Project {
   id: string;
@@ -50,6 +52,7 @@ export const MovieProjectDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [failedScenes, setFailedScenes] = useState<Record<string, Scene[]>>({});
   const [loading, setLoading] = useState(true);
+  const [bibleProjectId, setBibleProjectId] = useState<string | null>(null);
 
   const refresh = async () => {
     if (!user) return;
@@ -198,31 +201,39 @@ export const MovieProjectDashboard = () => {
                 </div>
               )}
 
-              {p.status === "completed" && (
-                <div className="grid grid-cols-3 gap-1.5 mt-2">
-                  {p.final_video_url && (
-                    <Button size="sm" variant="outline" className="h-8 text-[10px]"
-                      onClick={() => window.open(p.final_video_url!, "_blank")}>
-                      <Film className="w-3 h-3 mr-1" /> Movie
-                    </Button>
-                  )}
-                  {p.trailer_url && (
-                    <Button size="sm" variant="outline" className="h-8 text-[10px]"
-                      onClick={() => window.open(p.trailer_url!, "_blank")}>
-                      <Play className="w-3 h-3 mr-1" /> Trailer
-                    </Button>
-                  )}
-                  {p.final_video_url && (
-                    <Button size="sm" className="h-8 text-[10px]" onClick={() => publishToYouTube(p)}>
-                      <Youtube className="w-3 h-3 mr-1" /> Publish
-                    </Button>
-                  )}
-                </div>
+              {p.status === "completed" && p.final_video_url && (
+                <MovieInlinePlayer url={p.final_video_url} title={p.title} />
               )}
+
+              <div className="grid grid-cols-3 gap-1.5 mt-2">
+                <Button size="sm" variant="outline" className="h-8 text-[10px]"
+                  onClick={() => setBibleProjectId(p.id)}>
+                  <Users className="w-3 h-3 mr-1" /> Cast
+                </Button>
+                {p.trailer_url && (
+                  <Button size="sm" variant="outline" className="h-8 text-[10px]"
+                    onClick={() => window.open(p.trailer_url!, "_blank")}>
+                    <Play className="w-3 h-3 mr-1" /> Trailer
+                  </Button>
+                )}
+                {p.status === "completed" && p.final_video_url && (
+                  <Button size="sm" className="h-8 text-[10px]" onClick={() => publishToYouTube(p)}>
+                    <Youtube className="w-3 h-3 mr-1" /> Publish
+                  </Button>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
+
+      {bibleProjectId && (
+        <CharacterBibleEditor
+          projectId={bibleProjectId}
+          open={!!bibleProjectId}
+          onOpenChange={(o) => !o && setBibleProjectId(null)}
+        />
+      )}
     </Card>
   );
 };
