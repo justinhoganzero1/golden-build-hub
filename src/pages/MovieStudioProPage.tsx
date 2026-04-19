@@ -11,6 +11,8 @@ import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
+import MovieCostEstimator from "@/components/MovieCostEstimator";
+import JustKeepTalkingButton from "@/components/JustKeepTalkingButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
@@ -153,12 +155,24 @@ const MovieStudioProPage = () => {
           </Card>
         )}
 
+        <MovieCostEstimator
+          walletBalanceCents={balance ?? 0}
+          maxDurationMin={limits.maxDurationMin}
+        />
+
+        <JustKeepTalkingButton
+          onBriefReady={(brief) => {
+            sessionStorage.setItem("oracle_movie_brief", JSON.stringify(brief));
+            setStudioOpen(true);
+          }}
+        />
+
         <Button
           onClick={() => setDirectorOpen(true)}
           size="lg"
           className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
         >
-          <Wand2 className="w-6 h-6 mr-3" /> Tell Oracle Your Movie (recommended)
+          <Wand2 className="w-6 h-6 mr-3" /> Tell Oracle Your Movie (22-Q interview)
         </Button>
 
         <Button
@@ -172,6 +186,7 @@ const MovieStudioProPage = () => {
 
         <p className="text-[10px] text-center text-muted-foreground">
           Pricing is transparent. You see the exact charge before every export — no surprise fees.
+          {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small SOLACE watermark."}
         </p>
 
         <MovieProjectDashboard />
