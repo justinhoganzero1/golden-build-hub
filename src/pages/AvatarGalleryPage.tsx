@@ -6,6 +6,7 @@ import { useUserAvatars, useDeleteAvatar, type UserAvatar } from "@/hooks/useUse
 import { useSetMasterAvatar } from "@/hooks/useMasterAvatar";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import LivingAvatar from "@/components/LivingAvatar";
 
 const PURPOSE_LABELS: Record<string, { label: string; icon: string }> = {
   oracle: { label: "Oracle", icon: "🔮" },
@@ -144,7 +145,13 @@ const AvatarGalleryPage = () => {
             <div className="space-y-4">
               <div className="aspect-square rounded-xl bg-[#0f0f0f] overflow-hidden">
                 {selected.image_url ? (
-                  <img src={selected.image_url} alt={selected.name} className="w-full h-full object-cover" />
+                  <LivingAvatar
+                    imageUrl={selected.image_url}
+                    alt={selected.name}
+                    intensity="normal"
+                    enableWalking
+                    walkingPrompt={`${selected.name}, ${selected.personality || "natural movement"}, walking and gesturing naturally`}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-6xl">
                     {PURPOSE_LABELS[selected.purpose]?.icon}
