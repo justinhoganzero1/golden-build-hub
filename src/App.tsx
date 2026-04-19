@@ -107,6 +107,7 @@ const loaders = {
   "/ai-email-writer": () => import("./pages/SeoLandingPage"),
   "/store/:accountId": () => import("./pages/StorefrontPage"),
   "/advertise": () => import("./pages/AdvertisePage"),
+  "/audio-filter": () => import("./pages/AudioFilterPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -172,6 +173,7 @@ const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
 const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
 const AdvertisePage = lazy(loaders["/advertise"]);
+const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -245,6 +247,7 @@ const App = () => (
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/story-writer" element={<RequireAuth><ErrorBoundary pageName="Story Writer"><StoryWriterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
