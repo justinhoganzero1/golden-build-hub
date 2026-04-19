@@ -582,7 +582,7 @@ async function shotstackStitch(
   const audioClips = scenes
     .map(s => {
       const c = s.audio
-        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration, volume: 1 }
+        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration }
         : null;
       audioCursor += s.duration;
       return c;
