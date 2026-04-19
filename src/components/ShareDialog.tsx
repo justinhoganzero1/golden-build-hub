@@ -39,11 +39,32 @@ const robustCopy = async (text: string): Promise<boolean> => {
   }
 };
 
-// Open a URL reliably across web, in-app webviews, and Capacitor native.
-// Strategy: anchor-click first (preserves user-gesture, avoids popup blockers),
-// then Capacitor Browser plugin if present, then window.open as last resort.
+// Open a URL reliably across web, in-app webviews, iframes, and Capacitor native.
+// In iframes (Lovable preview), programmatic anchor clicks with target=_blank are
+// often blocked silently — so we try window.open first and fall back to top-level
+// navigation when in an iframe.
+const isInIframe = (): boolean => {
+  try { return window.self !== window.top; } catch { return true; }
+};
+
 const robustOpen = async (href: string): Promise<boolean> => {
-  // 1. Anchor click — most reliable for user-gesture-initiated opens (WhatsApp, FB, etc.)
+  // 1. Capacitor native Browser (installed app)
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url: href });
+      return true;
+    }
+  } catch {}
+
+  // 2. window.open — most reliable in standalone PWAs and webviews
+  try {
+    const w = window.open(href, "_blank", "noopener,noreferrer");
+    if (w && !w.closed) return true;
+  } catch {}
+
+  // 3. Anchor click fallback
   try {
     const a = document.createElement("a");
     a.href = href;
@@ -53,22 +74,16 @@ const robustOpen = async (href: string): Promise<boolean> => {
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { try { document.body.removeChild(a); } catch {} }, 100);
-    return true;
   } catch {}
-  // 2. Capacitor native Browser (when running as installed app)
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (Capacitor.isNativePlatform()) {
-      const { Browser } = await import("@capacitor/browser");
-      await Browser.open({ url: href });
-      return true;
-    }
-  } catch {}
-  // 3. Last resort
-  try {
-    const w = window.open(href, "_blank", "noopener,noreferrer");
-    if (w) return true;
-  } catch {}
+
+  // 4. If in an iframe (Lovable preview), break out to top-level navigation
+  if (isInIframe()) {
+    try { (window.top as Window).location.href = href; return true; } catch {}
+  }
+
+  // 5. Last resort — same-tab navigation
+  try { window.location.href = href; return true; } catch {}
+
   return false;
 };
 
