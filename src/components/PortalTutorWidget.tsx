@@ -7,7 +7,6 @@ import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avata
 import { useMute } from "@/contexts/MuteContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Strip markdown, emojis, URLs, and code so TTS sounds natural
 const sanitizeForTTS = (raw: string): string =>
   raw
     .replace(/```[\s\S]*?```/g, "")
@@ -21,6 +20,7 @@ const sanitizeForTTS = (raw: string): string =>
     .trim();
 
 type Msg = { role: "user" | "assistant"; content: string };
+type MicPermissionState = "unknown" | "granted" | "denied" | "unsupported";
 
 const SUGGESTED = [
   "How do I install ORACLE LUNAR on my phone?",
@@ -28,6 +28,16 @@ const SUGGESTED = [
   "Walk me through the Crisis Hub",
   "How much does it cost?",
 ];
+
+const SPEECH_ONLY_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  channelCount: 1,
+  sampleRate: 16000,
+  sampleSize: 16,
+  latency: 0,
+};
 
 const PortalTutorWidget = () => {
   const navigate = useNavigate();
@@ -45,13 +55,64 @@ const PortalTutorWidget = () => {
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(true);
+  const [micPermission, setMicPermission] = useState<MicPermissionState>("unknown");
+  const [inputLevel, setInputLevel] = useState(0);
   const { isMuted } = useMute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const sendRef = useRef<(t: string) => void>();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const meterStreamRef = useRef<MediaStream | null>(null);
+  const meterCtxRef = useRef<AudioContext | null>(null);
+  const meterAnalyserRef = useRef<AnalyserNode | null>(null);
+  const meterDataRef = useRef<Float32Array | null>(null);
+  const meterRafRef = useRef<number | null>(null);
 
-  // Browser TTS fallback so the Concierge ALWAYS speaks even if ElevenLabs fails
+  const stopMeter = useCallback(() => {
+    if (meterRafRef.current) cancelAnimationFrame(meterRafRef.current);
+    meterRafRef.current = null;
+    try { meterStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
+    try { meterCtxRef.current?.close(); } catch {}
+    meterStreamRef.current = null;
+    meterCtxRef.current = null;
+    meterAnalyserRef.current = null;
+    meterDataRef.current = null;
+    setInputLevel(0);
+  }, []);
+
+  const startLevelMeter = useCallback((stream: MediaStream) => {
+    stopMeter();
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const source = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.82;
+    const data = new Float32Array(analyser.fftSize);
+    source.connect(analyser);
+
+    meterStreamRef.current = stream;
+    meterCtxRef.current = ctx;
+    meterAnalyserRef.current = analyser;
+    meterDataRef.current = data;
+
+    const tick = () => {
+      const activeAnalyser = meterAnalyserRef.current;
+      const activeData = meterDataRef.current;
+      if (!activeAnalyser || !activeData) return;
+      activeAnalyser.getFloatTimeDomainData(activeData);
+      let sum = 0;
+      for (let i = 0; i < activeData.length; i++) sum += activeData[i] * activeData[i];
+      const rms = Math.sqrt(sum / activeData.length);
+      const level = Math.max(0, Math.min(1, (rms - 0.012) / 0.11));
+      setInputLevel((prev) => prev * 0.45 + level * 0.55);
+      meterRafRef.current = requestAnimationFrame(tick);
+    };
+
+    meterRafRef.current = requestAnimationFrame(tick);
+  }, [stopMeter]);
+
   const speakBrowser = useCallback((text: string) => {
     try {
       const synth = window.speechSynthesis;
@@ -65,7 +126,7 @@ const PortalTutorWidget = () => {
         || voices.find((v) => v.lang?.startsWith("en"));
       if (preferred) utter.voice = preferred;
       synth.speak(utter);
-    } catch { /* ignore */ }
+    } catch {}
   }, []);
 
   const speak = useCallback(async (raw: string) => {
@@ -86,7 +147,6 @@ const PortalTutorWidget = () => {
         },
         body: JSON.stringify({
           text,
-          // MASTER VOICE: Sarah (EXAVITQu4vr4xnSDxMaL) — same default as the Oracle Lunar app
           voiceId: "EXAVITQu4vr4xnSDxMaL",
           modelId: "eleven_flash_v2_5",
           fast: true,
@@ -100,7 +160,6 @@ const PortalTutorWidget = () => {
         }),
       });
       if (!resp.ok) throw new Error(`tts ${resp.status}`);
-      // Edge function returns JSON `{ fallback: true }` on failure instead of audio
       const ct = resp.headers.get("content-type") || "";
       if (ct.includes("application/json")) {
         speakBrowser(text);
@@ -111,7 +170,6 @@ const PortalTutorWidget = () => {
       audioRef.current = audio;
       audio.onended = () => URL.revokeObjectURL(audio.src);
       await audio.play().catch(() => {
-        // Autoplay blocked — fall back to browser TTS which is allowed after user gesture
         speakBrowser(text);
       });
     } catch (err) {
@@ -119,6 +177,39 @@ const PortalTutorWidget = () => {
       speakBrowser(text);
     }
   }, [voiceOn, isMuted, speakBrowser]);
+
+  const requestMicAccess = useCallback(async (announceFailure = true) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicPermission("unsupported");
+      if (announceFailure) {
+        setMessages((p) => [...p, { role: "assistant", content: "Microphone access isn't available in this browser. Try Chrome, Edge, or Safari on HTTPS." }]);
+      }
+      return false;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: SPEECH_ONLY_AUDIO_CONSTRAINTS,
+      });
+      setMicPermission("granted");
+      startLevelMeter(stream);
+      return true;
+    } catch (err: any) {
+      const name = err?.name || "";
+      const blocked = name === "NotAllowedError" || name === "SecurityError";
+      const missing = name === "NotFoundError" || name === "OverconstrainedError";
+      setMicPermission(blocked ? "denied" : missing ? "unsupported" : "unknown");
+      if (announceFailure) {
+        const msg = blocked
+          ? "Microphone is blocked for this site. Click the 🔒 lock icon in your browser address bar → Site settings → set Microphone to Allow → reload the page."
+          : missing
+          ? "No microphone was detected. Check your laptop input device, then try again."
+          : "Microphone access failed. Please click Allow when your browser asks.";
+        setMessages((p) => [...p, { role: "assistant", content: msg }]);
+      }
+      return false;
+    }
+  }, [startLevelMeter]);
 
   useEffect(() => {
     if ((isMuted || !voiceOn) && audioRef.current) {
@@ -130,11 +221,26 @@ const PortalTutorWidget = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => { sendRef.current = send; });
+
+  useEffect(() => {
+    return () => {
+      try { recognitionRef.current?.stop?.(); } catch {}
+      stopMeter();
+    };
+  }, [stopMeter]);
+
+  useEffect(() => {
+    if (open) return;
+    try { recognitionRef.current?.stop?.(); } catch {}
+    setListening(false);
+    stopMeter();
+  }, [open, stopMeter]);
+
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
-    // Membership gate: unauthenticated visitors get the pitch on their FIRST message.
     if (!user) {
       const userMsg: Msg = { role: "user", content: trimmed };
       const pitch =
@@ -187,9 +293,6 @@ const PortalTutorWidget = () => {
     }
   };
 
-  // ===== Speech recognition (mic) =====
-  useEffect(() => { sendRef.current = send; });
-
   const toggleMic = async () => {
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
@@ -199,28 +302,19 @@ const PortalTutorWidget = () => {
     if (listening) {
       recognitionRef.current?.stop();
       setListening(false);
+      setInputLevel(0);
       return;
     }
-    try {
-      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
-      probe.getTracks().forEach((t) => t.stop());
-    } catch (err: any) {
-      const name = err?.name || "";
-      const blocked = name === "NotAllowedError" || name === "SecurityError";
-      const missing = name === "NotFoundError" || name === "OverconstrainedError";
-      const msg = blocked
-        ? "Microphone is blocked for this site. Click the 🔒 lock icon in your browser's address bar → Site settings → set Microphone to Allow → reload the page."
-        : missing
-        ? "No microphone detected. Check your laptop's input device in system settings, then try again."
-        : "Microphone access failed. Please click Allow when your browser asks.";
-      setMessages((p) => [...p, { role: "assistant", content: msg }]);
-      return;
-    }
+
+    const granted = await requestMicAccess(true);
+    if (!granted) return;
+
     const rec = new SR();
     rec.lang = "en-US";
     rec.interimResults = true;
     rec.continuous = false;
     let finalText = "";
+
     rec.onresult = (e: any) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -230,23 +324,41 @@ const PortalTutorWidget = () => {
       }
       setInput(finalText + interim);
     };
-    rec.onerror = () => { setListening(false); };
+    rec.onerror = (e: any) => {
+      setListening(false);
+      setInputLevel(0);
+      if (e?.error === "not-allowed") setMicPermission("denied");
+    };
     rec.onend = () => {
       setListening(false);
+      setInputLevel(0);
       const text = finalText.trim();
       if (text) sendRef.current?.(text);
       setInput("");
     };
+
     recognitionRef.current = rec;
-    setListening(true);
-    rec.start();
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setListening(false);
+      setMessages((p) => [...p, { role: "assistant", content: "I couldn't start listening. Please try the mic button again." }]);
+    }
   };
+
+  const handleOpen = async () => {
+    setOpen(true);
+    await requestMicAccess(false);
+  };
+
+  const glowLevel = listening ? Math.max(0.18, Math.min(1, inputLevel)) : 0;
 
   return (
     <>
       {!open && (
         <button
-          onClick={() => setOpen(true)}
+          onClick={handleOpen}
           aria-label="Open ORACLE LUNAR Concierge"
           className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary pl-2 pr-5 py-2 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:scale-105 transition-transform"
         >
@@ -264,14 +376,21 @@ const PortalTutorWidget = () => {
         <div className="fixed inset-x-2 bottom-2 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[400px] z-50 flex flex-col rounded-2xl border border-border bg-card shadow-2xl max-h-[85vh]">
           <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
-              <img
-                src={MASTER_AI_AVATAR}
-                alt={MASTER_AI_AVATAR_ALT}
-                className="h-10 w-10 rounded-full object-cover border-2 border-primary shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
-              />
+              <div
+                className="oracle-listening-shell"
+                style={{ ["--oracle-listening-level" as string]: glowLevel.toString() }}
+              >
+                <img
+                  src={MASTER_AI_AVATAR}
+                  alt={MASTER_AI_AVATAR_ALT}
+                  className="h-10 w-10 rounded-full object-cover border-2 border-primary shadow-[0_0_15px_hsl(var(--primary)/0.5)] transition-transform duration-100"
+                />
+              </div>
               <div>
                 <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
-                <div className="text-xs text-muted-foreground">Your guide to every feature</div>
+                <div className="text-xs text-muted-foreground">
+                  {listening ? "Listening now — speak naturally" : "Your guide to every feature"}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -347,6 +466,12 @@ const PortalTutorWidget = () => {
             </div>
           )}
 
+          {micPermission === "denied" && (
+            <div className="px-4 pt-2 text-[11px] text-destructive">
+              Microphone is blocked for this site — click the 🔒 icon in your browser address bar, allow microphone access, then reload.
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -370,10 +495,9 @@ const PortalTutorWidget = () => {
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
-                // Notify the home logo to pulse while the user is typing
                 window.dispatchEvent(new CustomEvent("oracle-lunar-chat-typing"));
               }}
-              placeholder={listening ? "Listening…" : "Ask anything about ORACLE LUNAR…"}
+              placeholder={listening ? "Listening… speak now" : "Ask anything about ORACLE LUNAR…"}
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <Button type="submit" size="icon" disabled={loading || !input.trim()}>
