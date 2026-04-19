@@ -488,6 +488,7 @@ export type Database = {
       living_gifs: {
         Row: {
           amount_paid_cents: number
+          attempts: number
           created_at: string
           currency: string
           duration_seconds: number
@@ -496,9 +497,16 @@ export type Database = {
           gif_url: string | null
           id: string
           is_active_oracle: boolean
+          last_progress_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          pipeline_stage: string | null
           preview_mp4_url: string | null
           prompt: string
+          replicate_prediction_id: string | null
           resolution: string
+          runway_task_id: string | null
           source_avatar_id: string | null
           source_image_url: string
           status: string
@@ -511,6 +519,7 @@ export type Database = {
         }
         Insert: {
           amount_paid_cents?: number
+          attempts?: number
           created_at?: string
           currency?: string
           duration_seconds?: number
@@ -519,9 +528,16 @@ export type Database = {
           gif_url?: string | null
           id?: string
           is_active_oracle?: boolean
+          last_progress_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          pipeline_stage?: string | null
           preview_mp4_url?: string | null
           prompt: string
+          replicate_prediction_id?: string | null
           resolution?: string
+          runway_task_id?: string | null
           source_avatar_id?: string | null
           source_image_url: string
           status?: string
@@ -534,6 +550,7 @@ export type Database = {
         }
         Update: {
           amount_paid_cents?: number
+          attempts?: number
           created_at?: string
           currency?: string
           duration_seconds?: number
@@ -542,9 +559,16 @@ export type Database = {
           gif_url?: string | null
           id?: string
           is_active_oracle?: boolean
+          last_progress_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          pipeline_stage?: string | null
           preview_mp4_url?: string | null
           prompt?: string
+          replicate_prediction_id?: string | null
           resolution?: string
+          runway_task_id?: string | null
           source_avatar_id?: string | null
           source_image_url?: string
           status?: string
@@ -1704,6 +1728,19 @@ export type Database = {
       _reschedule_cron: {
         Args: { _command: string; _name: string; _schedule: string }
         Returns: undefined
+      }
+      claim_next_living_gif: {
+        Args: { _worker_id: string }
+        Returns: {
+          attempts: number
+          gif_id: string
+          pipeline_stage: string
+          prompt: string
+          replicate_prediction_id: string
+          runway_task_id: string
+          source_image_url: string
+          user_id: string
+        }[]
       }
       claim_next_render_job: {
         Args: { _worker_id: string }

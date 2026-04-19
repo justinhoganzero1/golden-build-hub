@@ -14,7 +14,7 @@ export interface LivingGif {
   thumbnail_url: string | null;
   duration_seconds: number;
   resolution: string;
-  status: "pending_payment" | "generating" | "ready" | "failed";
+  status: "pending_payment" | "queued" | "generating" | "running" | "upscaling" | "ready" | "failed";
   is_active_oracle: boolean;
   amount_paid_cents: number;
   error_message: string | null;
@@ -27,6 +27,13 @@ export const useLivingGifs = () => {
   return useQuery({
     queryKey: ["living-gifs", user?.id],
     enabled: !!user?.id,
+    refetchInterval: (q) => {
+      const rows = (q.state.data ?? []) as LivingGif[];
+      const active = rows.some((r) =>
+        ["queued", "generating", "running", "upscaling"].includes(r.status),
+      );
+      return active ? 5000 : false;
+    },
     queryFn: async () => {
       const { data, error } = await supabase
         .from("living_gifs")
