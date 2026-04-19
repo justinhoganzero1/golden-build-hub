@@ -1960,6 +1960,8 @@ const OraclePage = () => {
             >
               ✨ Living GIF Studio
             </button>
+          </div>
+        )}
 
         {/* Orbiting agents */}
         {activeAgents.map((a, i) => {
