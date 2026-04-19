@@ -160,7 +160,7 @@ const PortalLandingPage = () => {
       {/* ── Referral programme bubble (top-right, round, fluro green) ── */}
       <button
         type="button"
-        onClick={() => navigate("/referrals")}
+        onClick={() => navigate(user ? "/referrals" : "/sign-in?redirect=/referrals")}
         className="holo-bubble fixed top-28 right-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(57,255,20,0.85),0_0_80px_rgba(163,255,0,0.5)] hover:shadow-[0_0_60px_rgba(57,255,20,1),0_0_120px_rgba(163,255,0,0.7)] transition-all"
         style={{
           background:
