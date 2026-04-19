@@ -208,6 +208,13 @@ export const MovieProjectDashboard = () => {
                 <MovieInlinePlayer url={p.final_video_url} title={p.title} />
               )}
 
+              {p.payment_status !== "paid" && p.status !== "completed" && (
+                <Button size="sm" className="w-full h-9 mt-2 text-xs bg-primary"
+                  onClick={() => setPayProject({ id: p.id, title: p.title })}>
+                  <CreditCard className="w-3 h-3 mr-1" /> Pay & Render this movie
+                </Button>
+              )}
+
               <div className="grid grid-cols-3 gap-1.5 mt-2">
                 <Button size="sm" variant="outline" className="h-8 text-[10px]"
                   onClick={() => setBibleProjectId(p.id)}>
@@ -235,6 +242,14 @@ export const MovieProjectDashboard = () => {
           projectId={bibleProjectId}
           open={!!bibleProjectId}
           onOpenChange={(o) => !o && setBibleProjectId(null)}
+        />
+      )}
+      {payProject && (
+        <MoviePaymentDialog
+          open={!!payProject}
+          onOpenChange={(o) => !o && setPayProject(null)}
+          projectId={payProject.id}
+          projectTitle={payProject.title}
         />
       )}
     </Card>
