@@ -30,6 +30,7 @@ const VaultPage = () => {
   const [addType, setAddType] = useState<"password" | "card">("password");
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"all" | "password" | "card">("all");
+  const [showMovieStudio, setShowMovieStudio] = useState(false);
 
   const [form, setForm] = useState({ title: "", username: "", password: "", url: "", cardNumber: "", expiry: "", cvv: "", cardHolder: "" });
 
