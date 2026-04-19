@@ -27,9 +27,13 @@ const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
 const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const SHOTSTACK_API_KEY = Deno.env.get("SHOTSTACK_API_KEY");
-// Use Shotstack sandbox by default; switch to "v1" for production
+// SHOTSTACK_ENV = "v1" (production, no watermark) or "stage" (sandbox)
 const SHOTSTACK_ENV = Deno.env.get("SHOTSTACK_ENV") ?? "stage";
+// Use the production key when running against v1, otherwise fall back to sandbox key
+const SHOTSTACK_API_KEY =
+  SHOTSTACK_ENV === "v1"
+    ? (Deno.env.get("SHOTSTACK_PROD_API_KEY") ?? Deno.env.get("SHOTSTACK_API_KEY"))
+    : Deno.env.get("SHOTSTACK_API_KEY");
 const SHOTSTACK_BASE = `https://api.shotstack.io/edit/${SHOTSTACK_ENV}`;
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
