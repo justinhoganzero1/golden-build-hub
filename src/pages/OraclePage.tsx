@@ -213,86 +213,45 @@ const OraclePage = () => {
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   const handleCapturedVoiceText = useCallback((rawText: string) => {
     const text = rawText.replace(/\s+/g, " ").trim();
-    if (!text) { setInput(""); return; }
-
-    const lower = text.toLowerCase();
-    const wakeMatch = lower.match(/\b(?:hey|hi|hello|okay|ok)[, ]+(?:oracle(?:[ -]?lunar)?)\b[ ,.!?-]*/);
-    if (wakeMatch) {
-      voiceChannelOpenRef.current = true;
-      setVoiceChannelOpen(true);
-      if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-      voiceChannelTimerRef.current = setTimeout(() => {
-        voiceChannelOpenRef.current = false;
-        setVoiceChannelOpen(false);
-      }, 20000);
-      const remainder = text.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
-      setInput("");
-      if (remainder.split(/\s+/).filter(Boolean).length >= 1) {
-        sendMessageRef.current?.(remainder);
-      }
-      return;
-    }
-
-    if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+(?:oracle(?:[ -]?lunar)?)\b/.test(lower)
-        || /\b(?:oracle(?:[ -]?lunar)?)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
-      voiceChannelOpenRef.current = false;
-      setVoiceChannelOpen(false);
-      if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
+    if (!text || text.length < 2) {
       setInput("");
       return;
     }
-
-    if (text.length < 2) { setInput(""); return; }
 
     const normalized = normalizeCapturedText(text);
-    if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
+    if (
+      normalized &&
+      lastAutoSentRef.current.text === normalized &&
+      Date.now() - lastAutoSentRef.current.at < 8000
+    ) {
       setInput("");
       return;
     }
+
     lastAutoSentRef.current = { text: normalized, at: Date.now() };
-
-    if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-    voiceChannelTimerRef.current = setTimeout(() => {
-      voiceChannelOpenRef.current = false;
-      setVoiceChannelOpen(false);
-    }, 20000);
-
     setInput("");
     sendMessageRef.current?.(text);
   }, [normalizeCapturedText]);
 
-  const scribe = useScribe({
-    modelId: "scribe_v2_realtime",
-    commitStrategy: "vad" as any,
-    onPartialTranscript: (data: any) => {
-      if (!alwaysListenRef.current || !scribeModeRef.current) return;
-      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
-      const partial = (data?.text ?? "").trim();
-      if (partial) setInput(partial);
-    },
-    onCommittedTranscript: (data: any) => {
-      if (!alwaysListenRef.current || !scribeModeRef.current) return;
-      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
-      const committed = (data?.text ?? "").trim();
-      if (!committed) return;
-      handleCapturedVoiceText(committed);
-    },
-  } as any);
+  // Old realtime token/scribe path disabled — Oracle now uses one direct browser mic pipeline only.
+  const scribe = {
+    connect: async () => {},
+    disconnect: async () => {},
+  } as any;
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
     if (isSpeaking) {
-      if (alwaysListenRef.current && recognitionRef.current && !pausedForSpeechRef.current) {
-        pausedForSpeechRef.current = true;
+      if (alwaysListenRef.current && recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch {}
       }
       finalTranscriptRef.current = "";
-      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-    } else {
-      echoCooldownUntilRef.current = Date.now() + 2500;
-      if (pausedForSpeechRef.current) {
-        pausedForSpeechRef.current = false;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
       }
+    } else {
+      echoCooldownUntilRef.current = Date.now() + 1200;
     }
   }, [isSpeaking]);
 
@@ -1046,16 +1005,26 @@ const OraclePage = () => {
     toast.success(avatarId ? "Oracle replaced with your avatar!" : "Switched back to Orb Oracle");
   };
 
-  // Always-on speech recognition
+  // Direct browser speech recognition — one mic path only.
   const startAlwaysListening = useCallback(() => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) return;
-    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      toast.error("Speech recognition is not supported in this browser. Use Chrome or Safari.");
+      return;
+    }
+
+    if (recognitionRef.current) {
+      try { recognitionRef.current.onend = null; } catch {}
+      try { recognitionRef.current.onresult = null; } catch {}
+      try { recognitionRef.current.stop(); } catch {}
+    }
+
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SR();
     recognitionRef.current = recognition;
     recognition.lang = "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
     finalTranscriptRef.current = "";
 
     const restartWhenSafe = () => {
@@ -1064,7 +1033,7 @@ const OraclePage = () => {
         return;
       }
       if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
-        setTimeout(restartWhenSafe, 600);
+        window.setTimeout(restartWhenSafe, 500);
         return;
       }
       try {
@@ -1072,119 +1041,64 @@ const OraclePage = () => {
         recognition.start();
         setIsListening(true);
       } catch {
-        setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1200);
+        window.setTimeout(restartWhenSafe, 900);
       }
     };
 
-    recognition.onresult = (e: any) => {
-      let interim = "", final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const transcript = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += transcript;
-        else interim += transcript;
-      }
-      // Always show interim text so the user can SEE Oracle is hearing them.
-      if (interim) setInput(interim);
+    recognition.onstart = () => setIsListening(true);
 
-      // Echo guard — drop FINALS only while Oracle is speaking, so her own TTS
-      // doesn't loop back as a fake user message. Interim above still shows.
+    recognition.onresult = (e: any) => {
       if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
-        finalTranscriptRef.current = "";
-        if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
         return;
       }
-      if (final) {
+
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = (e.results[i]?.[0]?.transcript || "").trim();
+        if (!transcript) continue;
+        if (e.results[i].isFinal) final += ` ${transcript}`;
+        else interim += ` ${transcript}`;
+      }
+
+      const liveText = (interim || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
+      setInput(liveText);
+
+      if (final.trim()) {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
+        setInput(finalTranscriptRef.current);
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
-          if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
-            finalTranscriptRef.current = "";
-            return;
-          }
           const text = finalTranscriptRef.current.replace(/\s+/g, " ").trim();
           finalTranscriptRef.current = "";
-          if (!text) { setInput(""); return; }
-
-          const lower = text.toLowerCase();
-
-          // ── WAKE WORD DETECTION ──
-          const wakeMatch = lower.match(/\b(?:hey|hi|hello|okay|ok)[, ]+(?:oracle(?:[ -]?lunar)?)\b[ ,.!?-]*/);
-          if (wakeMatch) {
-            voiceChannelOpenRef.current = true;
-            setVoiceChannelOpen(true);
-            if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-            voiceChannelTimerRef.current = setTimeout(() => {
-              voiceChannelOpenRef.current = false;
-              setVoiceChannelOpen(false);
-            }, 20000);
-            const remainder = text.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
-            setInput("");
-            if (remainder.split(/\s+/).filter(Boolean).length >= 1) {
-              sendMessageRef.current?.(remainder);
-            }
-            return;
-          }
-
-          // ── SLEEP / CLOSE PHRASES ──
-          if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+(?:oracle(?:[ -]?lunar)?)\b/.test(lower)
-              || /\b(?:oracle(?:[ -]?lunar)?)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
-            voiceChannelOpenRef.current = false;
-            setVoiceChannelOpen(false);
-            if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
+          if (!text) {
             setInput("");
             return;
           }
-
-          // ── OPEN-MIC MODE — high sensitivity ──
-          // Accept anything that looks like a real word. Only block pure noise
-          // (single char) so Oracle hears short questions like "what time is it" or "hi".
-          if (text.length < 2) { setInput(""); return; }
-
-          const normalized = normalizeCapturedText(text);
-          if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
-            setInput("");
-            return;
-          }
-          lastAutoSentRef.current = { text: normalized, at: Date.now() };
-
-          if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-          voiceChannelTimerRef.current = setTimeout(() => {
-            voiceChannelOpenRef.current = false;
-            setVoiceChannelOpen(false);
-          }, 20000);
-
-          setInput("");
-          sendMessageRef.current?.(text);
-        }, 1500); // shorter silence window — Oracle replies faster
+          handleCapturedVoiceText(text);
+        }, 900);
       }
     };
 
     recognition.onerror = (e: any) => {
-      if (e.error === "not-allowed") {
-        setIsListening(false);
+      setIsListening(false);
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
         alwaysListenRef.current = false;
+        toast.error("Microphone permission was blocked.");
         return;
       }
-      if (e.error === "aborted") return;
+      if (e?.error === "aborted" || e?.error === "no-speech") return;
+      if (alwaysListenRef.current) window.setTimeout(restartWhenSafe, 700);
     };
 
     recognition.onend = () => {
-      if (!alwaysListenRef.current) {
-        setIsListening(false);
-        return;
-      }
       setIsListening(false);
-      restartWhenSafe();
+      if (alwaysListenRef.current) restartWhenSafe();
     };
 
     alwaysListenRef.current = true;
-    try {
-      recognition.start();
-      setIsListening(true);
-    } catch {
-      setTimeout(() => { if (alwaysListenRef.current) startAlwaysListening(); }, 1000);
-    }
-  }, []);
+    restartWhenSafe();
+  }, [handleCapturedVoiceText, mergeCapturedTranscript]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
 
@@ -1253,11 +1167,12 @@ const OraclePage = () => {
   }, [oracleName, speakAsAgent, subLoading]);
 
   const toggleMic = async () => {
-    if (micPermGranted && alwaysListenRef.current) {
+    if (alwaysListenRef.current) {
       alwaysListenRef.current = false;
-      scribeModeRef.current = false;
-      pausedForSpeechRef.current = false;
-      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
       finalTranscriptRef.current = "";
       lastAutoSentRef.current = { text: "", at: 0 };
       if (recognitionRef.current) {
@@ -1267,15 +1182,16 @@ const OraclePage = () => {
         try { recognitionRef.current.abort?.(); } catch {}
         recognitionRef.current = null;
       }
-      try { await scribe.disconnect(); } catch {}
       setIsListening(false);
       setInput("");
       return;
     }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error("Microphone API not available. Use Chrome/Safari over HTTPS.");
       return;
     }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -1284,33 +1200,8 @@ const OraclePage = () => {
           autoGainControl: true,
         },
       });
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setMicPermGranted(true);
-
-      try {
-        const { data, error } = await supabase.functions.invoke("elevenlabs-stt-token");
-        if (error || !data?.token) throw new Error(error?.message ?? "No speech token");
-        scribeModeRef.current = true;
-        alwaysListenRef.current = true;
-        await scribe.connect({
-          token: data.token,
-          microphone: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        } as any);
-        setIsListening(true);
-        return;
-      } catch (scribeErr) {
-        console.warn("Realtime STT unavailable, falling back to browser recognition", scribeErr);
-        scribeModeRef.current = false;
-      }
-
-      if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-        toast.error("Speech recognition not supported in this browser. Try Chrome.");
-        return;
-      }
       startAlwaysListening();
     } catch (err: any) {
       console.error("Mic error:", err);
@@ -2023,16 +1914,14 @@ const OraclePage = () => {
 
       {/* Orb / Avatar area */}
       <div className={`relative flex-1 flex items-center justify-center transition-all ${showChat ? "max-h-[35%]" : ""}`}>
-        {/* Wake-word indicator: small pulsing dot on the orb when listening for "hey oracle-lunar" */}
+        {/* Live mic indicator */}
         {isListening && (
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
             <span
-              className={`w-2 h-2 rounded-full ${voiceChannelOpen ? "bg-emerald-400" : "bg-amber-400"}`}
+              className="w-2 h-2 rounded-full bg-emerald-400"
               style={{ animation: "pulse 1.4s ease-in-out infinite" }}
             />
-            <span className="text-[10px] text-muted-foreground">
-              {voiceChannelOpen ? "Channel open" : 'Say "hey oracle-lunar"'}
-            </span>
+            <span className="text-[10px] text-muted-foreground">Listening now</span>
           </div>
         )}
         {oracleMode.mode === "orb" ? (
