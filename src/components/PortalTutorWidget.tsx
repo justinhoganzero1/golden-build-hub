@@ -100,7 +100,7 @@ const PortalTutorWidget = () => {
       const activeAnalyser = meterAnalyserRef.current;
       const activeData = meterDataRef.current;
       if (!activeAnalyser || !activeData) return;
-      activeAnalyser.getByteTimeDomainData(activeData);
+      activeAnalyser.getByteTimeDomainData(activeData as any);
       let sum = 0;
       for (let i = 0; i < activeData.length; i++) {
         const sample = (activeData[i] - 128) / 128;
