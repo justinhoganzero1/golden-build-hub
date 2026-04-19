@@ -485,6 +485,337 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_character_bible: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          personality: string | null
+          project_id: string
+          reference_image_url: string | null
+          updated_at: string
+          user_id: string
+          visual_seed: string | null
+          voice_id: string | null
+          voice_name: string | null
+          wardrobe: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          personality?: string | null
+          project_id: string
+          reference_image_url?: string | null
+          updated_at?: string
+          user_id: string
+          visual_seed?: string | null
+          voice_id?: string | null
+          voice_name?: string | null
+          wardrobe?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          personality?: string | null
+          project_id?: string
+          reference_image_url?: string | null
+          updated_at?: string
+          user_id?: string
+          visual_seed?: string | null
+          voice_id?: string | null
+          voice_name?: string | null
+          wardrobe?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_character_bible_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "movie_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movie_projects: {
+        Row: {
+          brief: Json
+          completed_at: string | null
+          completed_scenes: number | null
+          created_at: string
+          director_intent: string | null
+          error_count: number | null
+          estimated_cost_cents: number | null
+          failed_scenes: number | null
+          final_video_url: string | null
+          full_script: string | null
+          genre: string | null
+          id: string
+          last_error: string | null
+          logline: string | null
+          quality_tier: Database["public"]["Enums"]["movie_quality_tier"]
+          spent_cost_cents: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["movie_project_status"]
+          target_duration_minutes: number
+          thumbnail_url: string | null
+          title: string
+          total_scenes: number | null
+          trailer_url: string | null
+          updated_at: string
+          user_id: string
+          user_paid_cents: number | null
+          youtube_metadata: Json | null
+          youtube_video_id: string | null
+        }
+        Insert: {
+          brief?: Json
+          completed_at?: string | null
+          completed_scenes?: number | null
+          created_at?: string
+          director_intent?: string | null
+          error_count?: number | null
+          estimated_cost_cents?: number | null
+          failed_scenes?: number | null
+          final_video_url?: string | null
+          full_script?: string | null
+          genre?: string | null
+          id?: string
+          last_error?: string | null
+          logline?: string | null
+          quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          spent_cost_cents?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["movie_project_status"]
+          target_duration_minutes?: number
+          thumbnail_url?: string | null
+          title?: string
+          total_scenes?: number | null
+          trailer_url?: string | null
+          updated_at?: string
+          user_id: string
+          user_paid_cents?: number | null
+          youtube_metadata?: Json | null
+          youtube_video_id?: string | null
+        }
+        Update: {
+          brief?: Json
+          completed_at?: string | null
+          completed_scenes?: number | null
+          created_at?: string
+          director_intent?: string | null
+          error_count?: number | null
+          estimated_cost_cents?: number | null
+          failed_scenes?: number | null
+          final_video_url?: string | null
+          full_script?: string | null
+          genre?: string | null
+          id?: string
+          last_error?: string | null
+          logline?: string | null
+          quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          spent_cost_cents?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["movie_project_status"]
+          target_duration_minutes?: number
+          thumbnail_url?: string | null
+          title?: string
+          total_scenes?: number | null
+          trailer_url?: string | null
+          updated_at?: string
+          user_id?: string
+          user_paid_cents?: number | null
+          youtube_metadata?: Json | null
+          youtube_video_id?: string | null
+        }
+        Relationships: []
+      }
+      movie_render_jobs: {
+        Row: {
+          attempts: number | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          job_type: string
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number | null
+          payload: Json | null
+          priority: number | null
+          project_id: string
+          result: Json | null
+          scene_id: string | null
+          scheduled_for: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_type: string
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number | null
+          payload?: Json | null
+          priority?: number | null
+          project_id: string
+          result?: Json | null
+          scene_id?: string | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_type?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number | null
+          payload?: Json | null
+          priority?: number | null
+          project_id?: string
+          result?: Json | null
+          scene_id?: string | null
+          scheduled_for?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_render_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "movie_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movie_render_jobs_scene_id_fkey"
+            columns: ["scene_id"]
+            isOneToOne: false
+            referencedRelation: "movie_scenes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movie_scenes: {
+        Row: {
+          audio_url: string | null
+          characters: string[] | null
+          completed_at: string | null
+          created_at: string
+          dialogue: Json | null
+          duration_seconds: number
+          final_scene_url: string | null
+          id: string
+          last_error: string | null
+          lipsync_url: string | null
+          location: string | null
+          mood: string | null
+          music_url: string | null
+          project_id: string
+          provider_cost_cents: number | null
+          retry_count: number | null
+          scene_number: number
+          script_text: string
+          sfx_url: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["movie_scene_status"]
+          time_of_day: string | null
+          updated_at: string
+          user_id: string
+          video_1080p_url: string | null
+          video_4k_url: string | null
+          video_8k_url: string | null
+          visual_prompt: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          characters?: string[] | null
+          completed_at?: string | null
+          created_at?: string
+          dialogue?: Json | null
+          duration_seconds?: number
+          final_scene_url?: string | null
+          id?: string
+          last_error?: string | null
+          lipsync_url?: string | null
+          location?: string | null
+          mood?: string | null
+          music_url?: string | null
+          project_id: string
+          provider_cost_cents?: number | null
+          retry_count?: number | null
+          scene_number: number
+          script_text: string
+          sfx_url?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["movie_scene_status"]
+          time_of_day?: string | null
+          updated_at?: string
+          user_id: string
+          video_1080p_url?: string | null
+          video_4k_url?: string | null
+          video_8k_url?: string | null
+          visual_prompt?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          characters?: string[] | null
+          completed_at?: string | null
+          created_at?: string
+          dialogue?: Json | null
+          duration_seconds?: number
+          final_scene_url?: string | null
+          id?: string
+          last_error?: string | null
+          lipsync_url?: string | null
+          location?: string | null
+          mood?: string | null
+          music_url?: string | null
+          project_id?: string
+          provider_cost_cents?: number | null
+          retry_count?: number | null
+          scene_number?: number
+          script_text?: string
+          sfx_url?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["movie_scene_status"]
+          time_of_day?: string | null
+          updated_at?: string
+          user_id?: string
+          video_1080p_url?: string | null
+          video_4k_url?: string | null
+          video_8k_url?: string | null
+          visual_prompt?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_scenes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "movie_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oracle_chat_usage: {
         Row: {
           created_at: string
@@ -1266,6 +1597,18 @@ export type Database = {
       }
     }
     Functions: {
+      claim_next_render_job: {
+        Args: { _worker_id: string }
+        Returns: {
+          attempts: number
+          job_id: string
+          job_type: string
+          payload: Json
+          project_id: string
+          scene_id: string
+          user_id: string
+        }[]
+      }
       count_user_jailbreak_attempts: {
         Args: { _user_id: string }
         Returns: number
@@ -1294,6 +1637,10 @@ export type Database = {
         }[]
       }
       is_owner: { Args: never; Returns: boolean }
+      recalc_project_progress: {
+        Args: { _project_id: string }
+        Returns: undefined
+      }
       wallet_charge_call: {
         Args: {
           _destination: string
@@ -1316,6 +1663,27 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "investigator"
+      movie_project_status:
+        | "draft"
+        | "chunking"
+        | "queued"
+        | "rendering"
+        | "stitching"
+        | "mixing"
+        | "upscaling"
+        | "completed"
+        | "failed"
+        | "paused"
+      movie_quality_tier: "sd" | "hd" | "4k" | "8k_ultimate"
+      movie_scene_status:
+        | "pending"
+        | "rendering_video"
+        | "rendering_audio"
+        | "lip_syncing"
+        | "upscaling"
+        | "completed"
+        | "failed"
+        | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1444,6 +1812,29 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "investigator"],
+      movie_project_status: [
+        "draft",
+        "chunking",
+        "queued",
+        "rendering",
+        "stitching",
+        "mixing",
+        "upscaling",
+        "completed",
+        "failed",
+        "paused",
+      ],
+      movie_quality_tier: ["sd", "hd", "4k", "8k_ultimate"],
+      movie_scene_status: [
+        "pending",
+        "rendering_video",
+        "rendering_audio",
+        "lip_syncing",
+        "upscaling",
+        "completed",
+        "failed",
+        "skipped",
+      ],
     },
   },
 } as const
