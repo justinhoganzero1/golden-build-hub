@@ -522,11 +522,12 @@ async function stitchProject(job: any) {
       project.quality_tier,
     );
   }
+  // CRITICAL: never accept a non-mp4 (e.g. a still PNG) as the final movie.
+  // If Shotstack failed, throw so the job retries instead of silently saving a still.
   if (!finalUrl) {
-    finalUrl = sceneUrls[0];
-  } else {
-    finalUrl = await mirrorToBucket(finalUrl, `${project.user_id}/${job.project_id}/final.mp4`, "video/mp4");
+    throw new Error("Shotstack stitch failed — refusing to fall back to a still image. Will retry.");
   }
+  finalUrl = await mirrorToBucket(finalUrl, `${project.user_id}/${job.project_id}/final.mp4`, "video/mp4");
 
   await supabase.from("movie_projects").update({
     status: "completed",
