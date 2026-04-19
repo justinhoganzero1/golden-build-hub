@@ -136,9 +136,28 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     else toast.error("Couldn't open your messaging app.");
   };
 
-  const shareWhatsApp = () => {
-    void robustOpen(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`);
-    toast.success("Opening WhatsApp…");
+  const shareWhatsApp = async () => {
+    const message = `${shareText} ${shareUrl}`;
+    // 1. Native share sheet on mobile lets the user pick WhatsApp directly
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
+      try {
+        await (navigator as any).share({ title, text: shareText, url: shareUrl });
+        toast.success("Shared!");
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+    // 2. Mobile devices: wa.me deep-links into the app
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(typeof navigator !== "undefined" ? navigator.userAgent : "");
+    if (isMobile) {
+      void robustOpen(`https://wa.me/?text=${encodeURIComponent(message)}`);
+      toast.success("Opening WhatsApp…");
+      return;
+    }
+    // 3. Desktop: go straight to WhatsApp Web (api.whatsapp.com is blocked by Chrome)
+    void robustOpen(`https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`);
+    toast.success("Opening WhatsApp Web…");
   };
   const blockedProviderFallback = async (provider: string) => {
     if (typeof navigator !== "undefined" && "share" in navigator) {
