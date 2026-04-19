@@ -62,6 +62,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_unlocks: {
+        Row: {
+          amount_cents: number
+          app_key: string
+          created_at: string
+          currency: string
+          id: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          app_key: string
+          created_at?: string
+          currency?: string
+          id?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          app_key?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           category: string | null
@@ -1238,6 +1274,10 @@ export type Database = {
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
       grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
       has_active_reward: { Args: { _user_id: string }; Returns: boolean }
+      has_app_unlock: {
+        Args: { _app_key: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
