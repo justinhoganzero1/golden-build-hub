@@ -71,50 +71,43 @@ serve(async (req) => {
         throw new Error(`Payment not complete: ${session.payment_status}`);
       }
       await supa.from("living_gifs").update({
-        status: "generating",
         stripe_payment_intent: String(session.payment_intent ?? ""),
       }).eq("id", gif_id);
-    } else {
-      await supa.from("living_gifs").update({ status: "generating" }).eq("id", gif_id);
     }
 
-    const effectiveSourceImage = source_image_url || gif.source_image_url;
-    if (!effectiveSourceImage) throw new Error("source_image_url required");
-
-    log("generating", { gif_id });
-
-    // Generate one 10s clip (cost-pragmatic; advertised as 20s loop via boomerang)
+    const updates: Record<string, unknown> = {
+      status: "queued",
+      pipeline_stage: null,
+      runway_task_id: null,
+      replicate_prediction_id: null,
+      attempts: 0,
+      locked_at: null,
+      locked_by: null,
+      last_progress_at: null,
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    };
     if (source_image_url && source_image_url !== gif.source_image_url) {
-      await supa.from("living_gifs").update({
-        source_image_url,
-        thumbnail_url: gif.thumbnail_url ?? source_image_url,
-      }).eq("id", gif_id);
+      updates.source_image_url = source_image_url;
+      updates.thumbnail_url = gif.thumbnail_url ?? source_image_url;
     }
+    await supa.from("living_gifs").update(updates).eq("id", gif_id);
+    log("queued", { gif_id });
 
-    const raw1 = await runwayGenerate(effectiveSourceImage, gif.prompt);
-    const upscaled = await replicateUpscale(raw1);
-
-    // Fetch the upscaled file and upload to storage
-    const fileRes = await fetch(upscaled);
-    if (!fileRes.ok) throw new Error("Failed to fetch upscaled file");
-    const bytes = new Uint8Array(await fileRes.arrayBuffer());
-    const path = `${user.id}/${gif_id}.mp4`;
-    const { error: upErr } = await supa.storage
-      .from("living-gifs")
-      .upload(path, bytes, { contentType: "video/mp4", upsert: true });
-    if (upErr) throw upErr;
-    const { data: pub } = supa.storage.from("living-gifs").getPublicUrl(path);
-
-    await supa.from("living_gifs").update({
-      status: "ready",
-      gif_url: pub.publicUrl,
-      preview_mp4_url: pub.publicUrl,
-      thumbnail_url: gif.source_image_url,
-      generated_at: new Date().toISOString(),
-    }).eq("id", gif_id);
+    // Best-effort kick the worker (cron is the safety net)
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/living-gif-worker`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tick: true }),
+      });
+    } catch { /* ignore */ }
 
     return new Response(
-      JSON.stringify({ ok: true, gif_url: pub.publicUrl }),
+      JSON.stringify({ ok: true, queued: true, gif_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
