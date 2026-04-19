@@ -116,7 +116,16 @@ serve(async (req) => {
     const user = ud.user;
 
     const { gif_id, session_id } = await req.json();
-    if (!gif_id || !session_id) throw new Error("gif_id and session_id required");
+    if (!gif_id) throw new Error("gif_id required");
+
+    // Admin bypass — owner skips Stripe
+    const { data: roleRow } = await supa
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!roleRow;
 
     const { data: gif, error: ge } = await supa
       .from("living_gifs")
@@ -132,19 +141,22 @@ serve(async (req) => {
       });
     }
 
-    // Verify Stripe payment
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-      apiVersion: "2025-08-27.basil",
-    });
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status !== "paid") {
-      throw new Error(`Payment not complete: ${session.payment_status}`);
+    if (!isAdmin) {
+      if (!session_id) throw new Error("session_id required");
+      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+        apiVersion: "2025-08-27.basil",
+      });
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      if (session.payment_status !== "paid") {
+        throw new Error(`Payment not complete: ${session.payment_status}`);
+      }
+      await supa.from("living_gifs").update({
+        status: "generating",
+        stripe_payment_intent: String(session.payment_intent ?? ""),
+      }).eq("id", gif_id);
+    } else {
+      await supa.from("living_gifs").update({ status: "generating" }).eq("id", gif_id);
     }
-
-    await supa.from("living_gifs").update({
-      status: "generating",
-      stripe_payment_intent: String(session.payment_intent ?? ""),
-    }).eq("id", gif_id);
 
     log("generating", { gif_id });
 

@@ -30,6 +30,15 @@ serve(async (req) => {
     if (ue || !ud.user?.email) throw new Error("Not authenticated");
     const user = ud.user;
 
+    // Admin bypass — owner generates GIFs free
+    const { data: roleRow } = await supa
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    const isAdmin = !!roleRow;
+
     const body = await req.json().catch(() => ({}));
     const { source_avatar_id, source_image_url, prompt, title } = body ?? {};
     if (!source_image_url || !prompt || String(prompt).trim().length < 4) {
@@ -48,12 +57,21 @@ serve(async (req) => {
         source_image_url,
         prompt: String(prompt).slice(0, 800),
         title: title ? String(title).slice(0, 120) : null,
-        amount_paid_cents: 400,
-        status: "pending_payment",
+        amount_paid_cents: isAdmin ? 0 : 400,
+        status: isAdmin ? "generating" : "pending_payment",
       })
       .select("id")
       .single();
     if (insErr) throw insErr;
+
+    // Admin: skip Stripe entirely, return a marker the client uses to trigger generation
+    if (isAdmin) {
+      log("admin bypass — free generation", { gif_id: gif.id, user: user.email });
+      return new Response(
+        JSON.stringify({ admin_bypass: true, gif_id: gif.id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
       apiVersion: "2025-08-27.basil",
