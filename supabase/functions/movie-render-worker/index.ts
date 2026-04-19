@@ -128,12 +128,17 @@ async function renderVideo(job: any) {
     videoUrl = await runwayGenerateAndPoll(scene.visual_prompt ?? scene.script_text, dur);
   }
 
-  // Fallback to Replicate (Stable Video Diffusion) if Runway unavailable or failed
+  // Free internal fallback: Lovable AI Gateway → Veo (image-to-video).
+  if (!videoUrl && LOVABLE_API_KEY) {
+    videoUrl = await lovableVideoFallback(scene.visual_prompt ?? scene.script_text, dur);
+  }
+
+  // Last resort: Replicate (Stable Video Diffusion)
   if (!videoUrl && REPLICATE_API_TOKEN) {
     videoUrl = await replicateVideoFallback(scene.visual_prompt ?? scene.script_text);
   }
 
-  if (!videoUrl) throw new Error("All video providers failed (no Runway or Replicate token)");
+  if (!videoUrl) throw new Error("All video providers failed (Runway, Lovable Veo, Replicate)");
 
   // Download + re-upload to our bucket so we own it
   const ownedUrl = await mirrorToBucket(videoUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-1080p.mp4`, "video/mp4");
