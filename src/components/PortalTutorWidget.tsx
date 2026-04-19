@@ -36,7 +36,6 @@ const SPEECH_ONLY_AUDIO_CONSTRAINTS: MediaTrackConstraints = {
   channelCount: 1,
   sampleRate: 16000,
   sampleSize: 16,
-  latency: 0,
 };
 
 const PortalTutorWidget = () => {
