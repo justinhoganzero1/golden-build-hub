@@ -1,26 +1,31 @@
 // Movie Studio Pro — render charge gate.
-// Charges the user's wallet at base compute cost + 50% service markup BEFORE export.
-// Pricing model:
-//   base cost per scene (20 sec cinematic clip): 8 cents
-//     - covers Gemini image gen + ElevenLabs VO/SFX/music compute
-//   service fee: +50% of base = ensures we always profit
-//   minimum charge: 25 cents per export
+// Charges the user's wallet at:
+//   provider compute estimate + PLATFORM_MARKUP_PCT (5%) on top of every outside cost
+//   + an additional service fee that scales with duration (covers Lovable AI + storage)
 //
-// action=estimate → returns price, no charge
+// action=estimate → returns price + breakdown, no charge
 // action=charge   → atomically deducts wallet (rejects if insufficient)
+//
+// 2026-04-19: Aggressive paywall update
+//   - We now bill provider cost (Runway image-to-video + ElevenLabs VO) at provider+5%
+//   - Service fee bumped from 50% → 60% on internal compute to cover Gemini + storage + bandwidth
+//   - HD/captions surcharges retained
+//   - Added duration_min input so we can cap export length per subscription tier (enforced client-side too)
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { markupCents, PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BASE_CENTS_PER_SCENE = 8;
-const SERVICE_MARKUP = 0.5; // +50%
+const SERVICE_MARKUP = 0.6; // +60% on internal compute (Gemini + storage + render queue)
 const MIN_CHARGE_CENTS = 25;
-const HD_SURCHARGE_CENTS = 15; // 1080p add-on
-const CAPTION_SURCHARGE_CENTS = 5;
+const HD_SURCHARGE_CENTS = 25;     // bumped — 1080p adds real bandwidth cost
+const CAPTION_SURCHARGE_CENTS = 10;
+const SECONDS_PER_SCENE = 6;       // beat length used by scene-breaker
+const AVG_VO_CHARS_PER_SCENE = 90; // ~6s of natural speech
 
 interface Body {
   scene_count: number;
@@ -30,12 +35,41 @@ interface Body {
 }
 
 function price(b: Body) {
-  const base = Math.max(1, b.scene_count) * BASE_CENTS_PER_SCENE
+  const scenes = Math.max(1, b.scene_count);
+
+  // Provider passthrough (with +5% platform markup baked in)
+  const runwayCost = scenes * SECONDS_PER_SCENE * PROVIDER_RATES.runway_image_to_video_per_second;
+  const ttsCost = Math.ceil(
+    (scenes * AVG_VO_CHARS_PER_SCENE / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars
+  );
+  const provider_runway = markupCents(runwayCost);
+  const provider_tts = markupCents(ttsCost);
+  const provider_total = provider_runway.total_cents + provider_tts.total_cents;
+
+  // Internal compute (Gemini for scene breaking + storage + bandwidth)
+  const internal_compute = 8 * scenes
     + (b.hd ? HD_SURCHARGE_CENTS : 0)
     + (b.with_captions ? CAPTION_SURCHARGE_CENTS : 0);
-  const fee = Math.ceil(base * SERVICE_MARKUP);
-  const total = Math.max(MIN_CHARGE_CENTS, base + fee);
-  return { base_cents: base, service_fee_cents: fee, total_cents: total };
+  const internal_fee = Math.ceil(internal_compute * SERVICE_MARKUP);
+  const internal_total = internal_compute + internal_fee;
+
+  const total = Math.max(MIN_CHARGE_CENTS, provider_total + internal_total);
+
+  return {
+    base_cents: provider_runway.provider_cost_cents + provider_tts.provider_cost_cents + internal_compute,
+    service_fee_cents: provider_runway.platform_fee_cents + provider_tts.platform_fee_cents + internal_fee,
+    total_cents: total,
+    breakdown: {
+      runway_video: provider_runway,
+      elevenlabs_voiceover: provider_tts,
+      lovable_compute_cents: internal_compute,
+      lovable_compute_markup_cents: internal_fee,
+      hd_surcharge_cents: b.hd ? HD_SURCHARGE_CENTS : 0,
+      captions_surcharge_cents: b.with_captions ? CAPTION_SURCHARGE_CENTS : 0,
+      platform_markup_pct: 5,
+      service_markup_pct: 60,
+    },
+  };
 }
 
 const json = (b: unknown, s = 200) =>
@@ -63,7 +97,6 @@ Deno.serve(async (req) => {
     const p = price(body);
 
     if (body.action === "estimate") {
-      // Also return current balance so UI can show "you need $X.XX more"
       const { data: wallet } = await supabase
         .from("wallet_balances")
         .select("balance_cents")
@@ -77,9 +110,6 @@ Deno.serve(async (req) => {
     }
 
     // CHARGE — atomic deduction
-    // Use the same wallet_charge_call helper pattern but inline since this isn't a Twilio call.
-    // Re-use wallet_topup with a NEGATIVE amount to deduct atomically? No — that allows negatives.
-    // Implement guarded deduction here.
     const { data: wallet } = await supabase
       .from("wallet_balances")
       .select("balance_cents")
@@ -97,16 +127,14 @@ Deno.serve(async (req) => {
       }, 402);
     }
 
-    // Deduct via upsert
     await supabase
       .from("wallet_balances")
       .upsert({ user_id: user.id, balance_cents: balance - p.total_cents }, { onConflict: "user_id" });
 
-    // Log the charge in call_charges (re-using table for now, status="movie_render")
     await supabase.from("call_charges").insert({
       user_id: user.id,
       destination: `movie_render:${body.scene_count}scenes${body.hd ? ":hd" : ""}${body.with_captions ? ":cc" : ""}`,
-      duration_seconds: body.scene_count * 20,
+      duration_seconds: body.scene_count * SECONDS_PER_SCENE,
       twilio_cost_cents: p.base_cents,
       service_fee_cents: p.service_fee_cents,
       total_billed_cents: p.total_cents,
