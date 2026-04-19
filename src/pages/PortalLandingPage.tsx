@@ -130,7 +130,7 @@ const PortalLandingPage = () => {
       <button
         type="button"
         onClick={() => handleInstall()}
-        className="fixed top-28 left-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(255,20,147,0.85),0_0_80px_rgba(250,204,21,0.5)] hover:shadow-[0_0_60px_rgba(255,20,147,1),0_0_120px_rgba(250,204,21,0.7)] transition-all animate-pulse"
+        className="holo-bubble fixed top-28 left-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(255,20,147,0.85),0_0_80px_rgba(250,204,21,0.5)] hover:shadow-[0_0_60px_rgba(255,20,147,1),0_0_120px_rgba(250,204,21,0.7)] transition-all"
         style={{
           background:
             "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
@@ -138,25 +138,30 @@ const PortalLandingPage = () => {
         }}
         aria-label="Limited time free — install SOLACE"
       >
-        <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-          🎉 FREE!
-        </div>
-        <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-          Join the party ✨
-        </div>
-        <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-          14 days! 🥳
-        </div>
-        <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
-          Tap to install 🎈
-        </div>
+        <span className="holo-rim" aria-hidden="true" />
+        <span className="holo-sheen" aria-hidden="true" />
+        <span className="holo-scan" aria-hidden="true" />
+        <span className="relative z-10 contents">
+          <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+            🎉 FREE!
+          </div>
+          <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            Join the party ✨
+          </div>
+          <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+            14 days! 🥳
+          </div>
+          <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
+            Tap to install 🎈
+          </div>
+        </span>
       </button>
 
       {/* ── Referral programme bubble (top-right, round, fluro green) ── */}
       <button
         type="button"
         onClick={() => navigate("/referrals")}
-        className="fixed top-28 right-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(57,255,20,0.85),0_0_80px_rgba(163,255,0,0.5)] hover:shadow-[0_0_60px_rgba(57,255,20,1),0_0_120px_rgba(163,255,0,0.7)] transition-all animate-pulse"
+        className="holo-bubble fixed top-28 right-4 z-50 h-44 w-44 md:h-52 md:w-52 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(57,255,20,0.85),0_0_80px_rgba(163,255,0,0.5)] hover:shadow-[0_0_60px_rgba(57,255,20,1),0_0_120px_rgba(163,255,0,0.7)] transition-all"
         style={{
           background:
             "radial-gradient(circle at 30% 30%, #39ff14 0%, #00b300 45%, #001a00 85%, #000 100%)",
@@ -164,18 +169,23 @@ const PortalLandingPage = () => {
         }}
         aria-label="Refer a friend — get a free month of Tier 3"
       >
-        <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-          🔗 REFER!
-        </div>
-        <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-          Invite a friend 💚
-        </div>
-        <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-          1 month free! 🎁
-        </div>
-        <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
-          Tap to share 🚀
-        </div>
+        <span className="holo-rim" aria-hidden="true" />
+        <span className="holo-sheen" aria-hidden="true" />
+        <span className="holo-scan" aria-hidden="true" />
+        <span className="relative z-10 contents">
+          <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+            🔗 REFER!
+          </div>
+          <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            Invite a friend 💚
+          </div>
+          <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
+            1 month free! 🎁
+          </div>
+          <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
+            Tap to share 🚀
+          </div>
+        </span>
       </button>
 
       {/* ── Top nav ───────────────────────────── */}
