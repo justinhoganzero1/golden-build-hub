@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,7 +30,7 @@ interface AccountStatus {
  *   5. Visit their public storefront
  */
 export default function StripeConnectPanel() {
-  const { user } = useAuth();
+  const { user, isReady } = useAuthReady();
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -43,7 +43,7 @@ export default function StripeConnectPanel() {
   const [submittingProduct, setSubmittingProduct] = useState(false);
 
   const refreshStatus = async () => {
-    if (!user) return;
+    if (!isReady || !user) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("connect-account", {
@@ -59,14 +59,14 @@ export default function StripeConnectPanel() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!isReady || !user) return;
     refreshStatus();
     // Re-fetch when returning from Stripe-hosted onboarding
     const params = new URLSearchParams(window.location.search);
     if (params.get("connect") === "return") {
       toast.success("Welcome back! Refreshing onboarding status…");
     }
-  }, [user?.id]);
+  }, [isReady, user?.id]);
 
   const handleCreate = async () => {
     setCreating(true);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReady } from "@/hooks/useAuthReady";
 
 // Map Stripe product IDs to tier names
 export const SUBSCRIPTION_TIERS = {
@@ -38,6 +39,7 @@ export interface SubscriptionState {
 
 export function useSubscription() {
   const { user } = useAuth();
+  const { isReady } = useAuthReady();
   const [state, setState] = useState<SubscriptionState>({
     subscribed: false,
     tier: "free",
@@ -52,6 +54,7 @@ export function useSubscription() {
   });
 
   const checkSubscription = useCallback(async () => {
+    if (!isReady) return;
     if (!user) {
       setState(prev => ({ ...prev, subscribed: false, tier: "free", effectiveTier: "free", loading: false }));
       return;
@@ -100,7 +103,7 @@ export function useSubscription() {
         error: err.message || "Failed to check subscription",
       }));
     }
-  }, [user]);
+  }, [user, isReady]);
 
   useEffect(() => {
     checkSubscription();
@@ -108,10 +111,10 @@ export function useSubscription() {
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    if (!user) return;
+    if (!isReady || !user) return;
     const interval = setInterval(checkSubscription, 60000);
     return () => clearInterval(interval);
-  }, [user, checkSubscription]);
+  }, [isReady, user, checkSubscription]);
 
   const startCheckout = async (priceId: string, mode: "subscription" | "payment" = "subscription") => {
     try {
