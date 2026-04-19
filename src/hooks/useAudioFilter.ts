@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { AudioFilterPipeline, type AudioFilterStatus, type FilterTier, subscriptionToFilterTier, loadVoicePrint } from "@/lib/audioFilter";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface UseAudioFilterOpts {
   /** Auto-start pipeline when this is true. */
