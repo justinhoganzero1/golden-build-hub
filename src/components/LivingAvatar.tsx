@@ -147,15 +147,13 @@ const LivingAvatar = ({
           className="w-full h-full object-cover rounded-[inherit]"
         />
       ) : (
-        <div className={`relative w-full h-full ${intensityClass}`}>
+        <div className={`relative w-full h-full ${intensityClass}`} style={{ transformOrigin: "center 70%" }}>
           <img
             src={imageUrl}
             alt={alt}
             className="w-full h-full object-cover rounded-[inherit] select-none"
             draggable={false}
           />
-          {/* Subtle blink overlay — hides eyes for ~120ms every ~5s */}
-          <div className="absolute inset-x-0 top-[38%] h-[6%] pointer-events-none animate-blink bg-foreground rounded-full mx-[20%]" />
         </div>
       )}
 
