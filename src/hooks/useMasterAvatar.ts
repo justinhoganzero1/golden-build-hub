@@ -37,7 +37,7 @@ export function useSetMasterAvatar() {
       // Mirror to localStorage so OraclePage picks it up immediately
       try {
         localStorage.setItem(
-          "solace-oracle-mode",
+          "oracle-lunar-mode",
           JSON.stringify({ mode: "avatar", avatarId })
         );
       } catch {}

@@ -104,7 +104,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
       });
       const j = await resp.json();
       if (resp.status === 402) {
-        toast.error("This unlocks with a SOLACE membership upgrade.");
+        toast.error("This unlocks with a ORACLE LUNAR membership upgrade.");
         return null;
       }
       if (!resp.ok) throw new Error(j.error || "Image gen failed");
@@ -180,7 +180,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         return;
       }
       if (resp.status === 402) {
-        setMessages((p) => [...p, { role: "assistant", content: "This unlocks with a SOLACE membership upgrade." }]);
+        setMessages((p) => [...p, { role: "assistant", content: "This unlocks with a ORACLE LUNAR membership upgrade." }]);
         return;
       }
       if (!resp.ok || !resp.body) throw new Error("stream failed");

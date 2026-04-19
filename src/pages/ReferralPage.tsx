@@ -7,14 +7,14 @@ import { toast } from "sonner";
 
 const ReferralPage = () => {
   const { user } = useAuth();
-  const [referralCode, setReferralCode] = useState("SOLACE2026");
+  const [referralCode, setReferralCode] = useState("ORACLE LUNAR2026");
   const [email, setEmail] = useState("");
   const [referrals, setReferrals] = useState<any[]>([]);
   const [tab, setTab] = useState<"invite" | "history" | "rewards">("invite");
 
   useEffect(() => {
     if (user) {
-      setReferralCode(`SOLACE${user.id.slice(0, 6).toUpperCase()}`);
+      setReferralCode(`ORACLE LUNAR${user.id.slice(0, 6).toUpperCase()}`);
       loadReferrals();
     }
   }, [user]);
@@ -39,7 +39,7 @@ const ReferralPage = () => {
   const shareLink = () => {
     const url = `${window.location.origin}/?ref=${referralCode}`;
     if (navigator.share) {
-      navigator.share({ title: "Join Solace!", text: `Use my code ${referralCode} to get started!`, url });
+      navigator.share({ title: "Join Oracle Lunar!", text: `Use my code ${referralCode} to get started!`, url });
     } else {
       navigator.clipboard.writeText(url);
       toast.success("Share link copied!");

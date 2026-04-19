@@ -109,7 +109,7 @@ const AppBuilderPage = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           type: "assistant",
-          prompt: `You are SOLACE Master App Builder v2 — an elite AI agent that ships production-grade, installable, monetisable web apps in one shot.
+          prompt: `You are ORACLE LUNAR Master App Builder v2 — an elite AI agent that ships production-grade, installable, monetisable web apps in one shot.
 
 CONVERSATION SO FAR:
 ${conversationContext}
@@ -128,7 +128,7 @@ INSTRUCTIONS — every app you generate MUST include ALL of the following super-
    • Inline service-worker registration that caches the page for offline use (use a blob URL for the SW script — keep it short).
    • A floating "Install App" button that calls beforeinstallprompt and hides once installed.
 
-3. **Stripe paywall (if PAID)** — every premium feature locked behind localStorage \`solace_paid=true\`. Big Subscribe CTA calling \`startCheckout()\` which POSTs to \`/api/create-checkout\` with the price tier. Tiered pricing card (Starter / Pro / Lifetime) when relevant. Lock badges (🔒) on locked features.
+3. **Stripe paywall (if PAID)** — every premium feature locked behind localStorage \`oracle-lunar_paid=true\`. Big Subscribe CTA calling \`startCheckout()\` which POSTs to \`/api/create-checkout\` with the price tier. Tiered pricing card (Starter / Pro / Lifetime) when relevant. Lock badges (🔒) on locked features.
 
 4. **Social share + virality** — built-in Share button using navigator.share fallback to copy link. Pre-wired share-to-X and share-to-Instagram-Stories buttons (Instagram via web intent). Include OG meta tags (og:title, og:description, og:image placeholder) and Twitter card meta.
 
@@ -140,7 +140,7 @@ INSTRUCTIONS — every app you generate MUST include ALL of the following super-
 
 8. **Design** — mobile-first, dark theme (bg #0a0a0a, accent gold #f59e0b), glassmorphism cards, smooth Framer-style CSS animations, Inter/Space-Grotesk via Google Fonts, fully responsive, 60fps polish.
 
-9. **Config meta** — <meta name="solace-app-config" content='{"paid":true|false,"price":"$X","play_ready":true,"pwa":true,"social":true,"ai":true,"version":2}'>
+9. **Config meta** — <meta name="oracle-lunar-app-config" content='{"paid":true|false,"price":"$X","play_ready":true,"pwa":true,"social":true,"ai":true,"version":2}'>
 
 10. **Single self-contained HTML file** — header / main / footer, "Get the App" CTA with Play Store + App Store badge placeholders, ready to wrap.
 
@@ -181,10 +181,10 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
         setCurrentCode(code);
         const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
 
-        // Detect paid status from generated <meta name="solace-app-config">
+        // Detect paid status from generated <meta name="oracle-lunar-app-config">
         let isPaid = false;
         let pricePoint: string | undefined;
-        const metaMatch = code.match(/<meta\s+name=["']solace-app-config["']\s+content=["']([^"']+)["']/i);
+        const metaMatch = code.match(/<meta\s+name=["']oracle-lunar-app-config["']\s+content=["']([^"']+)["']/i);
         if (metaMatch) {
           try {
             const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
@@ -248,7 +248,7 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
     <>
     <SEO
       title="AI App Builder — Build Web Apps By Chatting"
-      description="SOLACE App Builder: describe an app and AI builds it. Full HTML, deploy to Play Store, monetize. Free to start."
+      description="ORACLE LUNAR App Builder: describe an app and AI builds it. Full HTML, deploy to Play Store, monetize. Free to start."
       path="/app-builder"
     />
     <div className="min-h-screen bg-background flex flex-col">

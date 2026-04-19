@@ -99,7 +99,7 @@ const DEFAULT_AVATARS: AvatarConfig[] = [
   { id: "spark", name: "Spark", appearanceId: "hero-male", color: "#F97316", field: "Comedian", personality: "Energetic and fun", voiceId: "IKne3meq5aSn9XLyUdCD", active: false, locked: true },
 ];
 
-const AXEL_F_CACHE_KEY = "solace-axel-f-mp3";
+const AXEL_F_CACHE_KEY = "oracle-lunar-axel-f-mp3";
 
 const AIStudioPage = () => {
   const navigate = useNavigate();

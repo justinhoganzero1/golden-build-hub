@@ -23,23 +23,23 @@ const AboutPage = () => {
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-primary">Solace</h1>
+          <h1 className="text-2xl font-bold text-primary">Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm mt-1">Your AI Companion For Everything</p>
           <p className="text-xs text-muted-foreground mt-1">Version 1.0.0</p>
         </div>
 
         {/* Description */}
         <div className="bg-card border border-border rounded-xl p-4 mb-6">
-          <h2 className="text-lg font-semibold text-primary mb-2">About Solace</h2>
+          <h2 className="text-lg font-semibold text-primary mb-2">About Oracle Lunar</h2>
           <p className="text-sm text-foreground leading-relaxed">
-            Solace is the world's most secure AI-powered super app, designed to be your all-in-one digital companion. 
+            Oracle Lunar is the world's most secure AI-powered super app, designed to be your all-in-one digital companion. 
             From creative tools like AI art generation and video editing, to safety features including crisis support 
-            and real-time threat detection — Solace puts the power of 40+ specialized AI tools in your pocket.
+            and real-time threat detection — Oracle Lunar puts the power of 40+ specialized AI tools in your pocket.
           </p>
           <p className="text-sm text-foreground leading-relaxed mt-3">
-            Protected by 101 dedicated AI security systems, Solace sets a new standard in mobile app security. 
+            Protected by 101 dedicated AI security systems, Oracle Lunar sets a new standard in mobile app security. 
             Whether you're managing your health, creating stunning media, learning new skills, or keeping your 
-            family safe, Solace is built to help you thrive in every aspect of life.
+            family safe, Oracle Lunar is built to help you thrive in every aspect of life.
           </p>
         </div>
 
@@ -69,10 +69,10 @@ const AboutPage = () => {
 
         {/* Credits */}
         <div className="text-center text-xs text-muted-foreground space-y-1">
-          <p>Built with ❤️ by Solace AI</p>
-          <p>© {new Date().getFullYear()} Solace AI. All rights reserved.</p>
+          <p>Built with ❤️ by Oracle Lunar AI</p>
+          <p>© {new Date().getFullYear()} Oracle Lunar AI. All rights reserved.</p>
           <p className="mt-2">Powered by advanced AI technology</p>
-          <p>support@solace-ai.app</p>
+          <p>support@oracle-lunar.online</p>
         </div>
       </div>
     </div>

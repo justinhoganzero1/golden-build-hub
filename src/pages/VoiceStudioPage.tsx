@@ -219,7 +219,7 @@ export default function VoiceStudioPage() {
         .eq("id", avatarId);
       // Persist voice id in localStorage for Oracle TTS
       if (typeof cfg.voice_id === "string") {
-        localStorage.setItem("solace-oracle-voice", cfg.voice_id);
+        localStorage.setItem("oracle-lunar-voice", cfg.voice_id);
       }
       toast.success("Voice assigned");
       setAssignVoice(null);
@@ -301,9 +301,9 @@ export default function VoiceStudioPage() {
         }
       : null;
 
-    localStorage.setItem("solace-oracle-voice", voiceId);
+    localStorage.setItem("oracle-lunar-voice", voiceId);
     localStorage.setItem(
-      "solace-oracle-master-voice",
+      "oracle-lunar-master-voice",
       JSON.stringify({
         id: voiceId,
         name: voiceName,
@@ -313,11 +313,11 @@ export default function VoiceStudioPage() {
     );
     if (normalizedSettings) {
       localStorage.setItem(
-        "solace-oracle-voice-settings",
+        "oracle-lunar-voice-settings",
         JSON.stringify(normalizedSettings)
       );
     } else {
-      localStorage.removeItem("solace-oracle-voice-settings");
+      localStorage.removeItem("oracle-lunar-voice-settings");
     }
     toast.success(`👑 ${voiceName} is now the Oracle's default voice`);
   }
@@ -326,7 +326,7 @@ export default function VoiceStudioPage() {
     <>
     <SEO
       title="Voice Studio — 120+ AI Voices, Voice Cloning & TTS"
-      description="SOLACE Voice Studio: 120+ realistic AI voices, voice cloning, custom TTS. Build your perfect AI voice for chat, video and apps."
+      description="ORACLE LUNAR Voice Studio: 120+ realistic AI voices, voice cloning, custom TTS. Build your perfect AI voice for chat, video and apps."
       path="/voice-studio"
     />
     <div className="min-h-screen bg-background text-foreground p-4 pb-32">

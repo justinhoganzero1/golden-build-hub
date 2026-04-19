@@ -58,13 +58,13 @@ Deno.serve(async (req) => {
             <p style="margin-top:24px">
               <a href="https://oracle-lunar.online/movie-studio-pro" style="background:#f5b042;color:#0b0b0f;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Open Movie Studio Pro</a>
             </p>
-            <p style="color:#888;font-size:12px;margin-top:32px">— SOLACE Movie Studio</p>
+            <p style="color:#888;font-size:12px;margin-top:32px">— ORACLE LUNAR Movie Studio</p>
           </div>`;
         const resp = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            from: "SOLACE Movies <onboarding@resend.dev>",
+            from: "ORACLE LUNAR Movies <onboarding@resend.dev>",
             to: [email],
             subject: `🎬 Your movie "${p.title}" needs a quick retry`,
             html,
@@ -123,13 +123,13 @@ Deno.serve(async (req) => {
               <a href="https://oracle-lunar.online/movie-studio-pro" style="background:#1a1a22;color:#f5f5f7;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #333">Open Studio</a>
             </p>
             ${p.trailer_url ? `<p style="margin-top:12px"><a href="${p.trailer_url}" style="color:#f5b042">🎞 Watch the trailer</a></p>` : ""}
-            <p style="color:#888;font-size:12px;margin-top:32px">— SOLACE Movie Studio</p>
+            <p style="color:#888;font-size:12px;margin-top:32px">— ORACLE LUNAR Movie Studio</p>
           </div>`;
         const resp = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "Authorization": `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            from: "SOLACE Movies <onboarding@resend.dev>",
+            from: "ORACLE LUNAR Movies <onboarding@resend.dev>",
             to: [email],
             subject: `🎬 "${p.title}" is ready to watch`,
             html,

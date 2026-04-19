@@ -319,12 +319,12 @@ All colors MUST be HSL.
   }
 }
 
-/* ── SOLACE wordmark family ──
+/* ── ORACLE LUNAR wordmark family ──
    Cinematic serif (Cinzel) with wide tracking + gold glow that matches
-   the SOLACE logo wordmark. Use .solace-wordmark on any heading or text
+   the ORACLE LUNAR logo wordmark. Use .oracle-lunar-wordmark on any heading or text
    that should feel like the brand mark itself. */
 @layer components {
-  .solace-wordmark {
+  .oracle-lunar-wordmark {
     font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
     font-weight: 700;
     letter-spacing: 0.18em;
@@ -335,7 +335,7 @@ All colors MUST be HSL.
       0 0 28px hsl(var(--primary) / 0.30),
       0 2px 4px rgba(0, 0, 0, 0.6);
   }
-  .solace-wordmark-soft {
+  .oracle-lunar-wordmark-soft {
     font-family: 'Cinzel', 'Trajan Pro', Georgia, serif;
     font-weight: 600;
     letter-spacing: 0.12em;
@@ -343,7 +343,7 @@ All colors MUST be HSL.
     text-shadow: 0 0 10px hsl(var(--primary) / 0.18), 0 1px 3px rgba(0, 0, 0, 0.5);
   }
   /* On the public landing page, give every h1/h2/h3 the soft wordmark look
-     so the typography matches the SOLACE logo identity. */
+     so the typography matches the ORACLE LUNAR logo identity. */
   body[data-route="/"] h1,
   body[data-route="/"] h2,
   body[data-route="/"] h3 {

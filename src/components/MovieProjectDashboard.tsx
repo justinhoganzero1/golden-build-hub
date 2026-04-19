@@ -108,8 +108,8 @@ export const MovieProjectDashboard = () => {
       body: {
         action: "bundle",
         title: project.title,
-        description: `Created with SOLACE Movie Studio Pro`,
-        tags: ["AI", "Movie", "SOLACE"],
+        description: `Created with ORACLE LUNAR Movie Studio Pro`,
+        tags: ["AI", "Movie", "ORACLE LUNAR"],
         video_url: project.final_video_url,
       },
     });

@@ -284,7 +284,7 @@ const ProfilePage = () => {
         title="My Avatar"
         url={profileAvatar || undefined}
         imageUrl={profileAvatar || undefined}
-        description="Check out my AI avatar from Solace!"
+        description="Check out my AI avatar from Oracle Lunar!"
       />
       <MediaPickerDialog
         open={showMediaPicker}

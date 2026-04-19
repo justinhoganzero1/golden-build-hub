@@ -123,7 +123,7 @@ const SecurityShield = () => {
           <DialogHeader className="p-4 pb-2 border-b border-border bg-gradient-to-r from-primary/5 via-green-500/5 to-blue-500/5">
             <DialogTitle className="flex items-center gap-2 text-primary">
               <ShieldCheck className="w-6 h-6" />
-              SOLACE Security Fortress
+              ORACLE LUNAR Security Fortress
             </DialogTitle>
             <p className="text-xs text-muted-foreground">101 AI Security Agents protecting you 24/7</p>
             {/* Stats bar */}

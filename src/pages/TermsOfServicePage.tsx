@@ -10,12 +10,12 @@ const TermsOfServicePage = () => (
       <div className="space-y-6 text-sm text-foreground leading-relaxed">
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">1. Acceptance of Terms</h2>
-          <p>By downloading, installing, or using Solace ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App. These Terms constitute a legally binding agreement between you and Solace AI ("we," "our," or "us").</p>
+          <p>By downloading, installing, or using Oracle Lunar ("the App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App. These Terms constitute a legally binding agreement between you and Oracle Lunar AI ("we," "our," or "us").</p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">2. Description of Service</h2>
-          <p>Solace is an AI-powered personal companion application providing safety, productivity, creativity, and wellness tools. Features include but are not limited to: AI chat, media creation and editing, personal assistant, health monitoring, financial management, and security services.</p>
+          <p>Oracle Lunar is an AI-powered personal companion application providing safety, productivity, creativity, and wellness tools. Features include but are not limited to: AI chat, media creation and editing, personal assistant, health monitoring, financial management, and security services.</p>
         </section>
 
         <section>
@@ -72,7 +72,7 @@ const TermsOfServicePage = () => (
 
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">8. Intellectual Property</h2>
-          <p>The App, including its design, features, code, AI models, and branding, is the property of Solace AI and is protected by intellectual property laws. You may not copy, modify, distribute, or reverse-engineer any part of the App without our written permission.</p>
+          <p>The App, including its design, features, code, AI models, and branding, is the property of Oracle Lunar AI and is protected by intellectual property laws. You may not copy, modify, distribute, or reverse-engineer any part of the App without our written permission.</p>
         </section>
 
         <section>
@@ -87,7 +87,7 @@ const TermsOfServicePage = () => (
 
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">10. Limitation of Liability</h2>
-          <p>To the maximum extent permitted by law, Solace AI shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of data, profits, or goodwill, arising from your use of or inability to use the App.</p>
+          <p>To the maximum extent permitted by law, Oracle Lunar AI shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of data, profits, or goodwill, arising from your use of or inability to use the App.</p>
         </section>
 
         <section>
@@ -108,7 +108,7 @@ const TermsOfServicePage = () => (
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">14. Contact</h2>
           <p>For questions about these Terms, contact us at:</p>
-          <p className="mt-2"><strong>Solace AI</strong><br />Email: support@solace-ai.app<br />Website: https://golden-vault-builder.lovable.app</p>
+          <p className="mt-2"><strong>Oracle Lunar AI</strong><br />Email: support@oracle-lunar.online<br />Website: https://golden-vault-builder.lovable.app</p>
         </section>
       </div>
     </div>

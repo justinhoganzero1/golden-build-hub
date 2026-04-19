@@ -101,7 +101,7 @@ interface Scene {
   // Newsroom-specific extras
   is_news_segment?: boolean;
   lower_third_name?: string;   // e.g. "Maya Chen"
-  lower_third_title?: string;  // e.g. "SOLACE Tech Reporter"
+  lower_third_title?: string;  // e.g. "ORACLE LUNAR Tech Reporter"
   broll_url?: string;          // optional B-roll image overlay (cutaway)
   // Director controls (preset-driven, baked into the photo prompt)
   camera_angle?: CameraAngle;
@@ -172,7 +172,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
   const nextBlockPrice = priceForBlockUSD(nextBlockNumber);
   // Newsroom (YouTube show) preset
   const [newsroomMode, setNewsroomMode] = useState(false);
-  const [showName, setShowName] = useState("");          // e.g. "SOLACE Daily"
+  const [showName, setShowName] = useState("");          // e.g. "ORACLE LUNAR Daily"
   const [hostName, setHostName] = useState("");          // e.g. "Alex Rivera"
   const [hostTitle, setHostTitle] = useState("");        // e.g. "Lead Anchor"
   const [hostAvatarUrl, setHostAvatarUrl] = useState<string | null>(null);
@@ -847,10 +847,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const lines: string[] = [];
       lines.push(`${title || "Untitled Movie"}`);
       lines.push("");
-      lines.push("— A SOLACE Production —");
+      lines.push("— A ORACLE LUNAR Production —");
       lines.push("");
       lines.push("Directed by");
-      lines.push("The SOLACE Oracle");
+      lines.push("The ORACLE LUNAR Oracle");
       lines.push("");
       if (starring.trim()) {
         lines.push("Starring");
@@ -883,7 +883,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       lines.push("Visuals");
       lines.push("Generated with AI");
       lines.push("");
-      lines.push("Made with ♥ on SOLACE");
+      lines.push("Made with ♥ on ORACLE LUNAR");
       setCreditsLines(lines);
       toast.success("Credits ready");
     } catch (e) {
@@ -905,7 +905,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     if (!script.trim()) { toast.error("Add your show script first"); return; }
     setGeneratingNewsroom(true);
     try {
-      const show = showName || "SOLACE Daily";
+      const show = showName || "ORACLE LUNAR Daily";
       const host = hostName || "Alex Rivera";
       const role = hostTitle || "Lead Anchor";
       setNewsroomMode(true);
@@ -1232,7 +1232,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             wrapText(ctx, title || "Untitled Movie", canvas.width / 2, canvas.height / 2, canvas.width - 200, 110);
             ctx.font = "italic 32px sans-serif";
             ctx.fillStyle = "#fff";
-            ctx.fillText("a SOLACE production", canvas.width / 2, canvas.height / 2 + 100);
+            ctx.fillText("a ORACLE LUNAR production", canvas.width / 2, canvas.height / 2 + 100);
             ctx.globalAlpha = 1;
             if (p < 1) requestAnimationFrame(tick);
             else resolve();
@@ -1436,7 +1436,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `${title || "solace-movie"}-${Date.now()}.webm`;
+      a.href = url; a.download = `${title || "oracle-lunar-movie"}-${Date.now()}.webm`;
       a.click();
 
       // Save to library
@@ -1445,7 +1445,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
         reader.onloadend = () => {
           saveMedia.mutate({
             media_type: "video",
-            title: title || "Solace Movie",
+            title: title || "Oracle Lunar Movie",
             url: reader.result as string,
             source_page: "movie-studio",
             metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length },

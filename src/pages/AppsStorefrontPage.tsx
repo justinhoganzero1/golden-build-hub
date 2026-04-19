@@ -5,10 +5,10 @@ import { STANDALONE_APPS } from "@/components/standalone/standaloneApps";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 /**
- * Public storefront listing all standalone SOLACE apps.
+ * Public storefront listing all standalone ORACLE LUNAR apps.
  * Each card links to /apps/<slug>. Free to use, with floating
  * Oracle helper inside each app and an option to install the
- * full SOLACE PWA.
+ * full ORACLE LUNAR PWA.
  */
 const AppsStorefrontPage = () => {
   const { canInstall, install, isIOS, isStandalone } = usePWAInstall();
@@ -16,8 +16,8 @@ const AppsStorefrontPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="SOLACE Apps — Free standalone AI tools"
-        description="Download or use any SOLACE AI app standalone — Oracle chat, AI tutor, mind hub, crisis help, photo magic, marketing, companion, wallet, calendar, and live vision. Each comes with Eric, your built-in AI helper."
+        title="ORACLE LUNAR Apps — Free standalone AI tools"
+        description="Download or use any ORACLE LUNAR AI app standalone — Oracle chat, AI tutor, mind hub, crisis help, photo magic, marketing, companion, wallet, calendar, and live vision. Each comes with Eric, your built-in AI helper."
         path="/apps"
       />
       <header className="border-b border-border">
@@ -26,7 +26,7 @@ const AppsStorefrontPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1">
-            <h1 className="font-bold text-lg">SOLACE Apps</h1>
+            <h1 className="font-bold text-lg">ORACLE LUNAR Apps</h1>
             <p className="text-xs text-muted-foreground">Pick any tool — use it free, install if you love it</p>
           </div>
           {!isStandalone && canInstall && (
@@ -43,7 +43,7 @@ const AppsStorefrontPage = () => {
       <main className="max-w-5xl mx-auto px-4 py-8">
         <section className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Every SOLACE tool, <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">on its own</span>
+            Every ORACLE LUNAR tool, <span className="bg-gradient-to-r from-primary to-amber-500 bg-clip-text text-transparent">on its own</span>
           </h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
             Each one is a focused, single-purpose app with Eric — your built-in AI helper — ready to guide you.
@@ -76,7 +76,7 @@ const AppsStorefrontPage = () => {
 
         <section className="mt-12 text-center text-sm text-muted-foreground">
           Want everything in one place?{" "}
-          <Link to="/" className="text-primary font-medium hover:underline">Get the full SOLACE app</Link>
+          <Link to="/" className="text-primary font-medium hover:underline">Get the full ORACLE LUNAR app</Link>
         </section>
       </main>
     </div>

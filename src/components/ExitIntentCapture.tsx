@@ -20,11 +20,11 @@ const ExitIntentCapture = forwardRef<HTMLDivElement, Record<string, never>>((_, 
   const { toast } = useToast();
 
   useEffect(() => {
-    if (sessionStorage.getItem("solace-exit-shown") === "1") return;
+    if (sessionStorage.getItem("oracle-lunar-exit-shown") === "1") return;
 
     const trigger = () => {
-      if (sessionStorage.getItem("solace-exit-shown") === "1") return;
-      sessionStorage.setItem("solace-exit-shown", "1");
+      if (sessionStorage.getItem("oracle-lunar-exit-shown") === "1") return;
+      sessionStorage.setItem("oracle-lunar-exit-shown", "1");
       setOpen(true);
     };
 
@@ -83,7 +83,7 @@ const ExitIntentCapture = forwardRef<HTMLDivElement, Record<string, never>>((_, 
             Wait — get <span className="text-primary">lifetime free access</span>
           </DialogTitle>
           <DialogDescription className="text-center">
-            Drop your email and we'll send you a private link to unlock SOLACE Pro forever.
+            Drop your email and we'll send you a private link to unlock ORACLE LUNAR Pro forever.
             No credit card. Limited to first 100 sign-ups.
           </DialogDescription>
         </DialogHeader>

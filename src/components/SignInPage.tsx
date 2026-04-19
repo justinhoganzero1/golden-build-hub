@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import solaceBanner from "@/assets/solace-banner.jpg";
+import oracle-lunarBanner from "@/assets/oracle-lunar-banner.jpg";
 
 const SignInPage = () => {
   const [email, setEmail] = useState("");
@@ -35,7 +35,7 @@ const SignInPage = () => {
           return;
         }
 
-        const refCode = searchParams.get("ref") || localStorage.getItem("solace-ref-code") || null;
+        const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
@@ -49,9 +49,9 @@ const SignInPage = () => {
           supabase.functions.invoke("grant-signup-reward", {
             body: { referralCode: refCode },
           }).catch(() => {});
-          localStorage.removeItem("solace-ref-code");
+          localStorage.removeItem("oracle-lunar-ref-code");
         } else if (refCode) {
-          localStorage.setItem("solace-ref-code", refCode);
+          localStorage.setItem("oracle-lunar-ref-code", refCode);
         }
         toast.success("Welcome! You've unlocked 30 days of Tier 3 free 🎉");
       } else {
@@ -94,7 +94,7 @@ const SignInPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-4 px-4">
       <div className="w-full max-w-md overflow-hidden rounded-xl mb-6">
-        <img src={solaceBanner} alt="Solace Banner" className="w-full h-auto object-cover" width={1024} height={512} />
+        <img src={oracle-lunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
       </div>
 
       <div className="w-full max-w-md border border-border rounded-2xl p-8 bg-card animate-slide-up">

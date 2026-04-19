@@ -72,7 +72,7 @@ export default function StorefrontPage() {
     <main className="min-h-screen bg-background text-foreground">
       <SEO
         title="Creator Storefront"
-        description="Buy products from a SOLACE creator powered by Stripe Connect."
+        description="Buy products from a ORACLE LUNAR creator powered by Stripe Connect."
         path={`/store/${accountId}`}
       />
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-6">

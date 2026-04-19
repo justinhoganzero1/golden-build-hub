@@ -9,7 +9,7 @@ type Msg = { role: "user" | "assistant"; content: string };
  *  Every reply is the same: "download the app". No real AI calls. */
 const StandaloneOracle = () => {
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Hi, I'm Eric. I only work inside the installed SOLACE app — download it and sign up to chat with me for real." },
+    { role: "assistant", content: "Hi, I'm Eric. I only work inside the installed ORACLE LUNAR app — download it and sign up to chat with me for real." },
   ]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);

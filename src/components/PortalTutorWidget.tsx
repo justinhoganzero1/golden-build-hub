@@ -23,7 +23,7 @@ const sanitizeForTTS = (raw: string): string =>
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTED = [
-  "How do I install SOLACE on my phone?",
+  "How do I install ORACLE LUNAR on my phone?",
   "What can the Oracle do?",
   "Walk me through the Crisis Hub",
   "How much does it cost?",
@@ -38,7 +38,7 @@ const PortalTutorWidget = () => {
     {
       role: "assistant",
       content:
-        "Hi — I'm your **SOLACE Concierge**. Tap the mic to talk to me, or type below. I can walk you through every feature and help you install the app.",
+        "Hi — I'm your **ORACLE LUNAR Concierge**. Tap the mic to talk to me, or type below. I can walk you through every feature and help you install the app.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -86,7 +86,7 @@ const PortalTutorWidget = () => {
         },
         body: JSON.stringify({
           text,
-          // MASTER VOICE: Sarah (EXAVITQu4vr4xnSDxMaL) — same default as the Solace app
+          // MASTER VOICE: Sarah (EXAVITQu4vr4xnSDxMaL) — same default as the Oracle Lunar app
           voiceId: "EXAVITQu4vr4xnSDxMaL",
           modelId: "eleven_flash_v2_5",
           fast: true,
@@ -138,7 +138,7 @@ const PortalTutorWidget = () => {
     if (!user) {
       const userMsg: Msg = { role: "user", content: trimmed };
       const pitch =
-        "Lovely to meet you. Before we go any further, I need you to **become a SOLACE member** — it's free to start, and it unlocks me, the Crisis Hub, the Safety Center, and every other tool on the site. Tap **Become a Member** below and I'll be right here waiting for you.";
+        "Lovely to meet you. Before we go any further, I need you to **become a ORACLE LUNAR member** — it's free to start, and it unlocks me, the Crisis Hub, the Safety Center, and every other tool on the site. Tap **Become a Member** below and I'll be right here waiting for you.";
       setMessages((p) => [...p, userMsg, { role: "assistant", content: pitch }]);
       setInput("");
       setGated(true);
@@ -238,7 +238,7 @@ const PortalTutorWidget = () => {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open SOLACE Concierge"
+          aria-label="Open ORACLE LUNAR Concierge"
           className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary pl-2 pr-5 py-2 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:scale-105 transition-transform"
         >
           <img
@@ -261,7 +261,7 @@ const PortalTutorWidget = () => {
                 className="h-10 w-10 rounded-full object-cover border-2 border-primary shadow-[0_0_15px_hsl(var(--primary)/0.5)]"
               />
               <div>
-                <div className="font-semibold text-foreground">SOLACE Concierge</div>
+                <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
                 <div className="text-xs text-muted-foreground">Your guide to every feature</div>
               </div>
             </div>
@@ -362,9 +362,9 @@ const PortalTutorWidget = () => {
               onChange={(e) => {
                 setInput(e.target.value);
                 // Notify the home logo to pulse while the user is typing
-                window.dispatchEvent(new CustomEvent("solace-chat-typing"));
+                window.dispatchEvent(new CustomEvent("oracle-lunar-chat-typing"));
               }}
-              placeholder={listening ? "Listening…" : "Ask anything about SOLACE…"}
+              placeholder={listening ? "Listening…" : "Ask anything about ORACLE LUNAR…"}
               className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <Button type="submit" size="icon" disabled={loading || !input.trim()}>

@@ -17,7 +17,7 @@ const Index = () => {
   useEffect(() => {
     if (loading || adminLoading) return;
     if (!user) return;
-    // Admins land on the Owner Dashboard; everyone else on the SOLACE dashboard
+    // Admins land on the Owner Dashboard; everyone else on the ORACLE LUNAR dashboard
     navigate(isAdmin ? "/owner" : "/dashboard", { replace: true });
   }, [user, loading, isAdmin, adminLoading, navigate]);
 

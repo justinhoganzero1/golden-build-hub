@@ -46,12 +46,12 @@ serve(async (req) => {
     const body = await req.json();
     const action: "next_question" | "finalize" = body.action;
     const answers: AnswerMap = body.answers || {};
-    const known: AnswerMap = body.known || {}; // pre-filled from SOLACE (avatars, voices, profile)
+    const known: AnswerMap = body.known || {}; // pre-filled from ORACLE LUNAR (avatars, voices, profile)
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Merge what we already know (from SOLACE data + answers so far)
+    // Merge what we already know (from ORACLE LUNAR data + answers so far)
     const merged: AnswerMap = { ...known, ...answers };
 
     if (action === "next_question") {

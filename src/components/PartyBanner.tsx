@@ -60,7 +60,7 @@ const PartyBanner = ({ variant, className = "" }: PartyBannerProps) => {
         onClick={() => navigate("/subscribe")}
         className={`holo-bubble relative cursor-pointer rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-500/30 via-primary/30 to-emerald-500/30 p-4 shadow-[0_0_35px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_55px_hsl(var(--primary)/0.65)] transition-all ${className}`}
         role="button"
-        aria-label="Free for 14 days — Download SOLACE Now"
+        aria-label="Free for 14 days — Download ORACLE LUNAR Now"
       >
         <span className="holo-rim" aria-hidden="true" />
         <span className="holo-sheen" aria-hidden="true" />

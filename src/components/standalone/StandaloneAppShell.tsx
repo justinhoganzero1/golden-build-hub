@@ -26,7 +26,7 @@ export const StandaloneAppShell = ({ slug, title, tagline, fullAppPath, children
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <SEO
-        title={`${title} — Standalone SOLACE App`}
+        title={`${title} — Standalone ORACLE LUNAR App`}
         description={tagline}
         path={`/apps/${slug}`}
       />
@@ -62,7 +62,7 @@ export const StandaloneAppShell = ({ slug, title, tagline, fullAppPath, children
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-6">{children}</main>
 
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        <Link to="/" className="hover:text-foreground">SOLACE</Link>
+        <Link to="/" className="hover:text-foreground">ORACLE LUNAR</Link>
         <span className="mx-2">·</span>
         <Link to="/apps" className="hover:text-foreground">All apps</Link>
         <span className="mx-2">·</span>

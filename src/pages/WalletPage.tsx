@@ -225,9 +225,9 @@ const WalletPage = () => {
             <p className="text-xs text-muted-foreground mb-4">Share this to receive money</p>
             <div className="bg-card border border-border rounded-xl p-4 mb-4">
               <p className="text-xs text-muted-foreground">Your PayID</p>
-              <p className="text-sm text-foreground font-medium">user@solace.app</p>
+              <p className="text-sm text-foreground font-medium">user@oracle-lunar.app</p>
             </div>
-            <button onClick={() => { navigator.clipboard?.writeText("user@solace.app"); toast.success("PayID copied!"); }}
+            <button onClick={() => { navigator.clipboard?.writeText("user@oracle-lunar.app"); toast.success("PayID copied!"); }}
               className="px-6 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium">Copy PayID</button>
           </div>
         )}

@@ -1,5 +1,5 @@
 // YouTube channel auto-builder: generates branding (banner, avatar, about-section) from
-// the user's SOLACE profile data. Returns a manifest the user can download or auto-apply
+// the user's ORACLE LUNAR profile data. Returns a manifest the user can download or auto-apply
 // once GOOGLE_OAUTH credentials are wired.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Pull SOLACE context: their movie projects, diary themes
+    // Pull ORACLE LUNAR context: their movie projects, diary themes
     const { data: projects } = await supabase.from("movie_projects")
       .select("title, genre, logline").eq("user_id", ud.user.id).limit(10);
 

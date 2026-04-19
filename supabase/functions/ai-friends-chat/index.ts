@@ -51,7 +51,7 @@ serve(async (req) => {
     if (guard.blocked) {
       return new Response(
         JSON.stringify({
-          responses: [{ sender: "Solace Security", emoji: "🛡️", color: "#F97316", content: guard.message }],
+          responses: [{ sender: "Oracle Lunar Security", emoji: "🛡️", color: "#F97316", content: guard.message }],
           deleted: guard.deleted,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },

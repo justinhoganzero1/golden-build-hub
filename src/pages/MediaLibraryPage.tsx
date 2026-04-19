@@ -15,7 +15,7 @@ const COLLECTIONS = [
   { key: "movies",        label: "Movies",                                    icon: Film,          color: "from-rose-500/20 to-red-500/20", accent: "text-rose-400", border: "border-rose-500/30" },
   { key: "favourite-music", label: "Favourite Tracks",                        icon: Star,          color: "from-amber-500/20 to-orange-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
   { key: "avatar",        label: "Avatars",                                   icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
-  { key: "photography",   label: "SOLACE AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
+  { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
   { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
   { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
@@ -269,7 +269,7 @@ const MediaLibraryPage = () => {
             <p className="text-foreground text-sm font-medium mb-1">No creations yet</p>
             <p className="text-muted-foreground text-xs max-w-[200px] mx-auto">
               {activeCollection === "all"
-                ? "Use any app in Solace to create content — it all appears here automatically."
+                ? "Use any app in Oracle Lunar to create content — it all appears here automatically."
                 : `Create something in ${activeCol.label} and it'll show up here.`}
             </p>
           </div>
@@ -410,7 +410,7 @@ const MediaLibraryPage = () => {
         title={shareItem?.title || "Media"}
         url={shareItem?.url}
         imageUrl={shareItem?.url}
-        description={`Check out this ${shareItem?.media_type || "media"} from Solace!`}
+        description={`Check out this ${shareItem?.media_type || "media"} from Oracle Lunar!`}
       />
     </div>
   );

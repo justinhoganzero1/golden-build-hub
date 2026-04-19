@@ -17,7 +17,7 @@ const StickyInstallBar = () => {
   const platform = detectInstallPlatform();
 
   useEffect(() => {
-    if (sessionStorage.getItem("solace-install-bar-dismissed") !== "1") {
+    if (sessionStorage.getItem("oracle-lunar-install-bar-dismissed") !== "1") {
       setDismissed(false);
     }
     // Pseudo-urgency: drops one spot every 90s, floors at 12
@@ -38,7 +38,7 @@ const StickyInstallBar = () => {
   };
 
   const dismiss = () => {
-    sessionStorage.setItem("solace-install-bar-dismissed", "1");
+    sessionStorage.setItem("oracle-lunar-install-bar-dismissed", "1");
     setDismissed(true);
   };
 

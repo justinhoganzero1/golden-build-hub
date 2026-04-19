@@ -217,7 +217,7 @@ const AITutorPage = () => {
     <>
     <SEO
       title="Free AI Tutor — Learn Any Subject With Voice + Text"
-      description="SOLACE AI Tutor: personalized lessons across math, science, languages, coding and more. Voice + text. Free to start."
+      description="ORACLE LUNAR AI Tutor: personalized lessons across math, science, languages, coding and more. Voice + text. Free to start."
       path="/ai-tutor"
     />
     <div className="min-h-screen bg-background pb-20">

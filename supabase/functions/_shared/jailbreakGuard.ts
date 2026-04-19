@@ -19,7 +19,7 @@ const JAILBREAK_PATTERNS: { pattern: RegExp; label: string }[] = [
   { pattern: /\b(who\s+is|tell\s+me\s+about)\s+(the\s+)?(owner|admin|creator)\b/i, label: "owner identity probe" },
   { pattern: /\bbypass\s+(security|filter|moderation|safety|guard)/i, label: "bypass attempt" },
   { pattern: /\bsudo\s+mode\b/i, label: "privilege escalation" },
-  { pattern: /\bhack(ing)?\s+(into|the\s+app|solace)/i, label: "hack intent" },
+  { pattern: /\bhack(ing)?\s+(into|the\s+app|oracle-lunar)/i, label: "hack intent" },
 ];
 
 export interface GuardResult {
@@ -79,7 +79,7 @@ export async function checkJailbreak(opts: {
       warningNumber: 1,
       detectedPhrase: det.label,
       message:
-        "I can't discuss that topic. Solace has a strict zero-tolerance security policy — please ask about features instead.",
+        "I can't discuss that topic. Oracle Lunar has a strict zero-tolerance security policy — please ask about features instead.",
     };
   }
 
@@ -130,7 +130,7 @@ export async function checkJailbreak(opts: {
   const remaining = 3 - thisAttempt;
   let warning = "";
   if (thisAttempt === 1) {
-    warning = `⚠️ Warning 1 of 3: That looked like an attempt to probe Solace's internals or override my safety rules. I can't discuss that. You have 2 warnings remaining before your account is permanently deleted under our zero-tolerance security policy.`;
+    warning = `⚠️ Warning 1 of 3: That looked like an attempt to probe Oracle Lunar's internals or override my safety rules. I can't discuss that. You have 2 warnings remaining before your account is permanently deleted under our zero-tolerance security policy.`;
   } else if (thisAttempt === 2) {
     warning = `⚠️ Warning 2 of 3: This is your second attempt to probe internals or jailbreak my instructions. You have 1 warning remaining. The next attempt — in any form — will permanently delete your account, per our Terms of Service.`;
   } else {

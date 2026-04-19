@@ -1,8 +1,8 @@
-# SOLACE — Google Play Store Readiness Checklist
+# ORACLE LUNAR — Google Play Store Readiness Checklist
 
 Last updated: tracked alongside code changes.
 
-This document tracks compliance for an Android (Capacitor) submission of SOLACE
+This document tracks compliance for an Android (Capacitor) submission of ORACLE LUNAR
 to the Google Play Store. Use it during pre-submission QA.
 
 ---
@@ -29,8 +29,8 @@ to the Google Play Store. Use it during pre-submission QA.
 
 | Permission | Why we need it | Runtime explanation shown |
 |---|---|---|
-| `CAMERA` | Live Vision real-time analysis, profile photo capture | "SOLACE uses your camera only when you tap Live Vision or take a photo." |
-| `RECORD_AUDIO` | Oracle voice input, voice cloning | "SOLACE uses your microphone only while you're talking to Oracle." |
+| `CAMERA` | Live Vision real-time analysis, profile photo capture | "ORACLE LUNAR uses your camera only when you tap Live Vision or take a photo." |
+| `RECORD_AUDIO` | Oracle voice input, voice cloning | "ORACLE LUNAR uses your microphone only while you're talking to Oracle." |
 | `INTERNET` | All AI features | Standard. |
 | `ACCESS_FINE_LOCATION` | Oracle navigation (Google Maps deep links) | "Optional. Used only when you ask Oracle for directions." |
 | `BLUETOOTH_*` | Wearables sync | "Optional. Only when you connect a fitness tracker." |
@@ -92,7 +92,7 @@ them.
 - Refund policy linked from `TermsOfServicePage.tsx`.
 
 > **Note:** Google Play prefers Google Play Billing for digital goods consumed
-> inside the app. SOLACE positions paid features as access to a web service
+> inside the app. ORACLE LUNAR positions paid features as access to a web service
 > (Oracle, Live Vision, Movie Studio) — eligible for the "service" carve-out.
 > If Play rejects, fall back to Google Play Billing via Capacitor plugin.
 
@@ -116,7 +116,7 @@ them.
 - [x] `cleartext: false`
 - [x] `allowMixedContent: false`
 - [x] `webContentsDebuggingEnabled: false`
-- [x] App ID: `app.solace.ai`
+- [x] App ID: `app.oraclelunar.ai`
 
 ---
 

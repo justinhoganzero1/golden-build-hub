@@ -519,7 +519,7 @@ const LiveVisionPage = () => {
     <>
     <SEO
       title="Live Vision — Real-Time AI Camera Analysis"
-      description="SOLACE Live Vision: point your camera, get instant AI analysis — text extraction, object ID, scene description, watch alerts."
+      description="ORACLE LUNAR Live Vision: point your camera, get instant AI analysis — text extraction, object ID, scene description, watch alerts."
       path="/live-vision"
     />
     <div className="min-h-screen bg-background pb-20">

@@ -91,7 +91,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
       return `${PUBLIC_ORIGIN}/`;
     }
   })();
-  const shareText = description || `Check out "${title}" on Solace!`;
+  const shareText = description || `Check out "${title}" on Oracle Lunar!`;
 
   const copyLink = async () => {
     const ok = await robustCopy(shareUrl);

@@ -102,7 +102,7 @@ async function checkLocalStorage(): Promise<CheckResult> {
       let pruned = 0;
       const keys = Object.keys(localStorage);
       for (const k of keys) {
-        if (!k.startsWith("solace.") && !k.startsWith("oracle.")) continue;
+        if (!k.startsWith("oracle-lunar.") && !k.startsWith("oracle.")) continue;
         const raw = localStorage.getItem(k);
         if (!raw) continue;
         if (raw.startsWith("{") || raw.startsWith("[")) {

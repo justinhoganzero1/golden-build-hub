@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shield, Sparkles, Download, Phone, FileText, Lock, ArrowRight, Send, Loader2, CheckCircle2, PhoneCall } from "lucide-react";
-import solaceLogo from "@/assets/solace-logo.png";
+import oracle-lunarLogo from "@/assets/oracle-lunar-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,18 +9,18 @@ import ReactMarkdown from "react-markdown";
 import PaywallGate from "@/components/PaywallGate";
 // Vaulted: AssistedCallDialog (Twilio) — disabled until telephony returns.
 
-// Standalone "SOLACE Claims" mini-app:
+// Standalone "ORACLE LUNAR Claims" mini-app:
 // - Free, focused on HostPlus + WorkCover QLD claims
 // - Embedded Oracle assistant (uses oracle-chat edge function with a claims-only system prompt)
-// - Promotes installing the full SOLACE app
+// - Promotes installing the full ORACLE LUNAR app
 
-const SYSTEM_PROMPT = `You are Oracle, a senior Australian insurance claims advocate inside the standalone SOLACE Claims mini-app. 
+const SYSTEM_PROMPT = `You are Oracle, a senior Australian insurance claims advocate inside the standalone ORACLE LUNAR Claims mini-app. 
 Your job: help the user prepare HostPlus income protection and WorkCover QLD claims.
 - Ask one clear question at a time to gather: full name, DOB, employer, job title, injury date, body parts, doctor, member numbers.
 - Provide phone numbers when relevant: HostPlus 1300 467 875, WorkCover QLD 1300 362 128.
 - Offer to draft claim letters and list required documents.
 - Plain text only, no markdown symbols, no emojis.
-- After 3-4 helpful exchanges, gently mention that the full SOLACE app stores their details securely, auto-fills forms, exports PDFs, and can place the calls for them.`;
+- After 3-4 helpful exchanges, gently mention that the full ORACLE LUNAR app stores their details securely, auto-fills forms, exports PDFs, and can place the calls for them.`;
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -104,9 +104,9 @@ const ClaimsAppPage = () => {
       {/* Header */}
       <header className="border-b border-primary/20 bg-card/60 backdrop-blur sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src={solaceLogo} alt="SOLACE Claims" className="w-9 h-9 rounded-lg" />
+          <img src={oracle-lunarLogo} alt="ORACLE LUNAR Claims" className="w-9 h-9 rounded-lg" />
           <div className="flex-1">
-            <h1 className="text-sm font-bold text-primary leading-tight">SOLACE Claims</h1>
+            <h1 className="text-sm font-bold text-primary leading-tight">ORACLE LUNAR Claims</h1>
             <p className="text-[10px] text-muted-foreground">Free AU claims helper · Powered by Oracle AI</p>
           </div>
           <Link to="/" className="text-xs text-muted-foreground hover:text-primary">Full app →</Link>
@@ -179,7 +179,7 @@ const ClaimsAppPage = () => {
       <section className="px-4 mt-6 max-w-3xl mx-auto">
         <div className="rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card p-5">
           <div className="flex items-center gap-2 text-primary text-xs font-bold mb-2">
-            <Sparkles className="w-4 h-4" /> UPGRADE TO THE FULL SOLACE APP
+            <Sparkles className="w-4 h-4" /> UPGRADE TO THE FULL ORACLE LUNAR APP
           </div>
           <h3 className="text-lg font-bold mb-2">Want Oracle to do everything for you?</h3>
           <ul className="space-y-1.5 text-sm text-muted-foreground mb-4">
@@ -211,9 +211,9 @@ const ClaimsAppPage = () => {
       </section>
 
       <footer className="px-4 py-8 max-w-3xl mx-auto text-center text-xs text-muted-foreground">
-        <Lock className="w-3 h-3 inline mr-1" /> Your chat is private. SOLACE never shares your details.
+        <Lock className="w-3 h-3 inline mr-1" /> Your chat is private. ORACLE LUNAR never shares your details.
         <div className="mt-2">
-          <Link to="/" className="text-primary inline-flex items-center gap-1">Explore the full SOLACE app <ArrowRight className="w-3 h-3" /></Link>
+          <Link to="/" className="text-primary inline-flex items-center gap-1">Explore the full ORACLE LUNAR app <ArrowRight className="w-3 h-3" /></Link>
         </div>
       </footer>
     </div>

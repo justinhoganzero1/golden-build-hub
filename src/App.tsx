@@ -99,7 +99,7 @@ const loaders = {
   "/ai-horoscope-free": () => import("./pages/SeoLandingPage"),
   "/ai-logo-ideas": () => import("./pages/SeoLandingPage"),
   "/ai-companion-app": () => import("./pages/SeoLandingPage"),
-  "/replika-vs-solace": () => import("./pages/SeoLandingPage"),
+  "/replika-vs-oracle-lunar": () => import("./pages/SeoLandingPage"),
   "/ai-life-coach-free": () => import("./pages/SeoLandingPage"),
   "/ai-elderly-care": () => import("./pages/SeoLandingPage"),
   "/ai-crisis-support": () => import("./pages/SeoLandingPage"),
@@ -268,7 +268,7 @@ const App = () => (
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="SOLACE Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="ORACLE LUNAR Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/movie-studio-pro" element={<RequireAuth><AppUnlockGate appKey="movie_studio"><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   <Route path="/movie-payment-success" element={<RequireAuth><ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />
@@ -294,7 +294,7 @@ const App = () => (
                   <Route path="/ai-horoscope-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-logo-ideas" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-companion-app" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
-                  <Route path="/replika-vs-solace" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/replika-vs-oracle-lunar" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-life-coach-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-elderly-care" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-crisis-support" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />

@@ -1,6 +1,6 @@
 {
-  "name": "Solace — Your AI Companion",
-  "short_name": "Solace",
+  "name": "Oracle Lunar — Your AI Companion",
+  "short_name": "Oracle Lunar",
   "description": "All-in-one AI companion for wellness, productivity, creativity, safety, and more. Chat with Oracle AI, build avatars, manage your life — all in one place.",
   "start_url": "/",
   "display": "standalone",
@@ -30,7 +30,7 @@
   "related_applications": [
     {
       "platform": "play",
-      "id": "app.solace.ai"
+      "id": "app.oraclelunar.ai"
     }
   ]
 }

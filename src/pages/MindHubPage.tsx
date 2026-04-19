@@ -315,7 +315,7 @@ const MindHubPage = () => {
     <>
     <SEO
       title="Mind Hub — Free AI Mental Wellness & Therapy Companion"
-      description="SOLACE Mind Hub: free guided breathing, meditation, mood tracking and a caring AI to talk through anxiety and stress. 24/7."
+      description="ORACLE LUNAR Mind Hub: free guided breathing, meditation, mood tracking and a caring AI to talk through anxiety and stress. 24/7."
       path="/mind-hub"
     />
     <div className="min-h-screen bg-background pb-20">
