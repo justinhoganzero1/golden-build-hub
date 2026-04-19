@@ -668,3 +668,73 @@ All colors MUST be HSL.
     animation: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Oracle SPEAKING halo — brilliant pink that nearly fills the
+   avatar's frame, driven live by the TTS audio amplitude via
+   --oracle-speaking-level (0 → 1). Layered ON TOP of the blue
+   listening glow so both can co-exist if needed.
+   ───────────────────────────────────────────────────────────── */
+@keyframes oracleSpeakingPulse {
+  0%, 100% {
+    transform: scale(calc(1 + var(--oracle-speaking-level, 0) * 0.18));
+    filter: blur(calc(18px + var(--oracle-speaking-level, 0) * 22px));
+  }
+  50% {
+    transform: scale(calc(1.06 + var(--oracle-speaking-level, 0) * 0.32));
+    filter: blur(calc(22px + var(--oracle-speaking-level, 0) * 30px));
+  }
+}
+
+.oracle-speaking-shell {
+  position: relative;
+}
+
+/* Wide pink cushion — radiates well beyond the avatar disc */
+.oracle-speaking-shell > img {
+  position: relative;
+  z-index: 1;
+  transition: box-shadow 80ms linear, filter 80ms linear;
+  box-shadow:
+    0 0 calc(8px + var(--oracle-speaking-level, 0) * 22px) hsl(320 100% 70% / calc(0.45 + var(--oracle-speaking-level, 0) * 0.55)),
+    0 0 calc(20px + var(--oracle-speaking-level, 0) * 40px) hsl(330 100% 60% / calc(0.35 + var(--oracle-speaking-level, 0) * 0.5)),
+    0 0 calc(45px + var(--oracle-speaking-level, 0) * 70px) hsl(320 100% 55% / calc(0.25 + var(--oracle-speaking-level, 0) * 0.4));
+}
+
+.oracle-speaking-shell[data-speaking="true"]::after {
+  /* Override the listening blue afterglow with the speaking pink one. */
+  background: radial-gradient(
+    circle,
+    hsl(0 0% 100% / 0.45) 0%,
+    hsl(320 100% 75% / 0.85) 18%,
+    hsl(325 100% 60% / 0.55) 38%,
+    hsl(330 100% 50% / 0.32) 60%,
+    transparent 78%
+  );
+  inset: -55%;
+  opacity: calc(0.55 + var(--oracle-speaking-level, 0) * 0.45);
+  filter: blur(calc(22px + var(--oracle-speaking-level, 0) * 32px));
+  animation: oracleSpeakingPulse 1.4s ease-in-out infinite;
+  z-index: -1;
+}
+
+.oracle-speaking-shell[data-speaking="true"]::before {
+  /* Inner brighter pink core that "fills" the avatar frame */
+  background: radial-gradient(
+    circle,
+    hsl(320 100% 80% / 0.9) 0%,
+    hsl(325 100% 65% / 0.55) 35%,
+    transparent 70%
+  );
+  inset: -22%;
+  opacity: calc(0.65 + var(--oracle-speaking-level, 0) * 0.35);
+  filter: blur(calc(10px + var(--oracle-speaking-level, 0) * 18px));
+  transform: scale(calc(1 + var(--oracle-speaking-level, 0) * 0.22));
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-speaking-shell[data-speaking="true"]::after {
+    animation: none;
+  }
+}
