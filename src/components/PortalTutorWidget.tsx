@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, X, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 import { useMute } from "@/contexts/MuteContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Strip markdown, emojis, URLs, and code so TTS sounds natural
 const sanitizeForTTS = (raw: string): string =>
@@ -28,7 +30,10 @@ const SUGGESTED = [
 ];
 
 const PortalTutorWidget = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [gated, setGated] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
@@ -128,6 +133,19 @@ const PortalTutorWidget = () => {
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+
+    // Membership gate: unauthenticated visitors get the pitch on their FIRST message.
+    if (!user) {
+      const userMsg: Msg = { role: "user", content: trimmed };
+      const pitch =
+        "Lovely to meet you. Before we go any further, I need you to **become a SOLACE member** — it's free to start, and it unlocks me, the Crisis Hub, the Safety Center, and every other tool on the site. Tap **Become a Member** below and I'll be right here waiting for you.";
+      setMessages((p) => [...p, userMsg, { role: "assistant", content: pitch }]);
+      setInput("");
+      setGated(true);
+      speak(pitch);
+      return;
+    }
+
     const userMsg: Msg = { role: "user", content: trimmed };
     setMessages((p) => [...p, userMsg]);
     setInput("");
@@ -292,7 +310,21 @@ const PortalTutorWidget = () => {
             )}
           </div>
 
-          {messages.length <= 1 && (
+          {gated && (
+            <div className="px-4 pb-3 pt-1 flex flex-col gap-2 border-t border-border bg-primary/5">
+              <Button
+                onClick={() => navigate("/sign-in")}
+                className="w-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold shadow-[0_0_20px_hsl(var(--primary)/0.5)]"
+              >
+                Become a Member — it's free
+              </Button>
+              <p className="text-[11px] text-center text-muted-foreground">
+                Membership unlocks the Concierge, Crisis Hub, Safety Center & every tool.
+              </p>
+            </div>
+          )}
+
+          {!gated && messages.length <= 1 && (
             <div className="px-4 pb-2 flex flex-wrap gap-2">
               {SUGGESTED.map((s) => (
                 <button
