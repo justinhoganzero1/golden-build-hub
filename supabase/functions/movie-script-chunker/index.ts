@@ -39,10 +39,12 @@ Deno.serve(async (req) => {
         { global: { headers: { Authorization: authHeader } } }
       );
       const { data: userData } = await userClient.auth.getUser();
-      const userId = userData?.user?.id;
-      if (!userId) throw new Error("not authenticated");
-      if (project.user_id !== userId) throw new Error("forbidden");
+      const authedUserId = userData?.user?.id;
+      if (!authedUserId) throw new Error("not authenticated");
+      if (project.user_id !== authedUserId) throw new Error("forbidden");
     }
+
+    const userId = project.user_id;
 
     await supabase.from("movie_projects").update({
       status: "chunking", started_at: new Date().toISOString(),
