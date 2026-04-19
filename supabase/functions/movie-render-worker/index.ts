@@ -297,14 +297,17 @@ async function renderAudio(job: any) {
 
   await supabase.from("movie_scenes").update({
     audio_url: audioUrl,
-    status: "completed",
-    completed_at: new Date().toISOString(),
+    status: "lip_syncing",
     provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents,
   }).eq("id", scene.id);
 
+  // Queue lip-sync job (will mark scene completed and call maybeQueueStitch)
+  await supabase.from("movie_render_jobs").insert({
+    project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
+    job_type: "lip_sync", priority: (job.priority ?? 100) + 5,
+  });
+
   await bumpSpend(job.project_id, cost.total_cents);
-  await supabase.rpc("recalc_project_progress", { _project_id: job.project_id });
-  await maybeQueueStitch(job.project_id, job.user_id);
   return { audioUrl, cost_cents: cost.total_cents };
 }
 
