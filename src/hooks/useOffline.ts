@@ -33,7 +33,7 @@ export function useOffline(): OfflineState {
 }
 
 // Simple localStorage cache for offline data
-const CACHE_PREFIX = "solace_offline_";
+const CACHE_PREFIX = "oracle_lunar_offline_";
 
 export function cacheData(key: string, data: unknown): void {
   try {

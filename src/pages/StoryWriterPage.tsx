@@ -112,7 +112,7 @@ const StoryWriterPage = () => {
           user_id: user.id,
           media_type: "story",
           title: story.title || "Untitled Story",
-          url: `solace://story/${savingId || "draft"}`,
+          url: `oracle-lunar://story/${savingId || "draft"}`,
           source_page: "story-writer",
           metadata: {
             genre: story.genre,
@@ -495,7 +495,7 @@ const StoryWriterPage = () => {
           onOpenChange={setShareOpen}
           title={story.title}
           url={story.publishedUrl || "https://golden-vault-builder.lovable.app"}
-          description={`Read "${story.title}" — a ${story.genre} story written in Solace.`}
+          description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
         />
       </div>
     </PaywallGate>

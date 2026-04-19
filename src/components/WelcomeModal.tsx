@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Sparkles, Gift, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const WELCOME_KEY_PREFIX = "solace-welcome-shown-";
+const WELCOME_KEY_PREFIX = "oracle-lunar-welcome-shown-";
 
 const WelcomeModal = () => {
   const { user } = useAuth();
@@ -34,7 +34,7 @@ const WelcomeModal = () => {
           </div>
         </div>
         <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
-          Welcome to SOLACE
+          Welcome to ORACLE LUNAR
         </h2>
         <p className="text-sm text-muted-foreground">
           Your 30 days of full Tier 3 access starts now — no card, no catch.

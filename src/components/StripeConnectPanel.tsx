@@ -153,7 +153,7 @@ export default function StripeConnectPanel() {
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             Onboard yourself as a creator, list products, and accept payments.
-            SOLACE keeps a 10% application fee.
+            ORACLE LUNAR keeps a 10% application fee.
           </p>
         </div>
         <Button

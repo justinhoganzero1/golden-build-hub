@@ -10,7 +10,7 @@ const PrivacyPolicyPage = () => (
       <div className="space-y-6 text-sm text-foreground leading-relaxed">
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">1. Introduction</h2>
-          <p>Welcome to Solace ("we," "our," or "us"). Solace is an AI-powered personal safety and productivity application. We are committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the Solace mobile application and related services (collectively, the "Service").</p>
+          <p>Welcome to Oracle Lunar ("we," "our," or "us"). Oracle Lunar is an AI-powered personal safety and productivity application. We are committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the Oracle Lunar mobile application and related services (collectively, the "Service").</p>
         </section>
 
         <section>
@@ -48,7 +48,7 @@ const PrivacyPolicyPage = () => (
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Service Providers:</strong> Trusted third-party services that help us operate the app (e.g., cloud hosting, AI processing, authentication).</li>
             <li><strong>Legal Requirements:</strong> When required by law, regulation, or legal process.</li>
-            <li><strong>Safety:</strong> To protect the rights, safety, and property of Solace, our users, or the public.</li>
+            <li><strong>Safety:</strong> To protect the rights, safety, and property of Oracle Lunar, our users, or the public.</li>
             <li><strong>With Your Consent:</strong> When you explicitly choose to share content via the app's sharing features.</li>
           </ul>
         </section>
@@ -76,7 +76,7 @@ const PrivacyPolicyPage = () => (
 
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">8. Children's Privacy</h2>
-          <p>Solace is not intended for children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected data from a child under 13, we will take steps to delete such information.</p>
+          <p>Oracle Lunar is not intended for children under the age of 13. We do not knowingly collect personal data from children under 13. If we become aware that we have collected data from a child under 13, we will take steps to delete such information.</p>
         </section>
 
         <section>
@@ -92,7 +92,7 @@ const PrivacyPolicyPage = () => (
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">11. Contact Us</h2>
           <p>If you have questions about this Privacy Policy, please contact us at:</p>
-          <p className="mt-2"><strong>Solace AI</strong><br />Email: support@solace-ai.app<br />Website: https://golden-vault-builder.lovable.app</p>
+          <p className="mt-2"><strong>Oracle Lunar AI</strong><br />Email: support@oracle-lunar.online<br />Website: https://golden-vault-builder.lovable.app</p>
         </section>
       </div>
     </div>

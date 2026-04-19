@@ -11,7 +11,7 @@ export const SUBSCRIPTION_TIERS = {
   biannual: { name: "Full Access (6 Months)", productId: "prod_ULpcFeJDxdOKpg", priceId: "price_1TN7xVLGip9LWuvpErAiooaU" }, // $40 AUD one-time (LIVE)
   annual: { name: "Full Access (12 Months)", productId: "prod_ULpdmj8JSKneEc", priceId: "price_1TN7xqLGip9LWuvpNKc21d7Z" }, // $80 AUD one-time (LIVE)
   golden: { name: "Golden Heart", productId: "prod_ULpdvXHq8omgek", priceId: "price_1TN7yDLGip9LWuvpk9vjhKtj" }, // $1200/yr USD (LIVE)
-  lifetime: { name: "SOLACE Lifetime Unlock", productId: "prod_ULpd2N2mCZfoMd", priceId: "price_1TN7ybLGip9LWuvpeExWonbd" }, // $900 one-time USD (LIVE)
+  lifetime: { name: "ORACLE LUNAR Lifetime Unlock", productId: "prod_ULpd2N2mCZfoMd", priceId: "price_1TN7ybLGip9LWuvpeExWonbd" }, // $900 one-time USD (LIVE)
 } as const;
 
 export function getTierByProductId(productId: string | null): string {

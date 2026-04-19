@@ -13,8 +13,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *   - `webContentsDebuggingEnabled` is false in production.
  */
 const config: CapacitorConfig = {
-  appId: 'app.solace.ai',
-  appName: 'Solace',
+  appId: 'app.oraclelunar.ai',
+  appName: 'Oracle Lunar',
   webDir: 'dist',
 
   // For local dev hot-reload only — uncomment, then re-comment before building a release AAB.

@@ -169,7 +169,7 @@ const PhotographyHubPage = () => {
                 <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
                 <button onClick={async () => {
                   try {
-                    await downloadFileFromUrl(generatedImage, `solace-photo-${Date.now()}`);
+                    await downloadFileFromUrl(generatedImage, `oracle-lunar-photo-${Date.now()}`);
                     toast.success("Image downloaded");
                   } catch (error) {
                     console.error(error);
@@ -230,7 +230,7 @@ const PhotographyHubPage = () => {
         title="AI Photo"
         url={generatedImage || undefined}
         imageUrl={generatedImage || undefined}
-        description="Check out this AI-generated photo from Solace!"
+        description="Check out this AI-generated photo from Oracle Lunar!"
       />
       <MediaPickerDialog
         open={showMediaPicker}

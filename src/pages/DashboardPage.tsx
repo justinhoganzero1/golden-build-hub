@@ -11,7 +11,7 @@ import {
   Bell, Map, Smartphone, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock
 } from "lucide-react";
-import solaceBanner from "@/assets/solace-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import PartyBanner from "@/components/PartyBanner";
@@ -86,15 +86,15 @@ const DashboardPage = () => {
 
   const [layout, setLayout] = useState(() => {
     try {
-      const saved = localStorage.getItem("solace-layout");
+      const saved = localStorage.getItem("oracle-lunar-layout");
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
 
   useEffect(() => {
     const handler = (e: Event) => setLayout((e as CustomEvent).detail);
-    window.addEventListener("solace-layout-change", handler);
-    return () => window.removeEventListener("solace-layout-change", handler);
+    window.addEventListener("oracle-lunar-layout-change", handler);
+    return () => window.removeEventListener("oracle-lunar-layout-change", handler);
   }, []);
 
   const gridCols = layout?.gridCols || 4;
@@ -128,13 +128,13 @@ const DashboardPage = () => {
       <WelcomeModal />
       {/* Banner */}
       <div className="w-full overflow-hidden">
-        <img src={solaceBanner} alt="Solace Banner" className="w-full h-40 object-cover" />
+        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-40 object-cover" />
       </div>
 
       {/* Welcome + Security Shield + Share */}
       <div className="px-4 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-primary">Welcome to Solace</h1>
+          <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
           {(tier === "lifetime" || isAdmin) && (
             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-sm">
@@ -180,9 +180,9 @@ const DashboardPage = () => {
       <ShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
-        title="Solace App"
+        title="Oracle Lunar App"
         url="https://golden-vault-builder.lovable.app"
-        description="Check out Solace — your AI companion to do everything! Download it now."
+        description="Check out Oracle Lunar — your AI companion to do everything! Download it now."
       />
 
       {/* App Grid */}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
-import solaceBanner from "@/assets/solace-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 interface IntroSplashProps {
@@ -11,7 +11,7 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
   const [visible, setVisible] = useState(true);
   const { get } = useSiteContent();
   const banner = get("landing", "free_trial_banner", "🎁 Sign up free — 30 days of full access, no card required");
-  const tagline = get("landing", "hero_tagline", "Solace, your AI companion to do everything!");
+  const tagline = get("landing", "hero_tagline", "Oracle Lunar, your AI companion to do everything!");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -33,8 +33,8 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
     >
       {/* Full-bleed banner background */}
       <img
-        src={solaceBanner}
-        alt="Solace Banner"
+        src={oracleLunarBanner}
+        alt="Oracle Lunar Banner"
         className="absolute inset-0 w-full h-full object-cover"
       />
 

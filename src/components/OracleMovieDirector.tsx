@@ -73,12 +73,12 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
 
   const recognitionRef = useRef<any>(null);
 
-  // Pre-fill known facts from SOLACE on open
+  // Pre-fill known facts from ORACLE LUNAR on open
   useEffect(() => {
     setDuration((d) => Math.min(d, limits.maxDurationMin));
   }, [limits.maxDurationMin]);
 
-  // Pre-fill known facts from SOLACE on open
+  // Pre-fill known facts from ORACLE LUNAR on open
   useEffect(() => {
     if (!open || !user) return;
     (async () => {

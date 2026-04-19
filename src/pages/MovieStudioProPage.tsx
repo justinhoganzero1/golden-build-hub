@@ -62,7 +62,7 @@ const MovieStudioProPage = () => {
     <>
     <SEO
       title="Movie Studio Pro — AI Cinematic Video Editor"
-      description="SOLACE Movie Studio Pro: script→scenes, 8K AI frames, voiceover, music, SFX, captions, HD export. Build films with AI."
+      description="ORACLE LUNAR Movie Studio Pro: script→scenes, 8K AI frames, voiceover, music, SFX, captions, HD export. Build films with AI."
       path="/movie-studio-pro"
     />
     <PageShell title="🎬 Movie Studio Pro" subtitle="Full cinematic editor — script→scenes, VO, music, SFX, captions, HD export">
@@ -186,7 +186,7 @@ const MovieStudioProPage = () => {
 
         <p className="text-[10px] text-center text-muted-foreground">
           Pricing is transparent. You see the exact charge before every export — no surprise fees.
-          {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small SOLACE watermark."}
+          {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small ORACLE LUNAR watermark."}
         </p>
 
         <MovieProjectDashboard />

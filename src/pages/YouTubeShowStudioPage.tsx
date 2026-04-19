@@ -192,7 +192,7 @@ Rules:
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground">Channel name</label>
-                <Input value={state.channelName} onChange={(e) => update({ channelName: e.target.value })} placeholder="e.g. Solace Daily" />
+                <Input value={state.channelName} onChange={(e) => update({ channelName: e.target.value })} placeholder="e.g. Oracle Lunar Daily" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Episode / show title</label>

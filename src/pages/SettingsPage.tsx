@@ -341,11 +341,11 @@ const SettingsPage = () => {
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
-  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("solace-theme-name") || "Gold & Black");
-  const [language, setLanguage] = useState(() => localStorage.getItem("solace-language") || "English");
+  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("oracle-lunar-theme-name") || "Gold & Black");
+  const [language, setLanguage] = useState(() => localStorage.getItem("oracle-lunar-language") || "English");
   const [privacySettings, setPrivacySettings] = useState(() => {
     try {
-      const raw = localStorage.getItem("solace-privacy");
+      const raw = localStorage.getItem("oracle-lunar-privacy");
       if (raw) return JSON.parse(raw);
     } catch {}
     return { shareData: false, locationTracking: true, crashReports: true, personalizedAds: true };
@@ -353,7 +353,7 @@ const SettingsPage = () => {
   const { subscribed } = useSubscription();
   const [currentLayout, setCurrentLayout] = useState(() => {
     try {
-      const raw = localStorage.getItem("solace-layout");
+      const raw = localStorage.getItem("oracle-lunar-layout");
       if (raw) return (JSON.parse(raw).name as string) || "Standard 4x";
     } catch {}
     return "Standard 4x";
@@ -365,13 +365,13 @@ const SettingsPage = () => {
   }, [user]);
 
   // Persist non-theme settings
-  useEffect(() => { localStorage.setItem("solace-language", language); }, [language]);
-  useEffect(() => { localStorage.setItem("solace-privacy", JSON.stringify(privacySettings)); }, [privacySettings]);
+  useEffect(() => { localStorage.setItem("oracle-lunar-language", language); }, [language]);
+  useEffect(() => { localStorage.setItem("oracle-lunar-privacy", JSON.stringify(privacySettings)); }, [privacySettings]);
 
   // Rehydrate saved theme on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("solace-theme");
+      const raw = localStorage.getItem("oracle-lunar-theme");
       if (!raw) return;
       const theme = JSON.parse(raw) as ThemeScheme;
       const root = document.documentElement;
@@ -399,11 +399,11 @@ const SettingsPage = () => {
 
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
-    localStorage.setItem("solace-layout", JSON.stringify(layout));
+    localStorage.setItem("oracle-lunar-layout", JSON.stringify(layout));
     setCurrentLayout(layout.name);
     toast.success(`Layout: ${layout.name}`);
     // Dispatch custom event so dashboard picks it up in real-time
-    window.dispatchEvent(new CustomEvent("solace-layout-change", { detail: layout }));
+    window.dispatchEvent(new CustomEvent("oracle-lunar-layout-change", { detail: layout }));
   };
 
   const handleLogout = async () => { await signOut(); toast.success("Signed out"); navigate("/"); };
@@ -489,8 +489,8 @@ const SettingsPage = () => {
       root.style.setProperty("--border", `${theme.primary.split(" ")[0]} 60% 20%`);
     }
     setCurrentTheme(theme.name);
-    localStorage.setItem("solace-theme", JSON.stringify(theme));
-    localStorage.setItem("solace-theme-name", theme.name);
+    localStorage.setItem("oracle-lunar-theme", JSON.stringify(theme));
+    localStorage.setItem("oracle-lunar-theme-name", theme.name);
     toast.success(`Theme: ${theme.name}`);
   };
 
@@ -644,7 +644,7 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Privacy & Security</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
-                  { label: "Share Analytics Data", key: "shareData" as const, desc: "Help improve Solace with anonymous usage data", locked: false },
+                  { label: "Share Analytics Data", key: "shareData" as const, desc: "Help improve Oracle Lunar with anonymous usage data", locked: false },
                   { label: "Location Tracking", key: "locationTracking" as const, desc: "For Crisis Hub, Radar, and location-based features", locked: false },
                   { label: "Crash Reports", key: "crashReports" as const, desc: "Auto-send crash reports to improve stability", locked: false },
                   { label: "Personalized Ads", key: "personalizedAds" as const, desc: subscribed ? "Show relevant sponsored content" : "🔒 Subscribe to any plan to disable ads", locked: !subscribed },
@@ -749,7 +749,7 @@ const SettingsPage = () => {
       { icon: <Globe className="w-5 h-5" />, label: "Language", subtitle: language, action: () => setTab("language") },
     ]},
     { title: "About", items: [
-      { icon: <Smartphone className="w-5 h-5" />, label: "About Solace", action: () => navigate("/about") },
+      { icon: <Smartphone className="w-5 h-5" />, label: "About Oracle Lunar", action: () => navigate("/about") },
       { icon: <Shield className="w-5 h-5" />, label: "Privacy Policy", action: () => navigate("/privacy-policy") },
       { icon: <FileText className="w-5 h-5" />, label: "Terms of Service", action: () => navigate("/terms-of-service") },
       { icon: <HelpCircle className="w-5 h-5" />, label: "Help & Support", action: () => setTab("help") },

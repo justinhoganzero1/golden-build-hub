@@ -10,9 +10,9 @@ interface SEOProps {
 }
 
 const SITE = "https://oracle-lunar.online";
-const DEFAULT_TITLE = "SOLACE — AI Companion App for Wellness, Safety & Productivity";
+const DEFAULT_TITLE = "ORACLE LUNAR — AI Companion App for Wellness, Safety & Productivity";
 const DEFAULT_DESC =
-  "SOLACE is the all-in-one AI companion app: voice oracle, AI tutor, mind hub, crisis support, photography, marketing, and more. Free to start.";
+  "ORACLE LUNAR is the all-in-one AI companion app: voice oracle, AI tutor, mind hub, crisis support, photography, marketing, and more. Free to start.";
 const DEFAULT_IMAGE = `${SITE}/icons/icon-512.png`;
 
 export default function SEO({
@@ -23,7 +23,7 @@ export default function SEO({
   type = "website",
   jsonLd,
 }: SEOProps) {
-  const fullTitle = title ? `${title} | SOLACE` : DEFAULT_TITLE;
+  const fullTitle = title ? `${title} | ORACLE LUNAR` : DEFAULT_TITLE;
   const url = `${SITE}${path.startsWith("/") ? path : `/${path}`}`;
   return (
     <Helmet>
@@ -35,7 +35,7 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />
       <meta property="og:image" content={image} />
-      <meta property="og:site_name" content="SOLACE" />
+      <meta property="og:site_name" content="ORACLE LUNAR" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />

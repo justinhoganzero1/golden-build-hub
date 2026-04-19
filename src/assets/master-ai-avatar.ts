@@ -1,7 +1,7 @@
 // ============================================
 // MASTER AI AVATAR
 // ============================================
-// Single source-of-truth for the SOLACE AI Oracle's face.
+// Single source-of-truth for the Oracle Lunar AI's face.
 // Used wherever the AI assistant is visually represented:
 //   - Oracle page (default Oracle when no user avatar is set)
 //   - Concierge widget (portal landing)
@@ -14,5 +14,5 @@
 import masterAvatar from "@/assets/avatars/oracle-blonde.png";
 
 export const MASTER_AI_AVATAR = masterAvatar;
-export const MASTER_AI_AVATAR_NAME = "Oracle";
-export const MASTER_AI_AVATAR_ALT = "SOLACE Oracle AI assistant";
+export const MASTER_AI_AVATAR_NAME = "Oracle Lunar";
+export const MASTER_AI_AVATAR_ALT = "Oracle Lunar AI assistant";

@@ -34,7 +34,7 @@ const DemoGate = ({ children, featureName }: { children: ReactNode; featureName?
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             The website is a showcase only — like a display screen in a shop window.
-            To actually use SOLACE you need to install the app and sign up inside it.
+            To actually use ORACLE LUNAR you need to install the app and sign up inside it.
           </p>
         </div>
 
@@ -44,12 +44,12 @@ const DemoGate = ({ children, featureName }: { children: ReactNode; featureName?
               onClick={onInstall}
               className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-primary-foreground font-semibold hover:opacity-90"
             >
-              <Download className="w-4 h-4" /> Install the SOLACE app
+              <Download className="w-4 h-4" /> Install the ORACLE LUNAR app
             </button>
           ) : isIOS ? (
             <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
               <Smartphone className="w-4 h-4 mx-auto mb-1 text-primary" />
-              On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, then open SOLACE from your home screen and sign up.
+              On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, then open ORACLE LUNAR from your home screen and sign up.
             </div>
           ) : (
             <Link

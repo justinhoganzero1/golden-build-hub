@@ -53,13 +53,13 @@ const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-f
 // ============ NAMING SYSTEM ============
 function getAgentNames(): Record<string, string> {
   try {
-    return JSON.parse(localStorage.getItem("solace-agent-names") || "{}");
+    return JSON.parse(localStorage.getItem("oracle-lunar-agent-names") || "{}");
   } catch { return {}; }
 }
 function setAgentName(defaultName: string, customName: string) {
   const names = getAgentNames();
   names[defaultName] = customName;
-  localStorage.setItem("solace-agent-names", JSON.stringify(names));
+  localStorage.setItem("oracle-lunar-agent-names", JSON.stringify(names));
 }
 function getDisplayName(defaultName: string): string {
   return getAgentNames()[defaultName] || defaultName;
@@ -69,16 +69,16 @@ function getDisplayName(defaultName: string): string {
 // Default = "avatar" so the master AI face is shown for new users.
 function getOracleMode(): { mode: "orb" | "avatar"; avatarId?: string } {
   try {
-    return JSON.parse(localStorage.getItem("solace-oracle-mode") || '{"mode":"avatar"}');
+    return JSON.parse(localStorage.getItem("oracle-lunar-mode") || '{"mode":"avatar"}');
   } catch { return { mode: "avatar" }; }
 }
 function setOracleMode(mode: "orb" | "avatar", avatarId?: string) {
-  localStorage.setItem("solace-oracle-mode", JSON.stringify({ mode, avatarId }));
+  localStorage.setItem("oracle-lunar-mode", JSON.stringify({ mode, avatarId }));
 }
 
 function getStoredOracleMasterVoice(): { id?: string; settings?: Record<string, unknown> | null } | null {
   try {
-    const raw = localStorage.getItem("solace-oracle-master-voice");
+    const raw = localStorage.getItem("oracle-lunar-master-voice");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -169,8 +169,8 @@ const OraclePage = () => {
   // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
   const echoCooldownUntilRef = useRef(0);
   // Wake-word voice channel — Oracle stays silently armed and only responds
-  // after the user says "hey solace". Closes on "thanks solace" / "goodbye solace"
-  // or after 20s of silence. Reopens on the next "hey solace".
+  // after the user says "hey oracle-lunar". Closes on "thanks oracle-lunar" / "goodbye oracle-lunar"
+  // or after 20s of silence. Reopens on the next "hey oracle-lunar".
   const [voiceChannelOpen, setVoiceChannelOpen] = useState(false);
   const voiceChannelOpenRef = useRef(false);
   const voiceChannelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -404,12 +404,12 @@ const OraclePage = () => {
     try {
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
-      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL");
+      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "EXAVITQu4vr4xnSDxMaL");
       let masterSettings: Record<string, unknown> | null = null;
       try {
         const raw = storedMasterVoice?.settings
           ? JSON.stringify(storedMasterVoice.settings)
-          : (typeof localStorage !== "undefined" ? localStorage.getItem("solace-oracle-voice-settings") : null);
+          : (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice-settings") : null);
         if (raw) masterSettings = JSON.parse(raw);
       } catch {}
 
@@ -632,7 +632,7 @@ const OraclePage = () => {
   useEffect(() => {
     if (debateCheckedRef.current || activeAgents.length < 2) return;
     debateCheckedRef.current = true;
-    const lastDebate = localStorage.getItem("solace-last-debate");
+    const lastDebate = localStorage.getItem("oracle-lunar-last-debate");
     const now = Date.now();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
     if (lastDebate && now - parseInt(lastDebate) < thirtyDays) return;
@@ -643,7 +643,7 @@ const OraclePage = () => {
   const triggerHeatedDebate = async () => {
     if (activeAgents.length < 2) return;
     setDebateActive(true);
-    localStorage.setItem("solace-last-debate", Date.now().toString());
+    localStorage.setItem("oracle-lunar-last-debate", Date.now().toString());
     const debateTopics = [
       "Is AI art real art?", "Would you rather have infinite knowledge or infinite creativity?",
       "Is time travel possible?", "Are humans inherently good or evil?",
@@ -690,7 +690,7 @@ const OraclePage = () => {
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
     // first real Oracle response speaks back in <1s.
-    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("solace-oracle-voice")) || "EXAVITQu4vr4xnSDxMaL";
+    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "EXAVITQu4vr4xnSDxMaL";
     fetch(ELEVENLABS_TTS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
@@ -1019,9 +1019,9 @@ const OraclePage = () => {
           const lower = text.toLowerCase();
 
           // ── WAKE WORD DETECTION ──
-          // "hey solace" opens the voice channel and (optionally) carries the
+          // "hey oracle-lunar" opens the voice channel and (optionally) carries the
           // rest of the sentence as the first prompt.
-          const wakeMatch = lower.match(/\bhey[, ]+solace\b[ ,.!?-]*/);
+          const wakeMatch = lower.match(/\bhey[, ]+oracle-lunar\b[ ,.!?-]*/);
           if (wakeMatch) {
             voiceChannelOpenRef.current = true;
             setVoiceChannelOpen(true);
@@ -1039,9 +1039,9 @@ const OraclePage = () => {
           }
 
           // ── SLEEP / CLOSE PHRASES ──
-          // "thanks solace" / "goodbye solace" / "stop solace" / "that's fine thanks solace"
-          if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+solace\b/.test(lower)
-              || /\bsolace[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
+          // "thanks oracle-lunar" / "goodbye oracle-lunar" / "stop oracle-lunar" / "that's fine thanks oracle-lunar"
+          if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+oracle-lunar\b/.test(lower)
+              || /\b(oracle lunar|oracle-lunar)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
             voiceChannelOpenRef.current = false;
             setVoiceChannelOpen(false);
             if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
@@ -1121,7 +1121,7 @@ const OraclePage = () => {
   const introTriggeredRef = useRef(false);
   useEffect(() => {
     if (introTriggeredRef.current) return;
-    if (localStorage.getItem("solace-oracle-introduced")) return;
+    if (localStorage.getItem("oracle-lunar-introduced")) return;
     introTriggeredRef.current = true;
     const t = setTimeout(() => sendMessageRef.current?.("__INTRO__"), 1200);
     return () => clearTimeout(t);
@@ -1133,7 +1133,7 @@ const OraclePage = () => {
     if (greetTriggeredRef.current) return;
     if (subLoading) return;
     // Skip greet on the very first visit (intro handles it)
-    if (!localStorage.getItem("solace-oracle-introduced")) return;
+    if (!localStorage.getItem("oracle-lunar-introduced")) return;
     greetTriggeredRef.current = true;
 
     const hour = new Date().getHours();
@@ -1157,10 +1157,10 @@ const OraclePage = () => {
       `Hi friend. How are you really doing?`,
     ];
 
-    const lastIdx = parseInt(sessionStorage.getItem("solace-last-greet-idx") || "-1", 10);
+    const lastIdx = parseInt(sessionStorage.getItem("oracle-lunar-last-greet-idx") || "-1", 10);
     let idx = Math.floor(Math.random() * greetings.length);
     if (idx === lastIdx) idx = (idx + 1) % greetings.length;
-    sessionStorage.setItem("solace-last-greet-idx", String(idx));
+    sessionStorage.setItem("oracle-lunar-last-greet-idx", String(idx));
     const greeting = greetings[idx];
 
     const t = setTimeout(() => {
@@ -1232,13 +1232,13 @@ const OraclePage = () => {
       const yesRe = /^(yes|yeah|yep|yup|sure|ok(ay)?|i agree|agreed|do it|go ahead|confirm(ed)?|i consent|grant(ed)?|approve(d)?|i'?m sure|absolutely|definitely)\b/i;
       const noRe = /^(no|nope|cancel|stop|never mind|nevermind|abort|don'?t)\b/i;
 
-      const stage = parseInt(sessionStorage.getItem("solace-phone-control-stage") || "0", 10);
-      const alreadyGranted = sessionStorage.getItem("solace-phone-control-granted") === "1";
+      const stage = parseInt(sessionStorage.getItem("oracle-lunar-phone-control-stage") || "0", 10);
+      const alreadyGranted = sessionStorage.getItem("oracle-lunar-phone-control-granted") === "1";
       const userMsgPC: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
 
       // Initial request
       if (!alreadyGranted && stage === 0 && askTextRe.test(text)) {
-        sessionStorage.setItem("solace-phone-control-stage", "1");
+        sessionStorage.setItem("oracle-lunar-phone-control-stage", "1");
         const ack: Message = {
           id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
           content: "Before I take full control of your phone, I need to confirm this with you three times. This grants me permission to make calls, send messages, open apps, navigate, use the camera, and act on your behalf. First confirmation — do you want me to take full control of your phone? Please say yes or no.",
@@ -1252,7 +1252,7 @@ const OraclePage = () => {
       // Mid-confirmation flow
       if (!alreadyGranted && stage > 0 && stage < 3) {
         if (noRe.test(text)) {
-          sessionStorage.removeItem("solace-phone-control-stage");
+          sessionStorage.removeItem("oracle-lunar-phone-control-stage");
           const ack: Message = {
             id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
             content: "Understood — I won't take control of your phone. We can keep going as normal.",
@@ -1264,7 +1264,7 @@ const OraclePage = () => {
         }
         if (yesRe.test(text)) {
           const next = stage + 1;
-          sessionStorage.setItem("solace-phone-control-stage", String(next));
+          sessionStorage.setItem("oracle-lunar-phone-control-stage", String(next));
           const prompts = [
             "Second confirmation — are you absolutely sure you want me to have full control of your phone? Say yes to continue.",
             "Final confirmation — this is the third and last check. Say yes and I will take full control of your phone for this session.",
@@ -1282,8 +1282,8 @@ const OraclePage = () => {
 
       // Final grant
       if (!alreadyGranted && stage === 3 && yesRe.test(text)) {
-        sessionStorage.setItem("solace-phone-control-granted", "1");
-        sessionStorage.removeItem("solace-phone-control-stage");
+        sessionStorage.setItem("oracle-lunar-phone-control-granted", "1");
+        sessionStorage.removeItem("oracle-lunar-phone-control-stage");
         toast.success("Full phone control granted for this session");
         const ack: Message = {
           id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "👑", color: "#FFD700",
@@ -1295,7 +1295,7 @@ const OraclePage = () => {
         return;
       }
       if (!alreadyGranted && stage === 3 && noRe.test(text)) {
-        sessionStorage.removeItem("solace-phone-control-stage");
+        sessionStorage.removeItem("oracle-lunar-phone-control-stage");
         const ack: Message = {
           id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
           content: "No problem — phone control was not granted. Nothing changes.",
@@ -1308,7 +1308,7 @@ const OraclePage = () => {
 
       // Revoke
       if (alreadyGranted && /(revoke|cancel|disable|turn off|stop)\s+(phone\s+)?control/i.test(text)) {
-        sessionStorage.removeItem("solace-phone-control-granted");
+        sessionStorage.removeItem("oracle-lunar-phone-control-granted");
         toast("Phone control revoked");
         const ack: Message = {
           id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛡️", color: "#FFD700",
@@ -1459,7 +1459,7 @@ const OraclePage = () => {
 
     try {
       const allMsgs = isIntroTrigger ? [{ role: "user" as const, sender: "user", emoji: "👤", color: "#FFAA00", content: "Hi", id: "intro" } as Message] : [...messages, userMsg];
-      const introKey = "solace-oracle-introduced";
+      const introKey = "oracle-lunar-introduced";
       const isFirstMeeting = !localStorage.getItem(introKey) || isIntroTrigger;
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
@@ -1692,7 +1692,7 @@ const OraclePage = () => {
     <>
     <SEO
       title="Oracle AI Chat — Talk to Your Voice AI Companion"
-      description="Chat with Oracle, the SOLACE voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
+      description="Chat with Oracle, the ORACLE LUNAR voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
       path="/oracle"
     />
     <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#0a0a0a" }}>
@@ -1916,7 +1916,7 @@ const OraclePage = () => {
 
       {/* Orb / Avatar area */}
       <div className={`relative flex-1 flex items-center justify-center transition-all ${showChat ? "max-h-[35%]" : ""}`}>
-        {/* Wake-word indicator: small pulsing dot on the orb when listening for "hey solace" */}
+        {/* Wake-word indicator: small pulsing dot on the orb when listening for "hey oracle-lunar" */}
         {isListening && (
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
             <span
@@ -1924,7 +1924,7 @@ const OraclePage = () => {
               style={{ animation: "pulse 1.4s ease-in-out infinite" }}
             />
             <span className="text-[10px] text-muted-foreground">
-              {voiceChannelOpen ? "Channel open" : 'Say "hey solace"'}
+              {voiceChannelOpen ? "Channel open" : 'Say "hey oracle-lunar"'}
             </span>
           </div>
         )}

@@ -20,7 +20,7 @@ const VisitorCounter = ({ page = "landing" }: VisitorCounterProps) => {
 
     const recordAndFetch = async () => {
       try {
-        const sessionKey = `solace-visit-${page}`;
+        const sessionKey = `oracle-lunar-visit-${page}`;
         if (!sessionStorage.getItem(sessionKey)) {
           // Capture acquisition data
           const params = new URLSearchParams(window.location.search);

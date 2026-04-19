@@ -8,25 +8,25 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 
 /**
- * SOLACE Live Editor — admin-only.
+ * ORACLE LUNAR Live Editor — admin-only.
  * Lets the owner change any registered text/image slot, manage the
  * site-wide announcement banner, and upload images to the public bucket.
  */
 
 const REGISTERED_SLOTS: { page: string; slot: string; label: string; kind: "text" | "image"; fallback: string }[] = [
   // Landing page
-  { page: "landing", slot: "hero_title", label: "Landing — Hero title", kind: "text", fallback: "SOLACE" },
+  { page: "landing", slot: "hero_title", label: "Landing — Hero title", kind: "text", fallback: "ORACLE LUNAR" },
   { page: "landing", slot: "hero_tagline", label: "Landing — Hero tagline", kind: "text", fallback: "Your personal AI super-app" },
   { page: "landing", slot: "hero_cta", label: "Landing — Primary button", kind: "text", fallback: "Get Started Free" },
   { page: "landing", slot: "free_trial_banner", label: "Landing — Free trial banner", kind: "text", fallback: "🎁 Sign up free — 30 days of full access, no card required" },
   // Dashboard
-  { page: "dashboard", slot: "welcome_title", label: "Dashboard — Welcome title", kind: "text", fallback: "Welcome to SOLACE" },
+  { page: "dashboard", slot: "welcome_title", label: "Dashboard — Welcome title", kind: "text", fallback: "Welcome to ORACLE LUNAR" },
   { page: "dashboard", slot: "welcome_subtitle", label: "Dashboard — Welcome subtitle", kind: "text", fallback: "Your 30 days of full Tier 3 access starts now" },
   // Subscribe
   { page: "subscribe", slot: "headline", label: "Subscribe — Headline", kind: "text", fallback: "Choose your plan" },
   { page: "subscribe", slot: "lifetime_promo", label: "Subscribe — Lifetime promo", kind: "text", fallback: "💎 $900 Lifetime Unlock — every premium feature, forever" },
   // Generic
-  { page: "global", slot: "footer_tagline", label: "Footer tagline", kind: "text", fallback: "Built with love. Powered by SOLACE." },
+  { page: "global", slot: "footer_tagline", label: "Footer tagline", kind: "text", fallback: "Built with love. Powered by ORACLE LUNAR." },
 ];
 
 const AdminEditorPage = () => {
@@ -140,7 +140,7 @@ const AdminEditorPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SEO title="SOLACE Live Editor — Admin" description="Edit site content live" />
+      <SEO title="ORACLE LUNAR Live Editor — Admin" description="Edit site content live" />
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />

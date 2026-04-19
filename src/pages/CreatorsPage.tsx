@@ -127,7 +127,7 @@ const CreatorsPage = () => {
         <div className="bg-card border border-border rounded-xl p-4 mb-6">
           <h2 className="text-lg font-semibold text-primary mb-2">About the Creator</h2>
           <p className="text-sm text-foreground leading-relaxed">
-            Hi! I'm the creator of Solace — a full-stack developer specializing in AI-powered applications, 
+            Hi! I'm the creator of Oracle Lunar — a full-stack developer specializing in AI-powered applications, 
             mobile development, and security architecture. I built this entire super app from the ground up, 
             integrating 40+ AI tools, 101 security systems, and cutting-edge features that push the boundaries 
             of what a single app can do.
@@ -155,7 +155,7 @@ const CreatorsPage = () => {
         <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10 border border-primary/20 rounded-xl p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-primary">Featured: Solace AI Super App</h3>
+            <h3 className="font-semibold text-primary">Featured: Oracle Lunar AI Super App</h3>
           </div>
           <ul className="text-sm text-foreground space-y-1">
             <li>• 40+ AI-powered tools in one app</li>

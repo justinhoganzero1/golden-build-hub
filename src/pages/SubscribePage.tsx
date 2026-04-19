@@ -211,7 +211,7 @@ const SubscribePage = () => {
           <div className="flex items-center gap-3 mb-3">
             <Crown className="w-7 h-7 text-primary" />
             <div>
-              <h3 className="text-lg font-bold text-foreground">SOLACE Lifetime Unlock</h3>
+              <h3 className="text-lg font-bold text-foreground">ORACLE LUNAR Lifetime Unlock</h3>
               <p className="text-xs text-muted-foreground"><span className="text-2xl font-bold text-primary">$900</span> one-time payment</p>
             </div>
           </div>

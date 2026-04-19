@@ -24,12 +24,12 @@ const captureRefFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
     if (ref && ref.length < 64) {
-      localStorage.setItem("solace-ref-code", ref);
+      localStorage.setItem("oracle-lunar-ref-code", ref);
     }
   } catch {}
 };
 
-const REWARD_FLAG_PREFIX = "solace-reward-granted-";
+const REWARD_FLAG_PREFIX = "oracle-lunar-reward-granted-";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -50,13 +50,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_IN" && session?.user) {
           const flagKey = `${REWARD_FLAG_PREFIX}${session.user.id}`;
           if (!localStorage.getItem(flagKey)) {
-            const refCode = localStorage.getItem("solace-ref-code");
+            const refCode = localStorage.getItem("oracle-lunar-ref-code");
             setTimeout(() => {
               supabase.functions.invoke("grant-signup-reward", {
                 body: { referralCode: refCode },
               }).then(() => {
                 localStorage.setItem(flagKey, "1");
-                localStorage.removeItem("solace-ref-code");
+                localStorage.removeItem("oracle-lunar-ref-code");
               }).catch(() => {});
             }, 500);
           }

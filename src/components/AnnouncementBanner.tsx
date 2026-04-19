@@ -11,7 +11,7 @@ type Announcement = {
   style: string;
 };
 
-const DISMISS_KEY = "solace-announcement-dismissed-";
+const DISMISS_KEY = "oracle-lunar-announcement-dismissed-";
 
 const styleMap: Record<string, string> = {
   info: "bg-primary/15 border-primary/40 text-foreground",

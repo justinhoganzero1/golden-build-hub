@@ -52,8 +52,8 @@ class ErrorBoundary extends Component<Props, State> {
       msg.includes("loading css chunk") ||
       error?.name === "ChunkLoadError";
 
-    if (isChunkError && !sessionStorage.getItem("solace-chunk-reloaded")) {
-      sessionStorage.setItem("solace-chunk-reloaded", "1");
+    if (isChunkError && !sessionStorage.getItem("oracle-lunar-chunk-reloaded")) {
+      sessionStorage.setItem("oracle-lunar-chunk-reloaded", "1");
       if ("caches" in window) {
         caches.keys().then(names => names.forEach(n => caches.delete(n)));
       }
@@ -176,7 +176,7 @@ class ErrorBoundary extends Component<Props, State> {
         <div className="max-w-sm w-full text-center space-y-4">
           <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
           <h2 className="text-lg font-bold text-foreground">Critical Error</h2>
-          <p className="text-sm text-muted-foreground">Solace encountered a critical issue. Please reload or contact support.</p>
+          <p className="text-sm text-muted-foreground">Oracle Lunar encountered a critical issue. Please reload or contact support.</p>
           <details className="text-left bg-card border border-border rounded-xl p-3 text-xs text-muted-foreground">
             <summary className="cursor-pointer font-medium">Diagnostics</summary>
             <pre className="mt-2 overflow-auto max-h-32 whitespace-pre-wrap break-all">

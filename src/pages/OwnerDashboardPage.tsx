@@ -69,13 +69,13 @@ const OwnerDashboardPage = () => {
     platform: string; name: string; status: string; budget: number; spent: number;
     impressions: number; clicks: number; conversions: number; startDate: string; endDate: string;
   }[]>(() => {
-    const saved = localStorage.getItem("solace-ad-campaigns");
+    const saved = localStorage.getItem("oracle-lunar-ad-campaigns");
     return saved ? JSON.parse(saved) : [];
   });
   const [newCampaign, setNewCampaign] = useState({ name: "", budget: "", startDate: "", endDate: "" });
 
   useEffect(() => {
-    localStorage.setItem("solace-ad-campaigns", JSON.stringify(adCampaigns));
+    localStorage.setItem("oracle-lunar-ad-campaigns", JSON.stringify(adCampaigns));
   }, [adCampaigns]);
 
   const adPlatforms = [
@@ -423,12 +423,12 @@ const OwnerDashboardPage = () => {
             {
               role: "system",
               content:
-                "You are SOLACE Site Architect — an elite full-stack engineer with ULTIMATE coding ability for the SOLACE web app. " +
+                "You are ORACLE LUNAR Site Architect — an elite full-stack engineer with ULTIMATE coding ability for the ORACLE LUNAR web app. " +
                 "Stack: React 18 + Vite + Tailwind + shadcn/ui + Supabase (Postgres + RLS + Edge Functions in Deno) + Lovable AI Gateway. " +
-                "When the admin asks to add a feature, change behavior, fix a bug, or extend an app inside SOLACE, respond with: " +
+                "When the admin asks to add a feature, change behavior, fix a bug, or extend an app inside ORACLE LUNAR, respond with: " +
                 "(1) a short plan, (2) the exact files to create/edit with full code blocks, (3) any SQL migration needed, " +
                 "(4) RLS policies for any new tables, (5) any edge function changes. " +
-                "IMPORTANT LIMITS: You can only modify THIS SOLACE codebase. You CANNOT remotely modify third-party websites, " +
+                "IMPORTANT LIMITS: You can only modify THIS ORACLE LUNAR codebase. You CANNOT remotely modify third-party websites, " +
                 "external apps, or other users' devices on the public internet — say so plainly if asked. " +
                 "For features that need to be deployed to other users, explain that the admin should ship the change here " +
                 "and all signed-in users will receive the update on next page load.",
@@ -485,7 +485,7 @@ const OwnerDashboardPage = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Owner Dashboard</h1>
-            <p className="text-gray-500 text-xs">SOLACE Command Center</p>
+            <p className="text-gray-500 text-xs">ORACLE LUNAR Command Center</p>
           </div>
         </div>
 
@@ -657,12 +657,12 @@ const OwnerDashboardPage = () => {
                 onClick={async () => {
                   const message = prompt(
                     "Broadcast message to Telegram / Discord / Slack / Email / 80 webhooks:",
-                    "🆓 SOLACE is FREE for 14 days — download now at https://oracle-lunar.online"
+                    "🆓 ORACLE LUNAR is FREE for 14 days — download now at https://oracle-lunar.online"
                   );
                   if (!message) return;
                   try {
                     const { data, error } = await supabase.functions.invoke("growth-broadcast", {
-                      body: { event: "feature", title: "📣 SOLACE Announcement", message, url: "https://oracle-lunar.online" },
+                      body: { event: "feature", title: "📣 ORACLE LUNAR Announcement", message, url: "https://oracle-lunar.online" },
                     });
                     if (error) throw error;
                     const ok = (data?.results || []).filter((r: any) => r.ok).map((r: any) => r.label).join(", ");
@@ -709,7 +709,7 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
-        {/* LEADS — captured by SOLACE Concierge */}
+        {/* LEADS — captured by ORACLE LUNAR Concierge */}
         {tab === "leads" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-2">
@@ -739,7 +739,7 @@ const OwnerDashboardPage = () => {
                     )}
                     <p className="text-sm text-gray-300">{l.message}</p>
                     {l.email && (
-                      <a href={`mailto:${l.email}?subject=Re:%20${encodeURIComponent(l.interest || "Your SOLACE inquiry")}`}
+                      <a href={`mailto:${l.email}?subject=Re:%20${encodeURIComponent(l.interest || "Your ORACLE LUNAR inquiry")}`}
                         className="inline-block mt-2 px-3 py-1.5 rounded-lg bg-amber-500 text-black text-xs font-bold">
                         Reply by Email
                       </a>
@@ -1264,19 +1264,19 @@ const OwnerDashboardPage = () => {
           </div>
         )}
 
-        {/* AI BUILDER — Admin-only ultimate-coding chat for shipping features into SOLACE */}
+        {/* AI BUILDER — Admin-only ultimate-coding chat for shipping features into ORACLE LUNAR */}
         {tab === "builder" && (
           <div className="space-y-3">
             <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Zap className="w-5 h-5 text-yellow-400" />
-                <h2 className="text-base font-bold text-white">SOLACE AI Builder</h2>
+                <h2 className="text-base font-bold text-white">ORACLE LUNAR AI Builder</h2>
               </div>
               <p className="text-[11px] text-gray-400">
                 Ultimate-level coding assistant for this site and every app inside it. Ask it to add features, fix bugs,
                 build new pages, or extend existing apps — it returns full code + SQL + edge function plans.
                 Changes deploy to all signed-in users on next page load. Note: external sites and other users' devices
-                cannot be remotely modified — only this SOLACE app.
+                cannot be remotely modified — only this ORACLE LUNAR app.
               </p>
             </div>
 
@@ -1330,7 +1330,7 @@ const OwnerDashboardPage = () => {
           title={libShareItem?.title || "Media"}
           url={libShareItem?.url}
           imageUrl={libShareItem?.url}
-          description={`Check out this ${libShareItem?.media_type || "media"} from Solace!`}
+          description={`Check out this ${libShareItem?.media_type || "media"} from Oracle Lunar!`}
         />
       </div>
       

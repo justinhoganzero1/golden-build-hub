@@ -2,9 +2,9 @@
 // connect-checkout
 // -----------------------------------------------------------------------------
 // Create a Stripe Checkout session as a DIRECT CHARGE on the connected account
-// with an application_fee_amount that goes back to the SOLACE platform account.
+// with an application_fee_amount that goes back to the ORACLE LUNAR platform account.
 //
-// Public endpoint (no auth required) — buyers don't need a SOLACE account.
+// Public endpoint (no auth required) — buyers don't need a ORACLE LUNAR account.
 // =============================================================================
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
@@ -15,7 +15,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Platform fee: 10% of the price (matches the SOLACE fee policy).
+// Platform fee: 10% of the price (matches the ORACLE LUNAR fee policy).
 const PLATFORM_FEE_BPS = 1000; // basis points = 10.00%
 
 Deno.serve(async (req) => {

@@ -17,7 +17,7 @@ const SoundSplash = ({ onEnable }: SoundSplashProps) => {
 
         <h2 className="text-xl font-bold text-foreground" style={{ color: 'white' }}>Enable Sound</h2>
         <p className="text-muted-foreground text-sm">
-          SOLACE features immersive audio. Tap to enable.
+          ORACLE LUNAR features immersive audio. Tap to enable.
         </p>
 
         <button

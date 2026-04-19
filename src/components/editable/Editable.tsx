@@ -2,7 +2,7 @@ import { createElement, ReactNode } from "react";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 /**
- * <EditableText page="landing" slot="hero_title" fallback="Welcome to SOLACE" />
+ * <EditableText page="landing" slot="hero_title" fallback="Welcome to ORACLE LUNAR" />
  * Renders the latest DB value (or the hardcoded fallback if none set).
  * Admin edits via /admin/editor update this live for everyone.
  */

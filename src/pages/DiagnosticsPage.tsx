@@ -200,7 +200,7 @@ const DiagnosticsPage = () => {
 
     // 12. LocalStorage
     await runTest("Local Storage Cache", async () => {
-      const key = "solace_test_" + Date.now();
+      const key = "oracle-lunar_test_" + Date.now();
       localStorage.setItem(key, "test");
       const val = localStorage.getItem(key);
       localStorage.removeItem(key);

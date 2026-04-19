@@ -1,4 +1,4 @@
-// SOLACE Web Crawler & Outreach — Admin-only growth engine.
+// ORACLE LUNAR Web Crawler & Outreach — Admin-only growth engine.
 // Uses Firecrawl (search/scrape/map) + Lovable AI to:
 //  1) DISCOVER niche-relevant websites, blogs, directories, press contacts
 //  2) DRAFT personalized outreach emails (press, partnerships, backlinks, AI-app directories)
@@ -64,7 +64,7 @@ function extractEmail(text: string): string | null {
 async function aiDraft(prospect: { url: string; title?: string; description?: string; pageSummary?: string }, campaign: string) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) return { subject: "", body: "" };
-  const sys = `You are a world-class growth marketer for SOLACE — a cinematic AI super-app (40+ modules: Oracle AI, Crisis Hub, Movie Studio, Avatar Generator, Live Vision, AI Companion, Wallet, etc.). Live at https://oracle-lunar.online. Founder: Justin Hogan. Write SHORT, warm, specific outreach emails that get replies. Always reference something specific from the target site. Never sound templated. End with one clear ask.`;
+  const sys = `You are a world-class growth marketer for ORACLE LUNAR — a cinematic AI super-app (40+ modules: Oracle AI, Crisis Hub, Movie Studio, Avatar Generator, Live Vision, AI Companion, Wallet, etc.). Live at https://oracle-lunar.online. Founder: Justin Hogan. Write SHORT, warm, specific outreach emails that get replies. Always reference something specific from the target site. Never sound templated. End with one clear ask.`;
   const user = `Campaign type: ${campaign}
 Target site: ${prospect.url}
 Title: ${prospect.title ?? ""}
@@ -85,7 +85,7 @@ Return JSON ONLY: {"subject":"...","body":"..."} — body under 120 words, plain
     const d = await r.json();
     const raw = d?.choices?.[0]?.message?.content || "";
     const json = raw.match(/\{[\s\S]*\}/)?.[0];
-    if (!json) return { subject: `SOLACE × ${new URL(prospect.url).hostname}`, body: raw.slice(0, 600) };
+    if (!json) return { subject: `ORACLE LUNAR × ${new URL(prospect.url).hostname}`, body: raw.slice(0, 600) };
     const parsed = JSON.parse(json);
     return { subject: parsed.subject || "", body: parsed.body || "" };
   } catch {

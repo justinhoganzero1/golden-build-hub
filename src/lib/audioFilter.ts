@@ -1,5 +1,5 @@
 /**
- * SOLACE Audio Filter — 20-layer, 4-mode adaptive mic pipeline.
+ * ORACLE LUNAR Audio Filter — 20-layer, 4-mode adaptive mic pipeline.
  *
  * Tier-paywalled. Free users get layers 1–4 only.
  *
@@ -48,8 +48,8 @@ export interface VoicePrint {
   updatedAt: number;
 }
 
-const VOICE_KEY = "solace-voiceprint";
-const FLATMATE_KEY = "solace-voiceprint-blocked";
+const VOICE_KEY = "oracle-lunar-voiceprint";
+const FLATMATE_KEY = "oracle-lunar-voiceprint-blocked";
 
 export function loadVoicePrint(): VoicePrint | null {
   try { return JSON.parse(localStorage.getItem(VOICE_KEY) || "null"); } catch { return null; }

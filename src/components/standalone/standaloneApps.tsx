@@ -98,7 +98,7 @@ export const STANDALONE_APPS: StandaloneApp[] = [
     slug: "wallet",
     title: "Wallet",
     tagline: "Your balance + top-ups",
-    description: "Quick view of your SOLACE wallet for calls and premium use.",
+    description: "Quick view of your ORACLE LUNAR wallet for calls and premium use.",
     icon: Wallet,
     color: "from-yellow-500 to-amber-500",
     fullAppPath: "/wallet",

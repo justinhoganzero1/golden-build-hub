@@ -195,9 +195,9 @@ const InvestorPage = () => {
         {(tab === "submit" || !isOwner) && (
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-xl p-4 mb-4">
-              <h2 className="text-lg font-semibold text-primary mb-2">Invest in Solace</h2>
+              <h2 className="text-lg font-semibold text-primary mb-2">Invest in Oracle Lunar</h2>
               <p className="text-sm text-muted-foreground">
-                Solace is an AI-powered super app with 40+ tools, 101 AI security guards, and a vision to become 
+                Oracle Lunar is an AI-powered super app with 40+ tools, 101 AI security guards, and a vision to become 
                 the world's most comprehensive personal companion. All investment offers are reviewed by our AI 
                 system and personally evaluated. Terms are negotiable.
               </p>

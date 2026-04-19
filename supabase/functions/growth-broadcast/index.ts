@@ -1,4 +1,4 @@
-// SOLACE Growth Broadcaster — fans out a single event to 80+ channels.
+// ORACLE LUNAR Growth Broadcaster — fans out a single event to 80+ channels.
 // Destinations supported (any subset, configured via secrets):
 //   - Telegram channel       (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID)
 //   - Discord webhook        (DISCORD_WEBHOOK_URL)
@@ -27,9 +27,9 @@ function buildText(p: Payload): { title: string; body: string } {
   const ev = (p.event || "custom").toLowerCase();
   const emoji =
     ev === "signup" ? "🎉" : ev === "referral" ? "🔗" : ev === "feature" ? "✨" : "📣";
-  const title = p.title || `${emoji} SOLACE — ${ev.toUpperCase()}`;
+  const title = p.title || `${emoji} ORACLE LUNAR — ${ev.toUpperCase()}`;
   const body =
-    (p.message || "Something exciting just happened on SOLACE.") +
+    (p.message || "Something exciting just happened on ORACLE LUNAR.") +
     (p.url ? `\n\n${p.url}` : `\n\n${APP_URL}`);
   return { title, body };
 }
@@ -82,7 +82,7 @@ async function sendEmail(title: string, body: string) {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "SOLACE <onboarding@resend.dev>",
+      from: "ORACLE LUNAR <onboarding@resend.dev>",
       to: recipients,
       subject: title,
       html: `<h2>${title}</h2><p style="white-space:pre-wrap">${body}</p><p><a href="${APP_URL}">${APP_URL}</a></p>`,

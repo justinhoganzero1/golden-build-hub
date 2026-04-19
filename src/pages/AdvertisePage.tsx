@@ -67,8 +67,8 @@ const AdvertisePage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Advertise on SOLACE — Reach engaged AI super-app users"
-        description="Promote your brand on SOLACE. Sponsored tiles, banners, newsletter & in-app promos to a high-intent AI audience."
+        title="Advertise on ORACLE LUNAR — Reach engaged AI super-app users"
+        description="Promote your brand on ORACLE LUNAR. Sponsored tiles, banners, newsletter & in-app promos to a high-intent AI audience."
         path="/advertise"
       />
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -80,7 +80,7 @@ const AdvertisePage = () => {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-primary text-primary-foreground mb-4">
             <Megaphone className="w-7 h-7" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Advertise on SOLACE</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Advertise on ORACLE LUNAR</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Reach a high-intent audience using AI tools every day. Tell us about your campaign and we&apos;ll get back to you within 1 business day.
           </p>
@@ -91,7 +91,7 @@ const AdvertisePage = () => {
             <CheckCircle2 className="w-12 h-12 text-primary mx-auto mb-3" />
             <h2 className="text-xl font-semibold mb-2">Thanks — we got it.</h2>
             <p className="text-muted-foreground">
-              Your inquiry was sent to the SOLACE team. We&apos;ll reach out at <span className="text-foreground font-medium">{form.email}</span> shortly.
+              Your inquiry was sent to the ORACLE LUNAR team. We&apos;ll reach out at <span className="text-foreground font-medium">{form.email}</span> shortly.
             </p>
           </div>
         ) : (

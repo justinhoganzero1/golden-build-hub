@@ -34,9 +34,9 @@ const SuggestionBoxPage = () => {
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ type: "assistant", prompt: `You are the Solace AI assistant. A user just submitted this suggestion for the app: "${suggestion.trim()}" (Category: ${category}). Thank them warmly and enthusiastically. Mention that if their idea gets implemented, they'll receive FREE LIFETIME ACCESS to all non-external-paid features of the app! Encourage them to submit more ideas. Be genuine and excited. Keep it under 100 words.` }),
+        body: JSON.stringify({ type: "assistant", prompt: `You are the Oracle Lunar AI assistant. A user just submitted this suggestion for the app: "${suggestion.trim()}" (Category: ${category}). Thank them warmly and enthusiastically. Mention that if their idea gets implemented, they'll receive FREE LIFETIME ACCESS to all non-external-paid features of the app! Encourage them to submit more ideas. Be genuine and excited. Keep it under 100 words.` }),
       });
-      let aiText = "Thank you so much for your amazing suggestion! We truly value your input. If your idea gets implemented, you'll earn FREE LIFETIME ACCESS to all Solace features! Keep the great ideas coming! 🌟";
+      let aiText = "Thank you so much for your amazing suggestion! We truly value your input. If your idea gets implemented, you'll earn FREE LIFETIME ACCESS to all Oracle Lunar features! Keep the great ideas coming! 🌟";
       if (resp.ok) {
         const data = await resp.json();
         if (data.result) aiText = data.result;
@@ -56,13 +56,13 @@ const SuggestionBoxPage = () => {
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-primary/10"><Bell className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-bold text-primary">Suggestion Box</h1><p className="text-muted-foreground text-xs">Help us improve Solace</p></div>
+          <div><h1 className="text-xl font-bold text-primary">Suggestion Box</h1><p className="text-muted-foreground text-xs">Help us improve Oracle Lunar</p></div>
         </div>
 
         {/* Incentive Banner */}
         <div className="bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 rounded-xl p-4 mb-4 flex items-start gap-3">
           <Star className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-          <div><p className="text-xs text-foreground font-medium">Submit a great idea that gets implemented and earn <span className="text-primary font-bold">FREE LIFETIME ACCESS</span> to all Solace features!</p></div>
+          <div><p className="text-xs text-foreground font-medium">Submit a great idea that gets implemented and earn <span className="text-primary font-bold">FREE LIFETIME ACCESS</span> to all Oracle Lunar features!</p></div>
         </div>
 
         <div className="flex gap-2 mb-4">{["Feature", "Bug", "Design", "Other"].map(c => (

@@ -43,7 +43,7 @@ const StandaloneWallet = () => {
       <Link to="/wallet" className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-primary text-primary-foreground font-medium">
         <ExternalLink className="w-4 h-4" /> Top up in full app
       </Link>
-      <p className="text-xs text-muted-foreground text-center">Top-ups, BPAY, PayID and call charges are managed in the full SOLACE app.</p>
+      <p className="text-xs text-muted-foreground text-center">Top-ups, BPAY, PayID and call charges are managed in the full ORACLE LUNAR app.</p>
     </div>
   );
 };

@@ -44,8 +44,8 @@ import StickyInstallBar from "@/components/StickyInstallBar";
 import SocialProofBar from "@/components/SocialProofBar";
 import PartyBanner from "@/components/PartyBanner";
 import ExitIntentCapture from "@/components/ExitIntentCapture";
-import solaceBanner from "@/assets/solace-banner.jpg";
-import solaceLogo from "@/assets/solace-logo.png";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
@@ -85,7 +85,7 @@ const PortalLandingPage = () => {
 
   // Pulse the shield-shaped logo glow while the user is typing in the chat
   useEffect(() => {
-    const el = document.getElementById("solace-home-logo-glow");
+    const el = document.getElementById("oracle-lunar-home-logo-glow");
     if (!el) return;
     let timer: number | undefined;
     const onTyping = () => {
@@ -93,14 +93,14 @@ const PortalLandingPage = () => {
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => el.classList.remove("is-pulsing"), 900);
     };
-    window.addEventListener("solace-chat-typing", onTyping);
+    window.addEventListener("oracle-lunar-chat-typing", onTyping);
     return () => {
-      window.removeEventListener("solace-chat-typing", onTyping);
+      window.removeEventListener("oracle-lunar-chat-typing", onTyping);
       if (timer) window.clearTimeout(timer);
     };
   }, []);
 
-  // Tag the body so landing-page-only CSS (like the SOLACE wordmark headings) activates
+  // Tag the body so landing-page-only CSS (like the ORACLE LUNAR wordmark headings) activates
   useEffect(() => {
     document.body.setAttribute("data-route", "/");
     return () => { document.body.removeAttribute("data-route"); };
@@ -136,7 +136,7 @@ const PortalLandingPage = () => {
             "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
           fontFamily: "'Pacifico', 'Caveat', 'Comic Sans MS', cursive",
         }}
-        aria-label="Limited time free — install SOLACE"
+        aria-label="Limited time free — install ORACLE LUNAR"
       >
         {/* 🐰 Easter bunny ears */}
         <span aria-hidden="true" className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
@@ -210,8 +210,8 @@ const PortalLandingPage = () => {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
-            <span className="solace-wordmark text-lg">SOLACE</span>
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
+            <span className="oracle-lunar-wordmark text-lg">ORACLE LUNAR</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
@@ -242,8 +242,8 @@ const PortalLandingPage = () => {
       <section className="relative overflow-hidden">
         {/* Banner image — same as the app's IntroSplash */}
         <img
-          src={solaceBanner}
-          alt="SOLACE cinematic banner"
+          src={oracleLunarBanner}
+          alt="ORACLE LUNAR cinematic banner"
           className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
         {/* Gold radial glow overlay */}
@@ -288,8 +288,8 @@ const PortalLandingPage = () => {
               }}
             />
             <img
-              src={solaceLogo}
-              alt="SOLACE shield logo"
+              src={oracleLunarLogo}
+              alt="ORACLE LUNAR shield logo"
               className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(0,191,255,0.6)]"
             />
           </div>
@@ -300,9 +300,9 @@ const PortalLandingPage = () => {
           </div>
 
           <h1 className="text-5xl md:text-7xl mb-6">
-            <span className="solace-wordmark text-5xl md:text-7xl">SOLACE</span>
+            <span className="oracle-lunar-wordmark text-5xl md:text-7xl">ORACLE LUNAR</span>
             <br />
-            <span className="solace-wordmark-soft text-2xl md:text-4xl block mt-4">
+            <span className="oracle-lunar-wordmark-soft text-2xl md:text-4xl block mt-4">
               Your AI companion to do everything
             </span>
           </h1>
@@ -325,7 +325,7 @@ const PortalLandingPage = () => {
               className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all animate-pulse"
             >
               <Download className="mr-3 h-7 w-7" />
-              {isStandalone ? "Already installed ✓" : canInstall ? "Install SOLACE — Free" : "Install on my phone"}
+              {isStandalone ? "Already installed ✓" : canInstall ? "Install ORACLE LUNAR — Free" : "Install on my phone"}
             </Button>
             <Button
               size="lg"
@@ -397,7 +397,7 @@ const PortalLandingPage = () => {
               All <span className="text-primary">Apps</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Special downloads from the SOLACE portal — standalone tools that live alongside the main app.
+              Special downloads from the ORACLE LUNAR portal — standalone tools that live alongside the main app.
             </p>
           </div>
 
@@ -420,7 +420,7 @@ const PortalLandingPage = () => {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
                 Wrap any app ready for the Play Store. Paste a URL, name your app, and download
-                a signed wrapper package you can publish — all from the SOLACE portal.
+                a signed wrapper package you can publish — all from the ORACLE LUNAR portal.
               </p>
               <Button
                 size="lg"
@@ -471,7 +471,7 @@ const PortalLandingPage = () => {
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
                 The full cinematic movie maker — script→scenes, AI voiceover, music & SFX mixing, auto-captions, HD export.
                 Build &amp; preview free; only charged from your wallet (compute + 50% service fee, $0.25 minimum) when you export.
-                Includes the SOLACE AI concierge for guidance.
+                Includes the ORACLE LUNAR AI concierge for guidance.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -506,7 +506,7 @@ const PortalLandingPage = () => {
               Install in <span className="text-primary">seconds</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              SOLACE installs straight from your browser — no app store, no waiting.
+              ORACLE LUNAR installs straight from your browser — no app store, no waiting.
             </p>
           </div>
 
@@ -537,8 +537,8 @@ const PortalLandingPage = () => {
                 action: () => {
                   if ((navigator as any).share) {
                     (navigator as any).share({
-                      title: "Install SOLACE",
-                      text: "Open this in Safari, tap Share, then 'Add to Home Screen' to install SOLACE.",
+                      title: "Install ORACLE LUNAR",
+                      text: "Open this in Safari, tap Share, then 'Add to Home Screen' to install ORACLE LUNAR.",
                       url: window.location.origin,
                     }).catch(() => {});
                   } else {
@@ -589,7 +589,7 @@ const PortalLandingPage = () => {
               className="shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
             >
               <Download className="mr-2 h-5 w-5" />
-              {isIOS ? "See iOS steps above" : canInstall ? "Install SOLACE now" : "Install (use Chrome/Edge/Safari)"}
+              {isIOS ? "See iOS steps above" : canInstall ? "Install ORACLE LUNAR now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
             {/* Native wrapper download — Portal-specific Play Store package */}
@@ -599,14 +599,14 @@ const PortalLandingPage = () => {
                 <h3 className="font-semibold text-lg">Want the Portal as a real Android app?</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Generate a ready-to-publish Google Play Store wrapper for the SOLACE Portal in seconds — separate from the main SOLACE app.
+                Generate a ready-to-publish Google Play Store wrapper for the ORACLE LUNAR Portal in seconds — separate from the main ORACLE LUNAR app.
               </p>
               <Button
                 variant="outline"
                 size="lg"
                 onClick={() => {
                   const portalUrl = encodeURIComponent(window.location.origin);
-                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("SOLACE Portal")}`);
+                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("ORACLE LUNAR Portal")}`);
                 }}
                 className="border-primary/40 hover:border-primary"
               >
@@ -677,10 +677,10 @@ const PortalLandingPage = () => {
           </h2>
           <div className="space-y-4">
             {[
-              { q: "Do I need to download from an app store?", a: "Not yet. SOLACE installs as a Progressive Web App straight from your browser. Native store builds are in progress." },
-              { q: "Is my data safe?", a: "Yes. SOLACE uses row-level security on every table and 101 AI security guards monitor for anomalies. Your conversations stay yours." },
-              { q: "Will the AI replace therapy or emergency services?", a: "No. SOLACE supports your wellbeing, but the Crisis Hub always points to local emergency services and trained professionals when needed." },
-              { q: "Can I try it before installing?", a: "Yes — tap 'Launch App' to use SOLACE in your browser. Install later if you want it on your home screen." },
+              { q: "Do I need to download from an app store?", a: "Not yet. ORACLE LUNAR installs as a Progressive Web App straight from your browser. Native store builds are in progress." },
+              { q: "Is my data safe?", a: "Yes. ORACLE LUNAR uses row-level security on every table and 101 AI security guards monitor for anomalies. Your conversations stay yours." },
+              { q: "Will the AI replace therapy or emergency services?", a: "No. ORACLE LUNAR supports your wellbeing, but the Crisis Hub always points to local emergency services and trained professionals when needed." },
+              { q: "Can I try it before installing?", a: "Yes — tap 'Launch App' to use ORACLE LUNAR in your browser. Install later if you want it on your home screen." },
               { q: "How do I get help?", a: "Tap the Concierge button (bottom right) any time. I can walk you through every feature." },
             ].map(({ q, a }) => (
               <details
@@ -702,8 +702,8 @@ const PortalLandingPage = () => {
       <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
-            <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
+            <span>© {new Date().getFullYear()} ORACLE LUNAR. All rights reserved.</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-5">
             <a href="/privacy-policy" className="hover:text-primary">Privacy</a>

@@ -184,7 +184,7 @@ const AvatarGeneratorPage = () => {
   const downloadImage = async () => {
     if (!imageUrl) return;
     try {
-      await downloadFileFromUrl(imageUrl, `solace-avatar-${Date.now()}`);
+      await downloadFileFromUrl(imageUrl, `oracle-lunar-avatar-${Date.now()}`);
       toast.success("Avatar downloaded");
     } catch (error) {
       console.error(error);
