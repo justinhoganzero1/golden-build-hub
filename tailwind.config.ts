@@ -109,15 +109,15 @@ export default {
         },
         "living-breathe": {
           "0%, 100%": { transform: "scale(1) translateY(0)" },
-          "50%": { transform: "scale(1.015) translateY(-1px)" },
+          "50%": { transform: "scale(1.04) translateY(-2px)" },
         },
         "living-sway": {
-          "0%, 100%": { transform: "rotate(-0.4deg)" },
-          "50%": { transform: "rotate(0.4deg)" },
+          "0%, 100%": { transform: "rotate(-1.2deg)" },
+          "50%": { transform: "rotate(1.2deg)" },
         },
         "blink": {
-          "0%, 92%, 100%": { opacity: "0", transform: "scaleY(0)" },
-          "94%, 96%": { opacity: "0.85", transform: "scaleY(1)" },
+          "0%, 93%, 100%": { opacity: "0", transform: "scaleY(0)" },
+          "95%, 97%": { opacity: "0.9", transform: "scaleY(1)" },
         },
       },
       animation: {

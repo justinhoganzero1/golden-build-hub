@@ -113,9 +113,12 @@ const LivingAvatar = ({
       }
     } catch (err: any) {
       const msg = err?.message ?? "Generation failed";
-      if (msg.toLowerCase().includes("insufficient") || msg.includes("402")) {
+      const lower = msg.toLowerCase();
+      if (lower.includes("insufficient") || msg.includes("402")) {
         toast.error("Wallet balance too low. Top up to bring your avatar to life.");
         navigate("/wallet");
+      } else if (lower.includes("credit") || lower.includes("runway")) {
+        toast.error("Runway video credits are exhausted. The owner needs to top up the Runway account.");
       } else {
         toast.error("Couldn't animate avatar. Try again in a moment.");
       }
