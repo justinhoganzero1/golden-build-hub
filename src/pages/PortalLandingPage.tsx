@@ -113,6 +113,11 @@ const PortalLandingPage = () => {
   }, []);
 
   const handleInstall = async (platform: InstallPlatform = detectInstallPlatform()) => {
+    // Force registration before allowing the app to be downloaded/installed.
+    if (!user) {
+      navigate("/sign-in?redirect=/");
+      return;
+    }
     trackInstallEvent("click", platform);
     const outcome = await install();
     if (outcome === "unavailable") {

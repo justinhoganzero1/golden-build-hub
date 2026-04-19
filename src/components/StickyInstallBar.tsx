@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Download, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useAuth } from "@/contexts/AuthContext";
 import { trackInstallEvent, detectInstallPlatform } from "@/lib/installAnalytics";
 
 /**
@@ -12,6 +14,8 @@ import { trackInstallEvent, detectInstallPlatform } from "@/lib/installAnalytics
  */
 const StickyInstallBar = () => {
   const { canInstall, isStandalone, install } = usePWAInstall();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(true);
   const [spotsLeft, setSpotsLeft] = useState(47);
   const platform = detectInstallPlatform();
@@ -30,6 +34,11 @@ const StickyInstallBar = () => {
   if (dismissed || isStandalone) return null;
 
   const handleInstall = async () => {
+    // Require registration before any download/install can happen.
+    if (!user) {
+      navigate("/sign-in?redirect=/");
+      return;
+    }
     trackInstallEvent("click", platform);
     const outcome = await install();
     if (outcome === "unavailable") {

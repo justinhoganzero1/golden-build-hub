@@ -8,8 +8,12 @@ export type AppKey = "app_wrapper" | "app_maker" | "movie_studio";
 export const APP_PRICING: Record<AppKey, { label: string; price: string; amountCents: number }> = {
   app_wrapper: { label: "App Wrapper", price: "$5", amountCents: 500 },
   app_maker: { label: "App Maker", price: "$20", amountCents: 2000 },
-  movie_studio: { label: "Movie Studio Pro", price: "$1", amountCents: 100 },
+  // Movie Studio Pro is free for any signed-in user — no one-time fee.
+  movie_studio: { label: "Movie Studio Pro", price: "Free", amountCents: 0 },
 };
+
+// Apps that no longer require a one-time unlock — every signed-in user gets them.
+const FREE_APPS: AppKey[] = ["movie_studio"];
 
 /**
  * Returns whether the current user owns a one-time unlock for the given app.
@@ -29,7 +33,7 @@ export const useAppUnlock = (appKey: AppKey) => {
       setLoading(false);
       return;
     }
-    if (isAdmin) {
+    if (isAdmin || FREE_APPS.includes(appKey)) {
       setUnlocked(true);
       setLoading(false);
       return;
