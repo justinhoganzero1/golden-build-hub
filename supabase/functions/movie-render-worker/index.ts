@@ -27,8 +27,11 @@ const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
 const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-// SHOTSTACK_ENV = "v1" (production, no watermark) or "stage" (sandbox)
-const SHOTSTACK_ENV = Deno.env.get("SHOTSTACK_ENV") ?? "stage";
+// SHOTSTACK_ENV must be exactly "v1" (production, no watermark) or "stage" (sandbox).
+// Anything else (e.g. someone accidentally pasted an API key here) is rejected and we
+// fall back to "v1" so the API URL stays valid.
+const _rawEnv = (Deno.env.get("SHOTSTACK_ENV") ?? "").trim().toLowerCase();
+const SHOTSTACK_ENV = _rawEnv === "v1" || _rawEnv === "stage" ? _rawEnv : "v1";
 // Use the production key when running against v1, otherwise fall back to sandbox key
 const SHOTSTACK_API_KEY =
   SHOTSTACK_ENV === "v1"
@@ -579,7 +582,7 @@ async function shotstackStitch(
   const audioClips = scenes
     .map(s => {
       const c = s.audio
-        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration, volume: 1 }
+        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration }
         : null;
       audioCursor += s.duration;
       return c;
