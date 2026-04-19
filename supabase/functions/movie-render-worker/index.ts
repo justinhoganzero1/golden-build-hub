@@ -27,6 +27,10 @@ const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
 const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const SHOTSTACK_API_KEY = Deno.env.get("SHOTSTACK_API_KEY");
+// Use Shotstack sandbox by default; switch to "v1" for production
+const SHOTSTACK_ENV = Deno.env.get("SHOTSTACK_ENV") ?? "stage";
+const SHOTSTACK_BASE = `https://api.shotstack.io/edit/${SHOTSTACK_ENV}`;
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -91,6 +95,7 @@ async function runJob(job: any): Promise<any> {
   switch (job.job_type) {
     case "video": return await renderVideo(job);
     case "audio": return await renderAudio(job);
+    case "lip_sync": return await lipSyncScene(job);
     case "upscale_4k": return await upscale(job, 4);
     case "upscale_8k": return await upscale(job, 8);
     case "stitch": return await stitchProject(job);
