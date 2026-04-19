@@ -209,9 +209,7 @@ const PortalLandingPage = () => {
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 relative">
-            <span aria-hidden="true" className="absolute -top-3 -left-2 text-base rotate-[-18deg] select-none">🥚</span>
-            <span aria-hidden="true" className="absolute -top-2 -right-2 text-base rotate-[14deg] select-none">🐣</span>
+          <div className="flex items-center gap-2">
             <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="solace-wordmark text-lg">SOLACE</span>
           </div>
@@ -703,11 +701,7 @@ const PortalLandingPage = () => {
       {/* ── Footer ────────────────────────────── */}
       <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2 relative">
-            <span aria-hidden="true" className="absolute -top-3 -left-3 text-lg rotate-[-20deg] select-none">🥚</span>
-            <span aria-hidden="true" className="absolute -top-4 left-3 text-base rotate-[8deg] select-none">🐰</span>
-            <span aria-hidden="true" className="absolute -bottom-2 left-6 text-base rotate-[18deg] select-none">🥚</span>
-            <span aria-hidden="true" className="absolute -top-3 right-2 text-lg rotate-[15deg] select-none">🐣</span>
+          <div className="flex items-center gap-2">
             <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
