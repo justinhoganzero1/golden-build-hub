@@ -202,9 +202,18 @@ const PortalTutorWidget = () => {
       return;
     }
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setMessages((p) => [...p, { role: "assistant", content: "I need microphone access to listen. Please allow it in your browser settings." }]);
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach((t) => t.stop());
+    } catch (err: any) {
+      const name = err?.name || "";
+      const blocked = name === "NotAllowedError" || name === "SecurityError";
+      const missing = name === "NotFoundError" || name === "OverconstrainedError";
+      const msg = blocked
+        ? "Microphone is blocked for this site. Click the 🔒 lock icon in your browser's address bar → Site settings → set Microphone to Allow → reload the page."
+        : missing
+        ? "No microphone detected. Check your laptop's input device in system settings, then try again."
+        : "Microphone access failed. Please click Allow when your browser asks.";
+      setMessages((p) => [...p, { role: "assistant", content: msg }]);
       return;
     }
     const rec = new SR();
