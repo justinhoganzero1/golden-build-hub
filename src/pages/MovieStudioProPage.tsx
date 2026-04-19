@@ -116,7 +116,7 @@ const MovieStudioProPage = () => {
         <Button
           onClick={() => setDirectorOpen(true)}
           size="lg"
-          className="w-full h-16 text-base font-bold bg-gradient-to-r from-amber-500 via-primary to-amber-500 hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
         >
           <Wand2 className="w-6 h-6 mr-3" /> Tell Oracle Your Movie (recommended)
         </Button>
