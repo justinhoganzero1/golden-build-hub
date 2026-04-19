@@ -310,7 +310,21 @@ const PortalTutorWidget = () => {
             )}
           </div>
 
-          {messages.length <= 1 && (
+          {gated && (
+            <div className="px-4 pb-3 pt-1 flex flex-col gap-2 border-t border-border bg-primary/5">
+              <Button
+                onClick={() => navigate("/sign-in")}
+                className="w-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold shadow-[0_0_20px_hsl(var(--primary)/0.5)]"
+              >
+                Become a Member — it's free
+              </Button>
+              <p className="text-[11px] text-center text-muted-foreground">
+                Membership unlocks the Concierge, Crisis Hub, Safety Center & every tool.
+              </p>
+            </div>
+          )}
+
+          {!gated && messages.length <= 1 && (
             <div className="px-4 pb-2 flex flex-wrap gap-2">
               {SUGGESTED.map((s) => (
                 <button
