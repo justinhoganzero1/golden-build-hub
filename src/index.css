@@ -491,29 +491,78 @@ All colors MUST be HSL.
 }
 
 
-/* MLSC: Bright pink glow under every tab (Radix tabs + nav tab buttons) */
-@keyframes pinkTabPulse {
+/* ============================================================
+   GLOBAL: Bright pink neon "cushion of light" UNDER every tab.
+   Applies app-wide to all tab-like elements:
+   - Radix Tabs (TabsTrigger -> role="tab")
+   - ARIA tabs (role="tab")
+   - Tablists (role="tablist") child buttons
+   - Custom .tab-pink-glow opt-in class
+   - Segmented / nav-tab buttons (data-tab, [data-slot="tab"])
+   ============================================================ */
+@keyframes pinkTabCushion {
   0%, 100% {
-    box-shadow:
-      0 6px 18px -2px hsl(320 100% 60% / 0.85),
-      0 2px 10px hsl(320 100% 70% / 0.7),
-      0 0 24px hsl(320 100% 65% / 0.55);
+    opacity: 0.85;
+    transform: translateX(-50%) scaleX(1) scaleY(1);
+    filter: blur(10px);
   }
   50% {
-    box-shadow:
-      0 8px 26px -2px hsl(320 100% 65% / 1),
-      0 4px 16px hsl(320 100% 75% / 0.9),
-      0 0 36px hsl(320 100% 70% / 0.8);
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1.05) scaleY(1.15);
+    filter: blur(13px);
   }
 }
 
 [role="tab"],
-[data-state][role="tab"],
+[role="tablist"] > button,
+[role="tablist"] > a,
+[data-slot="tab"],
+[data-tab],
 .tab-pink-glow {
   position: relative;
+  z-index: 0;
 }
 
+/* The pink cushion of light — a soft wide pad of glow sitting UNDER the tab */
+[role="tab"]::before,
+[role="tablist"] > button::before,
+[role="tablist"] > a::before,
+[data-slot="tab"]::before,
+[data-tab]::before,
+.tab-pink-glow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 92%;
+  height: 70%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at center,
+    hsl(320 100% 70% / 0.95) 0%,
+    hsl(325 100% 60% / 0.75) 35%,
+    hsl(330 100% 55% / 0.45) 65%,
+    transparent 85%
+  );
+  box-shadow:
+    0 0 18px hsl(320 100% 65% / 0.95),
+    0 0 36px hsl(325 100% 60% / 0.85),
+    0 0 64px hsl(330 100% 55% / 0.65),
+    0 0 110px hsl(320 100% 60% / 0.45);
+  filter: blur(10px);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: -1;
+  animation: pinkTabCushion 2.4s ease-in-out infinite;
+}
+
+/* Crisp neon underline accent on top of the cushion */
 [role="tab"]::after,
+[role="tablist"] > button::after,
+[role="tablist"] > a::after,
+[data-slot="tab"]::after,
+[data-tab]::after,
 .tab-pink-glow::after {
   content: "";
   position: absolute;
@@ -523,21 +572,42 @@ All colors MUST be HSL.
   height: 3px;
   border-radius: 999px;
   background: linear-gradient(90deg,
-    hsl(320 100% 70%) 0%,
+    hsl(320 100% 75%) 0%,
     hsl(330 100% 65%) 50%,
-    hsl(320 100% 70%) 100%);
+    hsl(320 100% 75%) 100%);
   box-shadow:
-    0 0 8px hsl(320 100% 65% / 0.9),
-    0 0 18px hsl(320 100% 60% / 0.8),
-    0 0 32px hsl(320 100% 55% / 0.6);
-  opacity: 0.85;
+    0 0 10px hsl(320 100% 70% / 1),
+    0 0 22px hsl(320 100% 60% / 0.9),
+    0 0 38px hsl(320 100% 55% / 0.7);
+  opacity: 0.95;
   pointer-events: none;
-  animation: pinkTabPulse 2.4s ease-in-out infinite;
+}
+
+/* Active tab gets a brighter, fuller cushion */
+[role="tab"][data-state="active"]::before,
+[data-slot="tab"][data-state="active"]::before,
+[data-tab][aria-selected="true"]::before,
+.tab-pink-glow[data-state="active"]::before {
+  opacity: 1;
+  width: 100%;
+  height: 85%;
+  box-shadow:
+    0 0 24px hsl(320 100% 70% / 1),
+    0 0 48px hsl(325 100% 60% / 0.95),
+    0 0 90px hsl(330 100% 55% / 0.8),
+    0 0 140px hsl(320 100% 60% / 0.55);
 }
 
 [role="tab"][data-state="active"]::after,
+[data-slot="tab"][data-state="active"]::after,
+[data-tab][aria-selected="true"]::after,
 .tab-pink-glow[data-state="active"]::after {
   opacity: 1;
   height: 4px;
   bottom: -4px;
+}
+
+/* Ensure tab containers don't clip the glow */
+[role="tablist"] {
+  overflow: visible !important;
 }
