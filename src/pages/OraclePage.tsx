@@ -13,6 +13,7 @@ import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPr
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
 import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
+import LivingAvatar from "@/components/LivingAvatar";
 
 interface Message {
   id: string;
