@@ -133,7 +133,10 @@ const LivingAvatar = ({
     : intensity === "strong" ? "animate-living-strong"
     : "animate-living";
 
-  const activeVideo = walkingVideoUrl ?? lipsyncUrl;
+  // Priority: just-generated walking clip > lipsync > active banked Oracle GIF
+  const activeVideo = walkingVideoUrl ?? lipsyncUrl ?? activeGif?.gif_url ?? null;
+  const loopVideo = !!(walkingVideoUrl || activeGif?.gif_url);
+  const muteVideo = !!(walkingVideoUrl || activeGif?.gif_url);
 
   return (
     <div className={`relative inline-block ${className}`}>
