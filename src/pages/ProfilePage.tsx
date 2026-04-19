@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import LivingAvatar from "@/components/LivingAvatar";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { moderatePrompt } from "@/lib/contentSafety";
 
@@ -134,7 +135,9 @@ const ProfilePage = () => {
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">
             {profileAvatar ? (
-              <img src={profileAvatar} alt="Profile avatar" onClick={() => setShowEnlarged(true)} className="w-24 h-24 rounded-full object-cover border-2 border-primary cursor-pointer hover:scale-105 transition-transform" />
+              <div onClick={() => setShowEnlarged(true)} className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary cursor-pointer hover:scale-105 transition-transform">
+                <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar" enableWalking walkingPrompt="the person turning their head and smiling warmly, gentle natural movement" />
+              </div>
             ) : (
               <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" onClick={() => setShowEnlarged(true)}>
                 <User className="w-10 h-10 text-primary" />
@@ -269,7 +272,9 @@ const ProfilePage = () => {
       <Dialog open={showEnlarged} onOpenChange={setShowEnlarged}>
         <DialogContent className="max-w-sm bg-background border-primary/30 flex items-center justify-center p-6">
           {profileAvatar ? (
-            <img src={profileAvatar} alt="Profile avatar enlarged" className="w-72 h-72 rounded-full object-cover border-4 border-primary animate-scale-in" />
+            <div className="w-72 h-72 rounded-full overflow-hidden border-4 border-primary animate-scale-in">
+              <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar enlarged" intensity="strong" enableWalking walkingPrompt="the person smiling and gesturing naturally, cinematic portrait motion" />
+            </div>
           ) : (
             <div className="w-72 h-72 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center animate-scale-in">
               <User className="w-24 h-24 text-primary" />

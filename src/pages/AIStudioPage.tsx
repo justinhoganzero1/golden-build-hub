@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import PaywallGate from "@/components/PaywallGate";
+import LivingAvatar from "@/components/LivingAvatar";
 
 // Realistic 8K avatar imports
 import execMale from "@/assets/avatars/exec-male.jpg";
@@ -258,7 +259,12 @@ const AIStudioPage = () => {
                 className="w-24 h-24 rounded-full overflow-hidden shadow-lg"
                 style={{ border: `3px solid ${selectedAvatar.color}`, boxShadow: `0 0 30px ${selectedAvatar.color}40` }}
               >
-                <img src={getAppearance(selectedAvatar.appearanceId).img} alt={selectedAvatar.name} className="w-full h-full object-cover" loading="lazy" width={512} height={512} />
+                <LivingAvatar
+                  imageUrl={getAppearance(selectedAvatar.appearanceId).img}
+                  alt={selectedAvatar.name}
+                  enableWalking
+                  walkingPrompt={`${selectedAvatar.name} the ${selectedAvatar.field}, walking forward confidently with natural gestures`}
+                />
               </div>
               <p className="mt-2 text-sm font-bold text-foreground">{selectedAvatar.name}</p>
               <p className="text-[10px] text-muted-foreground">{selectedAvatar.field}</p>
