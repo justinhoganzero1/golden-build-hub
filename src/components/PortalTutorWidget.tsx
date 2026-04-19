@@ -56,6 +56,8 @@ const PortalTutorWidget = () => {
   const [voiceOn, setVoiceOn] = useState(true);
   const [micPermission, setMicPermission] = useState<MicPermissionState>("unknown");
   const [inputLevel, setInputLevel] = useState(0);
+  const [speechLevel, setSpeechLevel] = useState(0);
+  const [speaking, setSpeaking] = useState(false);
   const { isMuted } = useMute();
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
