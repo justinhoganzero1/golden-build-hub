@@ -68,7 +68,13 @@ const SignInPage = () => {
           sessionStorage.setItem("admin-fresh-login", "1");
           sessionStorage.removeItem("admin-pending-login");
         }
-        navigate(redirectPath);
+        // Admin auto-routes to owner dashboard unless an explicit redirect was given.
+        const isAdminEmail = email.trim().toLowerCase() === ownerEmail;
+        const finalPath =
+          isAdminEmail && (redirectPath === "/dashboard" || redirectPath === "/")
+            ? "/owner-dashboard"
+            : redirectPath;
+        navigate(finalPath);
       }
     } catch (error: any) {
       toast.error(error.message);
