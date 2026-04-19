@@ -167,6 +167,7 @@ const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
+const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
 const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
@@ -263,7 +264,7 @@ const App = () => (
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="SOLACE Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/movie-studio-pro" element={<RequireAuth><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/movie-studio-pro" element={<RequireAuth><AppUnlockGate appKey="movie_studio"><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-chat-companion" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-friend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
