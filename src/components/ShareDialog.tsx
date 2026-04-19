@@ -140,14 +140,35 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     void robustOpen(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`);
     toast.success("Opening WhatsApp…");
   };
-  const shareFacebook = () => {
-    void robustOpen(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`);
+  const blockedProviderFallback = async (provider: string) => {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await (navigator as any).share({ title, text: shareText, url: shareUrl });
+        toast.success(`Shared via your device — choose ${provider} if it is available.`);
+        return;
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+
+    const ok = await robustCopy(`${shareText} ${shareUrl}`);
+    if (ok) {
+      toast.success(`${provider} is blocked here — the share text was copied so you can paste it anywhere.`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error(`${provider} is blocked here. Copy the link manually below.`);
+    }
   };
-  const shareTwitter = () => {
-    void robustOpen(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`);
+
+  const shareFacebook = async () => {
+    await blockedProviderFallback("Facebook");
   };
-  const shareTelegram = () => {
-    void robustOpen(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`);
+  const shareTwitter = async () => {
+    await blockedProviderFallback("Twitter/X");
+  };
+  const shareTelegram = async () => {
+    await blockedProviderFallback("Telegram");
   };
 
   const nativeShare = async () => {
@@ -224,6 +245,10 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">Telegram</span>
             </button>
           </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Facebook, Twitter/X, and Telegram are blocked in some browsers/devices, so those buttons now fall back to your share sheet or copy-ready text.
+          </p>
 
           {/* Email */}
           <div className="rounded-xl bg-card border border-border p-3 space-y-2">
