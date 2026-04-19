@@ -441,3 +441,23 @@ All colors MUST be HSL.
   0%, 100% { transform: scale(1); filter: saturate(1); }
   50%      { transform: scale(1.025); filter: saturate(1.2); }
 }
+
+/* ===== Movie Studio Pro: blue borders override =====
+   Visual-only — repaints any primary/amber/orange/yellow border within the
+   Movie Studio surfaces (page wrapper + Movie Studio dialog) to a calm blue.
+   Does NOT change theme tokens, render logic, or any in-flight movie generation. */
+.movie-studio-blue-borders [class*="border-primary"],
+.movie-studio-blue-borders [class*="border-amber"],
+.movie-studio-blue-borders [class*="border-orange"],
+.movie-studio-blue-borders [class*="border-yellow"],
+[data-movie-studio-dialog] [class*="border-primary"],
+[data-movie-studio-dialog] [class*="border-amber"],
+[data-movie-studio-dialog] [class*="border-orange"],
+[data-movie-studio-dialog] [class*="border-yellow"] {
+  border-color: hsl(210 90% 55% / 0.55) !important;
+}
+.movie-studio-blue-borders .border,
+[data-movie-studio-dialog] .border {
+  /* leave neutral .border untouched */
+}
+
