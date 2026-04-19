@@ -457,15 +457,15 @@ Everything else is OPEN:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // SPEED: flash-lite is ~3x faster TTFB than flash-preview for chat-style replies
-        model: "google/gemini-2.5-flash-lite",
+        // Owner gets the stronger model + more headroom; public users keep flash-lite for speed.
+        model: userEmail?.toLowerCase() === ADMIN_EMAIL ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: personalitySystem },
           ...messages,
         ],
         stream: true,
-        // SPEED: cap output so Oracle doesn't ramble — faster end-to-end speech
-        max_tokens: 400,
+        // SPEED: cap output so Oracle doesn't ramble — owner gets more room for R-rated / dev work.
+        max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 400,
       }),
     });
 
