@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -41,14 +41,14 @@ const LivingGifStudioPage = () => {
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const failedToastIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const activeGif = gifs.find((g) => ["queued", "running", "generating", "upscaling"].includes(g.status));
-    if (!activeGif) return;
-
-    if (activeGif.status === "failed" && activeGif.error_message) {
-      toast.error(activeGif.error_message);
-    }
+    gifs.forEach((gif) => {
+      if (gif.status !== "failed" || !gif.error_message || failedToastIds.current.has(gif.id)) return;
+      failedToastIds.current.add(gif.id);
+      toast.error(gif.error_message);
+    });
   }, [gifs]);
 
   const picked = avatarOptions.find((a) => a.id === pickedId) ?? avatarOptions[0];
