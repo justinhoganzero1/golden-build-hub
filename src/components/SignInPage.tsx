@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignInPage = () => {
+  const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -17,6 +19,14 @@ const SignInPage = () => {
   const redirectPath = searchParams.get("redirect") || "/dashboard";
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
+    const nextPath = isOwner ? "/owner-dashboard" : redirectPath;
+    navigate(nextPath, { replace: true });
+  }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +94,7 @@ const SignInPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
@@ -91,6 +102,7 @@ const SignInPage = () => {
   };
 
   const handleAppleSignIn = async () => {
+    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
     const result = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
