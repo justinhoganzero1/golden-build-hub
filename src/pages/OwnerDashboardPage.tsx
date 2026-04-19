@@ -12,6 +12,7 @@ import StripeRevenuePanel from "@/components/StripeRevenuePanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { useNavigate } from "react-router-dom";
 import { useAllUserMediaPaginated } from "@/hooks/useAllUserMedia";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ import AdvertiserInquiriesPanel from "@/components/admin/AdvertiserInquiriesPane
 
 const OwnerDashboardPage = () => {
   const { user, loading } = useAuth();
+  const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
   // Web Crawler state (admin growth engine)
@@ -136,32 +138,10 @@ const OwnerDashboardPage = () => {
 
   // Hardened admin gate:
   // 1) Hard email allowlist — ONLY justinbretthogan@gmail.com is permitted, no matter what.
-  // 2) On the public web (not the installed native app), force a fresh sign-in every visit
-  //    by signing out any cached session and sending the visitor to /sign-in.
-  //    This prevents the admin tab from "auto-opening" on the website.
+  // 2) Wait for auth restoration before rendering admin-only panels.
   const ADMIN_EMAIL = "justinbretthogan@gmail.com";
   useEffect(() => {
-    if (loading || adminLoading) return;
-
-    const isNativeApp =
-      typeof window !== "undefined" &&
-      // Capacitor injects this global on the installed Android/iOS app
-      (!!(window as any).Capacitor?.isNativePlatform?.() ||
-        // Standalone PWA also counts as installed
-        window.matchMedia?.("(display-mode: standalone)")?.matches);
-
-    // PUBLIC WEB → always force a fresh login. Never auto-open the admin dashboard.
-    if (!isNativeApp) {
-      const sessionFlag = sessionStorage.getItem("admin-fresh-login");
-      if (!sessionFlag) {
-        // Wipe any cached Supabase session so the website can never auto-sign-in to admin
-        supabase.auth.signOut().finally(() => {
-          sessionStorage.setItem("admin-pending-login", "1");
-          navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });
-        });
-        return;
-      }
-    }
+    if (loading || adminLoading || !isReady) return;
 
     if (!user) {
       navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });
@@ -181,7 +161,7 @@ const OwnerDashboardPage = () => {
     if (!isAdmin) {
       navigate("/dashboard", { replace: true });
     }
-  }, [loading, adminLoading, isAdmin, user, navigate]);
+  }, [loading, adminLoading, isAdmin, user, navigate, isReady]);
 
   useEffect(() => {
     (async () => {
@@ -251,8 +231,15 @@ const OwnerDashboardPage = () => {
         // Until a dedicated admin counter exists, fall back to 0 — Stripe dashboard is the source of truth.
         let paidUpgrades = 0;
         try {
-          const { data } = await supabase.functions.invoke("check-subscription", { body: { admin_count: true } });
-          if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+          if (accessToken) {
+            const { data } = await supabase.functions.invoke("check-subscription", {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: { admin_count: true },
+            });
+            if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+          }
         } catch { /* ignore — endpoint may not expose admin counts yet */ }
         if (!cancelled) {
           setLiveTraffic({
@@ -266,7 +253,7 @@ const OwnerDashboardPage = () => {
     load();
     const i = window.setInterval(load, 30000);
     return () => { cancelled = true; window.clearInterval(i); };
-  }, [isAdmin]);
+  }, [isAdmin, accessToken]);
 
   // Load traffic sources (admin only) — aggregates utm_source/referrer for the bar graph
   useEffect(() => {
@@ -312,7 +299,7 @@ const OwnerDashboardPage = () => {
     setChangingPassword(false);
   };
 
-  if (loading || adminLoading || !isAdmin) {
+  if (loading || adminLoading || !isReady || !accessToken || !isAdmin) {
     return null;
   }
 
