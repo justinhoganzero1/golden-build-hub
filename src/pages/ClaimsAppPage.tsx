@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shield, Sparkles, Download, Phone, FileText, Lock, ArrowRight, Send, Loader2, CheckCircle2, PhoneCall } from "lucide-react";
-import oracle-lunarLogo from "@/assets/oracle-lunar-logo.png";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -104,7 +104,7 @@ const ClaimsAppPage = () => {
       {/* Header */}
       <header className="border-b border-primary/20 bg-card/60 backdrop-blur sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <img src={oracle-lunarLogo} alt="ORACLE LUNAR Claims" className="w-9 h-9 rounded-lg" />
+          <img src={oracleLunarLogo} alt="ORACLE LUNAR Claims" className="w-9 h-9 rounded-lg" />
           <div className="flex-1">
             <h1 className="text-sm font-bold text-primary leading-tight">ORACLE LUNAR Claims</h1>
             <p className="text-[10px] text-muted-foreground">Free AU claims helper · Powered by Oracle AI</p>

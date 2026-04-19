@@ -44,8 +44,8 @@ import StickyInstallBar from "@/components/StickyInstallBar";
 import SocialProofBar from "@/components/SocialProofBar";
 import PartyBanner from "@/components/PartyBanner";
 import ExitIntentCapture from "@/components/ExitIntentCapture";
-import oracle-lunarBanner from "@/assets/oracle-lunar-banner.jpg";
-import oracle-lunarLogo from "@/assets/oracle-lunar-logo.png";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
@@ -210,7 +210,7 @@ const PortalLandingPage = () => {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={oracle-lunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="oracle-lunar-wordmark text-lg">ORACLE LUNAR</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -242,7 +242,7 @@ const PortalLandingPage = () => {
       <section className="relative overflow-hidden">
         {/* Banner image — same as the app's IntroSplash */}
         <img
-          src={oracle-lunarBanner}
+          src={oracleLunarBanner}
           alt="ORACLE LUNAR cinematic banner"
           className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
@@ -288,7 +288,7 @@ const PortalLandingPage = () => {
               }}
             />
             <img
-              src={oracle-lunarLogo}
+              src={oracleLunarLogo}
               alt="ORACLE LUNAR shield logo"
               className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(0,191,255,0.6)]"
             />
@@ -702,7 +702,7 @@ const PortalLandingPage = () => {
       <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <img src={oracle-lunarLogo} alt="ORACLE LUNAR" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} ORACLE LUNAR. All rights reserved.</span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-5">

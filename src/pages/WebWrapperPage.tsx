@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import oracle-lunarLogo from "@/assets/oracle-lunar-logo.png";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import { MASTER_AI_AVATAR as aiAvatar } from "@/assets/master-ai-avatar";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 
@@ -168,7 +168,7 @@ const WebWrapperPage = () => {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src={oracle-lunarLogo} alt="ORACLE LUNAR" className="h-8 w-8 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR" className="h-8 w-8 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="font-bold tracking-[0.2em] text-primary">ORACLE LUNAR</span>
           </button>
           <Button variant="ghost" size="sm" onClick={() => navigate("/")}>

@@ -11,7 +11,7 @@ import {
   Bell, Map, Smartphone, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock
 } from "lucide-react";
-import oracle-lunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import PartyBanner from "@/components/PartyBanner";
@@ -128,7 +128,7 @@ const DashboardPage = () => {
       <WelcomeModal />
       {/* Banner */}
       <div className="w-full overflow-hidden">
-        <img src={oracle-lunarBanner} alt="Oracle Lunar Banner" className="w-full h-40 object-cover" />
+        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-40 object-cover" />
       </div>
 
       {/* Welcome + Security Shield + Share */}

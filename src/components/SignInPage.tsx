@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import oracle-lunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 
 const SignInPage = () => {
   const [email, setEmail] = useState("");
@@ -94,7 +94,7 @@ const SignInPage = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-4 px-4">
       <div className="w-full max-w-md overflow-hidden rounded-xl mb-6">
-        <img src={oracle-lunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
+        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
       </div>
 
       <div className="w-full max-w-md border border-border rounded-2xl p-8 bg-card animate-slide-up">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
-import oracle-lunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 interface IntroSplashProps {
@@ -33,7 +33,7 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
     >
       {/* Full-bleed banner background */}
       <img
-        src={oracle-lunarBanner}
+        src={oracleLunarBanner}
         alt="Oracle Lunar Banner"
         className="absolute inset-0 w-full h-full object-cover"
       />
