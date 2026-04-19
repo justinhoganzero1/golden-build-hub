@@ -225,19 +225,42 @@ async function processOne(): Promise<{ processed: boolean; result?: unknown }> {
     throw new Error(`unknown pipeline_stage: ${stage}`);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    log("step error", { gif_id: gif.gif_id, msg });
-    const isFinal = (gif.attempts ?? 0) + 1 >= 3;
+    const lowerMsg = msg.toLowerCase();
+    const failedOnSubmit = !gif.pipeline_stage || gif.pipeline_stage === "queued";
+    const providerFatal =
+      lowerMsg.includes("not enough credits") ||
+      lowerMsg.includes("insufficient") ||
+      lowerMsg.includes("unauthorized") ||
+      lowerMsg.includes("invalid api key") ||
+      lowerMsg.includes("payment required") ||
+      lowerMsg.includes("forbidden");
+    const isFinal = failedOnSubmit || providerFatal || (gif.attempts ?? 0) >= 3;
+
+    log("step error", {
+      gif_id: gif.gif_id,
+      msg,
+      failedOnSubmit,
+      providerFatal,
+      attempts: gif.attempts,
+      final: isFinal,
+    });
+
     await supa.from("living_gifs").update({
-      status: isFinal ? "failed" : "queued",
+      status: isFinal
+        ? "failed"
+        : gif.pipeline_stage === "replicate_pending"
+          ? "upscaling"
+          : "queued",
       error_message: msg.slice(0, 500),
-      pipeline_stage: isFinal ? "failed" : null,
-      runway_task_id: isFinal ? gif.runway_task_id : null,
-      replicate_prediction_id: isFinal ? gif.replicate_prediction_id : null,
+      pipeline_stage: isFinal ? "failed" : gif.pipeline_stage,
+      runway_task_id: isFinal && failedOnSubmit ? null : gif.runway_task_id,
+      replicate_prediction_id: isFinal && failedOnSubmit ? null : gif.replicate_prediction_id,
       locked_at: null,
       locked_by: null,
       last_progress_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq("id", gif.gif_id);
+
     return { processed: true, result: { error: msg, gif_id: gif.gif_id, final: isFinal } };
   }
 }
