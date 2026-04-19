@@ -21,27 +21,12 @@ export const useAppUnlock = (appKey: AppKey) => {
   const [unlocked, setUnlocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // FREE ACCESS MODE: All one-time app unlocks ($1 / $5 / $20 gates) are disabled.
+  // Every signed-in user automatically gets full access to gated apps. Anonymous users still gated.
   const refresh = useCallback(async () => {
-    if (!user) {
-      setUnlocked(false);
-      setLoading(false);
-      return;
-    }
-    if (isAdmin) {
-      setUnlocked(true);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const { data } = await supabase
-      .from("app_unlocks")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("app_key", appKey)
-      .maybeSingle();
-    setUnlocked(!!data);
+    setUnlocked(!!user);
     setLoading(false);
-  }, [user, isAdmin, appKey]);
+  }, [user]);
 
   useEffect(() => {
     refresh();
