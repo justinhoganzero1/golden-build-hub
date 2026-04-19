@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2, Wand2 } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,12 +10,20 @@ import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAppUnlock } from "@/hooks/useAppUnlock";
+import { getMovieLimits } from "@/lib/moviePaywall";
 
 const MIN_BALANCE_CENTS = 25;
 
 const MovieStudioProPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { effectiveTier } = useSubscription();
+  const { isAdmin } = useIsAdmin();
+  const { unlocked: ownsMovieStudio } = useAppUnlock("movie_studio");
+  const limits = getMovieLimits(effectiveTier, isAdmin, ownsMovieStudio);
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -77,9 +85,40 @@ const MovieStudioProPage = () => {
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             <Lock className="w-3 h-3 inline mr-1" />
-            Each export is charged from your wallet at <strong>compute cost + 50% service fee</strong>.
-            Pricing: <strong>~$0.12 per scene</strong> + $0.15 HD + $0.05 captions. Minimum $0.25/render.
+            Every export is billed at <strong>provider cost + 5% platform fee</strong> (Runway video, ElevenLabs voiceover) plus a small Lovable compute charge. Minimum $0.25/render. You see the exact total before exporting — no surprise fees.
           </p>
+        </Card>
+
+        {/* Tier matrix — drives upsells */}
+        <Card className="p-4 bg-card border-primary/20">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Crown className="w-4 h-4 text-primary" /> Your plan: {limits.label}
+            </h3>
+            {!ownsMovieStudio && !isAdmin && (
+              <Button size="sm" variant="outline" onClick={() => navigate("/subscribe")}>
+                Upgrade
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+            <FeatureRow ok label={`Up to ${limits.maxDurationMin} min`} />
+            <FeatureRow ok={limits.allowHD} label="HD 1080p export" />
+            <FeatureRow ok={limits.allowCaptions} label="Burn-in captions" />
+            <FeatureRow ok={limits.allowUpscale4K} label="4K/8K upscale" />
+            <FeatureRow ok={limits.allowYouTubeOAuth} label="1-click YouTube" />
+            <FeatureRow ok label="Download MP4" />
+            <FeatureRow ok label="22-Q Oracle director" />
+            <FeatureRow ok label="Wallet pay-per-render" />
+          </div>
+          {!ownsMovieStudio && !isAdmin && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                💎 <strong className="text-primary">$1 Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render wallet charges still apply (we have to pay Runway + ElevenLabs).{" "}
+                <button onClick={() => navigate("/subscribe")} className="text-primary underline">See plans</button>
+              </p>
+            </div>
+          )}
         </Card>
 
         {/* Pricing breakdown */}
@@ -149,5 +188,12 @@ const MovieStudioProPage = () => {
     </>
   );
 };
+
+const FeatureRow = ({ ok, label }: { ok: boolean; label: string }) => (
+  <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${ok ? "bg-primary/10" : "bg-muted/40 opacity-60"}`}>
+    {ok ? <Check className="w-3 h-3 text-primary shrink-0" /> : <X className="w-3 h-3 text-muted-foreground shrink-0" />}
+    <span className={ok ? "text-foreground" : "text-muted-foreground line-through"}>{label}</span>
+  </div>
+);
 
 export default MovieStudioProPage;

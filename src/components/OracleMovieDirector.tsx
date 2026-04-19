@@ -1,5 +1,9 @@
 // Oracle Movie Director — runs the 22-question movie interview before opening the studio.
 // Modes: voice (Oracle speaks each question), form (all 22 visible), hybrid (default — voice + visible answer box).
+//
+// PAYWALL: Movie length is capped by the user's subscription tier. Free=2min, Starter=5min,
+// Full Access=10min, Pro/Quarterly+=30min, Lifetime/Admin=unlimited. Buying the $1 Movie Studio
+// one-time unlock also lifts caps (handled via useAppUnlock).
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,10 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, MicOff, Sparkles, Wand2, FastForward } from "lucide-react";
+import { Loader2, Mic, MicOff, Sparkles, Wand2, FastForward, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAppUnlock } from "@/hooks/useAppUnlock";
+import { getMovieLimits, tierRequiredForDuration, TIER_UPSELL_LABEL } from "@/lib/moviePaywall";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/movie-director`;
 const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
@@ -38,12 +47,18 @@ interface Props {
 
 export default function OracleMovieDirector({ open, onOpenChange, onComplete }: Props) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { effectiveTier } = useSubscription();
+  const { isAdmin } = useIsAdmin();
+  const { unlocked: ownsMovieStudio } = useAppUnlock("movie_studio");
+  const limits = getMovieLimits(effectiveTier, isAdmin, ownsMovieStudio);
+
   const [mode, setMode] = useState<Mode>("hybrid");
   const [started, setStarted] = useState(false);
 
   // Initial quick prompt
   const [topic, setTopic] = useState("");
-  const [duration, setDuration] = useState(3);
+  const [duration, setDuration] = useState(Math.min(3, limits.maxDurationMin));
 
   // Interview state
   const [known, setKnown] = useState<Record<string, string>>({});
@@ -60,10 +75,14 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
 
   // Pre-fill known facts from SOLACE on open
   useEffect(() => {
+    setDuration((d) => Math.min(d, limits.maxDurationMin));
+  }, [limits.maxDurationMin]);
+
+  // Pre-fill known facts from SOLACE on open
+  useEffect(() => {
     if (!open || !user) return;
     (async () => {
       const k: Record<string, string> = {};
-      // Pull active oracle avatar as the narrator default
       const { data: avatars } = await supabase
         .from("user_avatars")
         .select("name, voice_style, personality")
@@ -74,14 +93,12 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
         const a = avatars[0];
         if (a.voice_style) k.narrator = `${a.voice_style} (${a.name})`;
       }
-      // Pull display name as fallback channel name
       const meta = (user.user_metadata || {}) as any;
       if (meta.full_name || meta.name) k.channel_name = `${meta.full_name || meta.name}'s Channel`;
       setKnown(k);
     })();
   }, [open, user]);
 
-  // Speak helper (uses browser TTS for now — fast, free, no edge function call)
   const speak = (text: string) => {
     if (mode === "form") return;
     try {
@@ -93,7 +110,6 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
     } catch { /* ignore */ }
   };
 
-  // Voice listening helper
   const toggleListen = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Voice input not supported in this browser"); return; }
@@ -113,9 +129,12 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
     setListening(true);
   };
 
-  // Begin interview from quick brief
   const beginInterview = async () => {
     if (!topic.trim()) { toast.error("Tell Oracle what your movie is about first"); return; }
+    if (duration > limits.maxDurationMin) {
+      toast.error(`Your ${limits.label} plan caps movies at ${limits.maxDurationMin} min. Upgrade to unlock longer films.`);
+      return;
+    }
     const seedKnown = { ...known, logline: topic.trim(), duration_min: String(duration) };
     setKnown(seedKnown);
     setStarted(true);
@@ -159,7 +178,6 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
   };
 
   const finishEarly = async () => {
-    // Fill remaining with "(director's choice)" so AI invents
     const filled = { ...answers };
     if (currentField && answerInput.trim()) filled[currentField] = answerInput.trim();
     await finalize(known, filled, true);
@@ -168,12 +186,6 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
   const finalize = async (knownNow: Record<string, string>, answersNow: Record<string, string>, allowGaps = false) => {
     setFinalizing(true);
     try {
-      // If allowGaps, mark unanswered as director's choice so AI invents
-      const merged: Record<string, string> = { ...knownNow, ...answersNow };
-      if (allowGaps) {
-        // movie-director will see them as "answered" and skip them — fill with placeholder
-        // (not strictly needed since "next_question" only asks unanswered, but keeps payload tidy)
-      }
       const r = await fetch(FN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
@@ -185,7 +197,6 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
       toast.success("Your movie is ready — opening Movie Studio");
       onComplete(j as MovieDirectorResult);
       onOpenChange(false);
-      // reset for next time
       setStarted(false);
       setAnswers({});
       setCurrentField(null);
@@ -196,6 +207,13 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
       setFinalizing(false);
     }
   };
+
+  // Build the duration option list, locking ones above tier
+  const durationOptions = [
+    { v: 2,  label: "Short",  sub: "1–3 min"   },
+    { v: 7,  label: "Medium", sub: "3–10 min"  },
+    { v: 20, label: "Long",   sub: "10–30 min" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) window.speechSynthesis?.cancel(); onOpenChange(o); }}>
@@ -213,35 +231,64 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
               Tell Oracle what your movie is about and how long it should be. Oracle will ask up to 22 quick questions, then build your full screenplay, scenes, voiceover, and a YouTube launch package.
             </p>
 
+            {/* Tier badge */}
+            <Card className="p-3 bg-primary/5 border-primary/30 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Crown className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold truncate">{limits.label} plan</p>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Up to {limits.maxDurationMin} min · {limits.allowHD ? "HD" : "SD only"} · {limits.allowCaptions ? "captions" : "no captions"} · {limits.allowUpscale4K ? "4K upscale" : "no 4K"}
+                  </p>
+                </div>
+              </div>
+              {!isAdmin && !ownsMovieStudio && limits.maxDurationMin < 30 && (
+                <Button size="sm" variant="outline" onClick={() => navigate("/subscribe")} className="shrink-0">
+                  Upgrade
+                </Button>
+              )}
+            </Card>
+
             <div className="space-y-2">
               <label className="text-xs font-medium">Movie length</label>
               <div className="grid grid-cols-3 gap-2">
-                {[
-                  { v: 2, label: "Short", sub: "1–3 min" },
-                  { v: 7, label: "Medium", sub: "3–10 min" },
-                  { v: 20, label: "Long", sub: "10–30 min" },
-                ].map(opt => (
-                  <Button
-                    key={opt.v}
-                    variant={duration === opt.v ? "default" : "outline"}
-                    onClick={() => setDuration(opt.v)}
-                    className="h-auto flex-col py-3"
-                  >
-                    <span className="font-bold">{opt.label}</span>
-                    <span className="text-[10px] opacity-70">{opt.sub}</span>
-                  </Button>
-                ))}
+                {durationOptions.map(opt => {
+                  const locked = opt.v > limits.maxDurationMin;
+                  return (
+                    <Button
+                      key={opt.v}
+                      variant={duration === opt.v ? "default" : "outline"}
+                      onClick={() => {
+                        if (locked) {
+                          const need = tierRequiredForDuration(opt.v);
+                          toast.error(`${opt.label} films need ${TIER_UPSELL_LABEL[need]} or higher.`, {
+                            action: { label: "Upgrade", onClick: () => navigate("/subscribe") },
+                          });
+                          return;
+                        }
+                        setDuration(opt.v);
+                      }}
+                      className="h-auto flex-col py-3 relative"
+                    >
+                      <span className="font-bold flex items-center gap-1">
+                        {locked && <Lock className="w-3 h-3" />}
+                        {opt.label}
+                      </span>
+                      <span className="text-[10px] opacity-70">{opt.sub}</span>
+                    </Button>
+                  );
+                })}
               </div>
               <Input
                 type="number"
                 min={1}
-                max={30}
+                max={limits.maxDurationMin}
                 value={duration}
-                onChange={(e) => setDuration(Math.max(1, Math.min(30, Number(e.target.value) || 1)))}
+                onChange={(e) => setDuration(Math.max(1, Math.min(limits.maxDurationMin, Number(e.target.value) || 1)))}
                 className="text-center"
               />
               <p className="text-[10px] text-center text-muted-foreground">
-                Longer films cost more to render — you'll see the exact charge before exporting.
+                Each render is billed from your wallet at <strong>provider cost + 5% platform fee</strong> + a small service charge. You'll see the exact total before exporting.
               </p>
             </div>
 
