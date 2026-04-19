@@ -112,7 +112,7 @@ serve(async (req) => {
       );
     }
 
-    const name = oracleName || "Oracle";
+    const name = oracleName || "Oracle Lunar";
     const memoriesBlock = userMemories || "";
     const showAds = adContext?.showAds ?? true;
     const isSubscribed = adContext?.isSubscribed ?? false;

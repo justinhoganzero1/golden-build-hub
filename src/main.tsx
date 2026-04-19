@@ -40,11 +40,28 @@ const initNative = async () => {
 
 initNative();
 
-// Default Oracle name = "Eric" (per user preference). Users can still rename via Oracle UI.
+// One-time migration: copy any old "solace-*" localStorage keys to the new
+// "oracle-lunar-*" namespace so existing users don't lose their settings.
+try {
+  if (!localStorage.getItem("oracle-lunar-migrated-v1")) {
+    for (let i = 0; i < localStorage.length; i++) {
+      const oldKey = localStorage.key(i);
+      if (!oldKey || !oldKey.startsWith("solace")) continue;
+      const newKey = oldKey.replace(/^solace[_-]?/, "oracle-lunar-").replace(/--/g, "-");
+      const val = localStorage.getItem(oldKey);
+      if (val !== null && localStorage.getItem(newKey) === null) {
+        localStorage.setItem(newKey, val);
+      }
+    }
+    localStorage.setItem("oracle-lunar-migrated-v1", "1");
+  }
+} catch {}
+
+// Default Oracle name = "Oracle Lunar". Users can still rename via Oracle UI.
 try {
   const names = JSON.parse(localStorage.getItem("oracle-lunar-agent-names") || "{}");
   if (!names.Oracle) {
-    names.Oracle = "Eric";
+    names.Oracle = "Oracle Lunar";
     localStorage.setItem("oracle-lunar-agent-names", JSON.stringify(names));
   }
 } catch {}
