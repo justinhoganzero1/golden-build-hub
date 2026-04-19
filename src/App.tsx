@@ -109,6 +109,7 @@ const loaders = {
   "/store/:accountId": () => import("./pages/StorefrontPage"),
   "/advertise": () => import("./pages/AdvertisePage"),
   "/audio-filter": () => import("./pages/AudioFilterPage"),
+  "/living-gif-studio": () => import("./pages/LivingGifStudioPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -176,6 +177,7 @@ const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
 const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
 const AdvertisePage = lazy(loaders["/advertise"]);
 const AudioFilterPage = lazy(loaders["/audio-filter"]);
+const LivingGifStudioPage = lazy(loaders["/living-gif-studio"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -305,6 +307,7 @@ const App = () => (
                   <Route path="/apps" element={<RequireAuth><ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/apps/:slug" element={<RequireAuth><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></RequireAuth>} />
                   <Route path="/advertise" element={<ErrorBoundary pageName="Advertise"><AdvertisePage /></ErrorBoundary>} />
+                  <Route path="/living-gif-studio" element={<RequireAuth><ErrorBoundary pageName="Living GIF Studio"><LivingGifStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

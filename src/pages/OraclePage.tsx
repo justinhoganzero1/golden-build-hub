@@ -1954,6 +1954,12 @@ const OraclePage = () => {
               )}
             </div>
             <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
+            <button
+              onClick={() => navigate("/living-gif-studio")}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
+            >
+              ✨ Living GIF Studio
+            </button>
           </div>
         )}
 

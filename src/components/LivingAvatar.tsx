@@ -5,6 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
 import { hasAccess } from "@/components/PaywallGate";
+import { useActiveOracleGif } from "@/hooks/useLivingGifs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -53,6 +54,7 @@ const LivingAvatar = ({
   const { tier } = useSubscription();
   const { isAdmin } = useIsAdmin();
   const isPreview = usePreviewMode();
+  const { data: activeGif } = useActiveOracleGif();
   const [walkingVideoUrl, setWalkingVideoUrl] = useState<string | null>(null);
   const [lipsyncUrl, setLipsyncUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState<"lipsync" | "walking" | null>(null);
@@ -132,7 +134,10 @@ const LivingAvatar = ({
     : intensity === "strong" ? "animate-living-strong"
     : "animate-living";
 
-  const activeVideo = walkingVideoUrl ?? lipsyncUrl;
+  // Priority: just-generated walking clip > lipsync > active banked Oracle GIF
+  const activeVideo = walkingVideoUrl ?? lipsyncUrl ?? activeGif?.gif_url ?? null;
+  const loopVideo = !!(walkingVideoUrl || activeGif?.gif_url);
+  const muteVideo = !!(walkingVideoUrl || activeGif?.gif_url);
 
   return (
     <div className={`relative inline-block ${className}`}>
@@ -141,9 +146,9 @@ const LivingAvatar = ({
           ref={videoRef}
           src={activeVideo}
           autoPlay
-          loop={!!walkingVideoUrl}
+          loop={loopVideo}
           playsInline
-          muted={!!walkingVideoUrl}
+          muted={muteVideo}
           className="w-full h-full object-cover rounded-[inherit]"
         />
       ) : (
