@@ -489,13 +489,12 @@ const OraclePage = () => {
       if (!prepared) return false;
 
       const hasSSML = false;
+      const hasCustomMaster = !!masterSettings;
 
-      // Honor the user-saved model exactly when they tuned one; otherwise use
-      // turbo for low latency (or multilingual when SSML is present).
+      // Always favor the saved Oracle voice configuration so playback stays
+      // consistent and we never slip into a different-sounding fallback voice.
       const savedModelId = (masterSettings?.model_id as string | undefined) || undefined;
-      const modelId = hasCustomMaster
-        ? savedModelId
-        : (hasSSML ? "eleven_multilingual_v2" : undefined);
+      const modelId = savedModelId;
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
@@ -503,9 +502,7 @@ const OraclePage = () => {
         body: JSON.stringify({
           text: prepared,
           voiceId: masterVoiceId,
-          // Only enable "fast" mode (which forces turbo + low-bitrate format) when
-          // the user has NOT saved their own settings. Otherwise honor their model.
-          fast: hasCustomMaster ? false : !hasSSML,
+          fast: false,
           modelId,
           settings: hasCustomMaster
             ? {
