@@ -192,7 +192,7 @@ const MovieStudioProPage = () => {
         {/* ===== PRICING TIERS ===== */}
         <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-card to-card border-primary/30">
           <div className="text-center mb-5">
-            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
+            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Choose Your Studio
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
