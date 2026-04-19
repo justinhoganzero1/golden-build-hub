@@ -1,5 +1,6 @@
-// Creates a new movie_projects row, validates tier limits, charges wallet upfront for the estimated cost,
-// then triggers the script chunker.
+// Creates a new movie_projects row, validates tier limits, charges wallet UPFRONT for the
+// estimated cost (atomic deduction), then triggers the script chunker.
+// On failure, the worker refunds per-scene cost via wallet_topup.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -72,15 +73,29 @@ Deno.serve(async (req) => {
 
     const estimateCents = Math.ceil(dur * (PRICING[quality] ?? 200));
 
-    // Check wallet balance — we DON'T charge upfront, but we warn if too low
-    const { data: wallet } = await supabase.from("wallet_balances")
-      .select("balance_cents").eq("user_id", user.id).maybeSingle();
-    const balance = wallet?.balance_cents ?? 0;
-    if (!isAdmin && balance < estimateCents) {
-      return new Response(JSON.stringify({
-        error: `Estimated cost is $${(estimateCents / 100).toFixed(2)}. Your wallet has $${(balance / 100).toFixed(2)}. Top up first.`,
-        estimate_cents: estimateCents, balance_cents: balance, insufficient: true,
-      }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // ===== ATOMIC WALLET CHARGE UPFRONT =====
+    // Admin bypasses wallet (he owns the platform).
+    if (!isAdmin) {
+      // Ensure wallet row exists
+      await supabase.from("wallet_balances")
+        .upsert({ user_id: user.id, balance_cents: 0 }, { onConflict: "user_id", ignoreDuplicates: true });
+
+      const { data: wallet } = await supabase.from("wallet_balances")
+        .select("balance_cents").eq("user_id", user.id).maybeSingle();
+      const balance = wallet?.balance_cents ?? 0;
+
+      if (balance < estimateCents) {
+        return new Response(JSON.stringify({
+          error: `Estimated cost is $${(estimateCents / 100).toFixed(2)}. Your wallet has $${(balance / 100).toFixed(2)}. Top up first.`,
+          estimate_cents: estimateCents, balance_cents: balance, insufficient: true,
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Deduct upfront
+      const { error: chargeErr } = await supabase.from("wallet_balances")
+        .update({ balance_cents: balance - estimateCents, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
+      if (chargeErr) throw chargeErr;
     }
 
     const { data: project, error } = await supabase.from("movie_projects").insert({
@@ -91,10 +106,17 @@ Deno.serve(async (req) => {
       quality_tier: quality,
       brief: brief || {},
       estimated_cost_cents: estimateCents,
+      user_paid_cents: isAdmin ? 0 : estimateCents,
       status: "draft",
     }).select().single();
 
-    if (error) throw error;
+    if (error) {
+      // Refund on insert failure
+      if (!isAdmin) {
+        await supabase.rpc("wallet_topup", { _user_id: user.id, _amount_cents: estimateCents });
+      }
+      throw error;
+    }
 
     // Kick off script chunker in background
     EdgeRuntime.waitUntil((async () => {
@@ -105,7 +127,7 @@ Deno.serve(async (req) => {
       });
     })());
 
-    return new Response(JSON.stringify({ ok: true, project }), {
+    return new Response(JSON.stringify({ ok: true, project, charged_cents: isAdmin ? 0 : estimateCents }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (e) {

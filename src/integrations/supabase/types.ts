@@ -1641,6 +1641,7 @@ export type Database = {
         Args: { _project_id: string }
         Returns: undefined
       }
+      retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
       wallet_charge_call: {
         Args: {
           _destination: string
