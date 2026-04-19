@@ -495,7 +495,7 @@ const PortalTutorWidget = () => {
               <div>
                 <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
                 <div className="text-xs text-muted-foreground">
-                  {listening ? "Listening now — speak naturally" : "Your guide to every feature"}
+                  {speaking ? "Speaking…" : listening ? "Listening now — speak naturally" : "Your guide to every feature"}
                 </div>
               </div>
             </div>
