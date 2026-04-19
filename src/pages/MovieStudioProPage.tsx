@@ -105,10 +105,10 @@ const MovieStudioProPage = () => {
             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-            <FeatureRow ok label={`Up to ${limits.maxDurationMin} min`} />
-            <FeatureRow ok={limits.allowHD} label="HD 1080p export" />
+            <FeatureRow ok label={limits.maxDurationMin > 0 ? `Up to ${limits.maxDurationMin} min` : `1 free ${limits.freeClipSeconds}s clip`} />
+            <FeatureRow ok={limits.allowHD} label="HD 1080p slideshow" />
             <FeatureRow ok={limits.allowCaptions} label="Burn-in captions" />
-            <FeatureRow ok={limits.allowUpscale4K} label="4K/8K upscale" />
+            <FeatureRow ok label="Ken Burns pan/zoom" />
             <FeatureRow ok={limits.allowYouTubeOAuth} label="1-click YouTube" />
             <FeatureRow ok label="Download MP4" />
             <FeatureRow ok label="22-Q Oracle director" />

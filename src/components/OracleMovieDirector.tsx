@@ -238,7 +238,7 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
                 <div className="min-w-0">
                   <p className="text-xs font-bold truncate">{limits.label} plan</p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    Up to {limits.maxDurationMin} min · {limits.allowHD ? "HD" : "SD only"} · {limits.allowCaptions ? "captions" : "no captions"} · {limits.allowUpscale4K ? "4K upscale" : "no 4K"}
+                    {limits.maxDurationMin > 0 ? `Up to ${limits.maxDurationMin} min` : `1 free ${limits.freeClipSeconds}s clip`} · {limits.allowHD ? "HD slideshow" : "SD slideshow"} · {limits.allowCaptions ? "captions" : "no captions"}
                   </p>
                 </div>
               </div>
