@@ -136,7 +136,7 @@ const ProfilePage = () => {
           <div className="relative mb-3">
             {profileAvatar ? (
               <div onClick={() => setShowEnlarged(true)} className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary cursor-pointer hover:scale-105 transition-transform">
-                <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar" enableWalking walkingPrompt="the person turning their head and smiling warmly, gentle natural movement" />
+                <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar" />
               </div>
             ) : (
               <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" onClick={() => setShowEnlarged(true)}>
@@ -273,7 +273,7 @@ const ProfilePage = () => {
         <DialogContent className="max-w-sm bg-background border-primary/30 flex items-center justify-center p-6">
           {profileAvatar ? (
             <div className="w-72 h-72 rounded-full overflow-hidden border-4 border-primary animate-scale-in">
-              <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar enlarged" intensity="strong" enableWalking walkingPrompt="the person smiling and gesturing naturally, cinematic portrait motion" />
+              <LivingAvatar imageUrl={profileAvatar} alt="Profile avatar enlarged" intensity="strong" />
             </div>
           ) : (
             <div className="w-72 h-72 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center animate-scale-in">

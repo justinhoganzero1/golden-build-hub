@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Lock, Sparkles, Video } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useSubscription } from "@/hooks/useSubscription";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { usePreviewMode } from "@/hooks/usePreviewMode";
-import { hasAccess } from "@/components/PaywallGate";
-import { useActiveOracleGif } from "@/hooks/useLivingGifs";
+import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 /**
  * LivingAvatar — tiered animated avatar.
@@ -29,15 +22,7 @@ interface LivingAvatarProps {
   intensity?: "subtle" | "normal" | "strong";
   /** Pass an audio URL to trigger lip-sync (tier 2). Requires monthly+. */
   speakingAudioUrl?: string;
-  /** Show the "Bring to life" walking-video button (tier 3). Requires quarterly+. */
-  enableWalking?: boolean;
-  /** Walking prompt hint, e.g. "walking through a forest at dawn" */
-  walkingPrompt?: string;
-  /** Called when a walking clip is generated */
-  onWalkingVideoReady?: (videoUrl: string) => void;
 }
-
-const WALKING_TIER = "quarterly";
 const LIPSYNC_TIER = "monthly";
 
 const LivingAvatar = ({
@@ -46,22 +31,12 @@ const LivingAvatar = ({
   className = "",
   intensity = "normal",
   speakingAudioUrl,
-  enableWalking = false,
-  walkingPrompt = "the person gently moving and gesturing naturally",
-  onWalkingVideoReady,
 }: LivingAvatarProps) => {
-  const navigate = useNavigate();
-  const { tier } = useSubscription();
-  const { isAdmin } = useIsAdmin();
-  const isPreview = usePreviewMode();
-  const { data: activeGif } = useActiveOracleGif();
-  const [walkingVideoUrl, setWalkingVideoUrl] = useState<string | null>(null);
   const [lipsyncUrl, setLipsyncUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState<"lipsync" | "walking" | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const canLipsync = isAdmin || isPreview || hasAccess(tier, LIPSYNC_TIER);
-  const canWalk = isAdmin || isPreview || hasAccess(tier, WALKING_TIER);
+  const canLipsync = true;
 
   // Tier 2: auto lip-sync when audio arrives
   useEffect(() => {
@@ -89,55 +64,14 @@ const LivingAvatar = ({
     return () => { cancelled = true; };
   }, [speakingAudioUrl, imageUrl, canLipsync]);
 
-  const handleBringToLife = async () => {
-    if (!canWalk) {
-      toast.info("Walking avatars unlock with the Pro plan ($20+).");
-      navigate("/subscribe");
-      return;
-    }
-    try {
-      setGenerating("walking");
-      toast.info("Bringing your avatar to life… (~30s)");
-      const { data, error } = await supabase.functions.invoke("runway-image-to-video", {
-        body: {
-          image_url: imageUrl,
-          prompt: walkingPrompt,
-          duration: 5,
-        },
-      });
-      if (error) throw error;
-      if (data?.video_url) {
-        setWalkingVideoUrl(data.video_url);
-        onWalkingVideoReady?.(data.video_url);
-        toast.success("Your avatar is alive! 🎬");
-      } else {
-        throw new Error("No video returned");
-      }
-    } catch (err: any) {
-      const msg = err?.message ?? "Generation failed";
-      const lower = msg.toLowerCase();
-      if (lower.includes("insufficient") || msg.includes("402")) {
-        toast.error("Wallet balance too low. Top up to bring your avatar to life.");
-        navigate("/wallet");
-      } else if (lower.includes("credit") || lower.includes("runway")) {
-        toast.error("Runway video credits are exhausted. The owner needs to top up the Runway account.");
-      } else {
-        toast.error("Couldn't animate avatar. Try again in a moment.");
-      }
-    } finally {
-      setGenerating(null);
-    }
-  };
-
   const intensityClass =
     intensity === "subtle" ? "animate-living-subtle"
     : intensity === "strong" ? "animate-living-strong"
     : "animate-living";
 
-  // Priority: just-generated walking clip > lipsync > active banked Oracle GIF
-  const activeVideo = walkingVideoUrl ?? lipsyncUrl ?? activeGif?.gif_url ?? null;
-  const loopVideo = !!(walkingVideoUrl || activeGif?.gif_url);
-  const muteVideo = !!(walkingVideoUrl || activeGif?.gif_url);
+  const activeVideo = lipsyncUrl ?? null;
+  const loopVideo = false;
+  const muteVideo = false;
 
   return (
     <div className={`relative inline-block ${className}`}>
@@ -171,17 +105,6 @@ const LivingAvatar = ({
         </div>
       )}
 
-      {enableWalking && !walkingVideoUrl && !generating && (
-        <button
-          type="button"
-          onClick={handleBringToLife}
-          className="absolute bottom-2 right-2 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full bg-background/80 backdrop-blur border border-primary/40 text-[11px] font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-colors shadow-lg"
-          title={canWalk ? "Generate a 5s living-avatar clip (~$1.50)" : "Pro plan required"}
-        >
-          {canWalk ? <Video className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-          {canWalk ? "Bring to life" : "Pro"}
-        </button>
-      )}
     </div>
   );
 };

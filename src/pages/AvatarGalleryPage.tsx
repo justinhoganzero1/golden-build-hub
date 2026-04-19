@@ -149,8 +149,6 @@ const AvatarGalleryPage = () => {
                     imageUrl={selected.image_url}
                     alt={selected.name}
                     intensity="normal"
-                    enableWalking
-                    walkingPrompt={`${selected.name}, ${selected.personality || "natural movement"}, walking and gesturing naturally`}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-6xl">
