@@ -119,7 +119,7 @@ const LivingGifStudioPage = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-xs font-bold text-primary">
             <Crown className="w-3 h-3" /> PREMIUM • {PRICE_LABEL} per GIF
           </div>
-          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary via-amber-400 to-primary bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
             Living GIF Studio
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
@@ -194,7 +194,7 @@ const LivingGifStudioPage = () => {
           <Button
             onClick={handleGenerate}
             disabled={busy || verifying}
-            className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-amber-400 text-primary-foreground"
+            className="w-full h-12 text-base font-bold bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
           >
             {busy ? (
               <>
