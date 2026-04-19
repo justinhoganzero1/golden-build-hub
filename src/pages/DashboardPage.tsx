@@ -34,6 +34,7 @@ const tiles: AppTile[] = [
   { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle", tier: null },
   { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub", tier: "starter" },
   { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub", tier: null },
+  { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter", tier: null },
   { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault", tier: "starter" },
   { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet", tier: "starter" },
   
