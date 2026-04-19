@@ -1,12 +1,12 @@
-// generate-living-gif
-// Verifies the Stripe payment, then renders a 20s clip via Runway,
-// upscales to 8K via Replicate, uploads to storage, and updates the row.
+// generate-living-gif (queue-and-return)
 //
-// NOTE on "true 8K GIF": Runway returns an MP4. We upscale that MP4 frames to 8K
-// via Replicate's video upscaler and store the upscaled MP4 as `gif_url` (it is
-// labeled as the downloadable file). Browsers cannot natively play a 200MB animated
-// GIF anyway; the MP4 plays as a perfect loop everywhere a <video> tag is used,
-// and downloads as a true-8K file the user can convert if needed.
+// Switched to async pipeline. This function:
+//   1. Verifies the user (and Stripe if not admin)
+//   2. Resets the row to `queued` with a fresh source image if provided
+//   3. Returns immediately
+//
+// The actual Runway → Replicate → storage work happens in the
+// `living-gif-worker` edge function, kicked every minute by pg_cron.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -19,99 +19,6 @@ const corsHeaders = {
 };
 const log = (s: string, d?: unknown) =>
   console.log(`[gen-living-gif] ${s}${d ? " " + JSON.stringify(d) : ""}`);
-
-const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY")!;
-const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN")!;
-
-async function toRunwayImage(imageUrl: string): Promise<string> {
-  // Runway accepts: https:// URLs, runway:// URIs, or data:image/...;base64 strings.
-  // Reject relative paths, blobs, and anything else by converting to data URI.
-  if (imageUrl.startsWith("data:image/")) return imageUrl;
-  if (imageUrl.startsWith("https://")) return imageUrl;
-  // Anything else (relative paths like /src/assets/..., http://, etc.) → fail clearly
-  throw new Error(
-    `Source image URL is not publicly fetchable by Runway: "${imageUrl.slice(0, 80)}". ` +
-    `Use a https:// URL or a data:image/...;base64 string.`,
-  );
-}
-
-async function runwayGenerate(imageUrl: string, prompt: string): Promise<string> {
-  const promptImage = await toRunwayImage(imageUrl);
-  // Runway Gen-3 image_to_video, max 10s per call
-  const create = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RUNWAY_API_KEY}`,
-      "X-Runway-Version": "2024-11-06",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      promptImage,
-      promptText: prompt,
-      model: "gen3a_turbo",
-      duration: 10,
-      ratio: "1280:768",
-    }),
-  });
-  if (!create.ok) throw new Error(`Runway create failed: ${await create.text()}`);
-  const { id } = await create.json();
-
-  // Poll
-  for (let i = 0; i < 90; i++) {
-    await new Promise((r) => setTimeout(r, 4000));
-    const r = await fetch(`https://api.dev.runwayml.com/v1/tasks/${id}`, {
-      headers: {
-        Authorization: `Bearer ${RUNWAY_API_KEY}`,
-        "X-Runway-Version": "2024-11-06",
-      },
-    });
-    const t = await r.json();
-    if (t.status === "SUCCEEDED" && t.output?.[0]) return t.output[0];
-    if (t.status === "FAILED") throw new Error(`Runway failed: ${t.failure ?? "?"}`);
-  }
-  throw new Error("Runway timed out");
-}
-
-async function replicateUpscale(videoUrl: string): Promise<string> {
-  // Use a video upscaler on Replicate. Falls back to the source URL on failure.
-  try {
-    const create = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        Authorization: `Token ${REPLICATE_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // Topaz-style video upscaler
-        version: "f121d640bd286e1fdc67f9799164c1d5be36ff74576ee11c803ae5b665dd46aa", // real-esrgan video
-        input: { video: videoUrl, scale: 4 },
-      }),
-    });
-    if (!create.ok) {
-      log("replicate create failed, returning source", { body: await create.text() });
-      return videoUrl;
-    }
-    const pred = await create.json();
-    const url = pred.urls?.get;
-    for (let i = 0; i < 120; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const r = await fetch(url, {
-        headers: { Authorization: `Token ${REPLICATE_API_TOKEN}` },
-      });
-      const t = await r.json();
-      if (t.status === "succeeded" && t.output) {
-        return Array.isArray(t.output) ? t.output[0] : t.output;
-      }
-      if (t.status === "failed" || t.status === "canceled") {
-        log("replicate failed, returning source", { err: t.error });
-        return videoUrl;
-      }
-    }
-  } catch (e) {
-    log("replicate error, returning source", { e: String(e) });
-  }
-  return videoUrl;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
