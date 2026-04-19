@@ -87,13 +87,19 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
 
   const generateImage = async (prompt: string): Promise<string | null> => {
     try {
+      // Force 8K-quality output via prompt directive — the backend already uses
+      // the highest-quality Nano Banana Pro model.
+      const enhancedPrompt =
+        `${prompt}\n\nRender at 8K resolution (7680x4320), ultra-high detail, ` +
+        `photorealistic sharpness, professional studio lighting, maximum fidelity, ` +
+        `crisp textures, no compression artifacts.`;
       const resp = await fetch(IMAGE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ prompt, mode: "generate" }),
+        body: JSON.stringify({ prompt: enhancedPrompt }),
       });
       const j = await resp.json();
       if (resp.status === 402) {
@@ -101,7 +107,9 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         return null;
       }
       if (!resp.ok) throw new Error(j.error || "Image gen failed");
-      const url = j.imageUrl || j.url || null;
+      // image-gen returns { text, images: [{ image_url: { url } }] }
+      const url: string | null =
+        j.images?.[0]?.image_url?.url || j.imageUrl || j.url || null;
       if (url && user) {
         // Auto-save to library — exactly like the full Oracle does
         saveMedia.mutate({
@@ -109,7 +117,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
           media_type: "image",
           title: prompt.slice(0, 80),
           source_page: `Standalone: ${appName}`,
-          metadata: { prompt, oracle: "master", standalone_app: appName },
+          metadata: { prompt, oracle: "master", standalone_app: appName, quality: "8k" },
         });
       }
       return url;
