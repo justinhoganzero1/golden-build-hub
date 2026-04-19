@@ -1021,18 +1021,22 @@ const OraclePage = () => {
     };
 
     recognition.onresult = (e: any) => {
-      // Echo guard — drop anything captured while Oracle (or any agent) is speaking through the speakers,
-      // otherwise the mic picks up its own TTS and feeds it back as a "user" message.
-      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
-        finalTranscriptRef.current = "";
-        if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-        return;
-      }
       let interim = "", final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const transcript = e.results[i][0].transcript;
         if (e.results[i].isFinal) final += transcript;
         else interim += transcript;
+      }
+      // Always surface interim text in the input box so the user can SEE
+      // they're being heard, even while Oracle is mid-sentence.
+      if (interim) setInput(interim);
+
+      // Echo guard — drop FINAL captures while Oracle is speaking, otherwise
+      // her own TTS feeds back through the mic as a fake user message.
+      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
+        finalTranscriptRef.current = "";
+        if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+        return;
       }
       if (final) {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
@@ -1104,7 +1108,6 @@ const OraclePage = () => {
           sendMessageRef.current?.(text);
         }, 4000);
       }
-      if (interim) setInput(interim);
     };
 
     recognition.onerror = (e: any) => {
