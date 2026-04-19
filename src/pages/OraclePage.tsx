@@ -482,17 +482,13 @@ const OraclePage = () => {
         if (raw) masterSettings = JSON.parse(raw);
       } catch {}
 
-      // If the user has tuned a master voice in Voice Studio, DO NOT run the
-      // speech-therapist rewrite — it injects SSML which forces a model switch
-      // (turbo → multilingual_v2) and changes how the same voice ID sounds.
-      // Just do gentle pacing so the preview and the Oracle match exactly.
-      const hasCustomMaster = !!masterSettings;
-      const prepared = hasCustomMaster
-        ? text.replace(/\s{3,}/g, "  ").trim()
-        : (await coachSpeech(text)).replace(/\s{3,}/g, "  ").trim();
+      // Keep Oracle's voice stable. Do NOT run the speech-therapist rewrite here,
+      // because it can alter pacing/phrasing and make the same saved voice sound
+      // like a different person on some devices.
+      const prepared = text.replace(/\s{3,}/g, "  ").trim();
       if (!prepared) return false;
 
-      const hasSSML = !hasCustomMaster && /<(break|emphasis|prosody|lang)\b/i.test(prepared);
+      const hasSSML = false;
 
       // Honor the user-saved model exactly when they tuned one; otherwise use
       // turbo for low latency (or multilingual when SSML is present).
@@ -707,13 +703,8 @@ const OraclePage = () => {
     const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
     const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
     if (isOracle && hasPremiumVoice && premiumClean) {
-      const success = await speakWithElevenLabs(premiumClean);
-      if (!success) {
-        if (browserClean) {
-          await speakWithBrowserTTS(browserClean, next.agentName);
-        }
-      }
-    } else if (browserClean) {
+      await speakWithElevenLabs(premiumClean);
+    } else if (!isOracle && browserClean) {
       await speakWithBrowserTTS(browserClean, next.agentName);
     }
 
