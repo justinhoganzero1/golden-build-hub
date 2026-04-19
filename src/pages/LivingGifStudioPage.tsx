@@ -42,6 +42,15 @@ const LivingGifStudioPage = () => {
   const [busy, setBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
+  useEffect(() => {
+    const activeGif = gifs.find((g) => ["queued", "running", "generating", "upscaling"].includes(g.status));
+    if (!activeGif) return;
+
+    if (activeGif.status === "failed" && activeGif.error_message) {
+      toast.error(activeGif.error_message);
+    }
+  }, [gifs]);
+
   const picked = avatarOptions.find((a) => a.id === pickedId) ?? avatarOptions[0];
 
   // After Stripe redirect, finalize generation
@@ -329,11 +338,11 @@ const LivingGifStudioPage = () => {
                             </>
                           )}
                           {g.status === "pending_payment" && <p>Awaiting payment</p>}
-                          {g.status === "failed" && (
+                           {g.status === "failed" && (
                             <>
                               <p className="text-destructive font-medium">Failed</p>
                               {g.error_message && (
-                                <p className="text-[10px] text-muted-foreground line-clamp-3 max-w-[180px]">
+                                 <p className="text-[10px] text-muted-foreground max-w-[180px] break-words">
                                   {g.error_message}
                                 </p>
                               )}
