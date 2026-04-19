@@ -54,6 +54,7 @@ const LivingAvatar = ({
   const { tier } = useSubscription();
   const { isAdmin } = useIsAdmin();
   const isPreview = usePreviewMode();
+  const { data: activeGif } = useActiveOracleGif();
   const [walkingVideoUrl, setWalkingVideoUrl] = useState<string | null>(null);
   const [lipsyncUrl, setLipsyncUrl] = useState<string | null>(null);
   const [generating, setGenerating] = useState<"lipsync" | "walking" | null>(null);
@@ -145,9 +146,9 @@ const LivingAvatar = ({
           ref={videoRef}
           src={activeVideo}
           autoPlay
-          loop={!!walkingVideoUrl}
+          loop={loopVideo}
           playsInline
-          muted={!!walkingVideoUrl}
+          muted={muteVideo}
           className="w-full h-full object-cover rounded-[inherit]"
         />
       ) : (
