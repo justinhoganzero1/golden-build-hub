@@ -404,37 +404,28 @@ const PortalLandingPage = () => {
               </Button>
             </div>
 
-            {/* SOLACE Portal wrapper — secondary special download */}
-            <div className="holo-tile rounded-2xl p-6 border border-primary/20 flex flex-col">
+            {/* App Maker — conversational app generator */}
+            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
               <div className="flex items-center gap-4 mb-4">
-                <img
-                  src={solaceLogo}
-                  alt="SOLACE Portal logo"
-                  width={64}
-                  height={64}
-                  loading="lazy"
-                  className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
-                />
+                <div className="h-16 w-16 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
+                  <Sparkles className="w-8 h-8 text-primary" />
+                </div>
                 <div>
-                  <h3 className="font-semibold text-xl text-foreground">SOLACE Portal App</h3>
-                  <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
+                  <h3 className="font-semibold text-xl text-foreground">App Maker</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Build with AI</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Generate a standalone Android wrapper for the SOLACE Portal landing page itself — perfect for
-                publishing the marketing portal as its own Play Store app.
+                Describe an app in plain English and our AI builds a full single-file web app —
+                Stripe paywalls, AI chat, PWA install and sharing baked in. Then send it to App Wrapper to publish.
               </p>
               <Button
                 size="lg"
-                variant="outline"
-                onClick={() => {
-                  const portalUrl = encodeURIComponent(window.location.origin);
-                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("SOLACE Portal")}`);
-                }}
-                className="border-primary/40 hover:border-primary"
+                onClick={() => navigate("/app-builder")}
+                className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
               >
-                <Download className="mr-2 h-5 w-5" />
-                Build Portal App
+                <Sparkles className="mr-2 h-5 w-5" />
+                Open App Maker
               </Button>
             </div>
 
