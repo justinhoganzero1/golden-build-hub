@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft } from "lucide-react";
+import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -289,7 +289,7 @@ const LivingGifStudioPage = () => {
                     ) : null}
 
                     {g.status !== "ready" && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-sm p-2">
                         <div className="text-center text-xs">
                           {g.status === "generating" && (
                             <>
@@ -302,6 +302,28 @@ const LivingGifStudioPage = () => {
                             <span className="text-destructive">Failed</span>
                           )}
                         </div>
+                        {(g.status === "pending_payment" || g.status === "failed") && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 text-[10px] px-2"
+                            onClick={async () => {
+                              setVerifying(true);
+                              try {
+                                const { error } = await supabase.functions.invoke("generate-living-gif", { body: { gif_id: g.id } });
+                                if (error) throw error;
+                                toast.success("Rendering started!");
+                                refetch();
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Failed");
+                              } finally {
+                                setVerifying(false);
+                              }
+                            }}
+                          >
+                            <PlayCircle className="w-3 h-3 mr-1" /> Resume (admin free)
+                          </Button>
+                        )}
                       </div>
                     )}
 
