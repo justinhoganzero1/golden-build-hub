@@ -100,7 +100,7 @@ const PortalTutorWidget = () => {
       const activeAnalyser = meterAnalyserRef.current;
       const activeData = meterDataRef.current;
       if (!activeAnalyser || !activeData) return;
-      activeAnalyser.getFloatTimeDomainData(activeData);
+      activeAnalyser.getFloatTimeDomainData(activeData as Float32Array);
       let sum = 0;
       for (let i = 0; i < activeData.length; i++) sum += activeData[i] * activeData[i];
       const rms = Math.sqrt(sum / activeData.length);
