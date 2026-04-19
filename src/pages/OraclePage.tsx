@@ -213,71 +213,31 @@ const OraclePage = () => {
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   const handleCapturedVoiceText = useCallback((rawText: string) => {
     const text = rawText.replace(/\s+/g, " ").trim();
-    if (!text) { setInput(""); return; }
-
-    const lower = text.toLowerCase();
-    const wakeMatch = lower.match(/\b(?:hey|hi|hello|okay|ok)[, ]+(?:oracle(?:[ -]?lunar)?)\b[ ,.!?-]*/);
-    if (wakeMatch) {
-      voiceChannelOpenRef.current = true;
-      setVoiceChannelOpen(true);
-      if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-      voiceChannelTimerRef.current = setTimeout(() => {
-        voiceChannelOpenRef.current = false;
-        setVoiceChannelOpen(false);
-      }, 20000);
-      const remainder = text.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
-      setInput("");
-      if (remainder.split(/\s+/).filter(Boolean).length >= 1) {
-        sendMessageRef.current?.(remainder);
-      }
-      return;
-    }
-
-    if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+(?:oracle(?:[ -]?lunar)?)\b/.test(lower)
-        || /\b(?:oracle(?:[ -]?lunar)?)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
-      voiceChannelOpenRef.current = false;
-      setVoiceChannelOpen(false);
-      if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
+    if (!text || text.length < 2) {
       setInput("");
       return;
     }
-
-    if (text.length < 2) { setInput(""); return; }
 
     const normalized = normalizeCapturedText(text);
-    if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
+    if (
+      normalized &&
+      lastAutoSentRef.current.text === normalized &&
+      Date.now() - lastAutoSentRef.current.at < 8000
+    ) {
       setInput("");
       return;
     }
+
     lastAutoSentRef.current = { text: normalized, at: Date.now() };
-
-    if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
-    voiceChannelTimerRef.current = setTimeout(() => {
-      voiceChannelOpenRef.current = false;
-      setVoiceChannelOpen(false);
-    }, 20000);
-
     setInput("");
     sendMessageRef.current?.(text);
   }, [normalizeCapturedText]);
 
-  const scribe = useScribe({
-    modelId: "scribe_v2_realtime",
-    commitStrategy: "vad" as any,
-    onPartialTranscript: (data: any) => {
-      if (!alwaysListenRef.current || !scribeModeRef.current) return;
-      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
-      const partial = (data?.text ?? "").trim();
-      if (partial) setInput(partial);
-    },
-    onCommittedTranscript: (data: any) => {
-      if (!alwaysListenRef.current || !scribeModeRef.current) return;
-      if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) return;
-      const committed = (data?.text ?? "").trim();
-      if (!committed) return;
-      handleCapturedVoiceText(committed);
-    },
-  } as any);
+  // Old realtime token/scribe path disabled — Oracle now uses one direct browser mic pipeline only.
+  const scribe = {
+    connect: async () => {},
+    disconnect: async () => {},
+  } as any;
 
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
