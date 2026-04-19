@@ -43,8 +43,8 @@ export default function AudioFilterPage() {
   const [active, setActive] = useState(false);
   const [forced, setForced] = useState<FilterMode | undefined>(undefined);
   const [enrollOpen, setEnrollOpen] = useState(false);
-  const { stream, status, tier, error, needsEnrollment, setNeedsEnrollment } = useAudioFilter({ enabled: active, forcedMode: forced });
-  const max = tierMaxLayer(tier);
+  const { stream, analyser, status, error, needsEnrollment, setNeedsEnrollment } = useAudioFilter({ enabled: active, forcedMode: forced });
+  const { signatures, currentMatch, learnedCount, unknownCount } = useNoiseLearning({ analyser, active });
   const hasPrint = !!loadVoicePrint();
 
   useEffect(() => {
@@ -61,23 +61,25 @@ export default function AudioFilterPage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold text-primary">Audio Filter Fortress</h1>
+            <MlscLogo size="lg" />
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                MLSC — Multi-Layering Super Clarity
+              </h1>
+              <p className="text-xs text-muted-foreground">Free for everyone. App-wide. Always-on.</p>
+            </div>
           </div>
           <p className="text-muted-foreground">
-            20-layer mic pipeline. Sirens, TVs, dishes, traffic — Oracle hears <strong>only you</strong>.
+            <strong className="text-primary">{MLSC_TOTAL_LAYERS.toLocaleString()}</strong> micro-filter layers + a learning brain that
+            remembers every noise in your world. Sirens, TVs, dishes, traffic, neighbours, pets — Oracle hears <strong>only you</strong>,
+            and gets faster the more you use it.
           </p>
-          <div className="flex items-center gap-2 text-sm">
-            <Crown className="h-4 w-4 text-primary" />
-            <span>Your tier: <strong className="text-primary uppercase">{tier}</strong></span>
-            <span className="text-muted-foreground">— {max} of 20 layers active</span>
-          </div>
         </header>
 
         <Card className="p-4 space-y-4 bg-card border-primary/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold">Live filter</p>
+              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Live filter</p>
               <p className="text-xs text-muted-foreground">Test the pipeline on this device.</p>
             </div>
             <Switch checked={active} onCheckedChange={setActive} />
@@ -86,7 +88,12 @@ export default function AudioFilterPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
           {active && status && (
             <div className="flex flex-wrap items-start gap-3">
-              <AudioFilterHUD status={status} tier={tier} onUpgrade={() => navigate("/subscribe")} />
+              <AudioFilterHUD
+                status={status}
+                tier="elite"
+                learnedCount={learnedCount}
+                currentMatchLabel={currentMatch?.label || null}
+              />
               <div className="text-xs text-muted-foreground space-y-1 flex-1 min-w-[200px]">
                 <p>Force mode (skip auto-detect):</p>
                 <div className="flex flex-wrap gap-1">
@@ -95,6 +102,7 @@ export default function AudioFilterPage() {
                     <Button key={m} size="sm" variant={forced === m ? "default" : "outline"} onClick={() => setForced(m)} className="capitalize">{m}</Button>
                   ))}
                 </div>
+                <p className="pt-2"><strong className="text-primary">{unknownCount}</strong> new sounds learned this session</p>
               </div>
             </div>
           )}
@@ -122,27 +130,43 @@ export default function AudioFilterPage() {
         </Card>
 
         <Card className="p-4 space-y-2 bg-card border-primary/20">
-          <p className="font-semibold flex items-center gap-2"><Volume2 className="h-4 w-4" /> All 20 layers</p>
-          <ul className="space-y-1 text-sm">
-            {LAYERS.map(l => {
-              const unlocked = l.idx <= max;
-              return (
-                <li key={l.idx} className={`flex items-center gap-2 rounded px-2 py-1 ${unlocked ? "text-foreground" : "text-muted-foreground/60"}`}>
-                  <span className={`text-xs font-mono w-6 ${unlocked ? "text-primary" : ""}`}>{String(l.idx).padStart(2, "0")}</span>
-                  <span className="flex-1">{l.name}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded ${unlocked ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                    {unlocked ? "✓ Active" : l.tier}
-                  </span>
+          <p className="font-semibold flex items-center gap-2">
+            <Brain className="h-4 w-4 text-primary" /> Learned sound library
+            <span className="ml-auto text-xs text-muted-foreground">{signatures.length} signatures</span>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Every noise the AI hears for ~600ms gets fingerprinted and saved. Next time, recognition is instant — your environment becomes silent to Oracle.
+          </p>
+          {signatures.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">Turn on the live filter to start building your library.</p>
+          ) : (
+            <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 text-xs">
+              {signatures.slice(0, 30).map((s) => (
+                <li key={s.id} className={`rounded px-2 py-1 border ${s.source === "user" ? "bg-primary/10 border-primary/30" : "bg-muted border-muted-foreground/20"}`}>
+                  <span className="font-medium">{s.label}</span>
+                  <span className="block text-[10px] text-muted-foreground">{s.category} · {s.action}</span>
                 </li>
-              );
-            })}
-          </ul>
-
-          {tier !== "elite" && (
-            <Button onClick={() => navigate("/subscribe")} className="w-full mt-3 bg-primary text-primary-foreground">
-              <Crown className="mr-2 h-4 w-4" /> Unlock all 20 layers
-            </Button>
+              ))}
+            </ul>
           )}
+        </Card>
+
+        <Card className="p-4 space-y-2 bg-card border-primary/20">
+          <p className="font-semibold flex items-center gap-2"><Volume2 className="h-4 w-4" /> Pipeline architecture</p>
+          <ul className="space-y-1 text-sm">
+            {LAYERS.map(l => (
+              <li key={l.idx} className="flex items-center gap-2 rounded px-2 py-1 text-foreground">
+                <span className="text-xs font-mono w-6 text-primary">{String(l.idx).padStart(2, "0")}</span>
+                <span className="flex-1">{l.name}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary">✓ Active</span>
+              </li>
+            ))}
+            <li className="flex items-center gap-2 rounded px-2 py-1 text-muted-foreground border-t border-primary/10 mt-2 pt-2">
+              <span className="text-xs font-mono w-6 text-primary">+</span>
+              <span className="flex-1">{(MLSC_TOTAL_LAYERS - 20).toLocaleString()} micro-refinement layers (multi-band gating, perceptual weighting, learned-noise subtraction…)</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary">✓ Active</span>
+            </li>
+          </ul>
         </Card>
       </div>
 
