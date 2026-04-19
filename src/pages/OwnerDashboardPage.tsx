@@ -140,6 +140,8 @@ const OwnerDashboardPage = () => {
   // 1) Hard email allowlist — ONLY justinbretthogan@gmail.com is permitted, no matter what.
   // 2) Wait for auth restoration before rendering admin-only panels.
   const ADMIN_EMAIL = "justinbretthogan@gmail.com";
+  const isOwnerEmail = ((user?.email || "").trim().toLowerCase() === ADMIN_EMAIL);
+  const hasAdminAccess = isOwnerEmail || isAdmin;
   useEffect(() => {
     if (loading || adminLoading || !isReady) return;
 
@@ -158,10 +160,10 @@ const OwnerDashboardPage = () => {
       return;
     }
 
-    if (!isAdmin) {
+    if (!hasAdminAccess) {
       navigate("/dashboard", { replace: true });
     }
-  }, [loading, adminLoading, isAdmin, user, navigate, isReady]);
+  }, [loading, adminLoading, hasAdminAccess, user, navigate, isReady]);
 
   useEffect(() => {
     (async () => {
@@ -176,7 +178,7 @@ const OwnerDashboardPage = () => {
 
   // Load concierge + crawler leads for the Leads tab
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!hasAdminAccess) return;
     (async () => {
       const { data } = await supabase
         .from("inquiry_leads")
@@ -185,11 +187,11 @@ const OwnerDashboardPage = () => {
         .limit(200);
       if (data) setLeads(data);
     })();
-  }, [isAdmin]);
+  }, [hasAdminAccess]);
 
   // Load install analytics events for the owner dashboard
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!hasAdminAccess) return;
     (async () => {
       const { data } = await supabase
         .from("install_events")
@@ -215,11 +217,11 @@ const OwnerDashboardPage = () => {
       }
       setInstallStats(stats);
     })();
-  }, [isAdmin]);
+  }, [hasAdminAccess]);
 
   // Load private live traffic (admin only): site visitors, installs, paid upgrades
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!hasAdminAccess) return;
     let cancelled = false;
     const load = async () => {
       try {
@@ -253,11 +255,11 @@ const OwnerDashboardPage = () => {
     load();
     const i = window.setInterval(load, 30000);
     return () => { cancelled = true; window.clearInterval(i); };
-  }, [isAdmin, accessToken]);
+  }, [hasAdminAccess, accessToken]);
 
   // Load traffic sources (admin only) — aggregates utm_source/referrer for the bar graph
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!hasAdminAccess) return;
     let cancelled = false;
     const load = async () => {
       try {
@@ -287,7 +289,7 @@ const OwnerDashboardPage = () => {
     load();
     const i = window.setInterval(load, 60000);
     return () => { cancelled = true; window.clearInterval(i); };
-  }, [isAdmin]);
+  }, [hasAdminAccess]);
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
@@ -299,7 +301,7 @@ const OwnerDashboardPage = () => {
     setChangingPassword(false);
   };
 
-  if (loading || adminLoading || !isReady || !accessToken || !isAdmin) {
+  if (loading || adminLoading || !isReady || !accessToken || !hasAdminAccess) {
     return null;
   }
 
