@@ -214,12 +214,13 @@ const PortalLandingPage = () => {
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src={oracleLunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
-            <span className="oracle-lunar-wordmark text-lg">ORACLE LUNAR</span>
-            <MlscLogo size="sm" showLabel />
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={oracleLunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 shrink-0 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
+            <span className="oracle-lunar-wordmark text-lg whitespace-nowrap">ORACLE LUNAR</span>
+            {/* Rainbow MLSC sound-layering badge — sits to the right of the wordmark */}
+            <MlscLogo size="md" showLabel className="shrink-0 ml-1" />
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#all-apps" className="hover:text-primary transition-colors">All Apps</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
