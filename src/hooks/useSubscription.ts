@@ -39,7 +39,7 @@ export interface SubscriptionState {
 
 export function useSubscription() {
   const { user } = useAuth();
-  const { isReady } = useAuthReady();
+  const { isReady, accessToken } = useAuthReady();
   const [state, setState] = useState<SubscriptionState>({
     subscribed: false,
     tier: "free",
@@ -59,12 +59,20 @@ export function useSubscription() {
       setState(prev => ({ ...prev, subscribed: false, tier: "free", effectiveTier: "free", loading: false }));
       return;
     }
+    if (!accessToken) {
+      setState(prev => ({ ...prev, loading: false }));
+      return;
+    }
 
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       const [{ data, error }, { data: rewardData }] = await Promise.all([
-        supabase.functions.invoke("check-subscription"),
+        supabase.functions.invoke("check-subscription", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }),
         supabase
           .from("reward_grants")
           .select("expires_at, reason")
@@ -103,7 +111,7 @@ export function useSubscription() {
         error: err.message || "Failed to check subscription",
       }));
     }
-  }, [user, isReady]);
+  }, [user, isReady, accessToken]);
 
   useEffect(() => {
     checkSubscription();

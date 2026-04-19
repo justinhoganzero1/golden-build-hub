@@ -31,15 +31,21 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Not authenticated" }, 401);
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr || !userData.user) return json({ error: "Not authenticated" }, 401);
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) return json({ error: "Not authenticated" }, 401);
 
     // Owner check via has_role RPC
     const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: userData.user.id,
+      _user_id: claimsData.claims.sub,
       _role: "admin",
     });
     if (!isAdmin) return json({ error: "Forbidden" }, 403);

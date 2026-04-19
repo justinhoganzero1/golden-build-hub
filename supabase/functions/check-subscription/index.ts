@@ -23,6 +23,12 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
+  const supabaseAuth = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
+
   try {
     logStep("Function started");
 
@@ -33,14 +39,19 @@ serve(async (req) => {
     if (!authHeader) throw new Error("No authorization header provided");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { email: user.email });
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    const email = typeof claimsData.claims.email === "string" ? claimsData.claims.email : null;
+    if (!email) throw new Error("User not authenticated or email not available");
+    logStep("User authenticated", { email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customers = await stripe.customers.list({ email, limit: 1 });
 
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");

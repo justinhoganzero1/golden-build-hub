@@ -18,7 +18,7 @@ const Index = () => {
     if (loading || adminLoading) return;
     if (!user) return;
     // Admins land on the Owner Dashboard; everyone else on the ORACLE LUNAR dashboard
-    navigate(isAdmin ? "/owner" : "/dashboard", { replace: true });
+    navigate(isAdmin ? "/owner-dashboard" : "/dashboard", { replace: true });
   }, [user, loading, isAdmin, adminLoading, navigate]);
 
   if (loading || adminLoading) return null;

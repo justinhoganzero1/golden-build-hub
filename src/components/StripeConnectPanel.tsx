@@ -30,7 +30,7 @@ interface AccountStatus {
  *   5. Visit their public storefront
  */
 export default function StripeConnectPanel() {
-  const { user, isReady } = useAuthReady();
+  const { user, isReady, accessToken } = useAuthReady();
   const [status, setStatus] = useState<AccountStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -43,10 +43,13 @@ export default function StripeConnectPanel() {
   const [submittingProduct, setSubmittingProduct] = useState(false);
 
   const refreshStatus = async () => {
-    if (!isReady || !user) return;
+    if (!isReady || !user || !accessToken) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("connect-account", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: { action: "status" },
       });
       if (error) throw error;
@@ -59,19 +62,22 @@ export default function StripeConnectPanel() {
   };
 
   useEffect(() => {
-    if (!isReady || !user) return;
+    if (!isReady || !user || !accessToken) return;
     refreshStatus();
     // Re-fetch when returning from Stripe-hosted onboarding
     const params = new URLSearchParams(window.location.search);
     if (params.get("connect") === "return") {
       toast.success("Welcome back! Refreshing onboarding status…");
     }
-  }, [isReady, user?.id]);
+  }, [isReady, user?.id, accessToken]);
 
   const handleCreate = async () => {
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke("connect-account", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: {
           action: "create",
           displayName: user?.email?.split("@")[0],
@@ -94,6 +100,9 @@ export default function StripeConnectPanel() {
     setLinking(true);
     try {
       const { data, error } = await supabase.functions.invoke("connect-account", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: { action: "link" },
       });
       if (error) throw error;

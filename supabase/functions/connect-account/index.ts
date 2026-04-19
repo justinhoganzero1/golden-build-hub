@@ -42,12 +42,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
-    const { data: userRes, error: userErr } = await supabaseAuth.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (userErr) throw new Error(`Auth error: ${userErr.message}`);
-    const user = userRes.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const user = {
+      id: claimsData.claims.sub,
+      email: typeof claimsData.claims.email === "string" ? claimsData.claims.email : null,
+    };
+    if (!user.email) throw new Error("User not authenticated");
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
