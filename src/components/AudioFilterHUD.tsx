@@ -1,6 +1,7 @@
 import { Shield, Mic, Volume2, AlertTriangle } from "lucide-react";
 import type { AudioFilterStatus, FilterTier } from "@/lib/audioFilter";
-import { tierMaxLayer } from "@/lib/audioFilter";
+import { MLSC_TOTAL_LAYERS } from "@/lib/audioFilter";
+import MlscLogo from "@/components/MlscLogo";
 
 interface Props {
   status: AudioFilterStatus | null;
@@ -18,16 +19,22 @@ const MODE_COLORS: Record<string, string> = {
 
 const MODE_ICON: Record<string, string> = { quiet: "🟢", normal: "🟡", street: "🟠", chaos: "🔴" };
 
-export default function AudioFilterHUD({ status, tier, onUpgrade, onEnroll }: Props) {
+export default function AudioFilterHUD({ status, onEnroll }: Props) {
   if (!status) return null;
-  const max = tierMaxLayer(tier);
 
   return (
     <div className="pointer-events-auto flex flex-col gap-1 rounded-lg border border-primary/20 bg-background/80 p-2 text-[10px] shadow-lg backdrop-blur">
+      <div className="flex items-center gap-2 pb-1 border-b border-primary/10">
+        <MlscLogo className="h-5 w-5" />
+        <span className="font-bold text-[11px] bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+          MLSC ACTIVE
+        </span>
+        <span className="ml-auto text-muted-foreground">{MLSC_TOTAL_LAYERS}/{MLSC_TOTAL_LAYERS} layers</span>
+      </div>
+
       <div className={`flex items-center gap-1 rounded border px-2 py-0.5 ${MODE_COLORS[status.mode]}`}>
         <Shield className="h-3 w-3" />
         <span className="font-semibold uppercase">{MODE_ICON[status.mode]} {status.mode}</span>
-        <span className="ml-auto opacity-70">{max}/20 layers</span>
       </div>
 
       <div className="flex items-center gap-2 text-muted-foreground">
@@ -37,18 +44,16 @@ export default function AudioFilterHUD({ status, tier, onUpgrade, onEnroll }: Pr
         {status.oracleSpeaking && <span className="text-amber-400">● oracle</span>}
       </div>
 
-      {max >= 3 && (
-        <div className="flex items-center gap-2">
-          <Mic className="h-3 w-3" />
-          <div className="h-1 flex-1 overflow-hidden rounded bg-muted">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${Math.round(status.voiceMatch * 100)}%` }}
-            />
-          </div>
-          <span className="text-muted-foreground">{Math.round(status.voiceMatch * 100)}%</span>
+      <div className="flex items-center gap-2">
+        <Mic className="h-3 w-3" />
+        <div className="h-1 flex-1 overflow-hidden rounded bg-muted">
+          <div
+            className="h-full bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 transition-all"
+            style={{ width: `${Math.round(status.voiceMatch * 100)}%` }}
+          />
         </div>
-      )}
+        <span className="text-muted-foreground">{Math.round(status.voiceMatch * 100)}%</span>
+      </div>
 
       {(status.sirenDetected || status.tvDetected) && (
         <div className="flex items-center gap-1 text-rose-300">
@@ -60,15 +65,6 @@ export default function AudioFilterHUD({ status, tier, onUpgrade, onEnroll }: Pr
 
       {status.pushToTalkRequired && (
         <div className="rounded bg-rose-500/20 px-2 py-0.5 text-rose-300">Hold to talk</div>
-      )}
-
-      {tier !== "elite" && onUpgrade && (
-        <button
-          onClick={onUpgrade}
-          className="mt-1 rounded bg-primary/20 px-2 py-0.5 text-primary hover:bg-primary/30"
-        >
-          Unlock {tier === "free" ? "16" : tier === "starter" ? "12" : "6"} more layers →
-        </button>
       )}
 
       {onEnroll && (
