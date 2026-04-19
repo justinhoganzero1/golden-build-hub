@@ -47,13 +47,19 @@ serve(async (req) => {
       .maybeSingle();
     const isAdmin = !!roleRow;
 
-    const { data: gif, error: ge } = await supa
+    const { data: gif } = await supa
       .from("living_gifs")
       .select("*")
       .eq("id", gif_id)
       .eq("user_id", user.id)
-      .single();
-    if (ge || !gif) throw new Error("GIF not found");
+      .maybeSingle();
+    if (!gif) {
+      // Stale redirect (row deleted or belongs to another user) — soft success
+      return new Response(
+        JSON.stringify({ ok: true, stale: true, gif_id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     if (gif.status === "ready" && gif.gif_url) {
       return new Response(JSON.stringify({ ok: true, gif }), {
