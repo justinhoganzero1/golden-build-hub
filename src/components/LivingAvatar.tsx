@@ -152,7 +152,7 @@ const LivingAvatar = ({
             draggable={false}
           />
           {/* Subtle blink overlay — hides eyes for ~120ms every ~5s */}
-          <div className="absolute inset-x-0 top-[38%] h-[6%] pointer-events-none animate-blink bg-foreground/0" />
+          <div className="absolute inset-x-0 top-[38%] h-[6%] pointer-events-none animate-blink bg-foreground rounded-full mx-[20%]" />
         </div>
       )}
 
