@@ -58,17 +58,20 @@ const PartyBanner = ({ variant, className = "" }: PartyBannerProps) => {
     return (
       <div
         onClick={() => navigate("/subscribe")}
-        className={`relative cursor-pointer overflow-hidden rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-500/30 via-primary/30 to-emerald-500/30 p-4 shadow-[0_0_35px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_55px_hsl(var(--primary)/0.65)] transition-all ${className}`}
+        className={`holo-bubble relative cursor-pointer rounded-2xl border-2 border-emerald-400/60 bg-gradient-to-r from-emerald-500/30 via-primary/30 to-emerald-500/30 p-4 shadow-[0_0_35px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_55px_hsl(var(--primary)/0.65)] transition-all ${className}`}
         role="button"
         aria-label="Free for 14 days — Download SOLACE Now"
       >
-        <div className="absolute inset-0 pointer-events-none opacity-30">
+        <span className="holo-rim" aria-hidden="true" />
+        <span className="holo-sheen" aria-hidden="true" />
+        <span className="holo-scan" aria-hidden="true" />
+        <div className="absolute inset-0 pointer-events-none opacity-30 z-[4]">
           <span className="absolute top-2 left-4 text-lg">⚡</span>
           <span className="absolute top-3 right-6 text-lg">📲</span>
           <span className="absolute bottom-2 left-10 text-lg">🎁</span>
           <span className="absolute bottom-3 right-10 text-lg">🆓</span>
         </div>
-        <div className="relative flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3">
           <div className="shrink-0 w-12 h-12 rounded-full bg-emerald-500/30 flex items-center justify-center ring-2 ring-emerald-400/50">
             <Gift className="w-6 h-6 text-emerald-300" />
           </div>
