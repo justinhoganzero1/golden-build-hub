@@ -59,6 +59,7 @@ export default function StripeConnectPanel() {
   };
 
   useEffect(() => {
+    if (!user) return;
     refreshStatus();
     // Re-fetch when returning from Stripe-hosted onboarding
     const params = new URLSearchParams(window.location.search);

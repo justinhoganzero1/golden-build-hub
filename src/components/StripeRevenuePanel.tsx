@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,10 +52,12 @@ function fmtBalance(map: Record<string, number>) {
 }
 
 export default function StripeRevenuePanel() {
+  const { user } = useAuth();
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const { data: res, error } = await supabase.functions.invoke("stripe-revenue");
@@ -69,10 +72,11 @@ export default function StripeRevenuePanel() {
   };
 
   useEffect(() => {
+    if (!user) return;
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [user?.id]);
 
   const primaryCurrency =
     data && Object.keys(data.currencyTotals).length > 0
