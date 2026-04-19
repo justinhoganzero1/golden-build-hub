@@ -469,12 +469,7 @@ const OraclePage = () => {
       // === STREAMING PLAYBACK via MediaSource ===
       // Start playing the first MP3 frames the moment they arrive instead of
       // waiting for the entire blob. Cuts time-to-first-sound by 1-3 seconds.
-      // Android Chrome's MediaSource implementation produces robotic / metallic
-      // artifacts when fed chunked MP3. Force the smooth blob-playback path on
-      // Android so the voice sounds identical to desktop.
-      const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
       const mediaSourceSupported =
-        !isAndroid &&
         typeof window !== "undefined" &&
         "MediaSource" in window &&
         (window as any).MediaSource.isTypeSupported?.("audio/mpeg");
@@ -1032,12 +1027,11 @@ const OraclePage = () => {
         if (e.results[i].isFinal) final += transcript;
         else interim += transcript;
       }
-      // Always surface interim text in the input box so the user can SEE
-      // they're being heard, even while Oracle is mid-sentence.
+      // Always show interim text so the user can SEE Oracle is hearing them.
       if (interim) setInput(interim);
 
-      // Echo guard — drop FINAL captures while Oracle is speaking, otherwise
-      // her own TTS feeds back through the mic as a fake user message.
+      // Echo guard — drop FINALS only while Oracle is speaking, so her own TTS
+      // doesn't loop back as a fake user message. Interim above still shows.
       if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
         finalTranscriptRef.current = "";
         if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
@@ -1047,7 +1041,6 @@ const OraclePage = () => {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
-          // Re-check at fire time in case speech started during the silence window
           if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
             finalTranscriptRef.current = "";
             return;
@@ -1059,8 +1052,6 @@ const OraclePage = () => {
           const lower = text.toLowerCase();
 
           // ── WAKE WORD DETECTION ──
-          // "hey oracle-lunar" opens the voice channel and (optionally) carries the
-          // rest of the sentence as the first prompt.
           const wakeMatch = lower.match(/\bhey[, ]+oracle-lunar\b[ ,.!?-]*/);
           if (wakeMatch) {
             voiceChannelOpenRef.current = true;
@@ -1072,14 +1063,13 @@ const OraclePage = () => {
             }, 20000);
             const remainder = text.slice((wakeMatch.index ?? 0) + wakeMatch[0].length).trim();
             setInput("");
-            if (remainder.split(/\s+/).filter(Boolean).length >= 2) {
+            if (remainder.split(/\s+/).filter(Boolean).length >= 1) {
               sendMessageRef.current?.(remainder);
             }
             return;
           }
 
           // ── SLEEP / CLOSE PHRASES ──
-          // "thanks oracle-lunar" / "goodbye oracle-lunar" / "stop oracle-lunar" / "that's fine thanks oracle-lunar"
           if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+oracle-lunar\b/.test(lower)
               || /\b(oracle lunar|oracle-lunar)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
             voiceChannelOpenRef.current = false;
@@ -1089,11 +1079,10 @@ const OraclePage = () => {
             return;
           }
 
-          // ── OPEN-MIC MODE ──
-          // No wake-word gate. Oracle listens to everything the user says,
-          // with a small sensitivity guard so background mumbles are ignored.
-          const wordCount = text.split(/\s+/).filter(Boolean).length;
-          if (text.length < 4 || wordCount < 2) { setInput(""); return; }
+          // ── OPEN-MIC MODE — high sensitivity ──
+          // Accept anything that looks like a real word. Only block pure noise
+          // (single char) so Oracle hears short questions like "what time is it" or "hi".
+          if (text.length < 2) { setInput(""); return; }
 
           const normalized = normalizeCapturedText(text);
           if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
@@ -1102,7 +1091,6 @@ const OraclePage = () => {
           }
           lastAutoSentRef.current = { text: normalized, at: Date.now() };
 
-          // Reset the 20s auto-close timer because the user is actively speaking
           if (voiceChannelTimerRef.current) clearTimeout(voiceChannelTimerRef.current);
           voiceChannelTimerRef.current = setTimeout(() => {
             voiceChannelOpenRef.current = false;
@@ -1111,7 +1099,7 @@ const OraclePage = () => {
 
           setInput("");
           sendMessageRef.current?.(text);
-        }, 4000);
+        }, 1500); // shorter silence window — Oracle replies faster
       }
     };
 
