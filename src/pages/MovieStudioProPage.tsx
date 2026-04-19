@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
+import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
@@ -172,6 +173,8 @@ const MovieStudioProPage = () => {
         <p className="text-[10px] text-center text-muted-foreground">
           Pricing is transparent. You see the exact charge before every export — no surprise fees.
         </p>
+
+        <MovieProjectDashboard />
       </div>
 
       <OracleMovieDirector
