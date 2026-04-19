@@ -356,17 +356,15 @@ async function renderAudio(job: any) {
 
   const cost = markupCents(Math.ceil((totalChars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
 
+  // Slideshow mode: no real video → skip lip-sync, mark complete, queue stitch.
   await supabase.from("movie_scenes").update({
     audio_url: audioUrl,
-    status: "lip_syncing",
+    status: "completed",
+    completed_at: new Date().toISOString(),
     provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents,
   }).eq("id", scene.id);
-
-  // Queue lip-sync job (will mark scene completed and call maybeQueueStitch)
-  await supabase.from("movie_render_jobs").insert({
-    project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
-    job_type: "lip_sync", priority: (job.priority ?? 100) + 5,
-  });
+  await supabase.rpc("recalc_project_progress", { _project_id: job.project_id });
+  await maybeQueueStitch(job.project_id, job.user_id);
 
   await bumpSpend(job.project_id, cost.total_cents);
   return { audioUrl, cost_cents: cost.total_cents };
