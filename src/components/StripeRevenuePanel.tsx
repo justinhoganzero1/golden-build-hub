@@ -52,15 +52,19 @@ function fmtBalance(map: Record<string, number>) {
 }
 
 export default function StripeRevenuePanel() {
-  const { user, isReady } = useAuthReady();
+  const { user, isReady, accessToken } = useAuthReady();
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
-    if (!isReady || !user) return;
+    if (!isReady || !user || !accessToken) return;
     setLoading(true);
     try {
-      const { data: res, error } = await supabase.functions.invoke("stripe-revenue");
+      const { data: res, error } = await supabase.functions.invoke("stripe-revenue", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       if (error) throw error;
       if ((res as any)?.error) throw new Error((res as any).error);
       setData(res as RevenueData);
@@ -72,11 +76,11 @@ export default function StripeRevenuePanel() {
   };
 
   useEffect(() => {
-    if (!isReady || !user) return;
+    if (!isReady || !user || !accessToken) return;
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, [isReady, user?.id]);
+  }, [isReady, user?.id, accessToken]);
 
   const primaryCurrency =
     data && Object.keys(data.currencyTotals).length > 0

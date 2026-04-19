@@ -38,5 +38,7 @@ export function useAuthReady() {
     };
   }, []);
 
-  return { isReady, user, session };
+  const accessToken = session?.access_token ?? null;
+
+  return { isReady, user, session, accessToken, hasSession: !!accessToken };
 }
