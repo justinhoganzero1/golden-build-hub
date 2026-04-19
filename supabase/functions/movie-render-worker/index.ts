@@ -122,30 +122,28 @@ async function renderVideo(job: any) {
   }).eq("id", scene.id);
 
   let videoUrl = "";
-  let costCents = 0;
   const dur = Number(scene.duration_seconds ?? 8);
 
   if (RUNWAY_API_KEY) {
     videoUrl = await runwayGenerateAndPoll(scene.visual_prompt ?? scene.script_text, dur);
-    if (videoUrl) {
-      costCents = markupCents(Math.ceil(PROVIDER_RATES.runway_image_to_video_per_second * dur)).total_cents;
-    }
   }
 
-  // Free internal fallback: generate a still, then animate it with Gemini Video.
+  // Free internal fallback: Lovable AI Gateway → Veo (image-to-video).
   if (!videoUrl && LOVABLE_API_KEY) {
     videoUrl = await lovableVideoFallback(scene.visual_prompt ?? scene.script_text, dur);
   }
 
-   // Fallback to Replicate (Stable Video Diffusion) if Runway/internal fallback unavailable or failed
+  // Last resort: Replicate (Stable Video Diffusion)
   if (!videoUrl && REPLICATE_API_TOKEN) {
     videoUrl = await replicateVideoFallback(scene.visual_prompt ?? scene.script_text);
   }
 
-  if (!videoUrl) throw new Error("All video providers failed (Runway, internal fallback, and Replicate all returned no video)");
+  if (!videoUrl) throw new Error("All video providers failed (Runway, Lovable Veo, Replicate)");
 
   // Download + re-upload to our bucket so we own it
   const ownedUrl = await mirrorToBucket(videoUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-1080p.mp4`, "video/mp4");
+
+  const cost = markupCents(Math.ceil(PROVIDER_RATES.runway_image_to_video_per_second * dur));
 
   const followUps: any[] = [{
     project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
@@ -167,13 +165,11 @@ async function renderVideo(job: any) {
 
   await supabase.from("movie_scenes").update({
     video_1080p_url: ownedUrl,
-    provider_cost_cents: (scene.provider_cost_cents ?? 0) + costCents,
+    provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents,
   }).eq("id", scene.id);
 
-  if (costCents > 0) {
-    await bumpSpend(job.project_id, costCents);
-  }
-  return { videoUrl: ownedUrl, cost_cents: costCents };
+  await bumpSpend(job.project_id, cost.total_cents);
+  return { videoUrl: ownedUrl, cost_cents: cost.total_cents };
 }
 
 async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promise<string> {
@@ -241,73 +237,49 @@ async function replicateVideoFallback(prompt: string): Promise<string> {
   return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
 }
 
+// Free internal fallback: generate a still with Gemini, then animate via Lovable Veo.
 async function lovableVideoFallback(prompt: string, durationSec: number): Promise<string> {
-  const imageUrl = await generateSceneKeyframe(prompt);
-  if (!imageUrl) return "";
-
-  const { data: imgB64, mime } = await fetchAsBase64(imageUrl);
-  const duration = durationSec <= 5 ? 5 : 10;
-
-  const submit = await fetch("https://ai.gateway.lovable.dev/v1beta/models/veo-3.0-generate-001:predictLongRunning", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      instances: [{
-        prompt: (`Cinematic motion, smooth camera movement, natural subject motion. ${prompt ?? ""}`).slice(0, 480),
-        image: { bytesBase64Encoded: imgB64, mimeType: mime },
-      }],
-      parameters: {
-        aspectRatio: "16:9",
-        durationSeconds: duration,
-        personGeneration: "allow_all",
-        sampleCount: 1,
-      },
-    }),
-  });
-
-  if (!submit.ok) {
-    console.warn("[lovable video submit failed]", submit.status, await submit.text());
+  try {
+    const imageDataUrl = await generateSceneKeyframe(prompt);
+    if (!imageDataUrl) return "";
+    const duration = durationSec <= 5 ? 5 : 10;
+    const veoPrompt = (`Cinematic motion, smooth camera movement, natural subject motion. ${prompt ?? ""}`).slice(0, 480);
+    const submit = await fetch("https://ai.gateway.lovable.dev/v1/video/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/veo-3.0-fast",
+        prompt: veoPrompt,
+        input_image: imageDataUrl,
+        aspect_ratio: "16:9",
+        duration_seconds: duration,
+      }),
+    });
+    if (!submit.ok) {
+      console.warn("[lovable video submit failed]", submit.status, await submit.text());
+      return "";
+    }
+    const sj = await submit.json();
+    const direct: string | undefined = sj?.data?.[0]?.url || sj?.video_url || sj?.url || sj?.output;
+    if (direct) return direct;
+    const opId: string | undefined = sj?.id || sj?.operation_id;
+    if (!opId) return "";
+    for (let i = 0; i < 36; i++) {
+      await sleep(5000);
+      const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+      });
+      if (!op.ok) continue;
+      const oj = await op.json();
+      const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
+      if (url) return url;
+      if (oj?.status === "failed" || oj?.error) return "";
+    }
+    return "";
+  } catch (e) {
+    console.warn("[lovable video error]", e);
     return "";
   }
-
-  const sj = await submit.json();
-  const opName: string | undefined = sj.name;
-  if (!opName) return "";
-
-  for (let attempt = 0; attempt < 36; attempt++) {
-    await sleep(5000);
-    const op = await fetch(`https://ai.gateway.lovable.dev/v1beta/${opName}`, {
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
-    });
-    if (!op.ok) continue;
-    const oj = await op.json();
-    if (oj.done) {
-      const vids = oj.response?.generatedVideos || oj.response?.videos || [];
-      const first = vids[0];
-      const url: string | undefined = first?.video?.uri || first?.uri || first?.video?.url || first?.url;
-      if (!url) return "";
-      try {
-        const dl = await fetch(url.includes("?") ? `${url}&key=${LOVABLE_API_KEY}` : `${url}?key=${LOVABLE_API_KEY}`);
-        if (dl.ok) {
-          const buf = new Uint8Array(await dl.arrayBuffer());
-          let bin = "";
-          for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-          return `data:video/mp4;base64,${btoa(bin)}`;
-        }
-      } catch (_) {
-        return url;
-      }
-      return url;
-    }
-    if (oj.error) {
-      throw new Error(oj.error.message || "Lovable video failed");
-    }
-  }
-
-  throw new Error("Lovable video still rendering after 3min — will retry");
 }
 
 async function generateSceneKeyframe(prompt: string): Promise<string> {
@@ -316,37 +288,16 @@ async function generateSceneKeyframe(prompt: string): Promise<string> {
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-image",
-      messages: [{
-        role: "user",
-        content: `Create a single cinematic movie still frame, realistic, high detail, no text overlay: ${prompt}`,
-      }],
+      messages: [{ role: "user", content: `Cinematic movie still, realistic, high detail, no text overlay: ${prompt}` }],
       modalities: ["image", "text"],
     }),
   });
-
   if (!r.ok) {
     console.warn("[keyframe failed]", r.status, await r.text());
     return "";
   }
-
   const j = await r.json();
   return j?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? "";
-}
-
-async function fetchAsBase64(url: string): Promise<{ data: string; mime: string }> {
-  if (url.startsWith("data:")) {
-    const m = url.match(/^data:([^;]+);base64,(.*)$/);
-    if (!m) throw new Error("Invalid data URL");
-    return { mime: m[1], data: m[2] };
-  }
-
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Image fetch ${r.status}`);
-  const mime = r.headers.get("content-type") || "image/png";
-  const buf = new Uint8Array(await r.arrayBuffer());
-  let bin = "";
-  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-  return { mime, data: btoa(bin) };
 }
 
 // ============= AUDIO (ElevenLabs per character) =============
