@@ -481,6 +481,8 @@ const OraclePage = () => {
         currentAudioRef.current = audio;
         audio.volume = 0.95;
         audio.playbackRate = 1.0;
+        // Smoother playback: let the browser buffer ahead instead of starving.
+        audio.preload = "auto";
 
         const sourceBuffer = await new Promise<SourceBuffer>((resolve, reject) => {
           mediaSource.addEventListener(
@@ -497,6 +499,12 @@ const OraclePage = () => {
         const queue: Uint8Array[] = [];
         let streamDone = false;
         let started = false;
+        let bytesBuffered = 0;
+        // Pre-buffer threshold (~24KB ≈ ~0.5s of 192kbps MP3) — prevents the
+        // "jumbled / robotic / stuttering" voice caused by underrunning the
+        // MediaSource buffer on the very first frames.
+        const PREBUFFER_BYTES = 24 * 1024;
+
         const pump = () => {
           if (sourceBuffer.updating || queue.length === 0) return;
           const chunk = queue.shift()!;
@@ -509,12 +517,21 @@ const OraclePage = () => {
           }
         });
 
+        const tryStart = () => {
+          if (started) return;
+          if (bytesBuffered < PREBUFFER_BYTES && !streamDone) return;
+          started = true;
+          setIsSpeaking(true);
+          audio.play().catch(() => {});
+        };
+
         (async () => {
           try {
             while (true) {
               const { done, value } = await reader.read();
               if (done) {
                 streamDone = true;
+                tryStart();
                 if (!sourceBuffer.updating && queue.length === 0) {
                   try { mediaSource.endOfStream(); } catch {}
                 }
@@ -522,21 +539,34 @@ const OraclePage = () => {
               }
               if (value) {
                 queue.push(value);
+                bytesBuffered += value.byteLength;
                 if (!sourceBuffer.updating) pump();
-                if (!started) {
-                  started = true;
-                  setIsSpeaking(true);
-                  audio.play().catch(() => {});
-                }
+                tryStart();
               }
             }
           } catch (e) { console.warn("TTS stream read error", e); }
         })();
 
+        // Safety timer: if `ended` never fires (stalled MediaSource), bail
+        // after a generous timeout so the queue keeps flowing.
         await new Promise<void>((resolve) => {
-          audio.onended = () => resolve();
-          audio.onerror = () => resolve();
+          let resolved = false;
+          const finish = () => { if (!resolved) { resolved = true; resolve(); } };
+          audio.onended = finish;
+          audio.onerror = finish;
+          // Fallback: when stream is fully done AND audio reports it has
+          // played past its buffered end, finish.
+          const watchdog = setInterval(() => {
+            if (!streamDone) return;
+            if (audio.ended || audio.paused && audio.currentTime > 0 && audio.currentTime >= (audio.duration || Infinity) - 0.05) {
+              clearInterval(watchdog);
+              finish();
+            }
+          }, 250);
+          // Hard timeout: 60s for any single utterance.
+          setTimeout(() => { clearInterval(watchdog); finish(); }, 60000);
         });
+        try { audio.pause(); } catch {}
         setIsSpeaking(false);
         currentAudioRef.current = null;
         try { URL.revokeObjectURL(audio.src); } catch {}
