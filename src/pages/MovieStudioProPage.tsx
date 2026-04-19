@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, Zap, Trophy, Infinity as InfinityIcon, Star } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, Zap, Trophy, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -203,31 +203,31 @@ const MovieStudioProPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <PricingTier
               icon={<Sparkles className="w-5 h-5" />}
-              name="Director's Trial"
+              name="Free Taster"
               price="Free"
-              tagline="Get hooked"
+              tagline="One shot, on us"
               features={[
-                "1 free movie up to 60 sec",
-                "1080p HD",
+                "1 lifetime 8-second clip",
+                "720p Ken Burns slideshow",
+                "AI narration included",
                 "Oracle 22-Q director",
-                "1 character bible",
                 "Watermarked export",
               ]}
-              cta="Start Free"
+              cta="Start Free Clip"
               onClick={() => setDirectorOpen(true)}
             />
 
             <PricingTier
               icon={<Zap className="w-5 h-5" />}
-              name="Indie · Pay-Per-Movie"
-              price="$9.99+"
-              tagline="No subscription"
+              name="Pay-Per-Render"
+              price="$0.50+"
+              tagline="No subscription · top up wallet"
               features={[
-                "2 min HD — $9.99",
-                "5 min 4K — $29.99",
-                "10 min 4K — $59.99",
-                "20 min 4K + lipsync — $129",
-                "No watermark · Full ownership",
+                "Standard 720p — $0.50/min",
+                "HD 1080p — $2.00/min",
+                "Burn-in captions included",
+                "Pause / cancel anytime",
+                "No watermark · full ownership",
               ]}
               cta="Top Up Wallet"
               onClick={() => navigate("/wallet")}
@@ -235,17 +235,32 @@ const MovieStudioProPage = () => {
 
             <PricingTier
               icon={<Star className="w-5 h-5" />}
-              name="Creator"
-              price="$29/mo"
+              name="Starter"
+              price="$5/mo"
+              tagline="Hobby creators"
+              features={[
+                "Up to 2-min movies",
+                "Captions included",
+                "Wallet still pays per render",
+                "All 42 app features unlocked",
+                "Removes the free-clip cap",
+              ]}
+              cta="Get Starter"
+              onClick={() => navigate("/subscribe")}
+            />
+
+            <PricingTier
+              icon={<Zap className="w-5 h-5" />}
+              name="Full Access"
+              price="$10/mo"
               tagline="Most popular"
               highlight
               features={[
-                "3 movies/month up to 5 min",
-                "4K · No watermark",
-                "5 characters in bible",
+                "Up to 5-min movies",
+                "HD 1080p unlocked",
                 "1-click YouTube publish",
                 "Priority render queue",
-                "20% off overage renders",
+                "10GB asset storage",
               ]}
               cta="Subscribe"
               onClick={() => navigate("/subscribe")}
@@ -253,61 +268,41 @@ const MovieStudioProPage = () => {
 
             <PricingTier
               icon={<Trophy className="w-5 h-5" />}
-              name="Studio Pro"
-              price="$149/mo"
-              tagline="Pro creators"
+              name="Pro Quarterly"
+              price="$20"
+              tagline="3 months · best value"
               features={[
-                "10 movies/month up to 10 min",
-                "Unlimited character bible",
-                "8K upscale (+$20/render)",
-                "Multi-character lipsync",
-                "Custom voices · Sound design",
-                "Commercial license · White-label",
+                "Up to 15-min movies",
+                "HD 1080p unlocked",
+                "1-click YouTube publish",
+                "Priority queue · 50GB storage",
+                "Pay-per-render still applies",
               ]}
               cta="Go Pro"
               onClick={() => navigate("/subscribe")}
             />
 
             <PricingTier
-              icon={<InfinityIcon className="w-5 h-5" />}
-              name="Infinite"
-              price="$499/mo"
-              tagline="Full-length features"
-              features={[
-                "Unlimited length (90+ min)",
-                "Up to 50 movies/month",
-                "8K included",
-                "Voice cloning (3 voices)",
-                "API access · Dedicated GPU",
-                "White-glove onboarding",
-              ]}
-              cta="Contact"
-              onClick={() => navigate("/subscribe")}
-            />
-
-            <PricingTier
               icon={<Crown className="w-5 h-5" />}
-              name="Lifetime Founder"
-              price="$499 once"
-              tagline="First 100 only · One-time"
+              name="Movie Studio Lifetime"
+              price="$1 once"
+              tagline="Limited launch unlock"
               founder
               features={[
-                "Lifetime Studio Pro tier",
-                "All future features included",
-                "Founder badge on profile",
-                "Locked-in legacy pricing",
-                "Direct line to the founder",
-                "Limited to first 100 users",
+                "Lifts the free-clip cap forever",
+                "Up to 30-min movies",
+                "HD 1080p unlocked",
+                "1-click YouTube publish",
+                "Wallet pay-per-render still applies",
               ]}
-              cta="Claim Founder Spot"
+              cta="Unlock for $1"
               onClick={() => navigate("/subscribe")}
             />
           </div>
 
           <div className="mt-4 pt-4 border-t border-border/50 text-center">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              🛡️ <strong>Margin protection:</strong> every render is wallet-funded before it starts. No runaway costs.
-              8K and voice cloning are paid add-ons on every tier (we pay Replicate + ElevenLabs per use).
+              🛡️ <strong>Margin protection:</strong> every render is wallet-funded before it starts and we add a 5% platform markup on every external provider call (Runway, ElevenLabs, Replicate). Subscriptions lift the duration cap — they do not give you free rendering.
             </p>
           </div>
         </Card>
