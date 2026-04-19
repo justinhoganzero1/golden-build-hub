@@ -95,11 +95,28 @@ const LivingGifStudioPage = () => {
         },
       });
       if (error) throw error;
+
+      // Admin bypass — generate directly, no Stripe
+      if (data?.admin_bypass && data?.gif_id) {
+        toast.success("Admin bypass — rendering free 8K GIF (~60–90s)…");
+        setVerifying(true);
+        const { error: genErr } = await supabase.functions.invoke("generate-living-gif", {
+          body: { gif_id: data.gif_id },
+        });
+        setVerifying(false);
+        if (genErr) throw genErr;
+        toast.success("Your Living GIF is ready! 🎬");
+        setPrompt("");
+        setTitle("");
+        refetch();
+        return;
+      }
+
       if (!data?.url) throw new Error("No checkout URL");
       window.location.href = data.url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast.error(`Couldn't start checkout: ${msg}`);
+      toast.error(`Couldn't generate: ${msg}`);
     } finally {
       setBusy(false);
     }
