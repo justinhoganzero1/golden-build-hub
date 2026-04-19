@@ -556,15 +556,20 @@ async function shotstackStitch(
   const resMap: Record<string, string> = { sd: "sd", hd: "hd", "4k": "4k", "8k_ultimate": "4k" };
   const resolution = resMap[qualityTier] ?? "hd";
 
+  // Ken Burns effect rotation — camera pans/zooms INSIDE each still
+  const kenBurnsEffects = ["zoomIn", "zoomOut", "slideLeft", "slideRight", "slideUp", "slideDown"];
+
   let cursor = 0;
-  const videoClips = scenes.map(s => {
-    const clip = {
-      asset: { type: "video", src: s.url },
+  const videoClips = scenes.map((s, i) => {
+    const isImage = /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(s.url);
+    const clip: any = {
+      asset: { type: isImage ? "image" : "video", src: s.url },
       start: cursor,
       length: s.duration,
       fit: "cover",
       transition: { in: "fade", out: "fade" },
     };
+    if (isImage) clip.effect = kenBurnsEffects[i % kenBurnsEffects.length];
     cursor += s.duration;
     return clip;
   });

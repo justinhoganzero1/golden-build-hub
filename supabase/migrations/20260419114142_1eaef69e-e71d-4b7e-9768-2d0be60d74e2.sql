@@ -1,0 +1,4 @@
+UPDATE public.movie_scenes SET status='pending', last_error=NULL, started_at=NULL, completed_at=NULL, retry_count=0, audio_url=NULL, video_1080p_url=NULL, video_4k_url=NULL, video_8k_url=NULL, lipsync_url=NULL WHERE project_id='9462c169-99db-4c32-9dff-222e43f1a517';
+DELETE FROM public.movie_render_jobs WHERE project_id='9462c169-99db-4c32-9dff-222e43f1a517' AND job_type IN ('lip_sync','upscale_4k','upscale_8k');
+UPDATE public.movie_render_jobs SET status='queued', attempts=0, locked_by=NULL, locked_at=NULL, error_message=NULL, scheduled_for=now() WHERE project_id='9462c169-99db-4c32-9dff-222e43f1a517';
+UPDATE public.movie_projects SET status='rendering', failed_scenes=0, completed_scenes=0, last_error=NULL, final_video_url=NULL WHERE id='9462c169-99db-4c32-9dff-222e43f1a517';
