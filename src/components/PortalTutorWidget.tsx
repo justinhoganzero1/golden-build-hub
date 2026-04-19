@@ -548,7 +548,7 @@ const PortalTutorWidget = () => {
           </div>
 
           {gated && (
-            <div className="px-4 pb-3 pt-1 flex flex-col gap-2 border-t border-border bg-primary/5">
+            <div className="relative z-10 px-4 pb-3 pt-1 flex flex-col gap-2 border-t border-border bg-primary/10 backdrop-blur-md">
               <Button
                 onClick={() => navigate("/sign-in")}
                 className="w-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold shadow-[0_0_20px_hsl(var(--primary)/0.5)]"
@@ -562,12 +562,12 @@ const PortalTutorWidget = () => {
           )}
 
           {!gated && messages.length <= 1 && (
-            <div className="px-4 pb-2 flex flex-wrap gap-2">
+            <div className="relative z-10 px-4 pb-2 flex flex-wrap gap-2 bg-background/60 backdrop-blur-md">
               {SUGGESTED.map((s) => (
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-xs rounded-full border border-border bg-background px-3 py-1.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                  className="text-xs rounded-full border border-border bg-background/80 px-3 py-1.5 text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                 >
                   {s}
                 </button>
@@ -576,7 +576,7 @@ const PortalTutorWidget = () => {
           )}
 
           {micPermission === "denied" && (
-            <div className="px-4 pt-2 text-[11px] text-destructive">
+            <div className="relative z-10 px-4 pt-2 text-[11px] text-destructive bg-background/70 backdrop-blur-md">
               Microphone is blocked for this site — click the 🔒 icon in your browser address bar, allow microphone access, then reload.
             </div>
           )}
