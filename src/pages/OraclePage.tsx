@@ -500,10 +500,10 @@ const OraclePage = () => {
         let streamDone = false;
         let started = false;
         let bytesBuffered = 0;
-        // Pre-buffer threshold (~24KB ≈ ~0.5s of 192kbps MP3) — prevents the
-        // "jumbled / robotic / stuttering" voice caused by underrunning the
-        // MediaSource buffer on the very first frames.
-        const PREBUFFER_BYTES = 24 * 1024;
+        // Pre-buffer threshold (~96KB ≈ ~2s of 192kbps MP3) — larger buffer
+        // eliminates the "robotic / stuttering" voice caused by underrunning
+        // the MediaSource buffer on the very first frames over slow networks.
+        const PREBUFFER_BYTES = 96 * 1024;
 
         const pump = () => {
           if (sourceBuffer.updating || queue.length === 0) return;
@@ -1080,15 +1080,11 @@ const OraclePage = () => {
             return;
           }
 
-          // ── GATE: ignore everything when the channel is closed ──
-          if (!voiceChannelOpenRef.current) {
-            setInput("");
-            return;
-          }
-
-          // Sensitivity guard: ignore short stray utterances inside open channel
+          // ── OPEN-MIC MODE ──
+          // No wake-word gate. Oracle listens to everything the user says,
+          // with a small sensitivity guard so background mumbles are ignored.
           const wordCount = text.split(/\s+/).filter(Boolean).length;
-          if (text.length < 8 || wordCount < 3) { setInput(""); return; }
+          if (text.length < 4 || wordCount < 2) { setInput(""); return; }
 
           const normalized = normalizeCapturedText(text);
           if (normalized && lastAutoSentRef.current.text === normalized && Date.now() - lastAutoSentRef.current.at < 10000) {
