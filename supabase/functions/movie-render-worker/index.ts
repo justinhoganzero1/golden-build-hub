@@ -311,6 +311,52 @@ async function renderAudio(job: any) {
   return { audioUrl, cost_cents: cost.total_cents };
 }
 
+// ============= LIP SYNC (Replicate wav2lip) =============
+async function lipSyncScene(job: any) {
+  const { data: scene } = await supabase.from("movie_scenes")
+    .select("*").eq("id", job.scene_id).maybeSingle();
+  if (!scene) throw new Error("scene missing");
+
+  // If no video or no audio, just mark complete and move on
+  if (!scene.video_1080p_url || !scene.audio_url || !REPLICATE_API_TOKEN) {
+    await markSceneComplete(scene, job.project_id);
+    await maybeQueueStitch(job.project_id, job.user_id);
+    return { skipped: true, reason: !REPLICATE_API_TOKEN ? "no_replicate" : "missing_inputs" };
+  }
+
+  try {
+    // wav2lip on Replicate
+    const r = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+      },
+      body: JSON.stringify({
+        version: "8d65e3f4f4298520e079198b493c25adfc43c058ffec924f2aefc8010ed25eef",
+        input: { face: scene.video_1080p_url, audio: scene.audio_url },
+      }),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const lipUrl = Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
+      if (lipUrl) {
+        const owned = await mirrorToBucket(lipUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-lipsync.mp4`, "video/mp4");
+        await supabase.from("movie_scenes").update({ lipsync_url: owned }).eq("id", scene.id);
+        const cost = markupCents(20); // ~$0.20 per wav2lip run
+        await bumpSpend(job.project_id, cost.total_cents);
+      }
+    }
+  } catch (e) {
+    console.warn("[lipsync] non-fatal:", e);
+  }
+
+  await markSceneComplete(scene, job.project_id);
+  await maybeQueueStitch(job.project_id, job.user_id);
+  return { ok: true };
+}
+
 // ============= UPSCALE (Real-ESRGAN / Topaz via Replicate) =============
 async function upscale(job: any, factor: 4 | 8) {
   const { data: scene } = await supabase.from("movie_scenes")
