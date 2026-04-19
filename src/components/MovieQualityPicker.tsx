@@ -1,18 +1,18 @@
-// Quality + duration picker with the ULTIMATE 8K upsell.
-import { Card } from "@/components/ui/card";
+// Quality picker — slideshow edition (SD 720p / HD 1080p only).
 import { Badge } from "@/components/ui/badge";
-import { Lock, Crown } from "lucide-react";
-import { QUALITY_TIERS, type RenderQualityTier, getQualityTier } from "@/lib/moviePaywall";
+import { Lock } from "lucide-react";
+import { QUALITY_TIERS, type RenderQualityTier } from "@/lib/moviePaywall";
 
 interface Props {
   value: RenderQualityTier;
   onChange: (q: RenderQualityTier) => void;
   durationMin: number;
   isAdmin?: boolean;
-  isLifetime?: boolean;
+  /** Free users are locked to SD 720p. */
+  isFreeTier?: boolean;
 }
 
-export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isLifetime }: Props) => {
+export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isFreeTier }: Props) => {
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-muted-foreground">Render quality</p>
