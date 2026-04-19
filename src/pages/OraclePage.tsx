@@ -1108,7 +1108,6 @@ const OraclePage = () => {
           sendMessageRef.current?.(text);
         }, 4000);
       }
-      if (interim) setInput(interim);
     };
 
     recognition.onerror = (e: any) => {
