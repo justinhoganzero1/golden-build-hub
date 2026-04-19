@@ -479,8 +479,12 @@ const PortalTutorWidget = () => {
           <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <div
-                className="oracle-listening-shell"
-                style={{ ["--oracle-listening-level" as string]: glowLevel.toString() }}
+                className="oracle-listening-shell oracle-speaking-shell"
+                data-speaking={speaking ? "true" : "false"}
+                style={{
+                  ["--oracle-listening-level" as string]: glowLevel.toString(),
+                  ["--oracle-speaking-level" as string]: pinkLevel.toString(),
+                }}
               >
                 <img
                   src={MASTER_AI_AVATAR}
