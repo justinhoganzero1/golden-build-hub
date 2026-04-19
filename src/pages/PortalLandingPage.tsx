@@ -38,7 +38,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import PortalTutorWidget from "@/components/PortalTutorWidget";
 import SecurityShield from "@/components/SecurityShield";
 import StickyInstallBar from "@/components/StickyInstallBar";
 import SocialProofBar from "@/components/SocialProofBar";
@@ -726,7 +725,7 @@ const PortalLandingPage = () => {
         </div>
       </footer>
 
-      <PortalTutorWidget />
+      {/* PortalTutorWidget removed from public site — Oracle is gated behind sign-in + paywall */}
 
       {/* ── Exit-Intent Email Capture (BOOSTER #5) ── */}
       <ExitIntentCapture />

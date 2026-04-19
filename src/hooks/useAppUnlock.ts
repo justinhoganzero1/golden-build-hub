@@ -14,6 +14,7 @@ export const APP_PRICING: Record<AppKey, { label: string; price: string; amountC
 /**
  * Returns whether the current user owns a one-time unlock for the given app.
  * Admins automatically pass. Anonymous users always return false.
+ * Real Stripe-backed paywall — checks the `app_unlocks` table via has_app_unlock RPC.
  */
 export const useAppUnlock = (appKey: AppKey) => {
   const { user } = useAuth();
@@ -21,12 +22,30 @@ export const useAppUnlock = (appKey: AppKey) => {
   const [unlocked, setUnlocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // FREE ACCESS MODE: All one-time app unlocks ($1 / $5 / $20 gates) are disabled.
-  // Every signed-in user automatically gets full access to gated apps. Anonymous users still gated.
   const refresh = useCallback(async () => {
-    setUnlocked(!!user);
-    setLoading(false);
-  }, [user]);
+    setLoading(true);
+    if (!user) {
+      setUnlocked(false);
+      setLoading(false);
+      return;
+    }
+    if (isAdmin) {
+      setUnlocked(true);
+      setLoading(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase.rpc("has_app_unlock", {
+        _user_id: user.id,
+        _app_key: appKey,
+      });
+      setUnlocked(!error && !!data);
+    } catch {
+      setUnlocked(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, isAdmin, appKey]);
 
   useEffect(() => {
     refresh();
