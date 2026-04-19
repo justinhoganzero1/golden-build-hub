@@ -64,7 +64,7 @@ const PortalTutorWidget = () => {
   const meterStreamRef = useRef<MediaStream | null>(null);
   const meterCtxRef = useRef<AudioContext | null>(null);
   const meterAnalyserRef = useRef<AnalyserNode | null>(null);
-  const meterDataRef = useRef<Float32Array | null>(null);
+  const meterDataRef = useRef<Uint8Array | null>(null);
   const meterRafRef = useRef<number | null>(null);
 
   const stopMeter = useCallback(() => {
@@ -88,7 +88,7 @@ const PortalTutorWidget = () => {
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 1024;
     analyser.smoothingTimeConstant = 0.82;
-    const data = new Float32Array(analyser.fftSize);
+    const data = new Uint8Array(analyser.fftSize);
     source.connect(analyser);
 
     meterStreamRef.current = stream;
@@ -100,9 +100,12 @@ const PortalTutorWidget = () => {
       const activeAnalyser = meterAnalyserRef.current;
       const activeData = meterDataRef.current;
       if (!activeAnalyser || !activeData) return;
-      activeAnalyser.getFloatTimeDomainData(activeData as Float32Array);
+      activeAnalyser.getByteTimeDomainData(activeData);
       let sum = 0;
-      for (let i = 0; i < activeData.length; i++) sum += activeData[i] * activeData[i];
+      for (let i = 0; i < activeData.length; i++) {
+        const sample = (activeData[i] - 128) / 128;
+        sum += sample * sample;
+      }
       const rms = Math.sqrt(sum / activeData.length);
       const level = Math.max(0, Math.min(1, (rms - 0.012) / 0.11));
       setInputLevel((prev) => prev * 0.45 + level * 0.55);
