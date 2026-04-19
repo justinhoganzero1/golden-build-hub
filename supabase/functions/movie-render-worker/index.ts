@@ -643,13 +643,23 @@ async function renderTrailer(job: any) {
   const last = scenes[scenes.length - 1];
   if (last && !picks.includes(last)) picks.push(last);
 
-  const urls = picks.map(s => s.video_4k_url || s.video_1080p_url).filter(Boolean) as string[];
-  if (!urls.length || !REPLICATE_API_TOKEN) return { skipped: true };
+  // Use shorter clips (4-6s each) for trailer punchiness
+  const clips = picks.map(s => ({
+    url: (s.lipsync_url || s.video_4k_url || s.video_1080p_url) as string,
+    audio: null as string | null,
+    duration: Math.min(6, Number(s.duration_seconds ?? 6)),
+  })).filter(x => x.url);
+  if (!clips.length || !SHOTSTACK_API_KEY) return { skipped: true };
 
-  let trailerUrl = await replicateFFmpegStitch(urls, [], "");
+  let trailerUrl = await shotstackStitch(clips, "hd");
   if (trailerUrl) {
     trailerUrl = await mirrorToBucket(trailerUrl, `${project.user_id}/${job.project_id}/trailer.mp4`, "video/mp4");
-    await supabase.from("movie_projects").update({ trailer_url: trailerUrl }).eq("id", job.project_id);
+    await supabase.from("movie_projects").update({
+      trailer_url: trailerUrl,
+      trailer_status: "done",
+    }).eq("id", job.project_id);
+    const cost = markupCents(15); // ~$0.15 trailer Shotstack
+    await bumpSpend(job.project_id, cost.total_cents);
   }
   return { trailerUrl };
 }
