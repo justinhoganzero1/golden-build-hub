@@ -586,7 +586,7 @@ const PortalTutorWidget = () => {
               e.preventDefault();
               send(input);
             }}
-            className="flex items-center gap-2 border-t border-border p-3"
+            className="relative z-10 flex items-center gap-2 border-t border-border bg-background/85 backdrop-blur-md p-3"
           >
             <button
               type="button"
