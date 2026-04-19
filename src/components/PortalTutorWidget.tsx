@@ -30,7 +30,10 @@ const SUGGESTED = [
 ];
 
 const PortalTutorWidget = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [gated, setGated] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
