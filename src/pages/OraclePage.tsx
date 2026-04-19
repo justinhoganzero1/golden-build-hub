@@ -216,7 +216,7 @@ const OraclePage = () => {
     if (!text) { setInput(""); return; }
 
     const lower = text.toLowerCase();
-    const wakeMatch = lower.match(/\bhey[, ]+oracle-lunar\b[ ,.!?-]*/);
+    const wakeMatch = lower.match(/\b(?:hey|hi|hello|okay|ok)[, ]+(?:oracle(?:[ -]?lunar)?)\b[ ,.!?-]*/);
     if (wakeMatch) {
       voiceChannelOpenRef.current = true;
       setVoiceChannelOpen(true);
@@ -233,8 +233,8 @@ const OraclePage = () => {
       return;
     }
 
-    if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+oracle-lunar\b/.test(lower)
-        || /\b(oracle lunar|oracle-lunar)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
+    if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+(?:oracle(?:[ -]?lunar)?)\b/.test(lower)
+        || /\b(?:oracle(?:[ -]?lunar)?)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
       voiceChannelOpenRef.current = false;
       setVoiceChannelOpen(false);
       if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
@@ -1108,7 +1108,7 @@ const OraclePage = () => {
           const lower = text.toLowerCase();
 
           // ── WAKE WORD DETECTION ──
-          const wakeMatch = lower.match(/\bhey[, ]+oracle-lunar\b[ ,.!?-]*/);
+          const wakeMatch = lower.match(/\b(?:hey|hi|hello|okay|ok)[, ]+(?:oracle(?:[ -]?lunar)?)\b[ ,.!?-]*/);
           if (wakeMatch) {
             voiceChannelOpenRef.current = true;
             setVoiceChannelOpen(true);
@@ -1126,8 +1126,8 @@ const OraclePage = () => {
           }
 
           // ── SLEEP / CLOSE PHRASES ──
-          if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+oracle-lunar\b/.test(lower)
-              || /\b(oracle lunar|oracle-lunar)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
+          if (/\b(thanks|thank you|goodbye|bye|stop|that'?s fine[, ]+thanks)[, ]+(?:oracle(?:[ -]?lunar)?)\b/.test(lower)
+              || /\b(?:oracle(?:[ -]?lunar)?)[, ]+(thanks|thank you|goodbye|bye|stop)\b/.test(lower)) {
             voiceChannelOpenRef.current = false;
             setVoiceChannelOpen(false);
             if (voiceChannelTimerRef.current) { clearTimeout(voiceChannelTimerRef.current); voiceChannelTimerRef.current = null; }
