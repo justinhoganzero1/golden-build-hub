@@ -13,7 +13,8 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { project_id } = await req.json();
+    const body = await req.json();
+    const { project_id, internal } = body;
     if (!project_id) throw new Error("project_id required");
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -23,19 +24,25 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: userData } = await userClient.auth.getUser();
-    const userId = userData?.user?.id;
-    if (!userId) throw new Error("not authenticated");
-
     const { data: project } = await supabase
       .from("movie_projects").select("*").eq("id", project_id).maybeSingle();
     if (!project) throw new Error("project not found");
-    if (project.user_id !== userId) throw new Error("forbidden");
+
+    // Trusted internal call (e.g. from stripe-webhook with service role key) bypasses user check
+    const isInternal = internal === true &&
+      authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+
+    if (!isInternal) {
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: userData } = await userClient.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) throw new Error("not authenticated");
+      if (project.user_id !== userId) throw new Error("forbidden");
+    }
 
     await supabase.from("movie_projects").update({
       status: "chunking", started_at: new Date().toISOString(),
