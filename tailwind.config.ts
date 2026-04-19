@@ -107,6 +107,18 @@ export default {
           "0%": { transform: "scale(1)", opacity: "0.8" },
           "100%": { transform: "scale(1.5)", opacity: "0" },
         },
+        "living-breathe": {
+          "0%, 100%": { transform: "scale(1) translateY(0)" },
+          "50%": { transform: "scale(1.015) translateY(-1px)" },
+        },
+        "living-sway": {
+          "0%, 100%": { transform: "rotate(-0.4deg)" },
+          "50%": { transform: "rotate(0.4deg)" },
+        },
+        "blink": {
+          "0%, 92%, 100%": { opacity: "0", transform: "scaleY(0)" },
+          "94%, 96%": { opacity: "0.85", transform: "scaleY(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -115,6 +127,10 @@ export default {
         "slide-up": "slide-up 0.5s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "pulse-ring": "pulse-ring 1.5s ease-out infinite",
+        "living-subtle": "living-breathe 5s ease-in-out infinite",
+        "living": "living-breathe 4s ease-in-out infinite, living-sway 7s ease-in-out infinite",
+        "living-strong": "living-breathe 3s ease-in-out infinite, living-sway 5s ease-in-out infinite",
+        "blink": "blink 5.5s ease-in-out infinite",
       },
     },
   },
