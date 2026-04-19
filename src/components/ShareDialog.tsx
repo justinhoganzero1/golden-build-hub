@@ -159,35 +159,65 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     void robustOpen(`https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`);
     toast.success("Opening WhatsApp Web…");
   };
-  const blockedProviderFallback = async (provider: string) => {
-    if (typeof navigator !== "undefined" && "share" in navigator) {
+  // Universal share helper: tries native share first, then mobile deep link, then desktop web URL.
+  const universalShare = async (
+    provider: string,
+    urls: { mobile: string; desktop: string },
+  ) => {
+    const message = `${shareText} ${shareUrl}`;
+    // 1. Native share sheet (best on mobile — lets user pick the app directly)
+    if (typeof navigator !== "undefined" && (navigator as any).share) {
       try {
         await (navigator as any).share({ title, text: shareText, url: shareUrl });
-        toast.success(`Shared via your device — choose ${provider} if it is available.`);
+        toast.success("Shared!");
         return;
       } catch (e: any) {
         if (e?.name === "AbortError") return;
       }
     }
-
-    const ok = await robustCopy(`${shareText} ${shareUrl}`);
+    // 2. Platform-specific link
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(
+      typeof navigator !== "undefined" ? navigator.userAgent : "",
+    );
+    const target = isMobile ? urls.mobile : urls.desktop;
+    const ok = await robustOpen(target);
     if (ok) {
-      toast.success(`${provider} is blocked here — the share text was copied so you can paste it anywhere.`);
+      toast.success(`Opening ${provider}…`);
+      return;
+    }
+    // 3. Last-resort copy fallback
+    const copied = await robustCopy(message);
+    if (copied) {
+      toast.success(`${provider} blocked — link copied so you can paste it.`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.error(`${provider} is blocked here. Copy the link manually below.`);
+      toast.error(`Couldn't open ${provider}. Copy the link manually below.`);
     }
   };
 
   const shareFacebook = async () => {
-    await blockedProviderFallback("Facebook");
+    const u = encodeURIComponent(shareUrl);
+    const q = encodeURIComponent(shareText);
+    await universalShare("Facebook", {
+      mobile: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      desktop: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+    });
   };
   const shareTwitter = async () => {
-    await blockedProviderFallback("Twitter/X");
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    await universalShare("Twitter/X", {
+      mobile: `https://twitter.com/intent/tweet?text=${text}`,
+      desktop: `https://twitter.com/intent/tweet?text=${text}`,
+    });
   };
   const shareTelegram = async () => {
-    await blockedProviderFallback("Telegram");
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(shareText);
+    await universalShare("Telegram", {
+      mobile: `tg://msg_url?url=${u}&text=${t}`,
+      desktop: `https://t.me/share/url?url=${u}&text=${t}`,
+    });
   };
 
   const nativeShare = async () => {
