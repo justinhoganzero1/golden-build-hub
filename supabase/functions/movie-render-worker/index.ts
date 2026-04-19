@@ -621,7 +621,12 @@ async function renderThumbnail(job: any) {
     finalUrl = pub.publicUrl;
   }
   if (finalUrl) {
-    await supabase.from("movie_projects").update({ thumbnail_url: finalUrl }).eq("id", job.project_id);
+    await supabase.from("movie_projects").update({
+      thumbnail_url: finalUrl,
+      thumbnail_status: "done",
+    }).eq("id", job.project_id);
+    const cost = markupCents(3); // ~$0.03 Gemini image
+    await bumpSpend(job.project_id, cost.total_cents);
   }
   return { thumbnail: finalUrl };
 }
