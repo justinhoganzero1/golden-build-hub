@@ -469,7 +469,12 @@ const OraclePage = () => {
       // === STREAMING PLAYBACK via MediaSource ===
       // Start playing the first MP3 frames the moment they arrive instead of
       // waiting for the entire blob. Cuts time-to-first-sound by 1-3 seconds.
+      // Android Chrome's MediaSource implementation produces robotic / metallic
+      // artifacts when fed chunked MP3. Force the smooth blob-playback path on
+      // Android so the voice sounds identical to desktop.
+      const isAndroid = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
       const mediaSourceSupported =
+        !isAndroid &&
         typeof window !== "undefined" &&
         "MediaSource" in window &&
         (window as any).MediaSource.isTypeSupported?.("audio/mpeg");
