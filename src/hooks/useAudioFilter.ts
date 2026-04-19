@@ -17,8 +17,8 @@ interface UseAudioFilterOpts {
 export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
   const { effectiveTier } = useSubscription();
   const { isAdmin } = useIsAdmin();
-  // Admin always gets the maximum (lifetime) tier — all 20 layers unlocked.
-  const tier: FilterTier = isAdmin ? "lifetime" : subscriptionToFilterTier(effectiveTier);
+  // Admin always gets the maximum tier — all 20 layers unlocked.
+  const tier: FilterTier = isAdmin ? "elite" : subscriptionToFilterTier(effectiveTier);
   const pipelineRef = useRef<AudioFilterPipeline | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<AudioFilterStatus | null>(null);
