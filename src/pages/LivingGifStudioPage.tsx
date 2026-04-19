@@ -342,11 +342,8 @@ const LivingGifStudioPage = () => {
           )}
         </section>
 
-        <Button variant="ghost" onClick={() => navigate("/oracle")} className="w-full">
-          ← Back to Oracle
-        </Button>
       </div>
-    </PageShell>
+    </div>
   );
 };
 

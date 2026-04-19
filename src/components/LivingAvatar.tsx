@@ -5,6 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
 import { hasAccess } from "@/components/PaywallGate";
+import { useActiveOracleGif } from "@/hooks/useLivingGifs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
