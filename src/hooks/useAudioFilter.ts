@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { AudioFilterPipeline, type AudioFilterStatus, type FilterTier, subscriptionToFilterTier, loadVoicePrint } from "@/lib/audioFilter";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface UseAudioFilterOpts {
   /** Auto-start pipeline when this is true. */
@@ -15,7 +16,9 @@ interface UseAudioFilterOpts {
  */
 export function useAudioFilter({ enabled, forcedMode }: UseAudioFilterOpts) {
   const { effectiveTier } = useSubscription();
-  const tier: FilterTier = subscriptionToFilterTier(effectiveTier);
+  const { isAdmin } = useIsAdmin();
+  // Admin always gets the maximum tier — all 20 layers unlocked.
+  const tier: FilterTier = isAdmin ? "elite" : subscriptionToFilterTier(effectiveTier);
   const pipelineRef = useRef<AudioFilterPipeline | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [status, setStatus] = useState<AudioFilterStatus | null>(null);
