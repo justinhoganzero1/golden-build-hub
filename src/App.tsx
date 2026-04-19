@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
+import AppUnlockGate from "@/components/AppUnlockGate";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -238,7 +239,8 @@ const App = () => (
                   <Route path="/suggestion-box" element={<RequireAuth><ErrorBoundary pageName="Suggestion Box"><SuggestionBoxPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/referral" element={<RequireAuth><ErrorBoundary pageName="Referral"><ReferralPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/subscribe" element={<RequireAuth><ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/app-builder" element={<RequireAuth><ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/app-builder" element={<RequireAuth><AppUnlockGate appKey="app_maker"><ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
+                  <Route path="/unlock-success" element={<RequireAuth><ErrorBoundary pageName="Unlock"><UnlockSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/story-writer" element={<RequireAuth><ErrorBoundary pageName="Story Writer"><StoryWriterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
@@ -256,7 +258,7 @@ const App = () => (
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
-                  <Route path="/web-wrapper" element={<RequireAuth><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/web-wrapper" element={<RequireAuth><AppUnlockGate appKey="app_wrapper"><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
