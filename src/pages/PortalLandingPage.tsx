@@ -138,6 +138,15 @@ const PortalLandingPage = () => {
         }}
         aria-label="Limited time free — install SOLACE"
       >
+        {/* 🐰 Easter bunny ears */}
+        <span aria-hidden="true" className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
+          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-pink-200 to-pink-400 border-2 border-white/80 -rotate-[18deg] shadow-[0_0_12px_rgba(255,182,193,0.9)] relative">
+            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-pink-300/80" />
+          </span>
+          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-pink-200 to-pink-400 border-2 border-white/80 rotate-[18deg] shadow-[0_0_12px_rgba(255,182,193,0.9)] relative">
+            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-pink-300/80" />
+          </span>
+        </span>
         <span className="holo-rim" aria-hidden="true" />
         <span className="holo-sheen" aria-hidden="true" />
         <span className="holo-scan" aria-hidden="true" />
@@ -169,6 +178,15 @@ const PortalLandingPage = () => {
         }}
         aria-label="Refer a friend — get a free month of Tier 3"
       >
+        {/* 🐰 Easter bunny ears */}
+        <span aria-hidden="true" className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
+          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-lime-100 to-lime-300 border-2 border-white/80 -rotate-[18deg] shadow-[0_0_12px_rgba(163,255,0,0.9)] relative">
+            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-lime-200/80" />
+          </span>
+          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-lime-100 to-lime-300 border-2 border-white/80 rotate-[18deg] shadow-[0_0_12px_rgba(163,255,0,0.9)] relative">
+            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-lime-200/80" />
+          </span>
+        </span>
         <span className="holo-rim" aria-hidden="true" />
         <span className="holo-sheen" aria-hidden="true" />
         <span className="holo-scan" aria-hidden="true" />
@@ -191,7 +209,9 @@ const PortalLandingPage = () => {
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative">
+            <span aria-hidden="true" className="absolute -top-3 -left-2 text-base rotate-[-18deg] select-none">🥚</span>
+            <span aria-hidden="true" className="absolute -top-2 -right-2 text-base rotate-[14deg] select-none">🐣</span>
             <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="solace-wordmark text-lg">SOLACE</span>
           </div>
@@ -683,7 +703,11 @@ const PortalLandingPage = () => {
       {/* ── Footer ────────────────────────────── */}
       <footer className="border-t border-primary/20">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative">
+            <span aria-hidden="true" className="absolute -top-3 -left-3 text-lg rotate-[-20deg] select-none">🥚</span>
+            <span aria-hidden="true" className="absolute -top-4 left-3 text-base rotate-[8deg] select-none">🐰</span>
+            <span aria-hidden="true" className="absolute -bottom-2 left-6 text-base rotate-[18deg] select-none">🥚</span>
+            <span aria-hidden="true" className="absolute -top-3 right-2 text-lg rotate-[15deg] select-none">🐣</span>
             <img src={solaceLogo} alt="SOLACE" className="h-7 w-7 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
             <span>© {new Date().getFullYear()} SOLACE. All rights reserved.</span>
           </div>
