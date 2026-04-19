@@ -68,6 +68,73 @@ const PortalTutorWidget = () => {
   const meterAnalyserRef = useRef<AnalyserNode | null>(null);
   const meterDataRef = useRef<Uint8Array | null>(null);
   const meterRafRef = useRef<number | null>(null);
+  const speechCtxRef = useRef<AudioContext | null>(null);
+  const speechAnalyserRef = useRef<AnalyserNode | null>(null);
+  const speechDataRef = useRef<Uint8Array | null>(null);
+  const speechRafRef = useRef<number | null>(null);
+  const speechSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const speechSrcAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopSpeechMeter = useCallback(() => {
+    if (speechRafRef.current) cancelAnimationFrame(speechRafRef.current);
+    speechRafRef.current = null;
+    try { speechSourceRef.current?.disconnect(); } catch {}
+    try { speechCtxRef.current?.close(); } catch {}
+    speechSourceRef.current = null;
+    speechCtxRef.current = null;
+    speechAnalyserRef.current = null;
+    speechDataRef.current = null;
+    speechSrcAudioRef.current = null;
+    setSpeechLevel(0);
+    setSpeaking(false);
+  }, []);
+
+  const attachSpeechMeter = useCallback((audio: HTMLAudioElement) => {
+    // Tear down any prior graph BEFORE we create a new MediaElementSource —
+    // each <audio> element can only be attached to one source node.
+    stopSpeechMeter();
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    try {
+      const ctx = new Ctx();
+      const source = ctx.createMediaElementSource(audio);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.78;
+      const data = new Uint8Array(analyser.fftSize);
+      // Keep audio audible via the speakers AND tap it for the meter.
+      source.connect(analyser);
+      source.connect(ctx.destination);
+
+      speechCtxRef.current = ctx;
+      speechAnalyserRef.current = analyser;
+      speechDataRef.current = data;
+      speechSourceRef.current = source;
+      speechSrcAudioRef.current = audio;
+      setSpeaking(true);
+
+      const tick = () => {
+        const a = speechAnalyserRef.current;
+        const d = speechDataRef.current;
+        if (!a || !d) return;
+        a.getByteTimeDomainData(d as any);
+        let sum = 0;
+        for (let i = 0; i < d.length; i++) {
+          const s = (d[i] - 128) / 128;
+          sum += s * s;
+        }
+        const rms = Math.sqrt(sum / d.length);
+        // Boost low-amplitude TTS so the glow reads even on quiet syllables.
+        const level = Math.max(0, Math.min(1, (rms - 0.008) / 0.16));
+        setSpeechLevel((prev) => prev * 0.55 + level * 0.45);
+        speechRafRef.current = requestAnimationFrame(tick);
+      };
+      speechRafRef.current = requestAnimationFrame(tick);
+    } catch (err) {
+      // CORS or already-attached element — fail silently, just no glow.
+      console.warn("speech meter attach failed:", err);
+    }
+  }, [stopSpeechMeter]);
 
   const stopMeter = useCallback(() => {
     if (meterRafRef.current) cancelAnimationFrame(meterRafRef.current);
