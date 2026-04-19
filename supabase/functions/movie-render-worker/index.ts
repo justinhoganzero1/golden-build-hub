@@ -27,6 +27,10 @@ const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY");
 const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN");
 const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const SHOTSTACK_API_KEY = Deno.env.get("SHOTSTACK_API_KEY");
+// Use Shotstack sandbox by default; switch to "v1" for production
+const SHOTSTACK_ENV = Deno.env.get("SHOTSTACK_ENV") ?? "stage";
+const SHOTSTACK_BASE = `https://api.shotstack.io/edit/${SHOTSTACK_ENV}`;
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -91,6 +95,7 @@ async function runJob(job: any): Promise<any> {
   switch (job.job_type) {
     case "video": return await renderVideo(job);
     case "audio": return await renderAudio(job);
+    case "lip_sync": return await lipSyncScene(job);
     case "upscale_4k": return await upscale(job, 4);
     case "upscale_8k": return await upscale(job, 8);
     case "stitch": return await stitchProject(job);
@@ -292,15 +297,64 @@ async function renderAudio(job: any) {
 
   await supabase.from("movie_scenes").update({
     audio_url: audioUrl,
-    status: "completed",
-    completed_at: new Date().toISOString(),
+    status: "lip_syncing",
     provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents,
   }).eq("id", scene.id);
 
+  // Queue lip-sync job (will mark scene completed and call maybeQueueStitch)
+  await supabase.from("movie_render_jobs").insert({
+    project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
+    job_type: "lip_sync", priority: (job.priority ?? 100) + 5,
+  });
+
   await bumpSpend(job.project_id, cost.total_cents);
-  await supabase.rpc("recalc_project_progress", { _project_id: job.project_id });
-  await maybeQueueStitch(job.project_id, job.user_id);
   return { audioUrl, cost_cents: cost.total_cents };
+}
+
+// ============= LIP SYNC (Replicate wav2lip) =============
+async function lipSyncScene(job: any) {
+  const { data: scene } = await supabase.from("movie_scenes")
+    .select("*").eq("id", job.scene_id).maybeSingle();
+  if (!scene) throw new Error("scene missing");
+
+  // If no video or no audio, just mark complete and move on
+  if (!scene.video_1080p_url || !scene.audio_url || !REPLICATE_API_TOKEN) {
+    await markSceneComplete(scene, job.project_id);
+    await maybeQueueStitch(job.project_id, job.user_id);
+    return { skipped: true, reason: !REPLICATE_API_TOKEN ? "no_replicate" : "missing_inputs" };
+  }
+
+  try {
+    // wav2lip on Replicate
+    const r = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+      },
+      body: JSON.stringify({
+        version: "8d65e3f4f4298520e079198b493c25adfc43c058ffec924f2aefc8010ed25eef",
+        input: { face: scene.video_1080p_url, audio: scene.audio_url },
+      }),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const lipUrl = Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
+      if (lipUrl) {
+        const owned = await mirrorToBucket(lipUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-lipsync.mp4`, "video/mp4");
+        await supabase.from("movie_scenes").update({ lipsync_url: owned }).eq("id", scene.id);
+        const cost = markupCents(20); // ~$0.20 per wav2lip run
+        await bumpSpend(job.project_id, cost.total_cents);
+      }
+    }
+  } catch (e) {
+    console.warn("[lipsync] non-fatal:", e);
+  }
+
+  await markSceneComplete(scene, job.project_id);
+  await maybeQueueStitch(job.project_id, job.user_id);
+  return { ok: true };
 }
 
 // ============= UPSCALE (Real-ESRGAN / Topaz via Replicate) =============
@@ -395,16 +449,23 @@ async function stitchProject(job: any) {
     srtUrl = pub.publicUrl;
   }
 
+  // Prefer lipsync_url > 8k > 4k > 1080p per scene
+  const bestScenes = scenes.map(s => ({
+    url: s.lipsync_url || s.video_8k_url || s.video_4k_url || s.video_1080p_url,
+    audio: s.lipsync_url ? null : s.audio_url,
+    duration: Number(s.duration_seconds ?? 8),
+  })).filter(x => x.url);
+
   let finalUrl = "";
-  if (REPLICATE_API_TOKEN) {
-    finalUrl = await replicateFFmpegStitch(sceneUrls, audioUrls, srtUrl);
+  if (SHOTSTACK_API_KEY && bestScenes.length) {
+    finalUrl = await shotstackStitch(
+      bestScenes as Array<{ url: string; audio: string | null; duration: number }>,
+      project.quality_tier,
+    );
   }
   if (!finalUrl) {
-    // Fallback: just point at the first scene with all audio in metadata.
-    // Better than failing the whole project.
     finalUrl = sceneUrls[0];
   } else {
-    // Mirror to our bucket
     finalUrl = await mirrorToBucket(finalUrl, `${project.user_id}/${job.project_id}/final.mp4`, "video/mp4");
   }
 
@@ -412,9 +473,10 @@ async function stitchProject(job: any) {
     status: "completed",
     completed_at: new Date().toISOString(),
     final_video_url: finalUrl,
+    shotstack_status: SHOTSTACK_API_KEY ? "done" : "skipped",
   }).eq("id", job.project_id);
 
-  // Auto-queue trailer + thumbnail (once each) and YouTube publish prompt
+  // Auto-queue trailer + thumbnail
   const { count: trailerCount } = await supabase.from("movie_render_jobs")
     .select("*", { count: "exact", head: true })
     .eq("project_id", job.project_id).eq("job_type", "trailer");
@@ -427,33 +489,74 @@ async function stitchProject(job: any) {
   return { stitched: true, finalUrl, srt: !!srtUrl };
 }
 
-async function replicateFFmpegStitch(videoUrls: string[], audioUrls: string[], srtUrl: string): Promise<string> {
-  // Use a Replicate FFmpeg model to concat + mix + burn captions
-  // Model: lucataco/ffmpeg (general-purpose)
-  const filterScript = srtUrl
-    ? `concat=n=${videoUrls.length}:v=1:a=0,subtitles='${srtUrl}'`
-    : `concat=n=${videoUrls.length}:v=1:a=0`;
+// ============= SHOTSTACK STITCH =============
+async function shotstackStitch(
+  scenes: Array<{ url: string; audio: string | null; duration: number }>,
+  qualityTier: string,
+): Promise<string> {
+  const resMap: Record<string, string> = { sd: "sd", hd: "hd", "4k": "4k", "8k_ultimate": "4k" };
+  const resolution = resMap[qualityTier] ?? "hd";
 
-  const r = await fetch("https://api.replicate.com/v1/predictions", {
+  let cursor = 0;
+  const videoClips = scenes.map(s => {
+    const clip = {
+      asset: { type: "video", src: s.url },
+      start: cursor,
+      length: s.duration,
+      fit: "cover",
+      transition: { in: "fade", out: "fade" },
+    };
+    cursor += s.duration;
+    return clip;
+  });
+
+  let audioCursor = 0;
+  const audioClips = scenes
+    .map(s => {
+      const c = s.audio
+        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration, volume: 1 }
+        : null;
+      audioCursor += s.duration;
+      return c;
+    })
+    .filter(Boolean);
+
+  const tracks: any[] = [{ clips: videoClips }];
+  if (audioClips.length) tracks.push({ clips: audioClips });
+
+  const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
     method: "POST",
-    headers: {
-      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-      "Content-Type": "application/json",
-      "Prefer": "wait",
-    },
+    headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
     body: JSON.stringify({
-      version: "5e1dcb52ed8c74f6f2c02e5ba1c14e57e4c5e0b7c2c5e0b7c2c5e0b7c2c5e0b7", // ffmpeg
-      input: {
-        videos: videoUrls,
-        audios: audioUrls,
-        filter: filterScript,
-        output_format: "mp4",
-      },
+      timeline: { background: "#000000", tracks },
+      output: { format: "mp4", resolution, fps: 30 },
     }),
   });
-  if (!r.ok) return "";
-  const j = await r.json();
-  return j.output ?? (Array.isArray(j.output) ? j.output[0] : "");
+  if (!submit.ok) {
+    console.error("[shotstack submit failed]", submit.status, await submit.text());
+    return "";
+  }
+  const sj = await submit.json();
+  const renderId = sj?.response?.id;
+  if (!renderId) return "";
+
+  // Poll up to 5 minutes (every 10s)
+  for (let i = 0; i < 30; i++) {
+    await sleep(10_000);
+    const poll = await fetch(`${SHOTSTACK_BASE}/render/${renderId}`, {
+      headers: { "x-api-key": SHOTSTACK_API_KEY! },
+    });
+    if (!poll.ok) continue;
+    const pj = await poll.json();
+    const status = pj?.response?.status;
+    if (status === "done") return pj.response.url;
+    if (status === "failed") {
+      console.error("[shotstack failed]", pj.response?.error);
+      return "";
+    }
+  }
+  console.warn("[shotstack] still rendering after 5min");
+  throw new Error("Shotstack still rendering — retry");
 }
 
 function buildSRT(scenes: any[]): string {
@@ -518,7 +621,12 @@ async function renderThumbnail(job: any) {
     finalUrl = pub.publicUrl;
   }
   if (finalUrl) {
-    await supabase.from("movie_projects").update({ thumbnail_url: finalUrl }).eq("id", job.project_id);
+    await supabase.from("movie_projects").update({
+      thumbnail_url: finalUrl,
+      thumbnail_status: "done",
+    }).eq("id", job.project_id);
+    const cost = markupCents(3); // ~$0.03 Gemini image
+    await bumpSpend(job.project_id, cost.total_cents);
   }
   return { thumbnail: finalUrl };
 }
@@ -540,13 +648,23 @@ async function renderTrailer(job: any) {
   const last = scenes[scenes.length - 1];
   if (last && !picks.includes(last)) picks.push(last);
 
-  const urls = picks.map(s => s.video_4k_url || s.video_1080p_url).filter(Boolean) as string[];
-  if (!urls.length || !REPLICATE_API_TOKEN) return { skipped: true };
+  // Use shorter clips (4-6s each) for trailer punchiness
+  const clips = picks.map(s => ({
+    url: (s.lipsync_url || s.video_4k_url || s.video_1080p_url) as string,
+    audio: null as string | null,
+    duration: Math.min(6, Number(s.duration_seconds ?? 6)),
+  })).filter(x => x.url);
+  if (!clips.length || !SHOTSTACK_API_KEY) return { skipped: true };
 
-  let trailerUrl = await replicateFFmpegStitch(urls, [], "");
+  let trailerUrl = await shotstackStitch(clips, "hd");
   if (trailerUrl) {
     trailerUrl = await mirrorToBucket(trailerUrl, `${project.user_id}/${job.project_id}/trailer.mp4`, "video/mp4");
-    await supabase.from("movie_projects").update({ trailer_url: trailerUrl }).eq("id", job.project_id);
+    await supabase.from("movie_projects").update({
+      trailer_url: trailerUrl,
+      trailer_status: "done",
+    }).eq("id", job.project_id);
+    const cost = markupCents(15); // ~$0.15 trailer Shotstack
+    await bumpSpend(job.project_id, cost.total_cents);
   }
   return { trailerUrl };
 }

@@ -557,14 +557,22 @@ export type Database = {
           id: string
           last_error: string | null
           logline: string | null
+          paid_at: string | null
+          payment_status: string
           quality_tier: Database["public"]["Enums"]["movie_quality_tier"]
+          shotstack_render_id: string | null
+          shotstack_status: string | null
           spent_cost_cents: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["movie_project_status"]
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
           target_duration_minutes: number
+          thumbnail_status: string | null
           thumbnail_url: string | null
           title: string
           total_scenes: number | null
+          trailer_status: string | null
           trailer_url: string | null
           updated_at: string
           user_id: string
@@ -587,14 +595,22 @@ export type Database = {
           id?: string
           last_error?: string | null
           logline?: string | null
+          paid_at?: string | null
+          payment_status?: string
           quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          shotstack_render_id?: string | null
+          shotstack_status?: string | null
           spent_cost_cents?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["movie_project_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           target_duration_minutes?: number
+          thumbnail_status?: string | null
           thumbnail_url?: string | null
           title?: string
           total_scenes?: number | null
+          trailer_status?: string | null
           trailer_url?: string | null
           updated_at?: string
           user_id: string
@@ -617,14 +633,22 @@ export type Database = {
           id?: string
           last_error?: string | null
           logline?: string | null
+          paid_at?: string | null
+          payment_status?: string
           quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          shotstack_render_id?: string | null
+          shotstack_status?: string | null
           spent_cost_cents?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["movie_project_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           target_duration_minutes?: number
+          thumbnail_status?: string | null
           thumbnail_url?: string | null
           title?: string
           total_scenes?: number | null
+          trailer_status?: string | null
           trailer_url?: string | null
           updated_at?: string
           user_id?: string
