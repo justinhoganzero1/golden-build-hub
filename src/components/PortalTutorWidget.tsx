@@ -454,6 +454,7 @@ const PortalTutorWidget = () => {
   };
 
   const glowLevel = listening ? Math.max(0.18, Math.min(1, inputLevel)) : 0;
+  const pinkLevel = speaking ? Math.max(0.25, Math.min(1, speechLevel)) : 0;
 
   return (
     <>
