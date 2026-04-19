@@ -22,7 +22,13 @@ export default function MlscLogo({ className, showLabel = false, size = "md" }: 
         style={{ animationDuration: "3s" }}
       />
       {showLabel && (
-        <span className="text-[10px] font-bold tracking-widest bg-gradient-to-r from-red-500 via-yellow-400 via-green-400 via-blue-400 to-violet-500 bg-clip-text text-transparent">
+        <span
+          className="text-[11px] font-extrabold tracking-widest text-transparent bg-clip-text"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, #ef4444 0%, #f59e0b 20%, #eab308 40%, #22c55e 60%, #3b82f6 80%, #a855f7 100%)",
+          }}
+        >
           MLSC
         </span>
       )}
