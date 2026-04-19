@@ -19,11 +19,11 @@ export const JustKeepTalkingButton = ({ onBriefReady }: Props) => {
 
   const scribe = useScribe({
     modelId: "scribe_v2_realtime",
-    commitStrategy: "vad",
+    commitStrategy: "vad" as any,
     onCommittedTranscript: (data: any) => {
       transcriptRef.current += " " + (data.text ?? "");
     },
-  });
+  } as any);
 
   const start = useCallback(async () => {
     try {
