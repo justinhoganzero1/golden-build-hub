@@ -1,0 +1,1 @@
+UPDATE movie_projects SET status='draft', last_error=NULL WHERE id='9462c169-99db-4c32-9dff-222e43f1a517';
