@@ -25,3 +25,14 @@ verify_jwt = false
 
 [functions.connect-checkout]
 verify_jwt = false
+
+# Stripe webhook — verified via Stripe signature, must be public.
+[functions.stripe-webhook]
+verify_jwt = false
+
+# Cron-triggered workers — invoked by pg_cron via service-role auth.
+[functions.movie-render-worker]
+verify_jwt = false
+
+[functions.movie-failure-notify]
+verify_jwt = false
