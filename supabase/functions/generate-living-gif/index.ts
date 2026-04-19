@@ -128,7 +128,7 @@ serve(async (req) => {
     if (!ud.user) throw new Error("Not authenticated");
     const user = ud.user;
 
-    const { gif_id, session_id } = await req.json();
+    const { gif_id, session_id, source_image_url } = await req.json();
     if (!gif_id) throw new Error("gif_id required");
 
     // Admin bypass — owner skips Stripe
@@ -171,10 +171,20 @@ serve(async (req) => {
       await supa.from("living_gifs").update({ status: "generating" }).eq("id", gif_id);
     }
 
+    const effectiveSourceImage = source_image_url || gif.source_image_url;
+    if (!effectiveSourceImage) throw new Error("source_image_url required");
+
     log("generating", { gif_id });
 
     // Generate one 10s clip (cost-pragmatic; advertised as 20s loop via boomerang)
-    const raw1 = await runwayGenerate(gif.source_image_url, gif.prompt);
+    if (source_image_url && source_image_url !== gif.source_image_url) {
+      await supa.from("living_gifs").update({
+        source_image_url,
+        thumbnail_url: gif.thumbnail_url ?? source_image_url,
+      }).eq("id", gif_id);
+    }
+
+    const raw1 = await runwayGenerate(effectiveSourceImage, gif.prompt);
     const upscaled = await replicateUpscale(raw1);
 
     // Fetch the upscaled file and upload to storage

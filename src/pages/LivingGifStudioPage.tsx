@@ -94,6 +94,15 @@ const LivingGifStudioPage = () => {
     });
   };
 
+  const startGeneration = async (gifId: string, sourceImageUrl?: string) => {
+    const body = sourceImageUrl
+      ? { gif_id: gifId, source_image_url: await imageToDataUri(sourceImageUrl) }
+      : { gif_id: gifId };
+
+    const { error } = await supabase.functions.invoke("generate-living-gif", { body });
+    if (error) throw error;
+  };
+
   const handleGenerate = async () => {
     if (!picked) return toast.error("Pick an avatar first");
     if (prompt.trim().length < 6) {
@@ -116,9 +125,8 @@ const LivingGifStudioPage = () => {
       if (data?.admin_bypass && data?.gif_id) {
         toast.success("Admin bypass — rendering free 8K GIF (~60–90s)…");
         setVerifying(true);
-        const { error: genErr } = await supabase.functions.invoke("generate-living-gif", {
-          body: { gif_id: data.gif_id },
-        });
+        const sourceImageUrl = typeof sourceImage === "string" ? sourceImage : picked.image_url;
+        const genErr = await startGeneration(data.gif_id, sourceImageUrl).catch((error) => error);
         setVerifying(false);
         if (genErr) throw genErr;
         toast.success("Your Living GIF is ready! 🎬");
@@ -326,8 +334,7 @@ const LivingGifStudioPage = () => {
                             onClick={async () => {
                               setVerifying(true);
                               try {
-                                const { error } = await supabase.functions.invoke("generate-living-gif", { body: { gif_id: g.id } });
-                                if (error) throw error;
+                                 await startGeneration(g.id, g.thumbnail_url ?? g.source_image_url);
                                 toast.success("Rendering started!");
                                 refetch();
                               } catch (e) {
