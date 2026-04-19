@@ -317,16 +317,27 @@ const LivingGifStudioPage = () => {
 
                     {g.status !== "ready" && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-sm p-2">
-                        <div className="text-center text-xs">
-                          {g.status === "generating" && (
+                        <div className="text-center text-xs space-y-1">
+                          {["queued", "running", "generating", "upscaling"].includes(g.status) && (
                             <>
                               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-1 text-primary" />
-                              Rendering 8K…
+                              <p>
+                                {g.status === "queued" && "Queued… starting render"}
+                                {(g.status === "running" || g.status === "generating") && "Rendering 8K…"}
+                                {g.status === "upscaling" && "Upscaling final video…"}
+                              </p>
                             </>
                           )}
-                          {g.status === "pending_payment" && "Awaiting payment"}
+                          {g.status === "pending_payment" && <p>Awaiting payment</p>}
                           {g.status === "failed" && (
-                            <span className="text-destructive">Failed</span>
+                            <>
+                              <p className="text-destructive font-medium">Failed</p>
+                              {g.error_message && (
+                                <p className="text-[10px] text-muted-foreground line-clamp-3 max-w-[180px]">
+                                  {g.error_message}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                         {(g.status === "pending_payment" || g.status === "failed") && (
@@ -337,8 +348,8 @@ const LivingGifStudioPage = () => {
                             onClick={async () => {
                               setVerifying(true);
                               try {
-                                 await startGeneration(g.id, g.thumbnail_url ?? g.source_image_url);
-                                toast.success("Rendering started!");
+                                await startGeneration(g.id, g.thumbnail_url ?? g.source_image_url);
+                                toast.success("Queued — rendering started.");
                                 refetch();
                               } catch (e) {
                                 toast.error(e instanceof Error ? e.message : "Failed");
