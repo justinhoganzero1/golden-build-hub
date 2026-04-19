@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     notified++;
   }
 
-  return new Response(JSON.stringify({ ok: true, scanned: projects?.length ?? 0, notified }), {
+  return new Response(JSON.stringify({ ok: true, scanned: projects?.length ?? 0, notified, emailed }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
