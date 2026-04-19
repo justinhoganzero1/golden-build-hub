@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +41,15 @@ const LivingGifStudioPage = () => {
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const failedToastIds = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    gifs.forEach((gif) => {
+      if (gif.status !== "failed" || !gif.error_message || failedToastIds.current.has(gif.id)) return;
+      failedToastIds.current.add(gif.id);
+      toast.error(gif.error_message);
+    });
+  }, [gifs]);
 
   const picked = avatarOptions.find((a) => a.id === pickedId) ?? avatarOptions[0];
 
@@ -329,11 +338,11 @@ const LivingGifStudioPage = () => {
                             </>
                           )}
                           {g.status === "pending_payment" && <p>Awaiting payment</p>}
-                          {g.status === "failed" && (
+                           {g.status === "failed" && (
                             <>
                               <p className="text-destructive font-medium">Failed</p>
                               {g.error_message && (
-                                <p className="text-[10px] text-muted-foreground line-clamp-3 max-w-[180px]">
+                                 <p className="text-[10px] text-muted-foreground max-w-[180px] break-words">
                                   {g.error_message}
                                 </p>
                               )}
