@@ -107,7 +107,7 @@ export default function AudioFilterPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => setEnrollOpen(true)} disabled={tier === "free"}>
+              <Button size="sm" onClick={() => setEnrollOpen(true)}>
                 {hasPrint ? "Re-sync" : "Sync voice"}
               </Button>
               {hasPrint && (
@@ -117,9 +117,6 @@ export default function AudioFilterPage() {
               )}
             </div>
           </div>
-          {tier === "free" && (
-            <p className="text-xs text-amber-400">Voice sync requires Starter tier or higher.</p>
-          )}
         </Card>
 
         <Card className="p-4 space-y-2 bg-card border-primary/20">

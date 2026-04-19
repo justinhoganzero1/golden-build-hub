@@ -47,6 +47,7 @@ import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
+import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
 
 const FEATURES = [
@@ -216,6 +217,7 @@ const PortalLandingPage = () => {
           <div className="flex items-center gap-2">
             <img src={oracleLunarLogo} alt="ORACLE LUNAR logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="oracle-lunar-wordmark text-lg">ORACLE LUNAR</span>
+            <MlscLogo size="sm" showLabel />
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>

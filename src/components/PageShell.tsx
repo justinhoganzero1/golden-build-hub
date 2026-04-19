@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import UniversalBackButton from "./UniversalBackButton";
+import MlscLogo from "./MlscLogo";
 
 interface PageShellProps {
   title: string;
@@ -14,10 +15,11 @@ const PageShell = ({ title, subtitle, children, icon }: PageShellProps) => {
       <UniversalBackButton />
       <div className="flex items-center gap-3 mb-6">
         {icon && <div className="text-primary">{icon}</div>}
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-primary">{title}</h1>
           {subtitle && <p className="text-muted-foreground text-sm">{subtitle}</p>}
         </div>
+        <MlscLogo size="sm" showLabel />
       </div>
       {children || (
         <div className="flex flex-col items-center justify-center py-20 text-center">
