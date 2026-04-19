@@ -133,6 +133,19 @@ const PortalTutorWidget = () => {
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
+
+    // Membership gate: unauthenticated visitors get the pitch on their FIRST message.
+    if (!user) {
+      const userMsg: Msg = { role: "user", content: trimmed };
+      const pitch =
+        "Lovely to meet you. Before we go any further, I need you to **become a SOLACE member** — it's free to start, and it unlocks me, the Crisis Hub, the Safety Center, and every other tool on the site. Tap **Become a Member** below and I'll be right here waiting for you.";
+      setMessages((p) => [...p, userMsg, { role: "assistant", content: pitch }]);
+      setInput("");
+      setGated(true);
+      speak(pitch);
+      return;
+    }
+
     const userMsg: Msg = { role: "user", content: trimmed };
     setMessages((p) => [...p, userMsg]);
     setInput("");
