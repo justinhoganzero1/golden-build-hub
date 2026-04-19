@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Sparkles, X, Minimize2 } from "lucide-react";
+import { Sparkles, X, Minimize2, Mic } from "lucide-react";
+import { toast } from "sonner";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useDraggable } from "@/hooks/useDraggable";
@@ -89,6 +90,51 @@ export const MasterOracleLauncher = () => {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                onClick={async () => {
+                  try {
+                    if (!navigator.mediaDevices?.getUserMedia) {
+                      toast.error("Mic API unavailable. Use Chrome/Safari over HTTPS.");
+                      return;
+                    }
+                    // Check current permission state
+                    let state: PermissionState | "unknown" = "unknown";
+                    try {
+                      const p = await (navigator.permissions as any)?.query({ name: "microphone" as PermissionName });
+                      state = p?.state ?? "unknown";
+                    } catch {}
+
+                    if (state === "denied") {
+                      toast.error(
+                        "Mic is BLOCKED in browser settings. Click the 🔒 padlock left of the URL → Site settings → Microphone → Allow, then reload.",
+                        { duration: 12000 }
+                      );
+                      return;
+                    }
+
+                    // Trigger the prompt (works when state is 'prompt')
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach((t) => t.stop());
+                    toast.success("Mic permission granted. Oracle can hear you now.");
+                    // Force iframe to remount so it re-initialises with mic access
+                    if (iframeRef.current) {
+                      const src = iframeRef.current.src;
+                      iframeRef.current.src = "about:blank";
+                      setTimeout(() => { if (iframeRef.current) iframeRef.current.src = src; }, 50);
+                    }
+                  } catch (e: any) {
+                    toast.error(
+                      "Mic prompt was dismissed or blocked. Open 🔒 padlock → Site settings → Microphone → Allow, then reload.",
+                      { duration: 12000 }
+                    );
+                  }
+                }}
+                className="p-2 rounded-full hover:bg-amber-500/20 text-amber-400 transition-colors"
+                aria-label="Request microphone permission"
+                title="Re-request microphone permission for Oracle"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
               <button
                 onClick={() => setOpen(false)}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
