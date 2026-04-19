@@ -237,6 +237,69 @@ async function replicateVideoFallback(prompt: string): Promise<string> {
   return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
 }
 
+// Free internal fallback: generate a still with Gemini, then animate via Lovable Veo.
+async function lovableVideoFallback(prompt: string, durationSec: number): Promise<string> {
+  try {
+    const imageDataUrl = await generateSceneKeyframe(prompt);
+    if (!imageDataUrl) return "";
+    const duration = durationSec <= 5 ? 5 : 10;
+    const veoPrompt = (`Cinematic motion, smooth camera movement, natural subject motion. ${prompt ?? ""}`).slice(0, 480);
+    const submit = await fetch("https://ai.gateway.lovable.dev/v1/video/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/veo-3.0-fast",
+        prompt: veoPrompt,
+        input_image: imageDataUrl,
+        aspect_ratio: "16:9",
+        duration_seconds: duration,
+      }),
+    });
+    if (!submit.ok) {
+      console.warn("[lovable video submit failed]", submit.status, await submit.text());
+      return "";
+    }
+    const sj = await submit.json();
+    const direct: string | undefined = sj?.data?.[0]?.url || sj?.video_url || sj?.url || sj?.output;
+    if (direct) return direct;
+    const opId: string | undefined = sj?.id || sj?.operation_id;
+    if (!opId) return "";
+    for (let i = 0; i < 36; i++) {
+      await sleep(5000);
+      const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+      });
+      if (!op.ok) continue;
+      const oj = await op.json();
+      const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
+      if (url) return url;
+      if (oj?.status === "failed" || oj?.error) return "";
+    }
+    return "";
+  } catch (e) {
+    console.warn("[lovable video error]", e);
+    return "";
+  }
+}
+
+async function generateSceneKeyframe(prompt: string): Promise<string> {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-image",
+      messages: [{ role: "user", content: `Cinematic movie still, realistic, high detail, no text overlay: ${prompt}` }],
+      modalities: ["image", "text"],
+    }),
+  });
+  if (!r.ok) {
+    console.warn("[keyframe failed]", r.status, await r.text());
+    return "";
+  }
+  const j = await r.json();
+  return j?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? "";
+}
+
 // ============= AUDIO (ElevenLabs per character) =============
 async function renderAudio(job: any) {
   const { data: scene } = await supabase.from("movie_scenes")
