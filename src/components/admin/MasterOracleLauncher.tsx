@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Sparkles, X } from "lucide-react";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useDraggable } from "@/hooks/useDraggable";
 
 /**
  * Admin-only floating launcher that opens the REAL master Oracle (/oracle)
@@ -14,6 +15,7 @@ export const MasterOracleLauncher = () => {
   const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const { ref, style, dragHandlers, justDragged } = useDraggable("master-oracle-launcher-pos");
 
   if (!isAdmin) return null;
   if (pathname === "/oracle" || pathname === "/chat-oracle") return null;
@@ -21,9 +23,12 @@ export const MasterOracleLauncher = () => {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        aria-label="Open Master Oracle"
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 pl-1 pr-4 py-1 rounded-full bg-gradient-to-br from-amber-500 to-primary text-primary-foreground shadow-2xl shadow-primary/40 hover:scale-105 transition-transform"
+        ref={ref}
+        {...dragHandlers}
+        onClick={() => { if (!justDragged) setOpen(true); }}
+        aria-label="Open Master Oracle (drag to move)"
+        style={style}
+        className="fixed z-50 flex items-center gap-2 pl-1 pr-4 py-1 rounded-full bg-gradient-to-br from-amber-500 to-primary text-primary-foreground shadow-2xl shadow-primary/40 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none"
       >
         <span className="relative">
           <img

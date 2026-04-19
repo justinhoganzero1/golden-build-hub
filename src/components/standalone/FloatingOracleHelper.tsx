@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useMute } from "@/contexts/MuteContext";
 import { cleanTextForSpeech } from "@/lib/utils";
+import { useDraggable } from "@/hooks/useDraggable";
 import { toast } from "sonner";
 
 /**
@@ -265,12 +266,17 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
     rec.start();
   };
 
+  const { ref: dragRef, style: dragStyle, dragHandlers, justDragged } = useDraggable("floating-oracle-helper-pos");
+
   return (
     <>
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-amber-500 text-primary-foreground shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform"
-        aria-label="Open Master Oracle"
+        ref={dragRef}
+        {...dragHandlers}
+        onClick={() => { if (!justDragged) setOpen((o) => !o); }}
+        style={dragStyle}
+        className="fixed z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-amber-500 text-primary-foreground shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none touch-none"
+        aria-label="Open Master Oracle (drag to move)"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
