@@ -1,4 +1,4 @@
-import { Sparkles, GraduationCap, Brain, LifeBuoy, Camera, Megaphone, Heart, Wallet, Calendar, Eye } from "lucide-react";
+import { Sparkles, GraduationCap, Brain, LifeBuoy, Camera, Megaphone, Heart, Wallet, Calendar, Eye, Youtube } from "lucide-react";
 import type { ComponentType } from "react";
 
 /**
@@ -123,6 +123,16 @@ export const STANDALONE_APPS: StandaloneApp[] = [
     color: "from-sky-500 to-blue-500",
     fullAppPath: "/live-vision",
     Component: lazy(() => import("@/pages/standalone/StandaloneVision")),
+  },
+  {
+    slug: "youtube-show",
+    title: "YouTube Show Studio",
+    tagline: "Build a full episode in minutes",
+    description: "Pick clips, write a script with AI, voice it, and render a real show.",
+    icon: Youtube,
+    color: "from-red-500 to-orange-500",
+    fullAppPath: "/youtube-show-studio",
+    Component: lazy(() => import("@/pages/standalone/StandaloneYouTubeShow")),
   },
 ];
 
