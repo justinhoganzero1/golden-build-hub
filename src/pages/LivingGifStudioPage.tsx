@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download } from "lucide-react";
+import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,12 +106,15 @@ const LivingGifStudioPage = () => {
   };
 
   return (
-    <PageShell>
+    <div className="min-h-screen bg-background">
       <SEO
         title="Living GIF Studio — 20s 8K Animated Avatars"
         description="Generate 20-second 8K animated avatar GIFs of your Oracle. Bank unlimited GIFs forever, set any one as your active Oracle face."
       />
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back
+        </Button>
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-xs font-bold text-primary">
             <Crown className="w-3 h-3" /> PREMIUM • {PRICE_LABEL} per GIF
