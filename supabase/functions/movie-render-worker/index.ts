@@ -449,16 +449,23 @@ async function stitchProject(job: any) {
     srtUrl = pub.publicUrl;
   }
 
+  // Prefer lipsync_url > 8k > 4k > 1080p per scene
+  const bestScenes = scenes.map(s => ({
+    url: s.lipsync_url || s.video_8k_url || s.video_4k_url || s.video_1080p_url,
+    audio: s.lipsync_url ? null : s.audio_url,
+    duration: Number(s.duration_seconds ?? 8),
+  })).filter(x => x.url);
+
   let finalUrl = "";
-  if (REPLICATE_API_TOKEN) {
-    finalUrl = await replicateFFmpegStitch(sceneUrls, audioUrls, srtUrl);
+  if (SHOTSTACK_API_KEY && bestScenes.length) {
+    finalUrl = await shotstackStitch(
+      bestScenes as Array<{ url: string; audio: string | null; duration: number }>,
+      project.quality_tier,
+    );
   }
   if (!finalUrl) {
-    // Fallback: just point at the first scene with all audio in metadata.
-    // Better than failing the whole project.
     finalUrl = sceneUrls[0];
   } else {
-    // Mirror to our bucket
     finalUrl = await mirrorToBucket(finalUrl, `${project.user_id}/${job.project_id}/final.mp4`, "video/mp4");
   }
 
@@ -466,9 +473,10 @@ async function stitchProject(job: any) {
     status: "completed",
     completed_at: new Date().toISOString(),
     final_video_url: finalUrl,
+    shotstack_status: SHOTSTACK_API_KEY ? "done" : "skipped",
   }).eq("id", job.project_id);
 
-  // Auto-queue trailer + thumbnail (once each) and YouTube publish prompt
+  // Auto-queue trailer + thumbnail
   const { count: trailerCount } = await supabase.from("movie_render_jobs")
     .select("*", { count: "exact", head: true })
     .eq("project_id", job.project_id).eq("job_type", "trailer");
@@ -481,33 +489,74 @@ async function stitchProject(job: any) {
   return { stitched: true, finalUrl, srt: !!srtUrl };
 }
 
-async function replicateFFmpegStitch(videoUrls: string[], audioUrls: string[], srtUrl: string): Promise<string> {
-  // Use a Replicate FFmpeg model to concat + mix + burn captions
-  // Model: lucataco/ffmpeg (general-purpose)
-  const filterScript = srtUrl
-    ? `concat=n=${videoUrls.length}:v=1:a=0,subtitles='${srtUrl}'`
-    : `concat=n=${videoUrls.length}:v=1:a=0`;
+// ============= SHOTSTACK STITCH =============
+async function shotstackStitch(
+  scenes: Array<{ url: string; audio: string | null; duration: number }>,
+  qualityTier: string,
+): Promise<string> {
+  const resMap: Record<string, string> = { sd: "sd", hd: "hd", "4k": "4k", "8k_ultimate": "4k" };
+  const resolution = resMap[qualityTier] ?? "hd";
 
-  const r = await fetch("https://api.replicate.com/v1/predictions", {
+  let cursor = 0;
+  const videoClips = scenes.map(s => {
+    const clip = {
+      asset: { type: "video", src: s.url },
+      start: cursor,
+      length: s.duration,
+      fit: "cover",
+      transition: { in: "fade", out: "fade" },
+    };
+    cursor += s.duration;
+    return clip;
+  });
+
+  let audioCursor = 0;
+  const audioClips = scenes
+    .map(s => {
+      const c = s.audio
+        ? { asset: { type: "audio", src: s.audio }, start: audioCursor, length: s.duration, volume: 1 }
+        : null;
+      audioCursor += s.duration;
+      return c;
+    })
+    .filter(Boolean);
+
+  const tracks: any[] = [{ clips: videoClips }];
+  if (audioClips.length) tracks.push({ clips: audioClips });
+
+  const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
     method: "POST",
-    headers: {
-      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-      "Content-Type": "application/json",
-      "Prefer": "wait",
-    },
+    headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
     body: JSON.stringify({
-      version: "5e1dcb52ed8c74f6f2c02e5ba1c14e57e4c5e0b7c2c5e0b7c2c5e0b7c2c5e0b7", // ffmpeg
-      input: {
-        videos: videoUrls,
-        audios: audioUrls,
-        filter: filterScript,
-        output_format: "mp4",
-      },
+      timeline: { background: "#000000", tracks },
+      output: { format: "mp4", resolution, fps: 30 },
     }),
   });
-  if (!r.ok) return "";
-  const j = await r.json();
-  return j.output ?? (Array.isArray(j.output) ? j.output[0] : "");
+  if (!submit.ok) {
+    console.error("[shotstack submit failed]", submit.status, await submit.text());
+    return "";
+  }
+  const sj = await submit.json();
+  const renderId = sj?.response?.id;
+  if (!renderId) return "";
+
+  // Poll up to 5 minutes (every 10s)
+  for (let i = 0; i < 30; i++) {
+    await sleep(10_000);
+    const poll = await fetch(`${SHOTSTACK_BASE}/render/${renderId}`, {
+      headers: { "x-api-key": SHOTSTACK_API_KEY! },
+    });
+    if (!poll.ok) continue;
+    const pj = await poll.json();
+    const status = pj?.response?.status;
+    if (status === "done") return pj.response.url;
+    if (status === "failed") {
+      console.error("[shotstack failed]", pj.response?.error);
+      return "";
+    }
+  }
+  console.warn("[shotstack] still rendering after 5min");
+  throw new Error("Shotstack still rendering — retry");
 }
 
 function buildSRT(scenes: any[]): string {
