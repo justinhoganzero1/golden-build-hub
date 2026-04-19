@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isDemoMode } from "@/lib/demoMode";
 import DemoGate from "@/components/DemoGate";
 
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
+
 /**
  * Fort Knox auth gate.
  * 1. In the browser preview (not installed PWA / not native), shows a
@@ -15,8 +17,10 @@ const RequireAuth = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Step 1: web preview = locked dummy
-  if (isDemoMode()) {
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+
+  // Step 1: web preview = locked dummy (admin bypasses)
+  if (isDemoMode() && !isAdmin) {
     return <DemoGate>{null}</DemoGate>;
   }
 
