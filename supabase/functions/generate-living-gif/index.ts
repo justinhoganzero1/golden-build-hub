@@ -23,7 +23,20 @@ const log = (s: string, d?: unknown) =>
 const RUNWAY_API_KEY = Deno.env.get("RUNWAY_API_KEY")!;
 const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN")!;
 
+async function toRunwayImage(imageUrl: string): Promise<string> {
+  // Runway accepts: https:// URLs, runway:// URIs, or data:image/...;base64 strings.
+  // Reject relative paths, blobs, and anything else by converting to data URI.
+  if (imageUrl.startsWith("data:image/")) return imageUrl;
+  if (imageUrl.startsWith("https://")) return imageUrl;
+  // Anything else (relative paths like /src/assets/..., http://, etc.) → fail clearly
+  throw new Error(
+    `Source image URL is not publicly fetchable by Runway: "${imageUrl.slice(0, 80)}". ` +
+    `Use a https:// URL or a data:image/...;base64 string.`,
+  );
+}
+
 async function runwayGenerate(imageUrl: string, prompt: string): Promise<string> {
+  const promptImage = await toRunwayImage(imageUrl);
   // Runway Gen-3 image_to_video, max 10s per call
   const create = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
     method: "POST",
@@ -33,7 +46,7 @@ async function runwayGenerate(imageUrl: string, prompt: string): Promise<string>
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      promptImage: imageUrl,
+      promptImage,
       promptText: prompt,
       model: "gen3a_turbo",
       duration: 10,
