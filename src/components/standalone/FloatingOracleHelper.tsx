@@ -267,11 +267,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
 
   return (
     <>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-amber-500 text-primary-foreground shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform"
-        aria-label="Open Master Oracle"
-      >
+      <DraggableOracleButton open={open} onToggle={() => setOpen((o) => !o)}>
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
