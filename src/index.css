@@ -461,3 +461,32 @@ All colors MUST be HSL.
   /* leave neutral .border untouched */
 }
 
+/* ===== Movie Studio Pro: bright pink 3D glow under each "tab" (Card) =====
+   Pure CSS lift + glow on every Card / panel inside Movie Studio surfaces.
+   No JS, no DOM changes — safe for in-flight renders. */
+.movie-studio-blue-borders [class*="rounded-lg"][class*="bg-card"],
+.movie-studio-blue-borders [data-slot="card"],
+.movie-studio-blue-borders > .rounded-lg,
+.movie-studio-blue-borders [class*="rounded-lg"][class*="border"],
+[data-movie-studio-dialog] [data-slot="card"],
+[data-movie-studio-dialog] [class*="rounded-lg"][class*="border"] {
+  position: relative;
+  transform: translateZ(0);
+  box-shadow:
+    0 0 0 1px hsl(330 100% 65% / 0.45),
+    0 8px 18px -4px hsl(330 100% 55% / 0.55),
+    0 18px 40px -8px hsl(330 100% 50% / 0.65),
+    0 0 60px hsl(330 100% 60% / 0.45) !important;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.movie-studio-blue-borders [class*="rounded-lg"][class*="bg-card"]:hover,
+.movie-studio-blue-borders [data-slot="card"]:hover,
+[data-movie-studio-dialog] [data-slot="card"]:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow:
+    0 0 0 1px hsl(330 100% 70% / 0.6),
+    0 12px 24px -4px hsl(330 100% 55% / 0.7),
+    0 26px 60px -10px hsl(330 100% 50% / 0.8),
+    0 0 90px hsl(330 100% 65% / 0.6) !important;
+}
+
