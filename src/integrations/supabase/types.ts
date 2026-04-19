@@ -485,6 +485,86 @@ export type Database = {
         }
         Relationships: []
       }
+      living_gifs: {
+        Row: {
+          amount_paid_cents: number
+          created_at: string
+          currency: string
+          duration_seconds: number
+          error_message: string | null
+          generated_at: string | null
+          gif_url: string | null
+          id: string
+          is_active_oracle: boolean
+          preview_mp4_url: string | null
+          prompt: string
+          resolution: string
+          source_avatar_id: string | null
+          source_image_url: string
+          status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid_cents?: number
+          created_at?: string
+          currency?: string
+          duration_seconds?: number
+          error_message?: string | null
+          generated_at?: string | null
+          gif_url?: string | null
+          id?: string
+          is_active_oracle?: boolean
+          preview_mp4_url?: string | null
+          prompt: string
+          resolution?: string
+          source_avatar_id?: string | null
+          source_image_url: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid_cents?: number
+          created_at?: string
+          currency?: string
+          duration_seconds?: number
+          error_message?: string | null
+          generated_at?: string | null
+          gif_url?: string | null
+          id?: string
+          is_active_oracle?: boolean
+          preview_mp4_url?: string | null
+          prompt?: string
+          resolution?: string
+          source_avatar_id?: string | null
+          source_image_url?: string
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "living_gifs_source_avatar_id_fkey"
+            columns: ["source_avatar_id"]
+            isOneToOne: false
+            referencedRelation: "user_avatars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movie_character_bible: {
         Row: {
           created_at: string
