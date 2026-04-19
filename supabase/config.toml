@@ -36,3 +36,7 @@ verify_jwt = false
 
 [functions.movie-failure-notify]
 verify_jwt = false
+
+# Living GIF worker — cron-driven, no JWT (uses service-role auth in code).
+[functions.living-gif-worker]
+verify_jwt = false
