@@ -475,28 +475,31 @@ const PortalTutorWidget = () => {
       )}
 
       {open && (
-        <div className="fixed inset-x-2 bottom-2 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[400px] z-50 flex flex-col rounded-2xl border border-border bg-card shadow-2xl max-h-[85vh]">
-          <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div
-                className="oracle-listening-shell oracle-speaking-shell"
-                data-speaking={speaking ? "true" : "false"}
-                style={{
-                  ["--oracle-listening-level" as string]: glowLevel.toString(),
-                  ["--oracle-speaking-level" as string]: pinkLevel.toString(),
-                }}
-              >
-                <img
-                  src={MASTER_AI_AVATAR}
-                  alt={MASTER_AI_AVATAR_ALT}
-                  className="h-10 w-10 rounded-full object-cover border-2 border-primary shadow-[0_0_15px_hsl(var(--primary)/0.5)] transition-transform duration-100"
-                />
-              </div>
-              <div>
-                <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
-                <div className="text-xs text-muted-foreground">
-                  {speaking ? "Speaking…" : listening ? "Listening now — speak naturally" : "Your guide to every feature"}
-                </div>
+        <div className="fixed inset-x-2 bottom-2 top-2 sm:bottom-6 sm:right-6 sm:left-auto sm:top-6 sm:w-[400px] z-50 flex flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
+          {/* Anchored full-bleed avatar fills the entire widget */}
+          <div
+            className="oracle-listening-shell oracle-speaking-shell absolute inset-0 z-0"
+            data-speaking={speaking ? "true" : "false"}
+            style={{
+              ["--oracle-listening-level" as string]: glowLevel.toString(),
+              ["--oracle-speaking-level" as string]: pinkLevel.toString(),
+            }}
+          >
+            <img
+              src={MASTER_AI_AVATAR}
+              alt={MASTER_AI_AVATAR_ALT}
+              className="absolute inset-0 h-full w-full object-cover object-center select-none pointer-events-none"
+              draggable={false}
+            />
+            {/* Subtle gradient so header + messages stay legible over the avatar */}
+            <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/10 to-background/85 pointer-events-none" />
+          </div>
+
+          <header className="relative z-10 flex items-center justify-between gap-2 border-b border-border/60 bg-background/40 backdrop-blur-md px-4 py-3">
+            <div>
+              <div className="font-semibold text-foreground">ORACLE LUNAR Concierge</div>
+              <div className="text-xs text-muted-foreground">
+                {speaking ? "Speaking…" : listening ? "Listening now — speak naturally" : "Your guide to every feature"}
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -504,28 +507,28 @@ const PortalTutorWidget = () => {
                 onClick={() => setVoiceOn((v) => !v)}
                 aria-label={voiceOn ? "Mute Concierge voice" : "Unmute Concierge voice"}
                 title={voiceOn ? "Voice on — click to mute" : "Voice off — click to enable"}
-                className="rounded-md p-1.5 hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                className="rounded-md p-1.5 hover:bg-secondary/70 text-muted-foreground hover:text-primary transition-colors"
               >
                 {voiceOn && !isMuted ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </button>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="rounded-md p-1 hover:bg-secondary text-muted-foreground"
+                className="rounded-md p-1 hover:bg-secondary/70 text-muted-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
           </header>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div ref={scrollRef} className="relative z-10 flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`rounded-xl px-3 py-2 text-sm ${
+                className={`rounded-xl px-3 py-2 text-sm backdrop-blur-md ${
                   m.role === "user"
-                    ? "ml-auto max-w-[85%] bg-primary text-primary-foreground"
-                    : "mr-auto max-w-[90%] bg-secondary text-secondary-foreground"
+                    ? "ml-auto max-w-[85%] bg-primary/90 text-primary-foreground"
+                    : "mr-auto max-w-[90%] bg-secondary/85 text-secondary-foreground"
                 }`}
               >
                 <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1">
@@ -534,7 +537,7 @@ const PortalTutorWidget = () => {
               </div>
             ))}
             {loading && (
-              <div className="mr-auto rounded-xl bg-secondary px-3 py-2 text-sm text-muted-foreground">
+              <div className="mr-auto rounded-xl bg-secondary/85 backdrop-blur-md px-3 py-2 text-sm text-muted-foreground">
                 <span className="inline-flex gap-1">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary [animation-delay:150ms]" />
