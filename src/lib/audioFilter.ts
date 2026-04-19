@@ -161,6 +161,8 @@ export class AudioFilterPipeline {
   private gain: GainNode | null = null;
   private rawStream: MediaStream | null = null;
   public outputStream: MediaStream | null = null;
+  /** Exposed so other features (Live Vision, noise-learning hook) can tap the cleaned spectrum. */
+  public getAnalyser(): AnalyserNode | null { return this.analyser; }
   private rafId: number | null = null;
   private status: AudioFilterStatus = {
     mode: "quiet",
