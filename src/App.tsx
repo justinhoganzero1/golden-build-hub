@@ -18,6 +18,7 @@ import RequireAuth from "@/components/RequireAuth";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import AppUnlockGate from "@/components/AppUnlockGate";
+import PaywallGate from "@/components/PaywallGate";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
