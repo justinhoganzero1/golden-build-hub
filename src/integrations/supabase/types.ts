@@ -344,6 +344,60 @@ export type Database = {
         }
         Relationships: []
       }
+      global_sound_signatures: {
+        Row: {
+          action: string
+          bandwidth_hz: number | null
+          category: string
+          centroid_hz: number | null
+          contributors: number
+          created_at: string
+          description: string | null
+          duration_ms: number | null
+          fingerprint: Json
+          id: string
+          is_continuous: boolean
+          is_transient: boolean
+          label: string
+          peak_hz: number | null
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          bandwidth_hz?: number | null
+          category?: string
+          centroid_hz?: number | null
+          contributors?: number
+          created_at?: string
+          description?: string | null
+          duration_ms?: number | null
+          fingerprint?: Json
+          id?: string
+          is_continuous?: boolean
+          is_transient?: boolean
+          label: string
+          peak_hz?: number | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          bandwidth_hz?: number | null
+          category?: string
+          centroid_hz?: number | null
+          contributors?: number
+          created_at?: string
+          description?: string | null
+          duration_ms?: number | null
+          fingerprint?: Json
+          id?: string
+          is_continuous?: boolean
+          is_transient?: boolean
+          label?: string
+          peak_hz?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inquiry_leads: {
         Row: {
           ai_summary: string | null
@@ -1305,6 +1359,72 @@ export type Database = {
           notes?: string | null
           page?: string
           status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sound_signatures: {
+        Row: {
+          action: string
+          associated_event: string | null
+          bandwidth_hz: number | null
+          category: string
+          centroid_hz: number | null
+          confidence: number
+          created_at: string
+          duration_ms: number | null
+          fingerprint: Json
+          id: string
+          is_continuous: boolean
+          is_transient: boolean
+          label: string
+          last_heard_at: string
+          loudness_db: number | null
+          occurrences: number
+          peak_hz: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          associated_event?: string | null
+          bandwidth_hz?: number | null
+          category?: string
+          centroid_hz?: number | null
+          confidence?: number
+          created_at?: string
+          duration_ms?: number | null
+          fingerprint?: Json
+          id?: string
+          is_continuous?: boolean
+          is_transient?: boolean
+          label: string
+          last_heard_at?: string
+          loudness_db?: number | null
+          occurrences?: number
+          peak_hz?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          associated_event?: string | null
+          bandwidth_hz?: number | null
+          category?: string
+          centroid_hz?: number | null
+          confidence?: number
+          created_at?: string
+          duration_ms?: number | null
+          fingerprint?: Json
+          id?: string
+          is_continuous?: boolean
+          is_transient?: boolean
+          label?: string
+          last_heard_at?: string
+          loudness_db?: number | null
+          occurrences?: number
+          peak_hz?: number | null
           updated_at?: string
           user_id?: string
         }
