@@ -51,25 +51,28 @@ const LivingGifStudioPage = () => {
     const sessionId = params.get("session_id");
     if (paid === "1" && gifId && sessionId && !verifying) {
       setVerifying(true);
-      toast.info("Payment received. Rendering your 8K GIF (~60-90s)…");
+      // Clear params immediately so a refresh doesn't retrigger this branch
+      params.delete("paid");
+      params.delete("gif_id");
+      params.delete("session_id");
+      setParams(params, { replace: true });
+      toast.info("Payment received. Queuing your 8K GIF (~60-90s)…");
       supabase.functions
         .invoke("generate-living-gif", { body: { gif_id: gifId, session_id: sessionId } })
-        .then(({ error }) => {
+        .then(({ data, error }) => {
           if (error) throw error;
-          toast.success("Your Living GIF is ready! 🎬");
+          if ((data as { stale?: boolean })?.stale) {
+            toast.info("That generation was already cleared — start a new one below.");
+          } else {
+            toast.success("Queued! Your Living GIF will appear shortly.");
+          }
           refetch();
         })
         .catch((e) => {
           console.error(e);
           toast.error("Generation failed. We'll keep retrying — check back shortly.");
         })
-        .finally(() => {
-          setVerifying(false);
-          params.delete("paid");
-          params.delete("gif_id");
-          params.delete("session_id");
-          setParams(params, { replace: true });
-        });
+        .finally(() => setVerifying(false));
     } else if (params.get("canceled") === "1") {
       toast.info("Payment canceled. Your draft was discarded.");
       params.delete("canceled");
