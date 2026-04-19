@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2 } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
+import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 
 const MIN_BALANCE_CENTS = 25;
 
@@ -18,6 +19,12 @@ const MovieStudioProPage = () => {
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [studioOpen, setStudioOpen] = useState(false);
+  const [directorOpen, setDirectorOpen] = useState(false);
+
+  const handleDirectorComplete = (result: MovieDirectorResult) => {
+    sessionStorage.setItem("oracle_movie_brief", JSON.stringify(result));
+    setStudioOpen(true);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -107,17 +114,32 @@ const MovieStudioProPage = () => {
         )}
 
         <Button
+          onClick={() => setDirectorOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-amber-500 via-primary to-amber-500 hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+        >
+          <Wand2 className="w-6 h-6 mr-3" /> Tell Oracle Your Movie (recommended)
+        </Button>
+
+        <Button
           onClick={() => setStudioOpen(true)}
           size="lg"
-          className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground"
+          variant="outline"
+          className="w-full h-12 text-sm"
         >
-          <Film className="w-6 h-6 mr-3" /> Open Movie Studio Pro
+          <Film className="w-5 h-5 mr-2" /> Or open the studio manually
         </Button>
 
         <p className="text-[10px] text-center text-muted-foreground">
           Pricing is transparent. You see the exact charge before every export — no surprise fees.
         </p>
       </div>
+
+      <OracleMovieDirector
+        open={directorOpen}
+        onOpenChange={setDirectorOpen}
+        onComplete={handleDirectorComplete}
+      />
 
       <MovieStudio
         open={studioOpen}

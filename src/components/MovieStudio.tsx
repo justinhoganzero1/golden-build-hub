@@ -266,6 +266,23 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
     }
   }, [open]);
 
+  // Hydrate from Oracle Movie Director (sessionStorage handoff)
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = sessionStorage.getItem("oracle_movie_brief");
+      if (!raw) return;
+      const brief = JSON.parse(raw);
+      if (brief?.script) setScript(brief.script);
+      if (brief?.intent) setIntent(brief.intent);
+      if (brief?.youtube?.title) setTitle(brief.youtube.title);
+      sessionStorage.removeItem("oracle_movie_brief");
+      // Stash YouTube package for later publish step
+      if (brief?.youtube) sessionStorage.setItem("oracle_youtube_pkg", JSON.stringify(brief.youtube));
+      toast.success("Oracle pre-filled your script — review and tap Generate Scenes");
+    } catch { /* ignore */ }
+  }, [open]);
+
   // Load saved favourite tracks when the studio opens
   useEffect(() => {
     if (!open || !user) return;
