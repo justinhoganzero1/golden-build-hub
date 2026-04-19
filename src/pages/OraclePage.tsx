@@ -242,17 +242,16 @@ const OraclePage = () => {
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
     if (isSpeaking) {
-      if (alwaysListenRef.current && recognitionRef.current && !pausedForSpeechRef.current) {
-        pausedForSpeechRef.current = true;
+      if (alwaysListenRef.current && recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch {}
       }
       finalTranscriptRef.current = "";
-      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-    } else {
-      echoCooldownUntilRef.current = Date.now() + 2500;
-      if (pausedForSpeechRef.current) {
-        pausedForSpeechRef.current = false;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
       }
+    } else {
+      echoCooldownUntilRef.current = Date.now() + 1200;
     }
   }, [isSpeaking]);
 
