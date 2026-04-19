@@ -209,9 +209,7 @@ const PortalLandingPage = () => {
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 relative">
-            <span aria-hidden="true" className="absolute -top-3 -left-2 text-base rotate-[-18deg] select-none">🥚</span>
-            <span aria-hidden="true" className="absolute -top-2 -right-2 text-base rotate-[14deg] select-none">🐣</span>
+          <div className="flex items-center gap-2">
             <img src={solaceLogo} alt="SOLACE logo" className="h-9 w-9 drop-shadow-[0_0_10px_hsl(var(--primary)/0.6)]" />
             <span className="solace-wordmark text-lg">SOLACE</span>
           </div>
