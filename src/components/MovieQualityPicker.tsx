@@ -1,24 +1,25 @@
-// Quality + duration picker with the ULTIMATE 8K upsell.
-import { Card } from "@/components/ui/card";
+// Quality picker — slideshow edition (SD 720p / HD 1080p only).
 import { Badge } from "@/components/ui/badge";
-import { Lock, Crown } from "lucide-react";
-import { QUALITY_TIERS, type RenderQualityTier, getQualityTier } from "@/lib/moviePaywall";
+import { Lock } from "lucide-react";
+import { QUALITY_TIERS, type RenderQualityTier } from "@/lib/moviePaywall";
 
 interface Props {
   value: RenderQualityTier;
   onChange: (q: RenderQualityTier) => void;
   durationMin: number;
   isAdmin?: boolean;
-  isLifetime?: boolean;
+  /** Free users are locked to SD 720p. */
+  isFreeTier?: boolean;
 }
 
-export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isLifetime }: Props) => {
+export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isFreeTier }: Props) => {
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-muted-foreground">Render quality</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {QUALITY_TIERS.map(t => {
-          const locked = t.ultimate && !(isAdmin || isLifetime);
+          // Free tier locked to SD only
+          const locked = !!isFreeTier && !isAdmin && t.key !== "sd";
           const totalCost = ((t.pricePerMinCents * durationMin) / 100).toFixed(2);
           const selected = value === t.key;
           return (
@@ -30,18 +31,13 @@ export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isLi
                 selected ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.3)]" :
                 locked ? "border-border/30 bg-muted/20 opacity-60 cursor-not-allowed" :
                 "border-border/50 hover:border-primary/40 hover:bg-muted/40"
-              } ${t.ultimate ? "ring-1 ring-primary/30" : ""}`}
+              }`}
             >
               {t.badge && (
-                <Badge className={`absolute -top-2 -right-2 text-[9px] ${t.ultimate ? "bg-gradient-to-r from-primary to-yellow-500" : ""}`}>
-                  {t.badge}
-                </Badge>
+                <Badge className="absolute -top-2 -right-2 text-[9px]">{t.badge}</Badge>
               )}
               <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="flex items-center gap-1">
-                  {t.ultimate && <Crown className="w-3 h-3 text-primary" />}
-                  <span className="text-sm font-bold">{t.label}</span>
-                </div>
+                <span className="text-sm font-bold">{t.label}</span>
                 {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
               </div>
               <p className="text-[10px] text-muted-foreground">{t.resolution}</p>

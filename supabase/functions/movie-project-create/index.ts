@@ -1,6 +1,6 @@
 // Creates a new movie_projects row, validates tier limits, charges wallet UPFRONT for the
 // estimated cost (atomic deduction), then triggers the script chunker.
-// On failure, the worker refunds per-scene cost via wallet_topup.
+// Slideshow edition: free users get exactly ONE 8-second clip, ever. Everything else is paywalled.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -9,15 +9,15 @@ const corsHeaders = {
 };
 
 // Pricing per quality tier (cents per finished minute, +5% markup baked in)
-const PRICING: Record<string, number> = {
-  sd: 50, hd: 200, "4k": 800, "8k_ultimate": 5000,
-};
+const PRICING: Record<string, number> = { sd: 50, hd: 200 };
 
-// Tier limits by subscription
-const MAX_DURATION: Record<string, number> = {
-  free: 2, starter: 5, monthly: 10, quarterly: 30,
-  biannual: 30, annual: 30, golden: 60, lifetime: 120,
+// Tier limits by subscription (in MINUTES — free is special-cased to 8 SECONDS)
+const MAX_DURATION_MIN: Record<string, number> = {
+  starter: 2, monthly: 5, quarterly: 15,
+  biannual: 15, annual: 15, golden: 30, lifetime: 60,
 };
+const FREE_CLIP_SECONDS = 8;
+const FREE_CLIP_QUOTA = 1;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -41,42 +41,59 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Determine effective tier
+    // ===== Determine effective tier =====
     const adminEmails = ["justinbretthogan@gmail.com"];
     const isAdmin = adminEmails.includes((user.email ?? "").toLowerCase());
     let userTier = "free";
-    if (!isAdmin) {
+    if (isAdmin) {
+      userTier = "lifetime";
+    } else {
       const { data: rewards } = await supabase.from("reward_grants")
         .select("reward_type").eq("user_id", user.id).eq("active", true)
         .gt("expires_at", new Date().toISOString()).limit(1);
       if (rewards?.length) userTier = "monthly";
-    } else {
-      userTier = "lifetime";
     }
 
-    const dur = Math.max(1, Math.min(120, Number(target_duration_minutes) || 5));
+    const requestedDur = Math.max(0.1, Math.min(60, Number(target_duration_minutes) || 0.15));
     const quality = String(quality_tier || "hd");
+    const isFreeTier = !isAdmin && userTier === "free";
 
-    const maxDur = isAdmin ? 120 : (MAX_DURATION[userTier] ?? 2);
-    if (dur > maxDur) {
-      return new Response(JSON.stringify({
-        error: `Your tier allows up to ${maxDur} min. Upgrade to unlock ${dur} min.`,
-        upgrade_required: true,
-      }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // ===== FREE TIER: only 1 clip ever, fixed 8 seconds, SD only =====
+    if (isFreeTier) {
+      // Count existing projects (any status — we're deciding lifetime quota)
+      const { count } = await supabase.from("movie_projects")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if ((count ?? 0) >= FREE_CLIP_QUOTA) {
+        return new Response(JSON.stringify({
+          error: `Your free 8-second clip has been used. Upgrade to make more movies.`,
+          upgrade_required: true, free_quota_used: true,
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Force the free clip shape
+      var dur = FREE_CLIP_SECONDS / 60;        // 8 seconds expressed in minutes
+      var enforcedQuality = "sd";
+      var estimateCents = 0;                    // free for the user
+    } else {
+      // ===== Paid tier: enforce minute caps + valid quality =====
+      const maxDur = isAdmin ? 60 : (MAX_DURATION_MIN[userTier] ?? 0);
+      if (requestedDur > maxDur) {
+        return new Response(JSON.stringify({
+          error: `Your tier allows up to ${maxDur} min. Upgrade to unlock ${requestedDur} min.`,
+          upgrade_required: true,
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!PRICING[quality]) {
+        return new Response(JSON.stringify({ error: `Unknown quality tier "${quality}". Use 'sd' or 'hd'.` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      var dur = requestedDur;
+      var enforcedQuality = quality;
+      var estimateCents = Math.ceil(dur * PRICING[quality]);
     }
-    if (quality === "8k_ultimate" && !isAdmin && userTier !== "lifetime") {
-      return new Response(JSON.stringify({
-        error: "ULTIMATE 8K is reserved for Lifetime Ultimate members.",
-        upgrade_required: true,
-      }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
-    const estimateCents = Math.ceil(dur * (PRICING[quality] ?? 200));
-
-    // ===== ATOMIC WALLET CHARGE UPFRONT =====
-    // Admin bypasses wallet (he owns the platform).
-    if (!isAdmin) {
-      // Ensure wallet row exists
+    // ===== ATOMIC WALLET CHARGE UPFRONT (skip for admin and free clip) =====
+    if (!isAdmin && estimateCents > 0) {
       await supabase.from("wallet_balances")
         .upsert({ user_id: user.id, balance_cents: 0 }, { onConflict: "user_id", ignoreDuplicates: true });
 
@@ -91,7 +108,6 @@ Deno.serve(async (req) => {
         }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      // Deduct upfront
       const { error: chargeErr } = await supabase.from("wallet_balances")
         .update({ balance_cents: balance - estimateCents, updated_at: new Date().toISOString() })
         .eq("user_id", user.id);
@@ -100,19 +116,18 @@ Deno.serve(async (req) => {
 
     const { data: project, error } = await supabase.from("movie_projects").insert({
       user_id: user.id,
-      title: title || "Untitled Movie",
+      title: title || (isFreeTier ? "My Free 8s Clip" : "Untitled Movie"),
       logline, genre,
       target_duration_minutes: dur,
-      quality_tier: quality,
+      quality_tier: enforcedQuality,
       brief: brief || {},
       estimated_cost_cents: estimateCents,
-      user_paid_cents: isAdmin ? 0 : estimateCents,
+      user_paid_cents: isAdmin || isFreeTier ? 0 : estimateCents,
       status: "draft",
     }).select().single();
 
     if (error) {
-      // Refund on insert failure
-      if (!isAdmin) {
+      if (!isAdmin && estimateCents > 0) {
         await supabase.rpc("wallet_topup", { _user_id: user.id, _amount_cents: estimateCents });
       }
       throw error;
@@ -127,9 +142,10 @@ Deno.serve(async (req) => {
       });
     })());
 
-    return new Response(JSON.stringify({ ok: true, project, charged_cents: isAdmin ? 0 : estimateCents }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-    });
+    return new Response(JSON.stringify({
+      ok: true, project, charged_cents: isAdmin || isFreeTier ? 0 : estimateCents,
+      free_clip: isFreeTier,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (e) {
     console.error("[project-create]", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }), {

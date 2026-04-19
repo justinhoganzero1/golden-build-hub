@@ -1,15 +1,19 @@
-// Movie Studio + Oracle Director paywall rules.
-// Tiers cap movie length, scene count, and feature access. Admins + Lifetime bypass everything.
-// Wallet billing on top still applies (provider+5%, see supabase/functions/_shared/pricing.ts).
+// Movie Studio paywall rules — slideshow edition.
+// The renderer is now a Ken Burns slideshow (still images + AI narration).
+// So 4K/8K upscale promises were dropped. Two honest tiers: SD 720p / HD 1080p.
+// Free users get exactly ONE 8-second clip, lifetime. Everything after = paywall.
 
 export interface MovieTierLimits {
+  /** Max movie duration in MINUTES. Free users only get 8 SECONDS, expressed below as `freeClipSeconds`. */
   maxDurationMin: number;
+  /** Free tier clip length in seconds (used when on free tier and no paid unlock). */
+  freeClipSeconds: number;
+  /** How many free clips this account is ever allowed (lifetime, not per-month). */
+  freeClipQuota: number;
   allowHD: boolean;
   allowCaptions: boolean;
-  allowUpscale4K: boolean;
-  allow8KUltimate: boolean;
   allowYouTubeOAuth: boolean;
-  allowLongForm: boolean; // 30+ min films
+  allowLongForm: boolean; // 5+ min films
   label: string;
 }
 
@@ -21,50 +25,55 @@ const TIER_RANK: Record<string, number> = {
 export function getMovieLimits(tier: string, isAdmin = false, ownsMovieStudio = false): MovieTierLimits {
   if (isAdmin || TIER_RANK[tier] >= 7) {
     return {
-      maxDurationMin: 120,
-      allowHD: true, allowCaptions: true, allowUpscale4K: true,
-      allow8KUltimate: true, allowYouTubeOAuth: true, allowLongForm: true,
+      maxDurationMin: 60,
+      freeClipSeconds: 8, freeClipQuota: 9999,
+      allowHD: true, allowCaptions: true,
+      allowYouTubeOAuth: true, allowLongForm: true,
       label: isAdmin ? "Admin Unlimited" : "Lifetime Ultimate",
     };
   }
   if (ownsMovieStudio || TIER_RANK[tier] >= 6) {
     return {
-      maxDurationMin: 60,
-      allowHD: true, allowCaptions: true, allowUpscale4K: true,
-      allow8KUltimate: false, allowYouTubeOAuth: true, allowLongForm: true,
+      maxDurationMin: 30,
+      freeClipSeconds: 8, freeClipQuota: 9999,
+      allowHD: true, allowCaptions: true,
+      allowYouTubeOAuth: true, allowLongForm: true,
       label: ownsMovieStudio ? "Movie Studio Lifetime" : "Golden Heart",
     };
   }
   const rank = TIER_RANK[tier] ?? 0;
   if (rank >= 3) return {
-    maxDurationMin: 30, allowHD: true, allowCaptions: true,
-    allowUpscale4K: true, allow8KUltimate: false,
-    allowYouTubeOAuth: true, allowLongForm: false, label: "Pro / Quarterly+",
+    maxDurationMin: 15, freeClipSeconds: 8, freeClipQuota: 9999,
+    allowHD: true, allowCaptions: true,
+    allowYouTubeOAuth: true, allowLongForm: true, label: "Pro / Quarterly+",
   };
   if (rank >= 2) return {
-    maxDurationMin: 10, allowHD: true, allowCaptions: true,
-    allowUpscale4K: false, allow8KUltimate: false,
+    maxDurationMin: 5, freeClipSeconds: 8, freeClipQuota: 9999,
+    allowHD: true, allowCaptions: true,
     allowYouTubeOAuth: false, allowLongForm: false, label: "Full Access",
   };
   if (rank >= 1) return {
-    maxDurationMin: 5, allowHD: false, allowCaptions: true,
-    allowUpscale4K: false, allow8KUltimate: false,
+    maxDurationMin: 2, freeClipSeconds: 8, freeClipQuota: 9999,
+    allowHD: false, allowCaptions: true,
     allowYouTubeOAuth: false, allowLongForm: false, label: "Starter",
   };
+  // FREE — exactly one 8-second clip, ever.
   return {
-    maxDurationMin: 2, allowHD: false, allowCaptions: false,
-    allowUpscale4K: false, allow8KUltimate: false,
+    maxDurationMin: 0, // no minute-based films at all
+    freeClipSeconds: 8, freeClipQuota: 1,
+    allowHD: false, allowCaptions: true,
     allowYouTubeOAuth: false, allowLongForm: false, label: "Free",
   };
 }
 
+/** Returns the lowest tier that supports a given duration in minutes. */
 export function tierRequiredForDuration(min: number): string {
-  if (min <= 2) return "free";
-  if (min <= 5) return "starter";
-  if (min <= 10) return "monthly";
-  if (min <= 30) return "quarterly";
-  if (min <= 60) return "lifetime";
-  return "lifetime"; // 60-120min = lifetime ultimate
+  if (min <= 0.15) return "free";   // ≤ 8 seconds
+  if (min <= 2)   return "starter";
+  if (min <= 5)   return "monthly";
+  if (min <= 15)  return "quarterly";
+  if (min <= 30)  return "golden";
+  return "lifetime";
 }
 
 export const TIER_UPSELL_LABEL: Record<string, string> = {
@@ -73,9 +82,9 @@ export const TIER_UPSELL_LABEL: Record<string, string> = {
   golden: "Golden Heart ($1,200/yr)", lifetime: "Lifetime Ultimate ($900)",
 };
 
-// ============= QUALITY TIER PRICING (per finished minute, in cents) =============
-// All include +5% provider markup baked in. Two paths: "Standard" cheap, "ULTIMATE 8K" outrageous.
-export type RenderQualityTier = "sd" | "hd" | "4k" | "8k_ultimate";
+// ============= QUALITY TIER PRICING =============
+// Slideshow renderer = no real video gen. Two tiers only: SD 720p, HD 1080p.
+export type RenderQualityTier = "sd" | "hd";
 
 export interface QualityTierPricing {
   key: RenderQualityTier;
@@ -85,7 +94,6 @@ export interface QualityTierPricing {
   description: string;
   badge?: string;
   premium?: boolean;
-  ultimate?: boolean;
 }
 
 export const QUALITY_TIERS: QualityTierPricing[] = [
@@ -94,34 +102,15 @@ export const QUALITY_TIERS: QualityTierPricing[] = [
     label: "Standard",
     resolution: "720p",
     pricePerMinCents: 50, // $0.50/min
-    description: "Fast, smooth, social-ready. Real-ESRGAN polish.",
+    description: "Ken Burns pan/zoom slideshow with AI narration. Fast and social-ready.",
   },
   {
     key: "hd",
     label: "HD Cinema",
     resolution: "1080p",
     pricePerMinCents: 200, // $2/min
-    description: "Cinematic 1080p with audio mix and burn-in captions.",
+    description: "1080p Ken Burns slideshow with cinematic narration mix and burn-in captions.",
     badge: "Most popular",
-  },
-  {
-    key: "4k",
-    label: "4K Pro",
-    resolution: "3840×2160",
-    pricePerMinCents: 800, // $8/min
-    description: "Real-ESRGAN 4K upscale. Cinema-grade detail.",
-    badge: "Premium",
-    premium: true,
-  },
-  {
-    key: "8k_ultimate",
-    label: "🏆 ULTIMATE 8K",
-    resolution: "7680×4320",
-    pricePerMinCents: 5000, // $50/min — the outrageous one
-    description: "Topaz Video AI 8K. Studio-grade. Reserved for Lifetime Ultimate. Up to 120 min.",
-    badge: "ULTIMATE",
-    premium: true,
-    ultimate: true,
   },
 ];
 
@@ -134,3 +123,6 @@ export function estimateMovieCostCents(durationMin: number, quality: RenderQuali
   const tier = getQualityTier(quality);
   return Math.ceil(durationMin * tier.pricePerMinCents);
 }
+
+/** Cost of the free 8-second clip in cents (always $0 for the user — covered by us). */
+export const FREE_CLIP_SECONDS = 8;
