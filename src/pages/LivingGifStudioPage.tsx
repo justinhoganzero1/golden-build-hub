@@ -79,6 +79,21 @@ const LivingGifStudioPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const imageToDataUri = async (url: string): Promise<string> => {
+    if (url.startsWith("data:image/")) return url;
+    if (url.startsWith("https://")) return url; // Runway can fetch these directly
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Couldn't load avatar image (${res.status})`);
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("Avatar source is not an image");
+    return await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => resolve(r.result as string);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  };
+
   const handleGenerate = async () => {
     if (!picked) return toast.error("Pick an avatar first");
     if (prompt.trim().length < 6) {
@@ -86,10 +101,11 @@ const LivingGifStudioPage = () => {
     }
     setBusy(true);
     try {
+      const sourceImage = await imageToDataUri(picked.image_url);
       const { data, error } = await supabase.functions.invoke("create-gif-checkout", {
         body: {
           source_avatar_id: pickedId === "master" ? null : pickedId,
-          source_image_url: picked.image_url,
+          source_image_url: sourceImage,
           prompt: prompt.trim(),
           title: title.trim() || null,
         },
