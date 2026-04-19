@@ -142,7 +142,7 @@ async function renderVideo(job: any) {
     videoUrl = await replicateVideoFallback(scene.visual_prompt ?? scene.script_text);
   }
 
-  if (!videoUrl) throw new Error("All video providers failed (no Runway or Replicate token)");
+  if (!videoUrl) throw new Error("All video providers failed (Runway, internal fallback, and Replicate all returned no video)");
 
   // Download + re-upload to our bucket so we own it
   const ownedUrl = await mirrorToBucket(videoUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-1080p.mp4`, "video/mp4");
