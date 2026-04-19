@@ -365,3 +365,79 @@ All colors MUST be HSL.
     margin-right: auto;
   }
 }
+
+/* ── Holographic bubble effects ──
+   Used by referral / free-trial CTA bubbles for an iridescent, premium feel.
+   Compose with: className="holo-bubble ..." and add three spans inside:
+   <span class="holo-rim"/> <span class="holo-sheen"/> <span class="holo-scan"/> */
+@layer components {
+  .holo-bubble {
+    isolation: isolate;
+    overflow: hidden;
+    animation: holo-breathe 3.6s ease-in-out infinite;
+  }
+  .holo-bubble > .holo-rim,
+  .holo-bubble > .holo-sheen,
+  .holo-bubble > .holo-scan {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .holo-bubble > .holo-rim {
+    padding: 3px;
+    background: conic-gradient(
+      from 0deg,
+      #ff00d4, #00fff0, #fff200, #00ff85, #00b3ff, #ff00d4
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    filter: blur(0.5px) saturate(1.4);
+    opacity: 0.85;
+    animation: holo-spin 6s linear infinite;
+    z-index: 1;
+  }
+  .holo-bubble > .holo-sheen {
+    background: conic-gradient(
+      from 220deg at 50% 50%,
+      rgba(255, 0, 212, 0) 0deg,
+      rgba(0, 255, 240, 0.35) 60deg,
+      rgba(255, 242, 0, 0.30) 140deg,
+      rgba(0, 255, 133, 0.30) 220deg,
+      rgba(0, 179, 255, 0.35) 300deg,
+      rgba(255, 0, 212, 0) 360deg
+    );
+    mix-blend-mode: screen;
+    opacity: 0.55;
+    animation: holo-spin 9s linear infinite reverse;
+    z-index: 2;
+  }
+  .holo-bubble > .holo-scan {
+    background: linear-gradient(
+      115deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 65%
+    );
+    background-size: 250% 250%;
+    mix-blend-mode: screen;
+    opacity: 0.6;
+    animation: holo-scan-move 4s ease-in-out infinite;
+    z-index: 3;
+  }
+}
+
+@keyframes holo-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes holo-scan-move {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -100% 0; }
+}
+@keyframes holo-breathe {
+  0%, 100% { transform: scale(1); filter: saturate(1); }
+  50%      { transform: scale(1.025); filter: saturate(1.2); }
+}
