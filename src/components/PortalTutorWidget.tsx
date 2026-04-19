@@ -196,6 +196,25 @@ const PortalTutorWidget = () => {
       const preferred = voices.find((v) => /female|samantha|sarah|google.*english/i.test(v.name))
         || voices.find((v) => v.lang?.startsWith("en"));
       if (preferred) utter.voice = preferred;
+      // Browser TTS can't be tapped by Web Audio, so fake a soft pulsing glow
+      // so the avatar still feels alive.
+      let pulseRaf: number | null = null;
+      const startedAt = performance.now();
+      const pulse = () => {
+        const t = (performance.now() - startedAt) / 1000;
+        const v = 0.45 + Math.sin(t * 6) * 0.25 + Math.sin(t * 13) * 0.12;
+        setSpeechLevel(Math.max(0.2, Math.min(1, v)));
+        pulseRaf = requestAnimationFrame(pulse);
+      };
+      utter.onstart = () => { setSpeaking(true); pulse(); };
+      const stop = () => {
+        if (pulseRaf) cancelAnimationFrame(pulseRaf);
+        pulseRaf = null;
+        setSpeechLevel(0);
+        setSpeaking(false);
+      };
+      utter.onend = stop;
+      utter.onerror = stop;
       synth.speak(utter);
     } catch {}
   }, []);
@@ -209,6 +228,7 @@ const PortalTutorWidget = () => {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
+      stopSpeechMeter();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
       const resp = await fetch(url, {
         method: "POST",
@@ -238,16 +258,24 @@ const PortalTutorWidget = () => {
       }
       const blob = await resp.blob();
       const audio = new Audio(URL.createObjectURL(blob));
+      audio.crossOrigin = "anonymous";
       audioRef.current = audio;
-      audio.onended = () => URL.revokeObjectURL(audio.src);
+      const cleanup = () => {
+        URL.revokeObjectURL(audio.src);
+        stopSpeechMeter();
+      };
+      audio.onended = cleanup;
+      audio.onerror = cleanup;
+      attachSpeechMeter(audio);
       await audio.play().catch(() => {
+        stopSpeechMeter();
         speakBrowser(text);
       });
     } catch (err) {
       console.warn("Concierge TTS failed, using browser voice:", err);
       speakBrowser(text);
     }
-  }, [voiceOn, isMuted, speakBrowser]);
+  }, [voiceOn, isMuted, speakBrowser, attachSpeechMeter, stopSpeechMeter]);
 
   const requestMicAccess = useCallback(async (announceFailure = true) => {
     if (!navigator.mediaDevices?.getUserMedia) {
