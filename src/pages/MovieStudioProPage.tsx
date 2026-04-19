@@ -337,4 +337,62 @@ const FeatureRow = ({ ok, label }: { ok: boolean; label: string }) => (
   </div>
 );
 
+const PricingTier = ({
+  icon, name, price, tagline, features, cta, onClick, highlight, founder,
+}: {
+  icon: React.ReactNode;
+  name: string;
+  price: string;
+  tagline: string;
+  features: string[];
+  cta: string;
+  onClick: () => void;
+  highlight?: boolean;
+  founder?: boolean;
+}) => (
+  <Card
+    className={`p-4 flex flex-col gap-3 transition-all hover:scale-[1.02] ${
+      founder
+        ? "border-primary bg-gradient-to-br from-primary/15 via-card to-card shadow-[0_0_25px_hsl(var(--primary)/0.35)]"
+        : highlight
+        ? "border-primary/60 bg-primary/5 shadow-[0_0_15px_hsl(var(--primary)/0.2)]"
+        : "border-border"
+    }`}
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm font-bold leading-tight">{name}</h3>
+          <p className="text-[10px] text-muted-foreground">{tagline}</p>
+        </div>
+      </div>
+      {(highlight || founder) && (
+        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground uppercase tracking-wide">
+          {founder ? "Limited" : "Popular"}
+        </span>
+      )}
+    </div>
+    <div className="text-2xl font-extrabold text-foreground">{price}</div>
+    <ul className="text-[11px] space-y-1 flex-1">
+      {features.map((f, i) => (
+        <li key={i} className="flex items-start gap-1.5 text-muted-foreground">
+          <Check className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+          <span>{f}</span>
+        </li>
+      ))}
+    </ul>
+    <Button
+      onClick={onClick}
+      size="sm"
+      variant={founder || highlight ? "default" : "outline"}
+      className="w-full mt-1"
+    >
+      {cta}
+    </Button>
+  </Card>
+);
+
 export default MovieStudioProPage;
