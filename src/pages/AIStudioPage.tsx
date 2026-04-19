@@ -262,8 +262,6 @@ const AIStudioPage = () => {
                 <LivingAvatar
                   imageUrl={getAppearance(selectedAvatar.appearanceId).img}
                   alt={selectedAvatar.name}
-                  enableWalking
-                  walkingPrompt={`${selectedAvatar.name} the ${selectedAvatar.field}, walking forward confidently with natural gestures`}
                 />
               </div>
               <p className="mt-2 text-sm font-bold text-foreground">{selectedAvatar.name}</p>
