@@ -109,59 +109,48 @@ async function runJob(job: any): Promise<any> {
   }
 }
 
-// ============= VIDEO (Runway Gen-3) =============
+// ============= STILL IMAGE (slideshow mode) =============
+// User decision (2026-04-19): no real video generation. We just generate one
+// cinematic still per scene with Gemini, store it as `video_1080p_url`, and
+// let Shotstack stitch them together with Ken Burns + AI narration in the
+// stitch step. Cheap, fast, reliable.
 async function renderVideo(job: any) {
   const { data: scene } = await supabase.from("movie_scenes")
     .select("*").eq("id", job.scene_id).maybeSingle();
   if (!scene) throw new Error("scene missing");
-  const { data: project } = await supabase.from("movie_projects")
-    .select("quality_tier, user_id").eq("id", job.project_id).maybeSingle();
 
   await supabase.from("movie_scenes").update({
     status: "rendering_video", started_at: new Date().toISOString(),
   }).eq("id", scene.id);
 
-  let videoUrl = "";
-  const dur = Number(scene.duration_seconds ?? 8);
+  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing — cannot generate scene still");
 
-  if (RUNWAY_API_KEY) {
-    videoUrl = await runwayGenerateAndPoll(scene.visual_prompt ?? scene.script_text, dur);
-  }
+  const prompt = scene.visual_prompt ?? scene.script_text ?? "Cinematic establishing shot";
+  const dataUrl = await generateSceneKeyframe(prompt);
+  if (!dataUrl) throw new Error("Gemini failed to generate scene still");
 
-  // Free internal fallback: Lovable AI Gateway → Veo (image-to-video).
-  if (!videoUrl && LOVABLE_API_KEY) {
-    videoUrl = await lovableVideoFallback(scene.visual_prompt ?? scene.script_text, dur);
-  }
+  // Convert data URL → bytes and upload as PNG/JPEG to our bucket.
+  const m = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!m) throw new Error("Invalid image data url from Gemini");
+  const mime = m[1];
+  const ext = mime.includes("png") ? "png" : "jpg";
+  const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+  const path = `${scene.user_id}/${scene.project_id}/${scene.id}-still.${ext}`;
+  const up = await supabase.storage.from("movies").upload(path, bytes, {
+    contentType: mime, upsert: true,
+  });
+  if (up.error) throw new Error(`Still upload failed: ${up.error.message}`);
+  const { data: pub } = supabase.storage.from("movies").getPublicUrl(path);
+  const ownedUrl = pub.publicUrl;
 
-  // Last resort: Replicate (Stable Video Diffusion)
-  if (!videoUrl && REPLICATE_API_TOKEN) {
-    videoUrl = await replicateVideoFallback(scene.visual_prompt ?? scene.script_text);
-  }
+  // Tiny markup — image gen is essentially free for us
+  const cost = markupCents(2);
 
-  if (!videoUrl) throw new Error("All video providers failed (Runway, Lovable Veo, Replicate)");
-
-  // Download + re-upload to our bucket so we own it
-  const ownedUrl = await mirrorToBucket(videoUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-1080p.mp4`, "video/mp4");
-
-  const cost = markupCents(Math.ceil(PROVIDER_RATES.runway_image_to_video_per_second * dur));
-
-  const followUps: any[] = [{
+  // Queue audio next; skip upscale jobs (slideshow doesn't need them).
+  await supabase.from("movie_render_jobs").insert([{
     project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
     job_type: "audio", priority: job.priority ?? 100,
-  }];
-  if (project?.quality_tier === "4k" || project?.quality_tier === "8k_ultimate") {
-    followUps.push({
-      project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
-      job_type: "upscale_4k", priority: (job.priority ?? 100) + 1,
-    });
-  }
-  if (project?.quality_tier === "8k_ultimate") {
-    followUps.push({
-      project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
-      job_type: "upscale_8k", priority: (job.priority ?? 100) + 2,
-    });
-  }
-  await supabase.from("movie_render_jobs").insert(followUps);
+  }]);
 
   await supabase.from("movie_scenes").update({
     video_1080p_url: ownedUrl,
@@ -169,7 +158,7 @@ async function renderVideo(job: any) {
   }).eq("id", scene.id);
 
   await bumpSpend(job.project_id, cost.total_cents);
-  return { videoUrl: ownedUrl, cost_cents: cost.total_cents };
+  return { stillUrl: ownedUrl, mode: "slideshow", cost_cents: cost.total_cents };
 }
 
 async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promise<string> {
@@ -367,17 +356,15 @@ async function renderAudio(job: any) {
 
   const cost = markupCents(Math.ceil((totalChars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
 
+  // Slideshow mode: no real video → skip lip-sync, mark complete, queue stitch.
   await supabase.from("movie_scenes").update({
     audio_url: audioUrl,
-    status: "lip_syncing",
+    status: "completed",
+    completed_at: new Date().toISOString(),
     provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents,
   }).eq("id", scene.id);
-
-  // Queue lip-sync job (will mark scene completed and call maybeQueueStitch)
-  await supabase.from("movie_render_jobs").insert({
-    project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
-    job_type: "lip_sync", priority: (job.priority ?? 100) + 5,
-  });
+  await supabase.rpc("recalc_project_progress", { _project_id: job.project_id });
+  await maybeQueueStitch(job.project_id, job.user_id);
 
   await bumpSpend(job.project_id, cost.total_cents);
   return { audioUrl, cost_cents: cost.total_cents };
