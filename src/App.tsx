@@ -75,6 +75,7 @@ const loaders = {
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
+  "/movie-payment-success": () => import("./pages/MoviePaymentSuccessPage"),
   "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
   "/ai-chat-companion": () => import("./pages/SeoLandingPage"),
   "/ai-friend": () => import("./pages/SeoLandingPage"),
@@ -166,6 +167,7 @@ const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
+const MoviePaymentSuccessPage = lazy(loaders["/movie-payment-success"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
@@ -268,6 +270,7 @@ const App = () => (
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="SOLACE Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/movie-studio-pro" element={<RequireAuth><AppUnlockGate appKey="movie_studio"><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
+                  <Route path="/movie-payment-success" element={<RequireAuth><ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-chat-companion" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-friend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />

@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Film, Clock, DollarSign, AlertTriangle, RefreshCw, Crown, Youtube, Play, RotateCw, Users } from "lucide-react";
+import { Loader2, Film, Clock, DollarSign, AlertTriangle, RefreshCw, Crown, Youtube, Play, RotateCw, Users, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import MovieInlinePlayer from "./MovieInlinePlayer";
 import CharacterBibleEditor from "./CharacterBibleEditor";
+import MoviePaymentDialog from "./MoviePaymentDialog";
 
 interface Project {
   id: string;
@@ -27,6 +28,7 @@ interface Project {
   trailer_url?: string | null;
   thumbnail_url?: string | null;
   last_error?: string | null;
+  payment_status?: string | null;
   created_at: string;
 }
 
@@ -53,6 +55,7 @@ export const MovieProjectDashboard = () => {
   const [failedScenes, setFailedScenes] = useState<Record<string, Scene[]>>({});
   const [loading, setLoading] = useState(true);
   const [bibleProjectId, setBibleProjectId] = useState<string | null>(null);
+  const [payProject, setPayProject] = useState<{ id: string; title: string } | null>(null);
 
   const refresh = async () => {
     if (!user) return;
