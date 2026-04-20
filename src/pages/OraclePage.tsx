@@ -841,9 +841,10 @@ const OraclePage = () => {
 
       if (isLoadingRef.current) { rScale = 1.0 + Math.sin(t * 3) * 0.06; pinkGlow = 0.5 + Math.sin(t * 3) * 0.15; }
       if (isSpeakingRef.current) { speechPulse = (Math.sin(t * 20) * 0.4 + Math.sin(t * 31) * 0.35 + Math.sin(t * 11) * 0.25 + 1) / 2; rScale = 1.0 + speechPulse * 0.1; pinkGlow = 0.7 + speechPulse * 0.3; }
-      if (isListeningRef.current) { spinSpeed = 0.025; shimmerAmp = 0.5 + Math.sin(t * 14) * 0.3; pinkGlow = 0.55 + shimmerAmp * 0.35; rScale = 1.0 + Math.sin(t * 12) * 0.03; }
+      if (isListeningRef.current) { shimmerAmp = 0.5 + Math.sin(t * 14) * 0.3; pinkGlow = 0.55 + shimmerAmp * 0.35; rScale = 1.0 + Math.sin(t * 12) * 0.03; }
 
-      spinAngle += spinSpeed;
+      // Avatar bubble is anchored — no rotation. Keep spinAngle frozen at 0.
+      // spinAngle += spinSpeed;  // disabled per user request
       const r = baseR * rScale;
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#050508";
