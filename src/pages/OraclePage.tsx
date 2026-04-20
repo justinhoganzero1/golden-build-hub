@@ -1459,11 +1459,19 @@ const OraclePage = () => {
       const allMsgs = isIntroTrigger ? [{ role: "user" as const, sender: "user", emoji: "👤", color: "#FFAA00", content: "Hi", id: "intro" } as Message] : [...messages, userMsg];
       const introKey = "oracle-lunar-introduced";
       const isFirstMeeting = !localStorage.getItem(introKey) || isIntroTrigger;
+      // ── Sliding-window history ──
+      // Keep only the last 30 messages we send to the model. Without this cap the
+      // prompt grows unbounded and eventually exceeds the context window, which
+      // makes the edge function 502 mid-stream — the user perceives this as the
+      // conversation "dropping out and restarting fresh". The full UI history is
+      // preserved in `messages` state; only the wire payload is trimmed.
+      const HISTORY_CAP = 30;
+      const trimmedMsgs = allMsgs.length > HISTORY_CAP ? allMsgs.slice(-HISTORY_CAP) : allMsgs;
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
-          messages: allMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
+          messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
           isFirstMeeting,
           userMemories: formatMemoriesForPrompt(oracleMemories),
