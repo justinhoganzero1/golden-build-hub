@@ -1,0 +1,71 @@
+workflows:
+  android-aab-release:
+    name: Oracle Lunar — Android AAB (Play Store)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      node: 20
+      java: 17
+      groups:
+        - android_signing   # define ANDROID_KEYSTORE (base64), CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD in Codemagic UI
+      vars:
+        PACKAGE_NAME: "app.oraclelunar.ai"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci || npm install
+      - name: Build web assets (Vite)
+        script: |
+          npm run build
+      - name: Add Android platform if missing
+        script: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+      - name: Capacitor sync
+        script: |
+          npx cap sync android
+      - name: Decode signing keystore
+        script: |
+          echo "$ANDROID_KEYSTORE" | base64 --decode > $CM_BUILD_DIR/android/app/release.keystore
+      - name: Configure signing in build.gradle
+        script: |
+          cat >> $CM_BUILD_DIR/android/app/build.gradle <<'EOF'
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("release.keystore")
+                      storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("CM_KEY_ALIAS")
+                      keyPassword System.getenv("CM_KEY_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          EOF
+      - name: Build signed Android App Bundle
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - justinbretthogan@gmail.com
+        notify:
+          success: true
+          failure: true
