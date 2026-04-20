@@ -1652,7 +1652,14 @@ const OraclePage = () => {
         if (isBackground) {
           toast.success(`${oracleName} is working on it in the background...`);
         } else {
-          setTimeout(() => triggerExplosion(navPath), 1500);
+          // Only auto-navigate if the user EXPLICITLY asked to go somewhere.
+          // Prevents Oracle from yanking the user off the chat after one message.
+          const userAskedToNavigate = /\b(take me|open|go to|launch|show me|navigate|bring me|switch to|jump to)\b/i.test(text);
+          if (userAskedToNavigate) {
+            setTimeout(() => triggerExplosion(navPath), 1500);
+          } else {
+            console.log("[Oracle] Suppressed navigation to", navPath, "— user didn't ask to leave the chat");
+          }
         }
       }
 
