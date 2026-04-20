@@ -11,8 +11,8 @@
 // To update the master avatar across the entire site,
 // replace this single import.
 // ============================================
-import masterAvatar from "@/assets/avatars/oracle-blonde.png";
+import masterAvatar from "@/assets/avatars/oracle-peggy.png";
 
 export const MASTER_AI_AVATAR = masterAvatar;
-export const MASTER_AI_AVATAR_NAME = "Oracle Lunar";
-export const MASTER_AI_AVATAR_ALT = "Oracle Lunar AI assistant";
+export const MASTER_AI_AVATAR_NAME = "Peggy";
+export const MASTER_AI_AVATAR_ALT = "Peggy — Oracle Lunar AI assistant";
