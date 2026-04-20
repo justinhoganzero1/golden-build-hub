@@ -75,7 +75,6 @@ const FEATURES = [
   { icon: ShoppingBag, title: "POS Learn", desc: "16-lesson curriculum to master point-of-sale and retail tech.", to: "/pos-learn" },
   { icon: Wand2, title: "App Builder", desc: "Conversational generator — describe an app, export a working PWA.", to: "/app-builder" },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
-  { icon: Smartphone, title: "App Wrapper", desc: "Wrap any app ready for the Play Store — paste a URL, get a signed APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
