@@ -75,7 +75,6 @@ const FEATURES = [
   { icon: ShoppingBag, title: "POS Learn", desc: "16-lesson curriculum to master point-of-sale and retail tech.", to: "/pos-learn" },
   { icon: Wand2, title: "App Builder", desc: "Conversational generator — describe an app, export a working PWA.", to: "/app-builder" },
   { icon: Shield, title: "AI Security Fortress", desc: "101 AI security guards plus DB-level protections keep your data locked down.", to: "/safety-center" },
-  { icon: Smartphone, title: "App Wrapper", desc: "Wrap any app ready for the Play Store — paste a URL, get a signed APK package.", to: "/web-wrapper" },
 ];
 
 const PortalLandingPage = () => {
@@ -434,37 +433,6 @@ const PortalLandingPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Web Wrapper — featured special download */}
-            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
-              <div className="flex items-center gap-4 mb-4">
-                <img
-                  src={webWrapperLogo}
-                  alt="App Wrapper app logo"
-                  width={64}
-                  height={64}
-                  loading="lazy"
-                  className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
-                />
-                <div>
-                  <h3 className="font-semibold text-xl text-foreground">App Wrapper</h3>
-                  <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Generates the Android build recipe (manifest, MainActivity, signing checklist)
-                for any URL — paste a link, name your app, get a ready-to-compile project bundle
-                you take into Android Studio. <strong className="text-foreground/80">Not a finished APK.</strong>
-              </p>
-              <Button
-                size="lg"
-                onClick={() => navigate("/web-wrapper")}
-                className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
-              >
-                <Sparkles className="mr-2 h-5 w-5" />
-                Open App Wrapper Tool
-              </Button>
-            </div>
-
             {/* App Maker — conversational app generator */}
             <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
               <div className="flex items-center gap-4 mb-4">
@@ -598,82 +566,13 @@ const PortalLandingPage = () => {
               {isIOS ? "See iOS steps above" : canInstall ? "Install ORACLE LUNAR now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
-            {/* Native wrapper builder — Portal-specific Play Store package */}
-            <div className="mt-8 max-w-2xl mx-auto holo-tile rounded-xl p-6 border border-primary/30">
-              <div className="flex items-center gap-3 mb-2 justify-center">
-                <Zap className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Want the Portal as a real Android app?</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Open the App Wrapper tool to generate the Android build recipe for the
-                ORACLE LUNAR Portal. You'll still need Android Studio to compile the final AAB
-                before publishing to Google Play.
-              </p>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => {
-                  const portalUrl = encodeURIComponent(window.location.origin);
-                  navigate(`/web-wrapper?url=${portalUrl}&name=${encodeURIComponent("ORACLE LUNAR Portal")}`);
-                }}
-                className="border-primary/40 hover:border-primary"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Open Portal Wrapper Tool
-              </Button>
-            </div>
+
+            {/* App Wrapper CTA removed from public Portal — admin-only via Owner Dashboard */}
 
             <p className="text-xs text-muted-foreground mt-3">
               📱 Native Android app <strong className="text-primary">coming soon to Google Play</strong> — install as a PWA above to use ORACLE LUNAR right now.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ───────────────────────────── */}
-      <section id="pricing" className="max-w-6xl mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            Free to start. <span className="text-primary">Power when you need it.</span>
-          </h2>
-          <p className="text-muted-foreground">
-            Crisis support and the Oracle are free with daily chat limits — conditions apply.
-            Photo &amp; video generation, voice cloning, and other heavy AI features require a paid plan.
-          </p>
-          <p className="text-[11px] text-muted-foreground/70 mt-2">
-            *Free tier includes a daily message cap on Oracle chat. Premium AI generation
-            (images, video, music, cloned voices) is paywalled to cover compute costs.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { name: "Free", price: "$0", perks: ["Oracle + 1 AI friend", "Crisis Hub & Safety Center", "Suggestion Box", "Always-free core safety"] },
-            { name: "Starter", price: "$5/mo", perks: ["Everything in Free", "Mind Hub & Calendar", "Photography Hub basics", "10 premium voices"] },
-            { name: "Premium+", price: "Higher tiers", perks: ["All 40+ modules", "Voice cloning + 120 voices", "AI Companion", "Marketing & App Builder"] },
-          ].map((tier, i) => (
-            <div
-              key={tier.name}
-              className={`holo-tile rounded-xl p-6 ${i === 1 ? "ring-2 ring-primary shadow-[0_0_40px_hsl(var(--primary)/0.3)]" : ""}`}
-            >
-              <h3 className="font-semibold text-lg mb-1 text-foreground">{tier.name}</h3>
-              <div className="text-3xl font-bold mb-4 text-primary">{tier.price}</div>
-              <ul className="space-y-2 text-sm">
-                {tier.perks.map((p) => (
-                  <li key={p} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <span className="text-muted-foreground">{p}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className="w-full mt-6"
-                variant={i === 1 ? "default" : "outline"}
-                onClick={() => navigate("/subscribe")}
-              >
-                {tier.name === "Free" ? "Get started" : "Choose plan"}
-              </Button>
-            </div>
-          ))}
         </div>
       </section>
 
