@@ -113,16 +113,74 @@ const PortalLandingPage = () => {
     return () => window.removeEventListener("appinstalled", onInstalled);
   }, []);
 
+  const PUBLIC_HOST = "oracle-lunar.online";
+  const PUBLIC_URL = "https://oracle-lunar.online/";
+
+  /** True when the page is running inside the Lovable editor iframe or any preview/sandbox URL. */
+  const isOnProductionHost = (): boolean => {
+    try {
+      if (typeof window === "undefined") return true;
+      const inIframe = window.self !== window.top;
+      if (inIframe) return false;
+      return window.location.hostname === PUBLIC_HOST;
+    } catch {
+      return false;
+    }
+  };
+
+  /** Break out of any iframe / preview URL and send the user to the real production site. */
+  const openProductionSite = () => {
+    try {
+      const top = window.top as Window | null;
+      if (top && top !== window.self) {
+        top.location.href = PUBLIC_URL;
+        return;
+      }
+    } catch {}
+    try {
+      const w = window.open(PUBLIC_URL, "_blank", "noopener,noreferrer");
+      if (w && !w.closed) return;
+    } catch {}
+    window.location.href = PUBLIC_URL;
+  };
+
   const handleInstall = async (platform: InstallPlatform = detectInstallPlatform()) => {
+    trackInstallEvent("click", platform);
+
+    // If we're inside the Lovable editor iframe or on a preview/sandbox URL,
+    // PWA install can NEVER work here — the manifest's start_url belongs to the
+    // production domain. Send the user there immediately so install actually works.
+    if (!isOnProductionHost()) {
+      openProductionSite();
+      return;
+    }
+
     // Force registration before allowing the app to be downloaded/installed.
     if (!user) {
       navigate("/sign-in?redirect=/");
       return;
     }
-    trackInstallEvent("click", platform);
+
     const outcome = await install();
     if (outcome === "unavailable") {
-      document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
+      // iOS Safari + browsers without beforeinstallprompt — guide the user.
+      if (platform === "ios" || isIOS) {
+        alert(
+          "To install ORACLE LUNAR on iPhone/iPad:\n\n" +
+          "1. Tap the Share icon at the bottom of Safari.\n" +
+          "2. Scroll down and choose 'Add to Home Screen'.\n" +
+          "3. Tap 'Add' — done!"
+        );
+      } else if (platform === "android") {
+        alert(
+          "To install on Android:\n\n" +
+          "1. Open this page in Chrome.\n" +
+          "2. Tap the ⋮ menu (top-right).\n" +
+          "3. Choose 'Install app' or 'Add to Home screen'."
+        );
+      } else {
+        document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 

@@ -33,16 +33,56 @@ const StickyInstallBar = () => {
 
   if (dismissed || isStandalone) return null;
 
+  const PUBLIC_HOST = "oracle-lunar.online";
+  const PUBLIC_URL = "https://oracle-lunar.online/";
+
+  const isOnProductionHost = (): boolean => {
+    try {
+      if (typeof window === "undefined") return true;
+      const inIframe = window.self !== window.top;
+      if (inIframe) return false;
+      return window.location.hostname === PUBLIC_HOST;
+    } catch {
+      return false;
+    }
+  };
+
+  const openProductionSite = () => {
+    try {
+      const top = window.top as Window | null;
+      if (top && top !== window.self) {
+        top.location.href = PUBLIC_URL;
+        return;
+      }
+    } catch {}
+    try {
+      const w = window.open(PUBLIC_URL, "_blank", "noopener,noreferrer");
+      if (w && !w.closed) return;
+    } catch {}
+    window.location.href = PUBLIC_URL;
+  };
+
   const handleInstall = async () => {
-    // Require registration before any download/install can happen.
+    trackInstallEvent("click", platform);
+    // In Lovable preview / sandbox iframe → PWA install never works.
+    // Send the user straight to the live site so install actually triggers.
+    if (!isOnProductionHost()) {
+      openProductionSite();
+      return;
+    }
     if (!user) {
       navigate("/sign-in?redirect=/");
       return;
     }
-    trackInstallEvent("click", platform);
     const outcome = await install();
     if (outcome === "unavailable") {
-      document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
+      if (platform === "ios") {
+        alert("To install on iPhone/iPad:\n\n1. Tap the Share icon in Safari.\n2. Choose 'Add to Home Screen'.\n3. Tap 'Add'.");
+      } else if (platform === "android") {
+        alert("To install on Android:\n\n1. Open in Chrome.\n2. Tap the ⋮ menu.\n3. Choose 'Install app'.");
+      } else {
+        document.getElementById("install")?.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
