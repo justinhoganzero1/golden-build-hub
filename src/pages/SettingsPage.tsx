@@ -358,7 +358,7 @@ const SettingsPage = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("oracle-lunar-theme-name") || "Gold & Black");
-  const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine");
+  const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Acid Green");
   const [language, setLanguage] = useState(() => localStorage.getItem("oracle-lunar-language") || "English");
   const [privacySettings, setPrivacySettings] = useState(() => {
     try {

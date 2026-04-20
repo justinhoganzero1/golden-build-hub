@@ -745,10 +745,10 @@ All colors MUST be HSL.
    button, card, link, and portal surface across the entire app.
    ============================================================ */
 :root {
-  /* Default = electric marine / brilliant blue. Settings → Neon Glow can override. */
-  --neon-pink: 205 100% 55%;
-  --neon-pink-soft: 195 100% 68%;
-  --neon-pink-deep: 215 100% 45%;
+  /* Default = acid neon green. Settings → Neon Glow can override. */
+  --neon-pink: 135 100% 55%;
+  --neon-pink-soft: 120 100% 68%;
+  --neon-pink-deep: 145 100% 42%;
   --neon-pink-cushion:
     0 0 6px hsl(var(--neon-pink) / 0.85),
     0 0 14px hsl(var(--neon-pink) / 0.65),
