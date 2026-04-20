@@ -16,7 +16,14 @@ const ADMIN_EMAIL = "justinbretthogan@gmail.com";
  *  3. User must be a PAID MEMBER (any tier above free) OR have an active reward.
  *     Admin bypasses everything.
  */
-const RequireAuth = ({ children }: { children: ReactNode }) => {
+interface RequireAuthProps {
+  children: ReactNode;
+  /** When true, allow signed-in users without a paid membership.
+   *  Used for the always-free safety net pages: Oracle, Crisis, Safety. */
+  freeAccess?: boolean;
+}
+
+const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const { effectiveTier, loading: subLoading } = useSubscription();
   const location = useLocation();
@@ -42,9 +49,9 @@ const RequireAuth = ({ children }: { children: ReactNode }) => {
     return <Navigate to={`/sign-in?redirect=${redirect}`} replace />;
   }
 
-  // Lock 3: must be a paid member (admin bypasses)
+  // Lock 3: must be a paid member (admin + always-free pages bypass)
   const isPaid = effectiveTier && effectiveTier !== "free";
-  if (!isAdmin && !isPaid) {
+  if (!isAdmin && !freeAccess && !isPaid) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full text-center space-y-6 rounded-3xl border border-primary/30 bg-card/80 backdrop-blur p-8 shadow-2xl shadow-primary/10">
