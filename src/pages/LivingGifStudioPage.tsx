@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
+import { DownloadButton } from "@/components/DownloadButton";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
