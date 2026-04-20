@@ -644,6 +644,47 @@ export default function SeoLandingPage() {
             <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
           </Button>
         </section>
+
+        {/* Internal cross-links — passes Google PageRank to key pages incl. /investor */}
+        <section className="container mx-auto px-4 py-12 border-t border-border/40">
+          <h2 className="text-xl font-bold mb-4 text-center">Explore ORACLE LUNAR</h2>
+          <nav aria-label="Site links" className="grid grid-cols-2 md:grid-cols-4 gap-2 max-w-4xl mx-auto text-sm">
+            {[
+              { href: "/free-ai-app-2026", label: "Best Free AI 2026" },
+              { href: "/chatgpt-alternative", label: "ChatGPT Alternative" },
+              { href: "/gemini-alternative", label: "Gemini Alternative" },
+              { href: "/claude-alternative", label: "Claude Alternative" },
+              { href: "/ai-friend", label: "AI Friend" },
+              { href: "/free-ai-voice-chat", label: "Voice Chat" },
+              { href: "/ai-image-generator-free", label: "AI Images" },
+              { href: "/ai-video-generator", label: "AI Video" },
+              { href: "/ai-music-generator", label: "AI Music" },
+              { href: "/ai-coder", label: "AI Coder" },
+              { href: "/ai-therapist-free", label: "AI Therapist" },
+              { href: "/ai-tutor-free", label: "AI Tutor" },
+              { href: "/ai-life-coach-free", label: "AI Life Coach" },
+              { href: "/ai-resume-builder-free", label: "Resume Builder" },
+              { href: "/ai-interview-coach", label: "Interview Coach" },
+              { href: "/ai-travel-planner", label: "Travel Planner" },
+              { href: "/ai-cooking-assistant", label: "Cooking Assistant" },
+              { href: "/ai-fitness-coach-free", label: "Fitness Coach" },
+              { href: "/free-ai-meditation", label: "Meditation" },
+              { href: "/ai-elderly-care", label: "Elderly Care" },
+              { href: "/ai-companion", label: "AI Companion" },
+              { href: "/creators", label: "Creators" },
+              { href: "/investor", label: "Investor Hub" },
+              { href: "/about", label: "About" },
+            ].map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-muted-foreground hover:text-primary transition-colors py-1"
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
+        </section>
       </main>
     </>
   );
