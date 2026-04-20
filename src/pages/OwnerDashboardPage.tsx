@@ -4,7 +4,7 @@ import {
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
   TrendingUp, DollarSign, Globe, Smartphone, Bell, Settings,
   Search, Filter, Send, Crown, Zap, Image, Video, Music,
-  Camera, Grid, List, Trash2, Play, Download, Share2
+  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StripeConnectPanel from "@/components/StripeConnectPanel";
