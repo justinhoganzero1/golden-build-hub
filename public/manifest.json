@@ -26,11 +26,5 @@
     }
   ],
   "screenshots": [],
-  "prefer_related_applications": true,
-  "related_applications": [
-    {
-      "platform": "play",
-      "id": "app.oraclelunar.ai"
-    }
-  ]
+  "prefer_related_applications": false
 }
