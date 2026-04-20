@@ -38,12 +38,18 @@ const VisitorCounter = ({ page = "landing" }: VisitorCounterProps) => {
           }
           if (!utm_source) utm_source = "direct";
 
+          // Returning-visitor detection: persistent localStorage marker survives across sessions.
+          const returningKey = `oracle-lunar-returning-${page}`;
+          const isReturning = !!localStorage.getItem(returningKey);
+          const effectiveMedium = isReturning ? "returning" : (utm_medium || "new");
+          if (!isReturning) localStorage.setItem(returningKey, new Date().toISOString());
+
           await supabase.from("page_views").insert({
             page,
             user_agent: navigator.userAgent.slice(0, 200),
             referrer: ref ? ref.slice(0, 500) : null,
             utm_source: utm_source.slice(0, 100),
-            utm_medium: utm_medium ? utm_medium.slice(0, 100) : null,
+            utm_medium: effectiveMedium.slice(0, 100),
             utm_campaign: utm_campaign ? utm_campaign.slice(0, 100) : null,
           });
           sessionStorage.setItem(sessionKey, "1");

@@ -61,7 +61,7 @@ const OwnerDashboardPage = () => {
     perPlatform: { android: { clicks: number; installs: number }; ios: { clicks: number; installs: number }; desktop: { clicks: number; installs: number } };
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
   // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
-  const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; installs: number; paidUpgrades: number }>({ visitors: 0, installs: 0, paidUpgrades: 0 });
+  const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0 });
   // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
   const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
 
@@ -225,8 +225,9 @@ const OwnerDashboardPage = () => {
     let cancelled = false;
     const load = async () => {
       try {
-        const [{ count: visitors }, { count: installs }] = await Promise.all([
+        const [{ count: visitors }, { count: returning }, { count: installs }] = await Promise.all([
           supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing"),
+          supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing").eq("utm_medium", "returning"),
           supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
         ]);
         // Paid upgrades: count distinct paid users via Stripe (server-side admin endpoint).
@@ -246,6 +247,7 @@ const OwnerDashboardPage = () => {
         if (!cancelled) {
           setLiveTraffic({
             visitors: typeof visitors === "number" ? visitors : 0,
+            returning: typeof returning === "number" ? returning : 0,
             installs: typeof installs === "number" ? installs : 0,
             paidUpgrades,
           });
@@ -538,11 +540,16 @@ const OwnerDashboardPage = () => {
                 <Lock className="w-4 h-4 text-yellow-400" />
                 <h3 className="text-sm font-bold text-white">Live Traffic — Your Site (Private)</h3>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <Eye className="w-4 h-4 text-cyan-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-cyan-300">{liveTraffic.visitors.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Visitors</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <Users className="w-4 h-4 text-purple-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-purple-300">{liveTraffic.returning.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400">Returning (no DL)</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <Download className="w-4 h-4 text-emerald-300 mx-auto mb-1" />
