@@ -40,3 +40,7 @@ verify_jwt = false
 # Living GIF worker — cron-driven, no JWT (uses service-role auth in code).
 [functions.living-gif-worker]
 verify_jwt = false
+
+# Owner-only revenue panel — validates JWT + admin role in code.
+[functions.stripe-revenue]
+verify_jwt = false
