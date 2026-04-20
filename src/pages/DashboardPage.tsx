@@ -61,7 +61,8 @@ const tiles: AppTile[] = [
   
   { label: "Occasions", icon: <Gift className="w-6 h-6" />, path: "/special-occasions", tier: "starter" },
   { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box", tier: null },
-  { label: "Referral", icon: <Share2 className="w-6 h-6" />, path: "/referral", tier: null },
+  { label: "Referral", icon: <Gift className="w-6 h-6" />, path: "/referral", tier: null },
+  { label: "Share App", icon: <Share2 className="w-6 h-6" />, path: "__share__", tier: null },
   { label: "Subscribe", icon: <Star className="w-6 h-6" />, path: "/subscribe", tier: null },
   { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder", tier: "quarterly" },
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn", tier: "starter" },
@@ -104,6 +105,7 @@ const DashboardPage = () => {
   const tileBR = layout?.borderRadius || "rounded-xl";
 
   const handleTileClick = (tile: AppTile) => {
+    if (tile.path === "__share__") { setShareOpen(true); return; }
     if (!tile.tier || isAdmin) {
       navigate(tile.path);
       return;
@@ -151,9 +153,6 @@ const DashboardPage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShareOpen(true)} className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <Share2 className="w-5 h-5" />
-          </button>
           <SecurityShield />
         </div>
       </div>
@@ -181,8 +180,8 @@ const DashboardPage = () => {
         open={shareOpen}
         onOpenChange={setShareOpen}
         title="Oracle Lunar App"
-        url="https://golden-vault-builder.lovable.app"
-        description="Check out Oracle Lunar — your AI companion to do everything! Download it now."
+        url={`https://oracle-lunar.online/?ref=${user ? `ORACLE LUNAR${user.id.slice(0,6).toUpperCase()}` : ""}`}
+        description="Check out Oracle Lunar — your AI companion to do everything! When you sign up with my link and stay on a paid plan for 7 days, I unlock another month of full access. Win-win ✨"
       />
 
       {/* App Grid */}
