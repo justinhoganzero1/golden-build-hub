@@ -263,21 +263,23 @@ const WebWrapperPage = () => {
           {done && (
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
               <div className="font-semibold text-primary mb-1 flex items-center gap-2">
-                <FileText className="h-4 w-4" /> APK Wrapper Package Generated!
+                <FileText className="h-4 w-4" /> Build recipe generated
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                Your WebView APK project has been generated and downloaded. Now upload your AAB file to Play Console to publish.
+                Your Android <strong>build recipe</strong> (manifest, MainActivity, signing checklist) has
+                been downloaded as a text file. <strong className="text-foreground">This is not a finished APK</strong> —
+                you'll need Android Studio to compile and sign the final AAB before uploading to Play Console.
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}>
                   <Rocket className="mr-2 h-4 w-4" /> Open Play Console
                 </Button>
                 <Button variant="outline" onClick={wrap}>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Re-wrap
+                  <RefreshCw className="mr-2 h-4 w-4" /> Re-generate recipe
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                <strong>How to submit:</strong> Play Console → Create App → Upload AAB → Store Listing → Publish
+                <strong>Next steps:</strong> Open the recipe in Android Studio → Build &gt; Generate Signed Bundle (AAB) → upload to Play Console → Create App → Store Listing → Publish
               </p>
             </div>
           )}
@@ -289,8 +291,8 @@ const WebWrapperPage = () => {
               size="lg"
               className="shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
             >
-              <Download className="mr-2 h-4 w-4" />
-              {working ? "Wrapping..." : "Wrap for Play Store"}
+              <FileText className="mr-2 h-4 w-4" />
+              {working ? "Generating..." : "Generate Build Recipe"}
             </Button>
             <Button variant="outline" onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}>
               Play Console
@@ -302,7 +304,7 @@ const WebWrapperPage = () => {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          The downloaded file contains the AndroidManifest, MainActivity Java source, and step-by-step Play Store submission instructions.
+          Outputs a text file with AndroidManifest, MainActivity Java source, and Play Store submission steps. You'll compile the final AAB in Android Studio.
         </p>
       </main>
     </div>
