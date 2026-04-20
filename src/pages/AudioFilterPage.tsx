@@ -38,14 +38,26 @@ const LAYERS: { idx: number; name: string; tier: string }[] = [
 
 const MODES: FilterMode[] = ["quiet", "normal", "street", "chaos"];
 
+const MLSC_GLOBAL_KEY = "oracle-lunar-mlsc-enabled";
+
 export default function AudioFilterPage() {
   const navigate = useNavigate();
   const [active, setActive] = useState(false);
+  const [globalEnabled, setGlobalEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(MLSC_GLOBAL_KEY) !== "0"; } catch { return true; }
+  });
   const [forced, setForced] = useState<FilterMode | undefined>(undefined);
   const [enrollOpen, setEnrollOpen] = useState(false);
   const { stream, analyser, status, error, needsEnrollment, setNeedsEnrollment } = useAudioFilter({ enabled: active, forcedMode: forced });
   const { signatures, currentMatch, learnedCount, unknownCount } = useNoiseLearning({ analyser, active });
   const hasPrint = !!loadVoicePrint();
+
+  const toggleGlobal = (next: boolean) => {
+    setGlobalEnabled(next);
+    try { localStorage.setItem(MLSC_GLOBAL_KEY, next ? "1" : "0"); } catch {}
+    window.dispatchEvent(new CustomEvent("mlsc-toggle", { detail: { enabled: next } }));
+    toast.success(next ? "MLSC layer enabled app-wide" : "MLSC layer disabled");
+  };
 
   useEffect(() => {
     if (needsEnrollment) {
@@ -76,13 +88,23 @@ export default function AudioFilterPage() {
           </p>
         </header>
 
+        <Card className="p-4 space-y-4 bg-gradient-to-br from-primary/10 to-amber-500/5 border-primary/40">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> MLSC layer (app-wide)</p>
+              <p className="text-xs text-muted-foreground">Master switch — enables MLSC for every voice feature: Oracle, calls, vision, transcripts.</p>
+            </div>
+            <Switch checked={globalEnabled} onCheckedChange={toggleGlobal} />
+          </div>
+        </Card>
+
         <Card className="p-4 space-y-4 bg-card border-primary/20">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Live filter</p>
-              <p className="text-xs text-muted-foreground">Test the pipeline on this device.</p>
+              <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Live filter (test on this device)</p>
+              <p className="text-xs text-muted-foreground">Preview the pipeline using your mic right now.</p>
             </div>
-            <Switch checked={active} onCheckedChange={setActive} />
+            <Switch checked={active} onCheckedChange={setActive} disabled={!globalEnabled} />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
