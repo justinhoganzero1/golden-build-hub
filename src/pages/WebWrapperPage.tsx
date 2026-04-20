@@ -122,14 +122,19 @@ const WebWrapperPage = () => {
   const pkgId = useMemo(() => buildPackageId(url, appName), [url, appName]);
 
   const wrap = () => {
-    if (!url || !url.startsWith("http")) {
-      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL.", variant: "destructive" });
+    const cleanUrl = (url || "").trim();
+    const cleanName = (appName || "").trim();
+    if (!/^https?:\/\/.+\..+/i.test(cleanUrl)) {
+      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL (e.g. https://oracle-lunar.online).", variant: "destructive" });
       return;
     }
-    if (!appName.trim()) {
+    if (!cleanName) {
       toast({ title: "App name required", description: "Please enter your app name.", variant: "destructive" });
       return;
     }
+    // sync cleaned values back so the rest of the flow uses them
+    if (cleanUrl !== url) setUrl(cleanUrl);
+    if (cleanName !== appName) setAppName(cleanName);
     setWorking(true);
     setDone(false);
     setProgress(0);
