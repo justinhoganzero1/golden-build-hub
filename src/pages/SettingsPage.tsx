@@ -414,6 +414,24 @@ const SettingsPage = () => {
     } catch {}
   }, []);
 
+  // Rehydrate Neon Glow color on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine";
+    const glow = NEON_GLOWS.find(g => g.name === saved) || NEON_GLOWS[0];
+    applyNeonGlow(glow, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyNeonGlow = (glow: NeonGlow, announce = true) => {
+    const root = document.documentElement;
+    root.style.setProperty("--neon-pink", glow.main);
+    root.style.setProperty("--neon-pink-soft", glow.soft);
+    root.style.setProperty("--neon-pink-deep", glow.deep);
+    setNeonGlow(glow.name);
+    localStorage.setItem("oracle-lunar-neon-glow", glow.name);
+    if (announce) toast.success(`Neon Glow: ${glow.name}`);
+  };
+
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
     localStorage.setItem("oracle-lunar-layout", JSON.stringify(layout));
