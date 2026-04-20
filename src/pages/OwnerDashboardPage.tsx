@@ -505,6 +505,24 @@ const OwnerDashboardPage = () => {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div className="space-y-4">
+            {/* Admin-only tools — App Wrapper (hidden from public Portal & user Dashboard) */}
+            <div className="bg-gradient-to-br from-primary/15 to-amber-500/10 border border-primary/30 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <Lock className="w-4 h-4 text-primary" />
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">App Wrapper (Admin tool)</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Hidden from public Portal & user Dashboard. Generates the Android build recipe for any URL.
+                    </p>
+                  </div>
+                </div>
+                <Button size="sm" onClick={() => navigate("/web-wrapper")}>
+                  Open App Wrapper
+                </Button>
+              </div>
+            </div>
+
             {/* Live Stripe revenue (admin only) */}
             <StripeRevenuePanel />
 
