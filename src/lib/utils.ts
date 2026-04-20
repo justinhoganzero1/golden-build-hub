@@ -76,23 +76,63 @@ function ensureFileExtension(filename: string, mimeType: string) {
   return extension ? `${filename}.${extension}` : filename;
 }
 
-export async function downloadFileFromUrl(url: string, filename: string) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Download failed");
+/**
+ * Bullet-proof download:
+ *  1. Try fetch → blob → anchor click (best UX, forces save dialog).
+ *  2. If fetch fails (CORS, network), fall back to a direct anchor with `download` attribute.
+ *  3. If the platform is an in-app WebView that blocks both, open in a new tab so the user
+ *     can long-press / use the system share sheet.
+ *
+ * Always returns void; throws nothing — surfaces errors via toast at the call site if needed.
+ */
+export async function downloadFileFromUrl(url: string, filename: string): Promise<"saved" | "opened" | "failed"> {
+  if (!url) return "failed";
 
-  const blob = await response.blob();
-  const safeFilename = ensureFileExtension(filename, blob.type || "application/octet-stream");
-  const blobUrl = URL.createObjectURL(blob);
-
+  // Mode 1 — fetch + blob (CORS-safe origin)
   try {
-    const anchor = document.createElement("a");
-    anchor.href = blobUrl;
-    anchor.download = safeFilename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-  } finally {
-    URL.revokeObjectURL(blobUrl);
+    const response = await fetch(url, { mode: "cors", credentials: "omit" });
+    if (response.ok) {
+      const blob = await response.blob();
+      const safe = ensureFileExtension(filename, blob.type || "application/octet-stream");
+      const blobUrl = URL.createObjectURL(blob);
+      try {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = safe;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      }
+      return "saved";
+    }
+  } catch {
+    /* fall through */
+  }
+
+  // Mode 2 — direct anchor download (works for same-origin / properly-served Content-Disposition)
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return "saved";
+  } catch {
+    /* fall through */
+  }
+
+  // Mode 3 — last resort: open in a new tab so user can save manually
+  try {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return "opened";
+  } catch {
+    return "failed";
   }
 }
 

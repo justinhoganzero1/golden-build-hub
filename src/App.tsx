@@ -220,10 +220,10 @@ const App = () => (
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/crisis-hub" element={<RequireAuth><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/vault" element={<RequireAuth><ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/chat-oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/oracle" element={<RequireAuth freeAccess><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/chat-oracle" element={<RequireAuth freeAccess><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-studio" element={<RequireAuth><ErrorBoundary pageName="AI Studio"><AIStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/video-editor" element={<RequireAuth><ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/media-library" element={<RequireAuth><ErrorBoundary pageName="Media Library"><MediaLibraryPage /></ErrorBoundary></RequireAuth>} />
@@ -237,7 +237,7 @@ const App = () => (
                   <Route path="/inventor" element={<RequireAuth><ErrorBoundary pageName="Inventor"><InventorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/calendar" element={<RequireAuth><ErrorBoundary pageName="Calendar"><CalendarPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/alarm-clock" element={<RequireAuth><ErrorBoundary pageName="Alarm Clock"><AlarmClockPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/safety-center" element={<RequireAuth><ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/safety-center" element={<RequireAuth freeAccess><ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics" element={<RequireAuth><ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/elderly-care" element={<RequireAuth><ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-generator" element={<RequireAuth><ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary></RequireAuth>} />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
+import { DownloadButton } from "@/components/DownloadButton";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -397,16 +398,14 @@ const LivingGifStudioPage = () => {
                           {g.is_active_oracle ? "Active" : "Set as Oracle"}
                         </Button>
                         {g.gif_url && (
-                          <a
-                            href={g.gif_url}
-                            download={`living-gif-${g.id}.mp4`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Button size="sm" variant="ghost" className="h-7 px-2">
-                              <Download className="w-3 h-3" />
-                            </Button>
-                          </a>
+                          <DownloadButton
+                            url={g.gif_url}
+                            filename={`living-gif-${g.id}.mp4`}
+                            iconOnly
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2"
+                          />
                         )}
                         <Button
                           size="sm"
