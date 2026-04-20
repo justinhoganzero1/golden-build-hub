@@ -65,9 +65,9 @@ const LivingAvatar = ({
   }, [speakingAudioUrl, imageUrl, canLipsync]);
 
   const intensityClass =
-    intensity === "subtle" ? "animate-living-subtle"
-    : intensity === "strong" ? "animate-living-strong"
-    : "animate-living";
+    intensity === "subtle" ? ""
+    : intensity === "strong" ? ""
+    : "";
 
   const activeVideo = lipsyncUrl ?? null;
   const loopVideo = false;
