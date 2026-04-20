@@ -4,7 +4,7 @@ import {
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
   TrendingUp, DollarSign, Globe, Smartphone, Bell, Settings,
   Search, Filter, Send, Crown, Zap, Image, Video, Music,
-  Camera, Grid, List, Trash2, Play, Download, Share2
+  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StripeConnectPanel from "@/components/StripeConnectPanel";
@@ -25,7 +25,7 @@ import AdvertiserInquiriesPanel from "@/components/admin/AdvertiserInquiriesPane
 // Admin access is controlled via user_roles table (RBAC)
 
 const OwnerDashboardPage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
@@ -472,10 +472,25 @@ const OwnerDashboardPage = () => {
           <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
             <Crown className="w-8 h-8 text-yellow-400" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Owner Dashboard</h1>
-            <p className="text-gray-500 text-xs">ORACLE LUNAR Command Center</p>
+            <p className="text-gray-500 text-xs truncate">{user?.email || "ORACLE LUNAR Command Center"}</p>
           </div>
+          <button
+            onClick={async () => {
+              try {
+                await signOut();
+                toast.success("Signed out");
+                navigate("/sign-in", { replace: true });
+              } catch {
+                toast.error("Sign-out failed");
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 transition"
+            title="Sign out of admin"
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
         </div>
 
         {/* Tabs */}
