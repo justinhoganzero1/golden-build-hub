@@ -122,14 +122,19 @@ const WebWrapperPage = () => {
   const pkgId = useMemo(() => buildPackageId(url, appName), [url, appName]);
 
   const wrap = () => {
-    if (!url || !url.startsWith("http")) {
-      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL.", variant: "destructive" });
+    const cleanUrl = (url || "").trim();
+    const cleanName = (appName || "").trim();
+    if (!/^https?:\/\/.+\..+/i.test(cleanUrl)) {
+      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL (e.g. https://oracle-lunar.online).", variant: "destructive" });
       return;
     }
-    if (!appName.trim()) {
+    if (!cleanName) {
       toast({ title: "App name required", description: "Please enter your app name.", variant: "destructive" });
       return;
     }
+    // sync cleaned values back so the rest of the flow uses them
+    if (cleanUrl !== url) setUrl(cleanUrl);
+    if (cleanName !== appName) setAppName(cleanName);
     setWorking(true);
     setDone(false);
     setProgress(0);
@@ -261,26 +266,41 @@ const WebWrapperPage = () => {
           )}
 
           {done && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <div className="font-semibold text-primary mb-1 flex items-center gap-2">
-                <FileText className="h-4 w-4" /> Build recipe generated
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="font-semibold text-primary flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Build recipe downloaded — but you still need to compile it
               </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Your Android <strong>build recipe</strong> (manifest, MainActivity, signing checklist) has
-                been downloaded as a text file. <strong className="text-foreground">This is not a finished APK</strong> —
-                you'll need Android Studio to compile and sign the final AAB before uploading to Play Console.
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">Honest truth:</strong> what you just downloaded is a
+                <em> text recipe</em> (AndroidManifest, MainActivity Java, signing checklist) —
+                <strong className="text-foreground"> not a finished .aab file.</strong> The Play Store needs
+                a signed Android App Bundle, which can only be produced by an Android build environment.
               </p>
+              <div className="rounded-lg border border-border bg-card/60 p-3 text-sm space-y-2">
+                <div className="font-semibold text-foreground">Two ways to turn the recipe into an .aab:</div>
+                <div>
+                  <strong className="text-primary">A. Cloud build (no install needed)</strong> —
+                  push the recipe to GitHub, connect Codemagic, it builds + signs the .aab in the cloud and emails it to you. Free tier available.
+                </div>
+                <div>
+                  <strong className="text-primary">B. Local build</strong> —
+                  open the recipe in Android Studio on your PC/Mac, then Build → Generate Signed Bundle (AAB).
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}>
-                  <Rocket className="mr-2 h-4 w-4" /> Open Play Console
+                <Button onClick={() => window.open("https://codemagic.io/start/", "_blank")}>
+                  <Rocket className="mr-2 h-4 w-4" /> Build with Codemagic (cloud)
                 </Button>
-                <Button variant="outline" onClick={wrap}>
+                <Button variant="outline" onClick={() => window.open("https://developer.android.com/studio", "_blank")}>
+                  <Download className="mr-2 h-4 w-4" /> Get Android Studio
+                </Button>
+                <Button variant="outline" onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}>
+                  Open Play Console
+                </Button>
+                <Button variant="ghost" onClick={wrap}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Re-generate recipe
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                <strong>Next steps:</strong> Open the recipe in Android Studio → Build &gt; Generate Signed Bundle (AAB) → upload to Play Console → Create App → Store Listing → Publish
-              </p>
             </div>
           )}
 
