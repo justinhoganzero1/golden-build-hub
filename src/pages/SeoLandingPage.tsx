@@ -366,6 +366,163 @@ const VARIANTS: Record<string, SeoVariant> = {
       { q: "Can I customize tone?", a: "Yes — friendly, formal, urgent, casual. Just say what vibe you want." },
     ],
   },
+  "/chatgpt-alternative": {
+    path: "/chatgpt-alternative",
+    title: "ChatGPT Alternative 2026 — Free AI With Voice & Memory",
+    description: "Looking for a ChatGPT alternative? ORACLE LUNAR is free, has real voice chat, persistent memory, AI image + video generation, and 40+ tools.",
+    h1: "The Best Free ChatGPT Alternative",
+    tagline: "Free voice chat, image gen, video gen, memory — everything ChatGPT charges for.",
+    keywords: ["chatgpt alternative", "free chatgpt", "best chatgpt alternative 2026", "chatgpt vs"],
+    faqs: [
+      { q: "Is it really free?", a: "Yes — core chat, voice, and image gen are free forever." },
+      { q: "Does it have GPT-5?", a: "ORACLE LUNAR routes between GPT-5, Gemini 3, and Claude for the best answer per query." },
+    ],
+  },
+  "/gemini-alternative": {
+    path: "/gemini-alternative",
+    title: "Gemini Alternative — Free Multi-Model AI Super App",
+    description: "Free Gemini alternative with voice, vision, image gen, video gen, and 40+ specialized tools. No Google account required.",
+    h1: "Free Gemini Alternative",
+    tagline: "Multi-model AI — Gemini, GPT-5, Claude routed automatically. Free.",
+    keywords: ["gemini alternative", "google gemini alternative", "free gemini", "multi-model ai"],
+    faqs: [
+      { q: "Do I need a Google account?", a: "No — sign in with email, Apple, or Google (your choice)." },
+    ],
+  },
+  "/claude-alternative": {
+    path: "/claude-alternative",
+    title: "Claude Alternative — Free AI With Long Memory & Voice",
+    description: "Free Claude alternative with persistent memory, real-time voice chat, image and video generation. No usage caps on chat.",
+    h1: "Free Claude Alternative",
+    tagline: "Long-context AI with voice and vision — free, no usage caps on chat.",
+    keywords: ["claude alternative", "free claude", "anthropic alternative", "long context ai"],
+    faqs: [
+      { q: "Is there a message limit?", a: "Free tier has generous daily messaging — most users never hit it." },
+    ],
+  },
+  "/free-ai-app-2026": {
+    path: "/free-ai-app-2026",
+    title: "Best Free AI App 2026 — 40+ Tools in One Super App",
+    description: "ORACLE LUNAR is the #1 free AI super app for 2026. Chat, voice, image, video, music, code, photo edit, life coach — 40+ tools, one install.",
+    h1: "The Best Free AI App of 2026",
+    tagline: "40+ AI tools in one beautiful app. Install free, use forever.",
+    keywords: ["best free ai app 2026", "best ai app", "free ai super app", "ai apps 2026"],
+    faqs: [
+      { q: "Is it really 40+ tools?", a: "Yes — chat, voice, image gen, video gen, music gen, code, photo edit, tutor, therapist, life coach, and 30+ more." },
+      { q: "Where can I install?", a: "iPhone, Android, and desktop — install free in 10 seconds." },
+    ],
+  },
+  "/ai-for-android": {
+    path: "/ai-for-android",
+    title: "Best AI App for Android — Free Install, No Play Store Wait",
+    description: "ORACLE LUNAR AI installs directly on Android in 5 seconds. Free chat, voice, image gen — no Play Store sign-in required.",
+    h1: "Best AI App for Android",
+    tagline: "Install free in 5 seconds. No Play Store, no waiting, no credit card.",
+    keywords: ["ai app for android", "best android ai", "free ai android app", "android ai assistant"],
+    faqs: [
+      { q: "Do I need the Play Store?", a: "No — install as a PWA directly from your browser. Works exactly like a native app." },
+    ],
+  },
+  "/ai-for-iphone": {
+    path: "/ai-for-iphone",
+    title: "Best AI App for iPhone — Free Install From Safari",
+    description: "ORACLE LUNAR AI runs beautifully on iPhone. Voice chat, image gen, 40+ tools. Install free from Safari in 5 seconds.",
+    h1: "Best AI App for iPhone",
+    tagline: "Free AI super app for iPhone. Install from Safari — no App Store needed.",
+    keywords: ["ai app for iphone", "best iphone ai", "free ios ai app", "siri alternative"],
+    faqs: [
+      { q: "How do I install?", a: "Open in Safari, tap Share → Add to Home Screen. Done in 5 seconds." },
+    ],
+  },
+  "/free-ai-meditation": {
+    path: "/free-ai-meditation",
+    title: "Free AI Meditation App — Personalized Guided Sessions",
+    description: "ORACLE LUNAR AI meditation: personalized guided sessions, sleep stories, breathwork, and voice coaching — free, no subscription.",
+    h1: "Free AI Meditation",
+    tagline: "Personalized guided meditation, sleep stories, breathwork — free.",
+    keywords: ["ai meditation", "free meditation app", "ai sleep stories", "ai mindfulness"],
+    faqs: [
+      { q: "Are sessions personalized?", a: "Yes — AI generates a unique session based on how you're feeling right now." },
+    ],
+  },
+  "/ai-relationship-advice": {
+    path: "/ai-relationship-advice",
+    title: "Free AI Relationship Advice — Caring 24/7 AI Coach",
+    description: "Free AI relationship coach. Talk through dating, marriage, breakups, communication. Private, judgment-free, available 24/7.",
+    h1: "Free AI Relationship Advice",
+    tagline: "Talk through it with caring AI — judgment-free, private, 24/7.",
+    keywords: ["ai relationship advice", "ai dating coach", "free relationship coach", "ai marriage advice"],
+    faqs: [
+      { q: "Is it confidential?", a: "Yes — encrypted in transit, never sold." },
+    ],
+  },
+  "/ai-resume-builder-free": {
+    path: "/ai-resume-builder-free",
+    title: "Free AI Resume Builder — Tailored Resumes in 60 Seconds",
+    description: "ORACLE LUNAR AI resume builder: tailored to the job, ATS-optimized, free, no signup. Cover letters included.",
+    h1: "Free AI Resume Builder",
+    tagline: "Tailored, ATS-optimized resume + cover letter in 60 seconds. Free.",
+    keywords: ["ai resume builder", "free resume builder", "ai cover letter", "ats resume"],
+    faqs: [
+      { q: "Is it ATS-friendly?", a: "Yes — outputs are formatted to pass applicant tracking systems." },
+    ],
+  },
+  "/ai-interview-coach": {
+    path: "/ai-interview-coach",
+    title: "Free AI Interview Coach — Practice With Voice AI",
+    description: "Practice job interviews with a live AI interviewer. Voice-based mock interviews, instant feedback, role-specific. Free.",
+    h1: "Free AI Interview Coach",
+    tagline: "Live voice mock interviews + instant feedback — free.",
+    keywords: ["ai interview coach", "ai mock interview", "interview practice ai", "ai job coach"],
+    faqs: [
+      { q: "Does it use real voice?", a: "Yes — full voice conversation, just like a real interview." },
+    ],
+  },
+  "/ai-cooking-assistant": {
+    path: "/ai-cooking-assistant",
+    title: "Free AI Cooking Assistant — Recipes From What's in Your Fridge",
+    description: "Snap a photo of your fridge — AI suggests recipes you can make right now. Voice-guided cooking, free.",
+    h1: "Free AI Cooking Assistant",
+    tagline: "Photo your fridge → AI gives you tonight's recipe. Voice-guided. Free.",
+    keywords: ["ai cooking assistant", "ai recipe generator", "ai chef", "what to cook ai"],
+    faqs: [
+      { q: "Does it use my photo?", a: "Yes — Live Vision identifies ingredients and suggests recipes instantly." },
+    ],
+  },
+  "/ai-travel-planner": {
+    path: "/ai-travel-planner",
+    title: "Free AI Travel Planner — Custom Itineraries in Seconds",
+    description: "Tell ORACLE LUNAR your destination + budget — get a full day-by-day itinerary with restaurants, activities, and tips. Free.",
+    h1: "Free AI Travel Planner",
+    tagline: "Custom day-by-day itineraries with restaurants & tips — free.",
+    keywords: ["ai travel planner", "free trip planner ai", "ai itinerary", "ai vacation planner"],
+    faqs: [
+      { q: "Is it really free?", a: "Yes — generate as many itineraries as you want." },
+    ],
+  },
+  "/ai-fitness-coach-free": {
+    path: "/ai-fitness-coach-free",
+    title: "Free AI Fitness Coach — Custom Workouts & Voice Guidance",
+    description: "Free AI fitness coach. Custom workouts based on your goals, voice-guided form cues, weekly check-ins. No equipment needed.",
+    h1: "Free AI Fitness Coach",
+    tagline: "Custom workouts + voice-guided form. No equipment, no subscription.",
+    keywords: ["ai fitness coach", "free workout app", "ai personal trainer", "ai gym coach"],
+    faqs: [
+      { q: "Do I need a gym?", a: "No — bodyweight, dumbbell, or full gym programs all supported." },
+    ],
+  },
+  "/ai-investor-pitch": {
+    path: "/ai-investor-pitch",
+    title: "AI Investor Pitch Generator — Pitch Deck in 60 Seconds",
+    description: "Free AI pitch deck generator. Describe your startup → get a 10-slide investor pitch with TAM, traction, ask. Used by founders.",
+    h1: "AI Investor Pitch Generator",
+    tagline: "10-slide investor pitch deck in 60 seconds. Free.",
+    keywords: ["ai pitch deck", "investor pitch generator", "startup pitch ai", "free pitch deck"],
+    faqs: [
+      { q: "Is the deck investor-ready?", a: "Yes — modeled on real seed/Series A decks. Edit before sending." },
+      { q: "Looking to invest in ORACLE LUNAR?", a: "Visit our Investor Hub to submit an offer — every offer is reviewed by the founder personally." },
+    ],
+  },
 };
 
 export default function SeoLandingPage() {
