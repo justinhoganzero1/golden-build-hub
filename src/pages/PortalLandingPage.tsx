@@ -566,8 +566,13 @@ const PortalLandingPage = () => {
               {isIOS ? "See iOS steps above" : canInstall ? "Install ORACLE LUNAR now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
+
             {/* App Wrapper CTA removed from public Portal — admin-only via Owner Dashboard */}
-          ))}
+
+            <p className="text-xs text-muted-foreground mt-3">
+              📱 Native Android app <strong className="text-primary">coming soon to Google Play</strong> — install as a PWA above to use ORACLE LUNAR right now.
+            </p>
+          </div>
         </div>
       </section>
 
