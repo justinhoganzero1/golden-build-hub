@@ -427,7 +427,7 @@ const SettingsPage = () => {
 
   // Rehydrate Neon Glow color on mount
   useEffect(() => {
-    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Christmas";
+    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine";
     const glow = NEON_GLOWS.find(g => g.name === saved) || NEON_GLOWS[0];
     applyNeonGlow(glow, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
