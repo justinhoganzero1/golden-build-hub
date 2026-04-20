@@ -40,15 +40,21 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Not authenticated" }, 401);
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) return json({ error: "Not authenticated" }, 401);
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+    if (userError || !userData?.user) {
+      console.error("[stripe-revenue] auth failed", userError);
+      return json({ error: "Not authenticated", detail: userError?.message }, 401);
+    }
+    const userId = userData.user.id;
+    console.log("[stripe-revenue] authed user", userId, userData.user.email);
 
     // Owner check via has_role RPC
-    const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: claimsData.claims.sub,
+    const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+      _user_id: userId,
       _role: "admin",
     });
-    if (!isAdmin) return json({ error: "Forbidden" }, 403);
+    console.log("[stripe-revenue] has_role result", { isAdmin, roleError });
+    if (!isAdmin) return json({ error: "Forbidden", userId, isAdmin, roleError: roleError?.message }, 403);
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
