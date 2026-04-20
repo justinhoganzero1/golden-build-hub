@@ -745,16 +745,58 @@ All colors MUST be HSL.
    button, card, link, and portal surface across the entire app.
    ============================================================ */
 :root {
-  /* Default = acid neon green. Settings → Neon Glow can override. */
+  /* Default = Christmas (red + green alternating). Settings → Neon Glow can override. */
   --neon-pink: 135 100% 55%;
   --neon-pink-soft: 120 100% 68%;
   --neon-pink-deep: 145 100% 42%;
+  /* Christmas duo: secondary color used when .neon-duo is active on <html> */
+  --neon-pink-2: 0 100% 55%;
+  --neon-pink-2-soft: 8 100% 70%;
+  --neon-pink-2-deep: 350 100% 42%;
   --neon-pink-cushion:
     0 0 6px hsl(var(--neon-pink) / 0.85),
     0 0 14px hsl(var(--neon-pink) / 0.65),
     0 0 28px hsl(var(--neon-pink-soft) / 0.55),
     0 6px 22px hsl(var(--neon-pink-deep) / 0.45),
     0 0 42px hsl(var(--neon-pink-soft) / 0.35);
+}
+
+/* Christmas / duo-color mode: alternate red & green pulse */
+@keyframes neonChristmasPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 6px hsl(var(--neon-pink) / 0.95),
+      0 0 16px hsl(var(--neon-pink) / 0.7),
+      0 0 30px hsl(var(--neon-pink-soft) / 0.55),
+      0 6px 22px hsl(var(--neon-pink-deep) / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 6px hsl(var(--neon-pink-2) / 0.95),
+      0 0 16px hsl(var(--neon-pink-2) / 0.7),
+      0 0 30px hsl(var(--neon-pink-2-soft) / 0.55),
+      0 6px 22px hsl(var(--neon-pink-2-deep) / 0.5);
+  }
+}
+
+html.neon-duo button,
+html.neon-duo a[href],
+html.neon-duo [role="tab"],
+html.neon-duo [role="button"],
+html.neon-duo [role="menuitem"],
+html.neon-duo [role="link"],
+html.neon-duo .tab,
+html.neon-duo .portal-tile,
+html.neon-duo .app-tile,
+html.neon-duo .card-tile,
+html.neon-duo [data-glow="pink"] {
+  animation: neonChristmasPulse 2.4s ease-in-out infinite !important;
+}
+
+html.neon-duo [class*="rounded-"][class*="border"]:not(input):not(textarea):not(select),
+html.neon-duo .card,
+html.neon-duo [data-slot="card"] {
+  animation: neonChristmasPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes neonPinkBreath {
