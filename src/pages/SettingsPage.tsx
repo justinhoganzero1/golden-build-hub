@@ -252,6 +252,22 @@ const THEME_COLORS: ThemeScheme[] = [
 
 type SettingsTab = "main" | "theme" | "layout" | "wearables" | "privacy" | "language" | "notifications" | "help";
 
+interface NeonGlow { name: string; main: string; soft: string; deep: string; }
+
+const NEON_GLOWS: NeonGlow[] = [
+  { name: "Electric Marine", main: "205 100% 55%", soft: "195 100% 68%", deep: "215 100% 45%" },
+  { name: "Brilliant Blue",  main: "220 100% 60%", soft: "210 100% 72%", deep: "230 100% 48%" },
+  { name: "Hot Pink",        main: "322 100% 60%", soft: "318 100% 72%", deep: "328 100% 48%" },
+  { name: "Cyber Cyan",      main: "180 100% 55%", soft: "175 100% 70%", deep: "190 100% 45%" },
+  { name: "Acid Green",      main: "135 100% 55%", soft: "120 100% 68%", deep: "145 100% 42%" },
+  { name: "Solar Gold",      main: "45 100% 55%",  soft: "50 100% 70%",  deep: "38 100% 45%"  },
+  { name: "Plasma Violet",   main: "275 100% 60%", soft: "285 100% 72%", deep: "265 100% 48%" },
+  { name: "Lava Orange",     main: "20 100% 55%",  soft: "30 100% 68%",  deep: "12 100% 45%"  },
+  { name: "Crimson Red",     main: "0 100% 55%",   soft: "8 100% 68%",   deep: "350 100% 45%" },
+  { name: "Mint Frost",      main: "160 90% 55%",  soft: "150 95% 70%",  deep: "170 95% 42%"  },
+];
+
+
 interface LayoutOption {
   name: string;
   gridCols: number;
@@ -342,6 +358,7 @@ const SettingsPage = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("oracle-lunar-theme-name") || "Gold & Black");
+  const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine");
   const [language, setLanguage] = useState(() => localStorage.getItem("oracle-lunar-language") || "English");
   const [privacySettings, setPrivacySettings] = useState(() => {
     try {
@@ -396,6 +413,24 @@ const SettingsPage = () => {
       }
     } catch {}
   }, []);
+
+  // Rehydrate Neon Glow color on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine";
+    const glow = NEON_GLOWS.find(g => g.name === saved) || NEON_GLOWS[0];
+    applyNeonGlow(glow, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyNeonGlow = (glow: NeonGlow, announce = true) => {
+    const root = document.documentElement;
+    root.style.setProperty("--neon-pink", glow.main);
+    root.style.setProperty("--neon-pink-soft", glow.soft);
+    root.style.setProperty("--neon-pink-deep", glow.deep);
+    setNeonGlow(glow.name);
+    localStorage.setItem("oracle-lunar-neon-glow", glow.name);
+    if (announce) toast.success(`Neon Glow: ${glow.name}`);
+  };
 
   const applyLayout = (layout: LayoutOption) => {
     // Store layout in localStorage so DashboardPage can read it
@@ -510,6 +545,32 @@ const SettingsPage = () => {
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Theme & Colors</h1>
               <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentTheme}</span> · {THEME_COLORS.length} schemes</p>
+
+              {/* Neon Glow picker — controls the app-wide cushion glow under every tab */}
+              <div className="rounded-2xl border border-border bg-card p-3 mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold uppercase text-muted-foreground">Neon Glow (App-Wide Cushion)</h3>
+                  <span className="text-[10px] text-muted-foreground">{neonGlow}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {NEON_GLOWS.map(g => (
+                    <button
+                      key={g.name}
+                      onClick={() => applyNeonGlow(g)}
+                      className={`p-2 rounded-xl border text-center transition-all ${neonGlow === g.name ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                      style={{
+                        background: `radial-gradient(circle, hsl(${g.soft} / 0.25) 0%, transparent 70%)`,
+                        boxShadow: `0 0 6px hsl(${g.main} / 0.85), 0 0 14px hsl(${g.main} / 0.6), 0 0 26px hsl(${g.soft} / 0.5), 0 6px 22px hsl(${g.deep} / 0.45)`,
+                      }}
+                    >
+                      <div className="w-6 h-6 rounded-full mx-auto mb-1" style={{ background: `hsl(${g.main})`, boxShadow: `0 0 10px hsl(${g.main})` }} />
+                      <span className="text-[8px] text-foreground leading-tight block">{g.name}</span>
+                      {neonGlow === g.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Dark Themes ({THEME_COLORS.filter(t => !t.light).length})</h3>
               <div className="grid grid-cols-3 gap-2 mb-4 max-h-[60vh] overflow-y-auto pr-1">
                 {THEME_COLORS.filter(t => !t.light).map(t => (
