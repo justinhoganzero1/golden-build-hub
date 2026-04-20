@@ -451,16 +451,17 @@ const PortalLandingPage = () => {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Wrap any app ready for the Play Store. Paste a URL, name your app, and download
-                a signed wrapper package you can publish — all from the ORACLE LUNAR portal.
+                Generates the Android build recipe (manifest, MainActivity, signing checklist)
+                for any URL — paste a link, name your app, get a ready-to-compile project bundle
+                you take into Android Studio. <strong className="text-foreground/80">Not a finished APK.</strong>
               </p>
               <Button
                 size="lg"
                 onClick={() => navigate("/web-wrapper")}
                 className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
               >
-                <Download className="mr-2 h-5 w-5" />
-                Download App Wrapper
+                <Sparkles className="mr-2 h-5 w-5" />
+                Open App Wrapper Tool
               </Button>
             </div>
 
@@ -521,6 +522,7 @@ const PortalLandingPage = () => {
                 title: "Android",
                 steps: ["Open in Chrome or Edge.", "Tap Install below.", "Confirm in the prompt."],
                 cta: canInstall ? "Install on Android" : "Open install prompt",
+                badge: "Native Play Store app coming soon",
                 action: () => handleInstall("android"),
                 installedHere: isStandalone && isAndroidUA,
               },
@@ -559,12 +561,12 @@ const PortalLandingPage = () => {
 
             return (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                {cards.map(({ key, icon: Icon, title, steps, cta, action, installedHere }) => (
+                {cards.map(({ key, icon: Icon, title, steps, cta, action, installedHere, badge }: any) => (
                   <div key={key} className="holo-tile rounded-xl p-6 flex flex-col">
                     <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
                     <h3 className="font-semibold mb-2 text-foreground">{title}</h3>
                     <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside flex-1">
-                      {steps.map((s) => <li key={s}>{s}</li>)}
+                      {steps.map((s: string) => <li key={s}>{s}</li>)}
                     </ol>
                     <Button
                       onClick={action}
@@ -575,6 +577,11 @@ const PortalLandingPage = () => {
                       <Download className="mr-2 h-4 w-4" />
                       {installedHere ? "Already installed ✓" : cta}
                     </Button>
+                    {badge && (
+                      <p className="text-[10px] uppercase tracking-wider text-primary/80 text-center mt-2 font-semibold">
+                        🎉 {badge}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -591,14 +598,16 @@ const PortalLandingPage = () => {
               {isIOS ? "See iOS steps above" : canInstall ? "Install ORACLE LUNAR now" : "Install (use Chrome/Edge/Safari)"}
             </Button>
 
-            {/* Native wrapper download — Portal-specific Play Store package */}
+            {/* Native wrapper builder — Portal-specific Play Store package */}
             <div className="mt-8 max-w-2xl mx-auto holo-tile rounded-xl p-6 border border-primary/30">
               <div className="flex items-center gap-3 mb-2 justify-center">
                 <Zap className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-lg">Want the Portal as a real Android app?</h3>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Generate a ready-to-publish Google Play Store wrapper for the ORACLE LUNAR Portal in seconds — separate from the main ORACLE LUNAR app.
+                Open the App Wrapper tool to generate the Android build recipe for the
+                ORACLE LUNAR Portal. You'll still need Android Studio to compile the final AAB
+                before publishing to Google Play.
               </p>
               <Button
                 variant="outline"
@@ -609,13 +618,13 @@ const PortalLandingPage = () => {
                 }}
                 className="border-primary/40 hover:border-primary"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Build Portal App Wrapper
+                <Sparkles className="mr-2 h-4 w-4" />
+                Open Portal Wrapper Tool
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground mt-3">
-              Native Android & iOS builds coming soon to Google Play and the App Store.
+              📱 Native Android app <strong className="text-primary">coming soon to Google Play</strong> — install as a PWA above to use ORACLE LUNAR right now.
             </p>
           </div>
         </div>
