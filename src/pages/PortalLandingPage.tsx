@@ -49,6 +49,7 @@ import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
+import { bounceIfNotProduction } from "@/lib/installRedirect";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
@@ -566,6 +567,9 @@ const PortalLandingPage = () => {
                 steps: ["Open in Safari.", "Tap the Share icon.", "Choose Add to Home Screen."],
                 cta: "Show iOS steps",
                 action: () => {
+                  // Bounce out of the editor iframe if we're not on production —
+                  // otherwise the share sheet shows the preview URL.
+                  if (bounceIfNotProduction("/")) return;
                   if ((navigator as any).share) {
                     (navigator as any).share({
                       title: "Install ORACLE LUNAR",

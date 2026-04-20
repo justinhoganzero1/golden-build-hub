@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackInstallEvent, detectInstallPlatform } from "@/lib/installAnalytics";
+import { bounceIfNotProduction } from "@/lib/installRedirect";
 
 /**
  * Sticky high-conversion install mega-bar.
