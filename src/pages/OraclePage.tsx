@@ -1939,12 +1939,12 @@ const OraclePage = () => {
           <div className="flex flex-col items-center gap-3 z-10">
             <div
               className={`relative w-40 h-40 rounded-full overflow-hidden border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
-              style={{ animation: isSpeaking ? "pulse 1s ease-in-out infinite" : isLoading ? "pulse 2s ease-in-out infinite" : undefined }}
+              style={undefined}
             >
               <LivingAvatar
                 imageUrl={oracleAvatar?.image_url || MASTER_AI_AVATAR}
                 alt={oracleName}
-                intensity={isSpeaking ? "strong" : "normal"}
+                intensity="subtle"
                 className="w-full h-full"
               />
               {isListening && (
