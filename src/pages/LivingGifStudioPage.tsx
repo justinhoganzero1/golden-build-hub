@@ -397,16 +397,14 @@ const LivingGifStudioPage = () => {
                           {g.is_active_oracle ? "Active" : "Set as Oracle"}
                         </Button>
                         {g.gif_url && (
-                          <a
-                            href={g.gif_url}
-                            download={`living-gif-${g.id}.mp4`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Button size="sm" variant="ghost" className="h-7 px-2">
-                              <Download className="w-3 h-3" />
-                            </Button>
-                          </a>
+                          <DownloadButton
+                            url={g.gif_url}
+                            filename={`living-gif-${g.id}.mp4`}
+                            iconOnly
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2"
+                          />
                         )}
                         <Button
                           size="sm"
