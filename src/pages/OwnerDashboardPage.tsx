@@ -517,9 +517,12 @@ const OwnerDashboardPage = () => {
                     </p>
                   </div>
                 </div>
-                <Button size="sm" onClick={() => navigate("/web-wrapper")}>
+                <button
+                  onClick={() => navigate("/web-wrapper")}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold whitespace-nowrap"
+                >
                   Open App Wrapper
-                </Button>
+                </button>
               </div>
             </div>
 
