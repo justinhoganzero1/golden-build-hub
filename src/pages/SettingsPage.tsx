@@ -252,6 +252,22 @@ const THEME_COLORS: ThemeScheme[] = [
 
 type SettingsTab = "main" | "theme" | "layout" | "wearables" | "privacy" | "language" | "notifications" | "help";
 
+interface NeonGlow { name: string; main: string; soft: string; deep: string; }
+
+const NEON_GLOWS: NeonGlow[] = [
+  { name: "Electric Marine", main: "205 100% 55%", soft: "195 100% 68%", deep: "215 100% 45%" },
+  { name: "Brilliant Blue",  main: "220 100% 60%", soft: "210 100% 72%", deep: "230 100% 48%" },
+  { name: "Hot Pink",        main: "322 100% 60%", soft: "318 100% 72%", deep: "328 100% 48%" },
+  { name: "Cyber Cyan",      main: "180 100% 55%", soft: "175 100% 70%", deep: "190 100% 45%" },
+  { name: "Acid Green",      main: "135 100% 55%", soft: "120 100% 68%", deep: "145 100% 42%" },
+  { name: "Solar Gold",      main: "45 100% 55%",  soft: "50 100% 70%",  deep: "38 100% 45%"  },
+  { name: "Plasma Violet",   main: "275 100% 60%", soft: "285 100% 72%", deep: "265 100% 48%" },
+  { name: "Lava Orange",     main: "20 100% 55%",  soft: "30 100% 68%",  deep: "12 100% 45%"  },
+  { name: "Crimson Red",     main: "0 100% 55%",   soft: "8 100% 68%",   deep: "350 100% 45%" },
+  { name: "Mint Frost",      main: "160 90% 55%",  soft: "150 95% 70%",  deep: "170 95% 42%"  },
+];
+
+
 interface LayoutOption {
   name: string;
   gridCols: number;
