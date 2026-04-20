@@ -433,37 +433,6 @@ const PortalLandingPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Web Wrapper — featured special download */}
-            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
-              <div className="flex items-center gap-4 mb-4">
-                <img
-                  src={webWrapperLogo}
-                  alt="App Wrapper app logo"
-                  width={64}
-                  height={64}
-                  loading="lazy"
-                  className="h-16 w-16 rounded-xl drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]"
-                />
-                <div>
-                  <h3 className="font-semibold text-xl text-foreground">App Wrapper</h3>
-                  <p className="text-xs text-primary uppercase tracking-wider">Special download</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
-                Generates the Android build recipe (manifest, MainActivity, signing checklist)
-                for any URL — paste a link, name your app, get a ready-to-compile project bundle
-                you take into Android Studio. <strong className="text-foreground/80">Not a finished APK.</strong>
-              </p>
-              <Button
-                size="lg"
-                onClick={() => navigate("/web-wrapper")}
-                className="shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
-              >
-                <Sparkles className="mr-2 h-5 w-5" />
-                Open App Wrapper Tool
-              </Button>
-            </div>
-
             {/* App Maker — conversational app generator */}
             <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
               <div className="flex items-center gap-4 mb-4">
