@@ -108,6 +108,20 @@ const loaders = {
   "/ai-photo-editor": () => import("./pages/SeoLandingPage"),
   "/free-seo-tools": () => import("./pages/SeoLandingPage"),
   "/ai-email-writer": () => import("./pages/SeoLandingPage"),
+  "/chatgpt-alternative": () => import("./pages/SeoLandingPage"),
+  "/gemini-alternative": () => import("./pages/SeoLandingPage"),
+  "/claude-alternative": () => import("./pages/SeoLandingPage"),
+  "/free-ai-app-2026": () => import("./pages/SeoLandingPage"),
+  "/ai-for-android": () => import("./pages/SeoLandingPage"),
+  "/ai-for-iphone": () => import("./pages/SeoLandingPage"),
+  "/free-ai-meditation": () => import("./pages/SeoLandingPage"),
+  "/ai-relationship-advice": () => import("./pages/SeoLandingPage"),
+  "/ai-resume-builder-free": () => import("./pages/SeoLandingPage"),
+  "/ai-interview-coach": () => import("./pages/SeoLandingPage"),
+  "/ai-cooking-assistant": () => import("./pages/SeoLandingPage"),
+  "/ai-travel-planner": () => import("./pages/SeoLandingPage"),
+  "/ai-fitness-coach-free": () => import("./pages/SeoLandingPage"),
+  "/ai-investor-pitch": () => import("./pages/SeoLandingPage"),
   "/store/:accountId": () => import("./pages/StorefrontPage"),
   "/advertise": () => import("./pages/AdvertisePage"),
   "/audio-filter": () => import("./pages/AudioFilterPage"),
@@ -307,6 +321,20 @@ const App = () => (
                   <Route path="/ai-photo-editor" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-seo-tools" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-email-writer" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/chatgpt-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/gemini-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/claude-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/free-ai-app-2026" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-for-android" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-for-iphone" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/free-ai-meditation" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-relationship-advice" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-resume-builder-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-interview-coach" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-cooking-assistant" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-travel-planner" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-fitness-coach-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-investor-pitch" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps" element={<RequireAuth><ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/apps/:slug" element={<RequireAuth><PaywallGate requiredTier="starter" featureName="Standalone Mini-App"><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></PaywallGate></RequireAuth>} />
