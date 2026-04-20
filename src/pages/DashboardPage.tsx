@@ -45,7 +45,7 @@ const tiles: AppTile[] = [
   { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio", tier: "monthly" },
   { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub", tier: "monthly" },
   { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant", tier: "starter" },
-  { label: "Claims", icon: <Shield className="w-6 h-6" />, path: "/claims-assistant", tier: null },
+  // Claims removed from dashboard — still accessible via direct route if needed.
   { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor", tier: "starter" },
   { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter", tier: "starter" },
   { label: "Inventor", icon: <Lightbulb className="w-6 h-6" />, path: "/inventor", tier: "monthly" },
