@@ -252,9 +252,20 @@ const THEME_COLORS: ThemeScheme[] = [
 
 type SettingsTab = "main" | "theme" | "layout" | "wearables" | "privacy" | "language" | "notifications" | "help";
 
-interface NeonGlow { name: string; main: string; soft: string; deep: string; }
+interface NeonGlow {
+  name: string;
+  main: string;
+  soft: string;
+  deep: string;
+  /** Optional second color → enables alternating duo-pulse (e.g. Christmas red↔green) */
+  main2?: string;
+  soft2?: string;
+  deep2?: string;
+}
 
 const NEON_GLOWS: NeonGlow[] = [
+  { name: "Christmas",       main: "135 100% 50%", soft: "125 100% 65%", deep: "145 100% 38%",
+                              main2: "0 100% 55%",  soft2: "8 100% 70%",   deep2: "350 100% 42%" },
   { name: "Electric Marine", main: "205 100% 55%", soft: "195 100% 68%", deep: "215 100% 45%" },
   { name: "Brilliant Blue",  main: "220 100% 60%", soft: "210 100% 72%", deep: "230 100% 48%" },
   { name: "Hot Pink",        main: "322 100% 60%", soft: "318 100% 72%", deep: "328 100% 48%" },
@@ -358,7 +369,7 @@ const SettingsPage = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("oracle-lunar-theme-name") || "Gold & Black");
-  const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Acid Green");
+  const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Christmas");
   const [language, setLanguage] = useState(() => localStorage.getItem("oracle-lunar-language") || "English");
   const [privacySettings, setPrivacySettings] = useState(() => {
     try {
@@ -416,7 +427,7 @@ const SettingsPage = () => {
 
   // Rehydrate Neon Glow color on mount
   useEffect(() => {
-    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Acid Green";
+    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Christmas";
     const glow = NEON_GLOWS.find(g => g.name === saved) || NEON_GLOWS[0];
     applyNeonGlow(glow, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -427,6 +438,14 @@ const SettingsPage = () => {
     root.style.setProperty("--neon-pink", glow.main);
     root.style.setProperty("--neon-pink-soft", glow.soft);
     root.style.setProperty("--neon-pink-deep", glow.deep);
+    if (glow.main2) {
+      root.style.setProperty("--neon-pink-2", glow.main2);
+      root.style.setProperty("--neon-pink-2-soft", glow.soft2 || glow.main2);
+      root.style.setProperty("--neon-pink-2-deep", glow.deep2 || glow.main2);
+      root.classList.add("neon-duo");
+    } else {
+      root.classList.remove("neon-duo");
+    }
     setNeonGlow(glow.name);
     localStorage.setItem("oracle-lunar-neon-glow", glow.name);
     if (announce) toast.success(`Neon Glow: ${glow.name}`);
