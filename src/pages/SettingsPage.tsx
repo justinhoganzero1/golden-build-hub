@@ -545,6 +545,32 @@ const SettingsPage = () => {
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Theme & Colors</h1>
               <p className="text-xs text-muted-foreground mb-4">Current: <span className="text-primary font-medium">{currentTheme}</span> · {THEME_COLORS.length} schemes</p>
+
+              {/* Neon Glow picker — controls the app-wide cushion glow under every tab */}
+              <div className="rounded-2xl border border-border bg-card p-3 mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold uppercase text-muted-foreground">Neon Glow (App-Wide Cushion)</h3>
+                  <span className="text-[10px] text-muted-foreground">{neonGlow}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {NEON_GLOWS.map(g => (
+                    <button
+                      key={g.name}
+                      onClick={() => applyNeonGlow(g)}
+                      className={`p-2 rounded-xl border text-center transition-all ${neonGlow === g.name ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                      style={{
+                        background: `radial-gradient(circle, hsl(${g.soft} / 0.25) 0%, transparent 70%)`,
+                        boxShadow: `0 0 6px hsl(${g.main} / 0.85), 0 0 14px hsl(${g.main} / 0.6), 0 0 26px hsl(${g.soft} / 0.5), 0 6px 22px hsl(${g.deep} / 0.45)`,
+                      }}
+                    >
+                      <div className="w-6 h-6 rounded-full mx-auto mb-1" style={{ background: `hsl(${g.main})`, boxShadow: `0 0 10px hsl(${g.main})` }} />
+                      <span className="text-[8px] text-foreground leading-tight block">{g.name}</span>
+                      {neonGlow === g.name && <Check className="w-3 h-3 text-primary mx-auto mt-0.5" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Dark Themes ({THEME_COLORS.filter(t => !t.light).length})</h3>
               <div className="grid grid-cols-3 gap-2 mb-4 max-h-[60vh] overflow-y-auto pr-1">
                 {THEME_COLORS.filter(t => !t.light).map(t => (
