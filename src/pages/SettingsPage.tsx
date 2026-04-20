@@ -427,7 +427,7 @@ const SettingsPage = () => {
 
   // Rehydrate Neon Glow color on mount
   useEffect(() => {
-    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Acid Green";
+    const saved = localStorage.getItem("oracle-lunar-neon-glow") || "Christmas";
     const glow = NEON_GLOWS.find(g => g.name === saved) || NEON_GLOWS[0];
     applyNeonGlow(glow, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -438,6 +438,14 @@ const SettingsPage = () => {
     root.style.setProperty("--neon-pink", glow.main);
     root.style.setProperty("--neon-pink-soft", glow.soft);
     root.style.setProperty("--neon-pink-deep", glow.deep);
+    if (glow.main2) {
+      root.style.setProperty("--neon-pink-2", glow.main2);
+      root.style.setProperty("--neon-pink-2-soft", glow.soft2 || glow.main2);
+      root.style.setProperty("--neon-pink-2-deep", glow.deep2 || glow.main2);
+      root.classList.add("neon-duo");
+    } else {
+      root.classList.remove("neon-duo");
+    }
     setNeonGlow(glow.name);
     localStorage.setItem("oracle-lunar-neon-glow", glow.name);
     if (announce) toast.success(`Neon Glow: ${glow.name}`);
