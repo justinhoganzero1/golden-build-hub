@@ -738,3 +738,92 @@ All colors MUST be HSL.
     animation: none;
   }
 }
+
+/* ============================================================
+   APP-WIDE PINK NEON "FLUFFY CUSHION" GLOW
+   Radiates ~5mm of soft hot-pink light beneath every tab,
+   button, card, link, and portal surface across the entire app.
+   ============================================================ */
+:root {
+  --neon-pink: 322 100% 60%;
+  --neon-pink-soft: 318 100% 72%;
+  --neon-pink-deep: 328 100% 48%;
+  --neon-pink-cushion:
+    0 0 6px hsl(var(--neon-pink) / 0.85),
+    0 0 14px hsl(var(--neon-pink) / 0.65),
+    0 0 28px hsl(var(--neon-pink-soft) / 0.55),
+    0 6px 22px hsl(var(--neon-pink-deep) / 0.45),
+    0 0 42px hsl(var(--neon-pink-soft) / 0.35);
+}
+
+@keyframes neonPinkBreath {
+  0%, 100% {
+    box-shadow:
+      0 0 6px hsl(var(--neon-pink) / 0.85),
+      0 0 14px hsl(var(--neon-pink) / 0.6),
+      0 0 26px hsl(var(--neon-pink-soft) / 0.5),
+      0 6px 22px hsl(var(--neon-pink-deep) / 0.42),
+      0 0 40px hsl(var(--neon-pink-soft) / 0.32);
+  }
+  50% {
+    box-shadow:
+      0 0 8px hsl(var(--neon-pink) / 1),
+      0 0 18px hsl(var(--neon-pink) / 0.75),
+      0 0 34px hsl(var(--neon-pink-soft) / 0.65),
+      0 8px 28px hsl(var(--neon-pink-deep) / 0.55),
+      0 0 52px hsl(var(--neon-pink-soft) / 0.45);
+  }
+}
+
+/* Universal target — every clickable / tab-like element gets the glow */
+button,
+a[href],
+[role="tab"],
+[role="button"],
+[role="menuitem"],
+[role="link"],
+.tab,
+.portal-tile,
+.app-tile,
+.card-tile,
+[data-glow="pink"] {
+  position: relative;
+  animation: neonPinkBreath 3.6s ease-in-out infinite;
+  border-radius: inherit;
+}
+
+/* Make sure cards/Card components also radiate the cushion */
+[class*="rounded-"][class*="border"]:not(input):not(textarea):not(select),
+.card,
+[data-slot="card"] {
+  box-shadow: var(--neon-pink-cushion);
+}
+
+/* Don't paint glow on disabled / hidden / pure layout wrappers */
+button:disabled,
+a[aria-disabled="true"],
+[hidden],
+.no-neon,
+[data-glow="off"] {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Honour reduced-motion: keep the glow but stop the breathing pulse */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a[href],
+  [role="tab"],
+  [role="button"],
+  [role="menuitem"],
+  [role="link"],
+  .tab,
+  .portal-tile,
+  .app-tile,
+  .card-tile,
+  [data-glow="pink"] {
+    animation: none;
+    box-shadow: var(--neon-pink-cushion);
+  }
+}
+
