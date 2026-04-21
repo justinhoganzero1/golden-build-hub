@@ -115,6 +115,7 @@ const OraclePage = () => {
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
   const [micPermGranted, setMicPermGranted] = useState(false);
+  const [micPermissionError, setMicPermissionError] = useState<string | null>(null);
   const [renamingAgent, setRenamingAgent] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState("");
   const [oracleMode, setOracleModeState] = useState(getOracleMode);
@@ -1173,29 +1174,39 @@ const OraclePage = () => {
       try {
         const perm: any = await (navigator as any).permissions?.query?.({ name: "microphone" as PermissionName }).catch(() => null);
         if (perm?.state === "granted") {
+          setMicPermissionError(null);
           setMicPermGranted(true);
           startAlwaysListening();
           return;
         }
         if (perm?.state === "denied") {
-          toast.error("Microphone is blocked. Click the 🔒 lock icon in your browser address bar → set Microphone to Allow → reload the page.", { duration: 9000 });
+          const msg = "Microphone is blocked. Click the 🔒 lock icon in your browser address bar → set Microphone to Allow → reload the page.";
+          setMicPermissionError(msg);
+          toast.error(msg, { duration: 9000 });
           return;
         }
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         });
         stream.getTracks().forEach((tr) => tr.stop());
+        setMicPermissionError(null);
         setMicPermGranted(true);
         startAlwaysListening();
         toast.success("Microphone ready — Oracle is listening.");
       } catch (err: any) {
         console.error("[oracle] mic auto-prompt failed", err);
         if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
-          toast.error("Microphone was blocked. Click the 🔒 in your address bar → Allow Microphone → reload.", { duration: 9000 });
+          const msg = "Microphone was blocked. Click the 🔒 in your address bar → Allow Microphone → reload.";
+          setMicPermissionError(msg);
+          toast.error(msg, { duration: 9000 });
         } else if (err?.name === "NotFoundError") {
-          toast.error("No microphone detected on this laptop. Check Windows Sound settings → Input devices.");
+          const msg = "No microphone detected on this laptop. Check Windows Sound settings → Input devices.";
+          setMicPermissionError(msg);
+          toast.error(msg);
         } else {
-          toast.error("Tap the mic button to enable voice: " + (err?.message || err?.name || "unknown error"));
+          const msg = "Tap the mic button to enable voice: " + (err?.message || err?.name || "unknown error");
+          setMicPermissionError(msg);
+          toast.error(msg);
         }
       }
     }, 600);
@@ -1281,16 +1292,23 @@ const OraclePage = () => {
         },
       });
       stream.getTracks().forEach((track) => track.stop());
+      setMicPermissionError(null);
       setMicPermGranted(true);
       startAlwaysListening();
     } catch (err: any) {
       console.error("Mic error:", err);
       if (err.name === "NotAllowedError" || err.name === "SecurityError") {
-        toast.error("Microphone blocked. Enable it in your browser/device settings, then tap mic again.");
+        const msg = "Microphone blocked. Enable it in your browser/device settings, then tap mic again.";
+        setMicPermissionError(msg);
+        toast.error(msg);
       } else if (err.name === "NotFoundError") {
-        toast.error("No microphone found on this device.");
+        const msg = "No microphone found on this device.";
+        setMicPermissionError(msg);
+        toast.error(msg);
       } else {
-        toast.error("Could not access microphone: " + (err.message || err.name));
+        const msg = "Could not access microphone: " + (err.message || err.name);
+        setMicPermissionError(msg);
+        toast.error(msg);
       }
     }
   };
@@ -2151,6 +2169,27 @@ const OraclePage = () => {
 
       {/* Input bar */}
       <div className="px-4 py-3 z-10" style={{ background: "linear-gradient(to top, #0a0a0a, rgba(10,10,10,0.95))" }}>
+        {!micPermGranted && (
+          <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-white">Enable microphone</div>
+                <div className="text-xs text-gray-300">
+                  Oracle needs one click from you to trigger your laptop's mic permission.
+                </div>
+                {micPermissionError && (
+                  <div className="text-xs text-red-300 mt-1">{micPermissionError}</div>
+                )}
+              </div>
+              <button
+                onClick={toggleMic}
+                className="px-4 py-2 rounded-full bg-[#FFAA00] text-black text-sm font-semibold"
+              >
+                Allow mic
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
