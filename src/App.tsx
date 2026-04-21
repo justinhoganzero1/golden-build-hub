@@ -224,11 +224,13 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
-              <AnnouncementBanner />
-              <PreviewModeBanner />
+              <Suspense fallback={null}>
+                <AnnouncementBanner />
+                <PreviewModeBanner />
+                <MasterOracleLauncher />
+              </Suspense>
               <MasterMuteButton />
-              <MasterOracleLauncher />
-              
+
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
