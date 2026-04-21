@@ -10,7 +10,7 @@ import { useScribe } from "@elevenlabs/react";
 import { useMute } from "@/contexts/MuteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useUserAvatars, useSaveMedia, useCreateAvatar, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
