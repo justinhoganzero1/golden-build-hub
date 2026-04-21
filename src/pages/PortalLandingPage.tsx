@@ -49,7 +49,7 @@ import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
-import { bounceIfNotProduction } from "@/lib/installRedirect";
+import { bounceIfNotProduction, getNativeStoreUrl } from "@/lib/installRedirect";
 
 const FEATURES = [
   { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
@@ -115,6 +115,15 @@ const PortalLandingPage = () => {
 
   const handleInstall = async (platform: InstallPlatform = detectInstallPlatform()) => {
     trackInstallEvent("click", platform);
+
+    // 0) If a real native store listing exists, that IS the actual app — never
+    //    fall back to the PWA shortcut path which can look like "downloading
+    //    the website" to non-technical users.
+    const storeUrl = getNativeStoreUrl();
+    if (storeUrl) {
+      window.open(storeUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
 
     // If we're inside the Lovable editor iframe or on a preview/sandbox URL,
     // PWA install can NEVER work here — the manifest's start_url belongs to the
