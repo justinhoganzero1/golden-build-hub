@@ -18,8 +18,7 @@ const AudioDiagnosticsPage = () => {
     try {
       // Try to read permission state if supported
       try {
-        // @ts-expect-error microphone perm string is supported in most browsers
-        const status = await navigator.permissions?.query({ name: "microphone" });
+        const status = await navigator.permissions?.query({ name: "microphone" as PermissionName });
         if (status?.state) setPermission(status.state as any);
       } catch { /* ignore */ }
 
