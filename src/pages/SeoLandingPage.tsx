@@ -612,7 +612,7 @@ export default function SeoLandingPage() {
               "Free forever — chat without paywalls blocking the basics",
               "Real-time voice chat in 120+ human-quality voices",
               "Customizable personality, avatar, and shared interests",
-              "Works on iPhone, Android, and desktop — install in seconds",
+              "Works on iPhone, Android, and desktop",
               "24/7 support including a built-in Crisis Hub for tough days",
             ].map((item) => (
               <li key={item} className="flex items-start gap-3">

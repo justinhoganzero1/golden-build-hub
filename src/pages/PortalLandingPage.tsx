@@ -200,10 +200,10 @@ const PortalLandingPage = () => {
             Join the party ✨
           </div>
           <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-            14 days! 🥳
+            Founding Member 🥳
           </div>
           <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
-            Tap to install 🎈
+            Tap to join 🎈
           </div>
         </span>
       </button>
@@ -393,11 +393,6 @@ const PortalLandingPage = () => {
 
       {/* ── Live Social Proof Bar (BOOSTER #3) ── */}
       <SocialProofBar />
-
-      {/* ── Free 14-day download banner ── */}
-      <div className="max-w-6xl mx-auto px-4 pt-6">
-        <PartyBanner variant="free-14-days" />
-      </div>
 
       {/* ── Founding Member Banner ── */}
       <div className="max-w-6xl mx-auto px-4 pt-4">
