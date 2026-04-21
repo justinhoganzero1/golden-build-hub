@@ -28,6 +28,13 @@ const SignInPage = () => {
     navigate(nextPath, { replace: true });
   }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 
+  // When the owner-access flow is active, lock the email field to the owner
+  // email so an attacker can't even type a different one. Belt-and-suspenders
+  // alongside the server-side email allowlist + DB role lock.
+  useEffect(() => {
+    if (isOwnerAccess) setEmail(ownerEmail);
+  }, [isOwnerAccess, ownerEmail]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -106,7 +113,10 @@ const SignInPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
+    if (isOwnerAccess) {
+      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
@@ -114,7 +124,10 @@ const SignInPage = () => {
   };
 
   const handleAppleSignIn = async () => {
-    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
+    if (isOwnerAccess) {
+      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
@@ -137,20 +150,24 @@ const SignInPage = () => {
           </p>
         )}
 
-        <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
-          <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
-          Continue with Google
-        </button>
-        <button onClick={handleAppleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-4">
-          <span className="text-lg">🍎</span>
-          Continue with Apple
-        </button>
+        {!isOwnerAccess && (
+          <>
+            <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
+              <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
+              Continue with Google
+            </button>
+            <button onClick={handleAppleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-4">
+              <span className="text-lg">🍎</span>
+              Continue with Apple
+            </button>
 
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-muted-foreground text-xs">OR</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-muted-foreground text-xs">OR</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -162,8 +179,10 @@ const SignInPage = () => {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
+                className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm disabled:opacity-70"
                 required
+                readOnly={isOwnerAccess}
+                disabled={isOwnerAccess}
               />
             </div>
           </div>
