@@ -1564,6 +1564,15 @@ const OraclePage = () => {
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
 
+    // ── FIRST-VISIT SETUP INTERCEPT ──
+    // While the Oracle is asking the user for its name + appearance, every
+    // user reply is consumed by the setup flow instead of being forwarded
+    // to the chat backend.
+    if (!isIntroTrigger) {
+      const consumed = await handleSetupReply(text);
+      if (consumed) return;
+    }
+
     // ── TRUNCATION DETECTOR ──
     // If the message looks cut off ("udio on my device"), surface a quick
     // clarifier instead of forwarding garbage to the model.
