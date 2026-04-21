@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 import {
   Wand2, Loader2, Sparkles, Sliders, Scissors, RotateCw, FlipHorizontal, FlipVertical,
   Sun, Contrast, Droplet, Palette, Eraser, Maximize2, Image as ImageIcon, Brush,
@@ -147,7 +148,15 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
       const url = data?.images?.[0]?.image_url?.url;
       if (url) {
         pushHistory(url);
-        toast.success("Edit applied ✨");
+        // Auto-save AI edit result to the user's library
+        void saveToLibrary({
+          media_type: "image",
+          title: `Photo edit: ${prompt.slice(0, 60)}`,
+          url,
+          source_page: "photo-edit-studio",
+          metadata: { kind: "ai_photo_edit", prompt },
+        });
+        toast.success("Edit applied ✨ Saved to your Library");
       } else {
         const msg = data?.text?.slice(0, 140);
         toast.error(msg ? `AI replied with text: ${msg}` : "AI didn't return an image — try rephrasing");
