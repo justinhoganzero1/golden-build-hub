@@ -18,6 +18,7 @@ import RequireAuth from "@/components/RequireAuth";
 // startup parses less JS before first paint.
 const PreviewModeBanner = lazy(() => import("@/components/PreviewModeBanner"));
 const AnnouncementBanner = lazy(() => import("@/components/AnnouncementBanner"));
+const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 const MasterOracleLauncher = lazy(() => import("@/components/admin/MasterOracleLauncher"));
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
@@ -225,6 +226,7 @@ const App = () => (
               <Sonner />
               <OfflineBanner />
               <Suspense fallback={null}>
+                <SoftLaunchBanner />
                 <AnnouncementBanner />
                 <PreviewModeBanner />
                 <MasterOracleLauncher />
