@@ -117,6 +117,7 @@ const StickyInstallBar = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
