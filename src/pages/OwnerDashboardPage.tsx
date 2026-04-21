@@ -142,6 +142,21 @@ const OwnerDashboardPage = () => {
     isLoading: libLoading,
   } = useAllUserMediaPaginated(tab === "library", lowPowerMode ? 24 : 60);
   const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
+
+  // ⚠️ Hook-order safety: declared BEFORE the early-return guard at ~L346.
+  // Previously this useMemo lived after the guard, which made the hook
+  // count flip when admin auth resolved → "Rendered more hooks than during
+  // the previous render" crash that blocked admin login.
+  const filteredLib = useMemo(() => {
+    if (tab !== "library") return [];
+    return allMedia.filter((m: any) => {
+      if (libFilter === "Images" && m.media_type !== "image") return false;
+      if (libFilter === "Videos" && m.media_type !== "video") return false;
+      if (libFilter === "Audio" && m.media_type !== "audio") return false;
+      if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
+      return true;
+    });
+  }, [allMedia, libFilter, libSearch, tab]);
   const qc = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [newPassword, setNewPassword] = useState("");
