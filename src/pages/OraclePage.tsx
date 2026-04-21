@@ -1468,9 +1468,14 @@ const OraclePage = () => {
       // preserved in `messages` state; only the wire payload is trimmed.
       const HISTORY_CAP = 30;
       const trimmedMsgs = allMsgs.length > HISTORY_CAP ? allMsgs.slice(-HISTORY_CAP) : allMsgs;
+      // CRITICAL: send the signed-in user's JWT so the edge function can
+      // identify them. Falling back to the publishable key makes the server
+      // treat them as an anonymous public visitor and switch into Sales mode.
+      const { data: { session: oracleSession } } = await supabase.auth.getSession();
+      const oracleAuthToken = oracleSession?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${oracleAuthToken}` },
         body: JSON.stringify({
           messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
