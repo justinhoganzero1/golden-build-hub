@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { Crown, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
