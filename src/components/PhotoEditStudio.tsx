@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import {
   Zap, Snowflake, Flame, Camera, Aperture, Wind, Star, Download, Save, X, Undo2,
   Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon, Box
 } from "lucide-react";
-import Photo3DViewer from "./Photo3DViewer";
+
+const Photo3DViewer = lazy(() => import("./Photo3DViewer"));
 
 interface PhotoEditStudioProps {
   open: boolean;
@@ -397,7 +398,9 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
                     </p>
                   </div>
                   <div className="aspect-square w-full rounded-xl overflow-hidden border border-border bg-black">
-                    <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
+                    <Suspense fallback={<div className="flex h-full items-center justify-center text-xs text-muted-foreground">Loading 3D viewer…</div>}>
+                      <Photo3DViewer imageUrl={current} depth={depth3D} autoOrbit={autoOrbit} />
+                    </Suspense>
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1.5">

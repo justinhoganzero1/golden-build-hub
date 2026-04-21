@@ -5,6 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function isLowPowerMobile() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+  const nav = navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+    deviceMemory?: number;
+  };
+
+  const ua = navigator.userAgent.toLowerCase();
+  const isAndroid = /android/.test(ua);
+  const isMobileViewport = window.innerWidth <= 768;
+  const lowMemory = typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4;
+  const fewCores = typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 4;
+  const saveData = !!nav.connection?.saveData;
+  const slowNetwork = typeof nav.connection?.effectiveType === "string" && /(2g|3g)/i.test(nav.connection.effectiveType);
+
+  return isAndroid || (isMobileViewport && (lowMemory || fewCores || saveData || slowNetwork));
+}
+
 const MIME_EXTENSION_MAP: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",

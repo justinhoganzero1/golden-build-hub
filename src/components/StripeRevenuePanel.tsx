@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Loader2, RefreshCw, TrendingUp, Wallet, Users } from "lucide-react";
+import { isLowPowerMobile } from "@/lib/utils";
 
 interface RevenueData {
   gross30Cents: number;
@@ -55,6 +56,7 @@ export default function StripeRevenuePanel() {
   const { user, isReady, accessToken } = useAuthReady();
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(false);
+  const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
 
   const load = async () => {
     if (!isReady || !user || !accessToken) return;
@@ -78,9 +80,10 @@ export default function StripeRevenuePanel() {
   useEffect(() => {
     if (!isReady || !user || !accessToken) return;
     load();
+    if (lowPowerMode) return;
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, [isReady, user?.id, accessToken]);
+  }, [isReady, user?.id, accessToken, lowPowerMode]);
 
   const primaryCurrency =
     data && Object.keys(data.currencyTotals).length > 0
@@ -96,7 +99,9 @@ export default function StripeRevenuePanel() {
             Live Stripe Revenue
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Pulled directly from your Stripe account. Refreshes every 60 seconds.
+            {lowPowerMode
+              ? "Pulled directly from your Stripe account. Refresh manually on low-power devices."
+              : "Pulled directly from your Stripe account. Refreshes every 60 seconds."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -205,9 +210,7 @@ export default function StripeRevenuePanel() {
                           {fmtMoney(c.amount, c.currency)}
                         </td>
                         <td className="py-1 pr-3">
-                          <Badge
-                            variant={c.status === "succeeded" ? "default" : "secondary"}
-                          >
+                          <Badge variant={c.status === "succeeded" ? "default" : "secondary"}>
                             {c.status}
                           </Badge>
                         </td>
