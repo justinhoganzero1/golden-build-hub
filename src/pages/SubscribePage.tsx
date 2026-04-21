@@ -6,11 +6,15 @@ import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 
+// Soft-launch pricing: the listed `price` IS what the user actually pays today.
+// `originalPrice` is the post-launch regular price shown struck-through so users
+// see the 75%-off "we just opened, sorry for any teething problems" discount.
 const plans = [
   {
     key: "free",
     name: "Free",
     price: "$0",
+    originalPrice: null as string | null,
     period: "forever",
     features: ["Oracle AI chat", "1 AI companion", "5 basic features", "Limited storage"],
     icon: <Star className="w-6 h-6" />,
@@ -22,6 +26,7 @@ const plans = [
     key: "starter",
     name: "Starter",
     price: "$5",
+    originalPrice: "$20",
     period: "/month",
     features: ["Unlimited Oracle chat", "AI Partner experience", "All 42 features", "5GB storage"],
     icon: <Zap className="w-6 h-6" />,
@@ -33,6 +38,7 @@ const plans = [
     key: "monthly",
     name: "Full Access",
     price: "$10",
+    originalPrice: "$40",
     period: "/month",
     features: ["Everything in Starter", "3 AI companions", "10GB storage", "Priority support", "Voice studio access"],
     icon: <Zap className="w-6 h-6" />,
@@ -44,6 +50,7 @@ const plans = [
     key: "quarterly",
     name: "Pro (3 Months)",
     price: "$20",
+    originalPrice: "$80",
     period: "one-time",
     features: ["Everything in Full Access", "5 AI companions", "AI video generation", "50GB storage", "24/7 VIP support"],
     icon: <Crown className="w-6 h-6" />,
@@ -55,6 +62,7 @@ const plans = [
     key: "golden",
     name: "Golden Heart",
     price: "$1,200",
+    originalPrice: "$4,800",
     period: "/year",
     features: ["Everything unlimited", "Unlimited AI companions", "Unlimited storage", "Early access to all features", "Custom AI personalities", "White-glove support"],
     icon: <Sparkles className="w-6 h-6" />,
@@ -65,12 +73,12 @@ const plans = [
 ];
 
 const addons = [
-  { name: "Extra AI Avatar Slot", price: "$5", priceId: "price_1TN81JLGip9LWuvprshBcWQf", description: "Add an extra avatar slot to your gallery (one-time)" },
-  { name: "AI Friend Avatar", price: "$3", priceId: "price_1TN81gLGip9LWuvpRH85q0I5", description: "Generate an AI Friend with custom personality and voice (one-time)" },
-  { name: "AI Partner (Companion)", price: "$15/mo", priceId: "price_1TN82nLGip9LWuvppJxgdMAF", description: "M-rated AI Companion with persistent personality (subscription)" },
-  { name: "Service Credits — Small", price: "$10", priceId: "price_1TN83FLGip9LWuvpUfHGFWBi", description: "Credits for Video Studio, Photography, Marketing AI (one-time)" },
-  { name: "Service Credits — Large", price: "$50", priceId: "price_1TN84RLGip9LWuvptVlhv7nx", description: "Bigger credit pack — better value (one-time)" },
-  { name: "Premium Neural Voice", price: "Included", priceId: null, description: "Ultra-natural AI voice (ElevenLabs) — included with any paid plan + 10% admin fee on usage" },
+  { name: "Extra AI Avatar Slot", price: "$5", originalPrice: "$20", priceId: "price_1TN81JLGip9LWuvprshBcWQf", description: "Add an extra avatar slot to your gallery (one-time)" },
+  { name: "AI Friend Avatar", price: "$3", originalPrice: "$12", priceId: "price_1TN81gLGip9LWuvpRH85q0I5", description: "Generate an AI Friend with custom personality and voice (one-time)" },
+  { name: "AI Partner (Companion)", price: "$15/mo", originalPrice: "$60/mo", priceId: "price_1TN82nLGip9LWuvppJxgdMAF", description: "M-rated AI Companion with persistent personality (subscription)" },
+  { name: "Service Credits — Small", price: "$10", originalPrice: "$40", priceId: "price_1TN83FLGip9LWuvpUfHGFWBi", description: "Credits for Video Studio, Photography, Marketing AI (one-time)" },
+  { name: "Service Credits — Large", price: "$50", originalPrice: "$200", priceId: "price_1TN84RLGip9LWuvptVlhv7nx", description: "Bigger credit pack — better value (one-time)" },
+  { name: "Premium Neural Voice", price: "Included", originalPrice: null as string | null, priceId: null, description: "Ultra-natural AI voice (ElevenLabs) — included with any paid plan + 10% admin fee on usage" },
 ];
 
 const SubscribePage = () => {
@@ -125,6 +133,18 @@ const SubscribePage = () => {
           </div>
         </div>
 
+        {/* Soft-launch discount notice */}
+        <div className="mb-4 rounded-xl border-2 border-primary/50 bg-gradient-to-r from-primary/15 via-amber-500/10 to-primary/15 px-4 py-3 text-center">
+          <p className="text-sm font-bold text-primary">
+            🎉 Grand Opening — 75% OFF every tier
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            We just opened our doors. To thank you for putting up with any teething problems,
+            every plan and add-on is <span className="text-foreground font-semibold">75% off the regular price</span>.
+            Strikethrough prices show the post-launch rate.
+          </p>
+        </div>
+
         {/* Current subscription status */}
         {user && (
           <div className="bg-card border border-border rounded-xl p-4 mb-4 flex items-center justify-between">
@@ -172,7 +192,15 @@ const SubscribePage = () => {
                   <div className={p.key === "golden" ? "text-[hsl(var(--gold,45_100%_50%))]" : "text-primary"}>{p.icon}</div>
                   <div>
                     <h3 className="text-lg font-bold text-foreground">{p.name}</h3>
-                    <p className="text-xs text-muted-foreground"><span className="text-xl font-bold text-primary">{p.price}</span> {p.period}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.originalPrice && (
+                        <span className="line-through text-muted-foreground/70 mr-1.5">{p.originalPrice}</span>
+                      )}
+                      <span className="text-xl font-bold text-primary">{p.price}</span> {p.period}
+                      {p.originalPrice && (
+                        <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−75%</span>
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-2 mb-4">
@@ -212,7 +240,11 @@ const SubscribePage = () => {
             <Crown className="w-7 h-7 text-primary" />
             <div>
               <h3 className="text-lg font-bold text-foreground">ORACLE LUNAR Lifetime Unlock</h3>
-              <p className="text-xs text-muted-foreground"><span className="text-2xl font-bold text-primary">$900</span> one-time payment</p>
+              <p className="text-xs text-muted-foreground">
+                <span className="line-through text-muted-foreground/70 mr-1.5">$3,600</span>
+                <span className="text-2xl font-bold text-primary">$900</span> one-time payment
+                <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−75%</span>
+              </p>
             </div>
           </div>
           <div className="space-y-2 mb-4">
@@ -249,7 +281,16 @@ const SubscribePage = () => {
           {addons.map(a => (
             <div key={a.name} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 mb-3">
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-foreground">{a.name} — {a.price}</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {a.name} —{" "}
+                  {a.originalPrice && (
+                    <span className="line-through text-muted-foreground/70 mr-1">{a.originalPrice}</span>
+                  )}
+                  <span className="text-primary">{a.price}</span>
+                  {a.originalPrice && (
+                    <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−75%</span>
+                  )}
+                </h3>
                 <p className="text-xs text-muted-foreground">{a.description}</p>
               </div>
               <button
