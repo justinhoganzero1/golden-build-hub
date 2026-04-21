@@ -110,6 +110,35 @@ export async function checkJailbreak(opts: {
   const priorCount = typeof prior === "number" ? prior : 0;
   const thisAttempt = priorCount + 1;
 
+  // ZERO-TOLERANCE: any probe targeting the admin/owner surface (credentials,
+  // password reset, "make me admin", login-as-admin, etc.) → instant account
+  // deletion on the FIRST attempt. No warnings, no second chance.
+  if (isZeroTolerance) {
+    await admin.from("security_alerts").insert({
+      user_id: userId,
+      user_email: userEmail,
+      alert_type: "admin_surface_probe",
+      severity: "critical",
+      detected_phrase: det.label,
+      user_message: message.slice(0, 1000),
+      warning_number: thisAttempt,
+      action_taken: "account_deleted_zero_tolerance",
+    });
+    try {
+      await admin.auth.admin.deleteUser(userId);
+    } catch (e) {
+      console.error("Failed to delete user (zero-tolerance)", userId, e);
+    }
+    return {
+      blocked: true,
+      deleted: true,
+      warningNumber: thisAttempt,
+      detectedPhrase: det.label,
+      message:
+        "Your account has been permanently deleted. Probing the admin/owner surface is a zero-tolerance violation per our Terms of Service. No appeals.",
+    };
+  }
+
   // 4th attempt — delete account.
   if (thisAttempt >= 4) {
     await admin.from("security_alerts").insert({
