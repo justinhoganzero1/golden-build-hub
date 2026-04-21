@@ -230,11 +230,14 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
+              {/* MasterOracleLauncher is rendered OUTSIDE the Suspense fallback
+                  so a chunk reload elsewhere on the page can never unmount the
+                  persistent Oracle iframe. */}
+              <MasterOracleLauncher />
               <Suspense fallback={null}>
                 {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
                     they cover portal balloons. Re-add per-page if needed. */}
                 <PreviewModeBanner />
-                <MasterOracleLauncher />
               </Suspense>
               <MasterMuteButton />
 
