@@ -1261,7 +1261,11 @@ const OraclePage = () => {
     // "full phone control" mode. Once granted, the flag persists for the
     // session (cleared on tab close).
     if (!isIntroTrigger) {
-      const askTextRe = /(take|get|have|gain|give you|grant you|you (can )?control|full control|control of (my )?phone|control my phone|run my phone|operate my phone|full access to (my )?phone|take over (my )?phone)/i;
+      // Only trigger phone-control consent flow when the USER explicitly asks
+      // Oracle to take direct control of their phone. Oracle must NEVER offer
+      // this proactively — it should calmly explain it needs to use the phone
+      // for a specific task instead (handled server-side via system prompt).
+      const askTextRe = /\b(take|gain|have|get|give you|grant you|allow you to|let you)\s+(full\s+)?(control|access|charge|over)\s+(of\s+)?(my\s+)?phone\b|\bcontrol my phone\b|\brun my phone\b|\boperate my phone\b|\btake over my phone\b/i;
       const yesRe = /^(yes|yeah|yep|yup|sure|ok(ay)?|i agree|agreed|do it|go ahead|confirm(ed)?|i consent|grant(ed)?|approve(d)?|i'?m sure|absolutely|definitely)\b/i;
       const noRe = /^(no|nope|cancel|stop|never mind|nevermind|abort|don'?t)\b/i;
 
