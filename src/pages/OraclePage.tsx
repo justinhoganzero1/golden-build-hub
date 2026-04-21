@@ -2133,6 +2133,18 @@ const OraclePage = () => {
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
+      <AudioClarifyDialog
+        open={audioClarify.open}
+        fragment={audioClarify.fragment}
+        onResolve={(intent: AudioIntent) => {
+          const { fragment } = audioClarify;
+          setAudioClarify({ open: false, fragment: "" });
+          // Send the cleaned-up prompt (or the original text if user picked Cancel)
+          const cleaned = intentToPrompt(intent, fragment);
+          // Defer one tick so the dialog unmounts before the model call begins
+          setTimeout(() => sendMessageRef.current?.(cleaned), 0);
+        }}
+      />
     </div>
     </>
   );
