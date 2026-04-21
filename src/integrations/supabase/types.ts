@@ -1902,6 +1902,7 @@ export type Database = {
         }[]
       }
       is_owner: { Args: never; Returns: boolean }
+      is_owner_email_locked: { Args: never; Returns: boolean }
       recalc_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
