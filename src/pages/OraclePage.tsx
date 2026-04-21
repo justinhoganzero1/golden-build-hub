@@ -1191,6 +1191,7 @@ const OraclePage = () => {
   }, [flushCapturedVoiceText, mergeCapturedTranscript, scheduleCapturedVoiceFlush]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
+  useEffect(() => { startAlwaysListeningRef.current = startAlwaysListening; }, [startAlwaysListening]);
 
   useEffect(() => {
     return () => {
