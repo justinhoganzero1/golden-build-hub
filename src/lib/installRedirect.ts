@@ -22,6 +22,17 @@ export const PUBLIC_URL = "https://oracle-lunar.online/";
 export const PLAY_STORE_URL = "";   // e.g. "https://play.google.com/store/apps/details?id=app.oraclelunar.ai"
 export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXXXXX"
 
+/**
+ * Direct Android .apk download hosted on our own portal/CDN. When set,
+ * Android users get the *real native app* delivered straight to their
+ * phone instead of a PWA shortcut. Leave blank until the .apk is uploaded.
+ *
+ * Recommended hosts: Supabase Storage (public bucket), GitHub Releases,
+ * or a /downloads path on the production domain.
+ */
+export const ANDROID_APK_URL = "";  // e.g. "https://oracle-lunar.online/downloads/oracle-lunar.apk"
+export const ANDROID_APK_VERSION = "1.0.0";
+
 /** Returns the best native store URL for the current device, or null. */
 export const getNativeStoreUrl = (): string | null => {
   if (typeof navigator === "undefined") return null;
@@ -29,6 +40,15 @@ export const getNativeStoreUrl = (): string | null => {
   if (/iphone|ipad|ipod/.test(ua) && APP_STORE_URL) return APP_STORE_URL;
   if (/android/.test(ua) && PLAY_STORE_URL) return PLAY_STORE_URL;
   return null;
+};
+
+/** True when we have a hosted .apk available for direct sideload. */
+export const hasDirectApk = (): boolean => Boolean(ANDROID_APK_URL);
+
+/** True when the current device is Android (any browser). */
+export const isAndroidDevice = (): boolean => {
+  if (typeof navigator === "undefined") return false;
+  return /android/i.test(navigator.userAgent);
 };
 
 /** True when the current page is the real production deployment. */
