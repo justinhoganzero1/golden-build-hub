@@ -272,6 +272,8 @@ const OraclePage = () => {
     disconnect: async () => {},
   } as any;
 
+  const startAlwaysListeningRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
     if (isSpeaking) {
@@ -284,7 +286,20 @@ const OraclePage = () => {
         silenceTimerRef.current = null;
       }
     } else {
+      // Oracle just finished speaking — set anti-echo cooldown then
+      // proactively re-arm the always-listening loop. Some browsers swallow
+      // recognition.onend after stop(), so we don't rely on it alone.
       echoCooldownUntilRef.current = Date.now() + 1200;
+      if (alwaysListenRef.current) {
+        window.setTimeout(() => {
+          if (!alwaysListenRef.current) return;
+          if (!recognitionRef.current) {
+            try { startAlwaysListeningRef.current?.(); } catch {}
+            return;
+          }
+          try { recognitionRef.current.start(); } catch {}
+        }, 1300);
+      }
     }
   }, [isSpeaking]);
 
@@ -1176,6 +1191,7 @@ const OraclePage = () => {
   }, [flushCapturedVoiceText, mergeCapturedTranscript, scheduleCapturedVoiceFlush]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
+  useEffect(() => { startAlwaysListeningRef.current = startAlwaysListening; }, [startAlwaysListening]);
 
   useEffect(() => {
     return () => {
