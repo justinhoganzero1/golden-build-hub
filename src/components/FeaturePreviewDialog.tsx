@@ -27,6 +27,21 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
     ? to
     : `${previewRoute}${previewRoute.includes("?") ? "&" : "?"}preview=1`;
 
+  // Carry the feature path through sign-up / upgrade so the user lands directly
+  // on the feature afterwards. Any per-feature paywall (Subscribe / app-unlock)
+  // will then prompt naturally on arrival.
+  const encodedTo = encodeURIComponent(to);
+  const goUnlock = () => {
+    onOpenChange(false);
+    if (!user) {
+      navigate(`/welcome?redirect=${encodedTo}`);
+    } else {
+      // Logged-in but not subscribed — send to subscribe with a return path
+      navigate(`/subscribe?redirect=${encodedTo}`);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl w-[95vw] h-[92vh] p-0 flex flex-col bg-background border-primary/30 overflow-hidden">
