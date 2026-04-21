@@ -99,6 +99,7 @@ const OraclePage = () => {
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
   const saveMedia = useSaveMedia();
+  const createAvatar = useCreateAvatar();
   const { data: adPrefs } = useAdPreferences();
   const updateAdPrefs = useUpdateAdPreferences();
   const { subscribed, tier, loading: subLoading } = useSubscription();
