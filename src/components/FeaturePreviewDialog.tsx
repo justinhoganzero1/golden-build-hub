@@ -78,10 +78,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
           <div className="flex items-center gap-2 shrink-0">
             {!isInteractive && (
               <button
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate(user ? "/subscribe" : "/welcome");
-                }}
+                onClick={goUnlock}
                 className="hidden sm:inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-xs hover:opacity-90 transition-opacity"
               >
                 <Crown className="w-3.5 h-3.5" />
@@ -118,8 +115,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
               onClickCapture={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onOpenChange(false);
-                navigate(user ? "/subscribe" : "/welcome");
+                goUnlock();
               }}
             />
           )}
@@ -148,10 +144,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
             </Button>
             {!isInteractive && (
               <button
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate(user ? "/subscribe" : "/welcome");
-                }}
+                onClick={goUnlock}
                 className="inline-flex items-center gap-1.5 py-2 px-4 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-sm hover:opacity-90 transition-opacity"
               >
                 <Crown className="w-4 h-4" />
