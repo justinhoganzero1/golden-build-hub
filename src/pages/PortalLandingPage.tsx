@@ -43,6 +43,7 @@ import StickyInstallBar from "@/components/StickyInstallBar";
 import SocialProofBar from "@/components/SocialProofBar";
 import PartyBanner from "@/components/PartyBanner";
 import ExitIntentCapture from "@/components/ExitIntentCapture";
+import FloatingOffersField from "@/components/FloatingOffersField";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
@@ -160,9 +161,12 @@ const PortalLandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
       {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
       <StickyInstallBar />
+
+      {/* ── Floating prize balloons (big & small) — every tap → sign-up → dashboard ── */}
+      <FloatingOffersField />
 
       {/* ── Limited-time free offer bubble (top-left, round, neon-pink) ── */}
       <button

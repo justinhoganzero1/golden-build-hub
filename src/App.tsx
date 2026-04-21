@@ -226,8 +226,8 @@ const App = () => (
               <Sonner />
               <OfflineBanner />
               <Suspense fallback={null}>
-                <SoftLaunchBanner />
-                <AnnouncementBanner />
+                {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
+                    they cover portal balloons. Re-add per-page if needed. */}
                 <PreviewModeBanner />
                 <MasterOracleLauncher />
               </Suspense>
