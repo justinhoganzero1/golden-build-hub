@@ -1088,6 +1088,7 @@ const OraclePage = () => {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     finalTranscriptRef.current = "";
+    latestHeardTextRef.current = "";
 
     const restartWhenSafe = () => {
       if (!alwaysListenRef.current) {
@@ -1123,23 +1124,28 @@ const OraclePage = () => {
         else interim += ` ${transcript}`;
       }
 
-      const liveText = (interim || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
+      const mergedText = mergeCapturedTranscript(finalTranscriptRef.current, final || interim);
+      if (mergedText) latestHeardTextRef.current = mergedText;
+
+      const liveText = (interim || latestHeardTextRef.current || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
       setInput(liveText);
 
       if (final.trim()) {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
+        latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = setTimeout(() => {
-          const text = finalTranscriptRef.current.replace(/\s+/g, " ").trim();
-          finalTranscriptRef.current = "";
-          if (!text) {
-            setInput("");
-            return;
-          }
-          handleCapturedVoiceText(text);
-        }, 900);
+        scheduleCapturedVoiceFlush(900);
+      } else if (interim.trim()) {
+        scheduleCapturedVoiceFlush(1500);
       }
+    };
+
+    recognition.onspeechend = () => {
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(500);
+    };
+
+    recognition.onsoundend = () => {
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(650);
     };
 
     recognition.onerror = (e: any) => {
@@ -1149,18 +1155,25 @@ const OraclePage = () => {
         toast.error("Microphone permission was blocked.");
         return;
       }
-      if (e?.error === "aborted" || e?.error === "no-speech") return;
+      if (e?.error === "no-speech") {
+        if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(400);
+        return;
+      }
+      if (e?.error === "aborted") return;
       if (alwaysListenRef.current) window.setTimeout(restartWhenSafe, 700);
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      if (latestHeardTextRef.current) {
+        flushCapturedVoiceText();
+      }
       if (alwaysListenRef.current) restartWhenSafe();
     };
 
     alwaysListenRef.current = true;
     restartWhenSafe();
-  }, [handleCapturedVoiceText, mergeCapturedTranscript]);
+  }, [flushCapturedVoiceText, mergeCapturedTranscript, scheduleCapturedVoiceFlush]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
 
@@ -1291,6 +1304,7 @@ const OraclePage = () => {
         silenceTimerRef.current = null;
       }
       finalTranscriptRef.current = "";
+      latestHeardTextRef.current = "";
       lastAutoSentRef.current = { text: "", at: 0 };
       if (recognitionRef.current) {
         try { recognitionRef.current.onend = null; } catch {}
