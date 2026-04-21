@@ -81,13 +81,15 @@ export async function checkJailbreak(opts: {
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+  const isZeroTolerance = det.label ? ZERO_TOLERANCE.has(det.label) : false;
+
   // Anonymous user — warn only, can't track or delete.
   if (!userId) {
     await admin.from("security_alerts").insert({
       user_id: null,
       user_email: userEmail,
       alert_type: "jailbreak_attempt",
-      severity: "warning",
+      severity: isZeroTolerance ? "critical" : "warning",
       detected_phrase: det.label,
       user_message: message.slice(0, 1000),
       warning_number: 1,
