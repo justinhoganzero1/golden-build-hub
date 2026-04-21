@@ -1292,16 +1292,23 @@ const OraclePage = () => {
         },
       });
       stream.getTracks().forEach((track) => track.stop());
+      setMicPermissionError(null);
       setMicPermGranted(true);
       startAlwaysListening();
     } catch (err: any) {
       console.error("Mic error:", err);
       if (err.name === "NotAllowedError" || err.name === "SecurityError") {
-        toast.error("Microphone blocked. Enable it in your browser/device settings, then tap mic again.");
+        const msg = "Microphone blocked. Enable it in your browser/device settings, then tap mic again.";
+        setMicPermissionError(msg);
+        toast.error(msg);
       } else if (err.name === "NotFoundError") {
-        toast.error("No microphone found on this device.");
+        const msg = "No microphone found on this device.";
+        setMicPermissionError(msg);
+        toast.error(msg);
       } else {
-        toast.error("Could not access microphone: " + (err.message || err.name));
+        const msg = "Could not access microphone: " + (err.message || err.name);
+        setMicPermissionError(msg);
+        toast.error(msg);
       }
     }
   };
