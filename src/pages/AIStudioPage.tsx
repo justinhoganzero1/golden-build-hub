@@ -47,7 +47,7 @@ const APPEARANCE_OPTIONS = [
   { id: "singer-female", label: "Singer", img: singerFemale },
   { id: "judge-male", label: "Judge", img: judgeMale },
   { id: "mechanic-male", label: "Mechanic", img: mechanicMale },
-  { id: "vampire-male", label: "Vampire", img: vampireMale },
+  // { id: "vampire-male", label: "Vampire", img: vampireMale }, // removed — too creepy as default
   { id: "cowboy-male", label: "Cowboy", img: cowboyMale },
   { id: "ninja-male", label: "Ninja", img: ninjaMale },
   { id: "elf-female", label: "Elf", img: elfFemale },
