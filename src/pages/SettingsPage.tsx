@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
+import LowPowerToggle from "@/components/LowPowerToggle";
 
 interface PairedDevice {
   id: string;
@@ -768,6 +769,9 @@ const SettingsPage = () => {
           {tab === "notifications" && (
             <>
               <h1 className="text-lg font-bold text-primary mb-4">Notifications</h1>
+              <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border mb-4">
+                <LowPowerToggle />
+              </div>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
                   { label: "Push Notifications", value: true, onChange: () => {} },
