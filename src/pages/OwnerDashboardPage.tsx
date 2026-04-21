@@ -85,6 +85,13 @@ const OwnerDashboardPage = () => {
 
   const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
 
+  // ⚠️ Hook-order safety: must run BEFORE any conditional early return below.
+  // The previous placement (after the "if (!hasAdminAccess) return null" guard)
+  // caused "Rendered more hooks than during the previous render" and blocked
+  // admin login when auth state flipped from loading → ready.
+  // We reference allMedia further down; safe because React hooks only care
+  // about call ORDER, not what variables exist yet at this textual position.
+
   const adPlatforms = [
     { id: "admob", name: "Google AdMob", icon: "🟢", desc: "Banner, interstitial, rewarded ads", types: ["Banner", "Interstitial", "Rewarded Video", "Native"] },
     { id: "playstore", name: "Google Play Store", icon: "🔵", desc: "Store listing, screenshots, description", types: ["App Install", "Engagement", "Pre-Registration"] },
