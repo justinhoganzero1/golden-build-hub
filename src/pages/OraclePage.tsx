@@ -272,10 +272,11 @@ const OraclePage = () => {
     disconnect: async () => {},
   } as any;
 
+  const startAlwaysListeningRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     isSpeakingRef.current = isSpeaking;
     if (isSpeaking) {
-      // Pause (don't kill) recognition while Oracle speaks to avoid echo.
       if (alwaysListenRef.current && recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch {}
       }
@@ -286,23 +287,21 @@ const OraclePage = () => {
       }
     } else {
       // Oracle just finished speaking — set anti-echo cooldown then
-      // proactively re-arm the always-listening loop. We can't rely solely
-      // on recognition.onend because some browsers swallow it after stop().
+      // proactively re-arm the always-listening loop. Some browsers swallow
+      // recognition.onend after stop(), so we don't rely on it alone.
       echoCooldownUntilRef.current = Date.now() + 1200;
       if (alwaysListenRef.current) {
         window.setTimeout(() => {
           if (!alwaysListenRef.current) return;
-          // If recognition was torn down (or never re-armed), rebuild it.
           if (!recognitionRef.current) {
-            try { startAlwaysListening(); } catch {}
+            try { startAlwaysListeningRef.current?.(); } catch {}
             return;
           }
-          // Otherwise try to start it; if already running this throws and we ignore.
           try { recognitionRef.current.start(); } catch {}
         }, 1300);
       }
     }
-  }, [isSpeaking, startAlwaysListening]);
+  }, [isSpeaking]);
 
   // Prefetch the user's current daily Oracle usage so the badge renders before their first message.
   useEffect(() => {
