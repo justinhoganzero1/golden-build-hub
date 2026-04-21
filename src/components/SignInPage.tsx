@@ -113,7 +113,10 @@ const SignInPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
+    if (isOwnerAccess) {
+      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
@@ -121,7 +124,10 @@ const SignInPage = () => {
   };
 
   const handleAppleSignIn = async () => {
-    if (isOwnerAccess) sessionStorage.setItem("admin-fresh-login", "1");
+    if (isOwnerAccess) {
+      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: `${window.location.origin}${redirectPath}`,
     });
