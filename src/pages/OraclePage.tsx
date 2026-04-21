@@ -669,6 +669,7 @@ const OraclePage = () => {
 
         const tryStart = () => {
           if (started) return;
+          if (!isLive()) return; // a newer utterance superseded us
           if (bytesBuffered < PREBUFFER_BYTES && !streamDone) return;
           started = true;
           setIsSpeaking(true);
@@ -678,6 +679,7 @@ const OraclePage = () => {
         (async () => {
           try {
             while (true) {
+              if (!isLive()) { try { reader.cancel(); } catch {} break; }
               const { done, value } = await reader.read();
               if (done) {
                 streamDone = true;
@@ -705,8 +707,10 @@ const OraclePage = () => {
           audio.onended = finish;
           audio.onerror = finish;
           // Fallback: when stream is fully done AND audio reports it has
-          // played past its buffered end, finish.
+          // played past its buffered end, finish. ALSO bail instantly if a
+          // newer utterance has taken over (token mismatch).
           const watchdog = setInterval(() => {
+            if (!isLive()) { clearInterval(watchdog); finish(); return; }
             if (!streamDone) return;
             if (audio.ended || audio.paused && audio.currentTime > 0 && audio.currentTime >= (audio.duration || Infinity) - 0.05) {
               clearInterval(watchdog);
