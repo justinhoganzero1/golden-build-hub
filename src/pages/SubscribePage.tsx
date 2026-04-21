@@ -4,7 +4,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
@@ -85,17 +85,40 @@ const addons = [
   { name: "Premium Neural Voice", price: "Included", originalPrice: null as string | null, priceId: null, description: "Ultra-natural AI voice (ElevenLabs) — included with any paid plan + 10% admin fee on usage" },
 ];
 
+const POST_SUBSCRIBE_REDIRECT_KEY = "oracle-lunar:post-subscribe-redirect";
+
 const SubscribePage = () => {
   const { user } = useAuth();
   const { subscribed, tier, subscriptionEnd, loading, checkSubscription, startCheckout, openPortal } = useSubscription();
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { get: getContent } = useSiteContent();
   // Admin pricing overrides — admin can edit display-only prices via the
   // Owner Dashboard PricingEditorPanel; values fall back to hard-coded defaults.
   const priceFor = (key: string, fallback: string) => getContent("pricing", `${key}.price`, fallback);
   const msrpFor = (key: string, fallback: string | null) =>
     fallback ? getContent("pricing", `${key}.original`, fallback) : null;
+
+  // Capture & persist a feature redirect target across the Stripe round-trip
+  // so the user lands on the feature they originally tried to view.
+  useEffect(() => {
+    const r = searchParams.get("redirect");
+    if (r) {
+      try { sessionStorage.setItem(POST_SUBSCRIBE_REDIRECT_KEY, r); } catch {}
+    }
+  }, [searchParams]);
+
+  // Once the subscription becomes active, forward to the saved feature path.
+  useEffect(() => {
+    if (!subscribed) return;
+    let target: string | null = null;
+    try { target = sessionStorage.getItem(POST_SUBSCRIBE_REDIRECT_KEY); } catch {}
+    if (!target) return;
+    try { sessionStorage.removeItem(POST_SUBSCRIBE_REDIRECT_KEY); } catch {}
+    toast.success("Membership active — taking you to your feature ✨");
+    setTimeout(() => navigate(target!, { replace: true }), 600);
+  }, [subscribed, navigate]);
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
