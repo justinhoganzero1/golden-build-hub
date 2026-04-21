@@ -678,17 +678,28 @@ const OraclePage = () => {
     const browserClean = cleanTextForSpeech(next.text);
     isSpeakingQueueRef.current = true;
 
-    const isOracle = next.agentName === oracleName;
-    const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
-    const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
-    if (isOracle && hasPremiumVoice && premiumClean) {
-      await speakWithElevenLabs(premiumClean);
-    } else if (!isOracle && browserClean) {
-      await speakWithBrowserTTS(browserClean, next.agentName);
+    try {
+      const isOracle = next.agentName === oracleName;
+      const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
+      const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
+      if (isOracle && hasPremiumVoice && premiumClean) {
+        await speakWithElevenLabs(premiumClean);
+      } else if (!isOracle && browserClean) {
+        await speakWithBrowserTTS(browserClean, next.agentName);
+      } else if (isOracle && browserClean) {
+        // Fallback so Oracle doesn't go silent if premium voice path is unavailable.
+        await speakWithBrowserTTS(browserClean, next.agentName);
+      }
+    } catch (err) {
+      console.error("[speech-queue] utterance failed", err);
+    } finally {
+      // CRITICAL: always release the queue lock, otherwise the mic's onresult
+      // handler treats Oracle as "still speaking" forever and drops every
+      // user utterance — making Oracle appear deaf.
+      isSpeakingQueueRef.current = false;
+      echoCooldownUntilRef.current = Date.now() + 600;
+      processSpeechQueue();
     }
-
-    isSpeakingQueueRef.current = false;
-    processSpeechQueue();
   }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
