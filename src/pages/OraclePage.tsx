@@ -2288,6 +2288,11 @@ const OraclePage = () => {
             </div>
           </div>
         )}
+        {isListening && (
+          <div className={`mb-2 text-center text-[11px] font-medium ${wakeActive ? "text-emerald-300" : "text-amber-300"}`}>
+            {wakeActive ? "● Oracle is awake — speak naturally. Say \"that's all Oracle\" to sleep." : "○ Oracle is sleeping — say \"hey Oracle\" to wake her."}
+          </div>
+        )}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
