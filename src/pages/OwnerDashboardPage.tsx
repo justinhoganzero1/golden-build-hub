@@ -85,6 +85,13 @@ const OwnerDashboardPage = () => {
 
   const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
 
+  // ⚠️ Hook-order safety: must run BEFORE any conditional early return below.
+  // The previous placement (after the "if (!hasAdminAccess) return null" guard)
+  // caused "Rendered more hooks than during the previous render" and blocked
+  // admin login when auth state flipped from loading → ready.
+  // We reference allMedia further down; safe because React hooks only care
+  // about call ORDER, not what variables exist yet at this textual position.
+
   const adPlatforms = [
     { id: "admob", name: "Google AdMob", icon: "🟢", desc: "Banner, interstitial, rewarded ads", types: ["Banner", "Interstitial", "Rewarded Video", "Native"] },
     { id: "playstore", name: "Google Play Store", icon: "🔵", desc: "Store listing, screenshots, description", types: ["App Install", "Engagement", "Pre-Registration"] },
@@ -135,6 +142,21 @@ const OwnerDashboardPage = () => {
     isLoading: libLoading,
   } = useAllUserMediaPaginated(tab === "library", lowPowerMode ? 24 : 60);
   const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
+
+  // ⚠️ Hook-order safety: declared BEFORE the early-return guard at ~L346.
+  // Previously this useMemo lived after the guard, which made the hook
+  // count flip when admin auth resolved → "Rendered more hooks than during
+  // the previous render" crash that blocked admin login.
+  const filteredLib = useMemo(() => {
+    if (tab !== "library") return [];
+    return allMedia.filter((m: any) => {
+      if (libFilter === "Images" && m.media_type !== "image") return false;
+      if (libFilter === "Videos" && m.media_type !== "video") return false;
+      if (libFilter === "Audio" && m.media_type !== "audio") return false;
+      if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
+      return true;
+    });
+  }, [allMedia, libFilter, libSearch, tab]);
   const qc = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [newPassword, setNewPassword] = useState("");
@@ -474,17 +496,7 @@ const OwnerDashboardPage = () => {
     }
   };
 
-  const filteredLib = useMemo(() => {
-    if (tab !== "library") return [];
-
-    return allMedia.filter((m: any) => {
-      if (libFilter === "Images" && m.media_type !== "image") return false;
-      if (libFilter === "Videos" && m.media_type !== "video") return false;
-      if (libFilter === "Audio" && m.media_type !== "audio") return false;
-      if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
-      return true;
-    });
-  }, [allMedia, libFilter, libSearch, tab]);
+  // filteredLib hook moved above the early-return guard for hook-order safety.
 
   const handleDeleteMedia = async (id: string) => {
     const { error } = await supabase.from("user_media").delete().eq("id", id);
