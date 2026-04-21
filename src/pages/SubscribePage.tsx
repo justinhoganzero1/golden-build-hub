@@ -6,6 +6,7 @@ import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSiteContent } from "@/hooks/useSiteContent";
 
 const MSRP_TOOLTIP = "This is the regular post-launch price (MSRP). Today you're charged the discounted soft-launch amount shown next to it — the Stripe charge stays the same regardless of the strikethrough.";
 
@@ -89,6 +90,12 @@ const SubscribePage = () => {
   const { subscribed, tier, subscriptionEnd, loading, checkSubscription, startCheckout, openPortal } = useSubscription();
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const { get: getContent } = useSiteContent();
+  // Admin pricing overrides — admin can edit display-only prices via the
+  // Owner Dashboard PricingEditorPanel; values fall back to hard-coded defaults.
+  const priceFor = (key: string, fallback: string) => getContent("pricing", `${key}.price`, fallback);
+  const msrpFor = (key: string, fallback: string | null) =>
+    fallback ? getContent("pricing", `${key}.original`, fallback) : null;
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
@@ -204,13 +211,13 @@ const SubscribePage = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="line-through text-muted-foreground/70 mr-1.5 cursor-help inline-flex items-center gap-0.5">
-                              {p.originalPrice}<Info className="w-2.5 h-2.5" />
+                              {msrpFor(p.key, p.originalPrice)}<Info className="w-2.5 h-2.5" />
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">{MSRP_TOOLTIP}</TooltipContent>
                         </Tooltip>
                       )}
-                      <span className="text-xl font-bold text-primary">{p.price}</span> {p.period}
+                      <span className="text-xl font-bold text-primary">{priceFor(p.key, p.price)}</span> {p.period}
                       {p.originalPrice && (
                         <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−20%</span>
                       )}
@@ -258,12 +265,12 @@ const SubscribePage = () => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="line-through text-muted-foreground/70 mr-1.5 cursor-help inline-flex items-center gap-0.5">
-                      $1,125<Info className="w-2.5 h-2.5" />
+                      {msrpFor("lifetime", "$1,125")}<Info className="w-2.5 h-2.5" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">{MSRP_TOOLTIP}</TooltipContent>
                 </Tooltip>
-                <span className="text-2xl font-bold text-primary">$900</span> one-time payment
+                <span className="text-2xl font-bold text-primary">{priceFor("lifetime", "$900")}</span> one-time payment
                 <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−20%</span>
               </p>
             </div>

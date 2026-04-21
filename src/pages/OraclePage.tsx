@@ -16,6 +16,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
 import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
 import LivingAvatar from "@/components/LivingAvatar";
+import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
+import { detectTruncation } from "@/lib/truncationDetector";
 
 interface Message {
   id: string;
@@ -108,6 +110,9 @@ const OraclePage = () => {
   const [showChat, setShowChat] = useState(false);
   const [showDoctor, setShowDoctor] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Audio-truncation clarifier — when the Oracle detects a cut-off message
+  // like "udio on my device", we surface a quick form before the prompt is sent.
+  const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
   const [micPermGranted, setMicPermGranted] = useState(false);
   const [renamingAgent, setRenamingAgent] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState("");
@@ -1239,6 +1244,17 @@ const OraclePage = () => {
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
 
+    // ── TRUNCATION DETECTOR ──
+    // If the message looks cut off ("udio on my device"), surface a quick
+    // clarifier instead of forwarding garbage to the model.
+    if (!isIntroTrigger) {
+      const guess = detectTruncation(text);
+      if (guess.truncated && guess.confidence >= 0.6 && !audioClarify.open) {
+        setAudioClarify({ open: true, fragment: guess.fragment });
+        return;
+      }
+    }
+
     // ── PHONE CONTROL CONSENT GATE (3-prompt confirmation) ──
     // Oracle must ask the user three separate times before being granted
     // "full phone control" mode. Once granted, the flag persists for the
@@ -2117,6 +2133,18 @@ const OraclePage = () => {
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
+      <AudioClarifyDialog
+        open={audioClarify.open}
+        fragment={audioClarify.fragment}
+        onResolve={(intent: AudioIntent) => {
+          const { fragment } = audioClarify;
+          setAudioClarify({ open: false, fragment: "" });
+          // Send the cleaned-up prompt (or the original text if user picked Cancel)
+          const cleaned = intentToPrompt(intent, fragment);
+          // Defer one tick so the dialog unmounts before the model call begins
+          setTimeout(() => sendMessageRef.current?.(cleaned), 0);
+        }}
+      />
     </div>
     </>
   );
