@@ -113,6 +113,28 @@ const MediaLibraryPage = () => {
     }
   };
 
+  const handleWipeAll = async () => {
+    if (mediaItems.length === 0) {
+      toast.info("Your library is already empty.");
+      return;
+    }
+    const first = confirm(`Delete ALL ${mediaItems.length} items from your library? This cannot be undone.`);
+    if (!first) return;
+    const second = confirm("Are you absolutely sure? Everything in your library will be erased.");
+    if (!second) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Sign in required"); return; }
+    const { error } = await supabase.from("user_media").delete().eq("user_id", user.id);
+    if (error) {
+      console.error("Wipe error:", error);
+      toast.error("Failed to wipe library: " + error.message);
+    } else {
+      toast.success("Library cleared");
+      setSelected(null);
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+    }
+  };
+
   const activeCol = COLLECTIONS.find(c => c.key === activeCollection) || COLLECTIONS[0];
 
   return (
@@ -138,6 +160,11 @@ const MediaLibraryPage = () => {
               {`${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
             </p>
           </div>
+          <button onClick={handleWipeAll}
+            title="Delete every item in my library"
+            className="p-2.5 rounded-xl bg-card border border-border hover:border-destructive/60 hover:text-destructive transition-all">
+            <Trash2 className="w-4 h-4" />
+          </button>
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
