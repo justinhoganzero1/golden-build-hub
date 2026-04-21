@@ -730,7 +730,7 @@ const OwnerDashboardPage = () => {
                 onClick={async () => {
                   const message = prompt(
                     "Broadcast message to Telegram / Discord / Slack / Email / 80 webhooks:",
-                    "🆓 ORACLE LUNAR is FREE for 14 days — download now at https://oracle-lunar.online"
+                    "🆓 ORACLE LUNAR is FREE to join — become a Founding Member at https://oracle-lunar.online"
                   );
                   if (!message) return;
                   try {
