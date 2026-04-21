@@ -3,18 +3,15 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { Crown, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
-import { isDemoMode } from "@/lib/demoMode";
-import DemoGate from "@/components/DemoGate";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 /**
- * Fort Knox auth gate. Two locks must open in order:
- *  1. App must be INSTALLED (PWA standalone or native). Otherwise the website
- *     is a "plastic display" — DemoGate shows a download wall.
- *  2. User must be SIGNED IN.
- *  3. User must be a PAID MEMBER (any tier above free) OR have an active reward.
- *     Admin bypasses everything.
+ * Members-only gate. Two locks:
+ *  1. User must be SIGNED IN.
+ *  2. User must be a PAID MEMBER (any tier above free) OR have an active reward.
+ *  Admin bypasses everything. The APK download is available as an OPTIONAL
+ *  bonus (sticky install bar / dialog) — it is no longer required to use the app.
  */
 interface RequireAuthProps {
   children: ReactNode;
@@ -29,11 +26,6 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const location = useLocation();
 
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
-
-  // Lock 1: must be installed
-  if (isDemoMode() && !isAdmin) {
-    return <DemoGate>{null}</DemoGate>;
-  }
 
   if (loading || subLoading) {
     return (
