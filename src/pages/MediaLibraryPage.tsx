@@ -160,6 +160,11 @@ const MediaLibraryPage = () => {
               {`${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
             </p>
           </div>
+          <button onClick={handleWipeAll}
+            title="Delete every item in my library"
+            className="p-2.5 rounded-xl bg-card border border-border hover:border-destructive/60 hover:text-destructive transition-all">
+            <Trash2 className="w-4 h-4" />
+          </button>
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
