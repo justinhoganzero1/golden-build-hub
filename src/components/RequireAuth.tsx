@@ -27,7 +27,14 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
 
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
 
-  if (loading || subLoading) {
+  // Track whether we've EVER finished loading. Once we have, we stop showing
+  // the spinner — otherwise background subscription refreshes (every 60s)
+  // would unmount the entire page tree, wiping in-progress conversations
+  // (Oracle), restarting voices, and resetting avatar state.
+  const hasResolvedRef = useRef(false);
+  if (!loading && !subLoading) hasResolvedRef.current = true;
+
+  if ((loading || subLoading) && !hasResolvedRef.current) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
