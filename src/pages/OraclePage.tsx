@@ -501,6 +501,24 @@ const OraclePage = () => {
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Monotonically-increasing token. Each new utterance bumps it; any in-flight
+  // ElevenLabs stream / browser TTS that sees a stale token aborts immediately.
+  // This is the single source of truth that prevents two voices overlapping.
+  const speechTokenRef = useRef(0);
+  const cancelCurrentSpeech = useCallback(() => {
+    speechTokenRef.current += 1;
+    try { window.speechSynthesis?.cancel(); } catch {}
+    try {
+      const a = currentAudioRef.current;
+      if (a) {
+        a.onended = null; a.onerror = null;
+        a.pause();
+        try { a.src = ""; a.load(); } catch {}
+      }
+    } catch {}
+    currentAudioRef.current = null;
+    setIsSpeaking(false);
+  }, []);
 
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
   const SPEECH_THERAPIST_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/speech-therapist`;
