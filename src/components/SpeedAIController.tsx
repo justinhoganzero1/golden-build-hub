@@ -3,6 +3,7 @@ import {
   installGlobalPrefetchDelegate,
   startIdleWarmup,
 } from "@/lib/speedAI";
+import { isLowPowerMobile } from "@/lib/utils";
 
 /**
  * SpeedAIController
@@ -14,6 +15,8 @@ import {
  */
 const SpeedAIController = () => {
   useEffect(() => {
+    if (isLowPowerMobile()) return;
+
     installGlobalPrefetchDelegate();
     // Most-likely first destinations after the portal/welcome flow.
     startIdleWarmup([

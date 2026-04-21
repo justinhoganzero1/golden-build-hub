@@ -25,25 +25,25 @@ export const useAllUserMedia = () => {
 };
 
 // Cursor-paginated hook for the admin library
-export const useAllUserMediaPaginated = () => {
+export const useAllUserMediaPaginated = (enabledOverride = true, pageSize = PAGE_SIZE) => {
   const { user } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["all-user-media-paginated", user?.id],
+    queryKey: ["all-user-media-paginated", user?.id, pageSize],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       let q = supabase
         .from("user_media")
         .select(COLS)
         .order("created_at", { ascending: false })
-        .limit(PAGE_SIZE);
+        .limit(pageSize);
       if (pageParam) q = q.lt("created_at", pageParam);
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
     getNextPageParam: (lastPage) =>
-      lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
-    enabled: !!user,
+      lastPage.length === pageSize ? lastPage[lastPage.length - 1].created_at : undefined,
+    enabled: !!user && enabledOverride,
     staleTime: 30_000,
   });
 };

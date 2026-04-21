@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { Card } from "@/components/ui/card";
@@ -6,55 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Loader2, RefreshCw, TrendingUp, Wallet, Users } from "lucide-react";
-
-interface RevenueData {
-  gross30Cents: number;
-  net30Cents: number;
-  fees30Cents: number;
-  refunded30Cents: number;
-  count30: number;
-  gross7Cents: number;
-  count7: number;
-  currencyTotals: Record<string, number>;
-  activeSubscriptions: number;
-  availableBalance: Record<string, number>;
-  pendingBalance: Record<string, number>;
-  recentCharges: Array<{
-    id: string;
-    amount: number;
-    currency: string;
-    created: number;
-    status: string;
-    description: string | null;
-    receipt_url: string | null;
-  }>;
-  recentPayouts: Array<{
-    id: string;
-    amount: number;
-    currency: string;
-    arrival_date: number;
-    status: string;
-  }>;
-  generatedAt: number;
-}
-
-function fmtMoney(cents: number, currency = "usd") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format((cents ?? 0) / 100);
-}
-
-function fmtBalance(map: Record<string, number>) {
-  const entries = Object.entries(map ?? {});
-  if (entries.length === 0) return "$0.00";
-  return entries.map(([cur, amt]) => fmtMoney(amt, cur)).join(" · ");
-}
-
+import { isLowPowerMobile } from "@/lib/utils";
+...
 export default function StripeRevenuePanel() {
   const { user, isReady, accessToken } = useAuthReady();
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(false);
+  const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
 
   const load = async () => {
     if (!isReady || !user || !accessToken) return;
@@ -78,9 +36,10 @@ export default function StripeRevenuePanel() {
   useEffect(() => {
     if (!isReady || !user || !accessToken) return;
     load();
+    if (lowPowerMode) return;
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, [isReady, user?.id, accessToken]);
+  }, [isReady, user?.id, accessToken, lowPowerMode]);
 
   const primaryCurrency =
     data && Object.keys(data.currencyTotals).length > 0

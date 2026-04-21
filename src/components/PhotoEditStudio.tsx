@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,8 @@ import {
   Zap, Snowflake, Flame, Camera, Aperture, Wind, Star, Download, Save, X, Undo2,
   Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon, Box
 } from "lucide-react";
-import Photo3DViewer from "./Photo3DViewer";
+
+const Photo3DViewer = lazy(() => import("./Photo3DViewer"));
 
 interface PhotoEditStudioProps {
   open: boolean;
