@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackInstallEvent, detectInstallPlatform } from "@/lib/installAnalytics";
-import { bounceIfNotProduction } from "@/lib/installRedirect";
+import { bounceIfNotProduction, getNativeStoreUrl } from "@/lib/installRedirect";
 
 /**
  * Sticky high-conversion install mega-bar.
@@ -36,8 +36,16 @@ const StickyInstallBar = () => {
 
   const handleInstall = async () => {
     trackInstallEvent("click", platform);
-    // In Lovable preview / sandbox iframe → PWA install never works.
-    // Send the user straight to the live site so install actually triggers.
+    // 1) If a real native store listing exists, send the user there — that's the
+    //    actual app, not a website shortcut. This guarantees we never "download
+    //    the website" instead of the app.
+    const storeUrl = getNativeStoreUrl();
+    if (storeUrl) {
+      window.open(storeUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    // 2) In Lovable preview / sandbox iframe → PWA install never works.
+    //    Send the user straight to the live site so install actually triggers.
     if (bounceIfNotProduction("/")) return;
     if (!user) {
       navigate("/sign-in?redirect=/");
