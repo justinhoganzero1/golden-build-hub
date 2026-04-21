@@ -18,6 +18,7 @@ import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
 import LivingAvatar from "@/components/LivingAvatar";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
 import { detectTruncation } from "@/lib/truncationDetector";
+import { saveOracleTextTurn } from "@/lib/saveToLibrary";
 
 interface Message {
   id: string;
@@ -1685,6 +1686,15 @@ const OraclePage = () => {
       // Update displayed message with cleaned content
       const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
       setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
+
+      // Auto-save every Oracle answer to the user's library as a text note.
+      // Users own their library and can delete any item from My Library.
+      saveOracleTextTurn({
+        userMessage: text,
+        assistantMessage: finalDisplayContent,
+        oracleName,
+        source: "oracle",
+      });
 
       if (navPath) {
         if (isBackground) {
