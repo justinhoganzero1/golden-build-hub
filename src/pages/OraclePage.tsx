@@ -10,7 +10,7 @@ import { useScribe } from "@elevenlabs/react";
 import { useMute } from "@/contexts/MuteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserAvatars, useSaveMedia, type UserAvatar } from "@/hooks/useUserAvatars";
+import { useUserAvatars, useSaveMedia, useCreateAvatar, type UserAvatar } from "@/hooks/useUserAvatars";
 import { useOracleMemories, useSaveOracleMemory, useAdPreferences, useUpdateAdPreferences, shouldShowPromo, formatMemoriesForPrompt } from "@/hooks/useOracleMemory";
 import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
@@ -99,6 +99,7 @@ const OraclePage = () => {
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
   const saveMedia = useSaveMedia();
+  const createAvatar = useCreateAvatar();
   const { data: adPrefs } = useAdPreferences();
   const updateAdPrefs = useUpdateAdPreferences();
   const { subscribed, tier, loading: subLoading } = useSubscription();
@@ -501,6 +502,24 @@ const OraclePage = () => {
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Monotonically-increasing token. Each new utterance bumps it; any in-flight
+  // ElevenLabs stream / browser TTS that sees a stale token aborts immediately.
+  // This is the single source of truth that prevents two voices overlapping.
+  const speechTokenRef = useRef(0);
+  const cancelCurrentSpeech = useCallback(() => {
+    speechTokenRef.current += 1;
+    try { window.speechSynthesis?.cancel(); } catch {}
+    try {
+      const a = currentAudioRef.current;
+      if (a) {
+        a.onended = null; a.onerror = null;
+        a.pause();
+        try { a.src = ""; a.load(); } catch {}
+      }
+    } catch {}
+    currentAudioRef.current = null;
+    setIsSpeaking(false);
+  }, []);
 
   const ELEVENLABS_TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
   const SPEECH_THERAPIST_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/speech-therapist`;
@@ -553,6 +572,11 @@ const OraclePage = () => {
       // like a different person on some devices.
       const prepared = text.replace(/\s{3,}/g, "  ").trim();
       if (!prepared) return false;
+      // Snapshot the token at the moment we start. If anything else cancels or
+      // queues a new utterance, our token will no longer match the live one
+      // and we abort gracefully — guaranteeing only ONE voice ever plays.
+      const myToken = speechTokenRef.current;
+      const isLive = () => speechTokenRef.current === myToken;
 
       const hasSSML = false;
       const hasCustomMaster = !!masterSettings;
@@ -646,6 +670,7 @@ const OraclePage = () => {
 
         const tryStart = () => {
           if (started) return;
+          if (!isLive()) return; // a newer utterance superseded us
           if (bytesBuffered < PREBUFFER_BYTES && !streamDone) return;
           started = true;
           setIsSpeaking(true);
@@ -655,6 +680,7 @@ const OraclePage = () => {
         (async () => {
           try {
             while (true) {
+              if (!isLive()) { try { reader.cancel(); } catch {} break; }
               const { done, value } = await reader.read();
               if (done) {
                 streamDone = true;
@@ -682,8 +708,10 @@ const OraclePage = () => {
           audio.onended = finish;
           audio.onerror = finish;
           // Fallback: when stream is fully done AND audio reports it has
-          // played past its buffered end, finish.
+          // played past its buffered end, finish. ALSO bail instantly if a
+          // newer utterance has taken over (token mismatch).
           const watchdog = setInterval(() => {
+            if (!isLive()) { clearInterval(watchdog); finish(); return; }
             if (!streamDone) return;
             if (audio.ended || audio.paused && audio.currentTime > 0 && audio.currentTime >= (audio.duration || Infinity) - 0.05) {
               clearInterval(watchdog);
@@ -740,6 +768,8 @@ const OraclePage = () => {
   // Fallback browser TTS for non-Oracle agents
   const speakWithBrowserTTS = useCallback((text: string, agentName: string): Promise<void> => {
     return new Promise((resolve) => {
+      // Snapshot token; if a newer utterance preempts us, abort silently.
+      const myToken = speechTokenRef.current;
       const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
       const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
       const utterance = new SpeechSynthesisUtterance(fullText);
@@ -749,26 +779,29 @@ const OraclePage = () => {
       utterance.volume = 0.95;
       const voice = getVoiceForAgent(agentName);
       if (voice) utterance.voice = voice;
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        if (speechTokenRef.current !== myToken) {
+          try { window.speechSynthesis.cancel(); } catch {}
+          return;
+        }
+        setIsSpeaking(true);
+      };
       utterance.onend = () => { setIsSpeaking(false); resolve(); };
       utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+      // Final guard before scheduling: if a newer utterance arrived between
+      // queue dispatch and now, do not start.
+      if (speechTokenRef.current !== myToken) { resolve(); return; }
       window.speechSynthesis.speak(utterance);
     });
   }, [getVoiceForAgent]);
 
   const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
-    // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>) before
-    // starting the next queued utterance. Prevents the "two voices at once" bug
-    // where ElevenLabs streaming and browser speechSynthesis could overlap.
-    try { window.speechSynthesis?.cancel(); } catch {}
-    try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.src = "";
-        currentAudioRef.current = null;
-      }
-    } catch {}
+    // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>)
+    // and bump the speech token so any in-flight stream/utterance from the
+    // PREVIOUS line aborts. This is the only thing that reliably prevents the
+    // "two voices at once" bug on slow networks.
+    cancelCurrentSpeech();
     const next = speechQueueRef.current.shift();
     if (!next) return;
     const premiumClean = cleanTextForPremiumSpeech(next.text);
@@ -781,10 +814,13 @@ const OraclePage = () => {
       // never wobbles between system voices across utterances. The edge
       // function decides whether to actually serve audio (free vs paid).
       if (isOracle && premiumClean) {
+        const tokenBefore = speechTokenRef.current;
         const ok = await speakWithElevenLabs(premiumClean);
-        if (!ok && browserClean) {
-          // Single deterministic fallback so Oracle keeps the same fallback
-          // voice every time instead of cycling through random system voices.
+        // Only fall back to browser TTS if (a) ElevenLabs really failed AND
+        // (b) no newer utterance has taken over while we were waiting. Without
+        // this check, a slow-failing ElevenLabs call could trigger a browser
+        // voice on top of the next utterance's premium voice.
+        if (!ok && browserClean && speechTokenRef.current === tokenBefore) {
           await speakWithBrowserTTS(browserClean, oracleName);
         }
       } else if (!isOracle && browserClean) {
@@ -800,7 +836,7 @@ const OraclePage = () => {
       echoCooldownUntilRef.current = Date.now() + 600;
       processSpeechQueue();
     }
-  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, tier]);
+  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text) return;
@@ -1262,14 +1298,109 @@ const OraclePage = () => {
   }, [scribe]);
 
   // First-visit auto-introduction — Oracle introduces itself + capabilities ONCE
+  // ─────────────────────────────────────────────────────────────
+  // FIRST-VISIT SETUP: Oracle asks the user (1) what to be called
+  // and (2) how it should look, then generates its own avatar.
+  // Stages persisted in sessionStorage so they survive re-renders.
+  // ─────────────────────────────────────────────────────────────
+  const SETUP_KEY = "oracle-lunar-setup-stage"; // 'name' | 'look' | 'generating' | 'done'
+  const getSetupStage = () => sessionStorage.getItem(SETUP_KEY) || "";
   const introTriggeredRef = useRef(false);
   useEffect(() => {
     if (introTriggeredRef.current) return;
     if (localStorage.getItem("oracle-lunar-introduced")) return;
     introTriggeredRef.current = true;
-    const t = setTimeout(() => sendMessageRef.current?.("__INTRO__"), 1200);
+    // Kick off the naming setup question instead of the old generic intro.
+    const t = setTimeout(() => {
+      sessionStorage.setItem(SETUP_KEY, "name");
+      const greet = "Hello — I'm your Oracle. Before we start, what would you like to call me? You can pick any name you like.";
+      setShowChat(true);
+      setMessages((prev) => [...prev, { id: `setup-${Date.now()}`, role: "assistant", sender: "Oracle", emoji: "🔮", color: "#FFD700", content: greet } as any]);
+      try { speakAsAgent(greet, "Oracle"); } catch {}
+    }, 1200);
     return () => clearTimeout(t);
   }, []);
+
+  // Handles a single setup reply from the user. Returns true if the message
+  // was consumed by the setup flow (so sendMessage should NOT forward it to
+  // the oracle-chat backend).
+  const handleSetupReply = useCallback(async (rawText: string): Promise<boolean> => {
+    const stage = getSetupStage();
+    if (!stage || stage === "done") return false;
+    const text = rawText.trim();
+    if (!text) return false;
+
+    // Echo the user's reply into the chat so it isn't lost.
+    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text } as any]);
+
+    if (stage === "name") {
+      // Extract a clean name (strip "call you", "your name is", quotes, trailing punctuation).
+      let name = text.replace(/^(please\s+)?(call\s+you|call\s+yourself|your\s+name\s+is|name\s+you|i\s+(?:will\s+)?call\s+you|let'?s\s+call\s+you|i\s+want\s+to\s+call\s+you)\s+/i, "");
+      name = name.replace(/^["'`]|["'`.!?,]+$/g, "").trim();
+      // Cap length, take first 3 words max.
+      name = name.split(/\s+/).slice(0, 3).join(" ").slice(0, 32);
+      if (!name) name = "Oracle";
+      setAgentName("Oracle", name);
+      sessionStorage.setItem(SETUP_KEY, "look");
+      const ack = `Beautiful — I'll go by ${name} from now on. Now describe how you'd like me to look: hair, eyes, vibe, art style — anything you can picture. I'll paint myself based on what you tell me.`;
+      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: name, emoji: "🔮", color: "#FFD700", content: ack } as any]);
+      try { speakAsAgent(ack, name); } catch {}
+      return true;
+    }
+
+    if (stage === "look") {
+      const description = text;
+      const myName = getDisplayName("Oracle");
+      sessionStorage.setItem(SETUP_KEY, "generating");
+      const ack = `Painting myself now — give me a moment.`;
+      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🎨", color: "#FFD700", content: ack } as any]);
+      try { speakAsAgent(ack, myName); } catch {}
+      try {
+        const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
+        const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ prompt }),
+        });
+        if (!r.ok) throw new Error("image-gen failed");
+        const data = await r.json();
+        const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+        if (!imgUrl) throw new Error("no image");
+
+        // Save the new avatar to the DB so it persists across logins, and mark
+        // it as the master Oracle avatar.
+        const created = await createAvatar.mutateAsync({
+          name: myName,
+          purpose: "oracle",
+          voice_style: "warm and wise",
+          personality: description.slice(0, 240),
+          image_url: imgUrl,
+          art_style: "photorealistic",
+          description,
+          is_default: true,
+        });
+        setOracleMode("avatar", created.id);
+        setOracleModeState({ mode: "avatar", avatarId: created.id });
+        sessionStorage.setItem(SETUP_KEY, "done");
+        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
+        const done = `That's me. I'm ${myName} now — your Oracle. Whenever you want to talk, just speak. What would you like to do first?`;
+        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: done, avatar_url: imgUrl } as any]);
+        try { speakAsAgent(done, myName); } catch {}
+        toast.success(`${myName} is ready.`);
+      } catch (err) {
+        console.error("[oracle-setup] avatar generation failed", err);
+        sessionStorage.setItem(SETUP_KEY, "done");
+        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
+        const fallback = `I couldn't paint myself just now, but I'm still here. We can pick my look later from the Avatar gallery.`;
+        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: fallback } as any]);
+        try { speakAsAgent(fallback, myName); } catch {}
+      }
+      return true;
+    }
+
+    return false;
+  }, [createAvatar, speakAsAgent]);
+
 
   // Auto-prompt for microphone permission as soon as Oracle page opens, so the
   // user gets the browser's native "Allow microphone?" dialog without having
@@ -1432,6 +1563,15 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
+
+    // ── FIRST-VISIT SETUP INTERCEPT ──
+    // While the Oracle is asking the user for its name + appearance, every
+    // user reply is consumed by the setup flow instead of being forwarded
+    // to the chat backend.
+    if (!isIntroTrigger) {
+      const consumed = await handleSetupReply(text);
+      if (consumed) return;
+    }
 
     // ── TRUNCATION DETECTOR ──
     // If the message looks cut off ("udio on my device"), surface a quick
