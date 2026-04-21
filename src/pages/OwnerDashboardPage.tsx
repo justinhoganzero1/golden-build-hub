@@ -481,17 +481,7 @@ const OwnerDashboardPage = () => {
     }
   };
 
-  const filteredLib = useMemo(() => {
-    if (tab !== "library") return [];
-
-    return allMedia.filter((m: any) => {
-      if (libFilter === "Images" && m.media_type !== "image") return false;
-      if (libFilter === "Videos" && m.media_type !== "video") return false;
-      if (libFilter === "Audio" && m.media_type !== "audio") return false;
-      if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
-      return true;
-    });
-  }, [allMedia, libFilter, libSearch, tab]);
+  // filteredLib hook moved above the early-return guard for hook-order safety.
 
   const handleDeleteMedia = async (id: string) => {
     const { error } = await supabase.from("user_media").delete().eq("id", id);
