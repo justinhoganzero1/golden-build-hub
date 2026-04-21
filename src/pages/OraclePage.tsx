@@ -175,6 +175,7 @@ const OraclePage = () => {
   const sendMessageRef = useRef<(text: string) => void>();
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef("");
+  const latestHeardTextRef = useRef("");
   const alwaysListenRef = useRef(false);
   const scribeModeRef = useRef(false);
   // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
@@ -239,6 +240,31 @@ const OraclePage = () => {
     setInput("");
     sendMessageRef.current?.(text);
   }, [normalizeCapturedText]);
+
+  const flushCapturedVoiceText = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    const text = latestHeardTextRef.current.replace(/\s+/g, " ").trim();
+    latestHeardTextRef.current = "";
+    finalTranscriptRef.current = "";
+
+    if (!text) {
+      setInput("");
+      return;
+    }
+
+    handleCapturedVoiceText(text);
+  }, [handleCapturedVoiceText]);
+
+  const scheduleCapturedVoiceFlush = useCallback((delay = 1100) => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = setTimeout(() => {
+      flushCapturedVoiceText();
+    }, delay);
+  }, [flushCapturedVoiceText]);
 
   // Old realtime token/scribe path disabled — Oracle now uses one direct browser mic pipeline only.
   const scribe = {
