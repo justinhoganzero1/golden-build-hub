@@ -56,14 +56,26 @@ const SignInPage = () => {
         // If session is already active (auto-confirm on), this runs immediately;
         // otherwise AuthContext picks it up after email confirmation.
         if (signUpData.session) {
+          // Auto-confirm is on → user is signed in. Grant the welcome reward
+          // and bounce them straight to the portal/dashboard.
           supabase.functions.invoke("grant-signup-reward", {
             body: { referralCode: refCode },
           }).catch(() => {});
           localStorage.removeItem("oracle-lunar-ref-code");
-        } else if (refCode) {
-          localStorage.setItem("oracle-lunar-ref-code", refCode);
+          toast.success("Welcome aboard! Unlocking your portal… 🎉");
+          const isAdminEmail = email.trim().toLowerCase() === ownerEmail;
+          navigate(isAdminEmail ? "/owner-dashboard" : redirectPath, { replace: true });
+        } else {
+          // Email confirmation required → preserve the ref code and flip the
+          // form back to Sign-In so the user can log in once confirmed.
+          if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
+          toast.success(
+            "Account created! Check your email to confirm, then sign in to enter your portal.",
+            { duration: 7000 }
+          );
+          setIsSignUp(false);
+          setPassword("");
         }
-        toast.success("Welcome! You've unlocked 30 days of Tier 3 free 🎉");
       } else {
         // Hard email gate for owner dashboard — only the owner email can sign in to /owner-dashboard
         if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
