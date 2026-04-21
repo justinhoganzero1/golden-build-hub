@@ -571,6 +571,11 @@ const OraclePage = () => {
       // like a different person on some devices.
       const prepared = text.replace(/\s{3,}/g, "  ").trim();
       if (!prepared) return false;
+      // Snapshot the token at the moment we start. If anything else cancels or
+      // queues a new utterance, our token will no longer match the live one
+      // and we abort gracefully — guaranteeing only ONE voice ever plays.
+      const myToken = speechTokenRef.current;
+      const isLive = () => speechTokenRef.current === myToken;
 
       const hasSSML = false;
       const hasCustomMaster = !!masterSettings;
