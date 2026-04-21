@@ -767,6 +767,8 @@ const OraclePage = () => {
   // Fallback browser TTS for non-Oracle agents
   const speakWithBrowserTTS = useCallback((text: string, agentName: string): Promise<void> => {
     return new Promise((resolve) => {
+      // Snapshot token; if a newer utterance preempts us, abort silently.
+      const myToken = speechTokenRef.current;
       const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
       const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
       const utterance = new SpeechSynthesisUtterance(fullText);
@@ -776,26 +778,29 @@ const OraclePage = () => {
       utterance.volume = 0.95;
       const voice = getVoiceForAgent(agentName);
       if (voice) utterance.voice = voice;
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        if (speechTokenRef.current !== myToken) {
+          try { window.speechSynthesis.cancel(); } catch {}
+          return;
+        }
+        setIsSpeaking(true);
+      };
       utterance.onend = () => { setIsSpeaking(false); resolve(); };
       utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+      // Final guard before scheduling: if a newer utterance arrived between
+      // queue dispatch and now, do not start.
+      if (speechTokenRef.current !== myToken) { resolve(); return; }
       window.speechSynthesis.speak(utterance);
     });
   }, [getVoiceForAgent]);
 
   const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
-    // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>) before
-    // starting the next queued utterance. Prevents the "two voices at once" bug
-    // where ElevenLabs streaming and browser speechSynthesis could overlap.
-    try { window.speechSynthesis?.cancel(); } catch {}
-    try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.src = "";
-        currentAudioRef.current = null;
-      }
-    } catch {}
+    // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>)
+    // and bump the speech token so any in-flight stream/utterance from the
+    // PREVIOUS line aborts. This is the only thing that reliably prevents the
+    // "two voices at once" bug on slow networks.
+    cancelCurrentSpeech();
     const next = speechQueueRef.current.shift();
     if (!next) return;
     const premiumClean = cleanTextForPremiumSpeech(next.text);
@@ -808,10 +813,13 @@ const OraclePage = () => {
       // never wobbles between system voices across utterances. The edge
       // function decides whether to actually serve audio (free vs paid).
       if (isOracle && premiumClean) {
+        const tokenBefore = speechTokenRef.current;
         const ok = await speakWithElevenLabs(premiumClean);
-        if (!ok && browserClean) {
-          // Single deterministic fallback so Oracle keeps the same fallback
-          // voice every time instead of cycling through random system voices.
+        // Only fall back to browser TTS if (a) ElevenLabs really failed AND
+        // (b) no newer utterance has taken over while we were waiting. Without
+        // this check, a slow-failing ElevenLabs call could trigger a browser
+        // voice on top of the next utterance's premium voice.
+        if (!ok && browserClean && speechTokenRef.current === tokenBefore) {
           await speakWithBrowserTTS(browserClean, oracleName);
         }
       } else if (!isOracle && browserClean) {
@@ -827,7 +835,7 @@ const OraclePage = () => {
       echoCooldownUntilRef.current = Date.now() + 600;
       processSpeechQueue();
     }
-  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, subLoading, tier]);
+  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text) return;
