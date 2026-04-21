@@ -161,9 +161,12 @@ const PortalLandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
       {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
       <StickyInstallBar />
+
+      {/* ── Floating prize balloons (big & small) — every tap → sign-up → dashboard ── */}
+      <FloatingOffersField />
 
       {/* ── Limited-time free offer bubble (top-left, round, neon-pink) ── */}
       <button
