@@ -128,6 +128,7 @@ const loaders = {
   "/store/:accountId": () => import("./pages/StorefrontPage"),
   "/advertise": () => import("./pages/AdvertisePage"),
   "/audio-filter": () => import("./pages/AudioFilterPage"),
+  "/diagnostics/audio": () => import("./pages/AudioDiagnosticsPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -197,6 +198,7 @@ const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
 const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
 const AdvertisePage = lazy(loaders["/advertise"]);
 const AudioFilterPage = lazy(loaders["/audio-filter"]);
+const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -259,6 +261,7 @@ const App = () => (
                   <Route path="/alarm-clock" element={<RequireAuth><ErrorBoundary pageName="Alarm Clock"><AlarmClockPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/safety-center" element={<RequireAuth freeAccess><ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics" element={<RequireAuth><ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/diagnostics/audio" element={<RequireAuth><ErrorBoundary pageName="Audio Diagnostics"><AudioDiagnosticsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/elderly-care" element={<RequireAuth><ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-generator" element={<RequireAuth><ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/professional-hub" element={<RequireAuth><ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary></RequireAuth>} />

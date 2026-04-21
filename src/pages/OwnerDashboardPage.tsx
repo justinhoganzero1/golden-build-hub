@@ -22,6 +22,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
 const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/AdvertiserInquiriesPanel"));
+const AudioAnalyticsCard = lazy(() => import("@/components/admin/AudioAnalyticsCard"));
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -959,13 +960,18 @@ const OwnerDashboardPage = () => {
 
         {/* ADVERTISER INQUIRIES — submissions from /advertise */}
         {tab === "advertisers" && (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <Suspense fallback={<div className="text-sm text-muted-foreground">Loading advertiser inquiries…</div>}>
-              <AdvertiserInquiriesPanel />
-            </Suspense>
-            <div className="mt-3 text-xs text-gray-400">
-              Public form lives at <code className="text-yellow-400">/advertise</code> — share that link anywhere.
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <Suspense fallback={<div className="text-sm text-muted-foreground">Loading advertiser inquiries…</div>}>
+                <AdvertiserInquiriesPanel />
+              </Suspense>
+              <div className="mt-3 text-xs text-gray-400">
+                Public form lives at <code className="text-yellow-400">/advertise</code> — share that link anywhere.
+              </div>
             </div>
+            <Suspense fallback={null}>
+              <AudioAnalyticsCard />
+            </Suspense>
           </div>
         )}
 
