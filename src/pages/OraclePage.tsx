@@ -175,6 +175,7 @@ const OraclePage = () => {
   const sendMessageRef = useRef<(text: string) => void>();
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef("");
+  const latestHeardTextRef = useRef("");
   const alwaysListenRef = useRef(false);
   const scribeModeRef = useRef(false);
   // Brief cooldown after speech finishes so the mic doesn't grab the trailing audio echo.
@@ -239,6 +240,31 @@ const OraclePage = () => {
     setInput("");
     sendMessageRef.current?.(text);
   }, [normalizeCapturedText]);
+
+  const flushCapturedVoiceText = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+
+    const text = latestHeardTextRef.current.replace(/\s+/g, " ").trim();
+    latestHeardTextRef.current = "";
+    finalTranscriptRef.current = "";
+
+    if (!text) {
+      setInput("");
+      return;
+    }
+
+    handleCapturedVoiceText(text);
+  }, [handleCapturedVoiceText]);
+
+  const scheduleCapturedVoiceFlush = useCallback((delay = 1100) => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = setTimeout(() => {
+      flushCapturedVoiceText();
+    }, delay);
+  }, [flushCapturedVoiceText]);
 
   // Old realtime token/scribe path disabled — Oracle now uses one direct browser mic pipeline only.
   const scribe = {
@@ -1062,6 +1088,7 @@ const OraclePage = () => {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     finalTranscriptRef.current = "";
+    latestHeardTextRef.current = "";
 
     const restartWhenSafe = () => {
       if (!alwaysListenRef.current) {
@@ -1097,23 +1124,28 @@ const OraclePage = () => {
         else interim += ` ${transcript}`;
       }
 
-      const liveText = (interim || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
+      const mergedText = mergeCapturedTranscript(finalTranscriptRef.current, final || interim);
+      if (mergedText) latestHeardTextRef.current = mergedText;
+
+      const liveText = (interim || latestHeardTextRef.current || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
       setInput(liveText);
 
       if (final.trim()) {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
+        latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        silenceTimerRef.current = setTimeout(() => {
-          const text = finalTranscriptRef.current.replace(/\s+/g, " ").trim();
-          finalTranscriptRef.current = "";
-          if (!text) {
-            setInput("");
-            return;
-          }
-          handleCapturedVoiceText(text);
-        }, 900);
+        scheduleCapturedVoiceFlush(900);
+      } else if (interim.trim()) {
+        scheduleCapturedVoiceFlush(1500);
       }
+    };
+
+    recognition.onspeechend = () => {
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(500);
+    };
+
+    recognition.onsoundend = () => {
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(650);
     };
 
     recognition.onerror = (e: any) => {
@@ -1123,18 +1155,25 @@ const OraclePage = () => {
         toast.error("Microphone permission was blocked.");
         return;
       }
-      if (e?.error === "aborted" || e?.error === "no-speech") return;
+      if (e?.error === "no-speech") {
+        if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(400);
+        return;
+      }
+      if (e?.error === "aborted") return;
       if (alwaysListenRef.current) window.setTimeout(restartWhenSafe, 700);
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      if (latestHeardTextRef.current) {
+        flushCapturedVoiceText();
+      }
       if (alwaysListenRef.current) restartWhenSafe();
     };
 
     alwaysListenRef.current = true;
     restartWhenSafe();
-  }, [handleCapturedVoiceText, mergeCapturedTranscript]);
+  }, [flushCapturedVoiceText, mergeCapturedTranscript, scheduleCapturedVoiceFlush]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });
 
@@ -1265,6 +1304,7 @@ const OraclePage = () => {
         silenceTimerRef.current = null;
       }
       finalTranscriptRef.current = "";
+      latestHeardTextRef.current = "";
       lastAutoSentRef.current = { text: "", at: 0 };
       if (recognitionRef.current) {
         try { recognitionRef.current.onend = null; } catch {}
