@@ -219,9 +219,51 @@ const OraclePage = () => {
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+  // Wake-word gating: Oracle only listens to commands after "hey oracle"
+  // and goes back to sleep on "that's all oracle". Mic stays open the whole time.
+  const wakeActiveRef = useRef(false);
+  const [wakeActive, setWakeActive] = useState(false);
+  const WAKE_RE = /\b(hey|hi|hello|ok|okay)[\s,]+(oracle|oracal|oracul|oraclel|oricle)\b/i;
+  const SLEEP_RE = /\b(that'?s\s+all|thats\s+all|goodbye|bye|sleep|stop\s+listening|go\s+to\s+sleep)[\s,]*(oracle|oracal|oracul|oraclel|oricle)\b/i;
+
+  const stripWakePhrase = (t: string) => t.replace(WAKE_RE, "").replace(/^[\s,.!?-]+/, "").trim();
+
   const handleCapturedVoiceText = useCallback((rawText: string) => {
     const text = rawText.replace(/\s+/g, " ").trim();
     if (!text || text.length < 2) {
+      setInput("");
+      return;
+    }
+
+    // Sleep word — silence Oracle, mic stays open.
+    if (SLEEP_RE.test(text)) {
+      wakeActiveRef.current = false;
+      setWakeActive(false);
+      try { window.speechSynthesis?.cancel(); } catch {}
+      setInput("");
+      toast("Oracle is sleeping. Say \"hey Oracle\" to wake her.", { duration: 3500 });
+      return;
+    }
+
+    // Wake word — activate; if more was said after it, send the remainder.
+    const hasWake = WAKE_RE.test(text);
+    if (hasWake && !wakeActiveRef.current) {
+      wakeActiveRef.current = true;
+      setWakeActive(true);
+      const remainder = stripWakePhrase(text);
+      setInput("");
+      if (remainder.length >= 2) {
+        const normalized = normalizeCapturedText(remainder);
+        lastAutoSentRef.current = { text: normalized, at: Date.now() };
+        sendMessageRef.current?.(remainder);
+      } else {
+        toast("Oracle is listening…", { duration: 2000 });
+      }
+      return;
+    }
+
+    // Asleep — drop everything else (mic remains active for wake detection).
+    if (!wakeActiveRef.current) {
       setInput("");
       return;
     }
