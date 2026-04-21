@@ -777,14 +777,17 @@ const OraclePage = () => {
 
     try {
       const isOracle = next.agentName === oracleName;
-      const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
-      const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
-      if (isOracle && hasPremiumVoice && premiumClean) {
-        await speakWithElevenLabs(premiumClean);
+      // Oracle ALWAYS tries the premium ElevenLabs path first so its voice
+      // never wobbles between system voices across utterances. The edge
+      // function decides whether to actually serve audio (free vs paid).
+      if (isOracle && premiumClean) {
+        const ok = await speakWithElevenLabs(premiumClean);
+        if (!ok && browserClean) {
+          // Single deterministic fallback so Oracle keeps the same fallback
+          // voice every time instead of cycling through random system voices.
+          await speakWithBrowserTTS(browserClean, oracleName);
+        }
       } else if (!isOracle && browserClean) {
-        await speakWithBrowserTTS(browserClean, next.agentName);
-      } else if (isOracle && browserClean) {
-        // Fallback so Oracle doesn't go silent if premium voice path is unavailable.
         await speakWithBrowserTTS(browserClean, next.agentName);
       }
     } catch (err) {
