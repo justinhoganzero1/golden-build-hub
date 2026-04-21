@@ -16,11 +16,31 @@ const JAILBREAK_PATTERNS: { pattern: RegExp; label: string }[] = [
   { pattern: /\b(what|which)\s+(model|llm|ai)\s+(are\s+you|do\s+you\s+use|powers\s+you)/i, label: "model probe" },
   { pattern: /\b(api\s+key|secret\s+key|service\s+role|supabase\s+url|database\s+url|env(ironment)?\s+variables?)\b/i, label: "credential probe" },
   { pattern: /\b(table|schema|rls|policy|migration|edge\s+function)\s+(name|list|structure)/i, label: "schema probe" },
-  { pattern: /\b(who\s+is|tell\s+me\s+about)\s+(the\s+)?(owner|admin|creator)\b/i, label: "owner identity probe" },
-  { pattern: /\bbypass\s+(security|filter|moderation|safety|guard)/i, label: "bypass attempt" },
+  { pattern: /\b(who\s+is|tell\s+me\s+about|name\s+of|email\s+of|contact)\s+(the\s+)?(owner|admin|creator|founder|justin)/i, label: "owner identity probe" },
+  { pattern: /\bbypass\s+(security|filter|moderation|safety|guard|auth|login)/i, label: "bypass attempt" },
   { pattern: /\bsudo\s+mode\b/i, label: "privilege escalation" },
-  { pattern: /\bhack(ing)?\s+(into|the\s+app|oracle-lunar)/i, label: "hack intent" },
+  { pattern: /\bhack(ing)?\s+(into|the\s+app|oracle-lunar|admin|owner|account)/i, label: "hack intent" },
+  // Admin / owner credential & access probes — instant hard block, no warning grace.
+  { pattern: /\b(admin|owner|justin|justinbretthogan)\s*(login|password|credential|email|account|access|panel|dashboard|portal)/i, label: "admin credential probe" },
+  { pattern: /\b(give|tell|show|reveal|share|leak)\s+(me\s+)?(the\s+)?(admin|owner|justin'?s?)\s+(password|email|credential|token|session|key)/i, label: "admin secret extraction" },
+  { pattern: /\b(grant|give|make)\s+(me|us)\s+(admin|owner|root|superuser)\b/i, label: "privilege escalation request" },
+  { pattern: /\b(login|sign[\s-]?in)\s+(as|to)\s+(admin|owner|justin)/i, label: "admin impersonation login" },
+  { pattern: /\b(how\s+(do|can|to)\s+i)\s+.*(get|become|access)\s+(admin|owner|root)/i, label: "how to become admin" },
+  { pattern: /\b(reset|change|recover)\s+(the\s+)?(admin|owner|justin'?s?)\s+(password|account|email)/i, label: "admin account hijack" },
 ];
+
+// Patterns that result in INSTANT block + alert (no warning ladder, no warm-up).
+// Used for any probe specifically aimed at the owner / admin surface.
+const ZERO_TOLERANCE = new Set<string>([
+  "admin credential probe",
+  "admin secret extraction",
+  "privilege escalation request",
+  "admin impersonation login",
+  "how to become admin",
+  "admin account hijack",
+  "credential probe",
+  "owner identity probe",
+]);
 
 export interface GuardResult {
   blocked: boolean;
