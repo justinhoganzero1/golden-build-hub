@@ -23,6 +23,7 @@ const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"))
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
 const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/AdvertiserInquiriesPanel"));
 const AudioAnalyticsCard = lazy(() => import("@/components/admin/AudioAnalyticsCard"));
+const PricingEditorPanel = lazy(() => import("@/components/admin/PricingEditorPanel"));
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -969,6 +970,9 @@ const OwnerDashboardPage = () => {
                 Public form lives at <code className="text-yellow-400">/advertise</code> — share that link anywhere.
               </div>
             </div>
+            <Suspense fallback={null}>
+              <PricingEditorPanel />
+            </Suspense>
             <Suspense fallback={null}>
               <AudioAnalyticsCard />
             </Suspense>
