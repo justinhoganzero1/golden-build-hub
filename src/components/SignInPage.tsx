@@ -28,6 +28,13 @@ const SignInPage = () => {
     navigate(nextPath, { replace: true });
   }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 
+  // When the owner-access flow is active, lock the email field to the owner
+  // email so an attacker can't even type a different one. Belt-and-suspenders
+  // alongside the server-side email allowlist + DB role lock.
+  useEffect(() => {
+    if (isOwnerAccess) setEmail(ownerEmail);
+  }, [isOwnerAccess, ownerEmail]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
