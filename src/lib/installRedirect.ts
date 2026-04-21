@@ -14,6 +14,23 @@
 export const PUBLIC_HOST = "oracle-lunar.online";
 export const PUBLIC_URL = "https://oracle-lunar.online/";
 
+/**
+ * Optional native-app store links. When set, install CTAs prefer these
+ * over the PWA prompt so users get the *actual app*, not a saved shortcut
+ * to the website. Leave blank until the listings are live.
+ */
+export const PLAY_STORE_URL = "";   // e.g. "https://play.google.com/store/apps/details?id=app.oraclelunar.ai"
+export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXXXXX"
+
+/** Returns the best native store URL for the current device, or null. */
+export const getNativeStoreUrl = (): string | null => {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua) && APP_STORE_URL) return APP_STORE_URL;
+  if (/android/.test(ua) && PLAY_STORE_URL) return PLAY_STORE_URL;
+  return null;
+};
+
 /** True when the current page is the real production deployment. */
 export const isOnProductionHost = (): boolean => {
   try {

@@ -288,21 +288,32 @@ const OraclePage = () => {
 
   const oracleName = getDisplayName("Oracle");
 
-  // Merge user avatars into agents list + sync master Oracle avatar from DB
+  // Track whether we've already seeded the master oracle from the DB this session.
+  // Without this guard, every react-query refetch of `userAvatars` (focus/reconnect)
+  // overwrites the user's mid-session Oracle swap and resets all assigned voices,
+  // making the avatar "vanish" and a new TTS voice start mid-conversation.
+  const masterSeededRef = useRef(false);
+
+  // Merge user avatars into agents list + (one-time) sync master Oracle avatar from DB
   useEffect(() => {
     if (userAvatars.length === 0) return;
 
-    // 1) Master avatar = is_default + purpose='oracle' (DB-backed, survives logout)
-    const masterOracle = userAvatars.find(a => a.is_default && a.purpose === "oracle");
-    if (masterOracle) {
+    // 1) Master avatar = is_default + purpose='oracle' (DB-backed, survives logout).
+    //    Only apply ONCE per session, and only if the user hasn't already chosen
+    //    a different avatar in this session.
+    if (!masterSeededRef.current) {
+      const masterOracle = userAvatars.find(a => a.is_default && a.purpose === "oracle");
       const current = getOracleMode();
-      if (current.mode !== "avatar" || current.avatarId !== masterOracle.id) {
+      const userHasChoice = current.mode === "avatar" && current.avatarId
+        && userAvatars.some(a => a.id === current.avatarId);
+      if (masterOracle && !userHasChoice) {
         setOracleMode("avatar", masterOracle.id);
         setOracleModeState({ mode: "avatar", avatarId: masterOracle.id });
       }
+      masterSeededRef.current = true;
     }
 
-    // 2) Add user avatars as orbiting agents
+    // 2) Add user avatars as orbiting agents — preserve existing voice assignments.
     setAgents(prev => {
       const existing = prev.filter(a => !a.isUserAvatar);
       const userAgents: ChatAgent[] = userAvatars
@@ -320,7 +331,13 @@ const OraclePage = () => {
           avatarId: a.id,
           purpose: a.purpose,
         }));
-      voiceMapRef.current.clear();
+      // NOTE: do NOT clear voiceMapRef here — that resets every assistant voice
+      // mid-session whenever the avatars query refetches. Only prune entries for
+      // avatars that no longer exist.
+      const validNames = new Set([...existing.map(a => a.name), ...userAgents.map(a => a.name)]);
+      for (const name of Array.from(voiceMapRef.current.keys())) {
+        if (!validNames.has(name)) voiceMapRef.current.delete(name);
+      }
       return [...existing, ...userAgents];
     });
   }, [userAvatars]);
