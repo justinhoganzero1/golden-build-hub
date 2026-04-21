@@ -115,6 +115,7 @@ const OraclePage = () => {
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
   const [micPermGranted, setMicPermGranted] = useState(false);
+  const [micPermissionError, setMicPermissionError] = useState<string | null>(null);
   const [renamingAgent, setRenamingAgent] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState("");
   const [oracleMode, setOracleModeState] = useState(getOracleMode);
