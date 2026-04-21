@@ -24,7 +24,7 @@ import pilotMale from "@/assets/avatars/pilot-male.jpg";
 import singerFemale from "@/assets/avatars/singer-female.jpg";
 import judgeMale from "@/assets/avatars/judge-male.jpg";
 import mechanicMale from "@/assets/avatars/mechanic-male.jpg";
-import vampireMale from "@/assets/avatars/vampire-male.jpg";
+// vampireMale removed — was being shown as a "creepy" default. Replaced with friendlier picks.
 import cowboyMale from "@/assets/avatars/cowboy-male.jpg";
 import ninjaMale from "@/assets/avatars/ninja-male.jpg";
 import elfFemale from "@/assets/avatars/elf-female.jpg";
