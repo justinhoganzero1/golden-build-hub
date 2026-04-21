@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import {
   Shield, Users, Gift, Star, BarChart3, Mail, Megaphone,
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
@@ -7,8 +7,6 @@ import {
   Camera, Grid, List, Trash2, Play, Download, Share2, LogOut
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import StripeConnectPanel from "@/components/StripeConnectPanel";
-import StripeRevenuePanel from "@/components/StripeRevenuePanel";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,9 +16,12 @@ import { useAllUserMediaPaginated } from "@/hooks/useAllUserMedia";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { downloadFileFromUrl } from "@/lib/utils";
+import { downloadFileFromUrl, isLowPowerMobile } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import AdvertiserInquiriesPanel from "@/components/admin/AdvertiserInquiriesPanel";
+
+const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
+const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
+const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/AdvertiserInquiriesPanel"));
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -80,6 +81,8 @@ const OwnerDashboardPage = () => {
     localStorage.setItem("oracle-lunar-ad-campaigns", JSON.stringify(adCampaigns));
   }, [adCampaigns]);
 
+  const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
+
   const adPlatforms = [
     { id: "admob", name: "Google AdMob", icon: "🟢", desc: "Banner, interstitial, rewarded ads", types: ["Banner", "Interstitial", "Rewarded Video", "Native"] },
     { id: "playstore", name: "Google Play Store", icon: "🔵", desc: "Store listing, screenshots, description", types: ["App Install", "Engagement", "Pre-Registration"] },
@@ -128,7 +131,7 @@ const OwnerDashboardPage = () => {
     hasNextPage,
     isFetchingNextPage,
     isLoading: libLoading,
-  } = useAllUserMediaPaginated();
+  } = useAllUserMediaPaginated(tab === "library", lowPowerMode ? 24 : 60);
   const allMedia = (mediaPages?.pages.flat() ?? []) as any[];
   const qc = useQueryClient();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
@@ -166,6 +169,8 @@ const OwnerDashboardPage = () => {
   }, [loading, adminLoading, hasAdminAccess, user, navigate, isReady]);
 
   useEffect(() => {
+    if (!hasAdminAccess || tab !== "suggestions" || suggestions.length > 0) return;
+
     (async () => {
       const { data } = await supabase
         .from("suggestions")
@@ -174,11 +179,12 @@ const OwnerDashboardPage = () => {
         .limit(100);
       if (data) setSuggestions(data);
     })();
-  }, []);
+  }, [hasAdminAccess, suggestions.length, tab]);
 
   // Load concierge + crawler leads for the Leads tab
   useEffect(() => {
-    if (!hasAdminAccess) return;
+    if (!hasAdminAccess || tab !== "leads" || leads.length > 0) return;
+
     (async () => {
       const { data } = await supabase
         .from("inquiry_leads")
@@ -187,16 +193,17 @@ const OwnerDashboardPage = () => {
         .limit(200);
       if (data) setLeads(data);
     })();
-  }, [hasAdminAccess]);
+  }, [hasAdminAccess, leads.length, tab]);
 
   // Load install analytics events for the owner dashboard
   useEffect(() => {
-    if (!hasAdminAccess) return;
-    (async () => {
+    if (!hasAdminAccess || tab !== "overview") return;
+
+    const timeoutId = window.setTimeout(async () => {
       const { data } = await supabase
         .from("install_events")
         .select("event_type, platform")
-        .limit(10000);
+        .limit(lowPowerMode ? 1500 : 10000);
       if (!data) return;
       const stats = {
         totalClicks: 0, totalInstalls: 0,
@@ -216,12 +223,15 @@ const OwnerDashboardPage = () => {
         }
       }
       setInstallStats(stats);
-    })();
-  }, [hasAdminAccess]);
+    }, lowPowerMode ? 1200 : 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [hasAdminAccess, lowPowerMode, tab]);
 
   // Load private live traffic (admin only): site visitors, installs, paid upgrades
   useEffect(() => {
-    if (!hasAdminAccess) return;
+    if (!hasAdminAccess || tab !== "overview") return;
+
     let cancelled = false;
     const load = async () => {
       try {
@@ -230,8 +240,6 @@ const OwnerDashboardPage = () => {
           supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing").eq("utm_medium", "returning"),
           supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
         ]);
-        // Paid upgrades: count distinct paid users via Stripe (server-side admin endpoint).
-        // Until a dedicated admin counter exists, fall back to 0 — Stripe dashboard is the source of truth.
         let paidUpgrades = 0;
         try {
           if (accessToken) {
@@ -243,7 +251,7 @@ const OwnerDashboardPage = () => {
             });
             if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
           }
-        } catch { /* ignore — endpoint may not expose admin counts yet */ }
+        } catch {}
         if (!cancelled) {
           setLiveTraffic({
             visitors: typeof visitors === "number" ? visitors : 0,
@@ -252,16 +260,29 @@ const OwnerDashboardPage = () => {
             paidUpgrades,
           });
         }
-      } catch { /* silent */ }
+      } catch {}
     };
-    load();
+
+    const timeoutId = window.setTimeout(load, lowPowerMode ? 800 : 0);
+    if (lowPowerMode) {
+      return () => {
+        cancelled = true;
+        window.clearTimeout(timeoutId);
+      };
+    }
+
     const i = window.setInterval(load, 30000);
-    return () => { cancelled = true; window.clearInterval(i); };
-  }, [hasAdminAccess, accessToken]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      window.clearInterval(i);
+    };
+  }, [accessToken, hasAdminAccess, lowPowerMode, tab]);
 
   // Load traffic sources (admin only) — aggregates utm_source/referrer for the bar graph
   useEffect(() => {
-    if (!hasAdminAccess) return;
+    if (!hasAdminAccess || tab !== "sources") return;
+
     let cancelled = false;
     const load = async () => {
       try {
@@ -269,14 +290,14 @@ const OwnerDashboardPage = () => {
           .from("page_views")
           .select("utm_source, referrer")
           .order("created_at", { ascending: false })
-          .limit(5000);
+          .limit(lowPowerMode ? 1000 : 5000);
         if (!data) return;
         const counts: Record<string, number> = {};
         for (const row of data as Array<{ utm_source: string | null; referrer: string | null }>) {
           let src = row.utm_source?.trim().toLowerCase() || "";
           if (!src && row.referrer) {
             try { src = new URL(row.referrer).hostname.replace(/^www\./, "").toLowerCase(); }
-            catch { /* ignore */ }
+            catch {}
           }
           if (!src) src = "direct";
           counts[src] = (counts[src] || 0) + 1;
@@ -286,12 +307,22 @@ const OwnerDashboardPage = () => {
           .sort((a, b) => b.visits - a.visits)
           .slice(0, 12);
         if (!cancelled) setTrafficSources(arr);
-      } catch { /* silent */ }
+      } catch {}
     };
+
     load();
+    if (lowPowerMode) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const i = window.setInterval(load, 60000);
-    return () => { cancelled = true; window.clearInterval(i); };
-  }, [hasAdminAccess]);
+    return () => {
+      cancelled = true;
+      window.clearInterval(i);
+    };
+  }, [hasAdminAccess, lowPowerMode, tab]);
 
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
@@ -441,13 +472,17 @@ const OwnerDashboardPage = () => {
     }
   };
 
-  const filteredLib = allMedia.filter((m: any) => {
-    if (libFilter === "Images" && m.media_type !== "image") return false;
-    if (libFilter === "Videos" && m.media_type !== "video") return false;
-    if (libFilter === "Audio" && m.media_type !== "audio") return false;
-    if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
-    return true;
-  });
+  const filteredLib = useMemo(() => {
+    if (tab !== "library") return [];
+
+    return allMedia.filter((m: any) => {
+      if (libFilter === "Images" && m.media_type !== "image") return false;
+      if (libFilter === "Videos" && m.media_type !== "video") return false;
+      if (libFilter === "Audio" && m.media_type !== "audio") return false;
+      if (libSearch && !(m.title || "").toLowerCase().includes(libSearch.toLowerCase())) return false;
+      return true;
+    });
+  }, [allMedia, libFilter, libSearch, tab]);
 
   const handleDeleteMedia = async (id: string) => {
     const { error } = await supabase.from("user_media").delete().eq("id", id);
@@ -529,10 +564,14 @@ const OwnerDashboardPage = () => {
             </div>
 
             {/* Live Stripe revenue (admin only) */}
-            <StripeRevenuePanel />
+            <Suspense fallback={null}>
+              <StripeRevenuePanel />
+            </Suspense>
 
             {/* Stripe Connect demo (admin view) */}
-            <StripeConnectPanel />
+            <Suspense fallback={null}>
+              <StripeConnectPanel />
+            </Suspense>
 
             {/* Private Live Traffic — admin only, your site */}
             <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-4">
@@ -921,7 +960,9 @@ const OwnerDashboardPage = () => {
         {/* ADVERTISER INQUIRIES — submissions from /advertise */}
         {tab === "advertisers" && (
           <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <AdvertiserInquiriesPanel />
+            <Suspense fallback={<div className="text-sm text-muted-foreground">Loading advertiser inquiries…</div>}>
+              <AdvertiserInquiriesPanel />
+            </Suspense>
             <div className="mt-3 text-xs text-gray-400">
               Public form lives at <code className="text-yellow-400">/advertise</code> — share that link anywhere.
             </div>

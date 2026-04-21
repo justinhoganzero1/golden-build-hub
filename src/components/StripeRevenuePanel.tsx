@@ -7,7 +7,51 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Loader2, RefreshCw, TrendingUp, Wallet, Users } from "lucide-react";
 import { isLowPowerMobile } from "@/lib/utils";
-...
+
+interface RevenueData {
+  gross30Cents: number;
+  net30Cents: number;
+  fees30Cents: number;
+  refunded30Cents: number;
+  count30: number;
+  gross7Cents: number;
+  count7: number;
+  currencyTotals: Record<string, number>;
+  activeSubscriptions: number;
+  availableBalance: Record<string, number>;
+  pendingBalance: Record<string, number>;
+  recentCharges: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    created: number;
+    status: string;
+    description: string | null;
+    receipt_url: string | null;
+  }>;
+  recentPayouts: Array<{
+    id: string;
+    amount: number;
+    currency: string;
+    arrival_date: number;
+    status: string;
+  }>;
+  generatedAt: number;
+}
+
+function fmtMoney(cents: number, currency = "usd") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format((cents ?? 0) / 100);
+}
+
+function fmtBalance(map: Record<string, number>) {
+  const entries = Object.entries(map ?? {});
+  if (entries.length === 0) return "$0.00";
+  return entries.map(([cur, amt]) => fmtMoney(amt, cur)).join(" · ");
+}
+
 export default function StripeRevenuePanel() {
   const { user, isReady, accessToken } = useAuthReady();
   const [data, setData] = useState<RevenueData | null>(null);
@@ -55,7 +99,9 @@ export default function StripeRevenuePanel() {
             Live Stripe Revenue
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Pulled directly from your Stripe account. Refreshes every 60 seconds.
+            {lowPowerMode
+              ? "Pulled directly from your Stripe account. Refresh manually on low-power devices."
+              : "Pulled directly from your Stripe account. Refreshes every 60 seconds."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -164,9 +210,7 @@ export default function StripeRevenuePanel() {
                           {fmtMoney(c.amount, c.currency)}
                         </td>
                         <td className="py-1 pr-3">
-                          <Badge
-                            variant={c.status === "succeeded" ? "default" : "secondary"}
-                          >
+                          <Badge variant={c.status === "succeeded" ? "default" : "secondary"}>
                             {c.status}
                           </Badge>
                         </td>
