@@ -10,13 +10,15 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
 // Vaulted: CallControlBanner (Twilio) — disabled until telephony returns.
-import PreviewModeBanner from "@/components/PreviewModeBanner";
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
-import AnnouncementBanner from "@/components/AnnouncementBanner";
-import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
+// Lazy: non-critical chrome — keep these out of the initial bundle so Android
+// startup parses less JS before first paint.
+const PreviewModeBanner = lazy(() => import("@/components/PreviewModeBanner"));
+const AnnouncementBanner = lazy(() => import("@/components/AnnouncementBanner"));
+const MasterOracleLauncher = lazy(() => import("@/components/admin/MasterOracleLauncher"));
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
 
@@ -222,11 +224,13 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
-              <AnnouncementBanner />
-              <PreviewModeBanner />
+              <Suspense fallback={null}>
+                <AnnouncementBanner />
+                <PreviewModeBanner />
+                <MasterOracleLauncher />
+              </Suspense>
               <MasterMuteButton />
-              <MasterOracleLauncher />
-              
+
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />

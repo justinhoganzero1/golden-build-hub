@@ -8,6 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 export function isLowPowerMobile() {
   if (typeof window === "undefined" || typeof navigator === "undefined") return false;
 
+  // User override beats auto-detect
+  try {
+    const pref = localStorage.getItem("lowPowerMode");
+    if (pref === "on") return true;
+    if (pref === "off") return false;
+  } catch {}
+
   const nav = navigator as Navigator & {
     connection?: { saveData?: boolean; effectiveType?: string };
     deviceMemory?: number;
