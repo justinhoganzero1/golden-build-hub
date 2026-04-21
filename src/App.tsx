@@ -19,7 +19,10 @@ import RequireAuth from "@/components/RequireAuth";
 const PreviewModeBanner = lazy(() => import("@/components/PreviewModeBanner"));
 const AnnouncementBanner = lazy(() => import("@/components/AnnouncementBanner"));
 const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
-const MasterOracleLauncher = lazy(() => import("@/components/admin/MasterOracleLauncher"));
+// EAGER import — must NEVER be lazy. A Suspense fallback during chunk reload
+// would unmount the persistent Oracle iframe and start a "second voice" on
+// remount, which is the bug we're killing for good.
+import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
 
@@ -227,11 +230,14 @@ const App = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
+              {/* MasterOracleLauncher is rendered OUTSIDE the Suspense fallback
+                  so a chunk reload elsewhere on the page can never unmount the
+                  persistent Oracle iframe. */}
+              <MasterOracleLauncher />
               <Suspense fallback={null}>
                 {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
                     they cover portal balloons. Re-add per-page if needed. */}
                 <PreviewModeBanner />
-                <MasterOracleLauncher />
               </Suspense>
               <MasterMuteButton />
 

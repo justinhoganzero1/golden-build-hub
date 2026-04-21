@@ -8,19 +8,24 @@ import { useDraggable } from "@/hooks/useDraggable";
 import { isLowPowerMobile } from "@/lib/utils";
 
 const OPEN_STORAGE_KEY = "master-oracle-open";
+const EVER_ADMIN_KEY = "master-oracle-ever-admin";
 
 /**
  * Admin-only floating launcher that opens the REAL master Oracle (/oracle)
  * full-screen inside an iframe.
  *
- * CRITICAL: The iframe is mounted EXACTLY ONCE for the entire app session and
- * is only hidden/shown via CSS — never unmounted, never reloaded, never
- * key-bumped. This guarantees Oracle keeps its full state (chat history,
- * voice queue, mic stream, agents) the whole time the admin is signed in,
- * so it can never "refresh and start a second voice over the top".
+ * CRITICAL — INVINCIBLE IFRAME:
+ *   Once the iframe has been mounted ONCE in a browser session, it must NEVER
+ *   unmount, never reload, never key-bump, never lose its src — no matter what
+ *   `useIsAdmin()` returns next render, no matter what AuthContext re-emits,
+ *   no matter what route you're on. We track "has this user ever been admin in
+ *   this session" via sessionStorage; once true, the iframe stays mounted and
+ *   only its visibility CSS toggles. This is the only way to guarantee Oracle
+ *   keeps full chat history, voice queue, mic stream and agents alive without
+ *   ever starting a "second voice over the top".
  */
 export const MasterOracleLauncher = () => {
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { pathname } = useLocation();
   const [open, setOpenState] = useState<boolean>(() => {
     try { return sessionStorage.getItem(OPEN_STORAGE_KEY) === "1"; } catch { return false; }
@@ -28,6 +33,18 @@ export const MasterOracleLauncher = () => {
   const { ref, style, dragHandlers, justDragged } = useDraggable("master-oracle-launcher-pos");
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const lowPowerMode = useMemo(() => isLowPowerMobile(), []);
+
+  // Sticky admin flag — once true in this session, stays true even if a
+  // momentary re-fetch of the user_roles row briefly returns false.
+  const [everAdmin, setEverAdmin] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(EVER_ADMIN_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (isAdmin && !everAdmin) {
+      setEverAdmin(true);
+      try { sessionStorage.setItem(EVER_ADMIN_KEY, "1"); } catch {}
+    }
+  }, [isAdmin, everAdmin]);
 
   const setOpen = (next: boolean) => {
     setOpenState(next);
@@ -47,12 +64,24 @@ export const MasterOracleLauncher = () => {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [open]);
 
-  if (!isAdmin) return null;
+  // EFFECTIVE admin = is admin now OR has ever been admin in this session.
+  // Critical: while admin role is still loading we ALSO trust the sticky flag,
+  // so we never tear the iframe down during a refetch.
+  const effectiveAdmin = isAdmin || everAdmin;
+
+  // Render absolutely nothing only if we have NEVER been admin AND we're not
+  // currently loading. This way, the very first paint for non-admins is a noop;
+  // for any admin, once we mount, we never unmount.
+  if (!effectiveAdmin && !adminLoading) return null;
 
   // On the actual /oracle route the user IS the Oracle page already.
   // Hide our launcher button + dialog chrome there, BUT keep the iframe
   // mounted so coming back to any other page resumes the same conversation.
   const onOracleRoute = pathname === "/oracle" || pathname === "/chat-oracle";
+
+  // Until we know the user is admin, render nothing (no iframe yet).
+  // Once admin has been confirmed once, ALWAYS render the iframe shell.
+  if (!everAdmin) return null;
 
   return (
     <>
@@ -80,7 +109,8 @@ export const MasterOracleLauncher = () => {
         </button>
       )}
 
-      {/* Iframe shell. ALWAYS mounted once admin is detected, only visibility toggles. */}
+      {/* Iframe shell. ALWAYS mounted once admin has been confirmed even ONCE
+          in this session. Only visibility toggles via CSS. Never unmount. */}
       <div
         className={`fixed inset-0 z-[100] bg-background/95 flex-col ${lowPowerMode ? "" : "backdrop-blur-sm"} ${
           open && !onOracleRoute ? "flex" : "hidden"

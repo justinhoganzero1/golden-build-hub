@@ -24,7 +24,7 @@ import pilotMale from "@/assets/avatars/pilot-male.jpg";
 import singerFemale from "@/assets/avatars/singer-female.jpg";
 import judgeMale from "@/assets/avatars/judge-male.jpg";
 import mechanicMale from "@/assets/avatars/mechanic-male.jpg";
-import vampireMale from "@/assets/avatars/vampire-male.jpg";
+// vampireMale removed — was being shown as a "creepy" default. Replaced with friendlier picks.
 import cowboyMale from "@/assets/avatars/cowboy-male.jpg";
 import ninjaMale from "@/assets/avatars/ninja-male.jpg";
 import elfFemale from "@/assets/avatars/elf-female.jpg";
@@ -47,7 +47,7 @@ const APPEARANCE_OPTIONS = [
   { id: "singer-female", label: "Singer", img: singerFemale },
   { id: "judge-male", label: "Judge", img: judgeMale },
   { id: "mechanic-male", label: "Mechanic", img: mechanicMale },
-  { id: "vampire-male", label: "Vampire", img: vampireMale },
+  // { id: "vampire-male", label: "Vampire", img: vampireMale }, // removed — too creepy as default
   { id: "cowboy-male", label: "Cowboy", img: cowboyMale },
   { id: "ninja-male", label: "Ninja", img: ninjaMale },
   { id: "elf-female", label: "Elf", img: elfFemale },
