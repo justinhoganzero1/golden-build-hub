@@ -724,6 +724,19 @@ const OraclePage = () => {
     }
   }, []);
 
+  // Stable per-agent pitch — picked once and reused, so the same agent
+  // never sounds like a different person between utterances.
+  const agentPitchRef = useRef<Map<string, number>>(new Map());
+  const getStablePitch = (agentName: string) => {
+    if (!agentPitchRef.current.has(agentName)) {
+      // Deterministic hash → 0.95-1.10 range, fixed for this agent name.
+      let h = 0;
+      for (let i = 0; i < agentName.length; i++) h = (h * 31 + agentName.charCodeAt(i)) >>> 0;
+      agentPitchRef.current.set(agentName, 0.95 + (h % 100) / 666);
+    }
+    return agentPitchRef.current.get(agentName)!;
+  };
+
   // Fallback browser TTS for non-Oracle agents
   const speakWithBrowserTTS = useCallback((text: string, agentName: string): Promise<void> => {
     return new Promise((resolve) => {
@@ -732,7 +745,7 @@ const OraclePage = () => {
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.lang = "en-US";
       utterance.rate = 0.88;
-      utterance.pitch = 0.95 + Math.random() * 0.15;
+      utterance.pitch = getStablePitch(agentName);
       utterance.volume = 0.95;
       const voice = getVoiceForAgent(agentName);
       if (voice) utterance.voice = voice;
@@ -764,14 +777,17 @@ const OraclePage = () => {
 
     try {
       const isOracle = next.agentName === oracleName;
-      const hasStoredMasterVoice = !!(typeof localStorage !== "undefined" && getStoredOracleMasterVoice()?.id);
-      const hasPremiumVoice = isOwner || tier !== "free" || (subLoading && hasStoredMasterVoice);
-      if (isOracle && hasPremiumVoice && premiumClean) {
-        await speakWithElevenLabs(premiumClean);
+      // Oracle ALWAYS tries the premium ElevenLabs path first so its voice
+      // never wobbles between system voices across utterances. The edge
+      // function decides whether to actually serve audio (free vs paid).
+      if (isOracle && premiumClean) {
+        const ok = await speakWithElevenLabs(premiumClean);
+        if (!ok && browserClean) {
+          // Single deterministic fallback so Oracle keeps the same fallback
+          // voice every time instead of cycling through random system voices.
+          await speakWithBrowserTTS(browserClean, oracleName);
+        }
       } else if (!isOracle && browserClean) {
-        await speakWithBrowserTTS(browserClean, next.agentName);
-      } else if (isOracle && browserClean) {
-        // Fallback so Oracle doesn't go silent if premium voice path is unavailable.
         await speakWithBrowserTTS(browserClean, next.agentName);
       }
     } catch (err) {
