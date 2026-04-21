@@ -2169,6 +2169,27 @@ const OraclePage = () => {
 
       {/* Input bar */}
       <div className="px-4 py-3 z-10" style={{ background: "linear-gradient(to top, #0a0a0a, rgba(10,10,10,0.95))" }}>
+        {!micPermGranted && (
+          <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-white">Enable microphone</div>
+                <div className="text-xs text-gray-300">
+                  Oracle needs one click from you to trigger your laptop's mic permission.
+                </div>
+                {micPermissionError && (
+                  <div className="text-xs text-red-300 mt-1">{micPermissionError}</div>
+                )}
+              </div>
+              <button
+                onClick={toggleMic}
+                className="px-4 py-2 rounded-full bg-[#FFAA00] text-black text-sm font-semibold"
+              >
+                Allow mic
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
