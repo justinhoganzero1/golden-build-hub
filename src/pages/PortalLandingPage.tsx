@@ -273,7 +273,7 @@ const PortalLandingPage = () => {
             </button>
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!user && (
+            {!user ? (
               <>
                 <Button
                   onClick={() => navigate("/sign-in?redirect=/dashboard")}
@@ -286,19 +286,22 @@ const PortalLandingPage = () => {
                 </Button>
                 <Button
                   onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
-                  variant="secondary"
+                  variant="default"
                   size="sm"
-                  aria-label="Create free account"
+                  aria-label="Member sign up"
                 >
-                  Sign Up
+                  <span className="hidden sm:inline">Member Sign Up</span>
+                  <span className="sm:hidden">Sign Up</span>
+                  <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </>
+            ) : (
+              <Button onClick={() => navigate("/dashboard")} variant="default" size="sm">
+                <span className="hidden sm:inline">Open App</span>
+                <span className="sm:hidden">Open</span>
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
             )}
-            <Button onClick={() => navigate(user ? "/dashboard" : "/welcome")} variant="default" size="sm">
-              <span className="hidden sm:inline">{user ? "Open App" : "Launch App"}</span>
-              <span className="sm:hidden">{user ? "Open" : "Launch"}</span>
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
