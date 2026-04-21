@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Star, Check, Zap, Crown, Sparkles, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { Star, Check, Zap, Crown, Sparkles, Loader2, ExternalLink, RefreshCw, Info } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription, SUBSCRIPTION_TIERS } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const MSRP_TOOLTIP = "This is the regular post-launch price (MSRP). Today you're charged the discounted soft-launch amount shown next to it — the Stripe charge stays the same regardless of the strikethrough.";
 
 // Soft-launch pricing: the listed `price` IS what the user actually pays today.
 // `originalPrice` is set to +25% above the real price (post-launch rate) and
@@ -143,6 +146,10 @@ const SubscribePage = () => {
             every plan and add-on is <span className="text-foreground font-semibold">20% off the regular price</span>.
             Strikethrough prices show the post-launch rate.
           </p>
+          <p className="text-[10px] text-muted-foreground/80 mt-2 italic border-t border-border/40 pt-2">
+            Disclaimer: Soft-launch pricing is for display purposes only. The actual amount Stripe
+            charges is the live price shown — strikethrough MSRP values do not affect billing.
+          </p>
         </div>
 
         {/* Current subscription status */}
@@ -194,7 +201,14 @@ const SubscribePage = () => {
                     <h3 className="text-lg font-bold text-foreground">{p.name}</h3>
                     <p className="text-xs text-muted-foreground">
                       {p.originalPrice && (
-                        <span className="line-through text-muted-foreground/70 mr-1.5">{p.originalPrice}</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="line-through text-muted-foreground/70 mr-1.5 cursor-help inline-flex items-center gap-0.5">
+                              {p.originalPrice}<Info className="w-2.5 h-2.5" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">{MSRP_TOOLTIP}</TooltipContent>
+                        </Tooltip>
                       )}
                       <span className="text-xl font-bold text-primary">{p.price}</span> {p.period}
                       {p.originalPrice && (
@@ -241,7 +255,14 @@ const SubscribePage = () => {
             <div>
               <h3 className="text-lg font-bold text-foreground">ORACLE LUNAR Lifetime Unlock</h3>
               <p className="text-xs text-muted-foreground">
-                <span className="line-through text-muted-foreground/70 mr-1.5">$1,125</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="line-through text-muted-foreground/70 mr-1.5 cursor-help inline-flex items-center gap-0.5">
+                      $1,125<Info className="w-2.5 h-2.5" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">{MSRP_TOOLTIP}</TooltipContent>
+                </Tooltip>
                 <span className="text-2xl font-bold text-primary">$900</span> one-time payment
                 <span className="ml-2 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">−20%</span>
               </p>
@@ -284,7 +305,14 @@ const SubscribePage = () => {
                 <h3 className="text-sm font-semibold text-foreground">
                   {a.name} —{" "}
                   {a.originalPrice && (
-                    <span className="line-through text-muted-foreground/70 mr-1">{a.originalPrice}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="line-through text-muted-foreground/70 mr-1 cursor-help inline-flex items-center gap-0.5">
+                          {a.originalPrice}<Info className="w-2.5 h-2.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">{MSRP_TOOLTIP}</TooltipContent>
+                    </Tooltip>
                   )}
                   <span className="text-primary">{a.price}</span>
                   {a.originalPrice && (
