@@ -402,6 +402,29 @@ const PortalLandingPage = () => {
             </Button>
           </div>
 
+          {!user && (
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                size="lg"
+                variant="default"
+                onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
+                className="h-14 px-8 text-base font-bold rounded-xl shadow-[0_0_30px_hsl(var(--primary)/0.5)]"
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                Sign Up Free — 30 Days
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("/sign-in?redirect=/dashboard")}
+                className="h-14 px-8 text-base border-2 border-primary/40 hover:border-primary"
+              >
+                <Lock className="mr-2 h-5 w-5" />
+                Member Sign In
+              </Button>
+            </div>
+          )}
+
           <p className="mt-4 text-xs text-muted-foreground">
             ⚡ Installs in 5 seconds · No app store needed · Works on iPhone, Android & Desktop
           </p>
