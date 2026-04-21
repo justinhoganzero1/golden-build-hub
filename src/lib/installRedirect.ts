@@ -30,7 +30,10 @@ export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXX
  * Recommended hosts: Supabase Storage (public bucket), GitHub Releases,
  * or a /downloads path on the production domain.
  */
-export const ANDROID_APK_URL = "";  // e.g. "https://oracle-lunar.online/downloads/oracle-lunar.apk"
+// Hosted in the public `app-downloads` Supabase Storage bucket.
+// Upload your built file as `oracle-lunar.apk` to make this URL live.
+export const ANDROID_APK_URL =
+  "https://tpkpfkcnqdyrzpqdoqnp.supabase.co/storage/v1/object/public/app-downloads/oracle-lunar.apk";
 export const ANDROID_APK_VERSION = "1.0.0";
 
 /** Returns the best native store URL for the current device, or null. */
