@@ -2,7 +2,40 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
+import SEO from "@/components/SEO";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
+
+const HOME_JSON_LD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ORACLE LUNAR — AI Companion Super App",
+    "operatingSystem": "Android, iOS, Web",
+    "applicationCategory": "LifestyleApplication",
+    "url": "https://oracle-lunar.online/",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127" },
+    "screenshot": "https://oracle-lunar.online/icons/icon-512.png",
+    "featureList": "Oracle AI voice chat, Crisis Hub, Mind Hub, AI Companion, Photography Hub, Live Vision, Movie Studio, Voice Studio, AI Tutor, Marketing Hub, App Builder",
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Is ORACLE LUNAR free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — Oracle AI chat, Crisis Hub, Safety Center and the Suggestion Box are free forever. Premium tools unlock with subscription." } },
+      { "@type": "Question", "name": "Is ORACLE LUNAR a ChatGPT alternative?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. ORACLE LUNAR includes a free voice AI chat, AI tutor, AI photo editor, AI movie studio and 40+ tools — going far beyond a single chatbot." } },
+      { "@type": "Question", "name": "Does ORACLE LUNAR work on Android and iPhone?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Install as a PWA on iPhone or Android, or download the Android APK directly from the homepage." } },
+      { "@type": "Question", "name": "Can the AI remember me?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — every Oracle session uses persistent memory so the AI remembers your preferences, history and personality." } },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://oracle-lunar.online/" },
+    ],
+  },
+];
 import {
   Shield,
   Sparkles,
