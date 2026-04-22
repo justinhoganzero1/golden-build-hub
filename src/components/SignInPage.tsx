@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
+import { bounceIfNotProduction } from "@/lib/installRedirect";
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
@@ -20,6 +21,12 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const authPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (bounceIfNotProduction(authPath)) return;
+  }, []);
 
   useEffect(() => {
     if (isOwnerAccess) return;

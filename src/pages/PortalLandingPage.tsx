@@ -79,6 +79,24 @@ const PortalLandingPage = () => {
   const { user } = useAuth();
   const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
 
+  const goMemberSignIn = (redirect = "/dashboard") => {
+    const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
+    if (bounceIfNotProduction(target)) return;
+    navigate(target);
+  };
+
+  const goMemberSignUp = (redirect = "/dashboard") => {
+    const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(redirect)}`;
+    if (bounceIfNotProduction(target)) return;
+    navigate(target);
+  };
+
+  const goOwnerSignIn = () => {
+    const target = `/sign-in?redirect=${encodeURIComponent("/owner-dashboard")}`;
+    if (bounceIfNotProduction(target)) return;
+    navigate(target);
+  };
+
   // Pulse the shield-shaped logo glow while the user is typing in the chat
   useEffect(() => {
     const el = document.getElementById("oracle-lunar-home-logo-glow");
@@ -128,7 +146,7 @@ const PortalLandingPage = () => {
 
     // Force registration before allowing the app to be downloaded/installed.
     if (!user) {
-      navigate("/sign-in?redirect=/");
+      goMemberSignIn("/");
       return;
     }
 
@@ -175,7 +193,7 @@ const PortalLandingPage = () => {
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
             <button
               type="button"
-              onClick={() => navigate(user ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              onClick={() => navigate(user ? "/owner-dashboard" : (goOwnerSignIn(), "/"))}
               className="inline-flex items-center gap-1 hover:text-primary transition-colors"
               aria-label="Owner access"
             >
@@ -184,7 +202,7 @@ const PortalLandingPage = () => {
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
-              onClick={() => navigate("/sign-in?redirect=/dashboard")}
+              onClick={() => goMemberSignIn("/dashboard")}
               variant="outline"
               size="sm"
               aria-label="Member sign in"
@@ -193,7 +211,7 @@ const PortalLandingPage = () => {
               <span className="sm:hidden">Sign In</span>
             </Button>
             <Button
-              onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
+              onClick={() => goMemberSignUp("/dashboard")}
               variant="default"
               size="sm"
               aria-label="Member sign up"
@@ -287,7 +305,7 @@ const PortalLandingPage = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               size="lg"
-              onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
+              onClick={() => goMemberSignUp("/dashboard")}
               className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all"
             >
               <Sparkles className="mr-3 h-7 w-7" />
@@ -296,7 +314,7 @@ const PortalLandingPage = () => {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => navigate("/sign-in?redirect=/dashboard")}
+              onClick={() => goMemberSignIn("/dashboard")}
               className="h-16 px-10 text-lg font-bold rounded-2xl border-2 border-primary/40 hover:border-primary"
             >
               <Lock className="mr-3 h-6 w-6" />
@@ -548,7 +566,13 @@ const PortalLandingPage = () => {
             <a href="/about" className="hover:text-primary">About</a>
             <button
               type="button"
-              onClick={() => navigate(user ? "/owner-dashboard" : "/sign-in?redirect=/owner-dashboard")}
+              onClick={() => {
+                if (user) {
+                  navigate("/owner-dashboard");
+                  return;
+                }
+                goOwnerSignIn();
+              }}
               className="inline-flex items-center gap-1 hover:text-primary transition-colors"
               aria-label="Owner access"
               title="Owner access"

@@ -5,6 +5,7 @@ import { AlertTriangle, Crown, X, ExternalLink, Unlock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { bounceIfNotProduction } from "@/lib/installRedirect";
 
 interface FeaturePreviewDialogProps {
   open: boolean;
@@ -33,14 +34,13 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
   const encodedTo = encodeURIComponent(to);
   const goUnlock = () => {
     onOpenChange(false);
-    if (!user) {
-      navigate(`/sign-in?redirect=${encodedTo}`);
-    } else {
-      // Logged-in but not subscribed — send to subscribe with a return path
-      navigate(`/subscribe?redirect=${encodedTo}`);
-    }
-  };
+    const target = !user
+      ? `/sign-in?redirect=${encodedTo}`
+      : `/subscribe?redirect=${encodedTo}`;
 
+    if (bounceIfNotProduction(target)) return;
+    navigate(target);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,16 +136,19 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
               size="sm"
               onClick={() => {
                 onOpenChange(false);
+
                 if (isInteractive) {
-                  // Member (or admin) → straight into the real page
+                  if (bounceIfNotProduction(to)) return;
                   navigate(to);
-                } else if (user) {
-                  // Signed in but not a paying member → membership upgrade
-                  navigate("/subscribe");
-                } else {
-                  // Not signed in → sign-up screen, then come back to this page
-                  navigate(`/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`);
+                  return;
                 }
+
+                const target = user
+                  ? `/subscribe?redirect=${encodeURIComponent(to)}`
+                  : `/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`;
+
+                if (bounceIfNotProduction(target)) return;
+                navigate(target);
               }}
             >
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
