@@ -274,7 +274,7 @@ const StoryWriterPage = () => {
       return;
     }
     const slug = story.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const publishedUrl = `https://golden-vault-builder.lovable.app/stories/${slug}`;
+    const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
     setStory(s => ({ ...s, published: true, publishedUrl }));
     toast.success("Story published!", { description: publishedUrl });
   };
@@ -494,7 +494,7 @@ const StoryWriterPage = () => {
           open={shareOpen}
           onOpenChange={setShareOpen}
           title={story.title}
-          url={story.publishedUrl || "https://golden-vault-builder.lovable.app"}
+          url={story.publishedUrl || "https://oracle-lunar.online"}
           description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
         />
       </div>
