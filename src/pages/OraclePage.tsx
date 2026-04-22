@@ -2474,9 +2474,48 @@ const OraclePage = () => {
           >
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage(input)}
-            placeholder={`Speak, type, or attach for ${oracleName}...`}
-            className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none" />
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(input);
+              }
+            }}
+            onPaste={e => {
+              // Explicitly allow paste — read clipboard text and append
+              const pasted = e.clipboardData?.getData("text");
+              if (pasted) {
+                e.preventDefault();
+                const target = e.currentTarget;
+                const start = target.selectionStart ?? input.length;
+                const end = target.selectionEnd ?? input.length;
+                setInput(input.slice(0, start) + pasted + input.slice(end));
+              }
+            }}
+            placeholder={`Speak, type, paste, or attach for ${oracleName}...`}
+            rows={1}
+            spellCheck
+            autoCapitalize="sentences"
+            className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none resize-none max-h-32 py-1.5 select-text"
+            style={{ userSelect: "text", WebkitUserSelect: "text" }}
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const txt = await navigator.clipboard.readText();
+                if (txt) setInput(prev => prev + txt);
+              } catch {
+                toast.error("Clipboard blocked — long-press the box and choose Paste.");
+              }
+            }}
+            title="Paste from clipboard"
+            className="p-2 rounded-full bg-purple-500/20 hover:bg-purple-500/40 transition-colors text-purple-300 text-[10px] font-semibold"
+          >
+            Paste
+          </button>
           <button onClick={() => sendMessage(input)} disabled={!input.trim()} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
           </button>
