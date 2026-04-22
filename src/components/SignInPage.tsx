@@ -6,7 +6,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
-import { bounceIfNotProduction } from "@/lib/installRedirect";
+import { bounceIfNotProduction, PUBLIC_ORIGIN } from "@/lib/installRedirect";
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
@@ -45,7 +45,6 @@ const SignInPage = () => {
     if (isOwnerAccess) setEmail(ownerEmail);
   }, [isOwnerAccess, ownerEmail]);
 
-  // Track sign-in vs sign-up page landings so we can measure submit drop-off
   useEffect(() => {
     if (isOwnerAccess) return;
     const pageKey = isSignUp ? "sign-in-signup" : "sign-in";
@@ -79,10 +78,11 @@ const SignInPage = () => {
         }
 
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
+        const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: emailReturnUrl },
         });
         if (error) throw error;
 
@@ -93,7 +93,6 @@ const SignInPage = () => {
             });
             localStorage.removeItem("oracle-lunar-ref-code");
           } catch {
-            // AuthContext retries this on SIGNED_IN; do not block entry.
           }
 
           toast.success("Welcome aboard! Taking you into your portal… 🎉");
@@ -107,7 +106,6 @@ const SignInPage = () => {
           setPassword("");
         }
       } else {
-        // Hard email gate for owner dashboard — only the owner email can sign in to /owner-dashboard
         if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
           toast.error("Admin access is restricted to the owner account.");
           setLoading(false);
@@ -117,7 +115,6 @@ const SignInPage = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
-        // Mark this tab as a fresh admin login so the dashboard guard lets it through once.
         if (isOwnerAccess) {
           sessionStorage.setItem("admin-fresh-login", "1");
           sessionStorage.removeItem("admin-pending-login");
@@ -126,7 +123,6 @@ const SignInPage = () => {
         toast.success("Signed in — opening your portal now.");
       }
     } catch (error: any) {
-      // Log failed signups so the owner dashboard can see who tried to join but couldn't
       if (isSignUp) {
         try {
           await supabase.from("signup_failures").insert({
@@ -136,7 +132,7 @@ const SignInPage = () => {
             user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
             source_page: typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
           });
-        } catch { /* never block UX on logging */ }
+        } catch {}
       }
       toast.error(error.message);
     } finally {
@@ -150,7 +146,7 @@ const SignInPage = () => {
       return;
     }
 
-    const oauthReturnUrl = `${window.location.origin}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
+    const oauthReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: oauthReturnUrl,
     });
@@ -171,7 +167,7 @@ const SignInPage = () => {
       return;
     }
 
-    const oauthReturnUrl = `${window.location.origin}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
+    const oauthReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
     const result = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: oauthReturnUrl,
     });
