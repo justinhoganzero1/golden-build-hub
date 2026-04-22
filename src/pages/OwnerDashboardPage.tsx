@@ -1036,6 +1036,38 @@ const OwnerDashboardPage = () => {
                 ))}
               </div>
             </div>
+
+            {/* SEO Blast — instant indexing across Bing/Yandex/IndexNow */}
+            <div className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/30 rounded-2xl p-4">
+              <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-400" /> SEO Blast — Instant Indexing
+              </h3>
+              <p className="text-xs text-gray-400 mb-3">
+                Submits all 70+ landing pages to Bing, Yandex, and IndexNow API in one shot.
+                Crawlers visit within hours instead of weeks. Safe to run any time.
+              </p>
+              <button
+                onClick={async () => {
+                  toast.loading("Firing SEO blast across search engines…", { id: "seo-blast" });
+                  try {
+                    const { data, error } = await supabase.functions.invoke("seo-blast");
+                    if (error) throw error;
+                    toast.success(
+                      `Blast complete — ${data?.urls_submitted ?? 0} URLs submitted. Bing/Yandex will crawl shortly.`,
+                      { id: "seo-blast", duration: 6000 }
+                    );
+                  } catch (e: any) {
+                    toast.error(`SEO blast failed: ${e?.message ?? "unknown"}`, { id: "seo-blast" });
+                  }
+                }}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-sm flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+              >
+                <Zap className="w-4 h-4" /> Fire SEO Blast Now
+              </button>
+              <p className="text-[10px] text-gray-500 mt-2">
+                Tip: also run from cron (already set up to fire daily). Add your Google Search Console + Bing Webmaster verification tokens in <code className="text-yellow-400">index.html</code> for full coverage.
+              </p>
+            </div>
           </div>
         )}
 
