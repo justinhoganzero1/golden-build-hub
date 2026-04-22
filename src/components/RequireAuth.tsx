@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { Crown, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -24,6 +25,12 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const { effectiveTier, loading: subLoading } = useSubscription();
   const location = useLocation();
+  const isPreview = usePreviewMode();
+
+  // Preview iframe from the portal landing tiles — render the real page so
+  // visitors see the actual feature (read-only). The dialog overlays a
+  // click-blocker and CTA to sign in / upgrade.
+  if (isPreview) return <>{children}</>;
 
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
 
