@@ -147,13 +147,14 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
-    // Direct Supabase OAuth — goes straight to Google then back to this app,
-    // bypassing the Lovable-hosted OAuth gateway entirely.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}${redirectPath}` },
+    // MUST use the Lovable Cloud managed OAuth broker — calling
+    // supabase.auth.signInWithOAuth directly fails with
+    // "Unsupported provider: missing OAuth secret" because the client
+    // secret is held by the broker, not in Supabase auth config.
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
-    if (error) toast.error(error.message);
+    if (result?.error) toast.error(String(result.error));
   };
 
   const handleAppleSignIn = async () => {
@@ -161,11 +162,10 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: { redirectTo: `${window.location.origin}${redirectPath}` },
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: `${window.location.origin}${redirectPath}`,
     });
-    if (error) toast.error(error.message);
+    if (result?.error) toast.error(String(result.error));
   };
 
   return (
