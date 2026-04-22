@@ -39,11 +39,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
-import StickyInstallBar from "@/components/StickyInstallBar";
-import SocialProofBar from "@/components/SocialProofBar";
-import PartyBanner from "@/components/PartyBanner";
-import ExitIntentCapture from "@/components/ExitIntentCapture";
-import FloatingOffersField from "@/components/FloatingOffersField";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
