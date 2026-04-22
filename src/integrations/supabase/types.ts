@@ -1256,6 +1256,36 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_failures: {
+        Row: {
+          created_at: string
+          email: string | null
+          error_code: string | null
+          id: string
+          reason: string
+          source_page: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          id?: string
+          reason: string
+          source_page?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          id?: string
+          reason?: string
+          source_page?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       site_announcements: {
         Row: {
           active: boolean
