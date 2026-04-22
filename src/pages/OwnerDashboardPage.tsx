@@ -432,6 +432,8 @@ const OwnerDashboardPage = () => {
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "advertisers", label: "Advertisers", icon: <Megaphone className="w-4 h-4" /> },
+    { key: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { key: "failed-signups", label: "Failed Sign-ups", icon: <XCircle className="w-4 h-4" /> },
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
