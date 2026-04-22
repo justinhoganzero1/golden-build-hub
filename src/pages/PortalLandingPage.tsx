@@ -594,8 +594,7 @@ const PortalLandingPage = () => {
 
       {/* PortalTutorWidget removed from public site — Oracle is gated behind sign-in + paywall */}
 
-      {/* ── Exit-Intent Email Capture (BOOSTER #5) ── */}
-      <ExitIntentCapture />
+
 
       {previewFeature && (
         <FeaturePreviewDialog
