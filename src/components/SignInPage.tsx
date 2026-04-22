@@ -150,22 +150,9 @@ const SignInPage = () => {
         )}
 
         {!isOwnerAccess && (
-          <>
-            <button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-3">
-              <span className="text-lg font-bold" style={{ color: '#4285F4' }}>G</span>
-              Continue with Google
-            </button>
-            <button onClick={handleAppleSignIn} className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg text-primary hover:bg-secondary transition-colors mb-4">
-              <span className="text-lg">🍎</span>
-              Continue with Apple
-            </button>
-
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-muted-foreground text-xs">OR</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-          </>
+          <p className="text-center text-xs text-muted-foreground mb-4">
+            {isSignUp ? "Create your account with email and password." : "Sign in with your email and password."}
+          </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -232,13 +219,7 @@ const SignInPage = () => {
               {isSignUp ? "Already have an account?" : "New here?"}{" "}
               <span
                 className="text-primary cursor-pointer hover:underline"
-                onClick={() => {
-                  if (!isProductionAuthHost) {
-                    continueOnLiveSite(isSignUp ? "signin" : "signup");
-                    return;
-                  }
-                  setIsSignUp(!isSignUp);
-                }}
+                onClick={() => setIsSignUp(!isSignUp)}
               >
                 {isSignUp ? "Sign in" : "Create an account"}
               </span>
