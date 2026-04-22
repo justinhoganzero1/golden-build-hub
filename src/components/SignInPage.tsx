@@ -7,36 +7,6 @@ import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 
-const getSignupPasswordError = (email: string, password: string) => {
-  const normalizedPassword = password.trim();
-  const emailLocalPart = email.split("@")[0]?.toLowerCase() || "";
-
-  if (normalizedPassword.length < 12) {
-    return "Use at least 12 characters for your password.";
-  }
-
-  if (!/[a-z]/.test(normalizedPassword) || !/[A-Z]/.test(normalizedPassword)) {
-    return "Add both uppercase and lowercase letters to your password.";
-  }
-
-  if (!/\d/.test(normalizedPassword)) {
-    return "Add at least one number to your password.";
-  }
-
-  if (!/[^A-Za-z0-9]/.test(normalizedPassword)) {
-    return "Add at least one symbol to your password.";
-  }
-
-  const obviousTerms = ["password", "123456", "qwerty", "oracle", "lunar", emailLocalPart]
-    .filter(Boolean);
-
-  if (obviousTerms.some((term) => term.length >= 3 && normalizedPassword.toLowerCase().includes(term))) {
-    return "Choose a less predictable password that does not include common words or your email name.";
-  }
-
-  return null;
-};
-
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -84,12 +54,6 @@ const SignInPage = () => {
           toast.error("Owner access is sign-in only.");
           return;
         }
-
-          const passwordError = getSignupPasswordError(email, password);
-          if (passwordError) {
-            toast.error(passwordError);
-            return;
-          }
 
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const { data: signUpData, error } = await supabase.auth.signUp({
@@ -144,12 +108,19 @@ const SignInPage = () => {
         navigate(finalPath);
       }
     } catch (error: any) {
-        const message = String(error?.message || "");
-        if (message.toLowerCase().includes("weak") || message.toLowerCase().includes("easy to guess") || message.toLowerCase().includes("pwned")) {
-          toast.error("That password is being blocked for safety. Use 12+ characters with uppercase, lowercase, a number, and a symbol.");
-        } else {
-          toast.error(message || "Sign in failed. Please try again.");
-        }
+      // Log failed signups so the owner dashboard can see who tried to join but couldn't
+      if (isSignUp) {
+        try {
+          await supabase.from("signup_failures").insert({
+            email: email.trim().toLowerCase() || null,
+            reason: error?.message || "unknown signup error",
+            error_code: error?.code || error?.status?.toString() || null,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            source_page: typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+          });
+        } catch { /* never block UX on logging */ }
+      }
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -243,11 +214,6 @@ const SignInPage = () => {
                 required
               />
             </div>
-            {isSignUp && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Use 12+ characters with uppercase, lowercase, a number, and a symbol.
-              </p>
-            )}
           </div>
 
           <div className="flex items-center justify-between">

@@ -59,7 +59,7 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    if (body.admin_count === true) {
+    if (body.admin_count === true || body.admin_users === true) {
       const normalizedEmail = email.trim().toLowerCase();
       if (normalizedEmail !== "justinbretthogan@gmail.com") {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -68,16 +68,28 @@ serve(async (req) => {
         });
       }
 
-      const [{ data: usersPage, error: usersError }, { count: activeTrials, error: trialsError }] = await Promise.all([
-        supabaseClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-        supabaseClient
-          .from("reward_grants")
-          .select("id", { count: "exact", head: true })
-          .eq("active", true)
-          .gt("expires_at", new Date().toISOString()),
-      ]);
+      // Page through ALL auth.users (admin API caps at 1000 per page)
+      const allUsers: Array<{ id: string; email?: string; created_at?: string; last_sign_in_at?: string | null }> = [];
+      let page = 1;
+      while (true) {
+        const { data, error } = await supabaseClient.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) throw error;
+        allUsers.push(...data.users.map(u => ({
+          id: u.id,
+          email: u.email ?? "",
+          created_at: u.created_at,
+          last_sign_in_at: u.last_sign_in_at ?? null,
+        })));
+        if (data.users.length < 1000) break;
+        page += 1;
+        if (page > 50) break; // safety
+      }
 
-      if (usersError) throw usersError;
+      const { count: activeTrials, error: trialsError } = await supabaseClient
+        .from("reward_grants")
+        .select("id", { count: "exact", head: true })
+        .eq("active", true)
+        .gt("expires_at", new Date().toISOString());
       if (trialsError) throw trialsError;
 
       let paidCount = 0;
@@ -94,11 +106,38 @@ serve(async (req) => {
         startingAfter = subscriptions.data.at(-1)?.id;
       }
 
+      // "Online" = signed in within the last 5 minutes
+      const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+      const now = Date.now();
+      const enriched = allUsers.map(u => {
+        const lastMs = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : 0;
+        return {
+          id: u.id,
+          email: u.email,
+          created_at: u.created_at,
+          last_sign_in_at: u.last_sign_in_at,
+          online: lastMs > 0 && (now - lastMs) <= ONLINE_WINDOW_MS,
+        };
+      });
+
+      const onlineCount = enriched.filter(u => u.online).length;
+
+      // Failed signup count (last 30 days)
+      const since = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { count: failedSignups } = await supabaseClient
+        .from("signup_failures")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", since);
+
       return new Response(JSON.stringify({
-        total_users: usersPage.users.length,
+        total_users: enriched.length,
         paid_count: paidCount,
         trial_count: activeTrials ?? 0,
+        online_count: onlineCount,
+        offline_count: enriched.length - onlineCount,
+        failed_signups_30d: failedSignups ?? 0,
         revenue: 0,
+        users: body.admin_users === true ? enriched : undefined,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

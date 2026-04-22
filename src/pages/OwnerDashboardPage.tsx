@@ -31,7 +31,15 @@ const OwnerDashboardPage = () => {
   const { user, loading, signOut } = useAuth();
   const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
+  // Users tab — list of all members, split into online/offline sub-tabs
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
+  const [usersSearch, setUsersSearch] = useState("");
+  // Failed sign-ups tab
+  const [failedSignups, setFailedSignups] = useState<Array<{ id: string; email: string | null; reason: string; error_code: string | null; created_at: string }>>([]);
+  const [failedSignupsLoading, setFailedSignupsLoading] = useState(false);
   // Web Crawler state (admin growth engine)
   const [crawlerCampaign, setCrawlerCampaign] = useState<"press" | "partnership" | "directory" | "investor" | "backlink">("press");
   const [crawlerNiche, setCrawlerNiche] = useState("AI mental health super app");
@@ -357,6 +365,58 @@ const OwnerDashboardPage = () => {
     };
   }, [hasAdminAccess, lowPowerMode, tab]);
 
+  // Load all users (with online/offline split) when the Users tab opens
+  useEffect(() => {
+    if (!hasAdminAccess || tab !== "users" || !accessToken) return;
+    let cancelled = false;
+    (async () => {
+      setUsersLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("check-subscription", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: { admin_users: true },
+        });
+        if (error) throw error;
+        if (!cancelled && Array.isArray(data?.users)) setUsersList(data.users);
+      } catch (e: any) {
+        if (!cancelled) toast.error("Failed to load users: " + (e?.message || "unknown"));
+      } finally {
+        if (!cancelled) setUsersLoading(false);
+      }
+    })();
+    const i = window.setInterval(() => {
+      if (!cancelled) {
+        supabase.functions.invoke("check-subscription", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: { admin_users: true },
+        }).then(({ data }) => {
+          if (!cancelled && Array.isArray(data?.users)) setUsersList(data.users);
+        }).catch(() => {});
+      }
+    }, 30000);
+    return () => { cancelled = true; window.clearInterval(i); };
+  }, [accessToken, hasAdminAccess, tab]);
+
+  // Load failed sign-up attempts
+  useEffect(() => {
+    if (!hasAdminAccess || tab !== "failed-signups") return;
+    let cancelled = false;
+    (async () => {
+      setFailedSignupsLoading(true);
+      const { data, error } = await supabase
+        .from("signup_failures")
+        .select("id, email, reason, error_code, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (!cancelled) {
+        if (error) toast.error("Failed to load sign-up failures");
+        else if (data) setFailedSignups(data as typeof failedSignups);
+        setFailedSignupsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasAdminAccess, tab]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
@@ -424,6 +484,8 @@ const OwnerDashboardPage = () => {
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "advertisers", label: "Advertisers", icon: <Megaphone className="w-4 h-4" /> },
+    { key: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { key: "failed-signups", label: "Failed Sign-ups", icon: <XCircle className="w-4 h-4" /> },
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
   ] as const;
@@ -1295,6 +1357,120 @@ const OwnerDashboardPage = () => {
         </Dialog>
 
         {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "users" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> Members</h2>
+                  <p className="text-xs text-gray-400">All registered users — split by online/offline (online = active in last 5 min).</p>
+                </div>
+                <input
+                  value={usersSearch}
+                  onChange={(e) => setUsersSearch(e.target.value)}
+                  placeholder="Search by email…"
+                  className="px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs w-56"
+                />
+              </div>
+              <div className="flex gap-2 mb-3">
+                {(["online", "offline"] as const).map(s => {
+                  const count = usersList.filter(u => (s === "online" ? u.online : !u.online)).length;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setUsersSubTab(s)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${usersSubTab === s ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-white/5 text-gray-400 border border-white/10"}`}
+                    >
+                      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${s === "online" ? "bg-emerald-400" : "bg-gray-500"}`} />
+                      {s === "online" ? "Online" : "Offline"} ({count})
+                    </button>
+                  );
+                })}
+                <div className="ml-auto text-[11px] text-gray-500 self-center">Total: {usersList.length}</div>
+              </div>
+              {usersLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading members…</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Joined</th>
+                        <th className="py-2 pr-3">Last sign-in</th>
+                        <th className="py-2 pr-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList
+                        .filter(u => (usersSubTab === "online" ? u.online : !u.online))
+                        .filter(u => !usersSearch || (u.email || "").toLowerCase().includes(usersSearch.toLowerCase()))
+                        .map(u => (
+                          <tr key={u.id} className="border-b border-white/5">
+                            <td className="py-2 pr-3 text-white">{u.email || <span className="text-gray-500">—</span>}</td>
+                            <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
+                            <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
+                            <td className="py-2 pr-3">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.online ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-gray-500/15 text-gray-400 border border-gray-500/30"}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${u.online ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
+                                {u.online ? "Online" : "Offline"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      {usersList.filter(u => (usersSubTab === "online" ? u.online : !u.online)).length === 0 && (
+                        <tr><td colSpan={4} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "failed-signups" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><XCircle className="w-5 h-5 text-red-400" /> Failed Sign-ups</h2>
+                  <p className="text-xs text-gray-400">People who tried to join but couldn't — last 500 attempts.</p>
+                </div>
+                <span className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded-lg">{failedSignups.length} attempts</span>
+              </div>
+              {failedSignupsLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading…</p>
+              ) : failedSignups.length === 0 ? (
+                <p className="text-xs text-gray-500 py-6 text-center">🎉 No failed sign-ups recorded.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">When</th>
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Reason</th>
+                        <th className="py-2 pr-3">Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {failedSignups.map(f => (
+                        <tr key={f.id} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-gray-400 whitespace-nowrap">{new Date(f.created_at).toLocaleString()}</td>
+                          <td className="py-2 pr-3 text-white">{f.email || <span className="text-gray-500">(no email)</span>}</td>
+                          <td className="py-2 pr-3 text-red-300">{f.reason}</td>
+                          <td className="py-2 pr-3 text-gray-500">{f.error_code || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "sources" && (
           <div className="space-y-4">
             <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-4">
