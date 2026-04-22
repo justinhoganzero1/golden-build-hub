@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
-import { bounceIfNotProduction, PUBLIC_ORIGIN, isOnProductionHost, openProductionSite } from "@/lib/installRedirect";
+import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
@@ -21,22 +20,6 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
-  const isProductionAuthHost = isOnProductionHost();
-  const buildProductionAuthPath = (mode: "signin" | "signup" = isSignUp ? "signup" : "signin") => {
-    const params = new URLSearchParams();
-    params.set("redirect", redirectPath);
-    if (mode === "signup") params.set("mode", "signup");
-    return `/sign-in?${params.toString()}`;
-  };
-  const continueOnLiveSite = (mode: "signin" | "signup" = isSignUp ? "signup" : "signin") => {
-    openProductionSite(buildProductionAuthPath(mode));
-  };
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const authPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (bounceIfNotProduction(authPath)) return;
-  }, []);
 
   useEffect(() => {
     if (isOwnerAccess) return;
