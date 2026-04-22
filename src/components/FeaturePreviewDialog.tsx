@@ -136,7 +136,16 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
               size="sm"
               onClick={() => {
                 onOpenChange(false);
-                navigate(to);
+                if (isInteractive) {
+                  // Member (or admin) → straight into the real page
+                  navigate(to);
+                } else if (user) {
+                  // Signed in but not a paying member → membership upgrade
+                  navigate("/subscribe");
+                } else {
+                  // Not signed in → sign-up screen, then come back to this page
+                  navigate(`/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`);
+                }
               }}
             >
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
