@@ -12,7 +12,8 @@
  */
 
 export const PUBLIC_HOST = "oracle-lunar.online";
-export const PUBLIC_URL = "https://oracle-lunar.online/";
+export const PUBLIC_ORIGIN = `https://${PUBLIC_HOST}`;
+export const PUBLIC_URL = `${PUBLIC_ORIGIN}/`;
 
 /**
  * Optional native-app store links. When set, install CTAs prefer these
