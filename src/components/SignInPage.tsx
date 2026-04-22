@@ -16,12 +16,15 @@ const SignInPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
-  // Honour ?mode=signup so the "Sign Up" buttons on the portal land
-  // visitors directly on the Create-Account form (one less click to convert).
-  const initialMode = searchParams.get("mode") === "signup";
-  const [isSignUp, setIsSignUp] = useState(initialMode);
+  const requestedSignUp = searchParams.get("mode") === "signup";
+  const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
+
+  useEffect(() => {
+    if (isOwnerAccess) return;
+    setIsSignUp(requestedSignUp);
+  }, [requestedSignUp, isOwnerAccess]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -31,9 +34,6 @@ const SignInPage = () => {
     navigate(nextPath, { replace: true });
   }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 
-  // When the owner-access flow is active, lock the email field to the owner
-  // email so an attacker can't even type a different one. Belt-and-suspenders
-  // alongside the server-side email allowlist + DB role lock.
   useEffect(() => {
     if (isOwnerAccess) setEmail(ownerEmail);
   }, [isOwnerAccess, ownerEmail]);
@@ -62,22 +62,21 @@ const SignInPage = () => {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        // Fire-and-forget: grant the 30-day Tier 3 welcome trial + attach referral.
-        // If session is already active (auto-confirm on), this runs immediately;
-        // otherwise AuthContext picks it up after email confirmation.
+
         if (signUpData.session) {
-          // Auto-confirm is on → user is signed in. Grant the welcome reward
-          // and bounce them straight to the portal/dashboard.
-          supabase.functions.invoke("grant-signup-reward", {
-            body: { referralCode: refCode },
-          }).catch(() => {});
-          localStorage.removeItem("oracle-lunar-ref-code");
+          try {
+            await supabase.functions.invoke("grant-signup-reward", {
+              body: { referralCode: refCode },
+            });
+            localStorage.removeItem("oracle-lunar-ref-code");
+          } catch {
+            // AuthContext retries this on SIGNED_IN; do not block entry.
+          }
+
           toast.success("Welcome aboard! Unlocking your portal… 🎉");
           const isAdminEmail = email.trim().toLowerCase() === ownerEmail;
           navigate(isAdminEmail ? "/owner-dashboard" : redirectPath, { replace: true });
         } else {
-          // Email confirmation required → preserve the ref code and flip the
-          // form back to Sign-In so the user can log in once confirmed.
           if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
           toast.success(
             "Account created! Check your email to confirm, then sign in to enter your portal.",
