@@ -108,7 +108,7 @@ const TermsOfServicePage = () => (
         <section>
           <h2 className="text-lg font-semibold text-primary mb-2">14. Contact</h2>
           <p>For questions about these Terms, contact us at:</p>
-          <p className="mt-2"><strong>Oracle Lunar AI</strong><br />Email: support@oracle-lunar.online<br />Website: https://golden-vault-builder.lovable.app</p>
+          <p className="mt-2"><strong>Oracle Lunar AI</strong><br />Email: support@oracle-lunar.online<br />Website: https://oracle-lunar.online</p>
         </section>
       </div>
     </div>
