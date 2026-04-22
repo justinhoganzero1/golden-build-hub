@@ -976,9 +976,12 @@ const OraclePage = () => {
     const bgMatch = content.match(/\[\[BACKGROUND:(\/[^\]]+)\]\]/);
     const navPath = navMatch ? navMatch[1] : bgMatch ? bgMatch[1] : null;
     const isBackground = !!bgMatch && !navMatch;
+    // Also strip leading emoji/decor spam from displayed text (matches speech-side stripper).
+    const leadingDecor = /^(?:[\s\u200d\ufe0f]|[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{2700}-\u{27BF}]|[★☆✦✧✩✪✫✬✭✮✯✰⭐]|[—–\-*~•·●◆◇♦])+/u;
     const cleanContent = content
       .replace(/\[\[NAVIGATE:\/[^\]]+\]\]/g, "")
       .replace(/\[\[BACKGROUND:\/[^\]]+\]\]/g, "")
+      .replace(leadingDecor, "")
       .trim();
     return { cleanContent, navPath, isBackground };
   }, []);
