@@ -38,6 +38,22 @@ const SignInPage = () => {
     if (isOwnerAccess) setEmail(ownerEmail);
   }, [isOwnerAccess, ownerEmail]);
 
+  // Track sign-in vs sign-up page landings so we can measure submit drop-off
+  useEffect(() => {
+    if (isOwnerAccess) return;
+    const pageKey = isSignUp ? "sign-in-signup" : "sign-in";
+    const sessionKey = `oracle-lunar-visit-${pageKey}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, "1");
+    supabase.from("page_views").insert({
+      page: pageKey,
+      user_agent: navigator.userAgent.slice(0, 200),
+      referrer: document.referrer ? document.referrer.slice(0, 500) : null,
+    }).then(() => {}, () => {});
+  }, [isSignUp, isOwnerAccess]);
+
+  const [showHelp, setShowHelp] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -242,15 +258,45 @@ const SignInPage = () => {
         </form>
 
         {!isOwnerAccess && (
-          <p className="text-center text-muted-foreground text-sm mt-4">
-            {isSignUp ? "Already have an account?" : "New here?"}{" "}
-            <span
-              className="text-primary cursor-pointer hover:underline"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? "Sign in" : "Create an account"}
-            </span>
-          </p>
+          <>
+            <p className="text-center text-muted-foreground text-sm mt-4">
+              {isSignUp ? "Already have an account?" : "New here?"}{" "}
+              <span
+                className="text-primary cursor-pointer hover:underline"
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? "Sign in" : "Create an account"}
+              </span>
+            </p>
+
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={() => setShowHelp((v) => !v)}
+                className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2"
+              >
+                Trouble signing up?
+              </button>
+              {showHelp && (
+                <div className="mt-3 text-left text-xs text-muted-foreground border border-border rounded-lg p-3 bg-secondary/30 space-y-2">
+                  <p className="text-foreground font-semibold">Quick fixes:</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Use a password with <span className="text-foreground">8+ characters</span> — mix letters &amp; numbers.</li>
+                    <li>Avoid common passwords (e.g. <em>password123</em>) — they're auto-blocked.</li>
+                    <li>Already have an account? Tap <span className="text-primary">Sign in</span> above.</li>
+                    <li>Check your inbox (and spam) for a confirmation email after signup.</li>
+                  </ul>
+                  <p className="pt-1">
+                    Still stuck? Email{" "}
+                    <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">
+                      justinbretthogan@gmail.com
+                    </a>{" "}
+                    — we'll get you in.
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         <div className="flex justify-center mt-4">
