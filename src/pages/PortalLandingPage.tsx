@@ -285,48 +285,29 @@ const PortalLandingPage = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            {/* MEGA CTA (BOOSTER #4) — 3x bigger, pulsing, gold glow */}
             <Button
               size="lg"
-              onClick={() => handleInstall()}
-              disabled={isStandalone}
-              className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all animate-pulse"
+              onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
+              className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all"
             >
-              <Download className="mr-3 h-7 w-7" />
-              {isStandalone ? "Already installed ✓" : canInstall ? "Install ORACLE LUNAR — Free" : "Install on my phone"}
+              <Sparkles className="mr-3 h-7 w-7" />
+              Sign Up
             </Button>
             <Button
               size="lg"
               variant="outline"
-              onClick={() => navigate("/welcome")}
-              className="h-14 px-8 text-base border-2 border-primary/40 hover:border-primary"
+              onClick={() => navigate("/sign-in?redirect=/dashboard")}
+              className="h-16 px-10 text-lg font-bold rounded-2xl border-2 border-primary/40 hover:border-primary"
             >
-              Try in browser <ArrowRight className="ml-2 h-5 w-5" />
+              <Lock className="mr-3 h-6 w-6" />
+              Sign In
             </Button>
           </div>
 
-          {!user && (
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                size="lg"
-                variant="default"
-                onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
-                className="h-14 px-8 text-base font-bold rounded-xl shadow-[0_0_30px_hsl(var(--primary)/0.5)]"
-              >
-                <Sparkles className="mr-2 h-5 w-5" />
-                Sign Up Free — 30 Days
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate("/sign-in?redirect=/dashboard")}
-                className="h-14 px-8 text-base border-2 border-primary/40 hover:border-primary"
-              >
-                <Lock className="mr-2 h-5 w-5" />
-                Member Sign In
-              </Button>
-            </div>
-          )}
+          <p className="mt-4 text-xs text-muted-foreground">
+            Continue with <span className="font-semibold text-foreground">Google</span>,{" "}
+            <span className="font-semibold text-foreground">Apple</span>, or email — your choice on the next screen.
+          </p>
 
           <p className="mt-4 text-xs text-muted-foreground">
             ⚡ Installs in 5 seconds · No app store needed · Works on iPhone, Android & Desktop
