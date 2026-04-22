@@ -147,10 +147,13 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}${redirectPath}`,
+    // Direct Supabase OAuth — goes straight to Google then back to this app,
+    // bypassing the Lovable-hosted OAuth gateway entirely.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}${redirectPath}` },
     });
-    if (result?.error) toast.error(String(result.error));
+    if (error) toast.error(error.message);
   };
 
   const handleAppleSignIn = async () => {
@@ -158,10 +161,11 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
-    const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: `${window.location.origin}${redirectPath}`,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo: `${window.location.origin}${redirectPath}` },
     });
-    if (result?.error) toast.error(String(result.error));
+    if (error) toast.error(error.message);
   };
 
   return (
