@@ -56,11 +56,6 @@ const SignInPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isProductionAuthHost) {
-      continueOnLiveSite(isSignUp ? "signup" : "signin");
-      return;
-    }
-
     if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
       toast.error("Owner access only accepts the approved admin email.");
       return;
@@ -137,88 +132,6 @@ const SignInPage = () => {
       setLoading(false);
     }
   };
-
-  const handleGoogleSignIn = async () => {
-    if (!isProductionAuthHost) {
-      continueOnLiveSite("signin");
-      return;
-    }
-
-    if (isOwnerAccess) {
-      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
-      return;
-    }
-
-    const oauthReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: oauthReturnUrl,
-    });
-
-    if (result?.error) {
-      toast.error(String(result.error));
-      return;
-    }
-
-    if (!result?.redirected) {
-      toast.success("Signed in — opening your portal now.");
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    if (!isProductionAuthHost) {
-      continueOnLiveSite("signin");
-      return;
-    }
-
-    if (isOwnerAccess) {
-      toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
-      return;
-    }
-
-    const oauthReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
-    const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: oauthReturnUrl,
-    });
-
-    if (result?.error) {
-      toast.error(String(result.error));
-      return;
-    }
-
-    if (!result?.redirected) {
-      toast.success("Signed in — opening your portal now.");
-    }
-  };
-
-  if (!isProductionAuthHost) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="w-full max-w-lg border border-border rounded-2xl bg-card p-8 text-center space-y-4 animate-slide-up">
-          <h1 className="text-2xl font-bold text-primary">Open sign in on Oracle Lunar</h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Sign in and sign up are disabled inside the editor preview so visitors never get trapped in the preview auth flow.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => continueOnLiveSite("signin")}
-              className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:brightness-110 transition-all"
-            >
-              Open live sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => continueOnLiveSite("signup")}
-              className="flex-1 py-3 border border-border text-foreground rounded-lg hover:bg-secondary transition-colors"
-            >
-              Open live sign up
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground break-all">{PUBLIC_ORIGIN}{buildProductionAuthPath()}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-4 px-4">
