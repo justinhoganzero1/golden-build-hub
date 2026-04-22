@@ -38,6 +38,13 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
 
+    let body: Record<string, unknown> = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
     if (claimsError || !claimsData?.claims?.sub) {
@@ -51,6 +58,53 @@ serve(async (req) => {
     logStep("User authenticated", { email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    if (body.admin_count === true) {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (normalizedEmail !== "justinbretthogan@gmail.com") {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+
+      const [{ data: usersPage, error: usersError }, { count: activeTrials, error: trialsError }] = await Promise.all([
+        supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+        supabase
+          .from("reward_grants")
+          .select("id", { count: "exact", head: true })
+          .eq("active", true)
+          .gt("expires_at", new Date().toISOString()),
+      ]);
+
+      if (usersError) throw usersError;
+      if (trialsError) throw trialsError;
+
+      let paidCount = 0;
+      let hasMore = true;
+      let startingAfter: string | undefined;
+      while (hasMore) {
+        const subscriptions = await stripe.subscriptions.list({
+          status: "active",
+          limit: 100,
+          starting_after: startingAfter,
+        });
+        paidCount += subscriptions.data.length;
+        hasMore = subscriptions.has_more;
+        startingAfter = subscriptions.data.at(-1)?.id;
+      }
+
+      return new Response(JSON.stringify({
+        total_users: usersPage.users.length,
+        paid_count: paidCount,
+        trial_count: activeTrials ?? 0,
+        revenue: 0,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const customers = await stripe.customers.list({ email, limit: 1 });
 
     if (customers.data.length === 0) {

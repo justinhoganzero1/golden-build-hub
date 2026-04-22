@@ -63,6 +63,7 @@ const OwnerDashboardPage = () => {
     totalClicks: number; totalInstalls: number;
     perPlatform: { android: { clicks: number; installs: number }; ios: { clicks: number; installs: number }; desktop: { clicks: number; installs: number } };
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
+  const [memberStats, setMemberStats] = useState({ totalUsers: 0, paidUsers: 0, trialUsers: 0, revenue: 0 });
   // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
   const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0 });
   // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
@@ -274,6 +275,14 @@ const OwnerDashboardPage = () => {
               body: { admin_count: true },
             });
             if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+            if (!cancelled) {
+              setMemberStats({
+                totalUsers: typeof data?.total_users === "number" ? data.total_users : 0,
+                paidUsers: typeof data?.paid_count === "number" ? data.paid_count : 0,
+                trialUsers: typeof data?.trial_count === "number" ? data.trial_count : 0,
+                revenue: typeof data?.revenue === "number" ? data.revenue : 0,
+              });
+            }
           }
         } catch {}
         if (!cancelled) {
@@ -401,10 +410,7 @@ const OwnerDashboardPage = () => {
   };
 
   const qualitySuggestions = suggestions.filter(s => (s.ai_quality_score || 0) >= 5 && s.status !== "dismissed");
-  const totalUsers = 0;
-  const paidUsers = 0;
-  const trialUsers = 0;
-  const revenue = 0;
+  const { totalUsers, paidUsers, trialUsers, revenue } = memberStats;
 
   const tabs = [
     { key: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
