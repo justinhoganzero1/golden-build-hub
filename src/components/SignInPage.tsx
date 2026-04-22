@@ -12,11 +12,14 @@ const SignInPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
+  // Honour ?mode=signup so the "Sign Up" buttons on the portal land
+  // visitors directly on the Create-Account form (one less click to convert).
+  const initialMode = searchParams.get("mode") === "signup";
+  const [isSignUp, setIsSignUp] = useState(initialMode);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
 
