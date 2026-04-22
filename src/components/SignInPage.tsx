@@ -108,6 +108,18 @@ const SignInPage = () => {
         navigate(finalPath);
       }
     } catch (error: any) {
+      // Log failed signups so the owner dashboard can see who tried to join but couldn't
+      if (isSignUp) {
+        try {
+          await supabase.from("signup_failures").insert({
+            email: email.trim().toLowerCase() || null,
+            reason: error?.message || "unknown signup error",
+            error_code: error?.code || error?.status?.toString() || null,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            source_page: typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+          });
+        } catch { /* never block UX on logging */ }
+      }
       toast.error(error.message);
     } finally {
       setLoading(false);
