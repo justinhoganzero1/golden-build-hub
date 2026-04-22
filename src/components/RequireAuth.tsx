@@ -26,6 +26,11 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { effectiveTier, loading: subLoading } = useSubscription();
   const location = useLocation();
   const isPreview = usePreviewMode();
+  // Track whether we've EVER finished loading. Once we have, we stop showing
+  // the spinner — otherwise background subscription refreshes (every 60s)
+  // would unmount the entire page tree.
+  const hasResolvedRef = useRef(false);
+  if (!loading && !subLoading) hasResolvedRef.current = true;
 
   // Preview iframe from the portal landing tiles — render the real page so
   // visitors see the actual feature (read-only). The dialog overlays a
@@ -33,13 +38,6 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   if (isPreview) return <>{children}</>;
 
   const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
-
-  // Track whether we've EVER finished loading. Once we have, we stop showing
-  // the spinner — otherwise background subscription refreshes (every 60s)
-  // would unmount the entire page tree, wiping in-progress conversations
-  // (Oracle), restarting voices, and resetting avatar state.
-  const hasResolvedRef = useRef(false);
-  if (!loading && !subLoading) hasResolvedRef.current = true;
 
   if ((loading || subLoading) && !hasResolvedRef.current) {
     return (
