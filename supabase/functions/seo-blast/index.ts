@@ -1,14 +1,18 @@
 // Oracle Lunar — SEO Blast edge function
-// Pings Google + Bing sitemaps and submits ALL URLs to IndexNow
-// (instant indexing for Bing, Yandex, Naver, Seznam, Yep).
-// Safe to call repeatedly — idempotent. Designed for cron + manual trigger.
-
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+// Submits all sitemap URLs to the IndexNow network (Bing, Yandex, Seznam, Naver, Yep).
+// NOTE: Google deprecated /ping?sitemap and Bing did the same in 2024 — both now
+// return 404/410. The only reliable external push channel left is IndexNow plus
+// user-verified Google Search Console (which the site owner must connect manually).
 
 const SITE = "https://oracle-lunar.online";
 const SITEMAP_URL = `${SITE}/sitemap.xml`;
 const INDEXNOW_KEY = "40c21cdfe37d596683032a1dcc3b5563";
 const INDEXNOW_KEY_LOCATION = `${SITE}/${INDEXNOW_KEY}.txt`;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 async function fetchSitemapUrls(): Promise<string[]> {
   const res = await fetch(SITEMAP_URL, { headers: { "User-Agent": "OracleLunar-SEOBlast/1.0" } });
@@ -18,17 +22,7 @@ async function fetchSitemapUrls(): Promise<string[]> {
   return matches.map((m) => m[1].trim()).filter(Boolean);
 }
 
-async function pingSearchEngine(name: string, url: string) {
-  try {
-    const res = await fetch(url, { headers: { "User-Agent": "OracleLunar-SEOBlast/1.0" } });
-    return { engine: name, status: res.status, ok: res.ok };
-  } catch (e) {
-    return { engine: name, status: 0, ok: false, error: String(e) };
-  }
-}
-
 async function submitIndexNow(urls: string[]) {
-  // IndexNow accepts up to 10,000 URLs per submission across Bing, Yandex, etc.
   const body = {
     host: "oracle-lunar.online",
     key: INDEXNOW_KEY,
@@ -36,11 +30,13 @@ async function submitIndexNow(urls: string[]) {
     urlList: urls,
   };
   const endpoints = [
-    "https://api.indexnow.org/indexnow",
-    "https://www.bing.com/indexnow",
     "https://yandex.com/indexnow",
+    "https://www.bing.com/indexnow",
+    "https://api.indexnow.org/indexnow",
+    "https://search.seznam.cz/indexnow",
+    "https://indexnow.naver.com/indexnow",
   ];
-  const results = await Promise.all(
+  return await Promise.all(
     endpoints.map(async (endpoint) => {
       try {
         const res = await fetch(endpoint, {
@@ -54,7 +50,6 @@ async function submitIndexNow(urls: string[]) {
       }
     }),
   );
-  return results;
 }
 
 Deno.serve(async (req) => {
@@ -64,21 +59,17 @@ Deno.serve(async (req) => {
 
   try {
     const urls = await fetchSitemapUrls();
-
-    const [google, bing, indexNow] = await Promise.all([
-      pingSearchEngine("google", `https://www.google.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`),
-      pingSearchEngine("bing", `https://www.bing.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`),
-      submitIndexNow(urls),
-    ]);
+    const indexNow = await submitIndexNow(urls);
+    const successCount = indexNow.filter((r) => r.ok).length;
 
     const summary = {
       ok: true,
       site: SITE,
       timestamp: new Date().toISOString(),
       urls_submitted: urls.length,
-      sitemap_pings: [google, bing],
+      indexnow_endpoints_accepted: successCount,
       indexnow_results: indexNow,
-      note: "Submitted to Google + Bing sitemaps and IndexNow (Bing/Yandex/IndexNow API). Indexing is decided by each search engine.",
+      note: "Submitted to IndexNow network (Bing/Yandex/Seznam/Naver). Google requires Search Console verification — see index.html.",
     };
 
     return new Response(JSON.stringify(summary, null, 2), {
