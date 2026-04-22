@@ -208,6 +208,12 @@ const PortalLandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
+      <SEO
+        title="Free AI Companion, Voice Chat, Mind & Wellness Super App"
+        description="ORACLE LUNAR — free all-in-one AI super app: voice Oracle, AI companion, crisis hub, mind & wellness, AI photo editor, movie studio, AI tutor & 40+ tools. Install free."
+        path="/"
+        jsonLd={HOME_JSON_LD}
+      />
 
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
