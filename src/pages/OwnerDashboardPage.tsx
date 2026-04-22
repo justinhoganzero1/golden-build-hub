@@ -365,6 +365,58 @@ const OwnerDashboardPage = () => {
     };
   }, [hasAdminAccess, lowPowerMode, tab]);
 
+  // Load all users (with online/offline split) when the Users tab opens
+  useEffect(() => {
+    if (!hasAdminAccess || tab !== "users" || !accessToken) return;
+    let cancelled = false;
+    (async () => {
+      setUsersLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("check-subscription", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: { admin_users: true },
+        });
+        if (error) throw error;
+        if (!cancelled && Array.isArray(data?.users)) setUsersList(data.users);
+      } catch (e: any) {
+        if (!cancelled) toast.error("Failed to load users: " + (e?.message || "unknown"));
+      } finally {
+        if (!cancelled) setUsersLoading(false);
+      }
+    })();
+    const i = window.setInterval(() => {
+      if (!cancelled) {
+        supabase.functions.invoke("check-subscription", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: { admin_users: true },
+        }).then(({ data }) => {
+          if (!cancelled && Array.isArray(data?.users)) setUsersList(data.users);
+        }).catch(() => {});
+      }
+    }, 30000);
+    return () => { cancelled = true; window.clearInterval(i); };
+  }, [accessToken, hasAdminAccess, tab]);
+
+  // Load failed sign-up attempts
+  useEffect(() => {
+    if (!hasAdminAccess || tab !== "failed-signups") return;
+    let cancelled = false;
+    (async () => {
+      setFailedSignupsLoading(true);
+      const { data, error } = await supabase
+        .from("signup_failures")
+        .select("id, email, reason, error_code, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (!cancelled) {
+        if (error) toast.error("Failed to load sign-up failures");
+        else if (data) setFailedSignups(data as typeof failedSignups);
+        setFailedSignupsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasAdminAccess, tab]);
+
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
