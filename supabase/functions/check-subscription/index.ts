@@ -69,8 +69,8 @@ serve(async (req) => {
       }
 
       const [{ data: usersPage, error: usersError }, { count: activeTrials, error: trialsError }] = await Promise.all([
-        supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-        supabase
+        supabaseClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+        supabaseClient
           .from("reward_grants")
           .select("id", { count: "exact", head: true })
           .eq("active", true)
