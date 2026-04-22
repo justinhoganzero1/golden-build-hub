@@ -39,11 +39,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
-import StickyInstallBar from "@/components/StickyInstallBar";
-import SocialProofBar from "@/components/SocialProofBar";
-import PartyBanner from "@/components/PartyBanner";
-import ExitIntentCapture from "@/components/ExitIntentCapture";
-import FloatingOffersField from "@/components/FloatingOffersField";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
@@ -162,91 +157,6 @@ const PortalLandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
-      {/* ── Sticky Install Mega-Bar (BOOSTER #1) ── */}
-      <StickyInstallBar />
-
-      {/* ── Floating prize balloons (big & small) — every tap → sign-up → dashboard ── */}
-      <FloatingOffersField />
-
-      {/* ── Limited-time free offer bubble (top-left, round, neon-pink) ── */}
-      <button
-        type="button"
-        onClick={() => handleInstall()}
-        className="holo-bubble absolute top-20 left-4 z-30 h-36 w-36 md:h-44 md:w-44 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(255,20,147,0.85),0_0_80px_rgba(250,204,21,0.5)] hover:shadow-[0_0_60px_rgba(255,20,147,1),0_0_120px_rgba(250,204,21,0.7)] transition-all"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 30%, #ff1493 0%, #c2185b 45%, #1a0008 85%, #000 100%)",
-          fontFamily: "'Pacifico', 'Caveat', 'Comic Sans MS', cursive",
-        }}
-        aria-label="Limited time free — install ORACLE LUNAR"
-      >
-        {/* 🐰 Easter bunny ears */}
-        <span aria-hidden="true" className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
-          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-pink-200 to-pink-400 border-2 border-white/80 -rotate-[18deg] shadow-[0_0_12px_rgba(255,182,193,0.9)] relative">
-            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-pink-300/80" />
-          </span>
-          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-pink-200 to-pink-400 border-2 border-white/80 rotate-[18deg] shadow-[0_0_12px_rgba(255,182,193,0.9)] relative">
-            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-pink-300/80" />
-          </span>
-        </span>
-        <span className="holo-rim" aria-hidden="true" />
-        <span className="holo-sheen" aria-hidden="true" />
-        <span className="holo-scan" aria-hidden="true" />
-        <span className="relative z-10 contents">
-          <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-            🎉 FREE!
-          </div>
-          <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-            Join the party ✨
-          </div>
-          <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-            Founding Member 🥳
-          </div>
-          <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
-            Tap to join 🎈
-          </div>
-        </span>
-      </button>
-
-      {/* ── Referral programme bubble (top-right, round, fluro green) ── */}
-      <button
-        type="button"
-        onClick={() => navigate(user ? "/referrals" : "/sign-in?redirect=/referrals")}
-        className="holo-bubble absolute top-20 right-4 z-30 h-36 w-36 md:h-44 md:w-44 rounded-full border-[3px] border-yellow-400 backdrop-blur-md flex flex-col items-center justify-center text-center px-4 shadow-[0_0_40px_rgba(57,255,20,0.85),0_0_80px_rgba(163,255,0,0.5)] hover:shadow-[0_0_60px_rgba(57,255,20,1),0_0_120px_rgba(163,255,0,0.7)] transition-all"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 30%, #39ff14 0%, #00b300 45%, #001a00 85%, #000 100%)",
-          fontFamily: "'Pacifico', 'Caveat', 'Comic Sans MS', cursive",
-        }}
-        aria-label="Refer a friend — get a free month of Tier 3"
-      >
-        {/* 🐰 Easter bunny ears */}
-        <span aria-hidden="true" className="absolute -top-10 md:-top-12 left-1/2 -translate-x-1/2 flex gap-2 pointer-events-none">
-          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-lime-100 to-lime-300 border-2 border-white/80 -rotate-[18deg] shadow-[0_0_12px_rgba(163,255,0,0.9)] relative">
-            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-lime-200/80" />
-          </span>
-          <span className="block w-5 h-12 md:w-6 md:h-14 rounded-full bg-gradient-to-b from-lime-100 to-lime-300 border-2 border-white/80 rotate-[18deg] shadow-[0_0_12px_rgba(163,255,0,0.9)] relative">
-            <span className="absolute inset-x-1 top-2 bottom-3 rounded-full bg-lime-200/80" />
-          </span>
-        </span>
-        <span className="holo-rim" aria-hidden="true" />
-        <span className="holo-sheen" aria-hidden="true" />
-        <span className="holo-scan" aria-hidden="true" />
-        <span className="relative z-10 contents">
-          <div className="text-2xl md:text-3xl tracking-wide text-yellow-300 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-            🔗 REFER!
-          </div>
-          <div className="text-sm md:text-base text-white leading-tight mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-            Invite a friend 💚
-          </div>
-          <div className="text-xl md:text-2xl text-yellow-300 mt-1 leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)]">
-            1 month free! 🎁
-          </div>
-          <div className="text-[11px] md:text-xs text-white/95 mt-1 underline">
-            Tap to share 🚀
-          </div>
-        </span>
-      </button>
 
       {/* ── Top nav ───────────────────────────── */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
@@ -438,13 +348,7 @@ const PortalLandingPage = () => {
         </div>
       </section>
 
-      {/* ── Live Social Proof Bar (BOOSTER #3) ── */}
-      <SocialProofBar />
 
-      {/* ── Founding Member Banner ── */}
-      <div className="max-w-6xl mx-auto px-4 pt-4">
-        <PartyBanner variant="founding-member" />
-      </div>
 
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
@@ -690,8 +594,7 @@ const PortalLandingPage = () => {
 
       {/* PortalTutorWidget removed from public site — Oracle is gated behind sign-in + paywall */}
 
-      {/* ── Exit-Intent Email Capture (BOOSTER #5) ── */}
-      <ExitIntentCapture />
+
 
       {previewFeature && (
         <FeaturePreviewDialog
