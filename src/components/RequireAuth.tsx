@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { Crown, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -24,15 +25,19 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const { effectiveTier, loading: subLoading } = useSubscription();
   const location = useLocation();
-
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
-
+  const isPreview = usePreviewMode();
   // Track whether we've EVER finished loading. Once we have, we stop showing
   // the spinner — otherwise background subscription refreshes (every 60s)
-  // would unmount the entire page tree, wiping in-progress conversations
-  // (Oracle), restarting voices, and resetting avatar state.
+  // would unmount the entire page tree.
   const hasResolvedRef = useRef(false);
   if (!loading && !subLoading) hasResolvedRef.current = true;
+
+  // Preview iframe from the portal landing tiles — render the real page so
+  // visitors see the actual feature (read-only). The dialog overlays a
+  // click-blocker and CTA to sign in / upgrade.
+  if (isPreview) return <>{children}</>;
+
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
 
   if ((loading || subLoading) && !hasResolvedRef.current) {
     return (
