@@ -31,7 +31,15 @@ const OwnerDashboardPage = () => {
   const { user, loading, signOut } = useAuth();
   const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
+  // Users tab — list of all members, split into online/offline sub-tabs
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean }>>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
+  const [usersSearch, setUsersSearch] = useState("");
+  // Failed sign-ups tab
+  const [failedSignups, setFailedSignups] = useState<Array<{ id: string; email: string | null; reason: string; error_code: string | null; created_at: string }>>([]);
+  const [failedSignupsLoading, setFailedSignupsLoading] = useState(false);
   // Web Crawler state (admin growth engine)
   const [crawlerCampaign, setCrawlerCampaign] = useState<"press" | "partnership" | "directory" | "investor" | "backlink">("press");
   const [crawlerNiche, setCrawlerNiche] = useState("AI mental health super app");
