@@ -34,7 +34,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
   const goUnlock = () => {
     onOpenChange(false);
     if (!user) {
-      navigate(`/welcome?redirect=${encodedTo}`);
+      navigate(`/sign-in?redirect=${encodedTo}`);
     } else {
       // Logged-in but not subscribed — send to subscribe with a return path
       navigate(`/subscribe?redirect=${encodedTo}`);
