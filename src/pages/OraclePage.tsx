@@ -1916,14 +1916,17 @@ const OraclePage = () => {
         "gi"
       );
       const stripSelfNaming = (s: string) => s.replace(selfNameRegex, "$1").trimStart();
+      // Strip leading emojis / decorative symbols / leading punctuation flourishes the model sometimes spams.
+      const leadingEmojiRegex = /^(?:[\s\u200d\ufe0f]|[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{2700}-\u{27BF}]|[★☆✦✧✩✪✫✬✭✮✯✰⭐]|[—–\-*~•·●◆◇♦])+/u;
+      const stripLeadingDecor = (s: string) => s.replace(leadingEmojiRegex, "").trimStart();
       const stripMarkersForSpeech = (s: string) =>
-        stripSelfNaming(
+        stripLeadingDecor(stripSelfNaming(
           s
             .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
             .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
             .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
             .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
-        );
+        ));
       const flushSpeakableSentences = (final = false) => {
         if (isMuted) return;
         const pending = oracleContent.slice(spokenUpTo);
