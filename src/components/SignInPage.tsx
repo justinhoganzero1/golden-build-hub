@@ -96,9 +96,7 @@ const SignInPage = () => {
             // AuthContext retries this on SIGNED_IN; do not block entry.
           }
 
-          toast.success("Welcome aboard! Unlocking your portal… 🎉");
-          const isAdminEmail = email.trim().toLowerCase() === ownerEmail;
-          navigate(isAdminEmail ? "/owner-dashboard" : redirectPath, { replace: true });
+          toast.success("Welcome aboard! Taking you into your portal… 🎉");
         } else {
           if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
           toast.success(
@@ -115,20 +113,17 @@ const SignInPage = () => {
           setLoading(false);
           return;
         }
+
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
         // Mark this tab as a fresh admin login so the dashboard guard lets it through once.
         if (isOwnerAccess) {
           sessionStorage.setItem("admin-fresh-login", "1");
           sessionStorage.removeItem("admin-pending-login");
         }
-        // Admin auto-routes to owner dashboard unless an explicit redirect was given.
-        const isAdminEmail = email.trim().toLowerCase() === ownerEmail;
-        const finalPath =
-          isAdminEmail && (redirectPath === "/dashboard" || redirectPath === "/")
-            ? "/owner-dashboard"
-            : redirectPath;
-        navigate(finalPath);
+
+        toast.success("Signed in — opening your portal now.");
       }
     } catch (error: any) {
       // Log failed signups so the owner dashboard can see who tried to join but couldn't
@@ -154,14 +149,20 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
-    // MUST use the Lovable Cloud managed OAuth broker — calling
-    // supabase.auth.signInWithOAuth directly fails with
-    // "Unsupported provider: missing OAuth secret" because the client
-    // secret is held by the broker, not in Supabase auth config.
+
+    const oauthReturnUrl = `${window.location.origin}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}${redirectPath}`,
+      redirect_uri: oauthReturnUrl,
     });
-    if (result?.error) toast.error(String(result.error));
+
+    if (result?.error) {
+      toast.error(String(result.error));
+      return;
+    }
+
+    if (!result?.redirected) {
+      toast.success("Signed in — opening your portal now.");
+    }
   };
 
   const handleAppleSignIn = async () => {
@@ -169,10 +170,20 @@ const SignInPage = () => {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
     }
+
+    const oauthReturnUrl = `${window.location.origin}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
     const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: `${window.location.origin}${redirectPath}`,
+      redirect_uri: oauthReturnUrl,
     });
-    if (result?.error) toast.error(String(result.error));
+
+    if (result?.error) {
+      toast.error(String(result.error));
+      return;
+    }
+
+    if (!result?.redirected) {
+      toast.success("Signed in — opening your portal now.");
+    }
   };
 
   return (
