@@ -1357,6 +1357,120 @@ const OwnerDashboardPage = () => {
         </Dialog>
 
         {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "users" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" /> Members</h2>
+                  <p className="text-xs text-gray-400">All registered users — split by online/offline (online = active in last 5 min).</p>
+                </div>
+                <input
+                  value={usersSearch}
+                  onChange={(e) => setUsersSearch(e.target.value)}
+                  placeholder="Search by email…"
+                  className="px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs w-56"
+                />
+              </div>
+              <div className="flex gap-2 mb-3">
+                {(["online", "offline"] as const).map(s => {
+                  const count = usersList.filter(u => (s === "online" ? u.online : !u.online)).length;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setUsersSubTab(s)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${usersSubTab === s ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-white/5 text-gray-400 border border-white/10"}`}
+                    >
+                      <span className={`inline-block w-2 h-2 rounded-full mr-2 ${s === "online" ? "bg-emerald-400" : "bg-gray-500"}`} />
+                      {s === "online" ? "Online" : "Offline"} ({count})
+                    </button>
+                  );
+                })}
+                <div className="ml-auto text-[11px] text-gray-500 self-center">Total: {usersList.length}</div>
+              </div>
+              {usersLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading members…</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Joined</th>
+                        <th className="py-2 pr-3">Last sign-in</th>
+                        <th className="py-2 pr-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList
+                        .filter(u => (usersSubTab === "online" ? u.online : !u.online))
+                        .filter(u => !usersSearch || (u.email || "").toLowerCase().includes(usersSearch.toLowerCase()))
+                        .map(u => (
+                          <tr key={u.id} className="border-b border-white/5">
+                            <td className="py-2 pr-3 text-white">{u.email || <span className="text-gray-500">—</span>}</td>
+                            <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
+                            <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
+                            <td className="py-2 pr-3">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.online ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-gray-500/15 text-gray-400 border border-gray-500/30"}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${u.online ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
+                                {u.online ? "Online" : "Offline"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      {usersList.filter(u => (usersSubTab === "online" ? u.online : !u.online)).length === 0 && (
+                        <tr><td colSpan={4} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === "failed-signups" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><XCircle className="w-5 h-5 text-red-400" /> Failed Sign-ups</h2>
+                  <p className="text-xs text-gray-400">People who tried to join but couldn't — last 500 attempts.</p>
+                </div>
+                <span className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 px-2 py-1 rounded-lg">{failedSignups.length} attempts</span>
+              </div>
+              {failedSignupsLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading…</p>
+              ) : failedSignups.length === 0 ? (
+                <p className="text-xs text-gray-500 py-6 text-center">🎉 No failed sign-ups recorded.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">When</th>
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Reason</th>
+                        <th className="py-2 pr-3">Code</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {failedSignups.map(f => (
+                        <tr key={f.id} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-gray-400 whitespace-nowrap">{new Date(f.created_at).toLocaleString()}</td>
+                          <td className="py-2 pr-3 text-white">{f.email || <span className="text-gray-500">(no email)</span>}</td>
+                          <td className="py-2 pr-3 text-red-300">{f.reason}</td>
+                          <td className="py-2 pr-3 text-gray-500">{f.error_code || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "sources" && (
           <div className="space-y-4">
             <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-4">
