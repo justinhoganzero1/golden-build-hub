@@ -6,7 +6,7 @@ import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
-import { bounceIfNotProduction, PUBLIC_ORIGIN } from "@/lib/installRedirect";
+import { bounceIfNotProduction, PUBLIC_ORIGIN, isOnProductionHost, openProductionSite } from "@/lib/installRedirect";
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +21,16 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
+  const isProductionAuthHost = isOnProductionHost();
+  const buildProductionAuthPath = (mode: "signin" | "signup" = isSignUp ? "signup" : "signin") => {
+    const params = new URLSearchParams();
+    params.set("redirect", redirectPath);
+    if (mode === "signup") params.set("mode", "signup");
+    return `/sign-in?${params.toString()}`;
+  };
+  const continueOnLiveSite = (mode: "signin" | "signup" = isSignUp ? "signup" : "signin") => {
+    openProductionSite(buildProductionAuthPath(mode));
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -62,6 +72,11 @@ const SignInPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isProductionAuthHost) {
+      continueOnLiveSite(isSignUp ? "signup" : "signin");
+      return;
+    }
 
     if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
       toast.error("Owner access only accepts the approved admin email.");
@@ -141,6 +156,11 @@ const SignInPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!isProductionAuthHost) {
+      continueOnLiveSite("signin");
+      return;
+    }
+
     if (isOwnerAccess) {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
@@ -162,6 +182,11 @@ const SignInPage = () => {
   };
 
   const handleAppleSignIn = async () => {
+    if (!isProductionAuthHost) {
+      continueOnLiveSite("signin");
+      return;
+    }
+
     if (isOwnerAccess) {
       toast.error("Owner access is password-only — OAuth disabled for the admin portal.");
       return;
@@ -181,6 +206,36 @@ const SignInPage = () => {
       toast.success("Signed in — opening your portal now.");
     }
   };
+
+  if (!isProductionAuthHost) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-lg border border-border rounded-2xl bg-card p-8 text-center space-y-4 animate-slide-up">
+          <h1 className="text-2xl font-bold text-primary">Open sign in on Oracle Lunar</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Sign in and sign up are disabled inside the editor preview so visitors never get trapped in the preview auth flow.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => continueOnLiveSite("signin")}
+              className="flex-1 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:brightness-110 transition-all"
+            >
+              Open live sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => continueOnLiveSite("signup")}
+              className="flex-1 py-3 border border-border text-foreground rounded-lg hover:bg-secondary transition-colors"
+            >
+              Open live sign up
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground break-all">{PUBLIC_ORIGIN}{buildProductionAuthPath()}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-4 px-4">
@@ -281,7 +336,13 @@ const SignInPage = () => {
               {isSignUp ? "Already have an account?" : "New here?"}{" "}
               <span
                 className="text-primary cursor-pointer hover:underline"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  if (!isProductionAuthHost) {
+                    continueOnLiveSite(isSignUp ? "signin" : "signup");
+                    return;
+                  }
+                  setIsSignUp(!isSignUp);
+                }}
               >
                 {isSignUp ? "Sign in" : "Create an account"}
               </span>
