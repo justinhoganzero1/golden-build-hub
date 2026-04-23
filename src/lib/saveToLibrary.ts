@@ -30,16 +30,21 @@ export interface SaveToLibraryInput {
 export async function saveToLibrary(input: SaveToLibraryInput): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      console.warn("[saveToLibrary] skipped — user not signed in");
+      return null;
+    }
     const { data, error } = await supabase
       .from("user_media")
       .insert([{ ...input, user_id: user.id } as any])
       .select("id")
       .single();
     if (error) {
-      console.warn("[saveToLibrary] insert failed", error.message);
+      console.warn("[saveToLibrary] insert failed", error.message, error);
       return null;
     }
+    // Notify any listeners (Library page) so it refetches immediately
+    try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: data?.id } })); } catch { /* noop */ }
     return data?.id ?? null;
   } catch (e) {
     console.warn("[saveToLibrary] unexpected", e);

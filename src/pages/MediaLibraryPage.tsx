@@ -1,6 +1,6 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -68,6 +68,16 @@ const MediaLibraryPage = () => {
   const [selected, setSelected] = useState<any>(null);
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
+
+  // Auto-refresh whenever any module saves something to the library
+  useEffect(() => {
+    const handler = () => {
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+    };
+    window.addEventListener("library:updated", handler);
+    return () => window.removeEventListener("library:updated", handler);
+  }, [qc]);
 
   /* ── Counts per collection ── */
   const collectionCounts = useMemo(() => {
