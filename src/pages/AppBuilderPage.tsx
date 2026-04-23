@@ -224,12 +224,13 @@ const AppBuilderPage = () => {
   const saveAppToLibrary = useCallback(async (project: AppProject): Promise<string | undefined> => {
     if (!user) { toast.error("Sign in to save apps to your library"); return; }
     try {
+      let savedId: string | undefined;
       if (project.mediaId) {
         await supabase.from("user_media").update({
           title: project.name, url: project.code,
           metadata: { description: project.description, type: project.type } as any,
         }).eq("id", project.mediaId);
-        return project.mediaId;
+        savedId = project.mediaId;
       } else {
         const { data, error } = await supabase.from("user_media").insert([{
           user_id: user.id, media_type: "app", title: project.name, url: project.code,
@@ -237,9 +238,13 @@ const AppBuilderPage = () => {
           metadata: { description: project.description, type: project.type } as any,
         }]).select("id").single();
         if (error) throw error;
-        return data?.id;
+        savedId = data?.id;
       }
-    } catch (e) { console.error("Failed to save app", e); }
+      // Notify Library to refresh instantly
+      try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: savedId } })); } catch { /* noop */ }
+      toast.success("App saved to your Library");
+      return savedId;
+    } catch (e) { console.error("Failed to save app", e); toast.error("Failed to save app to library"); }
   }, [user]);
 
   // ===== Send =====
