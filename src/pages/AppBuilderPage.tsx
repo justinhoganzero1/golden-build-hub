@@ -222,7 +222,7 @@ const AppBuilderPage = () => {
 
   // ===== Save app =====
   const saveAppToLibrary = useCallback(async (project: AppProject): Promise<string | undefined> => {
-    if (!user) return;
+    if (!user) { toast.error("Sign in to save apps to your library"); return; }
     try {
       if (project.mediaId) {
         await supabase.from("user_media").update({
