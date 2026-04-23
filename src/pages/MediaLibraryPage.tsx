@@ -69,6 +69,16 @@ const MediaLibraryPage = () => {
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
 
+  // Auto-refresh whenever any module saves something to the library
+  useEffect(() => {
+    const handler = () => {
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+    };
+    window.addEventListener("library:updated", handler);
+    return () => window.removeEventListener("library:updated", handler);
+  }, [qc]);
+
   /* ── Counts per collection ── */
   const collectionCounts = useMemo(() => {
     const counts: Record<string, number> = { all: mediaItems.length };
