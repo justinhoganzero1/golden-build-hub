@@ -426,6 +426,7 @@ Ship-quality. No layout placeholders.`
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-xs font-semibold text-foreground">Live Preview: {previewProject.name}</h3>
             <div className="flex gap-2">
+              <button onClick={() => launchApp(previewProject)} className="text-xs text-primary flex items-center gap-1 font-semibold"><Play className="w-3 h-3" /> Launch</button>
               <button onClick={() => downloadApp(previewProject)} className="text-xs text-primary flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
               <button onClick={() => setPreviewProject(null)} className="text-xs text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
