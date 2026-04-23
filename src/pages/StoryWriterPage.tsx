@@ -185,6 +185,13 @@ const StoryWriterPage = () => {
         return { ...s, chapters: next };
       });
       toast.success("Story continued");
+      void saveToLibrary({
+        media_type: "text",
+        title: `Story: ${story.title}`,
+        url: ch.content + "\n\n" + text,
+        source_page: "story-writer",
+        metadata: { genre: story.genre, chapter: ch.title, action: "continue" },
+      });
     } catch (e: any) {
       toast.error("AI continue failed: " + (e?.message || "unknown"));
     }
@@ -207,6 +214,13 @@ const StoryWriterPage = () => {
       setStory(s => ({ ...s, chapters }));
       setActiveChapter(0);
       toast.success(`Outline ready — ${chapters.length} chapters`);
+      void saveToLibrary({
+        media_type: "text",
+        title: `Story Outline: ${story.title}`,
+        url: chapters.map(c => c.title).join("\n"),
+        source_page: "story-writer",
+        metadata: { genre: story.genre, action: "outline" },
+      });
     } catch (e: any) {
       toast.error("Outline failed: " + (e?.message || "unknown"));
     }
@@ -229,6 +243,13 @@ const StoryWriterPage = () => {
         return { ...s, chapters: next };
       });
       toast.success("Chapter rewritten");
+      void saveToLibrary({
+        media_type: "text",
+        title: `Story Chapter: ${ch.title}`,
+        url: text,
+        source_page: "story-writer",
+        metadata: { genre: story.genre, action: "rewrite" },
+      });
     } catch (e: any) {
       toast.error("Rewrite failed: " + (e?.message || "unknown"));
     }
