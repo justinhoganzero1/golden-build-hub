@@ -446,6 +446,9 @@ Ship-quality. No layout placeholders.`
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => launchApp(previewProject)} className="col-span-2 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold hover:opacity-90">
+                <Play className="w-4 h-4" /> Launch App in New Tab
+              </button>
               <button onClick={() => {
                   const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
                   const placeholderUrl = `https://${slug}.lovable.app`;
