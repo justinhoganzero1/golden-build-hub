@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Upload, Loader2, Sparkles } from "lucide-react";
+import { saveToLibrary } from "@/lib/saveToLibrary";
+import { toast } from "sonner";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
