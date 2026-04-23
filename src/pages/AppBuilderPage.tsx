@@ -382,6 +382,20 @@ Ship-quality. No layout placeholders.`
     toast.success("App downloaded!");
   };
 
+  const launchApp = (project: AppProject) => {
+    if (!project.code) { toast.error("No app code to launch"); return; }
+    const blob = new Blob([project.code], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Pop-up blocked — allow pop-ups to launch the app");
+      URL.revokeObjectURL(url);
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    toast.success(`Launched "${project.name}"`);
+  };
+
   return (
     <>
     <SEO title="AI App Builder — Build Web Apps By Chatting" description="ORACLE LUNAR App Builder: voice + screenshot + file input. Describe an app and the AI builds it." path="/app-builder" />
