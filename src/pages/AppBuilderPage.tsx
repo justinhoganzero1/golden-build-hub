@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste } from "lucide-react";
+import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -222,7 +222,7 @@ const AppBuilderPage = () => {
 
   // ===== Save app =====
   const saveAppToLibrary = useCallback(async (project: AppProject): Promise<string | undefined> => {
-    if (!user) return;
+    if (!user) { toast.error("Sign in to save apps to your library"); return; }
     try {
       if (project.mediaId) {
         await supabase.from("user_media").update({
@@ -382,6 +382,20 @@ Ship-quality. No layout placeholders.`
     toast.success("App downloaded!");
   };
 
+  const launchApp = (project: AppProject) => {
+    if (!project.code) { toast.error("No app code to launch"); return; }
+    const blob = new Blob([project.code], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) {
+      toast.error("Pop-up blocked — allow pop-ups to launch the app");
+      URL.revokeObjectURL(url);
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    toast.success(`Launched "${project.name}"`);
+  };
+
   return (
     <>
     <SEO title="AI App Builder — Build Web Apps By Chatting" description="ORACLE LUNAR App Builder: voice + screenshot + file input. Describe an app and the AI builds it." path="/app-builder" />
@@ -412,6 +426,7 @@ Ship-quality. No layout placeholders.`
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-xs font-semibold text-foreground">Live Preview: {previewProject.name}</h3>
             <div className="flex gap-2">
+              <button onClick={() => launchApp(previewProject)} className="text-xs text-primary flex items-center gap-1 font-semibold"><Play className="w-3 h-3" /> Launch</button>
               <button onClick={() => downloadApp(previewProject)} className="text-xs text-primary flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
               <button onClick={() => setPreviewProject(null)} className="text-xs text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
@@ -431,6 +446,9 @@ Ship-quality. No layout placeholders.`
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => launchApp(previewProject)} className="col-span-2 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold hover:opacity-90">
+                <Play className="w-4 h-4" /> Launch App in New Tab
+              </button>
               <button onClick={() => {
                   const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
                   const placeholderUrl = `https://${slug}.lovable.app`;
@@ -517,12 +535,17 @@ Ship-quality. No layout placeholders.`
         <div className="px-4 py-2 border-t border-border bg-card/50">
           <div className="flex gap-2 overflow-x-auto">
             {projects.map(p => (
-              <button key={p.id} onClick={() => { setPreviewProject(p); setCurrentCode(p.code); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-colors ${
+              <div key={p.id} className={`flex items-center gap-1 rounded-full text-xs whitespace-nowrap border transition-colors overflow-hidden ${
                   previewProject?.id === p.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary"
                 }`}>
-                <Code className="w-3 h-3" /> {p.name}
-              </button>
+                <button onClick={() => { setPreviewProject(p); setCurrentCode(p.code); }}
+                  className="flex items-center gap-1.5 pl-3 py-1.5">
+                  <Code className="w-3 h-3" /> {p.name}
+                </button>
+                <button onClick={() => launchApp(p)} title="Launch app" className="px-2 py-1.5 hover:bg-primary/20 border-l border-border/50">
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
