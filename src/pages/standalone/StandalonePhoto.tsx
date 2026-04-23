@@ -37,7 +37,18 @@ const StandalonePhoto = () => {
       });
       const j = await resp.json();
       if (!resp.ok) throw new Error(j.error || "Failed");
-      setResult(j.imageUrl || j.url || "");
+      const out = j.imageUrl || j.url || "";
+      setResult(out);
+      if (out) {
+        const id = await saveToLibrary({
+          media_type: "image",
+          title: `Photo Magic: ${prompt.slice(0, 60)}`,
+          url: out,
+          source_page: "standalone-photo",
+          metadata: { prompt, mode: "edit" },
+        });
+        if (id) toast.success("Saved to your Library");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
