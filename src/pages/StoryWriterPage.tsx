@@ -13,6 +13,7 @@ import ShareDialog from "@/components/ShareDialog";
 import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 interface StoryChapter {
   title: string;
