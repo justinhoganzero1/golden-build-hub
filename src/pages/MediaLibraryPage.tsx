@@ -1,6 +1,6 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
