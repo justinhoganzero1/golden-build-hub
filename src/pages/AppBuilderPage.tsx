@@ -535,12 +535,17 @@ Ship-quality. No layout placeholders.`
         <div className="px-4 py-2 border-t border-border bg-card/50">
           <div className="flex gap-2 overflow-x-auto">
             {projects.map(p => (
-              <button key={p.id} onClick={() => { setPreviewProject(p); setCurrentCode(p.code); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap border transition-colors ${
+              <div key={p.id} className={`flex items-center gap-1 rounded-full text-xs whitespace-nowrap border transition-colors overflow-hidden ${
                   previewProject?.id === p.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary"
                 }`}>
-                <Code className="w-3 h-3" /> {p.name}
-              </button>
+                <button onClick={() => { setPreviewProject(p); setCurrentCode(p.code); }}
+                  className="flex items-center gap-1.5 pl-3 py-1.5">
+                  <Code className="w-3 h-3" /> {p.name}
+                </button>
+                <button onClick={() => launchApp(p)} title="Launch app" className="px-2 py-1.5 hover:bg-primary/20 border-l border-border/50">
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              </div>
             ))}
           </div>
         </div>
