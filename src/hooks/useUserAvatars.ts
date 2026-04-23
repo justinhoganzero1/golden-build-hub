@@ -89,13 +89,19 @@ export function useSaveMedia() {
       source_page: string;
       metadata?: Record<string, unknown>;
     }) => {
-      if (!user) throw new Error("Not authenticated");
+      if (!user) throw new Error("Sign in to save to your library");
       const { error } = await supabase
         .from("user_media")
         .insert([{ ...media, user_id: user.id }] as any);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["user-media"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+    },
+    onError: (e: any) => {
+      console.error("[useSaveMedia] failed:", e?.message || e);
+    },
   });
 }
 
