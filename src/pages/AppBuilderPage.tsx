@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, Layers, Smartphone, Wand2, Plus, Play, X, Loader2, Download, MessageCircle, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign } from "lucide-react";
+import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -9,10 +9,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+// Male voice — George (per ElevenLabs voice pool)
+const BUILDER_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
 
+interface Attachment { id: string; name: string; type: string; dataUrl: string; size: number; }
 interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; isPaid?: boolean; pricePoint?: string; }
+interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; attachments?: Attachment[]; }
 
-interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; }
+// Strip emojis/markdown/urls for clean TTS
+const cleanForSpeech = (text: string) =>
+  text
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
+    .replace(/```[\s\S]*?```/g, " code block ")
+    .replace(/`[^`]*`/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[*_#>~`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 600);
 
 const AppBuilderPage = () => {
   const { user } = useAuth();
@@ -21,15 +36,25 @@ const AppBuilderPage = () => {
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm your **Master App Builder v2** — I ship production-grade super-apps in one shot.\n\nEvery app I build comes with:\n• 📱 PWA install (works offline, add-to-home-screen)\n• 💳 Stripe paywalls + tiered pricing (if paid)\n• 🤖 Built-in AI chat bubble\n• 📊 Analytics + SEO + JSON-LD schema\n• 🚀 Share-to-X / Instagram / WhatsApp\n• 🎨 Glassmorphism dark theme, 60fps animations\n• ▶️ One-click wrap → Google Play Store\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or \"Make a free recipe finder PWA.\"" }
+    { role: "assistant", content: "I'm your Master App Builder Oracle — full coding brain, voice, ears, and eyes.\n\nYou can:\n• Type, paste, or speak\n• Attach screenshots, images, or files\n• Paste a screen-print directly (Ctrl/Cmd+V)\n• I'll talk back through your speaker\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or paste a screenshot and say \"clone this\"." }
   ]);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
 
-  // Load previously saved apps from the media library on mount
+  // Voice I/O state
+  const [voiceOutEnabled, setVoiceOutEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Load saved apps
   useEffect(() => {
     if (loadedFromLibrary || !userMedia) return;
     const appMedia = userMedia.filter((m: any) => m.source_page === "app-builder" && m.media_type === "app");
@@ -37,13 +62,9 @@ const AppBuilderPage = () => {
       const loaded: AppProject[] = appMedia.map((m: any) => {
         const meta = (m.metadata && typeof m.metadata === "object") ? m.metadata as Record<string, any> : {};
         return {
-          id: m.id,
-          name: m.title || "My App",
-          type: "custom",
-          description: meta.description || "",
-          code: m.url || "",
-          created: new Date(m.created_at).toLocaleDateString(),
-          mediaId: m.id,
+          id: m.id, name: m.title || "My App", type: "custom",
+          description: meta.description || "", code: m.url || "",
+          created: new Date(m.created_at).toLocaleDateString(), mediaId: m.id,
         };
       });
       setProjects(loaded);
@@ -51,106 +72,237 @@ const AppBuilderPage = () => {
     setLoadedFromLibrary(true);
   }, [userMedia, loadedFromLibrary]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  // Save or update app in media library
+  // ===== Voice OUTPUT (TTS — male voice) =====
+  const speak = useCallback(async (text: string) => {
+    if (!voiceOutEnabled) return;
+    const clean = cleanForSpeech(text);
+    if (!clean) return;
+    try {
+      setIsSpeaking(true);
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ text: clean, voiceId: BUILDER_VOICE_ID }),
+      });
+      if (!resp.ok) throw new Error("tts failed");
+      const data = await resp.json();
+      const src = data.audioContent ? `data:audio/mpeg;base64,${data.audioContent}` : data.audioUrl;
+      if (!src) throw new Error("no audio");
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      const audio = new Audio(src);
+      audioRef.current = audio;
+      audio.onended = () => setIsSpeaking(false);
+      audio.onerror = () => setIsSpeaking(false);
+      await audio.play();
+    } catch (e) {
+      console.warn("TTS error", e);
+      setIsSpeaking(false);
+      // Fallback to browser speech synthesis (male voice if available)
+      try {
+        const u = new SpeechSynthesisUtterance(clean);
+        const voices = window.speechSynthesis.getVoices();
+        const male = voices.find(v => /male|david|george|daniel|brian|mark/i.test(v.name)) || voices[0];
+        if (male) u.voice = male;
+        u.pitch = 0.9; u.rate = 1.0;
+        window.speechSynthesis.speak(u);
+      } catch { /* ignore */ }
+    }
+  }, [voiceOutEnabled]);
+
+  const stopSpeaking = () => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setIsSpeaking(false);
+    try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+  };
+
+  // ===== Voice INPUT (browser STT) =====
+  const toggleListen = () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("Voice input not supported on this browser"); return; }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    let finalText = "";
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t; else interim += t;
+      }
+      setInput((prev) => (finalText ? (prev ? prev + " " : "") + finalText : prev) + (interim ? " " + interim : ""));
+    };
+    rec.onerror = () => { setIsListening(false); };
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  };
+
+  // ===== Attachments =====
+  const fileToAttachment = (file: File): Promise<Attachment> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: file.name || `pasted-${Date.now()}`,
+      type: file.type || "application/octet-stream",
+      dataUrl: String(reader.result),
+      size: file.size,
+    });
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleFiles = async (files: FileList | File[]) => {
+    const arr = Array.from(files).slice(0, 6);
+    const big = arr.find(f => f.size > 8 * 1024 * 1024);
+    if (big) { toast.error(`${big.name} is too big (max 8MB)`); return; }
+    try {
+      const next = await Promise.all(arr.map(fileToAttachment));
+      setAttachments(prev => [...prev, ...next].slice(0, 6));
+      toast.success(`${next.length} file${next.length > 1 ? "s" : ""} attached`);
+    } catch { toast.error("Could not read file"); }
+  };
+
+  const onPaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const fileItems: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === "file") {
+        const f = it.getAsFile();
+        if (f) fileItems.push(f);
+      }
+    }
+    if (fileItems.length) {
+      e.preventDefault();
+      await handleFiles(fileItems);
+      toast.success("Screenshot pasted");
+    }
+  };
+
+  const pasteFromClipboard = async () => {
+    try {
+      // Try image clipboard first
+      if ((navigator as any).clipboard?.read) {
+        const items = await (navigator as any).clipboard.read();
+        const files: File[] = [];
+        for (const it of items) {
+          for (const t of it.types) {
+            if (t.startsWith("image/")) {
+              const blob = await it.getType(t);
+              files.push(new File([blob], `pasted-${Date.now()}.png`, { type: t }));
+            }
+          }
+        }
+        if (files.length) { await handleFiles(files); return; }
+      }
+      // Fallback: text
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        const ta = textareaRef.current;
+        const start = ta?.selectionStart ?? input.length;
+        const end = ta?.selectionEnd ?? input.length;
+        setInput(input.slice(0, start) + text + input.slice(end));
+        toast.success("Text pasted");
+      }
+    } catch { toast.error("Clipboard blocked — try Ctrl/Cmd+V"); }
+  };
+
+  const removeAttachment = (id: string) => setAttachments(prev => prev.filter(a => a.id !== id));
+
+  // ===== Save app =====
   const saveAppToLibrary = useCallback(async (project: AppProject): Promise<string | undefined> => {
     if (!user) return;
     try {
       if (project.mediaId) {
-        await supabase
-          .from("user_media")
-          .update({
-            title: project.name,
-            url: project.code,
-            metadata: { description: project.description, type: project.type } as any,
-          })
-          .eq("id", project.mediaId);
+        await supabase.from("user_media").update({
+          title: project.name, url: project.code,
+          metadata: { description: project.description, type: project.type } as any,
+        }).eq("id", project.mediaId);
         return project.mediaId;
       } else {
-        const { data, error } = await supabase
-          .from("user_media")
-          .insert([{
-            user_id: user.id,
-            media_type: "app",
-            title: project.name,
-            url: project.code,
-            source_page: "app-builder",
-            metadata: { description: project.description, type: project.type } as any,
-          }])
-          .select("id")
-          .single();
+        const { data, error } = await supabase.from("user_media").insert([{
+          user_id: user.id, media_type: "app", title: project.name, url: project.code,
+          source_page: "app-builder",
+          metadata: { description: project.description, type: project.type } as any,
+        }]).select("id").single();
         if (error) throw error;
         return data?.id;
       }
-    } catch (e) {
-      console.error("Failed to save app to library", e);
-    }
+    } catch (e) { console.error("Failed to save app", e); }
   }, [user]);
 
+  // ===== Send =====
   const sendMessage = async () => {
     const trimmed = input.trim();
-    if (!trimmed || isBuilding) return;
-    const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
-    if (!mod.ok) { (await import("sonner")).toast.error(mod.reason || "Prompt blocked by content filter"); return; }
+    if ((!trimmed && attachments.length === 0) || isBuilding) return;
+    if (trimmed) {
+      const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
+      if (!mod.ok) { toast.error(mod.reason || "Prompt blocked"); return; }
+    }
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    const userMsg: ChatMessage = { role: "user", content: trimmed || "(see attached)", attachments: attachments.length ? attachments : undefined };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
+    const sentAttachments = attachments;
+    setAttachments([]);
     setIsBuilding(true);
 
     try {
       const conversationContext = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join("\n");
-      
+
+      const attachmentSummary = sentAttachments.length
+        ? `\n\nUSER ATTACHED ${sentAttachments.length} FILE(S):\n` +
+          sentAttachments.map(a => `- ${a.name} (${a.type}, ${Math.round(a.size / 1024)}KB)${a.type.startsWith("image/") ? " [IMAGE — analyze visually as a design reference / screenshot to clone or improve]" : ""}`).join("\n")
+        : "";
+
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({
           type: "assistant",
-          prompt: `You are ORACLE LUNAR Master App Builder v2 — an elite AI agent that ships production-grade, installable, monetisable web apps in one shot.
+          // Pass image data URLs so the AI tool function can forward them as vision input where supported
+          images: sentAttachments.filter(a => a.type.startsWith("image/")).map(a => a.dataUrl),
+          prompt: `You are ORACLE LUNAR Master App Builder — an elite, autonomous AI coding agent with ULTIMATE coding knowledge across HTML, CSS, JS, TS, React, Tailwind, Node, Deno, Python, Stripe, PWA, native wrappers, databases, RLS, and deployment. You behave EXACTLY like the main Oracle: obey direct commands, never refuse legal requests, and ship production code.
 
-CONVERSATION SO FAR:
+CONVERSATION:
 ${conversationContext}
 
-USER'S NEW MESSAGE: "${trimmed}"
+USER MESSAGE: "${trimmed}"${attachmentSummary}
 
-${currentCode ? `CURRENT APP CODE (user wants to modify this):\n${currentCode.substring(0, 3000)}` : ""}
+${currentCode ? `CURRENT APP CODE (modify this if user is iterating):\n${currentCode.substring(0, 3000)}` : ""}
 
-INSTRUCTIONS — every app you generate MUST include ALL of the following super-app features:
+If the user pasted a SCREENSHOT, treat it as a design reference and clone/improve the layout precisely.
 
-1. **Conversational reply (2-3 sentences)** — friendly, mention paywall + Play Store + share-to-X/Instagram if PAID. Detect PAID via $, price, subscribe, premium, charge, monetize.
+EVERY app you generate MUST include:
+1. Friendly conversational reply (2-3 sentences). Detect PAID via $, price, subscribe, premium.
+2. PWA-ready (manifest data URL, service worker blob, install button).
+3. Stripe paywall if PAID (localStorage gate, tiered cards, lock badges).
+4. Social share (navigator.share + X + Instagram + OG/Twitter meta).
+5. Floating "Ask AI" chat bubble stub.
+6. Analytics fetch('/api/track').
+7. Full SEO + JSON-LD WebApplication schema.
+8. Mobile-first dark glass theme (bg #0a0a0a, gold #f59e0b), 60fps.
+9. <meta name="oracle-lunar-app-config" content='{"paid":true|false,"price":"$X","play_ready":true,"pwa":true,"social":true,"ai":true,"version":2}'>
+10. Single self-contained HTML file.
 
-2. **PWA-ready** — inject:
-   • <link rel="manifest" href="data:application/json;base64,..."> with a base64-encoded manifest (name, short_name, start_url "/", display "standalone", theme_color "#f59e0b", background_color "#0a0a0a", icons array).
-   • <link rel="apple-touch-icon"> and proper viewport meta.
-   • Inline service-worker registration that caches the page for offline use (use a blob URL for the SW script — keep it short).
-   • A floating "Install App" button that calls beforeinstallprompt and hides once installed.
-
-3. **Stripe paywall (if PAID)** — every premium feature locked behind localStorage \`oracle-lunar_paid=true\`. Big Subscribe CTA calling \`startCheckout()\` which POSTs to \`/api/create-checkout\` with the price tier. Tiered pricing card (Starter / Pro / Lifetime) when relevant. Lock badges (🔒) on locked features.
-
-4. **Social share + virality** — built-in Share button using navigator.share fallback to copy link. Pre-wired share-to-X and share-to-Instagram-Stories buttons (Instagram via web intent). Include OG meta tags (og:title, og:description, og:image placeholder) and Twitter card meta.
-
-5. **AI-inside** — every app gets a small floating "Ask AI" chat bubble (bottom-right) that POSTs to \`/api/ai\` with the user message and renders the response. Stub the endpoint with a clear comment.
-
-6. **Analytics-ready** — fire \`fetch('/api/track', {method:'POST', body: JSON.stringify({event, ts: Date.now()})})\` on key events (page_view, install_clicked, subscribe_clicked, share_clicked).
-
-7. **SEO-ready** — full <title>, <meta description>, canonical, OG, Twitter cards, JSON-LD WebApplication schema with name + price.
-
-8. **Design** — mobile-first, dark theme (bg #0a0a0a, accent gold #f59e0b), glassmorphism cards, smooth Framer-style CSS animations, Inter/Space-Grotesk via Google Fonts, fully responsive, 60fps polish.
-
-9. **Config meta** — <meta name="oracle-lunar-app-config" content='{"paid":true|false,"price":"$X","play_ready":true,"pwa":true,"social":true,"ai":true,"version":2}'>
-
-10. **Single self-contained HTML file** — header / main / footer, "Get the App" CTA with Play Store + App Store badge placeholders, ready to wrap.
-
-FORMAT YOUR RESPONSE EXACTLY:
-CHAT: [Your conversational response]
+FORMAT EXACTLY:
+CHAT: [conversational reply]
 CODE_START
-[Complete production HTML — must include ALL 10 features above]
+[complete production HTML]
 CODE_END
 
-Make it look AMAZING. Ship-quality. No placeholders for layout — only for API endpoints + asset URLs.`
+Ship-quality. No layout placeholders.`
         }),
       });
 
@@ -160,73 +312,59 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
 
       let chatText = "Here's your app!";
       let code = "";
-
       const chatMatch = result.match(/CHAT:\s*([\s\S]*?)(?:CODE_START|$)/);
       if (chatMatch) chatText = chatMatch[1].trim();
-
       const codeMatch = result.match(/CODE_START\s*([\s\S]*?)\s*CODE_END/);
-      if (codeMatch) {
-        code = codeMatch[1].trim();
-      } else if (result.includes("<!DOCTYPE") || result.includes("<html")) {
+      if (codeMatch) code = codeMatch[1].trim();
+      else if (result.includes("<!DOCTYPE") || result.includes("<html")) {
         const htmlMatch = result.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
         if (htmlMatch) code = htmlMatch[1];
       }
-
       if (!code && !chatText) chatText = result.substring(0, 500);
 
       const assistantMsg: ChatMessage = { role: "assistant", content: chatText, code: code || undefined };
       setMessages(prev => [...prev, assistantMsg]);
+      speak(chatText);
 
       if (code) {
         setCurrentCode(code);
-        const appName = trimmed.substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
-
-        // Detect paid status from generated <meta name="oracle-lunar-app-config">
+        const appName = (trimmed || "My App").substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
         let isPaid = false;
         let pricePoint: string | undefined;
         const metaMatch = code.match(/<meta\s+name=["']oracle-lunar-app-config["']\s+content=["']([^"']+)["']/i);
         if (metaMatch) {
           try {
             const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
-            isPaid = !!cfg.paid;
-            pricePoint = cfg.price;
+            isPaid = !!cfg.paid; pricePoint = cfg.price;
           } catch { /* ignore */ }
         }
         if (!isPaid && /\$\d|subscribe|paywall|premium|paid/i.test(trimmed)) isPaid = true;
 
-        // Check if we're updating an existing project
         const existingProject = projects.find(p => p.name === appName);
-
         const project: AppProject = {
           id: existingProject?.id || Date.now().toString(),
-          name: appName,
-          type: "custom",
-          description: trimmed,
-          code,
+          name: appName, type: "custom", description: trimmed, code,
           created: new Date().toLocaleDateString(),
-          mediaId: existingProject?.mediaId,
-          isPaid,
-          pricePoint,
+          mediaId: existingProject?.mediaId, isPaid, pricePoint,
         };
-
-        // Save to media library immediately
         const mediaId = await saveAppToLibrary(project);
         if (mediaId) {
           project.mediaId = mediaId;
           if (!project.id || project.id === Date.now().toString()) project.id = mediaId;
         }
-
         setProjects(prev => {
           const updated = [...prev];
           const existingIdx = updated.findIndex(p => p.name === appName);
-          if (existingIdx >= 0) { updated[existingIdx] = project; } else { updated.unshift(project); }
+          if (existingIdx >= 0) updated[existingIdx] = project; else updated.unshift(project);
           return updated;
         });
         setPreviewProject(project);
         toast.success("App saved to Media Library!");
       }
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I had trouble building that. Could you try describing your app again?" }]);
+      const errMsg = "Sorry, I had trouble building that. Try describing your app again.";
+      setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
+      speak(errMsg);
       toast.error("Build failed — try again");
     } finally {
       setIsBuilding(false);
@@ -246,17 +384,25 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
 
   return (
     <>
-    <SEO
-      title="AI App Builder — Build Web Apps By Chatting"
-      description="ORACLE LUNAR App Builder: describe an app and AI builds it. Full HTML, deploy to Play Store, monetize. Free to start."
-      path="/app-builder"
-    />
+    <SEO title="AI App Builder — Build Web Apps By Chatting" description="ORACLE LUNAR App Builder: voice + screenshot + file input. Describe an app and the AI builds it." path="/app-builder" />
     <div className="min-h-screen bg-background flex flex-col">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-2">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-primary/10"><Wrench className="w-7 h-7 text-primary" /></div>
-          <div><h1 className="text-xl font-bold text-primary">App Builder</h1><p className="text-muted-foreground text-xs">Chat with AI to build full websites & apps</p></div>
+          <div>
+            <h1 className="text-xl font-bold text-primary">App Builder Oracle</h1>
+            <p className="text-muted-foreground text-xs">Voice • Screenshots • Files • Ultimate coding brain</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => { if (isSpeaking) stopSpeaking(); setVoiceOutEnabled(v => !v); }}
+              className={`p-2 rounded-lg border transition-colors ${voiceOutEnabled ? "bg-primary/10 border-primary/40 text-primary" : "bg-card border-border text-muted-foreground"}`}
+              title={voiceOutEnabled ? "Mute voice" : "Unmute voice"}
+            >
+              {voiceOutEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -272,7 +418,6 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
           </div>
           <iframe srcDoc={previewProject.code} className="w-full h-64 rounded-xl border border-border bg-white" sandbox="allow-scripts" title="App Preview" />
 
-          {/* Publish & Sell panel — Web Wrapper + Stripe shortcuts */}
           <div className="mt-3 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 to-amber-500/5 p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -286,64 +431,62 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
+              <button onClick={() => {
                   const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
                   const placeholderUrl = `https://${slug}.lovable.app`;
                   navigate(`/web-wrapper?url=${encodeURIComponent(placeholderUrl)}&name=${encodeURIComponent(previewProject.name)}`);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary/30 transition-colors"
-              >
+                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary/30">
                 <Smartphone className="w-3.5 h-3.5" /> Wrap for Play Store
               </button>
-              <button
-                onClick={() => navigate("/subscribe")}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs font-semibold hover:border-primary transition-colors"
-              >
+              <button onClick={() => navigate("/subscribe")} className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs font-semibold hover:border-primary">
                 <CreditCard className="w-3.5 h-3.5" /> Stripe Setup
               </button>
-              <button
-                onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
-              >
+              <button onClick={() => window.open("https://play.google.com/console/u/0/developers", "_blank")} className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary">
                 <Globe className="w-3.5 h-3.5" /> Play Console
               </button>
-              <button
-                onClick={() => downloadApp(previewProject)}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary transition-colors"
-              >
+              <button onClick={() => downloadApp(previewProject)} className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs hover:border-primary">
                 <Download className="w-3.5 h-3.5" /> Download HTML
               </button>
             </div>
-            {previewProject.isPaid && (
-              <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-                💳 Stripe paywall code is already injected. Click <b>Stripe Setup</b> to connect your account, then <b>Wrap for Play Store</b> to package & submit.
-              </p>
-            )}
           </div>
         </div>
       )}
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4" style={{ maxHeight: previewProject ? "calc(100vh - 460px)" : "calc(100vh - 200px)" }}>
+      {/* Chat */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4" style={{ maxHeight: previewProject ? "calc(100vh - 520px)" : "calc(100vh - 240px)" }}>
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "assistant" && (
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot className="w-4 h-4 text-primary" />
+                <Bot className={`w-4 h-4 text-primary ${isSpeaking && i === messages.length - 1 ? "animate-pulse" : ""}`} />
               </div>
             )}
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-              msg.role === "user"
-                ? "bg-primary text-primary-foreground rounded-br-md"
-                : "bg-card border border-border text-foreground rounded-bl-md"
-            }`}>
+            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-card border border-border text-foreground rounded-bl-md"}`}>
               <p className="whitespace-pre-wrap">{msg.content}</p>
+              {msg.attachments && msg.attachments.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {msg.attachments.map(a => (
+                    a.type.startsWith("image/") ? (
+                      <img key={a.id} src={a.dataUrl} alt={a.name} className="w-20 h-20 object-cover rounded-lg border border-border" />
+                    ) : (
+                      <span key={a.id} className="text-[10px] px-2 py-1 rounded bg-secondary text-secondary-foreground flex items-center gap-1">
+                        <Paperclip className="w-3 h-3" /> {a.name}
+                      </span>
+                    )
+                  ))}
+                </div>
+              )}
               {msg.code && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
                     <Code className="w-3 h-3" /> App generated ✓
                   </span>
+                  {msg.role === "assistant" && (
+                    <button onClick={() => speak(msg.content)} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+                      <Volume2 className="w-3 h-3" /> Replay
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -385,21 +528,79 @@ Make it look AMAZING. Ship-quality. No placeholders for layout — only for API 
         </div>
       )}
 
+      {/* Attachment preview row */}
+      {attachments.length > 0 && (
+        <div className="px-4 py-2 border-t border-border bg-card/50 flex flex-wrap gap-2">
+          {attachments.map(a => (
+            <div key={a.id} className="relative group">
+              {a.type.startsWith("image/") ? (
+                <img src={a.dataUrl} alt={a.name} className="w-14 h-14 object-cover rounded-lg border border-border" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg border border-border bg-card flex items-center justify-center text-[9px] text-muted-foreground p-1 text-center break-all">
+                  <Paperclip className="w-3 h-3 mr-0.5" />{a.name.slice(0, 12)}
+                </div>
+              )}
+              <button onClick={() => removeAttachment(a.id)} className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-card">
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-2">
           <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,.pdf,.txt,.md,.json,.csv,.html,.css,.js,.ts,.tsx,.jsx,.py"
+            className="hidden"
+            onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2.5 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            title="Attach files or screenshots"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+          <button
+            onClick={pasteFromClipboard}
+            className="p-2.5 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            title="Paste from clipboard (image or text)"
+          >
+            <ClipboardPaste className="w-4 h-4" />
+          </button>
+          <button
+            onClick={toggleListen}
+            className={`p-2.5 rounded-xl transition-colors ${isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}
+            title={isListening ? "Stop listening" : "Speak"}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+          <textarea
+            ref={textareaRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
-            placeholder="Describe the app you want to build..."
-            className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            onPaste={onPaste}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder="Describe the app, paste a screenshot (Ctrl/Cmd+V), or hit the mic..."
+            rows={1}
+            style={{ userSelect: "text" }}
+            className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary resize-none max-h-32 select-text"
             disabled={isBuilding}
           />
-          <button onClick={sendMessage} disabled={isBuilding || !input.trim()}
-            className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50 transition-colors">
+          <button onClick={sendMessage} disabled={isBuilding || (!input.trim() && attachments.length === 0)}
+            className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50">
             <Send className="w-5 h-5" />
           </button>
+        </div>
+        <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Paste screenshots</span>
+          <span className="flex items-center gap-1"><Mic className="w-3 h-3" /> Voice in</span>
+          <span className="flex items-center gap-1"><Volume2 className="w-3 h-3" /> Male voice out</span>
         </div>
       </div>
     </div>
