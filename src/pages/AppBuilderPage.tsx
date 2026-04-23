@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste } from "lucide-react";
+import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
