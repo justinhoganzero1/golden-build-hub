@@ -98,6 +98,7 @@ export function useSaveMedia() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user-media"] });
       qc.invalidateQueries({ queryKey: ["all-user-media"] });
+      try { window.dispatchEvent(new CustomEvent("library:updated")); } catch { /* noop */ }
     },
     onError: (e: any) => {
       console.error("[useSaveMedia] failed:", e?.message || e);
