@@ -204,6 +204,7 @@ const AdvertisePage = lazy(loaders["/advertise"]);
 const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
+const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -358,6 +359,7 @@ const App = () => (
                   <Route path="/advertise" element={<ErrorBoundary pageName="Advertise"><AdvertisePage /></ErrorBoundary>} />
                   <Route path="/library/public" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="/public-library" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
+                  <Route path="/purchase-success" element={<RequireAuth><ErrorBoundary pageName="Purchase Success"><ShopPurchaseSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
