@@ -544,13 +544,16 @@ export type Database = {
           amount_paid_cents: number
           attempts: number
           created_at: string
+          creator_display_name: string | null
           currency: string
+          download_count: number
           duration_seconds: number
           error_message: string | null
           generated_at: string | null
           gif_url: string | null
           id: string
           is_active_oracle: boolean
+          is_public: boolean
           last_progress_at: string | null
           locked_at: string | null
           locked_by: string | null
@@ -561,6 +564,8 @@ export type Database = {
           replicate_prediction_id: string | null
           resolution: string
           runway_task_id: string | null
+          shop_enabled: boolean
+          shop_price_cents: number
           source_avatar_id: string | null
           source_image_url: string
           status: string
@@ -570,18 +575,22 @@ export type Database = {
           title: string | null
           updated_at: string
           user_id: string
+          view_count: number
         }
         Insert: {
           amount_paid_cents?: number
           attempts?: number
           created_at?: string
+          creator_display_name?: string | null
           currency?: string
+          download_count?: number
           duration_seconds?: number
           error_message?: string | null
           generated_at?: string | null
           gif_url?: string | null
           id?: string
           is_active_oracle?: boolean
+          is_public?: boolean
           last_progress_at?: string | null
           locked_at?: string | null
           locked_by?: string | null
@@ -592,6 +601,8 @@ export type Database = {
           replicate_prediction_id?: string | null
           resolution?: string
           runway_task_id?: string | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           source_avatar_id?: string | null
           source_image_url: string
           status?: string
@@ -601,18 +612,22 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id: string
+          view_count?: number
         }
         Update: {
           amount_paid_cents?: number
           attempts?: number
           created_at?: string
+          creator_display_name?: string | null
           currency?: string
+          download_count?: number
           duration_seconds?: number
           error_message?: string | null
           generated_at?: string | null
           gif_url?: string | null
           id?: string
           is_active_oracle?: boolean
+          is_public?: boolean
           last_progress_at?: string | null
           locked_at?: string | null
           locked_by?: string | null
@@ -623,6 +638,8 @@ export type Database = {
           replicate_prediction_id?: string | null
           resolution?: string
           runway_task_id?: string | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           source_avatar_id?: string | null
           source_image_url?: string
           status?: string
@@ -632,6 +649,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+          view_count?: number
         }
         Relationships: [
           {
@@ -642,6 +660,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      module_publish_prefs: {
+        Row: {
+          auto_publish: boolean
+          created_at: string
+          default_shop_enabled: boolean
+          default_shop_price_cents: number
+          id: string
+          module_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_publish?: boolean
+          created_at?: string
+          default_shop_enabled?: boolean
+          default_shop_price_cents?: number
+          id?: string
+          module_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_publish?: boolean
+          created_at?: string
+          default_shop_enabled?: boolean
+          default_shop_price_cents?: number
+          id?: string
+          module_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       movie_character_bible: {
         Row: {
@@ -705,7 +756,9 @@ export type Database = {
           completed_at: string | null
           completed_scenes: number | null
           created_at: string
+          creator_display_name: string | null
           director_intent: string | null
+          download_count: number
           error_count: number | null
           estimated_cost_cents: number | null
           failed_scenes: number | null
@@ -713,11 +766,14 @@ export type Database = {
           full_script: string | null
           genre: string | null
           id: string
+          is_public: boolean
           last_error: string | null
           logline: string | null
           paid_at: string | null
           payment_status: string
           quality_tier: Database["public"]["Enums"]["movie_quality_tier"]
+          shop_enabled: boolean
+          shop_price_cents: number
           shotstack_render_id: string | null
           shotstack_status: string | null
           spent_cost_cents: number | null
@@ -735,6 +791,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_paid_cents: number | null
+          view_count: number
           youtube_metadata: Json | null
           youtube_video_id: string | null
         }
@@ -743,7 +800,9 @@ export type Database = {
           completed_at?: string | null
           completed_scenes?: number | null
           created_at?: string
+          creator_display_name?: string | null
           director_intent?: string | null
+          download_count?: number
           error_count?: number | null
           estimated_cost_cents?: number | null
           failed_scenes?: number | null
@@ -751,11 +810,14 @@ export type Database = {
           full_script?: string | null
           genre?: string | null
           id?: string
+          is_public?: boolean
           last_error?: string | null
           logline?: string | null
           paid_at?: string | null
           payment_status?: string
           quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          shop_enabled?: boolean
+          shop_price_cents?: number
           shotstack_render_id?: string | null
           shotstack_status?: string | null
           spent_cost_cents?: number | null
@@ -773,6 +835,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_paid_cents?: number | null
+          view_count?: number
           youtube_metadata?: Json | null
           youtube_video_id?: string | null
         }
@@ -781,7 +844,9 @@ export type Database = {
           completed_at?: string | null
           completed_scenes?: number | null
           created_at?: string
+          creator_display_name?: string | null
           director_intent?: string | null
+          download_count?: number
           error_count?: number | null
           estimated_cost_cents?: number | null
           failed_scenes?: number | null
@@ -789,11 +854,14 @@ export type Database = {
           full_script?: string | null
           genre?: string | null
           id?: string
+          is_public?: boolean
           last_error?: string | null
           logline?: string | null
           paid_at?: string | null
           payment_status?: string
           quality_tier?: Database["public"]["Enums"]["movie_quality_tier"]
+          shop_enabled?: boolean
+          shop_price_cents?: number
           shotstack_render_id?: string | null
           shotstack_status?: string | null
           spent_cost_cents?: number | null
@@ -811,6 +879,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_paid_cents?: number | null
+          view_count?: number
           youtube_metadata?: Json | null
           youtube_video_id?: string | null
         }
@@ -1253,6 +1322,57 @@ export type Database = {
           user_id?: string | null
           user_message?: string
           warning_number?: number
+        }
+        Relationships: []
+      }
+      shop_purchases: {
+        Row: {
+          amount_cents: number
+          buyer_id: string
+          completed_at: string | null
+          created_at: string
+          creator_id: string
+          creator_payout_cents: number
+          currency: string
+          id: string
+          item_id: string
+          item_kind: string
+          platform_fee_cents: number
+          status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          buyer_id: string
+          completed_at?: string | null
+          created_at?: string
+          creator_id: string
+          creator_payout_cents: number
+          currency?: string
+          id?: string
+          item_id: string
+          item_kind: string
+          platform_fee_cents: number
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          buyer_id?: string
+          completed_at?: string | null
+          created_at?: string
+          creator_id?: string
+          creator_payout_cents?: number
+          currency?: string
+          id?: string
+          item_id?: string
+          item_kind?: string
+          platform_fee_cents?: number
+          status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: []
       }
@@ -1763,39 +1883,57 @@ export type Database = {
       user_media: {
         Row: {
           created_at: string
+          creator_display_name: string | null
+          download_count: number
           id: string
+          is_public: boolean
           media_type: string
           metadata: Json | null
+          shop_enabled: boolean
+          shop_price_cents: number
           source_page: string | null
           thumbnail_url: string | null
           title: string | null
           updated_at: string
           url: string
           user_id: string
+          view_count: number
         }
         Insert: {
           created_at?: string
+          creator_display_name?: string | null
+          download_count?: number
           id?: string
+          is_public?: boolean
           media_type?: string
           metadata?: Json | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           source_page?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
           url: string
           user_id: string
+          view_count?: number
         }
         Update: {
           created_at?: string
+          creator_display_name?: string | null
+          download_count?: number
           id?: string
+          is_public?: boolean
           media_type?: string
           metadata?: Json | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           source_page?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
           url?: string
           user_id?: string
+          view_count?: number
         }
         Relationships: []
       }
