@@ -72,6 +72,38 @@ const MediaLibraryPage = () => {
   const [selected, setSelected] = useState<any>(null);
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
+  const [savingShare, setSavingShare] = useState(false);
+  const [priceInput, setPriceInput] = useState<string>("");
+
+  // Sync price input with selected item
+  useEffect(() => {
+    if (selected) {
+      const cents = selected.shop_price_cents || 0;
+      setPriceInput(cents > 0 ? (cents / 100).toFixed(2) : "");
+    }
+  }, [selected]);
+
+  const updateSelectedFlags = async (patch: { is_public?: boolean; shop_enabled?: boolean; shop_price_cents?: number }) => {
+    if (!selected) return;
+    setSavingShare(true);
+    try {
+      const { error } = await supabase
+        .from("user_media")
+        .update(patch)
+        .eq("id", selected.id);
+      if (error) throw error;
+      setSelected({ ...selected, ...patch });
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+      qc.invalidateQueries({ queryKey: ["public-library"] });
+      toast.success("Updated.");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not update sharing settings.");
+    } finally {
+      setSavingShare(false);
+    }
+  };
+
 
   // Auto-refresh whenever any module saves something to the library
   useEffect(() => {
