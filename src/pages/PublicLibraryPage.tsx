@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Lock, ShoppingBag, Download, Eye, Loader2, Filter } from "lucide-react";
+import { Sparkles, Lock, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,12 +20,37 @@ const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const isMember = (tier: string) =>
   ["starter", "monthly", "quarterly", "biannual", "annual", "golden", "lifetime"].includes(tier);
 
+type SortKey = "newest" | "popular" | "price_low" | "price_high";
+
 const PublicLibraryPage = () => {
   const { user } = useAuth();
   const { effectiveTier, loading: subLoading } = useSubscription();
   const [filter, setFilter] = useState<"all" | "shop" | "media" | "gif" | "movie">("all");
-  const { data: items = [], isLoading } = usePublicLibrary(filter);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const { data: rawItems = [], isLoading } = usePublicLibrary(filter);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const items = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = rawItems;
+    if (q) {
+      list = list.filter(
+        (i) =>
+          (i.title || "").toLowerCase().includes(q) ||
+          (i.creator_display_name || "").toLowerCase().includes(q)
+      );
+    }
+    const sorted = [...list];
+    if (sort === "popular") {
+      sorted.sort((a, b) => (b.view_count + b.download_count) - (a.view_count + a.download_count));
+    } else if (sort === "price_low") {
+      sorted.sort((a, b) => (a.shop_price_cents || 0) - (b.shop_price_cents || 0));
+    } else if (sort === "price_high") {
+      sorted.sort((a, b) => (b.shop_price_cents || 0) - (a.shop_price_cents || 0));
+    }
+    return sorted;
+  }, [rawItems, search, sort]);
 
   const member = useMemo(() => isMember(effectiveTier), [effectiveTier]);
 
