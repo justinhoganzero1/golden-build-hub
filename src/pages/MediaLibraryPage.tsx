@@ -525,6 +525,9 @@ const MediaLibraryPage = () => {
                 )}
               </div>
 
+              <div className="flex gap-2">
+                <button onClick={async () => {
+                  if (!selected.url) return;
                   try {
                     await downloadFileFromUrl(selected.url, selected.title || "media");
                     toast.success("Downloaded!");
