@@ -179,6 +179,11 @@ const MediaLibraryPage = () => {
             className="p-2.5 rounded-xl bg-card border border-border hover:border-destructive/60 hover:text-destructive transition-all">
             <Trash2 className="w-4 h-4" />
           </button>
+          <Link to="/library/public"
+            title="Browse the Public Library"
+            className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
+            <Globe2 className="w-4 h-4 text-primary" />
+          </Link>
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
