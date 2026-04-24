@@ -454,9 +454,77 @@ const MediaLibraryPage = () => {
                 </span>
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={async () => {
-                  if (!selected.url) return;
+              {/* ── Public Library + Creators Shop controls ── */}
+              <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-amber-500/5 p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Globe2 className="w-4 h-4 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">Share to Public Library</p>
+                      <p className="text-[10px] text-muted-foreground">Members can view and download.</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!!selected.is_public}
+                    disabled={savingShare}
+                    onCheckedChange={(v) => updateSelectedFlags({ is_public: v })}
+                  />
+                </div>
+
+                {selected.is_public && (
+                  <>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Sell in Creators Shop</p>
+                          <p className="text-[10px] text-muted-foreground">You keep 70%, platform 30%.</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={!!selected.shop_enabled}
+                        disabled={savingShare}
+                        onCheckedChange={(v) => updateSelectedFlags({ shop_enabled: v })}
+                      />
+                    </div>
+
+                    {selected.shop_enabled && (
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <Label className="text-[10px] text-muted-foreground">Price (USD)</Label>
+                          <div className="relative mt-1">
+                            <DollarSign className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              min="0.50"
+                              step="0.50"
+                              value={priceInput}
+                              onChange={(e) => setPriceInput(e.target.value)}
+                              placeholder="2.00"
+                              className="pl-7 h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          disabled={savingShare}
+                          onClick={() => {
+                            const dollars = parseFloat(priceInput);
+                            if (isNaN(dollars) || dollars < 0.5) {
+                              toast.error("Minimum price is $0.50");
+                              return;
+                            }
+                            updateSelectedFlags({ shop_price_cents: Math.round(dollars * 100) });
+                          }}
+                          className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          Save price
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
                   try {
                     await downloadFileFromUrl(selected.url, selected.title || "media");
                     toast.success("Downloaded!");
