@@ -149,6 +149,47 @@ const PublicLibraryPage = () => {
         </TabsList>
       </Tabs>
 
+      {/* Search + Sort */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title or creator…"
+            className="pl-9 pr-9"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1 overflow-x-auto">
+          {(["newest", "popular", "price_low", "price_high"] as SortKey[]).map((k) => (
+            <Button
+              key={k}
+              size="sm"
+              variant={sort === k ? "default" : "outline"}
+              onClick={() => setSort(k)}
+              className="text-xs whitespace-nowrap"
+            >
+              {k === "newest" ? "Newest" : k === "popular" ? "Popular" : k === "price_low" ? "Price ↑" : "Price ↓"}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground mb-3">
+        {items.length} {items.length === 1 ? "item" : "items"}
+        {search && <> matching <span className="text-foreground">"{search}"</span></>}
+      </p>
+
       {/* Grid */}
       {isLoading || subLoading ? (
         <div className="flex items-center justify-center py-16">
