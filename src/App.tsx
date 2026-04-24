@@ -132,6 +132,7 @@ const loaders = {
   "/advertise": () => import("./pages/AdvertisePage"),
   "/audio-filter": () => import("./pages/AudioFilterPage"),
   "/diagnostics/audio": () => import("./pages/AudioDiagnosticsPage"),
+  "/library/public": () => import("./pages/PublicLibraryPage"),
 } as const;
 
 registerRoutes(loaders);
@@ -202,6 +203,7 @@ const StandaloneAppRoute = lazy(() => import("./pages/StandaloneAppRoute"));
 const AdvertisePage = lazy(loaders["/advertise"]);
 const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
+const PublicLibraryPage = lazy(loaders["/library/public"]);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -354,6 +356,8 @@ const App = () => (
                   <Route path="/apps" element={<RequireAuth><ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/apps/:slug" element={<RequireAuth><PaywallGate requiredTier="starter" featureName="Standalone Mini-App"><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></PaywallGate></RequireAuth>} />
                   <Route path="/advertise" element={<ErrorBoundary pageName="Advertise"><AdvertisePage /></ErrorBoundary>} />
+                  <Route path="/library/public" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
+                  <Route path="/public-library" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

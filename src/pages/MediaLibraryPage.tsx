@@ -1,7 +1,11 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
+import { Link } from "react-router-dom";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +72,38 @@ const MediaLibraryPage = () => {
   const [selected, setSelected] = useState<any>(null);
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
+  const [savingShare, setSavingShare] = useState(false);
+  const [priceInput, setPriceInput] = useState<string>("");
+
+  // Sync price input with selected item
+  useEffect(() => {
+    if (selected) {
+      const cents = selected.shop_price_cents || 0;
+      setPriceInput(cents > 0 ? (cents / 100).toFixed(2) : "");
+    }
+  }, [selected]);
+
+  const updateSelectedFlags = async (patch: { is_public?: boolean; shop_enabled?: boolean; shop_price_cents?: number }) => {
+    if (!selected) return;
+    setSavingShare(true);
+    try {
+      const { error } = await supabase
+        .from("user_media")
+        .update(patch)
+        .eq("id", selected.id);
+      if (error) throw error;
+      setSelected({ ...selected, ...patch });
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+      qc.invalidateQueries({ queryKey: ["public-library"] });
+      toast.success("Updated.");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not update sharing settings.");
+    } finally {
+      setSavingShare(false);
+    }
+  };
+
 
   // Auto-refresh whenever any module saves something to the library
   useEffect(() => {
@@ -175,6 +211,11 @@ const MediaLibraryPage = () => {
             className="p-2.5 rounded-xl bg-card border border-border hover:border-destructive/60 hover:text-destructive transition-all">
             <Trash2 className="w-4 h-4" />
           </button>
+          <Link to="/library/public"
+            title="Browse the Public Library"
+            className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
+            <Globe2 className="w-4 h-4 text-primary" />
+          </Link>
           <button onClick={() => setView(view === "grid" ? "list" : "grid")}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
@@ -411,6 +452,77 @@ const MediaLibraryPage = () => {
                 <span className="text-[10px] text-muted-foreground px-2 py-1 rounded-full bg-muted/50">
                   {new Date(selected.created_at).toLocaleDateString()}
                 </span>
+              </div>
+
+              {/* ── Public Library + Creators Shop controls ── */}
+              <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-amber-500/5 p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Globe2 className="w-4 h-4 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">Share to Public Library</p>
+                      <p className="text-[10px] text-muted-foreground">Members can view and download.</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={!!selected.is_public}
+                    disabled={savingShare}
+                    onCheckedChange={(v) => updateSelectedFlags({ is_public: v })}
+                  />
+                </div>
+
+                {selected.is_public && (
+                  <>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Sell in Creators Shop</p>
+                          <p className="text-[10px] text-muted-foreground">You keep 70%, platform 30%.</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={!!selected.shop_enabled}
+                        disabled={savingShare}
+                        onCheckedChange={(v) => updateSelectedFlags({ shop_enabled: v })}
+                      />
+                    </div>
+
+                    {selected.shop_enabled && (
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <Label className="text-[10px] text-muted-foreground">Price (USD)</Label>
+                          <div className="relative mt-1">
+                            <DollarSign className="w-3.5 h-3.5 absolute left-2 top-2.5 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              min="0.50"
+                              step="0.50"
+                              value={priceInput}
+                              onChange={(e) => setPriceInput(e.target.value)}
+                              placeholder="2.00"
+                              className="pl-7 h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          disabled={savingShare}
+                          onClick={() => {
+                            const dollars = parseFloat(priceInput);
+                            if (isNaN(dollars) || dollars < 0.5) {
+                              toast.error("Minimum price is $0.50");
+                              return;
+                            }
+                            updateSelectedFlags({ shop_price_cents: Math.round(dollars * 100) });
+                          }}
+                          className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          Save price
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="flex gap-2">
