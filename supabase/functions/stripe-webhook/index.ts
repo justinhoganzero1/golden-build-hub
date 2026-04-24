@@ -100,7 +100,44 @@ Deno.serve(async (req) => {
         const projectId = meta.project_id;
         const appKey = meta.app_key;
 
-        if (projectId) {
+        const purchaseId = meta.purchase_id;
+
+        if (purchaseId) {
+          // Shop purchase — mark paid + bump creator download count
+          const { data: existing } = await supabase
+            .from("shop_purchases")
+            .select("id, status, item_kind, item_id")
+            .eq("id", purchaseId)
+            .maybeSingle();
+          if (existing && existing.status !== "paid") {
+            await supabase
+              .from("shop_purchases")
+              .update({
+                status: "paid",
+                completed_at: new Date().toISOString(),
+                stripe_payment_intent: (session.payment_intent as string) ?? null,
+              })
+              .eq("id", purchaseId);
+
+            // Bump download_count on the source item
+            const table =
+              existing.item_kind === "media"
+                ? "user_media"
+                : existing.item_kind === "gif"
+                ? "living_gifs"
+                : "movie_projects";
+            const { data: cur } = await supabase
+              .from(table)
+              .select("download_count")
+              .eq("id", existing.item_id)
+              .maybeSingle();
+            await supabase
+              .from(table)
+              .update({ download_count: (cur?.download_count ?? 0) + 1 })
+              .eq("id", existing.item_id);
+            log("shop purchase marked paid", { purchaseId });
+          }
+        } else if (projectId) {
           // Movie one-off
           await markMoviePaid(
             projectId,

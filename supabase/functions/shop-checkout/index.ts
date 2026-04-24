@@ -98,7 +98,7 @@ serve(async (req) => {
         creator_id: item.user_id,
         buyer_id: buyer.id,
       },
-      success_url: `${origin}/library/public?purchase=success`,
+      success_url: `${origin}/purchase-success?purchase_id=${purchase.id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/library/public?purchase=cancel`,
     });
 
