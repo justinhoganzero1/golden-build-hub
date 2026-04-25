@@ -227,6 +227,13 @@ const PortalLandingPage = () => {
           <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#all-apps" className="hover:text-primary transition-colors">All Apps</a>
+            <button
+              type="button"
+              onClick={() => navigate("/library/public")}
+              className="hover:text-primary transition-colors font-semibold text-primary/90"
+            >
+              Public Library
+            </button>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
