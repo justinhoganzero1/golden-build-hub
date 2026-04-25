@@ -220,12 +220,15 @@ const OraclePage = () => {
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-  // Wake-word gating: Oracle only listens to commands after "hey oracle"
-  // and goes back to sleep on "that's all oracle". Mic stays open the whole time.
-  const wakeActiveRef = useRef(false);
-  const [wakeActive, setWakeActive] = useState(false);
+  // Once the mic is on, Oracle is ALWAYS awake and listening. The mic only
+  // turns off when the user says "enough oracle" / "mute my mic" or taps the
+  // mic button. Wake words are still accepted but not required.
+  const wakeActiveRef = useRef(true);
+  const [wakeActive, setWakeActive] = useState(true);
   const WAKE_RE = /\b(hey|hi|hello|ok|okay)[\s,]+(oracle|oracal|oracul|oraclel|oricle)\b/i;
-  const SLEEP_RE = /\b(that'?s\s+all|thats\s+all|goodbye|bye|sleep|stop\s+listening|go\s+to\s+sleep)[\s,]*(oracle|oracal|oracul|oraclel|oricle)\b/i;
+  const SLEEP_RE = /\b(that'?s\s+all|thats\s+all|goodbye|bye|go\s+to\s+sleep)[\s,]*(oracle|oracal|oracul|oraclel|oricle)?\b/i;
+  // Hard mute commands — these fully disable the mic until user re-enables it.
+  const MUTE_RE = /\b(enough\s+(oracle|oracal|oracul)|mute\s+(my\s+)?mic(rophone)?|stop\s+listening|turn\s+off\s+(the\s+)?mic(rophone)?)\b/i;
 
   const stripWakePhrase = (t: string) => t.replace(WAKE_RE, "").replace(/^[\s,.!?-]+/, "").trim();
 
@@ -236,17 +239,41 @@ const OraclePage = () => {
       return;
     }
 
-    // Sleep word — silence Oracle, mic stays open.
+    // Hard mute — fully turn the mic off (user said "enough oracle" / "mute my mic").
+    if (MUTE_RE.test(text)) {
+      try { window.speechSynthesis?.cancel(); } catch {}
+      alwaysListenRef.current = false;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      finalTranscriptRef.current = "";
+      latestHeardTextRef.current = "";
+      lastAutoSentRef.current = { text: "", at: 0 };
+      if (recognitionRef.current) {
+        try { recognitionRef.current.onend = null; } catch {}
+        try { recognitionRef.current.onresult = null; } catch {}
+        try { recognitionRef.current.stop(); } catch {}
+        try { recognitionRef.current.abort?.(); } catch {}
+        recognitionRef.current = null;
+      }
+      setIsListening(false);
+      setInput("");
+      toast("Mic off. Tap the mic to talk again.", { duration: 3000 });
+      return;
+    }
+
+    // Soft sleep — Oracle stops auto-replying but mic stays open.
     if (SLEEP_RE.test(text)) {
       wakeActiveRef.current = false;
       setWakeActive(false);
       try { window.speechSynthesis?.cancel(); } catch {}
       setInput("");
-      toast("Oracle is sleeping. Say \"hey Oracle\" to wake her.", { duration: 3500 });
+      toast("Oracle paused. Say \"hey Oracle\" to wake her, or tap mic to mute.", { duration: 3500 });
       return;
     }
 
-    // Wake word — activate; if more was said after it, send the remainder.
+    // Wake word — re-activate; if more was said after it, send the remainder.
     const hasWake = WAKE_RE.test(text);
     if (hasWake && !wakeActiveRef.current) {
       wakeActiveRef.current = true;
@@ -269,7 +296,13 @@ const OraclePage = () => {
       return;
     }
 
-    const normalized = normalizeCapturedText(text);
+    const cleaned = hasWake ? stripWakePhrase(text) : text;
+    if (!cleaned || cleaned.length < 2) {
+      setInput("");
+      return;
+    }
+
+    const normalized = normalizeCapturedText(cleaned);
     if (
       normalized &&
       lastAutoSentRef.current.text === normalized &&
@@ -281,7 +314,7 @@ const OraclePage = () => {
 
     lastAutoSentRef.current = { text: normalized, at: Date.now() };
     setInput("");
-    sendMessageRef.current?.(text);
+    sendMessageRef.current?.(cleaned);
   }, [normalizeCapturedText]);
 
   const flushCapturedVoiceText = useCallback(() => {
@@ -1246,18 +1279,19 @@ const OraclePage = () => {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
-        scheduleCapturedVoiceFlush(900);
+        // Auto-send 2 seconds after the user finishes speaking.
+        scheduleCapturedVoiceFlush(2000);
       } else if (interim.trim()) {
-        scheduleCapturedVoiceFlush(1500);
+        scheduleCapturedVoiceFlush(2200);
       }
     };
 
     recognition.onspeechend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(500);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
 
     recognition.onsoundend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(650);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
 
     recognition.onerror = (e: any) => {
@@ -2452,7 +2486,7 @@ const OraclePage = () => {
         )}
         {isListening && (
           <div className={`mb-2 text-center text-[11px] font-medium ${wakeActive ? "text-emerald-300" : "text-amber-300"}`}>
-            {wakeActive ? "● Oracle is awake — speak naturally. Say \"that's all Oracle\" to sleep." : "○ Oracle is sleeping — say \"hey Oracle\" to wake her."}
+            {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">

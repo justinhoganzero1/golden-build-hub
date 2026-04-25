@@ -227,6 +227,13 @@ const PortalLandingPage = () => {
           <nav className="hidden lg:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
             <a href="#all-apps" className="hover:text-primary transition-colors">All Apps</a>
+            <button
+              type="button"
+              onClick={() => navigate("/library/public")}
+              className="hover:text-primary transition-colors font-semibold text-primary/90"
+            >
+              Public Library
+            </button>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#pricing" className="hover:text-primary transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
@@ -443,6 +450,29 @@ const PortalLandingPage = () => {
                 <Sparkles className="mr-2 h-5 w-5" />
                 Open App Maker
               </Button>
+            </div>
+
+            {/* Public Library — every creation by every member */}
+            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-16 w-16 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
+                  <AdminShield className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-xl text-foreground">Public Library</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Browse · Download · Buy</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+                Explore every photo, GIF, movie, and app shared by Oracle Lunar members.
+                Members can download anything for free, or buy creator-priced items in the Creators Shop.
+              </p>
+              <button
+                onClick={() => navigate("/library/public")}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-primary text-primary-foreground font-semibold shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
+              >
+                Open Public Library
+              </button>
             </div>
 
             {/* Movie Studio Pro & Living GIF — temporarily under construction */}
