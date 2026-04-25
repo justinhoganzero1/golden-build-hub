@@ -239,17 +239,41 @@ const OraclePage = () => {
       return;
     }
 
-    // Sleep word — silence Oracle, mic stays open.
+    // Hard mute — fully turn the mic off (user said "enough oracle" / "mute my mic").
+    if (MUTE_RE.test(text)) {
+      try { window.speechSynthesis?.cancel(); } catch {}
+      alwaysListenRef.current = false;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+      finalTranscriptRef.current = "";
+      latestHeardTextRef.current = "";
+      lastAutoSentRef.current = { text: "", at: 0 };
+      if (recognitionRef.current) {
+        try { recognitionRef.current.onend = null; } catch {}
+        try { recognitionRef.current.onresult = null; } catch {}
+        try { recognitionRef.current.stop(); } catch {}
+        try { recognitionRef.current.abort?.(); } catch {}
+        recognitionRef.current = null;
+      }
+      setIsListening(false);
+      setInput("");
+      toast("Mic off. Tap the mic to talk again.", { duration: 3000 });
+      return;
+    }
+
+    // Soft sleep — Oracle stops auto-replying but mic stays open.
     if (SLEEP_RE.test(text)) {
       wakeActiveRef.current = false;
       setWakeActive(false);
       try { window.speechSynthesis?.cancel(); } catch {}
       setInput("");
-      toast("Oracle is sleeping. Say \"hey Oracle\" to wake her.", { duration: 3500 });
+      toast("Oracle paused. Say \"hey Oracle\" to wake her, or tap mic to mute.", { duration: 3500 });
       return;
     }
 
-    // Wake word — activate; if more was said after it, send the remainder.
+    // Wake word — re-activate; if more was said after it, send the remainder.
     const hasWake = WAKE_RE.test(text);
     if (hasWake && !wakeActiveRef.current) {
       wakeActiveRef.current = true;
@@ -272,7 +296,13 @@ const OraclePage = () => {
       return;
     }
 
-    const normalized = normalizeCapturedText(text);
+    const cleaned = hasWake ? stripWakePhrase(text) : text;
+    if (!cleaned || cleaned.length < 2) {
+      setInput("");
+      return;
+    }
+
+    const normalized = normalizeCapturedText(cleaned);
     if (
       normalized &&
       lastAutoSentRef.current.text === normalized &&
@@ -284,7 +314,7 @@ const OraclePage = () => {
 
     lastAutoSentRef.current = { text: normalized, at: Date.now() };
     setInput("");
-    sendMessageRef.current?.(text);
+    sendMessageRef.current?.(cleaned);
   }, [normalizeCapturedText]);
 
   const flushCapturedVoiceText = useCallback(() => {
