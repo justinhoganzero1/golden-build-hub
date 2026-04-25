@@ -25,10 +25,31 @@ export interface SaveToLibraryInput {
   source_page: string;
   thumbnail_url?: string;
   metadata?: Record<string, unknown>;
+  is_public?: boolean;
 }
 
 export async function saveToLibrary(input: SaveToLibraryInput): Promise<string | null> {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      console.warn("[saveToLibrary] skipped — user not signed in");
+      return null;
+    }
+
+    const { data: rpcId, error: rpcError } = await (supabase as any).rpc("save_library_item", {
+      _media_type: input.media_type,
+      _title: input.title,
+      _url: input.url,
+      _source_page: input.source_page,
+      _thumbnail_url: input.thumbnail_url ?? null,
+      _metadata: input.metadata ?? {},
+      _is_public: input.is_public ?? false,
+    });
+    if (!rpcError && rpcId) {
+      try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: rpcId } })); } catch { /* noop */ }
+      return rpcId;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.warn("[saveToLibrary] skipped — user not signed in");
