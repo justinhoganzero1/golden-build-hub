@@ -452,6 +452,29 @@ const PortalLandingPage = () => {
               </Button>
             </div>
 
+            {/* Public Library — every creation by every member */}
+            <div className="holo-tile rounded-2xl p-6 border border-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.15)] flex flex-col">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="h-16 w-16 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center drop-shadow-[0_0_20px_hsl(var(--primary)/0.6)]">
+                  <AdminShield className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-xl text-foreground">Public Library</h3>
+                  <p className="text-xs text-primary uppercase tracking-wider">Browse · Download · Buy</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
+                Explore every photo, GIF, movie, and app shared by Oracle Lunar members.
+                Members can download anything for free, or buy creator-priced items in the Creators Shop.
+              </p>
+              <button
+                onClick={() => navigate("/library/public")}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-primary text-primary-foreground font-semibold shadow-[0_0_30px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_50px_hsl(var(--primary)/0.6)] transition-shadow"
+              >
+                Open Public Library
+              </button>
+            </div>
+
             {/* Movie Studio Pro & Living GIF — temporarily under construction */}
           </div>
         </div>
