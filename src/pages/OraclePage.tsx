@@ -2486,7 +2486,7 @@ const OraclePage = () => {
         )}
         {isListening && (
           <div className={`mb-2 text-center text-[11px] font-medium ${wakeActive ? "text-emerald-300" : "text-amber-300"}`}>
-            {wakeActive ? "● Oracle is awake — speak naturally. Say \"that's all Oracle\" to sleep." : "○ Oracle is sleeping — say \"hey Oracle\" to wake her."}
+            {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
