@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 export interface UserAvatar {
   id: string;
@@ -87,13 +88,22 @@ export function useSaveMedia() {
       title: string;
       url: string;
       source_page: string;
+      thumbnail_url?: string;
       metadata?: Record<string, unknown>;
+      is_public?: boolean;
     }) => {
       if (!user) throw new Error("Sign in to save to your library");
-      const { error } = await supabase
-        .from("user_media")
-        .insert([{ ...media, user_id: user.id }] as any);
-      if (error) throw error;
+      const id = await saveToLibrary({
+        media_type: media.media_type as any,
+        title: media.title,
+        url: media.url,
+        source_page: media.source_page,
+        thumbnail_url: media.thumbnail_url,
+        metadata: media.metadata,
+        is_public: media.is_public,
+      });
+      if (!id) throw new Error("Could not save to library");
+      return id;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["user-media"] });

@@ -2076,6 +2076,18 @@ export type Database = {
         Returns: undefined
       }
       retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
+      save_library_item: {
+        Args: {
+          _is_public?: boolean
+          _media_type: string
+          _metadata?: Json
+          _source_page: string
+          _thumbnail_url?: string
+          _title: string
+          _url: string
+        }
+        Returns: string
+      }
       wallet_charge_call: {
         Args: {
           _destination: string
