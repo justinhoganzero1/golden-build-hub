@@ -150,9 +150,16 @@ const SignInPage = () => {
         )}
 
         {!isOwnerAccess && (
-          <p className="text-center text-xs text-muted-foreground mb-4">
-            {isSignUp ? "Create your account with email and password." : "Sign in with your email and password."}
-          </p>
+          <>
+            <p className="text-center text-xs text-muted-foreground mb-2">
+              {isSignUp ? "Create your account with email and password." : "Sign in with your email and password."}
+            </p>
+            {isSignUp && (
+              <p className="text-center text-xs text-primary font-medium mb-4">
+                ✨ 100% free to join — no credit card required. You'll only be asked to pay if you choose to upgrade.
+              </p>
+            )}
+          </>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
