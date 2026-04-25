@@ -1279,18 +1279,19 @@ const OraclePage = () => {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
-        scheduleCapturedVoiceFlush(900);
+        // Auto-send 2 seconds after the user finishes speaking.
+        scheduleCapturedVoiceFlush(2000);
       } else if (interim.trim()) {
-        scheduleCapturedVoiceFlush(1500);
+        scheduleCapturedVoiceFlush(2200);
       }
     };
 
     recognition.onspeechend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(500);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
 
     recognition.onsoundend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(650);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
 
     recognition.onerror = (e: any) => {
