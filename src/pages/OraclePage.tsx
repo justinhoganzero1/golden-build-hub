@@ -220,12 +220,15 @@ const OraclePage = () => {
 
   useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-  // Wake-word gating: Oracle only listens to commands after "hey oracle"
-  // and goes back to sleep on "that's all oracle". Mic stays open the whole time.
-  const wakeActiveRef = useRef(false);
-  const [wakeActive, setWakeActive] = useState(false);
+  // Once the mic is on, Oracle is ALWAYS awake and listening. The mic only
+  // turns off when the user says "enough oracle" / "mute my mic" or taps the
+  // mic button. Wake words are still accepted but not required.
+  const wakeActiveRef = useRef(true);
+  const [wakeActive, setWakeActive] = useState(true);
   const WAKE_RE = /\b(hey|hi|hello|ok|okay)[\s,]+(oracle|oracal|oracul|oraclel|oricle)\b/i;
-  const SLEEP_RE = /\b(that'?s\s+all|thats\s+all|goodbye|bye|sleep|stop\s+listening|go\s+to\s+sleep)[\s,]*(oracle|oracal|oracul|oraclel|oricle)\b/i;
+  const SLEEP_RE = /\b(that'?s\s+all|thats\s+all|goodbye|bye|go\s+to\s+sleep)[\s,]*(oracle|oracal|oracul|oraclel|oricle)?\b/i;
+  // Hard mute commands — these fully disable the mic until user re-enables it.
+  const MUTE_RE = /\b(enough\s+(oracle|oracal|oracul)|mute\s+(my\s+)?mic(rophone)?|stop\s+listening|turn\s+off\s+(the\s+)?mic(rophone)?)\b/i;
 
   const stripWakePhrase = (t: string) => t.replace(WAKE_RE, "").replace(/^[\s,.!?-]+/, "").trim();
 
