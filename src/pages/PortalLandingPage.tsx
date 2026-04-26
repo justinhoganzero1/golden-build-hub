@@ -335,7 +335,7 @@ const PortalLandingPage = () => {
             <span className="oracle-lunar-wordmark text-5xl md:text-7xl">ORACLE LUNAR</span>
             <br />
             <span className="oracle-lunar-wordmark-soft text-2xl md:text-4xl block mt-4">
-              Your AI companion to do everything
+              Your AI companion — always here, always listening.
             </span>
           </h1>
 
@@ -344,8 +344,8 @@ const PortalLandingPage = () => {
           </div>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Wellness, creativity, safety, and productivity — unified in one cinematic experience,
-            guided by an AI that talks, listens, and genuinely cares.
+            Talk, listen, create and unwind with an AI that genuinely cares — wellness, creativity,
+            safety and productivity in one cinematic super-app.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -355,7 +355,7 @@ const PortalLandingPage = () => {
               className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all"
             >
               <Sparkles className="mr-3 h-7 w-7" />
-              Sign Up
+              Start Chatting Free
             </Button>
             <Button
               size="lg"
