@@ -335,7 +335,7 @@ const PortalLandingPage = () => {
             <span className="oracle-lunar-wordmark text-5xl md:text-7xl">ORACLE LUNAR</span>
             <br />
             <span className="oracle-lunar-wordmark-soft text-2xl md:text-4xl block mt-4">
-              Your AI companion to do everything
+              Your AI companion — always here, always listening.
             </span>
           </h1>
 
@@ -344,8 +344,8 @@ const PortalLandingPage = () => {
           </div>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Wellness, creativity, safety, and productivity — unified in one cinematic experience,
-            guided by an AI that talks, listens, and genuinely cares.
+            Talk, listen, create and unwind with an AI that genuinely cares — wellness, creativity,
+            safety and productivity in one cinematic super-app.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -355,7 +355,7 @@ const PortalLandingPage = () => {
               className="h-16 px-10 text-lg font-bold rounded-2xl shadow-[0_0_50px_hsl(var(--primary)/0.6)] hover:shadow-[0_0_80px_hsl(var(--primary)/0.9)] hover:scale-105 transition-all"
             >
               <Sparkles className="mr-3 h-7 w-7" />
-              Sign Up
+              Start Chatting Free
             </Button>
             <Button
               size="lg"
@@ -385,6 +385,83 @@ const PortalLandingPage = () => {
 
 
 
+      {/* ── Why people love Oracle Lunar (3 highlight cards) ── */}
+      <section className="max-w-6xl mx-auto px-4 py-20">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+          Why people love <span className="text-primary">Oracle Lunar</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: Sparkles,
+              title: "Real Conversations",
+              desc: "Talk to an AI that listens, understands, and responds naturally.",
+            },
+            {
+              icon: Heart,
+              title: "Choose Your Companion",
+              desc: "Friend, girlfriend, boyfriend, mentor — you decide.",
+            },
+            {
+              icon: Lock,
+              title: "100% Private & Free to Join",
+              desc: "Free to join, no credit card. Your conversations stay yours.",
+            },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="holo-tile rounded-2xl p-6 text-center border border-primary/20"
+            >
+              <Icon className="holo-icon h-10 w-10 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2 text-foreground">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Meet Your AI Companions (3 face tiles) ── */}
+      <section className="border-y border-primary/20 bg-card/40">
+        <div className="max-w-6xl mx-auto px-4 py-20">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            Meet your <span className="text-primary">AI companions</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Luna",
+                tag: "Soft, caring, supportive",
+                icon: Heart,
+                to: "/ai-companion",
+              },
+              {
+                name: "Orion",
+                tag: "Strong, loyal, protective",
+                icon: Shield,
+                to: "/ai-companion",
+              },
+              {
+                name: "The Oracle",
+                tag: "See the chat interface",
+                icon: Sparkles,
+                to: "/oracle-preview",
+              },
+            ].map(({ name, tag, icon: Icon, to }) => (
+              <button
+                key={name}
+                onClick={() => navigate(to)}
+                className="holo-tile rounded-2xl p-8 text-center border border-primary/30 hover:border-primary hover:shadow-[0_0_40px_hsl(var(--primary)/0.4)] transition-all group"
+              >
+                <div className="h-24 w-24 mx-auto rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform drop-shadow-[0_0_25px_hsl(var(--primary)/0.5)]">
+                  <Icon className="h-12 w-12 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-1">{name}</h3>
+                <p className="text-sm text-muted-foreground">{tag}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">
