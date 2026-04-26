@@ -75,6 +75,9 @@ import SecurityShield from "@/components/SecurityShield";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
+import companionLuna from "@/assets/companion-luna.jpg";
+import companionOrion from "@/assets/companion-orion.jpg";
+import companionOracle from "@/assets/companion-oracle.jpg";
 import VisitorCounter from "@/components/VisitorCounter";
 import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
@@ -426,37 +429,39 @@ const PortalLandingPage = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
             Meet your <span className="text-primary">AI companions</span>
           </h2>
+          <p className="text-center text-muted-foreground mb-10 text-sm">
+            Tap any face to sign up free — no credit card required.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                name: "Luna",
-                tag: "Soft, caring, supportive",
-                icon: Heart,
-                to: "/ai-companion",
-              },
-              {
-                name: "Orion",
-                tag: "Strong, loyal, protective",
-                icon: Shield,
-                to: "/ai-companion",
-              },
-              {
-                name: "The Oracle",
-                tag: "See the chat interface",
-                icon: Sparkles,
-                to: "/oracle-preview",
-              },
-            ].map(({ name, tag, icon: Icon, to }) => (
+              { name: "Luna", tag: "Soft, caring, supportive", img: companionLuna, redirect: "/ai-companion" },
+              { name: "Orion", tag: "Strong, loyal, protective", img: companionOrion, redirect: "/ai-companion" },
+              { name: "The Oracle", tag: "See the chat interface", img: companionOracle, redirect: "/oracle" },
+            ].map(({ name, tag, img, redirect }) => (
               <button
                 key={name}
-                onClick={() => navigate(to)}
-                className="holo-tile rounded-2xl p-8 text-center border border-primary/30 hover:border-primary hover:shadow-[0_0_40px_hsl(var(--primary)/0.4)] transition-all group"
+                onClick={() => goMemberSignUp(redirect)}
+                aria-label={`Sign up free to chat with ${name}`}
+                className="holo-tile rounded-2xl overflow-hidden text-center border border-primary/30 hover:border-primary hover:shadow-[0_0_40px_hsl(var(--primary)/0.5)] transition-all group"
               >
-                <div className="h-24 w-24 mx-auto rounded-full bg-primary/15 border border-primary/40 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform drop-shadow-[0_0_25px_hsl(var(--primary)/0.5)]">
-                  <Icon className="h-12 w-12 text-primary" />
+                <div className="relative aspect-square w-full overflow-hidden">
+                  <img
+                    src={img}
+                    alt={`${name} — Oracle Lunar AI companion 8K portrait`}
+                    width={1024}
+                    height={1024}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 text-center">
+                    <h3 className="text-2xl font-bold text-foreground mb-1 drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]">{name}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{tag}</p>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                      Sign up free <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-1">{name}</h3>
-                <p className="text-sm text-muted-foreground">{tag}</p>
               </button>
             ))}
           </div>
