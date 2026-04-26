@@ -2072,14 +2072,13 @@ const OraclePage = () => {
         if (isBackground) {
           toast.success(`${oracleName} is working on it in the background...`);
         } else {
-          // Only auto-navigate if the user EXPLICITLY asked to go somewhere.
-          // Prevents Oracle from yanking the user off the chat after one message.
-          const userAskedToNavigate = /\b(take me|open|go to|launch|show me|navigate|bring me|switch to|jump to)\b/i.test(text);
-          if (userAskedToNavigate) {
-            setTimeout(() => triggerExplosion(navPath), 1500);
-          } else {
-            console.log("[Oracle] Suppressed navigation to", navPath, "— user didn't ask to leave the chat");
-          }
+          // Trust the model's [[NAVIGATE:...]] tag. The system prompt explicitly
+          // tells Oracle to ONLY emit it when the user asked to go somewhere or
+          // walked through a feature. Silently swallowing it makes Oracle look
+          // broken ("the AI doesn't do anything"). Give the user a brief toast
+          // so they understand what's about to happen.
+          toast(`Opening ${navPath.replace(/^\//, "")}...`);
+          setTimeout(() => triggerExplosion(navPath), 1500);
         }
       }
 
