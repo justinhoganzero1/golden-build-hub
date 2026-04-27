@@ -310,6 +310,21 @@ const PhotoBrandKitPanel = ({ currentImage, prompt, filter, mode, onApplyTemplat
             />
           </div>
 
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={kit.hide_brand_watermark}
+              onChange={(e) => setKit({ ...kit, hide_brand_watermark: e.target.checked })}
+              className="mt-0.5 accent-primary"
+            />
+            <div className="flex-1">
+              <div className="text-xs font-semibold text-foreground">Hide major brand watermark</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Removes the large full-screen watermark from your exports. Per-platform watermarks still apply.
+              </p>
+            </div>
+          </label>
+
           <button
             onClick={saveKit}
             disabled={savingKit}
