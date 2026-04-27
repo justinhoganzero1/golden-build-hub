@@ -137,7 +137,7 @@ serve(async (req) => {
       availableBalance: available,
       pendingBalance: pending,
       recentCharges: recent,
-      recentPayouts: payouts.data.map((p) => ({
+      recentPayouts: payouts.data.map((p: Stripe.Payout) => ({
         id: p.id,
         amount: p.amount,
         currency: p.currency,
