@@ -86,7 +86,7 @@ const PhotoBrandKitPanel = ({ currentImage, prompt, filter, mode, onApplyTemplat
         supabase.from("photography_templates").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.rpc("photo_template_quota", { _user_id: user.id }),
       ]);
-      if (kitRes.data) setKit({ ...EMPTY_KIT, ...kitRes.data, watermarks: kitRes.data.watermarks || {} });
+      if (kitRes.data) setKit({ ...EMPTY_KIT, ...kitRes.data, watermarks: (kitRes.data.watermarks as any) || {} });
       if (tplRes.data) setTemplates(tplRes.data);
       if (quotaRes.data && Array.isArray(quotaRes.data) && quotaRes.data[0]) setQuota(quotaRes.data[0]);
     })();
