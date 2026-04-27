@@ -1160,6 +1160,48 @@ export type Database = {
         }
         Relationships: []
       }
+      photography_templates: {
+        Row: {
+          created_at: string
+          filter: string | null
+          id: string
+          mode: string
+          name: string
+          prompt: string
+          social_platform: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+          watermark_config: Json
+        }
+        Insert: {
+          created_at?: string
+          filter?: string | null
+          id?: string
+          mode?: string
+          name: string
+          prompt: string
+          social_platform?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+          watermark_config?: Json
+        }
+        Update: {
+          created_at?: string
+          filter?: string | null
+          id?: string
+          mode?: string
+          name?: string
+          prompt?: string
+          social_platform?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+          watermark_config?: Json
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
@@ -1781,6 +1823,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_brand_kits: {
+        Row: {
+          brand_name: string | null
+          created_at: string
+          custom_label: string | null
+          custom_link: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          tagline: string | null
+          updated_at: string
+          user_id: string
+          watermarks: Json
+        }
+        Insert: {
+          brand_name?: string | null
+          created_at?: string
+          custom_label?: string | null
+          custom_link?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          tagline?: string | null
+          updated_at?: string
+          user_id: string
+          watermarks?: Json
+        }
+        Update: {
+          brand_name?: string | null
+          created_at?: string
+          custom_label?: string | null
+          custom_link?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          tagline?: string | null
+          updated_at?: string
+          user_id?: string
+          watermarks?: Json
+        }
+        Relationships: []
+      }
       user_claims: {
         Row: {
           address: string | null
@@ -2071,6 +2155,14 @@ export type Database = {
       }
       is_owner: { Args: never; Returns: boolean }
       is_owner_email_locked: { Args: never; Returns: boolean }
+      photo_template_quota: {
+        Args: { _user_id: string }
+        Returns: {
+          free_limit: number
+          template_count: number
+          unlocked: boolean
+        }[]
+      }
       recalc_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
