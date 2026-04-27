@@ -11,6 +11,7 @@ import { moderatePrompt } from "@/lib/contentSafety";
 import { downloadFileFromUrl } from "@/lib/utils";
 import PaywallGate from "@/components/PaywallGate";
 import { supabase } from "@/integrations/supabase/client";
+import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -237,6 +238,19 @@ const PhotographyHubPage = () => {
             </button>
           ))}
         </div>
+
+        <PhotoBrandKitPanel
+          currentImage={generatedImage}
+          prompt={prompt}
+          filter={selectedFilter}
+          mode={mode}
+          onApplyTemplate={(t) => {
+            setPrompt(t.prompt);
+            setSelectedFilter(t.filter);
+            setMode(t.mode);
+            toast.success("Template loaded");
+          }}
+        />
       </div>
 
       <ShareDialog

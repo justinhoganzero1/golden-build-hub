@@ -14,6 +14,7 @@ const APP_PRICES: Record<string, { price: string; label: string; amount_cents: n
   app_wrapper: { price: "price_1TNjKELGip9LWuvpgfyCXGKE", label: "App Wrapper", amount_cents: 500 },
   app_maker: { price: "price_1TNjPQLGip9LWuvpXeNDys3j", label: "App Maker", amount_cents: 2000 },
   movie_studio: { price: "price_1TNjPoLGip9LWuvpNSihLK7v", label: "Movie Studio Pro", amount_cents: 100 },
+  photo_templates: { price: "price_1TQcriLGip9LWuvpKFaAUlKx", label: "Unlimited Photo Templates", amount_cents: 100 },
 };
 
 serve(async (req) => {

@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
-export type AppKey = "app_wrapper" | "app_maker" | "movie_studio";
+export type AppKey = "app_wrapper" | "app_maker" | "movie_studio" | "photo_templates";
 
 export const APP_PRICING: Record<AppKey, { label: string; price: string; amountCents: number }> = {
   app_wrapper: { label: "App Wrapper", price: "$5", amountCents: 500 },
   app_maker: { label: "App Maker", price: "$20", amountCents: 2000 },
   // Movie Studio Pro is free for any signed-in user — no one-time fee.
   movie_studio: { label: "Movie Studio Pro", price: "Free", amountCents: 0 },
+  photo_templates: { label: "Unlimited Photo Templates", price: "$1", amountCents: 100 },
 };
 
 // Apps that no longer require a one-time unlock — every signed-in user gets them.

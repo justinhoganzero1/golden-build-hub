@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         { stripeAccount: accountId } // Stripe-Account header → connected account
       );
       return json({
-        products: products.data.map((p) => {
+        products: products.data.map((p: Stripe.Product) => {
           const price = p.default_price as Stripe.Price | null;
           return {
             id: p.id,

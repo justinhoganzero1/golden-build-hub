@@ -56,6 +56,23 @@ serve(async (req) => {
     const platformFee = Math.ceil(item.shop_price_cents * 0.30);
     const creatorPayout = item.shop_price_cents - platformFee;
 
+    // Find creator's Stripe Connect account (optional — enables direct payout)
+    const { data: connectRow } = await supabase
+      .from("connect_accounts")
+      .select("stripe_account_id")
+      .eq("user_id", item.user_id)
+      .maybeSingle();
+
+    let creatorReady = false;
+    if (connectRow?.stripe_account_id) {
+      try {
+        const acct = await stripe.accounts.retrieve(connectRow.stripe_account_id);
+        creatorReady = !!acct.charges_enabled;
+      } catch (_) {
+        creatorReady = false;
+      }
+    }
+
     // Create pending purchase row
     const { data: purchase, error: pErr } = await supabase
       .from("shop_purchases")
@@ -74,6 +91,32 @@ serve(async (req) => {
     if (pErr) throw pErr;
 
     const origin = req.headers.get("origin") || "https://oracle-lunar.online";
+
+    // If creator has a ready Connect account, route the funds: destination charge w/ application fee.
+    const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData | undefined =
+      creatorReady && connectRow?.stripe_account_id
+        ? {
+            application_fee_amount: platformFee,
+            transfer_data: { destination: connectRow.stripe_account_id },
+            metadata: {
+              purchase_id: purchase.id,
+              creator_id: item.user_id,
+              buyer_id: buyer.id,
+              item_kind,
+              item_id,
+            },
+          }
+        : {
+            metadata: {
+              purchase_id: purchase.id,
+              creator_id: item.user_id,
+              buyer_id: buyer.id,
+              item_kind,
+              item_id,
+              payout_pending: "creator_not_connected",
+            },
+          };
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : buyer.email,
@@ -91,6 +134,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
+      payment_intent_data: paymentIntentData,
       metadata: {
         purchase_id: purchase.id,
         item_id,
@@ -98,8 +142,8 @@ serve(async (req) => {
         creator_id: item.user_id,
         buyer_id: buyer.id,
       },
-      success_url: `${origin}/purchase-success?purchase_id=${purchase.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/library/public?purchase=cancel`,
+      success_url: `${origin}/purchase-success?purchase_id=${purchase.id}&item_kind=${item_kind}&item_id=${item_id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/library/public?purchase=cancel&item_id=${item_id}`,
     });
 
     await supabase
@@ -107,8 +151,8 @@ serve(async (req) => {
       .update({ stripe_session_id: session.id })
       .eq("id", purchase.id);
 
-    log("created", { sessionId: session.id, purchaseId: purchase.id });
-    return new Response(JSON.stringify({ url: session.url }), {
+    log("created", { sessionId: session.id, purchaseId: purchase.id, creatorReady });
+    return new Response(JSON.stringify({ url: session.url, creatorReady }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

@@ -98,11 +98,11 @@ serve(async (req) => {
 
     // Current Stripe balance
     const balance = await stripe.balance.retrieve();
-    const available = balance.available.reduce((acc, b) => {
+    const available = balance.available.reduce((acc: Record<string, number>, b: Stripe.Balance.Available) => {
       acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
       return acc;
     }, {} as Record<string, number>);
-    const pending = balance.pending.reduce((acc, b) => {
+    const pending = balance.pending.reduce((acc: Record<string, number>, b: Stripe.Balance.Pending) => {
       acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
       return acc;
     }, {} as Record<string, number>);
@@ -114,7 +114,7 @@ serve(async (req) => {
     const payouts = await stripe.payouts.list({ limit: 5 });
 
     // Recent charges for the table
-    const recent = charges.data.slice(0, 10).map((c) => ({
+    const recent = charges.data.slice(0, 10).map((c: Stripe.Charge) => ({
       id: c.id,
       amount: c.amount,
       currency: c.currency,
@@ -137,7 +137,7 @@ serve(async (req) => {
       availableBalance: available,
       pendingBalance: pending,
       recentCharges: recent,
-      recentPayouts: payouts.data.map((p) => ({
+      recentPayouts: payouts.data.map((p: Stripe.Payout) => ({
         id: p.id,
         amount: p.amount,
         currency: p.currency,
