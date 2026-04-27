@@ -292,9 +292,9 @@ const App = () => (
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
-                  <Route path="/owner-dashboard" element={<RequireAuth><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/admin/library" element={<RequireAuth><ErrorBoundary pageName="Admin Library"><OwnerDashboardPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/admin/editor" element={<RequireAuth><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/owner-dashboard" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/library" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Library"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/editor" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
