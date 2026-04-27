@@ -238,6 +238,19 @@ const PhotographyHubPage = () => {
             </button>
           ))}
         </div>
+
+        <PhotoBrandKitPanel
+          currentImage={generatedImage}
+          prompt={prompt}
+          filter={selectedFilter}
+          mode={mode}
+          onApplyTemplate={(t) => {
+            setPrompt(t.prompt);
+            setSelectedFilter(t.filter);
+            setMode(t.mode);
+            toast.success("Template loaded");
+          }}
+        />
       </div>
 
       <ShareDialog
