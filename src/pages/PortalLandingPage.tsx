@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
 import SEO from "@/components/SEO";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
+import HomepageMailbox from "@/components/HomepageMailbox";
 
 const HOME_JSON_LD = [
   {
