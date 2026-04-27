@@ -40,6 +40,7 @@ type BrandKit = {
   custom_link: string;
   primary_color: string;
   watermarks: Partial<Record<SocialKey, Watermark>>;
+  hide_brand_watermark: boolean;
 };
 
 const EMPTY_KIT: BrandKit = {
@@ -50,6 +51,7 @@ const EMPTY_KIT: BrandKit = {
   custom_link: "",
   primary_color: "#FFD700",
   watermarks: {},
+  hide_brand_watermark: false,
 };
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
