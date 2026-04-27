@@ -675,6 +675,9 @@ const PortalLandingPage = () => {
         </div>
       </section>
 
+      {/* ── Direct mailbox to admin ─────────── */}
+      <HomepageMailbox />
+
       {/* ── FAQ ───────────────────────────────── */}
       <section id="faq" className="border-t border-primary/20 bg-card/40">
         <div className="max-w-3xl mx-auto px-4 py-20">
