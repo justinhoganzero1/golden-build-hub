@@ -98,11 +98,11 @@ serve(async (req) => {
 
     // Current Stripe balance
     const balance = await stripe.balance.retrieve();
-    const available = balance.available.reduce((acc, b) => {
+    const available = balance.available.reduce((acc: Record<string, number>, b: Stripe.Balance.Available) => {
       acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
       return acc;
     }, {} as Record<string, number>);
-    const pending = balance.pending.reduce((acc, b) => {
+    const pending = balance.pending.reduce((acc: Record<string, number>, b: Stripe.Balance.Pending) => {
       acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
       return acc;
     }, {} as Record<string, number>);
