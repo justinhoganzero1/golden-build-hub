@@ -10,6 +10,7 @@ const APP_ROUTES: Record<AppKey, string> = {
   app_wrapper: "/web-wrapper",
   app_maker: "/app-builder",
   movie_studio: "/movie-studio-pro",
+  photo_templates: "/photography-hub",
 };
 
 const UnlockSuccessPage = () => {
