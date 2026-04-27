@@ -11,6 +11,7 @@ import { moderatePrompt } from "@/lib/contentSafety";
 import { downloadFileFromUrl } from "@/lib/utils";
 import PaywallGate from "@/components/PaywallGate";
 import { supabase } from "@/integrations/supabase/client";
+import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
