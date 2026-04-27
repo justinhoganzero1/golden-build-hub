@@ -30,7 +30,10 @@ const SignInPage = () => {
     if (authLoading || !user) return;
 
     const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
-    const nextPath = isOwner ? "/owner-dashboard" : redirectPath;
+    // Normal users ALWAYS land on /dashboard regardless of requested redirect to admin pages.
+    const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
+    const safeRedirect = requestedAdmin && !isOwner ? "/dashboard" : redirectPath;
+    const nextPath = isOwner ? "/owner-dashboard" : safeRedirect;
     navigate(nextPath, { replace: true });
   }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 

@@ -1829,6 +1829,7 @@ export type Database = {
           created_at: string
           custom_label: string | null
           custom_link: string | null
+          hide_brand_watermark: boolean
           id: string
           logo_url: string | null
           primary_color: string | null
@@ -1842,6 +1843,7 @@ export type Database = {
           created_at?: string
           custom_label?: string | null
           custom_link?: string | null
+          hide_brand_watermark?: boolean
           id?: string
           logo_url?: string | null
           primary_color?: string | null
@@ -1855,6 +1857,7 @@ export type Database = {
           created_at?: string
           custom_label?: string | null
           custom_link?: string | null
+          hide_brand_watermark?: boolean
           id?: string
           logo_url?: string | null
           primary_color?: string | null

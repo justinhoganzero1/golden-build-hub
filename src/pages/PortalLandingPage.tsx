@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
 import SEO from "@/components/SEO";
 import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
+import HomepageMailbox from "@/components/HomepageMailbox";
 
 const HOME_JSON_LD = [
   {
@@ -674,6 +675,9 @@ const PortalLandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Direct mailbox to admin ─────────── */}
+      <HomepageMailbox />
 
       {/* ── FAQ ───────────────────────────────── */}
       <section id="faq" className="border-t border-primary/20 bg-card/40">
