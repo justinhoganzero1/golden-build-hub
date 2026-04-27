@@ -114,7 +114,7 @@ serve(async (req) => {
     const payouts = await stripe.payouts.list({ limit: 5 });
 
     // Recent charges for the table
-    const recent = charges.data.slice(0, 10).map((c) => ({
+    const recent = charges.data.slice(0, 10).map((c: Stripe.Charge) => ({
       id: c.id,
       amount: c.amount,
       currency: c.currency,
