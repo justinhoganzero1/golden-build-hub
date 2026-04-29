@@ -447,11 +447,35 @@ const OwnerDashboardPage = () => {
     toast("Suggestion dismissed");
   };
 
-  const addFreebie = () => {
-    if (!freebieEmail.trim()) return;
-    setFreebies(prev => [...prev, { email: freebieEmail, date: new Date().toLocaleDateString(), reason: "Suggestion implemented" }]);
-    setFreebieEmail("");
-    toast.success("Lifetime free access granted!");
+  const addFreebie = async () => {
+    const email = freebieEmail.trim().toLowerCase();
+    if (!email) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { email, days: 365, reason: "admin_freebie" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      setFreebieEmail("");
+      toast.success(`Free access granted to ${email} for 365 days`);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not grant access. The user must sign up first.");
+    }
+  };
+
+  const grantFreeForUser = async (email: string, userId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { userId, email, days: 365, reason: "admin_user_row_grant" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Free access granted to ${email} for 365 days`);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+    } catch (e: any) {
+      toast.error(e?.message || "Grant failed");
+    }
   };
 
   const addVaultUser = () => {
@@ -1527,6 +1551,7 @@ const OwnerDashboardPage = () => {
                         <th className="py-2 pr-3">Joined</th>
                         <th className="py-2 pr-3">Last sign-in</th>
                         <th className="py-2 pr-3">Status</th>
+                        <th className="py-2 pr-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1544,10 +1569,18 @@ const OwnerDashboardPage = () => {
                                 {u.online ? "Online" : "Offline"}
                               </span>
                             </td>
+                            <td className="py-2 pr-3 text-right">
+                              <button
+                                onClick={() => u.email && grantFreeForUser(u.email, u.id)}
+                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:brightness-110"
+                              >
+                                Grant Free Access
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       {usersList.filter(u => (usersSubTab === "online" ? u.online : !u.online)).length === 0 && (
-                        <tr><td colSpan={4} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
+                        <tr><td colSpan={5} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
                       )}
                     </tbody>
                   </table>
