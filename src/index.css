@@ -818,7 +818,8 @@ html.neon-duo [data-slot="card"] {
   }
 }
 
-/* Universal target — every clickable / tab-like element gets the glow */
+/* Universal target — every clickable / tab-like element gets a restrained
+   gold/violet holographic cushion, so the whole app matches the video tiles. */
 button,
 a[href],
 [role="tab"],
@@ -831,7 +832,9 @@ a[href],
 .card-tile,
 [data-glow="pink"] {
   position: relative;
-  animation: neonPinkBreath 3.6s ease-in-out infinite;
+  box-shadow:
+    0 0 10px hsl(var(--primary) / 0.18),
+    0 0 22px hsl(280 95% 65% / 0.12);
   border-radius: inherit;
 }
 
@@ -839,7 +842,9 @@ a[href],
 [class*="rounded-"][class*="border"]:not(input):not(textarea):not(select),
 .card,
 [data-slot="card"] {
-  box-shadow: var(--neon-pink-cushion);
+  box-shadow:
+    0 0 18px hsl(var(--primary) / 0.16),
+    0 0 34px hsl(280 95% 65% / 0.10);
 }
 
 /* Don't paint glow on disabled / hidden / pure layout wrappers */
