@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Video, Scissors, Type, Music, Image, Layers, Play, Upload } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import PaywallGate from "@/components/PaywallGate";
+import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 
 const tools = [
   { icon: <Scissors className="w-5 h-5" />, label: "Trim & Cut" },
@@ -36,6 +37,15 @@ const VideoEditorPage = () => {
               {t.icon}<span className="text-[10px]">{t.label}</span>
             </button>
           ))}
+        </div>
+
+        <div className="mt-4">
+          <HeyGenAffiliateCTA
+            placement="video_editor_avatar"
+            title="Add a Talking AI Avatar"
+            description="Generate a HeyGen avatar clip and drop it straight into your timeline."
+            ctaLabel="Create Avatar Clip →"
+          />
         </div>
       </div>
     </div>

@@ -697,6 +697,24 @@ const OwnerDashboardPage = () => {
                 <h3 className="text-sm font-bold text-white">HeyGen Affiliate</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">Up to 30% commission</span>
               </div>
+              {(() => {
+                const isLive = (() => {
+                  try {
+                    // Lazy-read so swapping the URL flips the badge instantly on next render
+                    const url = (window as any).__HEYGEN_AFFILIATE_URL__ || "";
+                    return url && !url.includes("?sid=oraclelunar");
+                  } catch { return false; }
+                })();
+                return (
+                  <div className={`mb-3 px-3 py-2 rounded-lg text-[11px] font-semibold text-center ${
+                    isLive
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                      : "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  }`}>
+                    {isLive ? "✅ LIVE — Earning commissions" : "⏳ PENDING — Awaiting HeyGen approval"}
+                  </div>
+                );
+              })()}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-pink-300">
@@ -705,8 +723,8 @@ const OwnerDashboardPage = () => {
                   <p className="text-[10px] text-gray-400">Local Clicks</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <p className="text-xs text-gray-300 truncate">heygen.com/?sid=oraclelunar</p>
-                  <p className="text-[10px] text-gray-400 mt-1">Your Link (update once approved)</p>
+                  <p className="text-xs text-gray-300 truncate">Edit src/lib/affiliateLinks.ts</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Paste real URL when approved</p>
                 </div>
               </div>
               <a
@@ -721,10 +739,10 @@ const OwnerDashboardPage = () => {
                 }}
                 className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold hover:opacity-90"
               >
-                Apply / Open HeyGen Affiliate →
+                Open HeyGen Affiliate Portal →
               </a>
               <p className="text-[10px] text-gray-400 mt-2 text-center">
-                Live in: Photography Hub Story Board "Animate" CTA, Movie Studio upgrade prompts
+                Will auto-activate in: Movie Studio • Photography Hub • Video Editor
               </p>
             </div>
 

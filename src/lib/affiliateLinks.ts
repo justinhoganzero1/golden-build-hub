@@ -5,7 +5,13 @@ export const ELEVENLABS_AFFILIATE_URL = "https://try.elevenlabs.io/20p2fwdcfmr2"
 
 // HeyGen affiliate link — paste your PartnerStack/HeyGen referral URL here once approved.
 // Apply at: https://www.heygen.com/affiliate
+// 🔴 PLACEHOLDER — all HeyGenAffiliateCTA components stay hidden until this is replaced.
 export const HEYGEN_AFFILIATE_URL = "https://www.heygen.com/?sid=oraclelunar";
+
+// Expose for the Owner Dashboard "live status" badge
+if (typeof window !== "undefined") {
+  (window as any).__HEYGEN_AFFILIATE_URL__ = HEYGEN_AFFILIATE_URL;
+}
 
 /**
  * Fire-and-forget click tracking. Stores in localStorage as a fallback

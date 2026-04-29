@@ -12,6 +12,7 @@ import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
+import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import JustKeepTalkingButton from "@/components/JustKeepTalkingButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -158,6 +159,13 @@ const MovieStudioProPage = () => {
         <MovieCostEstimator
           walletBalanceCents={balance ?? 0}
           maxDurationMin={limits.maxDurationMin}
+        />
+
+        <HeyGenAffiliateCTA
+          placement="movie_studio_character"
+          title="Need Lifelike Talking Characters?"
+          description="HeyGen creates AI avatars with perfect lip-sync in 175+ voices. Drop them into your Oracle Lunar movie scenes."
+          ctaLabel="Try HeyGen for Characters →"
         />
 
         <JustKeepTalkingButton
