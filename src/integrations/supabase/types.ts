@@ -62,6 +62,33 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_clicks: {
+        Row: {
+          clicked_at: string
+          created_at: string
+          id: string
+          partner: string
+          placement: string
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          partner: string
+          placement: string
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          created_at?: string
+          id?: string
+          partner?: string
+          placement?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_unlocks: {
         Row: {
           amount_cents: number
