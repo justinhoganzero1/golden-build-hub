@@ -18,7 +18,7 @@ import {
   type PresetName,
 } from "@/data/elevenLabsVoices";
 import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
-import { ELEVENLABS_AFFILIATE_URL } from "@/lib/affiliateLinks";
+import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
 
 interface AccountVoice {
   id: string;
