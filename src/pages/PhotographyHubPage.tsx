@@ -12,6 +12,7 @@ import { downloadFileFromUrl } from "@/lib/utils";
 import PaywallGate from "@/components/PaywallGate";
 import { supabase } from "@/integrations/supabase/client";
 import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
+import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -250,6 +251,13 @@ const PhotographyHubPage = () => {
             setMode(t.mode);
             toast.success("Template loaded");
           }}
+        />
+
+        <HeyGenAffiliateCTA
+          placement="photography_hub_animate"
+          title="Bring This Photo to Life"
+          description="Animate your 8K photo into a talking AI character video with HeyGen. Perfect for stories, ads, and social posts."
+          ctaLabel="Animate with HeyGen →"
         />
       </div>
 
