@@ -1580,7 +1580,7 @@ const OwnerDashboardPage = () => {
                           </tr>
                         ))}
                       {usersList.filter(u => (usersSubTab === "online" ? u.online : !u.online)).length === 0 && (
-                        <tr><td colSpan={4} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
+                        <tr><td colSpan={5} className="py-6 text-center text-gray-500">No {usersSubTab} members.</td></tr>
                       )}
                     </tbody>
                   </table>
