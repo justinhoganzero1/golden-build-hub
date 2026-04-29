@@ -1130,26 +1130,46 @@ a[aria-disabled="true"],
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GLOBAL UPGRADE — apply holographic look to existing .holo-tile
-   class used across portal + app, so every tile inherits the new
-   iridescent oil-slick treatment automatically.
+   CHICLET v4 — 3D glassy gold/violet tiles matching the cinematic
+   "Making of Oracle Lunar" video. Every .holo-tile across the app
+   inherits this look. Deterministic gold/violet alternation via
+   :nth-child for variety without per-tile classes.
    ═══════════════════════════════════════════════════════════════ */
 .holo-tile {
   position: relative;
+  border-radius: 22px !important;
   background:
-    linear-gradient(135deg,
-      hsl(0 0% 5% / 0.9),
-      hsl(280 30% 8% / 0.9) 50%,
-      hsl(200 30% 8% / 0.9)),
-    radial-gradient(circle at 80% 20%, hsl(280 90% 50% / 0.18), transparent 60%) !important;
-  border: 1px solid hsl(280 80% 50% / 0.25) !important;
+    linear-gradient(160deg,
+      hsl(0 0% 6% / 0.95),
+      hsl(265 35% 9% / 0.92) 50%,
+      hsl(0 0% 4% / 0.95)),
+    radial-gradient(circle at 30% 20%, hsl(45 100% 55% / 0.10), transparent 55%) !important;
+  border: 1.5px solid hsl(45 100% 55% / 0.45) !important;
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.08),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
-    0 8px 24px hsl(280 60% 10% / 0.5),
-    0 0 30px hsl(200 80% 40% / 0.15) !important;
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    inset 0 -2px 6px hsl(0 0% 0% / 0.6),
+    0 0 22px hsl(45 100% 55% / 0.32),
+    0 0 44px hsl(45 100% 55% / 0.18),
+    0 12px 28px hsl(0 0% 0% / 0.55) !important;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+}
+/* Violet variant — every other tile picks up a purple rim for the
+   classic chiclet alternation seen in the video. */
+.holo-tile:nth-child(even) {
+  background:
+    linear-gradient(160deg,
+      hsl(0 0% 6% / 0.95),
+      hsl(280 40% 10% / 0.92) 50%,
+      hsl(0 0% 4% / 0.95)),
+    radial-gradient(circle at 30% 20%, hsl(280 90% 60% / 0.14), transparent 55%) !important;
+  border-color: hsl(280 90% 60% / 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    inset 0 -2px 6px hsl(0 0% 0% / 0.6),
+    0 0 22px hsl(280 90% 60% / 0.32),
+    0 0 44px hsl(280 90% 60% / 0.18),
+    0 12px 28px hsl(0 0% 0% / 0.55) !important;
 }
 .holo-tile::before {
   content: '';
