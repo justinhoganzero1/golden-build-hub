@@ -1,32 +1,25 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, Series, staticFile, useCurrentFrame, interpolate } from "remotion";
+import { AbsoluteFill, Sequence, Series, useCurrentFrame, interpolate } from "remotion";
 import { loadFont as loadDisplay } from "@remotion/google-fonts/PlayfairDisplay";
 import { loadFont as loadBody } from "@remotion/google-fonts/Inter";
-import { CinematicScene } from "./components/CinematicScene";
+import { VideoScene } from "./components/VideoScene";
 
 loadDisplay();
 loadBody();
 
-// Audio is muxed post-render via system ffmpeg (Nix ffmpeg lacks libfdk_aac).
-const INCLUDE_AUDIO = false;
-
-// Scene timings (frames @ 30fps) - total 1050 = 35s
-// Narrator VO is 25.4s = 762 frames; starts at frame 0
-// Oracle VO is 7s = 210 frames; starts at frame 720 (during phone-call beat)
+// Total timeline: 31s = 930 frames @ 30fps
+// Audio (music + narrator + oracle) is muxed post-render via ffmpeg
 const SCENES = [
-  { img: "images/scene1-office.jpg", dur: 150, motion: "in" as const,    cap: "It's late.",                sub: "Floor 42" },
-  { img: "images/scene1-office.jpg", dur: 90,  motion: "left" as const,  cap: "The city sleeps.",         sub: undefined },
-  { img: "images/scene2-developer.jpg", dur: 180, motion: "in" as const, cap: "But one builder is awake.", sub: "Line by line" },
-  { img: "images/scene3-screen.jpg", dur: 150, motion: "out" as const,   cap: "An AI best friend.",       sub: "Always here" },
-  { img: "images/scene4-secretary.jpg", dur: 150, motion: "in" as const, cap: "Then... she walks in.",    sub: undefined },
-  { img: "images/scene5-phonehandoff.jpg", dur: 120, motion: "in" as const, cap: "The Oracle is on the line.", sub: "She wants to talk to him" },
-  { img: "images/scene6-call.jpg", dur: 120, motion: "out" as const,     cap: undefined, sub: undefined },
-  { img: "images/scene7-outro.jpg", dur: 90,  motion: "in" as const,     cap: undefined, sub: undefined },
+  { src: "video/clip1-office.mp4",    dur: 120, cap: "It's late.",                sub: "Floor 42" },                   // 0-4s
+  { src: "video/clip2-developer.mp4", dur: 240, cap: "But one builder is awake.", sub: "Line by line" },               // 4-12s
+  { src: "video/clip3-screen.mp4",    dur: 150, cap: "An AI best friend.",        sub: "Always here" },                // 12-17s
+  { src: "video/clip4-secretary.mp4", dur: 210, cap: "Then... she walks in.",     sub: undefined },                    // 17-24s
+  { src: "video/clip5-call.mp4",      dur: 210, cap: "The Oracle is on the line.", sub: "She wants to talk to him" },  // 24-31s
 ];
 
 const FilmGrain: React.FC = () => {
   const frame = useCurrentFrame();
-  const opacity = 0.06 + 0.02 * Math.abs(Math.sin(frame * 0.4));
+  const opacity = 0.05 + 0.02 * Math.abs(Math.sin(frame * 0.4));
   return (
     <AbsoluteFill
       style={{
@@ -49,7 +42,7 @@ const Letterbox: React.FC = () => (
 
 const TitleCard: React.FC = () => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 25, 110, 140], [0, 1, 1, 0], { extrapolateRight: "clamp" });
+  const opacity = interpolate(frame, [0, 25, 90, 120], [0, 1, 1, 0], { extrapolateRight: "clamp" });
   return (
     <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "flex-start", padding: 140, opacity, zIndex: 50 }}>
       <div
@@ -69,47 +62,28 @@ const TitleCard: React.FC = () => {
 };
 
 export const MainVideo: React.FC = () => {
-  let acc = 0;
   return (
     <AbsoluteFill style={{ background: "#000", fontFamily: "Inter" }}>
       <Series>
-        {SCENES.map((s, i) => {
-          const el = (
-            <Series.Sequence key={i} durationInFrames={s.dur}>
-              <CinematicScene
-                image={s.img}
-                caption={s.cap}
-                subCaption={s.sub}
-                motion={s.motion}
-                vignette={0.6}
-                captionPos={i % 2 === 0 ? "bottom" : "top"}
-              />
-            </Series.Sequence>
-          );
-          acc += s.dur;
-          return el;
-        })}
+        {SCENES.map((s, i) => (
+          <Series.Sequence key={i} durationInFrames={s.dur}>
+            <VideoScene
+              src={s.src}
+              caption={s.cap}
+              subCaption={s.sub}
+              vignette={0.6}
+              captionPos={i % 2 === 0 ? "bottom" : "top"}
+            />
+          </Series.Sequence>
+        ))}
       </Series>
 
-      {/* Title card overlay on first scene */}
-      <Sequence from={0} durationInFrames={150}>
+      <Sequence from={0} durationInFrames={120}>
         <TitleCard />
       </Sequence>
 
-      {/* Film grain overlay across whole video */}
       <FilmGrain />
-
-      {/* Letterbox bars for cinematic 2.39:1 feel */}
       <Letterbox />
-
-      {INCLUDE_AUDIO && (
-        <>
-          <Audio src={staticFile("audio/vo-narrator.mp3")} volume={1.0} />
-          <Sequence from={720}>
-            <Audio src={staticFile("audio/vo-oracle.mp3")} volume={1.0} />
-          </Sequence>
-        </>
-      )}
     </AbsoluteFill>
   );
 };
