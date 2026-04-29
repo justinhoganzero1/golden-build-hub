@@ -17,8 +17,9 @@ const Index = () => {
   useEffect(() => {
     if (loading || adminLoading) return;
     if (!user) return;
-    // Admins land on the Owner Dashboard; everyone else on the ORACLE LUNAR dashboard
-    navigate(isAdmin ? "/owner-dashboard" : "/dashboard", { replace: true });
+    // All users — including admins — land on the main ORACLE LUNAR dashboard.
+    // Admins can navigate to /owner-dashboard manually from there.
+    navigate("/dashboard", { replace: true });
   }, [user, loading, isAdmin, adminLoading, navigate]);
 
   if (loading || adminLoading) return null;

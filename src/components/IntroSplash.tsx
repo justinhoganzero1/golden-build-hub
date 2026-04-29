@@ -11,7 +11,7 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
   const [visible, setVisible] = useState(true);
   const { get } = useSiteContent();
   const banner = get("landing", "free_trial_banner", "🎁 Sign up free — 30 days of full access, no card required");
-  const tagline = get("landing", "hero_tagline", "Oracle Lunar, your AI companion to do everything!");
+  const tagline = get("landing", "hero_tagline", "Oracle Lunar — your AI companion, always here for you 💛");
 
   useEffect(() => {
     const timer = setTimeout(() => {
