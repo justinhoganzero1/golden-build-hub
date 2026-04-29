@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Video, Scissors, Type, Music, Image, Layers, Play, Upload } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import PaywallGate from "@/components/PaywallGate";
+import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 
 const tools = [
   { icon: <Scissors className="w-5 h-5" />, label: "Trim & Cut" },
