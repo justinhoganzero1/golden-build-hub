@@ -242,6 +242,22 @@ const PhotographyHubPage = () => {
           ))}
         </div>
 
+        <PhotoAIPowerLab
+          className="mb-4"
+          onApplyPreset={({ prompt: pp, filter: ff, mode: mm }) => {
+            setPrompt(pp);
+            setSelectedFilter(ff);
+            setMode(mm);
+            if (mm === "edit" && !uploadedPhoto) {
+              toast.info("Upload a photo to transform — opening picker");
+              fileRef.current?.click();
+            } else {
+              toast.success("Preset loaded — tap Generate");
+            }
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
+
         <PhotoBrandKitPanel
           currentImage={generatedImage}
           prompt={prompt}
