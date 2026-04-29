@@ -15,20 +15,20 @@ import { downloadFileFromUrl } from "@/lib/utils";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
-  { key: "all",           label: "All Creations",                             icon: Layers,        color: "from-amber-500/20 to-yellow-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-  { key: "movies",        label: "Movies",                                    icon: Film,          color: "from-rose-500/20 to-red-500/20", accent: "text-rose-400", border: "border-rose-500/30" },
-  { key: "favourite-music", label: "Favourite Tracks",                        icon: Star,          color: "from-amber-500/20 to-orange-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-  { key: "avatar",        label: "Avatars",                                   icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
-  { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
-  { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
-  { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
-  { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
-  { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles,      color: "from-fuchsia-500/20 to-pink-500/20", accent: "text-fuchsia-400", border: "border-fuchsia-500/30" },
-  { key: "video-editor",  label: "Video Editor",                             icon: Film,          color: "from-orange-500/20 to-amber-500/20", accent: "text-orange-400", border: "border-orange-500/30" },
-  { key: "voice-studio",  label: "Voice Studio",                             icon: Mic,           color: "from-teal-500/20 to-cyan-500/20", accent: "text-teal-400", border: "border-teal-500/30" },
-  { key: "oracle",        label: "Oracle",                                   icon: Globe,         color: "from-yellow-500/20 to-amber-500/20", accent: "text-yellow-400", border: "border-yellow-500/30" },
-  { key: "live-vision",   label: "Live Vision",                              icon: Eye,           color: "from-indigo-500/20 to-blue-500/20", accent: "text-indigo-400", border: "border-indigo-500/30" },
-  { key: "other",         label: "Other",                                    icon: FileText,      color: "from-zinc-500/20 to-slate-500/20", accent: "text-zinc-400", border: "border-zinc-500/30" },
+  { key: "all",           label: "All Creations",                             icon: Layers },
+  { key: "movies",        label: "Movies",                                    icon: Film },
+  { key: "favourite-music", label: "Favourite Tracks",                        icon: Star },
+  { key: "avatar",        label: "Avatars",                                   icon: User },
+  { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
+  { key: "apps",          label: "Apps",                                      icon: Globe },
+  { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
+  { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2 },
+  { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles },
+  { key: "video-editor",  label: "Video Editor",                             icon: Film },
+  { key: "voice-studio",  label: "Voice Studio",                             icon: Mic },
+  { key: "oracle",        label: "Oracle",                                   icon: Globe },
+  { key: "live-vision",   label: "Live Vision",                              icon: Eye },
+  { key: "other",         label: "Other",                                    icon: FileText },
 ] as const;
 
 const TYPE_FILTERS = [
