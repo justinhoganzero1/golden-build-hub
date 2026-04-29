@@ -447,11 +447,35 @@ const OwnerDashboardPage = () => {
     toast("Suggestion dismissed");
   };
 
-  const addFreebie = () => {
-    if (!freebieEmail.trim()) return;
-    setFreebies(prev => [...prev, { email: freebieEmail, date: new Date().toLocaleDateString(), reason: "Suggestion implemented" }]);
-    setFreebieEmail("");
-    toast.success("Lifetime free access granted!");
+  const addFreebie = async () => {
+    const email = freebieEmail.trim().toLowerCase();
+    if (!email) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { email, days: 365, reason: "admin_freebie" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      setFreebieEmail("");
+      toast.success(`Free access granted to ${email} for 365 days`);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not grant access. The user must sign up first.");
+    }
+  };
+
+  const grantFreeForUser = async (email: string, userId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { userId, email, days: 365, reason: "admin_user_row_grant" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Free access granted to ${email} for 365 days`);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+    } catch (e: any) {
+      toast.error(e?.message || "Grant failed");
+    }
   };
 
   const addVaultUser = () => {
