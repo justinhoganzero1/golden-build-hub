@@ -219,7 +219,7 @@ const MediaLibraryPage = () => {
       <div className="px-4 pt-14 pb-2">
         <div className="flex items-center gap-3 mb-1">
           <div className="relative">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-primary/20 to-amber-500/20 border border-primary/30">
+            <div className="holo-bubble p-2.5 rounded-2xl border border-primary/30">
               <FolderOpen className="w-7 h-7 text-primary" />
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
@@ -371,8 +371,8 @@ const MediaLibraryPage = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-primary/10 to-amber-500/10 border border-primary/20 flex items-center justify-center">
-              <activeCol.icon className={`w-8 h-8 ${activeCol.accent}`} />
+            <div className="holo-card w-16 h-16 mx-auto mb-3 rounded-2xl border border-primary/20 flex items-center justify-center">
+              <activeCol.icon className="w-8 h-8 text-primary" />
             </div>
             <p className="text-foreground text-sm font-medium mb-1">No creations yet</p>
             <p className="text-muted-foreground text-xs max-w-[200px] mx-auto">
@@ -408,8 +408,8 @@ const MediaLibraryPage = () => {
                 )}
                 {/* Source badge */}
                 <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="px-1 py-0.5 rounded bg-black/50 backdrop-blur-sm">
-                    <p className="text-[7px] text-white/80">{m.source_page || "—"}</p>
+                  <div className="px-1 py-0.5 rounded bg-card/80 border border-primary/20">
+                    <p className="text-[7px] text-muted-foreground">{m.source_page || "—"}</p>
                   </div>
                 </div>
               </button>
