@@ -964,50 +964,85 @@ a[aria-disabled="true"],
   pointer-events: none;
 }
 
-/* ── Holographic card — for tiles, panels, modals ── */
+/* ── Holographic card — Oracle Lunar "chiclet" look ──
+   Glassy translucent square with thick rim glow (gold or violet),
+   inner top highlight, and outer bloom. Matches the on-screen tiles
+   in the Oracle Lunar cinematic. ── */
 .holo-card {
   position: relative;
-  border-radius: var(--radius);
+  border-radius: 22px;
   background:
-    linear-gradient(135deg,
-      hsl(0 0% 5% / 0.85),
-      hsl(280 30% 8% / 0.85) 50%,
-      hsl(200 30% 8% / 0.85)),
-    radial-gradient(circle at 80% 20%, hsl(280 90% 50% / 0.15), transparent 60%);
+    /* inner glassy fill — slightly translucent so the bg shows through */
+    linear-gradient(160deg,
+      hsl(0 0% 6% / 0.92) 0%,
+      hsl(265 35% 9% / 0.90) 45%,
+      hsl(0 0% 4% / 0.94) 100%),
+    radial-gradient(ellipse at 50% 0%, hsl(45 100% 65% / 0.10), transparent 60%);
   border: 1px solid transparent;
   background-clip: padding-box;
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.08),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
-    0 8px 24px hsl(280 60% 10% / 0.5),
-    0 0 30px hsl(200 80% 40% / 0.12);
+    /* top inner highlight (glass shine) */
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    inset 0 2px 6px hsl(45 100% 75% / 0.08),
+    /* bottom inner shadow for depth */
+    inset 0 -2px 8px hsl(0 0% 0% / 0.55),
+    /* outer bloom — gold + violet halo like the video */
+    0 0 0 1px hsl(45 90% 55% / 0.35),
+    0 6px 18px hsl(0 0% 0% / 0.6),
+    0 0 22px hsl(45 100% 55% / 0.28),
+    0 0 40px hsl(280 90% 55% / 0.20);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .holo-card::before {
-  /* Iridescent border glow */
+  /* Thick iridescent rim — gold→violet sweep, the chiclet edge */
   content: '';
   position: absolute;
-  inset: -1px;
+  inset: 0;
   border-radius: inherit;
-  padding: 1px;
+  padding: 1.5px;
   background: linear-gradient(
     135deg,
-    hsl(280 90% 60% / 0.6),
-    hsl(200 95% 55% / 0.5) 25%,
-    hsl(160 85% 50% / 0.4) 50%,
-    hsl(45 100% 60% / 0.5) 75%,
-    hsl(320 90% 60% / 0.6)
+    hsl(45 100% 65% / 0.95) 0%,
+    hsl(40 95% 55% / 0.85) 22%,
+    hsl(0 0% 100% / 0.55) 38%,
+    hsl(280 95% 65% / 0.90) 58%,
+    hsl(260 90% 55% / 0.75) 80%,
+    hsl(45 100% 60% / 0.85) 100%
   );
   background-size: 200% 200%;
-  animation: holo-shimmer 12s ease-in-out infinite;
+  animation: holo-shimmer 10s ease-in-out infinite;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
   pointer-events: none;
+  filter: drop-shadow(0 0 6px hsl(45 100% 55% / 0.45));
+}
+
+/* Variant: violet-dominant rim (Photo / Voice tiles in the video) */
+.holo-card.holo-violet::before {
+  background: linear-gradient(
+    135deg,
+    hsl(280 95% 70% / 0.95) 0%,
+    hsl(260 90% 55% / 0.85) 30%,
+    hsl(0 0% 100% / 0.55) 50%,
+    hsl(290 95% 65% / 0.90) 70%,
+    hsl(265 90% 55% / 0.85) 100%
+  );
+  filter: drop-shadow(0 0 6px hsl(280 95% 60% / 0.55));
+}
+.holo-card.holo-violet {
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    inset 0 2px 6px hsl(280 100% 80% / 0.10),
+    inset 0 -2px 8px hsl(0 0% 0% / 0.55),
+    0 0 0 1px hsl(280 90% 60% / 0.40),
+    0 6px 18px hsl(0 0% 0% / 0.6),
+    0 0 22px hsl(280 100% 60% / 0.30),
+    0 0 40px hsl(45 100% 55% / 0.15);
 }
 
 .holo-card::after {
