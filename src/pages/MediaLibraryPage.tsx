@@ -428,14 +428,14 @@ const MediaLibraryPage = () => {
                   ) : isVideoLike(m) ? (
                     <video src={m.url} poster={m.thumbnail_url || undefined} muted playsInline className="w-14 h-14 rounded-xl object-cover border border-border" />
                   ) : (
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${col.color} border ${col.border} flex items-center justify-center`}>
+                    <div className="holo-card w-14 h-14 rounded-xl border border-primary/25 flex items-center justify-center">
                       {getMediaIcon(m.media_type)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground font-medium truncate">{m.title || "Untitled"}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r ${col.color} ${col.accent} font-medium`}>{col.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-primary/25 bg-primary/10 text-primary font-medium">{col.label}</span>
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(m.created_at).toLocaleDateString()}
                       </span>
@@ -480,7 +480,7 @@ const MediaLibraryPage = () => {
                   const colKey = getCollectionKey(selected.source_page, selected.media_type, selected.metadata);
                   const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
                   return (
-                    <span className={`text-[10px] px-2 py-1 rounded-full bg-gradient-to-r ${col.color} ${col.accent} font-medium border ${col.border}`}>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium border border-primary/25">
                       {col.label}
                     </span>
                   );
