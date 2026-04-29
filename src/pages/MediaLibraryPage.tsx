@@ -458,12 +458,13 @@ const MediaLibraryPage = () => {
           {selected && (
             <div className="space-y-4 mt-2">
               <div className="aspect-video bg-secondary rounded-2xl flex items-center justify-center overflow-hidden border border-border">
-                {selected.media_type === "image" && selected.url ? (
+                {isImageLike(selected) ? (
                   <img src={selected.url} alt={selected.title} className="w-full h-full object-contain" />
                 ) : selected.media_type === "video" ? (
-                  <div className="text-center">
-                    <Play className="w-12 h-12 text-primary mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">Tap to play</p>
+                  <video src={selected.url} poster={selected.thumbnail_url || undefined} controls playsInline className="w-full h-full object-contain" />
+                ) : selected.media_type === "text" ? (
+                  <div className="w-full h-full overflow-auto p-4 text-left text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+                    {selected.url}
                   </div>
                 ) : (
                   <div className="text-center">
@@ -564,16 +565,7 @@ const MediaLibraryPage = () => {
               </div>
 
               <div className="flex gap-2">
-                <button onClick={async () => {
-                  if (!selected.url) return;
-                  try {
-                    await downloadFileFromUrl(selected.url, selected.title || "media");
-                    toast.success("Downloaded!");
-                  } catch (error) {
-                    console.error(error);
-                    toast.error("Failed to download media");
-                  }
-                }}
+                <button onClick={handleDownloadSelected}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
                 </button>
