@@ -771,16 +771,7 @@ const PortalLandingPage = () => {
 
 
 
-      {previewFeature && (
-        <FeaturePreviewDialog
-          open={!!previewFeature}
-          onOpenChange={(o) => !o && setPreviewFeature(null)}
-          title={previewFeature.title}
-          desc={previewFeature.desc}
-          icon={previewFeature.icon}
-          to={previewFeature.to}
-        />
-      )}
+      {/* Portal tiles never render live previews — they always route to sign-in or into the app. */}
     </div>
   );
 };
