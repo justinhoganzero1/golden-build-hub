@@ -18,6 +18,7 @@ import {
   type PresetName,
 } from "@/data/elevenLabsVoices";
 import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
+import { ELEVENLABS_AFFILIATE_URL } from "@/lib/affiliateLinks";
 
 interface AccountVoice {
   id: string;
@@ -340,6 +341,27 @@ export default function VoiceStudioPage() {
             Browse the full voice library, fine-tune every setting, and assign voices to your avatars.
           </p>
         </header>
+
+        {/* ElevenLabs affiliate CTA */}
+        <a
+          href={ELEVENLABS_AFFILIATE_URL}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          className="block mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Crown className="text-amber-400 shrink-0" size={20} />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">Want your own ElevenLabs voice studio?</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Clone unlimited voices, dub in 32 languages, build conversational agents — start free.
+              </p>
+            </div>
+            <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
+              Try ElevenLabs →
+            </span>
+          </div>
+        </a>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
