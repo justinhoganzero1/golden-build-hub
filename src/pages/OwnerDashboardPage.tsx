@@ -1551,6 +1551,7 @@ const OwnerDashboardPage = () => {
                         <th className="py-2 pr-3">Joined</th>
                         <th className="py-2 pr-3">Last sign-in</th>
                         <th className="py-2 pr-3">Status</th>
+                        <th className="py-2 pr-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1567,6 +1568,14 @@ const OwnerDashboardPage = () => {
                                 <span className={`w-1.5 h-1.5 rounded-full ${u.online ? "bg-emerald-400 animate-pulse" : "bg-gray-500"}`} />
                                 {u.online ? "Online" : "Offline"}
                               </span>
+                            </td>
+                            <td className="py-2 pr-3 text-right">
+                              <button
+                                onClick={() => u.email && grantFreeForUser(u.email, u.id)}
+                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:brightness-110"
+                              >
+                                Grant Free Access
+                              </button>
                             </td>
                           </tr>
                         ))}
