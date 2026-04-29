@@ -336,8 +336,10 @@ const MediaLibraryPage = () => {
             {recentItems.map((m: any) => (
               <button key={m.id} onClick={() => setSelected(m)}
                 className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
-                {m.media_type === "image" && m.url ? (
+                {isImageLike(m) ? (
                   <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                ) : isVideoLike(m) ? (
+                  <video src={m.url} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                     {getMediaIcon(m.media_type)}
@@ -384,13 +386,19 @@ const MediaLibraryPage = () => {
             {filtered.map((m: any) => (
               <button key={m.id} onClick={() => setSelected(m)}
                 className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
-                {m.media_type === "image" && m.url ? (
+                {isImageLike(m) ? (
                   <>
                     <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="absolute bottom-1 left-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[8px] text-white truncate font-medium">{m.title || "Untitled"}</p>
+                      <p className="text-[8px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
                     </div>
+                  </>
+                ) : isVideoLike(m) ? (
+                  <>
+                    <video src={m.url} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                    <Play className="absolute w-7 h-7 text-primary drop-shadow-lg" />
                   </>
                 ) : (
                   <>
@@ -415,8 +423,10 @@ const MediaLibraryPage = () => {
               return (
                 <button key={m.id} onClick={() => setSelected(m)}
                   className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
-                  {m.media_type === "image" && m.url ? (
+                  {isImageLike(m) ? (
                     <img src={m.url} alt={m.title} className="w-14 h-14 rounded-xl object-cover border border-border" />
+                  ) : isVideoLike(m) ? (
+                    <video src={m.url} poster={m.thumbnail_url || undefined} muted playsInline className="w-14 h-14 rounded-xl object-cover border border-border" />
                   ) : (
                     <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${col.color} border ${col.border} flex items-center justify-center`}>
                       {getMediaIcon(m.media_type)}
