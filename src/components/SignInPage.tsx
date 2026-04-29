@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ const SignInPage = () => {
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (isOwnerAccess) return;
@@ -28,18 +29,14 @@ const SignInPage = () => {
 
   useEffect(() => {
     if (authLoading || !user) return;
-
     const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
-    // Normal users ALWAYS land on /dashboard regardless of requested redirect to admin pages.
     const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
     const safeRedirect = requestedAdmin && !isOwner ? "/dashboard" : redirectPath;
     const nextPath = isOwner ? "/owner-dashboard" : safeRedirect;
     navigate(nextPath, { replace: true });
   }, [authLoading, user, ownerEmail, redirectPath, navigate]);
 
-  useEffect(() => {
-    if (isOwnerAccess) setEmail(ownerEmail);
-  }, [isOwnerAccess, ownerEmail]);
+  useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 
   useEffect(() => {
     if (isOwnerAccess) return;
@@ -54,68 +51,41 @@ const SignInPage = () => {
     }).then(() => {}, () => {});
   }, [isSignUp, isOwnerAccess]);
 
-  const [showHelp, setShowHelp] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
       toast.error("Owner access only accepts the approved admin email.");
       return;
     }
-
     setLoading(true);
-
     try {
       if (isSignUp) {
-        if (isOwnerAccess) {
-          toast.error("Owner access is sign-in only.");
-          return;
-        }
-
+        if (isOwnerAccess) { toast.error("Owner access is sign-in only."); return; }
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: emailReturnUrl },
+          email, password, options: { emailRedirectTo: emailReturnUrl },
         });
         if (error) throw error;
-
         if (signUpData.session) {
           try {
-            await supabase.functions.invoke("grant-signup-reward", {
-              body: { referralCode: refCode },
-            });
+            await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
             localStorage.removeItem("oracle-lunar-ref-code");
-          } catch {
-          }
-
+          } catch {}
           toast.success("Welcome aboard! Taking you into your portal… 🎉");
         } else {
           if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
-          toast.success(
-            "Account created! Check your email to confirm, then sign in to enter your portal.",
-            { duration: 7000 }
-          );
+          toast.success("Account created! Check your email to confirm, then sign in.", { duration: 7000 });
           setIsSignUp(false);
           setPassword("");
         }
       } else {
-        if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
-          toast.error("Admin access is restricted to the owner account.");
-          setLoading(false);
-          return;
-        }
-
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-
         if (isOwnerAccess) {
           sessionStorage.setItem("admin-fresh-login", "1");
           sessionStorage.removeItem("admin-pending-login");
         }
-
         toast.success("Signed in — opening your portal now.");
       }
     } catch (error: any) {
@@ -136,40 +106,62 @@ const SignInPage = () => {
     }
   };
 
+  // Defeat any inherited pink tab glow on this page by scoping a wrapper.
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-4 px-4">
-      <div className="w-full max-w-md overflow-hidden rounded-xl mb-6">
+    <div data-no-tab-glow className="min-h-screen bg-background flex flex-col items-center justify-start pt-6 px-4 pb-10">
+      <style>{`
+        [data-no-tab-glow] [role="tab"]::before,
+        [data-no-tab-glow] [role="tab"]::after,
+        [data-no-tab-glow] [role="tablist"] > button::before,
+        [data-no-tab-glow] [role="tablist"] > button::after { content: none !important; display: none !important; }
+      `}</style>
+
+      <div className="w-full max-w-md overflow-hidden rounded-[22px] mb-6 border border-primary/30 shadow-[0_0_32px_hsl(45_100%_55%/0.25)]">
         <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
       </div>
 
-      <div className="w-full max-w-md border border-border rounded-2xl p-8 bg-card animate-slide-up">
-        <h2 className="text-2xl font-bold text-primary text-center mb-2">
-          {isOwnerAccess ? "Owner Sign In" : isSignUp ? "Create Account" : "Sign In"}
-        </h2>
-        {isOwnerAccess && (
-          <p className="text-center text-sm text-muted-foreground mb-6">
-            Approved owner account only.
-          </p>
-        )}
+      <div
+        className="w-full max-w-md rounded-[22px] p-7 animate-slide-up"
+        style={{
+          background: "linear-gradient(160deg, hsl(0 0% 6% / 0.95), hsl(265 35% 9% / 0.92) 50%, hsl(0 0% 4% / 0.95))",
+          border: "1.5px solid hsl(45 100% 55% / 0.5)",
+          boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.18), 0 0 26px hsl(45 100% 55% / 0.3), 0 0 50px hsl(280 90% 60% / 0.18)",
+        }}
+      >
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <h2 className="text-2xl font-bold text-primary text-center">
+            {isOwnerAccess ? "Owner Sign In" : isSignUp ? "Create Account" : "Sign In"}
+          </h2>
+        </div>
 
-        {!isOwnerAccess && (
+        {isOwnerAccess ? (
+          <p className="text-center text-sm text-muted-foreground mb-6">Approved owner account only.</p>
+        ) : (
           <>
             <p className="text-center text-xs text-muted-foreground mb-2">
               {isSignUp ? "Create your account with email and password." : "Sign in with your email and password."}
             </p>
             {isSignUp && (
               <p className="text-center text-xs text-primary font-medium mb-4">
-                ✨ 100% free to join — no credit card required. You'll only be asked to pay if you choose to upgrade.
+                ✨ 100% free to join — no credit card required.
               </p>
             )}
           </>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div>
-            <label className="text-muted-foreground text-sm mb-1 block">Email</label>
-            <div className="flex items-center gap-3 border border-border rounded-lg px-4 py-3 bg-input">
-              <Mail className="w-4 h-4 text-muted-foreground" />
+            <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Email</label>
+            <div
+              className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors"
+              style={{
+                background: "hsl(0 0% 4% / 0.7)",
+                border: "1px solid hsl(45 100% 55% / 0.35)",
+                boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+              }}
+            >
+              <Mail className="w-4 h-4 text-primary/80" />
               <input
                 type="email"
                 placeholder="you@example.com"
@@ -184,9 +176,16 @@ const SignInPage = () => {
           </div>
 
           <div>
-            <label className="text-muted-foreground text-sm mb-1 block">Password</label>
-            <div className="flex items-center gap-3 border border-border rounded-lg px-4 py-3 bg-input">
-              <Lock className="w-4 h-4 text-muted-foreground" />
+            <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Password</label>
+            <div
+              className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+              style={{
+                background: "hsl(0 0% 4% / 0.7)",
+                border: "1px solid hsl(280 90% 60% / 0.4)",
+                boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+              }}
+            >
+              <Lock className="w-4 h-4 text-primary/80" />
               <input
                 type="password"
                 placeholder="••••••••"
@@ -199,17 +198,15 @@ const SignInPage = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-muted-foreground text-sm cursor-pointer">
+            <label className="flex items-center gap-2 text-muted-foreground text-xs cursor-pointer">
               <button
                 type="button"
                 onClick={() => setRememberMe(!rememberMe)}
-                className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                  rememberMe ? "bg-primary border-primary" : "border-border"
-                }`}
+                className={`w-4 h-4 rounded-full border-2 transition-colors ${rememberMe ? "bg-primary border-primary" : "border-primary/40"}`}
               />
               Remember me
             </label>
-            <span className="text-primary text-xs flex items-center gap-1">
+            <span className="text-primary text-[11px] flex items-center gap-1">
               <Shield className="w-3 h-3" /> Secure login
             </span>
           </div>
@@ -217,47 +214,49 @@ const SignInPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all disabled:opacity-50"
+            className="w-full py-3.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, hsl(45 100% 55%), hsl(38 100% 50%))",
+              color: "hsl(0 0% 8%)",
+              border: "1px solid hsl(45 100% 60% / 0.7)",
+              boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.4), 0 0 24px hsl(45 100% 55% / 0.4), 0 4px 14px hsl(45 100% 50% / 0.35)",
+            }}
           >
-            {loading ? "Loading..." : isOwnerAccess ? "Sign In as Owner" : isSignUp ? "Create Account" : "Sign In"} <ArrowRight className="w-4 h-4" />
+            {loading ? "Loading..." : isOwnerAccess ? "Sign In as Owner" : isSignUp ? "Create Account" : "Sign In"}
+            <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
         {!isOwnerAccess && (
           <>
-            <p className="text-center text-muted-foreground text-sm mt-4">
+            <p className="text-center text-muted-foreground text-xs mt-5">
               {isSignUp ? "Already have an account?" : "New here?"}{" "}
-              <span
-                className="text-primary cursor-pointer hover:underline"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
+              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => setIsSignUp(!isSignUp)}>
                 {isSignUp ? "Sign in" : "Create an account"}
               </span>
             </p>
-
             <div className="text-center mt-3">
               <button
                 type="button"
                 onClick={() => setShowHelp((v) => !v)}
-                className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2"
+                className="text-[11px] text-muted-foreground hover:text-primary underline underline-offset-2"
               >
                 Trouble signing up?
               </button>
               {showHelp && (
-                <div className="mt-3 text-left text-xs text-muted-foreground border border-border rounded-lg p-3 bg-secondary/30 space-y-2">
+                <div
+                  className="mt-3 text-left text-xs text-muted-foreground rounded-[14px] p-3 space-y-2"
+                  style={{ background: "hsl(0 0% 4% / 0.6)", border: "1px solid hsl(280 90% 60% / 0.3)" }}
+                >
                   <p className="text-foreground font-semibold">Quick fixes:</p>
                   <ul className="list-disc pl-4 space-y-1">
-                    <li>Use a password with <span className="text-foreground">8+ characters</span> — mix letters &amp; numbers.</li>
-                    <li>Avoid common passwords (e.g. <em>password123</em>) — they're auto-blocked.</li>
+                    <li>Use a password with <span className="text-foreground">8+ characters</span>.</li>
+                    <li>Avoid common passwords — they're auto-blocked.</li>
                     <li>Already have an account? Tap <span className="text-primary">Sign in</span> above.</li>
-                    <li>Check your inbox (and spam) for a confirmation email after signup.</li>
+                    <li>Check your inbox (and spam) for confirmation.</li>
                   </ul>
                   <p className="pt-1">
-                    Still stuck? Email{" "}
-                    <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">
-                      justinbretthogan@gmail.com
-                    </a>{" "}
-                    — we'll get you in.
+                    Still stuck? Email <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">justinbretthogan@gmail.com</a>.
                   </p>
                 </div>
               )}
@@ -265,18 +264,19 @@ const SignInPage = () => {
           </>
         )}
 
-        <div className="flex justify-center mt-4">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full border text-xs" style={{ borderColor: 'hsl(160, 84%, 39%)', color: 'hsl(160, 84%, 39%)' }}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
-            AI ANTI-HACKER ACTIVE
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
+        <div className="flex justify-center mt-5">
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider"
+            style={{ border: "1px solid hsl(160 84% 39% / 0.5)", color: "hsl(160 84% 50%)", background: "hsl(160 84% 20% / 0.15)" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "hsl(160 84% 45%)" }} />
+            AI Anti-Hacker Active
           </div>
         </div>
       </div>
 
-      <p className="text-muted-foreground text-xs mt-4 mb-8">
-        By continuing, you agree to our{" "}
-        <span className="text-primary cursor-pointer">Terms of Service</span>
+      <p className="text-muted-foreground text-[11px] mt-5">
+        By continuing, you agree to our <span className="text-primary cursor-pointer hover:underline">Terms of Service</span>
       </p>
     </div>
   );
