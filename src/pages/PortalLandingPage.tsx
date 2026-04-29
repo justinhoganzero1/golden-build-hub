@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
 import SEO from "@/components/SEO";
-import FeaturePreviewDialog from "@/components/FeaturePreviewDialog";
 import HomepageMailbox from "@/components/HomepageMailbox";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const HOME_JSON_LD = [
   {
@@ -85,7 +85,7 @@ import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "
 import { bounceIfNotProduction, getNativeStoreUrl } from "@/lib/installRedirect";
 
 const FEATURES = [
-  { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
+  // Oracle is intentionally NOT shown on the public portal — members only.
   { icon: Heart, title: "Crisis Hub", desc: "Safety-first crisis support tools — free for everyone, no paywall, ever.", to: "/crisis-hub" },
   { icon: Brain, title: "Mind Hub", desc: "8 guided wellness exercises with AI voice guidance and mood tracking.", to: "/mind-hub" },
   { icon: Camera, title: "Photography Hub", desc: "AI image-to-image transforms — restyle, age, restore, fantasy worlds.", to: "/photography-hub" },
@@ -114,7 +114,26 @@ const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
-  const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
+  const { subscribed } = useSubscription();
+  const isAdmin = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+  const isMember = !!user && (subscribed || isAdmin);
+
+  const handleTileClick = (to: string) => {
+    if (isMember) {
+      if (bounceIfNotProduction(to)) return;
+      navigate(to);
+    } else if (user) {
+      // Signed in but not a paying member → upgrade
+      const target = `/subscribe?redirect=${encodeURIComponent(to)}`;
+      if (bounceIfNotProduction(target)) return;
+      navigate(target);
+    } else {
+      // Not signed in → sign up / sign in
+      const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`;
+      if (bounceIfNotProduction(target)) return;
+      navigate(target);
+    }
+  };
 
   const goMemberSignIn = (redirect = "/dashboard") => {
     const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
@@ -485,12 +504,18 @@ const PortalLandingPage = () => {
             return (
               <button
                 key={title}
-                onClick={() => setPreviewFeature(feature)}
-                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all"
+                onClick={() => handleTileClick(feature.to)}
+                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all relative"
+                aria-label={isMember ? `Open ${title}` : `Sign in to use ${title}`}
               >
                 <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
                 <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                {!isMember && (
+                  <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                    <Lock className="w-3 h-3" /> {user ? "Upgrade to unlock" : "Sign up to unlock"}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -746,16 +771,7 @@ const PortalLandingPage = () => {
 
 
 
-      {previewFeature && (
-        <FeaturePreviewDialog
-          open={!!previewFeature}
-          onOpenChange={(o) => !o && setPreviewFeature(null)}
-          title={previewFeature.title}
-          desc={previewFeature.desc}
-          icon={previewFeature.icon}
-          to={previewFeature.to}
-        />
-      )}
+      {/* Portal tiles never render live previews — they always route to sign-in or into the app. */}
     </div>
   );
 };
