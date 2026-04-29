@@ -7,6 +7,9 @@ import { CinematicScene } from "./components/CinematicScene";
 loadDisplay();
 loadBody();
 
+// Audio is muxed post-render via system ffmpeg (Nix ffmpeg lacks libfdk_aac).
+const INCLUDE_AUDIO = false;
+
 // Scene timings (frames @ 30fps) - total 1050 = 35s
 // Narrator VO is 25.4s = 762 frames; starts at frame 0
 // Oracle VO is 7s = 210 frames; starts at frame 720 (during phone-call beat)
@@ -99,13 +102,14 @@ export const MainVideo: React.FC = () => {
       {/* Letterbox bars for cinematic 2.39:1 feel */}
       <Letterbox />
 
-      {/* Narrator VO from frame 0 */}
-      <Audio src={staticFile("audio/vo-narrator.mp3")} volume={1.0} />
-
-      {/* Oracle VO starts when secretary hands phone (scene 5 ends at 150+90+180+150+150 = 720) */}
-      <Sequence from={720}>
-        <Audio src={staticFile("audio/vo-oracle.mp3")} volume={1.0} />
-      </Sequence>
+      {INCLUDE_AUDIO && (
+        <>
+          <Audio src={staticFile("audio/vo-narrator.mp3")} volume={1.0} />
+          <Sequence from={720}>
+            <Audio src={staticFile("audio/vo-oracle.mp3")} volume={1.0} />
+          </Sequence>
+        </>
+      )}
     </AbsoluteFill>
   );
 };
