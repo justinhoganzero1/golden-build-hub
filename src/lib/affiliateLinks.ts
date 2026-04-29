@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const ELEVENLABS_AFFILIATE_URL = "https://try.elevenlabs.io/20p2fwdcfmr2";
 
+// HeyGen affiliate link — paste your PartnerStack/HeyGen referral URL here once approved.
+// Apply at: https://www.heygen.com/affiliate
+export const HEYGEN_AFFILIATE_URL = "https://www.heygen.com/?sid=oraclelunar";
+
 /**
  * Fire-and-forget click tracking. Stores in localStorage as a fallback
  * and tries to log to the affiliate_clicks table if it exists.
