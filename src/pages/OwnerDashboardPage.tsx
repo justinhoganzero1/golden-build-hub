@@ -650,6 +650,46 @@ const OwnerDashboardPage = () => {
               <StripeRevenuePanel />
             </Suspense>
 
+            {/* ElevenLabs Affiliate Tracker */}
+            <div className="bg-gradient-to-br from-primary/10 to-amber-500/10 border border-primary/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold text-white">ElevenLabs Affiliate</h3>
+                <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">20% commission</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-300">
+                    {(() => { try { return localStorage.getItem("affiliate_clicks_elevenlabs") || "0"; } catch { return "0"; } })()}
+                  </p>
+                  <p className="text-[10px] text-gray-400">Local Clicks</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-300 truncate" title="https://try.elevenlabs.io/20p2fwdcfmr2">
+                    try.elevenlabs.io/20p2fwdcfmr2
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1">Your Link</p>
+                </div>
+              </div>
+              <a
+                href="https://try.elevenlabs.io/20p2fwdcfmr2"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                onClick={() => {
+                  try {
+                    const k = "affiliate_clicks_elevenlabs";
+                    localStorage.setItem(k, String(parseInt(localStorage.getItem(k) || "0", 10) + 1));
+                  } catch {}
+                }}
+                className="block w-full text-center px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90"
+              >
+                Open Affiliate Dashboard →
+              </a>
+              <p className="text-[10px] text-gray-400 mt-2 text-center">
+                Live in: Voice Studio header, Voice Enrollment dialog, Subscribe page footer
+              </p>
+            </div>
+
             {/* Stripe Connect demo (admin view) */}
             <Suspense fallback={null}>
               <StripeConnectPanel />
