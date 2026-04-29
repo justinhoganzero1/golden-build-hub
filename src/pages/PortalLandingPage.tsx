@@ -504,12 +504,18 @@ const PortalLandingPage = () => {
             return (
               <button
                 key={title}
-                onClick={() => setPreviewFeature(feature)}
-                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all"
+                onClick={() => handleTileClick(feature.to)}
+                className="holo-tile rounded-xl p-5 text-left hover:ring-2 hover:ring-primary/60 transition-all relative"
+                aria-label={isMember ? `Open ${title}` : `Sign in to use ${title}`}
               >
                 <Icon className="holo-icon h-8 w-8 text-primary mb-3" />
                 <h3 className="font-semibold mb-1 text-foreground">{title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                {!isMember && (
+                  <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+                    <Lock className="w-3 h-3" /> {user ? "Upgrade to unlock" : "Sign up to unlock"}
+                  </span>
+                )}
               </button>
             );
           })}
