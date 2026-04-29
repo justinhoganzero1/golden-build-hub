@@ -1,2 +1,34 @@
 // Affiliate referral links — keep all third-party referral URLs in one place.
+import { supabase } from "@/integrations/supabase/client";
+
 export const ELEVENLABS_AFFILIATE_URL = "https://try.elevenlabs.io/20p2fwdcfmr2";
+
+/**
+ * Fire-and-forget click tracking. Stores in localStorage as a fallback
+ * and tries to log to the affiliate_clicks table if it exists.
+ */
+export function trackAffiliateClick(partner: string, placement: string) {
+  try {
+    const key = `affiliate_clicks_${partner}`;
+    const prev = parseInt(localStorage.getItem(key) || "0", 10);
+    localStorage.setItem(key, String(prev + 1));
+    localStorage.setItem(`${key}_last`, new Date().toISOString());
+  } catch { /* noop */ }
+
+  // Best-effort server log (won't block the navigation)
+  void supabase
+    .from("affiliate_clicks" as any)
+    .insert({ partner, placement, clicked_at: new Date().toISOString() })
+    .then(() => {}, () => {});
+}
+
+export function getAffiliateClickStats(partner: string) {
+  try {
+    return {
+      total: parseInt(localStorage.getItem(`affiliate_clicks_${partner}`) || "0", 10),
+      last: localStorage.getItem(`affiliate_clicks_${partner}_last`),
+    };
+  } catch {
+    return { total: 0, last: null };
+  }
+}
