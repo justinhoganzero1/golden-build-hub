@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
+import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -240,6 +241,22 @@ const PhotographyHubPage = () => {
             </button>
           ))}
         </div>
+
+        <PhotoAIPowerLab
+          className="mb-4"
+          onApplyPreset={({ prompt: pp, filter: ff, mode: mm }) => {
+            setPrompt(pp);
+            setSelectedFilter(ff);
+            setMode(mm);
+            if (mm === "edit" && !uploadedPhoto) {
+              toast.info("Upload a photo to transform — opening picker");
+              fileRef.current?.click();
+            } else {
+              toast.success("Preset loaded — tap Generate");
+            }
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
 
         <PhotoBrandKitPanel
           currentImage={generatedImage}
