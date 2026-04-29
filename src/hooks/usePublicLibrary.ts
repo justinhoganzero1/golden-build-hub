@@ -55,6 +55,10 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
           .limit(PAGE_SIZE),
       ]);
 
+      if (mediaRes.error) throw mediaRes.error;
+      if (gifsRes.error) throw gifsRes.error;
+      if (moviesRes.error) throw moviesRes.error;
+
       const items: PublicLibraryItem[] = [];
 
       (mediaRes.data || []).forEach((m: any) =>
@@ -84,7 +88,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
           title: g.title,
           url: g.gif_url || g.preview_mp4_url || "",
           thumbnail_url: g.thumbnail_url,
-          media_type: "gif",
+          media_type: g.gif_url ? "gif" : "video",
           created_at: g.created_at,
           shop_enabled: !!g.shop_enabled,
           shop_price_cents: g.shop_price_cents || 0,

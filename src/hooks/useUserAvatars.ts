@@ -123,51 +123,16 @@ export function useUserMedia() {
     queryKey: ["user-media", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      // Pull user_media + completed living_gifs + completed movie_projects in parallel
-      // so EVERY creation surfaces in the Library, even modules that store output
-      // in their own dedicated tables.
-      const [mediaRes, gifsRes, moviesRes] = await Promise.all([
-        supabase.from("user_media").select("*").order("created_at", { ascending: false }),
-        supabase.from("living_gifs")
-          .select("id,user_id,title,prompt,gif_url,preview_mp4_url,thumbnail_url,created_at,status")
-          .eq("status", "completed"),
-        supabase.from("movie_projects")
-          .select("id,user_id,title,final_video_url,thumbnail_url,trailer_url,created_at,status")
-          .eq("status", "completed"),
-      ]);
-      if (mediaRes.error) throw mediaRes.error;
-
-      const mediaItems = mediaRes.data || [];
-      const gifItems = (gifsRes.data || [])
-        .filter((g: any) => g.gif_url || g.preview_mp4_url)
-        .map((g: any) => ({
-          id: `gif:${g.id}`,
-          user_id: g.user_id,
-          media_type: "video",
-          title: g.title || (g.prompt ? g.prompt.slice(0, 60) : "Living GIF"),
-          url: g.gif_url || g.preview_mp4_url,
-          thumbnail_url: g.thumbnail_url,
-          source_page: "living-gif-studio",
-          metadata: { source: "living_gifs" },
-          created_at: g.created_at,
-        }));
-      const movieItems = (moviesRes.data || [])
-        .filter((m: any) => m.final_video_url)
-        .map((m: any) => ({
-          id: `movie:${m.id}`,
-          user_id: m.user_id,
-          media_type: "video",
-          title: m.title || "Movie",
-          url: m.final_video_url,
-          thumbnail_url: m.thumbnail_url || m.trailer_url,
-          source_page: "movie-studio",
-          metadata: { source: "movie_projects" },
-          created_at: m.created_at,
-        }));
-
-      return [...mediaItems, ...gifItems, ...movieItems].sort(
-        (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      // `user_media` is the single source of truth for My Library. Dedicated
+      // creation tables auto-copy finished assets into this table via database
+      // triggers, so library controls always update/delete a real library row.
+      const { data, error } = await supabase
+        .from("user_media")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user,
   });

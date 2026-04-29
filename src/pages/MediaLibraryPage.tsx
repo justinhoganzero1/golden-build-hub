@@ -15,20 +15,20 @@ import { downloadFileFromUrl } from "@/lib/utils";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
-  { key: "all",           label: "All Creations",                             icon: Layers,        color: "from-amber-500/20 to-yellow-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-  { key: "movies",        label: "Movies",                                    icon: Film,          color: "from-rose-500/20 to-red-500/20", accent: "text-rose-400", border: "border-rose-500/30" },
-  { key: "favourite-music", label: "Favourite Tracks",                        icon: Star,          color: "from-amber-500/20 to-orange-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-  { key: "avatar",        label: "Avatars",                                   icon: User,          color: "from-violet-500/20 to-purple-500/20", accent: "text-violet-400", border: "border-violet-500/30" },
-  { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera,        color: "from-sky-500/20 to-cyan-500/20", accent: "text-sky-400", border: "border-sky-500/30" },
-  { key: "apps",          label: "Apps",                                      icon: Globe,         color: "from-lime-500/20 to-emerald-500/20", accent: "text-lime-400", border: "border-lime-500/30" },
-  { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles,      color: "from-pink-500/20 to-rose-500/20", accent: "text-pink-400", border: "border-pink-500/30" },
-  { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2,         color: "from-emerald-500/20 to-green-500/20", accent: "text-emerald-400", border: "border-emerald-500/30" },
-  { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles,      color: "from-fuchsia-500/20 to-pink-500/20", accent: "text-fuchsia-400", border: "border-fuchsia-500/30" },
-  { key: "video-editor",  label: "Video Editor",                             icon: Film,          color: "from-orange-500/20 to-amber-500/20", accent: "text-orange-400", border: "border-orange-500/30" },
-  { key: "voice-studio",  label: "Voice Studio",                             icon: Mic,           color: "from-teal-500/20 to-cyan-500/20", accent: "text-teal-400", border: "border-teal-500/30" },
-  { key: "oracle",        label: "Oracle",                                   icon: Globe,         color: "from-yellow-500/20 to-amber-500/20", accent: "text-yellow-400", border: "border-yellow-500/30" },
-  { key: "live-vision",   label: "Live Vision",                              icon: Eye,           color: "from-indigo-500/20 to-blue-500/20", accent: "text-indigo-400", border: "border-indigo-500/30" },
-  { key: "other",         label: "Other",                                    icon: FileText,      color: "from-zinc-500/20 to-slate-500/20", accent: "text-zinc-400", border: "border-zinc-500/30" },
+  { key: "all",           label: "All Creations",                             icon: Layers },
+  { key: "movies",        label: "Movies",                                    icon: Film },
+  { key: "favourite-music", label: "Favourite Tracks",                        icon: Star },
+  { key: "avatar",        label: "Avatars",                                   icon: User },
+  { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
+  { key: "apps",          label: "Apps",                                      icon: Globe },
+  { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
+  { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2 },
+  { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles },
+  { key: "video-editor",  label: "Video Editor",                             icon: Film },
+  { key: "voice-studio",  label: "Voice Studio",                             icon: Mic },
+  { key: "oracle",        label: "Oracle",                                   icon: Globe },
+  { key: "live-vision",   label: "Live Vision",                              icon: Eye },
+  { key: "other",         label: "Other",                                    icon: FileText },
 ] as const;
 
 const TYPE_FILTERS = [
@@ -142,8 +142,36 @@ const MediaLibraryPage = () => {
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <Image className="w-5 h-5 text-primary" />;
+    if (type === "gif") return <Image className="w-5 h-5 text-primary" />;
     if (type === "video") return <Video className="w-5 h-5 text-primary" />;
+    if (type === "text" || type === "document") return <FileText className="w-5 h-5 text-primary" />;
+    if (type === "app") return <Globe className="w-5 h-5 text-primary" />;
     return <Music className="w-5 h-5 text-primary" />;
+  };
+
+  const isImageLike = (m: any) => (m.media_type === "image" || m.media_type === "gif") && !!m.url;
+  const isVideoLike = (m: any) => m.media_type === "video" && !!m.url;
+
+  const handleDownloadSelected = async () => {
+    if (!selected?.url) return;
+    try {
+      if (selected.media_type === "text") {
+        const blobUrl = URL.createObjectURL(new Blob([selected.url], { type: "text/plain" }));
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `${(selected.title || "library-note").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      } else {
+        await downloadFileFromUrl(selected.url, selected.title || "media");
+      }
+      toast.success("Downloaded!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download media");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -191,7 +219,7 @@ const MediaLibraryPage = () => {
       <div className="px-4 pt-14 pb-2">
         <div className="flex items-center gap-3 mb-1">
           <div className="relative">
-            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-primary/20 to-amber-500/20 border border-primary/30">
+            <div className="holo-bubble p-2.5 rounded-2xl border border-primary/30">
               <FolderOpen className="w-7 h-7 text-primary" />
             </div>
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
@@ -251,16 +279,16 @@ const MediaLibraryPage = () => {
                 <button key={col.key} onClick={() => setActiveCollection(col.key)}
                   className={`holo-tile relative rounded-2xl p-3 text-left ${
                     isActive
-                      ? `bg-gradient-to-br ${col.color} ${col.border} shadow-lg shadow-primary/5 scale-[1.02]`
+                        ? "ring-1 ring-primary/50 shadow-lg shadow-primary/10 scale-[1.02]"
                       : ""
                   }`}>
                   <div className="flex items-center gap-2.5">
-                    <div className={`holo-icon p-1.5 rounded-xl ${isActive ? `bg-gradient-to-br ${col.color}` : "bg-muted/50"}`}>
-                      <ColIcon className={`w-4 h-4 ${isActive ? col.accent : "text-muted-foreground"}`} />
+                      <div className={`holo-icon p-1.5 rounded-xl ${isActive ? "bg-primary/15" : "bg-muted/50"}`}>
+                        <ColIcon className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-semibold truncate ${isActive ? "text-foreground" : "text-muted-foreground"}`}>{col.label}</p>
-                      <p className={`text-[10px] ${isActive ? col.accent : "text-muted-foreground/60"}`}>
+                        <p className={`text-[10px] ${isActive ? "text-primary" : "text-muted-foreground/60"}`}>
                         {col.key === "all" ? `${mediaItems.length} total` : `${count} item${count !== 1 ? "s" : ""}`}
                       </p>
                     </div>
@@ -308,8 +336,10 @@ const MediaLibraryPage = () => {
             {recentItems.map((m: any) => (
               <button key={m.id} onClick={() => setSelected(m)}
                 className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
-                {m.media_type === "image" && m.url ? (
+                {isImageLike(m) ? (
                   <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                ) : isVideoLike(m) ? (
+                  <video src={m.url} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                     {getMediaIcon(m.media_type)}
@@ -325,10 +355,10 @@ const MediaLibraryPage = () => {
       {/* ── Active collection header ── */}
       {activeCollection !== "all" && (
         <div className="px-4 mb-3">
-          <div className={`flex items-center gap-2 p-2 rounded-xl bg-gradient-to-r ${activeCol.color} border ${activeCol.border}`}>
-            <activeCol.icon className={`w-4 h-4 ${activeCol.accent}`} />
+          <div className="holo-card flex items-center gap-2 p-2 rounded-xl border border-primary/25">
+            <activeCol.icon className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">{activeCol.label}</span>
-            <span className={`text-xs ml-auto ${activeCol.accent}`}>{filtered.length} items</span>
+            <span className="text-xs ml-auto text-primary">{filtered.length} items</span>
           </div>
         </div>
       )}
@@ -341,8 +371,8 @@ const MediaLibraryPage = () => {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-primary/10 to-amber-500/10 border border-primary/20 flex items-center justify-center">
-              <activeCol.icon className={`w-8 h-8 ${activeCol.accent}`} />
+            <div className="holo-card w-16 h-16 mx-auto mb-3 rounded-2xl border border-primary/20 flex items-center justify-center">
+              <activeCol.icon className="w-8 h-8 text-primary" />
             </div>
             <p className="text-foreground text-sm font-medium mb-1">No creations yet</p>
             <p className="text-muted-foreground text-xs max-w-[200px] mx-auto">
@@ -356,13 +386,19 @@ const MediaLibraryPage = () => {
             {filtered.map((m: any) => (
               <button key={m.id} onClick={() => setSelected(m)}
                 className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
-                {m.media_type === "image" && m.url ? (
+                {isImageLike(m) ? (
                   <>
                     <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="absolute bottom-1 left-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[8px] text-white truncate font-medium">{m.title || "Untitled"}</p>
+                      <p className="text-[8px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
                     </div>
+                  </>
+                ) : isVideoLike(m) ? (
+                  <>
+                    <video src={m.url} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                    <Play className="absolute w-7 h-7 text-primary drop-shadow-lg" />
                   </>
                 ) : (
                   <>
@@ -372,8 +408,8 @@ const MediaLibraryPage = () => {
                 )}
                 {/* Source badge */}
                 <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="px-1 py-0.5 rounded bg-black/50 backdrop-blur-sm">
-                    <p className="text-[7px] text-white/80">{m.source_page || "—"}</p>
+                  <div className="px-1 py-0.5 rounded bg-card/80 border border-primary/20">
+                    <p className="text-[7px] text-muted-foreground">{m.source_page || "—"}</p>
                   </div>
                 </div>
               </button>
@@ -387,17 +423,19 @@ const MediaLibraryPage = () => {
               return (
                 <button key={m.id} onClick={() => setSelected(m)}
                   className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
-                  {m.media_type === "image" && m.url ? (
+                  {isImageLike(m) ? (
                     <img src={m.url} alt={m.title} className="w-14 h-14 rounded-xl object-cover border border-border" />
+                  ) : isVideoLike(m) ? (
+                    <video src={m.url} poster={m.thumbnail_url || undefined} muted playsInline className="w-14 h-14 rounded-xl object-cover border border-border" />
                   ) : (
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${col.color} border ${col.border} flex items-center justify-center`}>
+                    <div className="holo-card w-14 h-14 rounded-xl border border-primary/25 flex items-center justify-center">
                       {getMediaIcon(m.media_type)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground font-medium truncate">{m.title || "Untitled"}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full bg-gradient-to-r ${col.color} ${col.accent} font-medium`}>{col.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-primary/25 bg-primary/10 text-primary font-medium">{col.label}</span>
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(m.created_at).toLocaleDateString()}
                       </span>
@@ -420,12 +458,13 @@ const MediaLibraryPage = () => {
           {selected && (
             <div className="space-y-4 mt-2">
               <div className="aspect-video bg-secondary rounded-2xl flex items-center justify-center overflow-hidden border border-border">
-                {selected.media_type === "image" && selected.url ? (
+                {isImageLike(selected) ? (
                   <img src={selected.url} alt={selected.title} className="w-full h-full object-contain" />
                 ) : selected.media_type === "video" ? (
-                  <div className="text-center">
-                    <Play className="w-12 h-12 text-primary mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">Tap to play</p>
+                  <video src={selected.url} poster={selected.thumbnail_url || undefined} controls playsInline className="w-full h-full object-contain" />
+                ) : selected.media_type === "text" ? (
+                  <div className="w-full h-full overflow-auto p-4 text-left text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+                    {selected.url}
                   </div>
                 ) : (
                   <div className="text-center">
@@ -441,7 +480,7 @@ const MediaLibraryPage = () => {
                   const colKey = getCollectionKey(selected.source_page, selected.media_type, selected.metadata);
                   const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
                   return (
-                    <span className={`text-[10px] px-2 py-1 rounded-full bg-gradient-to-r ${col.color} ${col.accent} font-medium border ${col.border}`}>
+                    <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-medium border border-primary/25">
                       {col.label}
                     </span>
                   );
@@ -526,16 +565,7 @@ const MediaLibraryPage = () => {
               </div>
 
               <div className="flex gap-2">
-                <button onClick={async () => {
-                  if (!selected.url) return;
-                  try {
-                    await downloadFileFromUrl(selected.url, selected.title || "media");
-                    toast.success("Downloaded!");
-                  } catch (error) {
-                    console.error(error);
-                    toast.error("Failed to download media");
-                  }
-                }}
+                <button onClick={handleDownloadSelected}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
                 </button>
