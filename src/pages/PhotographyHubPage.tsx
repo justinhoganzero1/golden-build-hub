@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
+import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
