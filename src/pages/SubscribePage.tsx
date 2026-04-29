@@ -361,6 +361,29 @@ const SubscribePage = () => {
             </div>
           ))}
         </div>
+
+        {/* ElevenLabs affiliate footer */}
+        <a
+          href="https://try.elevenlabs.io/20p2fwdcfmr2"
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => {
+            try {
+              const k = "affiliate_clicks_elevenlabs";
+              localStorage.setItem(k, String(parseInt(localStorage.getItem(k) || "0", 10) + 1));
+            } catch {}
+          }}
+          className="mt-8 block rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-amber-500/5 to-primary/5 p-4 hover:border-primary/60 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Crown className="w-5 h-5 text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Power user? Get your own ElevenLabs studio</p>
+              <p className="text-xs text-muted-foreground">Clone unlimited voices, dub in 32 languages, build agents — start free.</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+          </div>
+        </a>
       </div>
     </div>
   );
