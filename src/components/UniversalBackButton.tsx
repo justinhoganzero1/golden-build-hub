@@ -35,7 +35,7 @@ const UniversalBackButton = ({ label = "Back", fallbackPath = "/dashboard" }: Un
       type="button"
       onClick={handleBack}
       aria-label={label}
-      className="fixed left-3 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full bg-card/85 backdrop-blur-md border border-border shadow-lg text-primary hover:text-foreground hover:bg-card transition-colors active:scale-95"
+      className="holo-card fixed left-3 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full text-primary hover:text-foreground transition-colors active:scale-95"
       style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
     >
       <ArrowLeft className="w-4 h-4" />
