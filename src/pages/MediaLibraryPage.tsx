@@ -279,16 +279,16 @@ const MediaLibraryPage = () => {
                 <button key={col.key} onClick={() => setActiveCollection(col.key)}
                   className={`holo-tile relative rounded-2xl p-3 text-left ${
                     isActive
-                      ? `bg-gradient-to-br ${col.color} ${col.border} shadow-lg shadow-primary/5 scale-[1.02]`
+                        ? "ring-1 ring-primary/50 shadow-lg shadow-primary/10 scale-[1.02]"
                       : ""
                   }`}>
                   <div className="flex items-center gap-2.5">
-                    <div className={`holo-icon p-1.5 rounded-xl ${isActive ? `bg-gradient-to-br ${col.color}` : "bg-muted/50"}`}>
-                      <ColIcon className={`w-4 h-4 ${isActive ? col.accent : "text-muted-foreground"}`} />
+                      <div className={`holo-icon p-1.5 rounded-xl ${isActive ? "bg-primary/15" : "bg-muted/50"}`}>
+                        <ColIcon className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs font-semibold truncate ${isActive ? "text-foreground" : "text-muted-foreground"}`}>{col.label}</p>
-                      <p className={`text-[10px] ${isActive ? col.accent : "text-muted-foreground/60"}`}>
+                        <p className={`text-[10px] ${isActive ? "text-primary" : "text-muted-foreground/60"}`}>
                         {col.key === "all" ? `${mediaItems.length} total` : `${count} item${count !== 1 ? "s" : ""}`}
                       </p>
                     </div>
@@ -355,10 +355,10 @@ const MediaLibraryPage = () => {
       {/* ── Active collection header ── */}
       {activeCollection !== "all" && (
         <div className="px-4 mb-3">
-          <div className={`flex items-center gap-2 p-2 rounded-xl bg-gradient-to-r ${activeCol.color} border ${activeCol.border}`}>
-            <activeCol.icon className={`w-4 h-4 ${activeCol.accent}`} />
+          <div className="holo-card flex items-center gap-2 p-2 rounded-xl border border-primary/25">
+            <activeCol.icon className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">{activeCol.label}</span>
-            <span className={`text-xs ml-auto ${activeCol.accent}`}>{filtered.length} items</span>
+            <span className="text-xs ml-auto text-primary">{filtered.length} items</span>
           </div>
         </div>
       )}
