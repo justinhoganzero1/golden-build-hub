@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
 import SEO from "@/components/SEO";
 import HomepageMailbox from "@/components/HomepageMailbox";
+import PartnerBubbles from "@/components/PartnerBubbles";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const HOME_JSON_LD = [
@@ -766,6 +767,9 @@ const PortalLandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating partner-promo bubbles — affiliate revenue surface */}
+      <PartnerBubbles />
 
       {/* PortalTutorWidget removed from public site — Oracle is gated behind sign-in + paywall */}
 

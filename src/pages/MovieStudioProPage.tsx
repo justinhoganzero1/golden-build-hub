@@ -13,6 +13,7 @@ import OracleMovieDirector, { type MovieDirectorResult } from "@/components/Orac
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
+import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import JustKeepTalkingButton from "@/components/JustKeepTalkingButton";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -167,6 +168,8 @@ const MovieStudioProPage = () => {
           description="HeyGen creates AI avatars with perfect lip-sync in 175+ voices. Drop them into your Oracle Lunar movie scenes."
           ctaLabel="Try HeyGen for Characters →"
         />
+
+        <PartnerPowerSuite placementPrefix="movie_studio" filter="all" />
 
         <JustKeepTalkingButton
           onBriefReady={(brief) => {
