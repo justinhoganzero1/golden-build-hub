@@ -114,7 +114,26 @@ const PortalLandingPage = () => {
   const navigate = useNavigate();
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
-  const [previewFeature, setPreviewFeature] = useState<typeof FEATURES[number] | null>(null);
+  const { subscribed } = useSubscription();
+  const isAdmin = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+  const isMember = !!user && (subscribed || isAdmin);
+
+  const handleTileClick = (to: string) => {
+    if (isMember) {
+      if (bounceIfNotProduction(to)) return;
+      navigate(to);
+    } else if (user) {
+      // Signed in but not a paying member → upgrade
+      const target = `/subscribe?redirect=${encodeURIComponent(to)}`;
+      if (bounceIfNotProduction(target)) return;
+      navigate(target);
+    } else {
+      // Not signed in → sign up / sign in
+      const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`;
+      if (bounceIfNotProduction(target)) return;
+      navigate(target);
+    }
+  };
 
   const goMemberSignIn = (redirect = "/dashboard") => {
     const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
