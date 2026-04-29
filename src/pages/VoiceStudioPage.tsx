@@ -18,7 +18,7 @@ import {
   type PresetName,
 } from "@/data/elevenLabsVoices";
 import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
-import { ELEVENLABS_AFFILIATE_URL } from "@/lib/affiliateLinks";
+import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
 
 interface AccountVoice {
   id: string;
@@ -347,6 +347,7 @@ export default function VoiceStudioPage() {
           href={ELEVENLABS_AFFILIATE_URL}
           target="_blank"
           rel="noopener noreferrer sponsored"
+          onClick={() => trackAffiliateClick("elevenlabs", "voice_studio_header")}
           className="block mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
         >
           <div className="flex items-center gap-3">
