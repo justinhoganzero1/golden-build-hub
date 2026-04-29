@@ -38,6 +38,15 @@ const VideoEditorPage = () => {
             </button>
           ))}
         </div>
+
+        <div className="mt-4">
+          <HeyGenAffiliateCTA
+            placement="video_editor_avatar"
+            title="Add a Talking AI Avatar"
+            description="Generate a HeyGen avatar clip and drop it straight into your timeline."
+            ctaLabel="Create Avatar Clip →"
+          />
+        </div>
       </div>
     </div>
     </PaywallGate>
