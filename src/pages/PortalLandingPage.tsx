@@ -85,7 +85,7 @@ import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "
 import { bounceIfNotProduction, getNativeStoreUrl } from "@/lib/installRedirect";
 
 const FEATURES = [
-  { icon: Sparkles, title: "Oracle AI", desc: "A personal AI guide that talks, listens, and remembers — with optional orbiting AI friends.", to: "/oracle" },
+  // Oracle is intentionally NOT shown on the public portal — members only.
   { icon: Heart, title: "Crisis Hub", desc: "Safety-first crisis support tools — free for everyone, no paywall, ever.", to: "/crisis-hub" },
   { icon: Brain, title: "Mind Hub", desc: "8 guided wellness exercises with AI voice guidance and mood tracking.", to: "/mind-hub" },
   { icon: Camera, title: "Photography Hub", desc: "AI image-to-image transforms — restyle, age, restore, fantasy worlds.", to: "/photography-hub" },
