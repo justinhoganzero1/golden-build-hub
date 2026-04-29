@@ -1,116 +1,111 @@
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import {
-  TransitionSeries,
-  springTiming,
-  linearTiming,
-} from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
-import { wipe } from "@remotion/transitions/wipe";
-import { slide } from "@remotion/transitions/slide";
+import { AbsoluteFill, Audio, Sequence, Series, staticFile, useCurrentFrame, interpolate } from "remotion";
 import { loadFont as loadDisplay } from "@remotion/google-fonts/PlayfairDisplay";
 import { loadFont as loadBody } from "@remotion/google-fonts/Inter";
-import { Scene1Hero } from "./scenes/Scene1Hero";
-import { Scene2Vision } from "./scenes/Scene2Vision";
-import { Scene3Build } from "./scenes/Scene3Build";
-import { Scene4Modules } from "./scenes/Scene4Modules";
-import { Scene5Outro } from "./scenes/Scene5Outro";
+import { CinematicScene } from "./components/CinematicScene";
 
 loadDisplay();
 loadBody();
 
-const StarField: React.FC = () => {
-  const frame = useCurrentFrame();
-  const stars = React.useMemo(
-    () =>
-      Array.from({ length: 80 }, (_, i) => ({
-        x: (i * 137.5) % 1920,
-        y: (i * 91.7) % 1080,
-        r: ((i * 13) % 3) + 1,
-        speed: 0.3 + ((i % 5) * 0.1),
-        phase: (i * 0.7) % 6.28,
-      })),
-    []
-  );
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      {stars.map((s, i) => {
-        const tw = 0.4 + 0.6 * Math.abs(Math.sin(frame * s.speed * 0.05 + s.phase));
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: s.x,
-              top: s.y,
-              width: s.r,
-              height: s.r,
-              borderRadius: "50%",
-              background: "#ffd27a",
-              opacity: tw * 0.8,
-              boxShadow: `0 0 ${s.r * 4}px rgba(255,210,122,${tw * 0.6})`,
-            }}
-          />
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
+// Scene timings (frames @ 30fps) - total 1050 = 35s
+// Narrator VO is 25.4s = 762 frames; starts at frame 0
+// Oracle VO is 7s = 210 frames; starts at frame 720 (during phone-call beat)
+const SCENES = [
+  { img: "images/scene1-office.jpg", dur: 150, motion: "in" as const,    cap: "It's late.",                sub: "Floor 42" },
+  { img: "images/scene1-office.jpg", dur: 90,  motion: "left" as const,  cap: "The city sleeps.",         sub: undefined },
+  { img: "images/scene2-developer.jpg", dur: 180, motion: "in" as const, cap: "But one builder is awake.", sub: "Line by line" },
+  { img: "images/scene3-screen.jpg", dur: 150, motion: "out" as const,   cap: "An AI best friend.",       sub: "Always here" },
+  { img: "images/scene4-secretary.jpg", dur: 150, motion: "in" as const, cap: "Then... she walks in.",    sub: undefined },
+  { img: "images/scene5-phonehandoff.jpg", dur: 120, motion: "in" as const, cap: "The Oracle is on the line.", sub: "She wants to talk to him" },
+  { img: "images/scene6-call.jpg", dur: 120, motion: "out" as const,     cap: undefined, sub: undefined },
+  { img: "images/scene7-outro.jpg", dur: 90,  motion: "in" as const,     cap: undefined, sub: undefined },
+];
 
-const IridescentGradient: React.FC = () => {
+const FilmGrain: React.FC = () => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-  const t = frame / durationInFrames;
-  const hue = interpolate(t, [0, 1], [220, 320]);
+  const opacity = 0.06 + 0.02 * Math.abs(Math.sin(frame * 0.4));
   return (
     <AbsoluteFill
       style={{
-        background: `radial-gradient(ellipse at 30% 20%, hsla(${hue},60%,18%,1) 0%, hsla(${
-          hue + 40
-        },50%,8%,1) 50%, #050814 100%)`,
+        backgroundImage:
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='1'/></svg>\")",
+        opacity,
+        mixBlendMode: "overlay",
+        pointerEvents: "none",
       }}
     />
   );
 };
 
-export const MainVideo: React.FC = () => {
+const Letterbox: React.FC = () => (
+  <>
+    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 60, background: "#000", zIndex: 100 }} />
+    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 60, background: "#000", zIndex: 100 }} />
+  </>
+);
+
+const TitleCard: React.FC = () => {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(frame, [0, 25, 110, 140], [0, 1, 1, 0], { extrapolateRight: "clamp" });
   return (
-    <AbsoluteFill style={{ background: "#050814", fontFamily: "Inter" }}>
-      <IridescentGradient />
-      <StarField />
-      <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={180}>
-          <Scene1Hero />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={linearTiming({ durationInFrames: 20 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={170}>
-          <Scene2Vision />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={slide({ direction: "from-right" })}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 25 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={200}>
-          <Scene3Build />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={wipe({ direction: "from-bottom-right" })}
-          timing={linearTiming({ durationInFrames: 25 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={210}>
-          <Scene4Modules />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={linearTiming({ durationInFrames: 20 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={180}>
-          <Scene5Outro />
-        </TransitionSeries.Sequence>
-      </TransitionSeries>
+    <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "flex-start", padding: 140, opacity, zIndex: 50 }}>
+      <div
+        style={{
+          fontFamily: "Inter",
+          fontSize: 22,
+          color: "#f5c97a",
+          letterSpacing: 8,
+          textTransform: "uppercase",
+          textShadow: "0 2px 8px rgba(0,0,0,0.9)",
+        }}
+      >
+        Oracle Lunar — A True Story
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+export const MainVideo: React.FC = () => {
+  let acc = 0;
+  return (
+    <AbsoluteFill style={{ background: "#000", fontFamily: "Inter" }}>
+      <Series>
+        {SCENES.map((s, i) => {
+          const el = (
+            <Series.Sequence key={i} durationInFrames={s.dur}>
+              <CinematicScene
+                image={s.img}
+                caption={s.cap}
+                subCaption={s.sub}
+                motion={s.motion}
+                vignette={0.6}
+                captionPos={i % 2 === 0 ? "bottom" : "top"}
+              />
+            </Series.Sequence>
+          );
+          acc += s.dur;
+          return el;
+        })}
+      </Series>
+
+      {/* Title card overlay on first scene */}
+      <Sequence from={0} durationInFrames={150}>
+        <TitleCard />
+      </Sequence>
+
+      {/* Film grain overlay across whole video */}
+      <FilmGrain />
+
+      {/* Letterbox bars for cinematic 2.39:1 feel */}
+      <Letterbox />
+
+      {/* Narrator VO from frame 0 */}
+      <Audio src={staticFile("audio/vo-narrator.mp3")} volume={1.0} />
+
+      {/* Oracle VO starts when secretary hands phone (scene 5 ends at 150+90+180+150+150 = 720) */}
+      <Sequence from={720}>
+        <Audio src={staticFile("audio/vo-oracle.mp3")} volume={1.0} />
+      </Sequence>
     </AbsoluteFill>
   );
 };
