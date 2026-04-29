@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Mic, Loader2, CheckCircle2 } from "lucide-react";
+import { Mic, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
 import { enrollVoice, loadVoicePrint } from "@/lib/audioFilter";
+import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
 import { toast } from "sonner";
 
 interface Props {
@@ -84,6 +85,18 @@ export default function VoiceEnrollmentDialog({ open, onOpenChange, onComplete }
             <Button onClick={() => setPhase("intro")} variant="outline">Try again</Button>
           </div>
         )}
+
+        {/* ElevenLabs affiliate footer */}
+        <a
+          href={ELEVENLABS_AFFILIATE_URL}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => trackAffiliateClick("elevenlabs", "voice_enrollment_dialog")}
+          className="mt-4 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground transition-colors"
+        >
+          <span>Want to clone your voice in studio quality? Try ElevenLabs.</span>
+          <ExternalLink className="h-3 w-3 shrink-0" />
+        </a>
       </DialogContent>
     </Dialog>
   );
