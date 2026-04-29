@@ -142,8 +142,36 @@ const MediaLibraryPage = () => {
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <Image className="w-5 h-5 text-primary" />;
+    if (type === "gif") return <Image className="w-5 h-5 text-primary" />;
     if (type === "video") return <Video className="w-5 h-5 text-primary" />;
+    if (type === "text" || type === "document") return <FileText className="w-5 h-5 text-primary" />;
+    if (type === "app") return <Globe className="w-5 h-5 text-primary" />;
     return <Music className="w-5 h-5 text-primary" />;
+  };
+
+  const isImageLike = (m: any) => (m.media_type === "image" || m.media_type === "gif") && !!m.url;
+  const isVideoLike = (m: any) => m.media_type === "video" && !!m.url;
+
+  const handleDownloadSelected = async () => {
+    if (!selected?.url) return;
+    try {
+      if (selected.media_type === "text") {
+        const blobUrl = URL.createObjectURL(new Blob([selected.url], { type: "text/plain" }));
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = `${(selected.title || "library-note").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(blobUrl);
+      } else {
+        await downloadFileFromUrl(selected.url, selected.title || "media");
+      }
+      toast.success("Downloaded!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download media");
+    }
   };
 
   const handleDelete = async (id: string) => {
