@@ -584,7 +584,7 @@ const OwnerDashboardPage = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
-      <UniversalBackButton />
+      <UniversalBackButton fallbackPath="/dashboard" />
       <div className="px-4 pt-14 pb-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">

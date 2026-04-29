@@ -358,7 +358,7 @@ const PortalLandingPage = () => {
             <span className="oracle-lunar-wordmark text-5xl md:text-7xl">ORACLE LUNAR</span>
             <br />
             <span className="oracle-lunar-wordmark-soft text-2xl md:text-4xl block mt-4">
-              Your AI companion — always here, always listening.
+              Your AI companion — always here for you 💛
             </span>
           </h1>
 
