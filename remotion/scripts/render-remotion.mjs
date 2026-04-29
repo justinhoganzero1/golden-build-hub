@@ -28,9 +28,11 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  outputLocation: "/mnt/documents/oracle-lunar-making-of.mp4",
+  audioCodec: "aac",
+  outputLocation: "/mnt/documents/oracle-lunar-making-of-v2.mp4",
   puppeteerInstance: browser,
-  muted: true,
+  muted: false,
+  enforceAudioTrack: true,
   concurrency: 1,
   onProgress: ({ progress }) => {
     if (Math.floor(progress * 100) % 10 === 0) {
