@@ -2158,6 +2158,10 @@ export type Database = {
       }
       is_owner: { Args: never; Returns: boolean }
       is_owner_email_locked: { Args: never; Returns: boolean }
+      library_media_type_from_url: {
+        Args: { _field?: string; _url: string }
+        Returns: string
+      }
       photo_template_quota: {
         Args: { _user_id: string }
         Returns: {
@@ -2180,6 +2184,19 @@ export type Database = {
           _thumbnail_url?: string
           _title: string
           _url: string
+        }
+        Returns: string
+      }
+      save_library_item_for_user: {
+        Args: {
+          _is_public?: boolean
+          _media_type: string
+          _metadata?: Json
+          _source_page: string
+          _thumbnail_url?: string
+          _title: string
+          _url: string
+          _user_id: string
         }
         Returns: string
       }
