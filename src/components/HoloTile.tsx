@@ -28,6 +28,13 @@ interface HoloTileProps {
   children?: ReactNode;
 }
 
+// Hash a string to a stable 0/1 so each tile picks a consistent rim variant
+const variantFor = (s: string): "gold" | "violet" => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h) % 2 === 0 ? "gold" : "violet";
+};
+
 const HoloTile = ({
   bubbleSrc,
   icon,
@@ -41,34 +48,44 @@ const HoloTile = ({
   badge,
   children,
 }: HoloTileProps) => {
-  const bubbleSize = compact ? "w-12 h-12" : "w-20 h-20 sm:w-24 sm:h-24";
+  const bubbleSize = compact ? "w-14 h-14" : "w-16 h-16 sm:w-20 sm:h-20";
+  const variant = variantFor(title);
 
   const content = (
     <>
-      {/* Bubble / icon */}
+      {/* Bubble / icon — centered, big, glowing like the chiclet icons */}
       <div className={`relative ${bubbleSize} flex items-center justify-center holo-float shrink-0`}>
         {bubbleSrc ? (
           <img
             src={bubbleSrc}
             alt=""
-            width={compact ? 48 : 96}
-            height={compact ? 48 : 96}
+            width={compact ? 56 : 80}
+            height={compact ? 56 : 80}
             loading="lazy"
-            className="w-full h-full object-contain drop-shadow-[0_8px_20px_rgba(140,70,255,0.45)]"
+            className={`w-full h-full object-contain ${
+              variant === "gold"
+                ? "drop-shadow-[0_4px_14px_rgba(255,190,80,0.55)]"
+                : "drop-shadow-[0_4px_14px_rgba(170,90,255,0.55)]"
+            }`}
           />
         ) : (
           <div className="holo-bubble w-full h-full flex items-center justify-center">
-            <div className="relative z-10 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <div className="relative z-10 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
               {icon}
             </div>
           </div>
         )}
       </div>
 
-      {/* Text block */}
-      <div className={`flex-1 min-w-0 ${compact ? "" : "text-center mt-3"}`}>
+      {/* Label — small, centered under the icon, like Oracle/Movie/Photo/Voice */}
+      <div className={`flex-1 min-w-0 ${compact ? "" : "text-center mt-2"}`}>
         <div className="flex items-center gap-2 justify-center">
-          <h3 className={`font-bold text-foreground truncate ${compact ? "text-sm" : "text-base"}`}>
+          <h3
+            className={`font-semibold truncate ${
+              compact ? "text-sm" : "text-sm sm:text-base"
+            } ${variant === "gold" ? "text-amber-100" : "text-violet-100"}`}
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.8)" }}
+          >
             {title}
           </h3>
           {badge && (
@@ -78,16 +95,16 @@ const HoloTile = ({
           )}
         </div>
         {subtitle && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground/80 line-clamp-2 mt-0.5">{subtitle}</p>
         )}
         {children}
       </div>
     </>
   );
 
-  const baseClasses = `holo-card p-4 ${compact ? "flex items-center gap-3" : "flex flex-col items-center"} ${
-    disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-  } ${className}`;
+  const baseClasses = `holo-card ${variant === "violet" ? "holo-violet" : ""} ${
+    compact ? "p-3 flex items-center gap-3" : "p-4 sm:p-5 flex flex-col items-center justify-center aspect-square"
+  } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`;
 
   if (href && !disabled) {
     return (
