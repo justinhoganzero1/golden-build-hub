@@ -690,6 +690,44 @@ const OwnerDashboardPage = () => {
               </p>
             </div>
 
+            {/* HeyGen Affiliate Tracker */}
+            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Video className="w-4 h-4 text-pink-400" />
+                <h3 className="text-sm font-bold text-white">HeyGen Affiliate</h3>
+                <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">Up to 30% commission</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-bold text-pink-300">
+                    {(() => { try { return localStorage.getItem("affiliate_clicks_heygen") || "0"; } catch { return "0"; } })()}
+                  </p>
+                  <p className="text-[10px] text-gray-400">Local Clicks</p>
+                </div>
+                <div className="bg-white/5 rounded-xl p-3 text-center">
+                  <p className="text-xs text-gray-300 truncate">heygen.com/?sid=oraclelunar</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Your Link (update once approved)</p>
+                </div>
+              </div>
+              <a
+                href="https://www.heygen.com/affiliate"
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                onClick={() => {
+                  try {
+                    const k = "affiliate_clicks_heygen";
+                    localStorage.setItem(k, String(parseInt(localStorage.getItem(k) || "0", 10) + 1));
+                  } catch {}
+                }}
+                className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold hover:opacity-90"
+              >
+                Apply / Open HeyGen Affiliate →
+              </a>
+              <p className="text-[10px] text-gray-400 mt-2 text-center">
+                Live in: Photography Hub Story Board "Animate" CTA, Movie Studio upgrade prompts
+              </p>
+            </div>
+
             {/* Stripe Connect demo (admin view) */}
             <Suspense fallback={null}>
               <StripeConnectPanel />
