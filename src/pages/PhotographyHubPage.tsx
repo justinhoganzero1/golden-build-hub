@@ -34,25 +34,102 @@ const PhotographyHubPage = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  // NEW — multi-image stack (up to 16). Drives the "Edit My Photos" frame and the
+  // "Compile Marketing Video" feature. Index 0 is what single-image edit uses.
+  const [photoStack, setPhotoStack] = useState<string[]>([]);
+  const MAX_STACK = 16;
   const [showShare, setShowShare] = useState(false);
   const [mode, setMode] = useState<"generate" | "edit">("generate");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [compilingVideo, setCompilingVideo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please upload an image"); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10MB"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedPhoto(reader.result as string);
-      setMode("edit");
-      toast.success("Photo uploaded! Describe how to transform it.");
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const remaining = MAX_STACK - photoStack.length;
+    if (remaining <= 0) {
+      toast.error(`Stack is full — max ${MAX_STACK} images.`);
+      return;
+    }
+    const accept = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast.warning(`Only added ${remaining} (max ${MAX_STACK}).`);
+    }
+
+    let loaded = 0;
+    const newOnes: string[] = [];
+    accept.forEach((file) => {
+      if (!file.type.startsWith("image/")) { toast.error(`${file.name}: not an image`); loaded++; return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name}: max 10MB`); loaded++; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        newOnes.push(reader.result as string);
+        loaded++;
+        if (loaded === accept.length) {
+          setPhotoStack((prev) => {
+            const next = [...prev, ...newOnes].slice(0, MAX_STACK);
+            // Keep legacy single-photo state in sync for the existing edit pipeline.
+            setUploadedPhoto(next[0] ?? null);
+            return next;
+          });
+          setMode("edit");
+          toast.success(`Added ${newOnes.length} image${newOnes.length === 1 ? "" : "s"} to the stack.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    // Clear the input so re-selecting the same file fires onChange again.
+    e.target.value = "";
   };
+
+  const removeFromStack = (idx: number) => {
+    setPhotoStack((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      setUploadedPhoto(next[0] ?? null);
+      return next;
+    });
+  };
+
+  const compileMarketingVideo = async () => {
+    if (photoStack.length < 2) {
+      toast.error("Add at least 2 images to compile a video.");
+      return;
+    }
+    if (!user) {
+      toast.error("Sign in to compile a marketing video.");
+      return;
+    }
+    setCompilingVideo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("compile-marketing-video", {
+        body: {
+          images: photoStack,
+          title: prompt.trim() || "ORACLE LUNAR Marketing Reel",
+          per_image_seconds: 2.5,
+          aspect: "9:16",
+        },
+      });
+      if (error) throw error;
+      const url = (data as any)?.video_url;
+      if (!url) throw new Error("No video URL returned");
+      toast.success("Marketing video compiled and saved to your library!");
+      saveMedia.mutate({
+        media_type: "video",
+        title: `Marketing Reel — ${new Date().toLocaleDateString()}`,
+        url,
+        source_page: "photography-hub",
+        metadata: { compiled_from: photoStack.length, kind: "marketing_reel" },
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Compile failed — coming soon.");
+    } finally {
+      setCompilingVideo(false);
+    }
+  };
+
 
   const upscaleTo8K = async (imageUrl: string): Promise<string> => {
     try {
