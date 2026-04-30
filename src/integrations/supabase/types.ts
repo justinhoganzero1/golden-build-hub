@@ -89,6 +89,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_charges: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          platform_fee_cents: number
+          provider_cost_cents: number
+          service: string
+          total_cents: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          platform_fee_cents?: number
+          provider_cost_cents?: number
+          service: string
+          total_cents: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          platform_fee_cents?: number
+          provider_cost_cents?: number
+          service?: string
+          total_cents?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_unlocks: {
         Row: {
           amount_cents: number
@@ -2226,6 +2259,21 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      wallet_charge_ai: {
+        Args: {
+          _metadata?: Json
+          _platform_fee_cents: number
+          _provider_cost_cents: number
+          _service: string
+          _user_id: string
+        }
+        Returns: {
+          charge_id: string
+          insufficient: boolean
+          new_balance_cents: number
+          total_billed_cents: number
+        }[]
       }
       wallet_charge_call: {
         Args: {
