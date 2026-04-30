@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Tier 1 — ABSOLUTE block (no bypass, mandatory for Google Play / global safety)
 const ABSOLUTE_BLOCK: RegExp[] = [
   /\b(child|kid|minor|underage|teen|preteen|loli|shota|toddler|baby)\b.{0,40}\b(nude|naked|sex|sexual|erotic|porn|nsfw|topless|undress|strip|lingerie|provocative|seductive)\b/i,
   /\b(nude|naked|sex|sexual|erotic|porn|nsfw|topless|undress|strip)\b.{0,40}\b(child|kid|minor|underage|teen|preteen|loli|shota|toddler|baby)\b/i,
@@ -13,16 +13,17 @@ const ABSOLUTE_BLOCK: RegExp[] = [
   /\b(how to)\b.{0,30}\b(kill myself|commit suicide|hang myself|overdose|end my life)\b/i,
   /\b(how to|build|make|construct)\b.{0,30}\b(bomb|explosive|ied|pipe bomb|nerve agent|sarin|ricin|anthrax)\b/i,
 ];
-// Tier 2 — M-rated block, owner may bypass
 const M_RATED = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip|fetish|orgasm|masturbat)\b/i;
+
+// Image generation provider cost (Gemini 3 Pro Image): ~3¢/image
+const IMAGE_GEN_COST_CENTS = 3;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // 🔒 FORT KNOX: require valid JWT
-    const authHeader = req.headers.get("Authorization") || "";
-    if (!authHeader.startsWith("Bearer ")) {
+    const user = await getUserFromRequest(req);
+    if (!user) {
       return new Response(JSON.stringify({ error: "Sign up required to generate images." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -36,7 +37,6 @@ serve(async (req) => {
       });
     }
 
-    // Tier 1 — ABSOLUTE, no bypass possible
     for (const pat of ABSOLUTE_BLOCK) {
       if (pat.test(prompt)) {
         return new Response(JSON.stringify({
@@ -47,7 +47,6 @@ serve(async (req) => {
         });
       }
     }
-    // Tier 2 — M-rated unless owner bypass
     if (!ownerBypass && M_RATED.test(prompt)) {
       return new Response(JSON.stringify({ error: "Content must be M-rated. Explicit descriptions are not allowed." }), {
         status: 400,
@@ -57,6 +56,13 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    try {
+      await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage });
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
+      throw e;
+    }
 
     let userContent: any;
     if (inputImage) {
