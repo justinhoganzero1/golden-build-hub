@@ -7,6 +7,8 @@
 // so the client can prompt the user to add it via the secrets flow.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +19,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "auth_required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { image_url, prompt = "", duration = 5, ratio = "1280:768" } =
       await req.json() as { image_url?: string; prompt?: string; duration?: 5 | 10; ratio?: string };
 
@@ -31,6 +39,15 @@ serve(async (req) => {
         error: "RUNWAY_API_KEY missing",
         hint: "Add a Runway API key in project secrets to enable real image-to-video generation.",
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Coin paywall: charge BEFORE submitting to Runway. Refund logic could be added on FAILED.
+    const providerCost = PROVIDER_RATES.runway_image_to_video_per_second * Number(duration);
+    try {
+      await chargeAI(user.id, "runway_image_to_video", providerCost, { duration, ratio });
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
+      throw e;
     }
 
     // 1) Submit task to Runway (Gen-3 / image_to_video)
