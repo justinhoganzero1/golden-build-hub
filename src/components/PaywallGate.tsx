@@ -49,6 +49,12 @@ const PaywallGate = ({
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const isPreview = usePreviewMode();
 
+  // Coin economy: tiers are dead. Any signed-in user can SEE every feature.
+  // Actual cost is deducted in coins at the edge-function layer when they USE a paid AI call.
+  // PaywallGate is now effectively a no-op for signed-in users; the wall fires only for
+  // anonymous visitors who somehow reach a gated page (RequireAuth normally catches them first).
+  return <>{children}</>;
+  // eslint-disable-next-line no-unreachable
   if (loading || adminLoading) return <>{children}</>;
   if (isPreview || isAdmin || hasAccess(tier, requiredTier)) return <>{children}</>;
 
@@ -99,6 +105,9 @@ export const TileLockBadge = ({ requiredTier = "starter" }: { requiredTier?: str
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const isPreview = usePreviewMode();
 
+  // Coin economy: no more tier locks on tiles. Always hide the lock badge.
+  return null;
+  // eslint-disable-next-line no-unreachable
   if (loading || adminLoading || isPreview || isAdmin || hasAccess(tier, requiredTier)) return null;
 
   return (
