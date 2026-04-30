@@ -3,6 +3,8 @@
 // Output: { image_url: string }  (Replicate-hosted PNG/JPG)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +18,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "auth_required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const { image_url, scale = 4, face_enhance = false } = await req.json() as {
       image_url?: string; scale?: number; face_enhance?: boolean;
     };
@@ -31,6 +39,15 @@ serve(async (req) => {
         error: "REPLICATE_API_TOKEN missing",
         hint: "Add a Replicate API token in project secrets to enable 4K/8K upscaling.",
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Coin paywall — 8x runs the upscaler twice
+    const providerCost = scale >= 8 ? PROVIDER_RATES.replicate_upscale_8x : PROVIDER_RATES.replicate_upscale_4x;
+    try {
+      await chargeAI(user.id, "replicate_upscale", providerCost, { scale, face_enhance });
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
+      throw e;
     }
 
     // Real-ESRGAN supports 2x/4x natively. For 8x, we run 4x then 2x.
