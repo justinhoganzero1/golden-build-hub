@@ -120,16 +120,12 @@ const PortalLandingPage = () => {
   const isMember = !!user && (subscribed || isAdmin);
 
   const handleTileClick = (to: string) => {
-    if (isMember) {
+    // Coin economy: any signed-in user can enter every app. Paid AI calls deduct coins server-side.
+    if (user) {
       if (bounceIfNotProduction(to)) return;
       navigate(to);
-    } else if (user) {
-      // Signed in but not a paying member → upgrade
-      const target = `/subscribe?redirect=${encodeURIComponent(to)}`;
-      if (bounceIfNotProduction(target)) return;
-      navigate(target);
     } else {
-      // Not signed in → sign up / sign in
+      // Soft-lock: anonymous visitors trigger auth on any action.
       const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`;
       if (bounceIfNotProduction(target)) return;
       navigate(target);
