@@ -27,6 +27,12 @@ const EVER_ADMIN_KEY = "master-oracle-ever-admin";
 export const MasterOracleLauncher = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { pathname } = useLocation();
+
+  // NEVER show on the public portal landing — owner request.
+  // Oracle belongs inside the member app, not on marketing pages.
+  if (pathname === "/" || pathname === "/oracle-preview" || pathname.startsWith("/sign-in")) {
+    return null;
+  }
   const [open, setOpenState] = useState<boolean>(() => {
     try { return sessionStorage.getItem(OPEN_STORAGE_KEY) === "1"; } catch { return false; }
   });

@@ -34,25 +34,102 @@ const PhotographyHubPage = () => {
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  // NEW — multi-image stack (up to 16). Drives the "Edit My Photos" frame and the
+  // "Compile Marketing Video" feature. Index 0 is what single-image edit uses.
+  const [photoStack, setPhotoStack] = useState<string[]>([]);
+  const MAX_STACK = 16;
   const [showShare, setShowShare] = useState(false);
   const [mode, setMode] = useState<"generate" | "edit">("generate");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [compilingVideo, setCompilingVideo] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please upload an image"); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error("Max 10MB"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedPhoto(reader.result as string);
-      setMode("edit");
-      toast.success("Photo uploaded! Describe how to transform it.");
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const remaining = MAX_STACK - photoStack.length;
+    if (remaining <= 0) {
+      toast.error(`Stack is full — max ${MAX_STACK} images.`);
+      return;
+    }
+    const accept = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast.warning(`Only added ${remaining} (max ${MAX_STACK}).`);
+    }
+
+    let loaded = 0;
+    const newOnes: string[] = [];
+    accept.forEach((file) => {
+      if (!file.type.startsWith("image/")) { toast.error(`${file.name}: not an image`); loaded++; return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name}: max 10MB`); loaded++; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        newOnes.push(reader.result as string);
+        loaded++;
+        if (loaded === accept.length) {
+          setPhotoStack((prev) => {
+            const next = [...prev, ...newOnes].slice(0, MAX_STACK);
+            // Keep legacy single-photo state in sync for the existing edit pipeline.
+            setUploadedPhoto(next[0] ?? null);
+            return next;
+          });
+          setMode("edit");
+          toast.success(`Added ${newOnes.length} image${newOnes.length === 1 ? "" : "s"} to the stack.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    // Clear the input so re-selecting the same file fires onChange again.
+    e.target.value = "";
   };
+
+  const removeFromStack = (idx: number) => {
+    setPhotoStack((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      setUploadedPhoto(next[0] ?? null);
+      return next;
+    });
+  };
+
+  const compileMarketingVideo = async () => {
+    if (photoStack.length < 2) {
+      toast.error("Add at least 2 images to compile a video.");
+      return;
+    }
+    if (!user) {
+      toast.error("Sign in to compile a marketing video.");
+      return;
+    }
+    setCompilingVideo(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("compile-marketing-video", {
+        body: {
+          images: photoStack,
+          title: prompt.trim() || "ORACLE LUNAR Marketing Reel",
+          per_image_seconds: 2.5,
+          aspect: "9:16",
+        },
+      });
+      if (error) throw error;
+      const url = (data as any)?.video_url;
+      if (!url) throw new Error("No video URL returned");
+      toast.success("Marketing video compiled and saved to your library!");
+      saveMedia.mutate({
+        media_type: "video",
+        title: `Marketing Reel — ${new Date().toLocaleDateString()}`,
+        url,
+        source_page: "photography-hub",
+        metadata: { compiled_from: photoStack.length, kind: "marketing_reel" },
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Compile failed — coming soon.");
+    } finally {
+      setCompilingVideo(false);
+    }
+  };
+
 
   const upscaleTo8K = async (imageUrl: string): Promise<string> => {
     try {
@@ -157,29 +234,66 @@ const PhotographyHubPage = () => {
           </button>
         </div>
 
-        {/* Uploaded Photo Preview */}
+        {/* Uploaded Photo Stack — up to 16 images, displayed as stacked frames */}
         {mode === "edit" && (
           <div className="mb-4">
-            {uploadedPhoto ? (
-              <div className="relative aspect-square bg-card border border-primary/30 rounded-xl overflow-hidden mb-2">
-                <img src={uploadedPhoto} alt="Uploaded" className="w-full h-full object-cover" />
-                <button onClick={() => fileRef.current?.click()}
-                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-primary/80 text-primary-foreground rounded-lg text-xs flex items-center gap-1">
-                  <Upload className="w-3 h-3" /> Change
+            {photoStack.length > 0 ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    {photoStack.length}/{MAX_STACK} image{photoStack.length === 1 ? "" : "s"} in stack
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => fileRef.current?.click()}
+                      disabled={photoStack.length >= MAX_STACK}
+                      className="px-3 py-1.5 rounded-lg text-[11px] bg-primary/15 border border-primary/30 text-primary disabled:opacity-40 flex items-center gap-1">
+                      <Upload className="w-3 h-3" /> Add more
+                    </button>
+                    <button onClick={() => { setPhotoStack([]); setUploadedPhoto(null); }}
+                      className="px-3 py-1.5 rounded-lg text-[11px] bg-card border border-border text-muted-foreground hover:border-destructive">
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 p-2 rounded-xl bg-card border border-primary/30">
+                  {photoStack.map((src, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/20 group">
+                      <img src={src} alt={`Stack ${i + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-primary">
+                        #{i + 1}
+                      </div>
+                      <button onClick={() => removeFromStack(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Compile to Marketing Video */}
+                <button
+                  onClick={compileMarketingVideo}
+                  disabled={photoStack.length < 2 || compilingVideo}
+                  className="mt-3 w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                  {compilingVideo ? "Compiling reel…" : `🎬 Compile ${photoStack.length} images → Marketing Video`}
                 </button>
-              </div>
+                <p className="text-[10px] text-muted-foreground text-center mt-1">
+                  Stack screenshots, products or moodboards — Oracle compiles them into a vertical reel ready for TikTok / Reels / Shorts.
+                </p>
+              </>
             ) : (
               <button onClick={() => fileRef.current?.click()}
                 className="w-full aspect-video bg-card border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors mb-2">
                 <Upload className="w-8 h-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload your photo</p>
-                <p className="text-[10px] text-muted-foreground">Tap to select • Max 10MB</p>
+                <p className="text-sm text-muted-foreground">Upload up to 16 photos</p>
+                <p className="text-[10px] text-muted-foreground">Tap to select multiple • Max 10MB each</p>
               </button>
             )}
           </div>
         )}
 
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+
 
         {/* Result Preview */}
         {generatedImage && (

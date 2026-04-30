@@ -92,8 +92,12 @@ export function useSubscription() {
       const paidRank = tierRank.indexOf(tier);
       const effectiveTier = rewardActive && paidRank < 2 ? "monthly" : tier;
 
+      // COIN ECONOMY: tiers are dead. Anyone signed in is a "member" and can SEE/USE
+      // every feature; actual paid AI calls are deducted from their coin balance at the
+      // edge-function layer. We still report the underlying Stripe tier for analytics
+      // but force `subscribed: true` and `effectiveTier: "lifetime"` for any signed-in user.
       setState({
-        subscribed: data?.subscribed || false,
+        subscribed: true,
         tier,
         productId: data?.product_id || null,
         subscriptionEnd: data?.subscription_end || null,
@@ -102,7 +106,7 @@ export function useSubscription() {
         rewardActive,
         rewardExpiresAt: rewardData?.expires_at || null,
         rewardReason: rewardData?.reason || null,
-        effectiveTier,
+        effectiveTier: "lifetime",
       });
     } catch (err: any) {
       setState(prev => ({
