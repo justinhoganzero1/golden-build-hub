@@ -1,3 +1,6 @@
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -7,6 +10,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "auth_required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       return new Response(JSON.stringify({ fallback: true, reason: "no_api_key", error: "ElevenLabs API key not configured" }), {
@@ -23,6 +32,13 @@ Deno.serve(async (req) => {
 
     const dur = Math.max(0.5, Math.min(22, Number(duration_seconds) || 5));
     const influence = Math.max(0, Math.min(1, Number(prompt_influence) ?? 0.4));
+
+    try {
+      await chargeAI(user.id, "elevenlabs_sfx", PROVIDER_RATES.elevenlabs_sfx_per_clip, { duration_seconds: dur });
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
+      throw e;
+    }
 
     const resp = await fetch("https://api.elevenlabs.io/v1/sound-generation", {
       method: "POST",
