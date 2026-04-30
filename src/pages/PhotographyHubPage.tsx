@@ -234,29 +234,66 @@ const PhotographyHubPage = () => {
           </button>
         </div>
 
-        {/* Uploaded Photo Preview */}
+        {/* Uploaded Photo Stack — up to 16 images, displayed as stacked frames */}
         {mode === "edit" && (
           <div className="mb-4">
-            {uploadedPhoto ? (
-              <div className="relative aspect-square bg-card border border-primary/30 rounded-xl overflow-hidden mb-2">
-                <img src={uploadedPhoto} alt="Uploaded" className="w-full h-full object-cover" />
-                <button onClick={() => fileRef.current?.click()}
-                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-primary/80 text-primary-foreground rounded-lg text-xs flex items-center gap-1">
-                  <Upload className="w-3 h-3" /> Change
+            {photoStack.length > 0 ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    {photoStack.length}/{MAX_STACK} image{photoStack.length === 1 ? "" : "s"} in stack
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => fileRef.current?.click()}
+                      disabled={photoStack.length >= MAX_STACK}
+                      className="px-3 py-1.5 rounded-lg text-[11px] bg-primary/15 border border-primary/30 text-primary disabled:opacity-40 flex items-center gap-1">
+                      <Upload className="w-3 h-3" /> Add more
+                    </button>
+                    <button onClick={() => { setPhotoStack([]); setUploadedPhoto(null); }}
+                      className="px-3 py-1.5 rounded-lg text-[11px] bg-card border border-border text-muted-foreground hover:border-destructive">
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 p-2 rounded-xl bg-card border border-primary/30">
+                  {photoStack.map((src, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/20 group">
+                      <img src={src} alt={`Stack ${i + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-primary">
+                        #{i + 1}
+                      </div>
+                      <button onClick={() => removeFromStack(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Compile to Marketing Video */}
+                <button
+                  onClick={compileMarketingVideo}
+                  disabled={photoStack.length < 2 || compilingVideo}
+                  className="mt-3 w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                  {compilingVideo ? "Compiling reel…" : `🎬 Compile ${photoStack.length} images → Marketing Video`}
                 </button>
-              </div>
+                <p className="text-[10px] text-muted-foreground text-center mt-1">
+                  Stack screenshots, products or moodboards — Oracle compiles them into a vertical reel ready for TikTok / Reels / Shorts.
+                </p>
+              </>
             ) : (
               <button onClick={() => fileRef.current?.click()}
                 className="w-full aspect-video bg-card border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary transition-colors mb-2">
                 <Upload className="w-8 h-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload your photo</p>
-                <p className="text-[10px] text-muted-foreground">Tap to select • Max 10MB</p>
+                <p className="text-sm text-muted-foreground">Upload up to 16 photos</p>
+                <p className="text-[10px] text-muted-foreground">Tap to select multiple • Max 10MB each</p>
               </button>
             )}
           </div>
         )}
 
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+
 
         {/* Result Preview */}
         {generatedImage && (
