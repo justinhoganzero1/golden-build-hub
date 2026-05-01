@@ -4,7 +4,7 @@ import {
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
   TrendingUp, DollarSign, Globe, Smartphone, Bell, Settings,
   Search, Filter, Send, Crown, Zap, Image, Video, Music,
-  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut
+  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut, Home
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +33,7 @@ const OwnerDashboardPage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
   // Users tab — list of all members, split into online/offline sub-tabs
-  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean }>>([]);
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; wallet_balance_cents?: number }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
@@ -456,9 +456,10 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin free AI credits" }]);
+      setUsersList(prev => prev.map(u => u.email?.toLowerCase() === email ? { ...u, freebie_active: true, wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
       setFreebieEmail("");
-      toast.success(`Free access granted to ${email} for 365 days`);
+      toast.success(`Freebie credits linked to ${email}`);
     } catch (e: any) {
       toast.error(e?.message || "Could not grant access. The user must sign up first.");
     }
@@ -471,8 +472,9 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Free access granted to ${email} for 365 days`);
-      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      toast.success(`Freebie credits linked to ${email}`);
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin free AI credits" }]);
     } catch (e: any) {
       toast.error(e?.message || "Grant failed");
     }
