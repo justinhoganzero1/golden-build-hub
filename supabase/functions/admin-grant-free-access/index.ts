@@ -1,6 +1,6 @@
-// Admin-only: grant a "free access" reward to a user by email.
-// Looks the user up in auth.users via service role and inserts a reward_grants row
-// (reward_type='tier3_trial'), default 365 days unless overridden.
+// Admin-only: grant freebie AI credits to a real registered user by email/userId.
+// Coin economy: this no longer creates fake subscription access. It links to
+// auth.users, tops up the wallet, and writes an audit reward_grants row.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
     const targetEmail = String(body.email || "").trim().toLowerCase();
     const userId = body.userId ? String(body.userId) : null;
     const days = Number.isFinite(Number(body.days)) ? Math.max(1, Math.min(3650, Number(body.days))) : 365;
+    const amountCents = Number.isFinite(Number(body.amountCents)) ? Math.max(1, Math.min(50000, Number(body.amountCents))) : 1860;
     const reason = String(body.reason || "admin_grant");
 
     if (!targetEmail && !userId) {
@@ -66,12 +67,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `No registered user with email ${targetEmail}. They must sign up first.` }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    const { data: newBalance, error: topupErr } = await admin.rpc("wallet_topup", {
+      _user_id: resolvedUserId,
+      _amount_cents: amountCents,
+    });
+    if (topupErr) throw topupErr;
+
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     const { data: grant, error: insErr } = await admin
       .from("reward_grants")
       .insert({
         user_id: resolvedUserId,
-        reward_type: "tier3_trial",
+        reward_type: "admin_freebie_coins",
         reason,
         starts_at: new Date().toISOString(),
         expires_at: expiresAt,
@@ -81,7 +88,7 @@ Deno.serve(async (req) => {
       .single();
     if (insErr) throw insErr;
 
-    return new Response(JSON.stringify({ ok: true, userId: resolvedUserId, email: resolvedEmail, grantId: grant.id, expiresAt: grant.expires_at }), {
+    return new Response(JSON.stringify({ ok: true, userId: resolvedUserId, email: resolvedEmail, grantId: grant.id, expiresAt: grant.expires_at, amountCents, newBalanceCents: newBalance }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (e: any) {

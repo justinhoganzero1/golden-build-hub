@@ -4,7 +4,7 @@ import {
   Lock, ChevronRight, CheckCircle, XCircle, Eye, Sparkles,
   TrendingUp, DollarSign, Globe, Smartphone, Bell, Settings,
   Search, Filter, Send, Crown, Zap, Image, Video, Music,
-  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut
+  Camera, Grid, List, Trash2, Play, Download, Share2, LogOut, Home
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +33,7 @@ const OwnerDashboardPage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
   // Users tab — list of all members, split into online/offline sub-tabs
-  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean }>>([]);
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; wallet_balance_cents?: number }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
@@ -456,9 +456,10 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin free AI credits" }]);
+      setUsersList(prev => prev.map(u => u.email?.toLowerCase() === email ? { ...u, freebie_active: true, wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
       setFreebieEmail("");
-      toast.success(`Free access granted to ${email} for 365 days`);
+      toast.success(`Freebie credits linked to ${email}`);
     } catch (e: any) {
       toast.error(e?.message || "Could not grant access. The user must sign up first.");
     }
@@ -471,8 +472,9 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Free access granted to ${email} for 365 days`);
-      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin grant (365 days)" }]);
+      toast.success(`Freebie credits linked to ${email}`);
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+      setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin free AI credits" }]);
     } catch (e: any) {
       toast.error(e?.message || "Grant failed");
     }
@@ -611,7 +613,7 @@ const OwnerDashboardPage = () => {
       <UniversalBackButton fallbackPath="/dashboard" />
       <div className="px-4 pt-14 pb-4">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
             <Crown className="w-8 h-8 text-yellow-400" />
           </div>
@@ -619,6 +621,13 @@ const OwnerDashboardPage = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Owner Dashboard</h1>
             <p className="text-gray-500 text-xs truncate">{user?.email || "ORACLE LUNAR Command Center"}</p>
           </div>
+          <button
+            onClick={() => navigate("/dashboard", { replace: false })}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition"
+            title="Go to the normal user dashboard"
+          >
+            <Home className="w-4 h-4" /> Main App
+          </button>
           <button
             onClick={async () => {
               try {
@@ -1071,11 +1080,11 @@ const OwnerDashboardPage = () => {
             <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Gift className="w-5 h-5 text-green-400" />
-                <h3 className="text-sm font-bold text-white">Grant Lifetime Free Access</h3>
+                <h3 className="text-sm font-bold text-white">Grant Free AI Credits</h3>
               </div>
-              <p className="text-xs text-gray-400 mb-3">For users whose ideas were implemented</p>
+              <p className="text-xs text-gray-400 mb-3">Links directly to an existing account and tops up enough coins for free AI use. Paid purchases still stay paid.</p>
               <input value={freebieEmail} onChange={e => setFreebieEmail(e.target.value)} placeholder="user@email.com" className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none mb-3" />
-              <button onClick={addFreebie} className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium text-sm">Grant Lifetime Access</button>
+              <button onClick={addFreebie} className="w-full py-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium text-sm">Grant Freebie Credits</button>
             </div>
             <h3 className="text-sm font-bold text-white">Granted Users ({freebies.length})</h3>
             {freebies.length === 0 ? <p className="text-xs text-gray-500 italic">No users granted yet</p> : freebies.map((f, i) => (
