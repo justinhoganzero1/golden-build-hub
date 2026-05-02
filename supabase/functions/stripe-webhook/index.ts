@@ -70,6 +70,23 @@ async function markMoviePaid(projectId: string, paymentIntent: string | null, am
   }
 }
 
+async function grantCoinTopup(session: Stripe.Checkout.Session) {
+  const meta = session.metadata ?? {};
+  const userId = meta.user_id;
+  const amount = Number(meta.wallet_cents ?? session.amount_total ?? 0);
+  if (!userId || !Number.isFinite(amount) || amount <= 0) {
+    log("coin topup missing metadata", { session_id: session.id, userId, amount });
+    return;
+  }
+
+  const { error } = await supabase.rpc("wallet_topup", {
+    _user_id: userId,
+    _amount_cents: Math.round(amount),
+  });
+  if (error) throw error;
+  log("coin topup credited", { user_id: userId, wallet_cents: Math.round(amount), session_id: session.id });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -99,10 +116,13 @@ Deno.serve(async (req) => {
         const meta = session.metadata ?? {};
         const projectId = meta.project_id;
         const appKey = meta.app_key;
+        const purchaseType = meta.purchase_type;
 
         const purchaseId = meta.purchase_id;
 
-        if (purchaseId) {
+        if (purchaseType === "coin_topup") {
+          await grantCoinTopup(session);
+        } else if (purchaseId) {
           // Shop purchase — mark paid + bump creator download count
           const { data: existing } = await supabase
             .from("shop_purchases")
