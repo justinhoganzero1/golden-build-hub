@@ -13,8 +13,9 @@ export const APP_PRICING: Record<AppKey, { label: string; price: string; amountC
   photo_templates: { label: "Unlimited Photo Templates", price: "$1", amountCents: 100 },
 };
 
-// Apps that no longer require a one-time unlock — every signed-in user gets them.
-const FREE_APPS: AppKey[] = ["movie_studio"];
+// Coin economy: one-time app unlocks are dead for core creation tools.
+// Any signed-in member can open them; paid AI actions charge coins when used.
+const FREE_APPS: AppKey[] = ["movie_studio", "app_maker", "app_wrapper"];
 
 /**
  * Returns whether the current user owns a one-time unlock for the given app.
