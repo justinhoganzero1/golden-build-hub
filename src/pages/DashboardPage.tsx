@@ -142,7 +142,7 @@ const DashboardPage = () => {
         onOpenChange={setShareOpen}
         title="Oracle Lunar App"
         url={`https://oracle-lunar.online/?ref=${user ? `ORACLE LUNAR${user.id.slice(0,6).toUpperCase()}` : ""}`}
-        description="Check out Oracle Lunar — your AI companion to do everything! When you sign up with my link and stay on a paid plan for 7 days, I unlock another month of full access. Win-win ✨"
+        description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
 
       {/* App Grid */}

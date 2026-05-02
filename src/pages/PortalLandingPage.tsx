@@ -385,8 +385,7 @@ const PortalLandingPage = () => {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Continue with <span className="font-semibold text-foreground">Google</span>,{" "}
-            <span className="font-semibold text-foreground">Apple</span>, or email — your choice on the next screen.
+            Continue with email and password — free to join, coins only when paid AI actions are used.
           </p>
 
           <p className="mt-4 text-xs text-muted-foreground">
