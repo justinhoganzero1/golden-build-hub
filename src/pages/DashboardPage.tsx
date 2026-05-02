@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
@@ -14,9 +13,7 @@ import {
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
-import PartyBanner from "@/components/PartyBanner";
 import WelcomeModal from "@/components/WelcomeModal";
-import { toast } from "sonner";
 
 interface AppTile {
   label: string;
@@ -74,14 +71,9 @@ const tiles: AppTile[] = [
   { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators", tier: null },
 ];
 
-const TIER_RANK: Record<string, number> = {
-  free: 0, starter: 1, monthly: 2, quarterly: 3, biannual: 4, annual: 5, golden: 6,
-};
-
 const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { tier, loading: subLoading } = useSubscription();
   const [shareOpen, setShareOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
 
