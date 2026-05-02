@@ -59,48 +59,30 @@ export function useSubscription() {
       setState(prev => ({ ...prev, subscribed: false, tier: "free", effectiveTier: "free", loading: false }));
       return;
     }
-    if (!accessToken) {
-      setState(prev => ({ ...prev, loading: false }));
-      return;
-    }
-
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
-      const [{ data, error }, { data: rewardData }] = await Promise.all([
-        supabase.functions.invoke("check-subscription", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }),
-        supabase
-          .from("reward_grants")
-          .select("expires_at, reason")
-          .eq("user_id", user.id)
-          .eq("active", true)
-          .gt("expires_at", new Date().toISOString())
-          .order("expires_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+      const { data: rewardData } = await supabase
+        .from("reward_grants")
+        .select("expires_at, reason")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
-
-      const tier = getTierByProductId(data?.product_id);
       const rewardActive = !!rewardData;
-      const tierRank = ["free", "starter", "monthly", "quarterly", "biannual", "annual", "golden", "lifetime"];
-      const paidRank = tierRank.indexOf(tier);
-      const effectiveTier = rewardActive && paidRank < 2 ? "monthly" : tier;
 
       // COIN ECONOMY: tiers are dead. Anyone signed in is a "member" and can SEE/USE
       // every feature; actual paid AI calls are deducted from their coin balance at the
-      // edge-function layer. We still report the underlying Stripe tier for analytics
-      // but force `subscribed: true` and `effectiveTier: "lifetime"` for any signed-in user.
+      // edge-function layer. Do not call Stripe subscription checks here; a Stripe failure
+      // must never lock a coin-wallet member out of the app.
       setState({
         subscribed: true,
-        tier,
-        productId: data?.product_id || null,
-        subscriptionEnd: data?.subscription_end || null,
+        tier: "lifetime",
+        productId: null,
+        subscriptionEnd: null,
         loading: false,
         error: null,
         rewardActive,
@@ -109,13 +91,20 @@ export function useSubscription() {
         effectiveTier: "lifetime",
       });
     } catch (err: any) {
-      setState(prev => ({
-        ...prev,
+      setState({
+        subscribed: true,
+        tier: "lifetime",
+        productId: null,
+        subscriptionEnd: null,
         loading: false,
         error: err.message || "Failed to check subscription",
-      }));
+        rewardActive: false,
+        rewardExpiresAt: null,
+        rewardReason: null,
+        effectiveTier: "lifetime",
+      });
     }
-  }, [user, isReady, accessToken]);
+  }, [user, isReady]);
 
   useEffect(() => {
     checkSubscription();
