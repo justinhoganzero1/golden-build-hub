@@ -7,7 +7,7 @@ interface PaywallGateProps {
   teaser?: boolean;
 }
 
-export function hasAccess(): boolean {
+export function hasAccess(_currentTier?: string, _requiredTier?: string): boolean {
   return true;
 }
 
