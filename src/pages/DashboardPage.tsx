@@ -63,7 +63,7 @@ const tiles: AppTile[] = [
   { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box", tier: null },
   { label: "Referral", icon: <Gift className="w-6 h-6" />, path: "/referral", tier: null },
   { label: "Share App", icon: <Share2 className="w-6 h-6" />, path: "__share__", tier: null },
-  { label: "Subscribe", icon: <Star className="w-6 h-6" />, path: "/subscribe", tier: null },
+  { label: "Coins", icon: <Star className="w-6 h-6" />, path: "/wallet", tier: null },
   { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder", tier: "quarterly" },
   { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn", tier: "starter" },
   { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer", tier: "starter" },
@@ -106,23 +106,9 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
-    if (!tile.tier || isAdmin) {
-      navigate(tile.path);
-      return;
-    }
-    const userRank = TIER_RANK[tier] ?? 0;
-    const requiredRank = TIER_RANK[tile.tier] ?? 0;
-    if (userRank >= requiredRank) {
-      navigate(tile.path);
-    } else {
-      toast("🔒 Premium Feature", {
-        description: `${tile.label} requires a paid plan. Upgrade now or submit a winning idea for FREE lifetime access!`,
-        action: {
-          label: "Upgrade",
-          onClick: () => navigate("/subscribe"),
-        },
-      });
-    }
+    // Coin economy: every signed-in member can enter every tool.
+    // Paid AI actions charge coins server-side when used.
+    navigate(tile.path);
   };
 
   return (
@@ -138,9 +124,9 @@ const DashboardPage = () => {
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
-          {(tier === "lifetime" || isAdmin) && (
+          {(user || isAdmin) && (
             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-sm">
-              ✨ Lifetime Member
+              ✨ Member
             </span>
           )}
           {isAdmin && (
@@ -157,24 +143,7 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Lifetime Birthday Party banner */}
-      {tier !== "lifetime" && !isAdmin && (
-        <div className="mx-4 mb-3 space-y-2">
-          <PartyBanner variant="founding-member" />
-          <PartyBanner variant="lifetime-birthday" />
-        </div>
-      )}
-
-      {/* Free lifetime promo banner */}
-      {tier === "free" && !isAdmin && (
-        <div className="mx-4 mb-4 p-3 rounded-xl bg-gradient-to-r from-primary/20 to-amber-500/20 border border-primary/30">
-          <p className="text-xs text-foreground text-center">
-            💡 <span className="font-bold text-primary">FREE Lifetime Membership!</span> Submit a winning idea in the{" "}
-            <button onClick={() => navigate("/suggestion-box")} className="underline text-primary font-semibold">Suggestion Box</button>
-            {" "}— if we build it, you get unlimited access forever! ✨
-          </p>
-        </div>
-      )}
+      {/* Subscription/pricing banners removed: ORACLE LUNAR now uses coins only. */}
 
       <ShareDialog
         open={shareOpen}
@@ -187,7 +156,7 @@ const DashboardPage = () => {
       {/* App Grid */}
       <div className={`grid ${gridGap} px-4 pb-24`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
         {tiles.map((tile) => {
-          const locked = tile.tier && !isAdmin && (TIER_RANK[tier] ?? 0) < (TIER_RANK[tile.tier] ?? 0);
+          const locked = false;
           return (
             <button
               key={tile.path + tile.label}
