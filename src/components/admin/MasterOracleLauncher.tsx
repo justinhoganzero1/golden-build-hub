@@ -27,12 +27,6 @@ const EVER_ADMIN_KEY = "master-oracle-ever-admin";
 export const MasterOracleLauncher = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const { pathname } = useLocation();
-
-  // NEVER show on the public portal landing — owner request.
-  // Oracle belongs inside the member app, not on marketing pages.
-  if (pathname === "/" || pathname === "/oracle-preview" || pathname.startsWith("/sign-in")) {
-    return null;
-  }
   const [open, setOpenState] = useState<boolean>(() => {
     try { return sessionStorage.getItem(OPEN_STORAGE_KEY) === "1"; } catch { return false; }
   });
@@ -84,6 +78,7 @@ export const MasterOracleLauncher = () => {
   // Hide our launcher button + dialog chrome there, BUT keep the iframe
   // mounted so coming back to any other page resumes the same conversation.
   const onOracleRoute = pathname === "/oracle" || pathname === "/chat-oracle";
+  const hiddenRoute = pathname === "/" || pathname === "/oracle-preview" || pathname.startsWith("/sign-in");
 
   // Until we know the user is admin, render nothing (no iframe yet).
   // Once admin has been confirmed once, ALWAYS render the iframe shell.
@@ -91,7 +86,7 @@ export const MasterOracleLauncher = () => {
 
   return (
     <>
-      {!open && !onOracleRoute && (
+      {!open && !onOracleRoute && !hiddenRoute && (
         <button
           ref={ref}
           {...dragHandlers}
@@ -119,7 +114,7 @@ export const MasterOracleLauncher = () => {
           in this session. Only visibility toggles via CSS. Never unmount. */}
       <div
         className={`fixed inset-0 z-[100] bg-background/95 flex-col ${lowPowerMode ? "" : "backdrop-blur-sm"} ${
-          open && !onOracleRoute ? "flex" : "hidden"
+          open && !onOracleRoute && !hiddenRoute ? "flex" : "hidden"
         }`}
         aria-hidden={!open || onOracleRoute}
       >

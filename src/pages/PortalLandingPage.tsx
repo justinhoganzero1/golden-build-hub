@@ -23,7 +23,7 @@ const HOME_JSON_LD = [
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      { "@type": "Question", "name": "Is ORACLE LUNAR free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — Oracle AI chat, Crisis Hub, Safety Center and the Suggestion Box are free forever. Premium tools unlock with subscription." } },
+      { "@type": "Question", "name": "Is ORACLE LUNAR free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — joining is free and new members get one-time welcome coins. Paid AI actions use coins, with no subscription tiers." } },
       { "@type": "Question", "name": "Is ORACLE LUNAR a ChatGPT alternative?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. ORACLE LUNAR includes a free voice AI chat, AI tutor, AI photo editor, AI movie studio and 40+ tools — going far beyond a single chatbot." } },
       { "@type": "Question", "name": "Does ORACLE LUNAR work on Android and iPhone?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Install as a PWA on iPhone or Android, or download the Android APK directly from the homepage." } },
       { "@type": "Question", "name": "Can the AI remember me?", "acceptedAnswer": { "@type": "Answer", "text": "Yes — every Oracle session uses persistent memory so the AI remembers your preferences, history and personality." } },
@@ -385,8 +385,7 @@ const PortalLandingPage = () => {
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground">
-            Continue with <span className="font-semibold text-foreground">Google</span>,{" "}
-            <span className="font-semibold text-foreground">Apple</span>, or email — your choice on the next screen.
+            Continue with email and password — free to join, coins only when paid AI actions are used.
           </p>
 
           <p className="mt-4 text-xs text-muted-foreground">
