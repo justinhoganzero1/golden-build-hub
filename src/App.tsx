@@ -290,6 +290,7 @@ const App = () => (
                   <Route path="/unlock-success" element={<RequireAuth><ErrorBoundary pageName="Unlock"><UnlockSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/story-writer" element={<RequireAuth><ErrorBoundary pageName="Story Writer"><StoryWriterPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/stories/:slug" element={<ErrorBoundary pageName="Public Story"><StoryPublicPage /></ErrorBoundary>} />
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
