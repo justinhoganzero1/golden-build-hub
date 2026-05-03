@@ -63,6 +63,7 @@ const loaders = {
   "/app-builder": () => import("./pages/AppBuilderPage"),
   "/pos-learn": () => import("./pages/POSLearnPage"),
   "/story-writer": () => import("./pages/StoryWriterPage"),
+  "/stories/:slug": () => import("./pages/StoryPublicPage"),
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
