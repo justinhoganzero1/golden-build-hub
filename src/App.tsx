@@ -173,6 +173,7 @@ const SubscribePage = lazy(loaders["/subscribe"]);
 const AppBuilderPage = lazy(loaders["/app-builder"]);
 const POSLearnPage = lazy(loaders["/pos-learn"]);
 const StoryWriterPage = lazy(loaders["/story-writer"]);
+const StoryPublicPage = lazy(loaders["/stories/:slug"]);
 const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
