@@ -1,11 +1,7 @@
-import { ReactNode, useRef } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
-import { Crown, Lock } from "lucide-react";
+import { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
-
-const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 /**
  * Members-only gate. Two locks:
