@@ -350,10 +350,50 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <Send className="w-5 h-5 text-cyan-400" />
               <span className="text-[10px] text-foreground">Telegram</span>
             </button>
+            <button onClick={shareLinkedIn} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Linkedin className="w-5 h-5 text-blue-600" />
+              <span className="text-[10px] text-foreground">LinkedIn</span>
+            </button>
+            <button onClick={shareReddit} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-orange-500" />
+              <span className="text-[10px] text-foreground">Reddit</span>
+            </button>
+            <button onClick={sharePinterest} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-red-500" />
+              <span className="text-[10px] text-foreground">Pinterest</span>
+            </button>
+            <button onClick={shareTumblr} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-indigo-400" />
+              <span className="text-[10px] text-foreground">Tumblr</span>
+            </button>
+            <button onClick={shareThreads} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-foreground" />
+              <span className="text-[10px] text-foreground">Threads</span>
+            </button>
+            <button onClick={shareBluesky} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-sky-500" />
+              <span className="text-[10px] text-foreground">Bluesky</span>
+            </button>
+            <button onClick={shareLine} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-green-400" />
+              <span className="text-[10px] text-foreground">LINE</span>
+            </button>
+            <button onClick={shareSnapchat} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-yellow-400" />
+              <span className="text-[10px] text-foreground">Snapchat</span>
+            </button>
+            <button onClick={sharePocket} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-pink-500" />
+              <span className="text-[10px] text-foreground">Pocket</span>
+            </button>
+            <button onClick={shareVK} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-blue-400" />
+              <span className="text-[10px] text-foreground">VK</span>
+            </button>
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Facebook, Twitter/X, and Telegram are blocked in some browsers/devices, so those buttons now fall back to your share sheet or copy-ready text.
+            Some platforms are blocked in certain browsers/devices — those buttons fall back to your share sheet or copy-ready text.
           </p>
 
           {/* Email */}
