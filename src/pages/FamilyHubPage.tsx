@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Home, Users, Calendar, ShoppingCart, MapPin, Heart, Plus, Check, Trash2, MessageSquare, Loader2, Send } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -85,7 +86,7 @@ const FamilyHubPage = () => {
       const memberInfo = members.map(m => `${m.name} (${m.avatar}) - ${m.status}`).join(", ");
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [
             { role: "system", content: `You are a family AI assistant. Family members: ${memberInfo}. Help with scheduling, meal planning, chores, activities, and family coordination. Be warm and helpful.` },

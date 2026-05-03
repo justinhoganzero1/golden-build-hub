@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,7 +159,7 @@ const StoryWriterPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ type: "assistant", prompt: `${system}\n\n${prompt}` }),
       });
@@ -288,17 +289,46 @@ const StoryWriterPage = () => {
   };
 
   const publish = async () => {
-    if (!canPublish) {
-      toast("🔒 Publishing requires Full Access", {
-        description: "Upgrade to publish your story.",
-        action: { label: "Upgrade", onClick: () => navigate("/subscribe") },
-      });
+    if (!user) { toast.error("Sign in to publish"); return; }
+    if (!story.chapters.some(c => c.content.trim())) {
+      toast.error("Write at least one chapter before publishing.");
       return;
     }
-    const slug = story.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = (story.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "story")
+      + "-" + Math.random().toString(36).slice(2, 7);
     const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
-    setStory(s => ({ ...s, published: true, publishedUrl }));
-    toast.success("Story published!", { description: publishedUrl });
+    try {
+      const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
+      const payload: any = {
+        user_id: user.id,
+        media_type: "story",
+        title: story.title || "Untitled Story",
+        url: publishedUrl,
+        source_page: "story-writer",
+        is_public: true,
+        metadata: {
+          slug,
+          genre: story.genre,
+          premise: story.premise,
+          chapters: story.chapters,
+          wordCount,
+          published: true,
+          publishedUrl,
+          authorName: user.email?.split("@")[0],
+        },
+      };
+      if (savingId) {
+        await supabase.from("user_media").update(payload).eq("id", savingId);
+      } else {
+        const { data } = await supabase.from("user_media").insert([payload]).select("id").single();
+        if (data) setSavingId(data.id);
+      }
+      setStory(s => ({ ...s, published: true, publishedUrl }));
+      toast.success("Story published — share it anywhere!", { description: publishedUrl });
+      setShareOpen(true);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to publish");
+    }
   };
 
   const loadSaved = (id: string) => {

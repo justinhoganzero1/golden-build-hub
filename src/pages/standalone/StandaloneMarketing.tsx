@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Loader2, Megaphone, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -19,7 +20,7 @@ const StandaloneMarketing = () => {
     try {
       const resp = await fetch(URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [{
             role: "user",

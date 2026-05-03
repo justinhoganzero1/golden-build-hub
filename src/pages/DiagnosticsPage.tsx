@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useCallback } from "react";
 import { Heart, Activity, Loader2, CheckCircle, XCircle, AlertTriangle, Play, RotateCcw } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -78,7 +79,7 @@ const DiagnosticsPage = () => {
     await runTest("Oracle AI Chat (Streaming)", async () => {
       const resp = await fetch(ORACLE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ messages: [{ role: "user", content: "Say hello in one word" }] }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -100,7 +101,7 @@ const DiagnosticsPage = () => {
     await runTest("Oracle AI Chat (Response Quality)", async () => {
       const resp = await fetch(ORACLE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ messages: [{ role: "user", content: "What is 2+2? Reply with just the number." }] }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -125,7 +126,7 @@ const DiagnosticsPage = () => {
     await runTest("Image Generation (Avatar)", async () => {
       const resp = await fetch(IMAGE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ prompt: "A simple blue circle on white background, minimal" }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -140,7 +141,7 @@ const DiagnosticsPage = () => {
     await runTest("Image Generation (Photography)", async () => {
       const resp = await fetch(IMAGE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ prompt: "A sunset over the ocean, photorealistic" }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -153,7 +154,7 @@ const DiagnosticsPage = () => {
     await runTest("AI Friends Group Chat", async () => {
       const resp = await fetch(FRIENDS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ message: "Hello everyone!", history: [] }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -169,7 +170,7 @@ const DiagnosticsPage = () => {
       await runTest(`Marketing Hub (${label})`, async () => {
         const resp = await fetch(TOOLS_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
           body: JSON.stringify({ type, prompt: "A fitness app for busy professionals" }),
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -183,7 +184,7 @@ const DiagnosticsPage = () => {
     await runTest("Personal Assistant", async () => {
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ type: "assistant", prompt: "What day is it today?" }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

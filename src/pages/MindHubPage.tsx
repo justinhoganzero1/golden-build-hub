@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForSpeech } from "@/lib/utils";
@@ -172,7 +173,7 @@ const MindHubPage = () => {
       const msgs = [...chatHistory, { role: "user", content: prompt }];
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ messages: [{ role: "system", content: `You are a calm, supportive wellness AI guide. ${activeExercise?.aiPrompt || "Help the user with mindfulness."}. Keep responses under 80 words. Be warm and encouraging.` }, ...msgs] }),
       });
       if (!resp.ok) throw new Error("AI unavailable");

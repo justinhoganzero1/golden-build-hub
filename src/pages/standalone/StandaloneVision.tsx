@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, CameraOff } from "lucide-react";
 
@@ -50,7 +51,7 @@ const StandaloneVision = () => {
       const dataUrl = c.toDataURL("image/jpeg", 0.8);
       const resp = await fetch(URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ image: dataUrl, prompt: "Describe what you see clearly and concisely." }),
       });
       const j = await resp.json();

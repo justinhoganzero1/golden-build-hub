@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect } from "react";
 import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star, Palette } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -144,7 +145,7 @@ IMPORTANT RULES:
       const allMsgs = [...messages.filter(m => m.id !== "welcome"), userMsg];
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [
             { role: "system", content: systemPrompt },

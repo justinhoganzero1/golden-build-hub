@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useEffect } from "react";
 import { Bell, Send, MessageCircle, Sparkles, Loader2, Star } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -33,7 +34,7 @@ const SuggestionBoxPage = () => {
       // Get AI response
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ type: "assistant", prompt: `You are the Oracle Lunar AI assistant. A user just submitted this suggestion for the app: "${suggestion.trim()}" (Category: ${category}). Thank them warmly and enthusiastically. Mention that if their idea gets implemented, they'll receive FREE LIFETIME ACCESS to all non-external-paid features of the app! Encourage them to submit more ideas. Be genuine and excited. Keep it under 100 words.` }),
       });
       let aiText = "Thank you so much for your amazing suggestion! We truly value your input. If your idea gets implemented, you'll earn FREE LIFETIME ACCESS to all Oracle Lunar features! Keep the great ideas coming! 🌟";

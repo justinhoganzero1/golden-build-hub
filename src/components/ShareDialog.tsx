@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send } from "lucide-react";
+import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ShareDialogProps {
@@ -219,6 +219,63 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
       desktop: `https://t.me/share/url?url=${u}&text=${t}`,
     });
   };
+  const shareReddit = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://www.reddit.com/submit?url=${u}&title=${t}`;
+    await universalShare("Reddit", { mobile: url, desktop: url });
+  };
+  const shareLinkedIn = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${u}`;
+    await universalShare("LinkedIn", { mobile: url, desktop: url });
+  };
+  const sharePinterest = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const d = encodeURIComponent(shareText);
+    const m = imageUrl ? `&media=${encodeURIComponent(imageUrl)}` : "";
+    const url = `https://pinterest.com/pin/create/button/?url=${u}&description=${d}${m}`;
+    await universalShare("Pinterest", { mobile: url, desktop: url });
+  };
+  const shareTumblr = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const c = encodeURIComponent(shareText);
+    const url = `https://www.tumblr.com/widgets/share/tool?canonicalUrl=${u}&title=${t}&caption=${c}`;
+    await universalShare("Tumblr", { mobile: url, desktop: url });
+  };
+  const shareThreads = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://www.threads.net/intent/post?text=${text}`;
+    await universalShare("Threads", { mobile: url, desktop: url });
+  };
+  const shareBluesky = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://bsky.app/intent/compose?text=${text}`;
+    await universalShare("Bluesky", { mobile: url, desktop: url });
+  };
+  const shareLine = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://social-plugins.line.me/lineit/share?url=${u}`;
+    await universalShare("LINE", { mobile: url, desktop: url });
+  };
+  const shareSnapchat = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.snapchat.com/scan?attachmentUrl=${u}`;
+    await universalShare("Snapchat", { mobile: url, desktop: url });
+  };
+  const sharePocket = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://getpocket.com/save?url=${u}&title=${t}`;
+    await universalShare("Pocket", { mobile: url, desktop: url });
+  };
+  const shareVK = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://vk.com/share.php?url=${u}&title=${t}`;
+    await universalShare("VK", { mobile: url, desktop: url });
+  };
 
   const nativeShare = async () => {
     if (typeof navigator !== "undefined" && (navigator as any).share) {
@@ -293,10 +350,50 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <Send className="w-5 h-5 text-cyan-400" />
               <span className="text-[10px] text-foreground">Telegram</span>
             </button>
+            <button onClick={shareLinkedIn} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Linkedin className="w-5 h-5 text-blue-600" />
+              <span className="text-[10px] text-foreground">LinkedIn</span>
+            </button>
+            <button onClick={shareReddit} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-orange-500" />
+              <span className="text-[10px] text-foreground">Reddit</span>
+            </button>
+            <button onClick={sharePinterest} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-red-500" />
+              <span className="text-[10px] text-foreground">Pinterest</span>
+            </button>
+            <button onClick={shareTumblr} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-indigo-400" />
+              <span className="text-[10px] text-foreground">Tumblr</span>
+            </button>
+            <button onClick={shareThreads} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-foreground" />
+              <span className="text-[10px] text-foreground">Threads</span>
+            </button>
+            <button onClick={shareBluesky} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-sky-500" />
+              <span className="text-[10px] text-foreground">Bluesky</span>
+            </button>
+            <button onClick={shareLine} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-green-400" />
+              <span className="text-[10px] text-foreground">LINE</span>
+            </button>
+            <button onClick={shareSnapchat} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-yellow-400" />
+              <span className="text-[10px] text-foreground">Snapchat</span>
+            </button>
+            <button onClick={sharePocket} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-pink-500" />
+              <span className="text-[10px] text-foreground">Pocket</span>
+            </button>
+            <button onClick={shareVK} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-blue-400" />
+              <span className="text-[10px] text-foreground">VK</span>
+            </button>
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Facebook, Twitter/X, and Telegram are blocked in some browsers/devices, so those buttons now fall back to your share sheet or copy-ready text.
+            Some platforms are blocked in certain browsers/devices — those buttons fall back to your share sheet or copy-ready text.
           </p>
 
           {/* Email */}
