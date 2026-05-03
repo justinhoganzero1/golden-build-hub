@@ -4,6 +4,7 @@
 // PAYWALL: Movie length is capped by the user's subscription tier. Free=2min, Starter=5min,
 // Full Access=10min, Pro/Quarterly+=30min, Lifetime/Admin=unlimited. Buying the $1 Movie Studio
 // one-time unlock also lifts caps (handled via useAppUnlock).
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { useAppUnlock } from "@/hooks/useAppUnlock";
 import { getMovieLimits, tierRequiredForDuration, TIER_UPSELL_LABEL } from "@/lib/moviePaywall";
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/movie-director`;
-const AUTH = `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`;
+const AUTH = `Bearer ${getEdgeAuthTokenSync()}`;
 
 type Mode = "voice" | "form" | "hybrid";
 

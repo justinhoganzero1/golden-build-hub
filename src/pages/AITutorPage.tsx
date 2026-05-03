@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import SEO from "@/components/SEO";
 import { GraduationCap, BookOpen, Play, Trophy, Star, Clock, ChevronRight, Loader2, FileText, Send } from "lucide-react";
@@ -52,7 +53,7 @@ const AITutorPage = () => {
       const levelLabel = EDUCATION_LEVELS.find(l => l.value === level)?.label || level;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [
             { role: "system", content: `You are an expert academic tutor and thesis writer. Generate comprehensive, well-structured academic content appropriate for ${levelLabel} level. Include proper academic formatting, citations suggestions, and detailed analysis. For university level, include abstract, introduction, literature review outline, methodology suggestions, and conclusion framework.` },
@@ -86,7 +87,7 @@ const AITutorPage = () => {
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [
             { role: "system", content: "You are an expert academic tutor. Help the student refine their thesis, explain concepts, or generate additional content. Be thorough and educational." },

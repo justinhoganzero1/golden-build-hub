@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -158,7 +159,7 @@ const StoryWriterPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ type: "assistant", prompt: `${system}\n\n${prompt}` }),
       });

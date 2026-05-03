@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
@@ -99,7 +100,7 @@ const ProfilePage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify(body),
       });

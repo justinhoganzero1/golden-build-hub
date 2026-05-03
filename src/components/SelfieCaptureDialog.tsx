@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, RefreshCw, Sparkles, Loader2, Check, X, UserPlus } from "lucide-react";
@@ -158,7 +159,7 @@ const SelfieCaptureDialog = ({ open, onOpenChange, onCapture, showAvatarAction =
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ prompt: preset.prompt, inputImage: source }),
       });

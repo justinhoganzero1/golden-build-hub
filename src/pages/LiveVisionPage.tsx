@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useCallback, useEffect } from "react";
 import SEO from "@/components/SEO";
 import { Eye, Camera, Scan, Zap, Info, Loader2, X, Save, SwitchCamera, Car, Mic, MicOff, Video, VideoOff, Sparkles, Target, ShieldCheck, FileSearch, Hash } from "lucide-react";
@@ -132,7 +133,7 @@ const LiveVisionPage = () => {
     const apiMode = mode === "driving" || mode === "parking" ? "scene" : mode;
     const resp = await fetch(VISION_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
       body: JSON.stringify({ image, mode: apiMode === "scene" && (mode === "driving" || mode === "parking") ? mode : apiMode, target: opts?.target, history: opts?.history }),
     });
     if (!resp.ok) return null;
@@ -162,7 +163,7 @@ const LiveVisionPage = () => {
     try {
       const r = await fetch(TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ text: clean.slice(0, 400), voiceId: "nPczCjzI2devNBz1zQrb" }),
       });
       if (r.ok) {

@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Upload, Loader2, Sparkles } from "lucide-react";
 import { saveToLibrary } from "@/lib/saveToLibrary";
@@ -32,7 +33,7 @@ const StandalonePhoto = () => {
     try {
       const resp = await fetch(URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ prompt, sourceImage: preview, mode: "edit" }),
       });
       const j = await resp.json();

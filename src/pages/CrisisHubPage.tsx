@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useEffect, useRef } from "react";
 import {
   Phone, Shield, AlertTriangle, Heart, MapPin, Globe, Loader2,
@@ -135,7 +136,7 @@ const CrisisHubPage = () => {
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [
             { role: "system", content: `You are an emergency calm-coach. The user is in ${numbers.city}, ${numbers.country}. Police/ambulance: ${numbers.police}. Crisis line: ${numbers.crisis}. Speak in short calm sentences. Tell them: 1) take one slow breath, 2) what to say to the operator, 3) where to wait. Keep under 60 words.` },

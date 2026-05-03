@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect } from "react";
 import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight, Mic, MicOff } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -75,7 +76,7 @@ const ProfessionalHubPage = () => {
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: [{ role: "system", content: SYSTEM_PROMPTS[activeTool] }, ...newHistory]
         }),

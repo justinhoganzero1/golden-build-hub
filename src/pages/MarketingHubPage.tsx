@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Share2, TrendingUp, BarChart3, Mail, Globe, Target, Loader2, Copy, CheckCircle, ArrowLeft, Megaphone, PenTool, Search, Users, Calendar, Hash, MessageSquare, FileText, Zap } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -41,7 +42,7 @@ const MarketingHubPage = () => {
     try {
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ type: "assistant", prompt: `[${tool?.sys}]\n\nUser request: ${prompt.trim()}` }),
       });
       if (!resp.ok) { toast.error("Generation failed"); return; }

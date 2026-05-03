@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useEffect, useRef, useState } from "react";
 import { Heart, Send, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -34,7 +35,7 @@ const StandaloneCompanion = () => {
     try {
       const resp = await fetch(URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           messages: next,
           oracleName: persona.name,

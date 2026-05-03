@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Loader2, Volume2, VolumeX, Image as ImageIcon, Mic, MicOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -58,7 +59,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({
           text,
@@ -98,7 +99,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ prompt: enhancedPrompt }),
       });
@@ -166,7 +167,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({
           messages: next,

@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
@@ -132,7 +133,7 @@ const AvatarGeneratorPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ prompt: fullPrompt, ownerBypass: isOwner }),
       });

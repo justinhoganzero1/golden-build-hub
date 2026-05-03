@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
@@ -904,7 +905,7 @@ const OraclePage = () => {
     try {
       const resp = await fetch(FRIENDS_CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           message: `DEBATE MODE: You must take a STRONG stance on this topic and argue passionately. Topic: "${topic}"`,
           history: [{ sender: "System", content: `A heated debate has started! Topic: "${topic}".` }],
@@ -1396,7 +1397,7 @@ const OraclePage = () => {
         const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
         const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
           body: JSON.stringify({ prompt }),
         });
         if (!r.ok) throw new Error("image-gen failed");
@@ -1766,7 +1767,7 @@ const OraclePage = () => {
         try {
           const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
             body: JSON.stringify({ prompt }),
           });
           if (!r.ok) { toast.error("Image generation failed"); return; }
@@ -1803,7 +1804,7 @@ const OraclePage = () => {
         try {
           const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
             body: JSON.stringify({ prompt, duration_seconds: 6, prompt_influence: 0.5 }),
           });
           if (!r.ok) { toast.error("Sound effect generation failed"); return; }
@@ -1831,7 +1832,7 @@ const OraclePage = () => {
         try {
           const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
             body: JSON.stringify({ prompt, duration_seconds: 30 }),
           });
           if (!r.ok) { toast.error("Music generation failed"); return; }
@@ -2094,7 +2095,7 @@ const OraclePage = () => {
           ];
           const friendResp = await fetch(FRIENDS_CHAT_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
             body: JSON.stringify({ message: text, history: historyWithOracle, agentNames: getAgentNames() }),
           });
           if (friendResp.ok) {

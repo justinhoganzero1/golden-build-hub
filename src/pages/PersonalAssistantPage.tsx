@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Sparkles, Bot, MessageCircle, Heart, Send, Loader2, CheckCircle, ListTodo, Calendar } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -33,7 +34,7 @@ const PersonalAssistantPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({ type: "assistant", prompt: input.trim() }),
       });

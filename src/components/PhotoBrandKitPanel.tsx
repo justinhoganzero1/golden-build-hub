@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,7 +122,7 @@ const PhotoBrandKitPanel = ({ currentImage, prompt, filter, mode, onApplyTemplat
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({
           prompt: `Minimalist professional logo, ${logoPrompt}, centered on solid white background, vector style, sharp edges, high contrast, 8K`,

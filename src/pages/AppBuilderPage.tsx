@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
@@ -83,7 +84,7 @@ const AppBuilderPage = () => {
       setIsSpeaking(true);
       const resp = await fetch(TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ text: clean, voiceId: BUILDER_VOICE_ID }),
       });
       if (!resp.ok) throw new Error("tts failed");
@@ -273,7 +274,7 @@ const AppBuilderPage = () => {
 
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
           type: "assistant",
           // Pass image data URLs so the AI tool function can forward them as vision input where supported

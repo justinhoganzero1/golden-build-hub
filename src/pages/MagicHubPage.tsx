@@ -1,3 +1,4 @@
+import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Star, Wand2, Sparkles, Palette, Zap, Gift, Loader2, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -45,7 +46,7 @@ const MagicHubPage = () => {
     try {
       const resp = await fetch(TOOLS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({ type: "assistant", prompt: `[${SYSTEM_PROMPTS[activeTool]}]\n\nUser request: ${userPrompt}` }),
       });
       if (!resp.ok) { toast.error("Generation failed"); return; }
