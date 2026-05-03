@@ -219,6 +219,63 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
       desktop: `https://t.me/share/url?url=${u}&text=${t}`,
     });
   };
+  const shareReddit = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://www.reddit.com/submit?url=${u}&title=${t}`;
+    await universalShare("Reddit", { mobile: url, desktop: url });
+  };
+  const shareLinkedIn = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${u}`;
+    await universalShare("LinkedIn", { mobile: url, desktop: url });
+  };
+  const sharePinterest = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const d = encodeURIComponent(shareText);
+    const m = imageUrl ? `&media=${encodeURIComponent(imageUrl)}` : "";
+    const url = `https://pinterest.com/pin/create/button/?url=${u}&description=${d}${m}`;
+    await universalShare("Pinterest", { mobile: url, desktop: url });
+  };
+  const shareTumblr = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const c = encodeURIComponent(shareText);
+    const url = `https://www.tumblr.com/widgets/share/tool?canonicalUrl=${u}&title=${t}&caption=${c}`;
+    await universalShare("Tumblr", { mobile: url, desktop: url });
+  };
+  const shareThreads = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://www.threads.net/intent/post?text=${text}`;
+    await universalShare("Threads", { mobile: url, desktop: url });
+  };
+  const shareBluesky = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://bsky.app/intent/compose?text=${text}`;
+    await universalShare("Bluesky", { mobile: url, desktop: url });
+  };
+  const shareLine = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://social-plugins.line.me/lineit/share?url=${u}`;
+    await universalShare("LINE", { mobile: url, desktop: url });
+  };
+  const shareSnapchat = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.snapchat.com/scan?attachmentUrl=${u}`;
+    await universalShare("Snapchat", { mobile: url, desktop: url });
+  };
+  const sharePocket = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://getpocket.com/save?url=${u}&title=${t}`;
+    await universalShare("Pocket", { mobile: url, desktop: url });
+  };
+  const shareVK = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://vk.com/share.php?url=${u}&title=${t}`;
+    await universalShare("VK", { mobile: url, desktop: url });
+  };
 
   const nativeShare = async () => {
     if (typeof navigator !== "undefined" && (navigator as any).share) {
