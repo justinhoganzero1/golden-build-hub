@@ -4,13 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 /**
- * Coin economy: every signed-in user is a member.
- * Only lock = must be signed in. No tier checks anywhere.
+ * Hard lock: signed-in AND phone-verified.
+ * Admin email bypasses phone check.
+ * Coin economy = signed-in + phone-verified user is a member.
  */
 interface RequireAuthProps {
   children: ReactNode;
   freeAccess?: boolean;
 }
+
+const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
@@ -30,6 +33,15 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   if (!user) {
     const redirect = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/sign-in?redirect=${redirect}`} replace />;
+  }
+
+  // Phone verification hard lock — admin bypass
+  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL;
+  const phoneVerified = !!(user as any).phone_confirmed_at || !!user.phone;
+
+  if (!isAdmin && !phoneVerified && location.pathname !== "/verify-phone") {
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/verify-phone?redirect=${redirect}`} replace />;
   }
 
   return <>{children}</>;
