@@ -188,6 +188,7 @@ const AboutPage = lazy(loaders["/about"]);
 const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
+const VerifyPhonePage = lazy(() => import("./pages/VerifyPhonePage"));
 const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
