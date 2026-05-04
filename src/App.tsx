@@ -308,6 +308,7 @@ const App = () => (
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
+                  <Route path="/verify-phone" element={<ErrorBoundary pageName="Verify Phone"><VerifyPhonePage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<RequireAuth><AppUnlockGate appKey="app_wrapper"><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
