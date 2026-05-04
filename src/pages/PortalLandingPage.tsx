@@ -400,40 +400,7 @@ const PortalLandingPage = () => {
 
 
 
-      {/* ── Why people love Oracle Lunar (3 highlight cards) ── */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-          Why people love <span className="text-primary">Oracle Lunar</span>
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              icon: Sparkles,
-              title: "Real Conversations",
-              desc: "Talk to an AI that listens, understands, and responds naturally.",
-            },
-            {
-              icon: Heart,
-              title: "Choose Your Companion",
-              desc: "Friend, girlfriend, boyfriend, mentor — you decide.",
-            },
-            {
-              icon: Lock,
-              title: "100% Private & Free to Join",
-              desc: "Free to join, no credit card. Your conversations stay yours.",
-            },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className="holo-tile rounded-2xl p-6 text-center border border-primary/20"
-            >
-              <Icon className="holo-icon h-10 w-10 text-primary mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-foreground">{title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* "Why people love" 3-card section removed per owner request. */}
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">
