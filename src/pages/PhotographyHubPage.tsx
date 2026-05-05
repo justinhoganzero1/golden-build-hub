@@ -16,7 +16,15 @@ import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
 import MovieStudio from "@/components/MovieStudio";
-import { Film } from "lucide-react";
+import { Film, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import {
+  PHOTO_TRIAL_LIMIT,
+  getPhotoTrialCount,
+  incrementPhotoTrial,
+  hasPhotoTrialRemaining,
+} from "@/lib/photoTrial";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -29,7 +37,25 @@ const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
  */
 const PhotographyHubPage = () => {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
   const saveMedia = useSaveMedia();
+  const [trialCount, setTrialCount] = useState(() => getPhotoTrialCount(user?.id));
+  const trialRemaining = Math.max(0, PHOTO_TRIAL_LIMIT - trialCount);
+  const trialExhausted = !isAdmin && trialRemaining <= 0;
+  const bumpTrial = () => {
+    if (isAdmin) return;
+    setTrialCount(incrementPhotoTrial(user?.id));
+  };
+  const enforceTrial = (count = 1): boolean => {
+    if (isAdmin) return true;
+    if (getPhotoTrialCount(user?.id) + count > PHOTO_TRIAL_LIMIT) {
+      toast.error("🔒 Free trial used (6 images). Upgrade to keep generating.");
+      navigate("/subscribe");
+      return false;
+    }
+    return true;
+  };
   const [prompt, setPrompt] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("None");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -161,6 +187,7 @@ const PhotographyHubPage = () => {
     if (!prompt.trim()) return;
     const moderation = moderatePrompt(prompt);
     if (!moderation.ok) { toast.error(moderation.reason); return; }
+    if (!enforceTrial(1)) return;
     setIsGenerating(true);
     setGeneratedImage(null);
     const filterPrompt = selectedFilter !== "None" ? `, ${selectedFilter.toLowerCase()} photography style` : "";
@@ -200,6 +227,7 @@ const PhotographyHubPage = () => {
       const finalUrl = await upscaleTo8K(baseUrl);
       setGeneratedImage(finalUrl);
       toast.success(mode === "edit" ? "8K photo transformed! ✨" : "8K photo generated!");
+      bumpTrial();
 
       if (user) {
         saveMedia.mutate({
@@ -224,6 +252,10 @@ const PhotographyHubPage = () => {
     if (!desc) { toast.error("Describe your story and characters first."); return; }
     const moderation = moderatePrompt(desc);
     if (!moderation.ok) { toast.error(moderation.reason); return; }
+    if (!enforceTrial(10)) {
+      toast.info(`The 10-frame story needs 10 generations — you have ${trialRemaining} free left.`);
+      return;
+    }
     setGeneratingStory(true);
     setStoryFrames([]);
     setStoryProgress({ done: 0, total: 10 });
@@ -269,6 +301,7 @@ const PhotographyHubPage = () => {
         const url = data.images?.[0]?.image_url?.url;
         if (!url) throw new Error(`Frame ${i + 1} returned no image`);
         frames.push(url);
+        bumpTrial();
         if (!anchorImage) anchorImage = url; // lock anchor on frame 1
         setStoryFrames([...frames]);
         setStoryProgress({ done: i + 1, total: scenes.length });
@@ -306,6 +339,33 @@ const PhotographyHubPage = () => {
             <p className="text-muted-foreground text-xs">Ultra-high-resolution still images · Generate or Edit</p>
           </div>
         </div>
+
+        {/* Free trial counter */}
+        {!isAdmin && (
+          trialExhausted ? (
+            <div className="mb-4 p-3 rounded-xl border border-destructive/40 bg-destructive/10 flex items-center gap-3">
+              <Lock className="w-5 h-5 text-destructive shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-destructive">Free trial used</p>
+                <p className="text-[11px] text-muted-foreground">You've generated {PHOTO_TRIAL_LIMIT}/{PHOTO_TRIAL_LIMIT} free images. Upgrade to keep creating.</p>
+              </div>
+              <button onClick={() => navigate("/subscribe")}
+                className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-bold whitespace-nowrap">
+                Upgrade
+              </button>
+            </div>
+          ) : (
+            <div className="mb-4 p-2.5 rounded-xl border border-primary/30 bg-primary/5 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                🎁 Free trial: <strong className="text-primary">{trialRemaining}/{PHOTO_TRIAL_LIMIT}</strong> images left
+              </span>
+              <button onClick={() => navigate("/subscribe")}
+                className="px-2.5 py-1 rounded-md bg-primary/15 border border-primary/30 text-primary text-[11px] font-semibold">
+                Upgrade for unlimited
+              </button>
+            </div>
+          )
+        )}
 
         {/* Mode Toggle */}
         <div className="flex gap-2 mb-4">
