@@ -127,12 +127,12 @@ Deno.serve(async (req) => {
       quality_tier: enforcedQuality,
       brief: brief || {},
       estimated_cost_cents: estimateCents,
-      user_paid_cents: isAdmin || isFreeTier ? 0 : estimateCents,
+      user_paid_cents: (isAdmin || isFreeTier || isFreeForLife) ? 0 : estimateCents,
       status: "draft",
     }).select().single();
 
     if (error) {
-      if (!isAdmin && estimateCents > 0) {
+      if (!isAdmin && !isFreeForLife && estimateCents > 0) {
         await supabase.rpc("wallet_topup", { _user_id: user.id, _amount_cents: estimateCents });
       }
       throw error;
