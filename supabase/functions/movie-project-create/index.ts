@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       var estimateCents = 0;                    // free for the user
     } else {
       // ===== Paid tier: enforce minute caps + valid quality =====
-      const maxDur = isAdmin ? 60 : (MAX_DURATION_MIN[userTier] ?? 0);
+      const maxDur = (isAdmin || isFreeForLife) ? 60 : (MAX_DURATION_MIN[userTier] ?? 0);
       if (requestedDur > maxDur) {
         return new Response(JSON.stringify({
           error: `Your tier allows up to ${maxDur} min. Upgrade to unlock ${requestedDur} min.`,
