@@ -45,18 +45,23 @@ Deno.serve(async (req) => {
     const adminEmails = ["justinbretthogan@gmail.com"];
     const isAdmin = adminEmails.includes((user.email ?? "").toLowerCase());
     let userTier = "free";
+    let isFreeForLife = false;
     if (isAdmin) {
       userTier = "lifetime";
     } else {
       const { data: rewards } = await supabase.from("reward_grants")
-        .select("reward_type").eq("user_id", user.id).eq("active", true)
-        .gt("expires_at", new Date().toISOString()).limit(1);
-      if (rewards?.length) userTier = "monthly";
+        .select("reward_type, reason").eq("user_id", user.id).eq("active", true)
+        .gt("expires_at", new Date().toISOString()).limit(5);
+      if (rewards?.length) {
+        userTier = "monthly";
+        isFreeForLife = rewards.some((r: any) => r.reward_type === "free_for_life" || r.reason === "free_for_life");
+        if (isFreeForLife) userTier = "lifetime";
+      }
     }
 
     const requestedDur = Math.max(0.1, Math.min(60, Number(target_duration_minutes) || 0.15));
     const quality = String(quality_tier || "hd");
-    const isFreeTier = !isAdmin && userTier === "free";
+    const isFreeTier = !isAdmin && !isFreeForLife && userTier === "free";
 
     // ===== FREE TIER: only 1 clip ever, fixed 8 seconds, SD only =====
     if (isFreeTier) {
