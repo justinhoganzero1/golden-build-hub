@@ -81,7 +81,7 @@ const MovieStudioProPage = () => {
               <div>
                 <p className="text-xs text-muted-foreground">Render Wallet Balance</p>
                 <p className="text-lg font-bold">
-                  {loadingBalance ? <Loader2 className="w-4 h-4 animate-spin inline" /> : balanceFmt}
+                  {loadingBalance ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${balanceFmt} coins`}
                 </p>
               </div>
             </div>
@@ -91,7 +91,7 @@ const MovieStudioProPage = () => {
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             <Lock className="w-3 h-3 inline mr-1" />
-            Every export is billed at <strong>provider cost + 5% platform fee</strong> (Runway video, ElevenLabs voiceover) plus a small Lovable compute charge. Minimum $0.25/render. You see the exact total before exporting — no surprise fees.
+            Every export is billed in <strong>coins</strong> (provider cost + 5% platform fee for Runway video & ElevenLabs voiceover) plus a small Lovable compute charge. Minimum {formatUsdAsCoins(0.25)} coins per render. You see the exact total before exporting — no surprise fees.
           </p>
         </Card>
 
