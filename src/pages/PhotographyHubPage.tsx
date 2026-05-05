@@ -252,6 +252,10 @@ const PhotographyHubPage = () => {
     if (!desc) { toast.error("Describe your story and characters first."); return; }
     const moderation = moderatePrompt(desc);
     if (!moderation.ok) { toast.error(moderation.reason); return; }
+    if (!enforceTrial(10)) {
+      toast.info(`The 10-frame story needs 10 generations — you have ${trialRemaining} free left.`);
+      return;
+    }
     setGeneratingStory(true);
     setStoryFrames([]);
     setStoryProgress({ done: 0, total: 10 });
