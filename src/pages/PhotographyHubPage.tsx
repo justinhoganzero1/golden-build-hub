@@ -73,6 +73,8 @@ const PhotographyHubPage = () => {
   const [compilingVideo, setCompilingVideo] = useState(false);
   const [showMovieStudio, setShowMovieStudio] = useState(false);
   const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
+  const [movieSeedFrames, setMovieSeedFrames] = useState<string[] | undefined>(undefined);
+  const [movieSeedScript, setMovieSeedScript] = useState<string | undefined>(undefined);
   // Photo Story: 10 sequential frames with consistent characters/wardrobe
   const [storyDescription, setStoryDescription] = useState("");
   const [storyFrames, setStoryFrames] = useState<string[]>([]);
