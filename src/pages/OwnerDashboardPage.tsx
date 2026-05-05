@@ -1534,6 +1534,70 @@ const OwnerDashboardPage = () => {
         </Dialog>
 
         {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "trials" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Zap className="w-5 h-5 text-purple-400" /> Trial Users</h2>
+                  <p className="text-xs text-gray-400">Everyone with an active reward / freebie grant — full email + one-click Free For Life upgrade.</p>
+                </div>
+                <span className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded-lg">
+                  {usersList.filter(u => u.freebie_active).length} active
+                </span>
+              </div>
+              {usersLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading trial users…</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Joined</th>
+                        <th className="py-2 pr-3">Last sign-in</th>
+                        <th className="py-2 pr-3">Grant</th>
+                        <th className="py-2 pr-3">Expires</th>
+                        <th className="py-2 pr-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList.filter(u => u.freebie_active).map(u => (
+                        <tr key={u.id} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-white font-medium">{u.email || <span className="text-gray-500">—</span>}</td>
+                          <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
+                          <td className="py-2 pr-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.free_for_life ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-purple-500/15 text-purple-300 border border-purple-500/30"}`}>
+                              {u.free_for_life ? "💎 Free For Life" : (u.grant_reason || "trial")}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3 text-gray-400">{u.grant_expires_at ? new Date(u.grant_expires_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 pr-3 text-right">
+                            {u.free_for_life ? (
+                              <span className="text-[10px] text-emerald-400">Active ✓</span>
+                            ) : (
+                              <button
+                                onClick={() => u.email && grantFreeForLife(u.email, u.id)}
+                                className="px-3 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:brightness-110"
+                              >
+                                Make Free For Life
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {usersList.filter(u => u.freebie_active).length === 0 && (
+                        <tr><td colSpan={6} className="py-6 text-center text-gray-500">No active trial users yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "users" && (
           <div className="space-y-4">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
