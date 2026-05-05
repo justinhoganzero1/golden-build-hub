@@ -120,7 +120,7 @@ const MovieStudioProPage = () => {
           {!ownsMovieStudio && !isAdmin && (
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                💎 <strong className="text-primary">$1 Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render wallet charges still apply (we have to pay Runway + ElevenLabs).{" "}
+                💎 <strong className="text-primary">{formatUsdAsCoins(1)}-coin Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render coin charges still apply (we have to pay Runway + ElevenLabs).{" "}
                 <button onClick={() => navigate("/subscribe")} className="text-primary underline">See plans</button>
               </p>
             </div>
