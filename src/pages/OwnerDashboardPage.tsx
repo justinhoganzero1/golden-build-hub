@@ -1566,10 +1566,10 @@ const OwnerDashboardPage = () => {
                   <p className="text-xs text-gray-400">Everyone with an active reward / freebie grant — full email + one-click Free For Life upgrade.</p>
                 </div>
                 <span className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded-lg">
-                  {usersList.filter(u => u.freebie_active).length} active
+                  {trialsList.length} active
                 </span>
               </div>
-              {usersLoading ? (
+              {trialsLoading ? (
                 <p className="text-xs text-gray-400 py-6 text-center">Loading trial users…</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -1585,14 +1585,14 @@ const OwnerDashboardPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {usersList.filter(u => u.freebie_active).map(u => (
+                      {trialsList.map(u => (
                         <tr key={u.id} className="border-b border-white/5">
                           <td className="py-2 pr-3 text-white font-medium">{u.email || <span className="text-gray-500">—</span>}</td>
                           <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
                           <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
                           <td className="py-2 pr-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.free_for_life ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-purple-500/15 text-purple-300 border border-purple-500/30"}`}>
-                              {u.free_for_life ? "💎 Free For Life" : (u.grant_reason || "trial")}
+                              {u.free_for_life ? "💎 Free For Life" : (u.grant_reason || u.reward_type || "trial")}
                             </span>
                           </td>
                           <td className="py-2 pr-3 text-gray-400">{u.grant_expires_at ? new Date(u.grant_expires_at).toLocaleDateString() : "—"}</td>
@@ -1601,7 +1601,11 @@ const OwnerDashboardPage = () => {
                               <span className="text-[10px] text-emerald-400">Active ✓</span>
                             ) : (
                               <button
-                                onClick={() => u.email && grantFreeForLife(u.email, u.id)}
+                                onClick={async () => {
+                                  if (!u.email) return;
+                                  await grantFreeForLife(u.email, u.id);
+                                  setTrialsList(prev => prev.map(t => t.id === u.id ? { ...t, free_for_life: true, reward_type: "free_for_life", grant_reason: "free_for_life" } : t));
+                                }}
                                 className="px-3 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:brightness-110"
                               >
                                 Make Free For Life
@@ -1610,7 +1614,7 @@ const OwnerDashboardPage = () => {
                           </td>
                         </tr>
                       ))}
-                      {usersList.filter(u => u.freebie_active).length === 0 && (
+                      {trialsList.length === 0 && (
                         <tr><td colSpan={6} className="py-6 text-center text-gray-500">No active trial users yet.</td></tr>
                       )}
                     </tbody>
