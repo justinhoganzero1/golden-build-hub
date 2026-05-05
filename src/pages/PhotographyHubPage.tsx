@@ -615,6 +615,8 @@ const PhotographyHubPage = () => {
                 toast.error("Write your story in the prompt box above first.");
                 return;
               }
+              setMovieSeedFrames(undefined);
+              setMovieSeedScript(undefined);
               setMovieSeedImage(generatedImage);
               setShowMovieStudio(true);
               if (!generatedImage) {
