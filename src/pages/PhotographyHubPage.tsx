@@ -47,6 +47,11 @@ const PhotographyHubPage = () => {
   const [compilingVideo, setCompilingVideo] = useState(false);
   const [showMovieStudio, setShowMovieStudio] = useState(false);
   const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
+  // Photo Story: 10 sequential frames with consistent characters/wardrobe
+  const [storyDescription, setStoryDescription] = useState("");
+  const [storyFrames, setStoryFrames] = useState<string[]>([]);
+  const [storyProgress, setStoryProgress] = useState<{ done: number; total: number } | null>(null);
+  const [generatingStory, setGeneratingStory] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,6 +215,80 @@ const PhotographyHubPage = () => {
       toast.error("Failed to generate photo");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // ----- Photo Story: 10 sequential frames, same characters & wardrobe -----
+  const generatePhotoStory = async () => {
+    const desc = storyDescription.trim();
+    if (!desc) { toast.error("Describe your story and characters first."); return; }
+    const moderation = moderatePrompt(desc);
+    if (!moderation.ok) { toast.error(moderation.reason); return; }
+    setGeneratingStory(true);
+    setStoryFrames([]);
+    setStoryProgress({ done: 0, total: 10 });
+    try {
+      // Step 1: ask AI to break the story into 10 scene prompts that all share
+      // the same characters, outfits, and visual style.
+      toast.info("Planning 10 scenes with consistent characters…");
+      const planResp = await supabase.functions.invoke("script-to-scenes", {
+        body: {
+          script: desc,
+          intent: "Generate exactly 10 still photos. CRITICAL: every photo must show the SAME characters with the SAME faces, SAME hair, SAME outfits/wardrobe, SAME body types. Vary only the scene, location, action, and pose. Lock the visual style across all 10 frames.",
+          targetDurationSec: 60, // 10 scenes × 6s
+        },
+      });
+      if (planResp.error) throw planResp.error;
+      const scenes: any[] = (planResp.data as any)?.scenes?.slice(0, 10) || [];
+      if (scenes.length < 1) throw new Error("Could not plan scenes.");
+
+      // Step 2: generate frame 1 first as the "character anchor"
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { toast.error("Please sign in again."); return; }
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
+      const wardrobeLock = `Maintain identical character identity, faces, hair, skin tone, body type, AND identical wardrobe/outfits across this sequence. Photoreal 8K, cinematic lighting.`;
+
+      const frames: string[] = [];
+      let anchorImage: string | null = null;
+      for (let i = 0; i < scenes.length; i++) {
+        const s = scenes[i];
+        const scenePrompt = `Frame ${i + 1} of 10. ${s.photo_prompt || s.caption}. ${wardrobeLock}`;
+        const body: any = { prompt: scenePrompt };
+        // After frame 1, pass the anchor as inputImage for character continuity
+        if (anchorImage) body.inputImage = anchorImage;
+        const resp = await fetch(GEN_URL, { method: "POST", headers, body: JSON.stringify(body) });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || `Frame ${i + 1} failed`);
+        }
+        const data = await resp.json();
+        const url = data.images?.[0]?.image_url?.url;
+        if (!url) throw new Error(`Frame ${i + 1} returned no image`);
+        frames.push(url);
+        if (!anchorImage) anchorImage = url; // lock anchor on frame 1
+        setStoryFrames([...frames]);
+        setStoryProgress({ done: i + 1, total: scenes.length });
+
+        if (user) {
+          saveMedia.mutate({
+            media_type: "image",
+            title: `Photo Story Frame ${i + 1}/${scenes.length} — ${desc.slice(0, 40)}`,
+            url,
+            source_page: "photography-hub",
+            metadata: { kind: "photo_story", frame: i + 1, total: scenes.length, story: desc },
+          });
+        }
+      }
+      toast.success(`✅ Photo story complete — ${frames.length} frames generated!`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Photo story failed");
+    } finally {
+      setGeneratingStory(false);
     }
   };
 
@@ -394,6 +473,54 @@ const PhotographyHubPage = () => {
             toast.success("Template loaded");
           }}
         />
+
+        {/* Photo Story — 10 sequential frames, same characters & wardrobe */}
+        <div className="mt-6 mb-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-amber-500/10 via-background to-primary/15 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ImagePlus className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">📸 Photo Story — 10 Frames</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Generate <strong>10 sequential photos</strong> featuring the same characters in the same outfits across different scenes.
+            Describe your story and characters, and Oracle will keep them consistent through all 10 frames.
+          </p>
+          <textarea
+            value={storyDescription}
+            onChange={(e) => setStoryDescription(e.target.value)}
+            rows={3}
+            placeholder="e.g. Maya (red leather jacket, dark curly hair) and Jake (blue denim, blonde) explore an abandoned mansion at night — finding clues, discovering a hidden room, escaping at dawn."
+            className="w-full px-3 py-2 rounded-xl bg-input border border-border text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-primary mb-2"
+          />
+          <button
+            onClick={generatePhotoStory}
+            disabled={generatingStory || !storyDescription.trim()}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50">
+            {generatingStory ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />
+                Generating frame {storyProgress?.done ?? 0} of {storyProgress?.total ?? 10}…
+              </>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Generate 10-Frame Photo Story</>
+            )}
+          </button>
+          {storyFrames.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {storyFrames.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/30 group">
+                  <img src={src} alt={`Story frame ${i + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-bold text-primary">
+                    {i + 1}/10
+                  </div>
+                  <button
+                    onClick={() => downloadFileFromUrl(src, `photo-story-${i + 1}-${Date.now()}`)}
+                    className="absolute bottom-1 right-1 p-1 rounded bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Download className="w-3 h-3 text-primary-foreground" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Story → Image → Storyboard → Movie pipeline */}
         <div className="mt-6 mb-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-background to-amber-500/10 p-4">
