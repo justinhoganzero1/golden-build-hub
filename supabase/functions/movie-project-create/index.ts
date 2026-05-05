@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     }
 
     // ===== ATOMIC WALLET CHARGE UPFRONT (skip for admin and free clip) =====
-    if (!isAdmin && estimateCents > 0) {
+    if (!isAdmin && !isFreeForLife && estimateCents > 0) {
       await supabase.from("wallet_balances")
         .upsert({ user_id: user.id, balance_cents: 0 }, { onConflict: "user_id", ignoreDuplicates: true });
 
