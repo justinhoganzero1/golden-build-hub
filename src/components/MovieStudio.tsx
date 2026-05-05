@@ -1947,12 +1947,34 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           <span className="text-[10px] font-bold">SCENE BACKING MUSIC</span>
                           {s.music_url && <audio src={s.music_url} controls className="h-6 max-w-[200px] ml-auto" />}
                         </div>
+                        <select
+                          onChange={(e) => {
+                            const preset = MUSIC_PRESETS_TOP_100.find(p => p.id === e.target.value);
+                            if (preset) updateScene(s.id, { music_prompt: preset.prompt });
+                          }}
+                          defaultValue=""
+                          className="w-full h-7 text-[11px] bg-input border border-border rounded px-1"
+                        >
+                          <option value="" disabled>🎵 Pick instrumental track for this scene…</option>
+                          {Object.entries(
+                            MUSIC_PRESETS_TOP_100.reduce((acc, p) => {
+                              (acc[p.genre] ||= []).push(p);
+                              return acc;
+                            }, {} as Record<string, typeof MUSIC_PRESETS_TOP_100>)
+                          ).map(([genre, list]) => (
+                            <optgroup key={genre} label={genre}>
+                              {list.map(p => (
+                                <option key={p.id} value={p.id}>{p.name} — {p.mood}</option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
                         <Textarea
                           value={s.music_prompt || ""}
                           onChange={e => updateScene(s.id, { music_prompt: e.target.value })}
                           rows={2}
                           className="text-xs"
-                          placeholder="Describe the backing track — e.g. 'tense orchestral strings building suspense', 'warm acoustic guitar, hopeful', 'dark synth pulse, 90 bpm'"
+                          placeholder="Or describe your own (instrumental only — no vocals)…"
                         />
                         <div className="flex flex-wrap gap-1 items-center">
                           <Button onClick={() => generateSceneMusic(s.id, 3)} size="sm" variant="secondary" className="h-7 text-xs"
