@@ -83,9 +83,9 @@ const loaders = {
   "/claims-assistant": () => import("./pages/ClaimsAssistantPage"),
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
-  "/movie-studio-pro": () => import("./pages/ComingSoonPage"),
-  "/movie-payment-success": () => import("./pages/ComingSoonPage"),
-  "/living-gif-studio": () => import("./pages/ComingSoonPage"),
+  "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
+  "/movie-payment-success": () => import("./pages/MoviePaymentSuccessPage"),
+  "/living-gif-studio": () => import("./pages/LivingGifStudioPage"),
   "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
   "/ai-chat-companion": () => import("./pages/SeoLandingPage"),
   "/ai-friend": () => import("./pages/SeoLandingPage"),
@@ -317,9 +317,9 @@ const App = () => (
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="ORACLE LUNAR Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/movie-studio-pro" element={<ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage title="Movie Studio Pro" subtitle="The cinematic Movie Studio is offline while we rebuild it. You can't generate or download a movie inside the app right now — but Oracle can guide you to the best external tools and securely store any API keys you need." /></ErrorBoundary>} />
-                  <Route path="/movie-payment-success" element={<ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage title="Movie Studio Pro" subtitle="Movie payments are paused while the studio is under construction. Please contact support if you were charged." /></ErrorBoundary>} />
-                  <Route path="/living-gif-studio" element={<ErrorBoundary pageName="Living GIF Studio"><LivingGifStudioPage title="Living GIF Generator" subtitle="The Living GIF generator is offline while we rebuild it. Oracle can point you to the right external animation tools and store the secrets for you." /></ErrorBoundary>} />
+                  <Route path="/movie-studio-pro" element={<RequireAuth><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/movie-payment-success" element={<RequireAuth><ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/living-gif-studio" element={<RequireAuth><ErrorBoundary pageName="Living GIF Studio"><LivingGifStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-chat-companion" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-friend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
