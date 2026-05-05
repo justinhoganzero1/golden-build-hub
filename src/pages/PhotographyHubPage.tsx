@@ -227,6 +227,7 @@ const PhotographyHubPage = () => {
       const finalUrl = await upscaleTo8K(baseUrl);
       setGeneratedImage(finalUrl);
       toast.success(mode === "edit" ? "8K photo transformed! ✨" : "8K photo generated!");
+      bumpTrial();
 
       if (user) {
         saveMedia.mutate({
