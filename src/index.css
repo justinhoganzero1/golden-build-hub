@@ -928,28 +928,25 @@ a[aria-disabled="true"],
 .holo-card {
   position: relative;
   border-radius: 22px;
-  background:
-    /* inner glassy fill — slightly translucent so the bg shows through */
-    linear-gradient(160deg,
-      hsl(0 0% 6% / 0.92) 0%,
-      hsl(265 35% 9% / 0.90) 45%,
-      hsl(0 0% 4% / 0.94) 100%),
-    radial-gradient(ellipse at 50% 0%, hsl(45 100% 65% / 0.10), transparent 60%);
-  border: 1px solid transparent;
-  background-clip: padding-box;
+  /* Fully transparent chiclet — just glass + neon outline */
+  background: hsl(0 0% 100% / 0.02);
+  border: 1px solid hsl(45 100% 65% / 0.55);
   box-shadow:
-    /* top inner highlight (glass shine) */
-    inset 0 1px 0 hsl(0 0% 100% / 0.18),
-    inset 0 2px 6px hsl(45 100% 75% / 0.08),
-    /* bottom inner shadow for depth */
-    inset 0 -2px 8px hsl(0 0% 0% / 0.55),
-    /* outer bloom — gold + violet halo like the video */
-    0 0 0 1px hsl(45 90% 55% / 0.35),
-    0 6px 18px hsl(0 0% 0% / 0.6),
-    0 0 22px hsl(45 100% 55% / 0.28),
-    0 0 40px hsl(280 90% 55% / 0.20);
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    inset 0 1px 0 hsl(0 0% 100% / 0.10),
+    /* neon outline glow */
+    0 0 8px hsl(45 100% 60% / 0.45),
+    0 0 18px hsl(45 100% 55% / 0.30),
+    0 0 32px hsl(280 90% 60% / 0.18);
+  overflow: visible; /* let icon punch out on hover */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.holo-card.holo-violet {
+  border-color: hsl(280 95% 70% / 0.55);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.10),
+    0 0 8px hsl(280 100% 65% / 0.50),
+    0 0 18px hsl(280 100% 60% / 0.32),
+    0 0 32px hsl(45 100% 55% / 0.15);
 }
 
 .holo-card::before {
@@ -991,26 +988,14 @@ a[aria-disabled="true"],
   );
   filter: drop-shadow(0 0 6px hsl(280 95% 60% / 0.55));
 }
-.holo-card.holo-violet {
-  box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.18),
-    inset 0 2px 6px hsl(280 100% 80% / 0.10),
-    inset 0 -2px 8px hsl(0 0% 0% / 0.55),
-    0 0 0 1px hsl(280 90% 60% / 0.40),
-    0 6px 18px hsl(0 0% 0% / 0.6),
-    0 0 22px hsl(280 100% 60% / 0.30),
-    0 0 40px hsl(45 100% 55% / 0.15);
-}
-
 .holo-card::after {
-  /* Sweeping sheen on hover */
   content: '';
   position: absolute;
   top: 0;
   left: -50%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(110deg, transparent, hsl(0 0% 100% / 0.08), transparent);
+  background: linear-gradient(110deg, transparent, hsl(0 0% 100% / 0.10), transparent);
   transform: skewX(-20deg);
   transition: left 0.6s ease;
   pointer-events: none;
@@ -1018,15 +1003,45 @@ a[aria-disabled="true"],
 
 .holo-card:hover {
   transform: translateY(-4px);
+  border-color: hsl(45 100% 70% / 0.95);
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.12),
-    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
-    0 16px 36px hsl(280 60% 10% / 0.6),
-    0 0 50px hsl(200 80% 50% / 0.25);
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    0 0 14px hsl(45 100% 60% / 0.75),
+    0 0 30px hsl(45 100% 55% / 0.55),
+    0 0 60px hsl(280 90% 60% / 0.35);
+}
+.holo-card.holo-violet:hover {
+  border-color: hsl(280 100% 75% / 0.95);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.18),
+    0 0 14px hsl(280 100% 65% / 0.80),
+    0 0 30px hsl(280 100% 60% / 0.55),
+    0 0 60px hsl(45 100% 55% / 0.30);
 }
 
-.holo-card:hover::after {
-  left: 150%;
+.holo-card:hover::after { left: 150%; }
+
+/* Icon "slap" — punch the bubble/icon out toward the user on hover */
+.holo-card .holo-float,
+.holo-card img,
+.holo-card .holo-bubble {
+  transition: transform 0.25s cubic-bezier(0.34, 1.8, 0.64, 1), filter 0.25s ease;
+  transform-origin: center;
+  will-change: transform;
+}
+.holo-card:hover .holo-float,
+.holo-card:hover img,
+.holo-card:hover .holo-bubble {
+  transform: scale(1.45) translateZ(0);
+  filter: drop-shadow(0 10px 22px hsl(45 100% 60% / 0.65))
+          drop-shadow(0 0 28px hsl(280 90% 60% / 0.45));
+  animation: holo-slap 0.5s cubic-bezier(0.34, 1.8, 0.64, 1);
+}
+@keyframes holo-slap {
+  0%   { transform: scale(1) translateZ(0); }
+  40%  { transform: scale(1.7) translateZ(0); }
+  70%  { transform: scale(1.35) translateZ(0); }
+  100% { transform: scale(1.45) translateZ(0); }
 }
 
 /* ── Holographic button — for CTAs ── */
