@@ -1595,12 +1595,24 @@ const OwnerDashboardPage = () => {
                               </span>
                             </td>
                             <td className="py-2 pr-3 text-right">
-                              <button
-                                onClick={() => u.email && grantFreeForUser(u.email, u.id)}
-                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:brightness-110"
-                              >
-                                Grant Free Access
-                              </button>
+                              {u.free_for_life ? (
+                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">💎 Free For Life</span>
+                              ) : (
+                                <div className="flex gap-1.5 justify-end">
+                                  <button
+                                    onClick={() => u.email && grantFreeForUser(u.email, u.id)}
+                                    className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                                  >
+                                    +Credits
+                                  </button>
+                                  <button
+                                    onClick={() => u.email && grantFreeForLife(u.email, u.id)}
+                                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:brightness-110"
+                                  >
+                                    Free For Life
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         ))}
