@@ -322,7 +322,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       id: uid(),
       caption: `Scene ${i + 1}`,
       photo_prompt: baseScript || `Scene ${i + 1}`,
-      motion: "kenburns",
+      motion: "ken-burns",
       duration_sec: CLIP_SECONDS,
       image_url: url,
       narration: baseScript ? `${baseScript} — moment ${i + 1}.` : `Scene ${i + 1}.`,
