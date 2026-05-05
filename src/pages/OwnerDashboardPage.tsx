@@ -34,6 +34,8 @@ const OwnerDashboardPage = () => {
   const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "trials" | "failed-signups">("overview");
   // Users tab — list of all members, split into online/offline sub-tabs
   const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; free_for_life?: boolean; grant_expires_at?: string | null; grant_reason?: string | null; wallet_balance_cents?: number }>>([]);
+  const [trialsList, setTrialsList] = useState<Array<{ id: string; email: string | null; created_at: string | null; last_sign_in_at: string | null; reward_type: string | null; grant_reason: string | null; grant_expires_at: string | null; free_for_life: boolean }>>([]);
+  const [trialsLoading, setTrialsLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
