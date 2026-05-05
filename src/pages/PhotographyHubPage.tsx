@@ -45,6 +45,8 @@ const PhotographyHubPage = () => {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [compilingVideo, setCompilingVideo] = useState(false);
+  const [showMovieStudio, setShowMovieStudio] = useState(false);
+  const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
