@@ -31,9 +31,9 @@ const OwnerDashboardPage = () => {
   const { user, loading, signOut } = useAuth();
   const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "trials" | "failed-signups">("overview");
   // Users tab — list of all members, split into online/offline sub-tabs
-  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; wallet_balance_cents?: number }>>([]);
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; free_for_life?: boolean; grant_expires_at?: string | null; grant_reason?: string | null; wallet_balance_cents?: number }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
