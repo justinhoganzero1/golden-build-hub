@@ -123,11 +123,16 @@ interface MovieStudioProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   seedImage?: string | null;
+  /** Pre-rendered sequential photos (e.g. from the Photo Story 10-frame generator). When provided, MovieStudio
+   *  pre-populates scenes from these images and skips the planning step. */
+  seedFrames?: string[];
+  /** Script/intent text used when seedFrames are provided (becomes the movie's narration backbone). */
+  seedScript?: string;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
+const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: MovieStudioProps) => {
   const { user } = useAuth();
   const saveMedia = useSaveMedia();
   const [script, setScript] = useState("");
