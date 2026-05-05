@@ -301,6 +301,7 @@ const PhotographyHubPage = () => {
         const url = data.images?.[0]?.image_url?.url;
         if (!url) throw new Error(`Frame ${i + 1} returned no image`);
         frames.push(url);
+        bumpTrial();
         if (!anchorImage) anchorImage = url; // lock anchor on frame 1
         setStoryFrames([...frames]);
         setStoryProgress({ done: i + 1, total: scenes.length });
