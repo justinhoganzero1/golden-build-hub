@@ -109,14 +109,36 @@ serve(async (req) => {
       // "Online" = signed in within the last 5 minutes
       const ONLINE_WINDOW_MS = 5 * 60 * 1000;
       const now = Date.now();
+
+      // Pull all active reward grants once so we can mark trial / FFL per user
+      const { data: activeGrants } = await supabaseClient
+        .from("reward_grants")
+        .select("user_id, reward_type, reason, expires_at, created_at")
+        .eq("active", true)
+        .gt("expires_at", new Date().toISOString());
+      const grantsByUser = new Map<string, { reward_type: string | null; reason: string | null; expires_at: string; created_at: string; freeForLife: boolean }>();
+      for (const g of (activeGrants ?? []) as any[]) {
+        const ffl = g.reward_type === "free_for_life" || g.reason === "free_for_life";
+        const prev = grantsByUser.get(g.user_id);
+        // Prefer FFL row if multiple
+        if (!prev || (ffl && !prev.freeForLife)) {
+          grantsByUser.set(g.user_id, { ...g, freeForLife: ffl });
+        }
+      }
+
       const enriched = allUsers.map(u => {
         const lastMs = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : 0;
+        const grant = grantsByUser.get(u.id);
         return {
           id: u.id,
           email: u.email,
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at,
           online: lastMs > 0 && (now - lastMs) <= ONLINE_WINDOW_MS,
+          freebie_active: !!grant,
+          free_for_life: !!grant?.freeForLife,
+          grant_expires_at: grant?.expires_at ?? null,
+          grant_reason: grant?.reason ?? null,
         };
       });
 
