@@ -74,7 +74,7 @@ export const MovieCostEstimator = ({
             >
               {q === "8k_ultimate" && <Crown className="w-3 h-3 inline mr-1 text-primary" />}
               {QUALITY_LABEL[q]}
-              <div className="text-[9px] opacity-70">${(PRICING_CENTS_PER_MIN[q] / 100).toFixed(2)}/min</div>
+              <div className="text-[9px] opacity-70">{formatCentsAsCoins(PRICING_CENTS_PER_MIN[q])} / min</div>
             </button>
           ))}
         </div>
