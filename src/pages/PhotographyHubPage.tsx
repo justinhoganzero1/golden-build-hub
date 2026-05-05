@@ -15,6 +15,8 @@ import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
+import MovieStudio from "@/components/MovieStudio";
+import { Film } from "lucide-react";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
