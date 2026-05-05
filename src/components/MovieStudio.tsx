@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { moderatePrompt } from "@/lib/contentSafety";
+import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
+import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
