@@ -1647,15 +1647,40 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             <div className="rounded-lg p-3 border border-primary/30 bg-primary/5 space-y-2">
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-primary">MUSIC SCORE (ElevenLabs)</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">Plays under the entire movie</span>
+                <span className="text-xs font-bold text-primary">MUSIC SCORE (Top 100 Trending Vibes)</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Instrumental only · plays under whole movie</span>
               </div>
+              <select
+                onChange={(e) => {
+                  const preset = MUSIC_PRESETS_TOP_100.find(p => p.id === e.target.value);
+                  if (preset) {
+                    setMusicPrompt(preset.prompt);
+                    toast.success(`🎵 Loaded: ${preset.name} (${preset.genre})`);
+                  }
+                }}
+                defaultValue=""
+                className="w-full h-8 text-[11px] bg-input border border-border rounded px-2"
+              >
+                <option value="" disabled>🎵 Pick a trending instrumental track ({MUSIC_PRESETS_TOP_100.length} options)…</option>
+                {Object.entries(
+                  MUSIC_PRESETS_TOP_100.reduce((acc, p) => {
+                    (acc[p.genre] ||= []).push(p);
+                    return acc;
+                  }, {} as Record<string, typeof MUSIC_PRESETS_TOP_100>)
+                ).map(([genre, list]) => (
+                  <optgroup key={genre} label={genre}>
+                    {list.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.mood}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               <Textarea
                 value={musicPrompt}
                 onChange={e => setMusicPrompt(e.target.value)}
                 rows={2}
                 className="text-xs"
-                placeholder="e.g. Cinematic orchestral score, slow build, melancholy strings, hopeful finale, 90 BPM"
+                placeholder="Or describe your own (instrumental only — no vocals)…"
               />
               <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={generateMusic} size="sm" variant="secondary" className="h-7 text-xs"
