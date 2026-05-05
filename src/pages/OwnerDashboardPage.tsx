@@ -399,6 +399,27 @@ const OwnerDashboardPage = () => {
     return () => { cancelled = true; window.clearInterval(i); };
   }, [accessToken, hasAdminAccess, tab]);
 
+  // Load Trial Users (fast, dedicated endpoint — pulls all active reward_grants)
+  useEffect(() => {
+    if (!hasAdminAccess || tab !== "trials") return;
+    let cancelled = false;
+    (async () => {
+      setTrialsLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-list-trials", { body: {} });
+        if (error) throw error;
+        if (!cancelled && Array.isArray((data as any)?.trials)) {
+          setTrialsList((data as any).trials);
+        }
+      } catch (e: any) {
+        if (!cancelled) toast.error("Failed to load trial users: " + (e?.message || "unknown"));
+      } finally {
+        if (!cancelled) setTrialsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hasAdminAccess, tab]);
+
   // Load failed sign-up attempts
   useEffect(() => {
     if (!hasAdminAccess || tab !== "failed-signups") return;
