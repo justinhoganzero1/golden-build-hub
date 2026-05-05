@@ -47,6 +47,11 @@ const PhotographyHubPage = () => {
   const [compilingVideo, setCompilingVideo] = useState(false);
   const [showMovieStudio, setShowMovieStudio] = useState(false);
   const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
+  // Photo Story: 10 sequential frames with consistent characters/wardrobe
+  const [storyDescription, setStoryDescription] = useState("");
+  const [storyFrames, setStoryFrames] = useState<string[]>([]);
+  const [storyProgress, setStoryProgress] = useState<{ done: number; total: number } | null>(null);
+  const [generatingStory, setGeneratingStory] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
