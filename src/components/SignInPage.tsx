@@ -220,6 +220,36 @@ const SignInPage = () => {
             </div>
           </div>
 
+          {isSignUp && !isOwnerAccess && (
+            <div>
+              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
+                Date of Birth <span className="text-primary">(must be 16+)</span>
+              </label>
+              <div
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+                style={{
+                  background: "hsl(0 0% 4% / 0.7)",
+                  border: "1px solid hsl(45 100% 55% / 0.35)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  max={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())
+                    .toISOString().slice(0, 10)}
+                  min="1900-01-01"
+                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
+                  required
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Oracle Lunar is restricted to users aged 16 and over.
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-muted-foreground text-xs cursor-pointer">
               <button
