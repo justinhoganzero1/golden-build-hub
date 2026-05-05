@@ -45,10 +45,10 @@ export const MovieCostEstimator = ({
     <Card className="p-4 space-y-3 bg-muted/30 border-primary/20">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-primary" /> Live cost estimate
+          <Coins className="w-4 h-4 text-primary" /> Live cost estimate
         </h4>
         <Badge variant={sufficient ? "default" : "destructive"} className="text-[10px]">
-          {sufficient ? "Wallet OK" : `Need $${(shortfall / 100).toFixed(2)} more`}
+          {sufficient ? "Wallet OK" : `Need ${formatCentsAsCoins(shortfall)} more coins`}
         </Badge>
       </div>
 
