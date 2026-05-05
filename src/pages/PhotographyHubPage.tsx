@@ -15,6 +15,8 @@ import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
+import MovieStudio from "@/components/MovieStudio";
+import { Film } from "lucide-react";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
@@ -43,6 +45,8 @@ const PhotographyHubPage = () => {
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [compilingVideo, setCompilingVideo] = useState(false);
+  const [showMovieStudio, setShowMovieStudio] = useState(false);
+  const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,6 +395,37 @@ const PhotographyHubPage = () => {
           }}
         />
 
+        {/* Story → Image → Storyboard → Movie pipeline */}
+        <div className="mt-6 mb-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-background to-amber-500/10 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Film className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">🎬 Movie Studio</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Turn your story into a full movie. Step 1: write your story above and generate the first image.
+            Step 2: tap below — Oracle will build a storyboard from that image, then render every scene into a complete movie.
+          </p>
+          <button
+            onClick={() => {
+              if (!prompt.trim()) {
+                toast.error("Write your story in the prompt box above first.");
+                return;
+              }
+              setMovieSeedImage(generatedImage);
+              setShowMovieStudio(true);
+              if (!generatedImage) {
+                toast.info("Tip: generate the opening image first for better continuity.");
+              } else {
+                toast.success("Storyboard builder opened — Oracle will plan your scenes.");
+              }
+            }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg">
+            <Film className="w-4 h-4" />
+            {generatedImage ? "Build Storyboard → Generate Movie" : "Open Movie Studio"}
+            <Sparkles className="w-4 h-4" />
+          </button>
+        </div>
+
         <HeyGenAffiliateCTA
           placement="photography_hub_animate"
           title="Bring This Photo to Life"
@@ -435,6 +470,11 @@ const PhotographyHubPage = () => {
           }}
         />
       )}
+      <MovieStudio
+        open={showMovieStudio}
+        onOpenChange={setShowMovieStudio}
+        seedImage={movieSeedImage}
+      />
     </div>
     </PaywallGate>
   );
