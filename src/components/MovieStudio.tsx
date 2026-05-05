@@ -90,6 +90,7 @@ interface Scene {
   narration?: string;
   speaker?: string;
   voice_style?: string;
+  voice_id?: string; // explicit ElevenLabs voice (overrides voice_style)
   audio_url?: string; // data URL of generated mp3
   generatingAudio?: boolean;
   // SFX (per scene)
