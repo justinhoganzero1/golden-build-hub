@@ -59,7 +59,7 @@ const MovieStudioProPage = () => {
   };
 
   const canRender = (balance ?? 0) >= MIN_BALANCE_CENTS;
-  const balanceFmt = `$${((balance ?? 0) / 100).toFixed(2)}`;
+  const balanceFmt = formatCentsAsCoins(balance ?? 0);
 
   return (
     <>
