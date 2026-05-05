@@ -11,6 +11,7 @@ const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dob, setDob] = useState(""); // YYYY-MM-DD, only used on signup
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -61,12 +62,34 @@ const SignInPage = () => {
     try {
       if (isSignUp) {
         if (isOwnerAccess) { toast.error("Owner access is sign-in only."); return; }
+        // Hard 16+ age gate at signup
+        if (!dob) { toast.error("Date of birth is required."); return; }
+        const dobDate = new Date(dob);
+        if (isNaN(dobDate.getTime())) { toast.error("Please enter a valid date of birth."); return; }
+        const today = new Date();
+        const sixteenYearsAgo = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+        if (dobDate > sixteenYearsAgo) {
+          toast.error("You must be at least 16 years old to use Oracle Lunar.");
+          return;
+        }
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
           email, password, options: { emailRedirectTo: emailReturnUrl },
         });
         if (error) throw error;
+        // Persist DOB to profiles (server-side trigger re-validates 16+)
+        if (signUpData.user) {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            user_id: signUpData.user.id,
+            date_of_birth: dob,
+          });
+          if (profileError) {
+            // If under-age trigger blocks, sign them out and stop
+            await supabase.auth.signOut();
+            throw new Error(profileError.message);
+          }
+        }
         if (signUpData.session) {
           try {
             await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
