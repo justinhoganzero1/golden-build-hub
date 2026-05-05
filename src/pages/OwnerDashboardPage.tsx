@@ -480,6 +480,21 @@ const OwnerDashboardPage = () => {
     }
   };
 
+  const grantFreeForLife = async (email: string, userId: string) => {
+    if (!confirm(`Grant FREE FOR LIFE to ${email}? This is permanent and unlimited.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { userId, email, freeForLife: true, reason: "free_for_life" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`💎 ${email} is now Free For Life!`);
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, free_for_life: true, grant_expires_at: (data as any)?.expiresAt ?? u.grant_expires_at, grant_reason: "free_for_life", wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+    } catch (e: any) {
+      toast.error(e?.message || "Free For Life grant failed");
+    }
+  };
+
   const addVaultUser = () => {
     if (!vaultEmail.trim()) return;
     setVaultUsers(prev => [...prev, { email: vaultEmail, level: vaultLevel }]);
