@@ -37,6 +37,8 @@ const VOICE_MAP: Record<string, string> = {
   "hero": "bIHbv24MWmeRgasZH58o", // Will
 };
 const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrator-male-warm"];
+const resolveVoiceId = (scene: { voice_id?: string; voice_style?: string }) =>
+  scene.voice_id || voiceFor(scene.voice_style);
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
 type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
