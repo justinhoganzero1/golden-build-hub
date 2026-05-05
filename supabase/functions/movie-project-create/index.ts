@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       }
       var dur = requestedDur;
       var enforcedQuality = quality;
-      var estimateCents = Math.ceil(dur * PRICING[quality]);
+      var estimateCents = (isFreeForLife) ? 0 : Math.ceil(dur * PRICING[quality]);
     }
 
     // ===== ATOMIC WALLET CHARGE UPFRONT (skip for admin and free clip) =====
