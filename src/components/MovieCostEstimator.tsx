@@ -3,8 +3,9 @@
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Wallet, Crown } from "lucide-react";
+import { Coins, Wallet, Crown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { formatCentsAsCoins } from "@/lib/coins";
 
 const PRICING_CENTS_PER_MIN: Record<string, number> = {
   sd: 50, hd: 200, "4k": 800, "8k_ultimate": 5000,
@@ -44,10 +45,10 @@ export const MovieCostEstimator = ({
     <Card className="p-4 space-y-3 bg-muted/30 border-primary/20">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-primary" /> Live cost estimate
+          <Coins className="w-4 h-4 text-primary" /> Live cost estimate
         </h4>
         <Badge variant={sufficient ? "default" : "destructive"} className="text-[10px]">
-          {sufficient ? "Wallet OK" : `Need $${(shortfall / 100).toFixed(2)} more`}
+          {sufficient ? "Wallet OK" : `Need ${formatCentsAsCoins(shortfall)} more coins`}
         </Badge>
       </div>
 
@@ -73,7 +74,7 @@ export const MovieCostEstimator = ({
             >
               {q === "8k_ultimate" && <Crown className="w-3 h-3 inline mr-1 text-primary" />}
               {QUALITY_LABEL[q]}
-              <div className="text-[9px] opacity-70">${(PRICING_CENTS_PER_MIN[q] / 100).toFixed(2)}/min</div>
+              <div className="text-[9px] opacity-70">{formatCentsAsCoins(PRICING_CENTS_PER_MIN[q])} / min</div>
             </button>
           ))}
         </div>
@@ -83,7 +84,7 @@ export const MovieCostEstimator = ({
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           <Wallet className="w-3 h-3" /> Total charge
         </span>
-        <span className="text-lg font-bold text-primary">${(estimateCents / 100).toFixed(2)}</span>
+        <span className="text-lg font-bold text-primary">{formatCentsAsCoins(estimateCents)} coins</span>
       </div>
       <p className="text-[10px] text-muted-foreground">
         Includes provider cost + 5% platform fee. Refunded per-scene if render fails.

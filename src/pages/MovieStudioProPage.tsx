@@ -19,6 +19,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
 import { getMovieLimits } from "@/lib/moviePaywall";
+import { formatCentsAsCoins, formatUsdAsCoins } from "@/lib/coins";
 
 const MIN_BALANCE_CENTS = 25;
 
@@ -58,7 +59,7 @@ const MovieStudioProPage = () => {
   };
 
   const canRender = (balance ?? 0) >= MIN_BALANCE_CENTS;
-  const balanceFmt = `$${((balance ?? 0) / 100).toFixed(2)}`;
+  const balanceFmt = formatCentsAsCoins(balance ?? 0);
 
   return (
     <>
@@ -80,7 +81,7 @@ const MovieStudioProPage = () => {
               <div>
                 <p className="text-xs text-muted-foreground">Render Wallet Balance</p>
                 <p className="text-lg font-bold">
-                  {loadingBalance ? <Loader2 className="w-4 h-4 animate-spin inline" /> : balanceFmt}
+                  {loadingBalance ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${balanceFmt} coins`}
                 </p>
               </div>
             </div>
@@ -90,7 +91,7 @@ const MovieStudioProPage = () => {
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             <Lock className="w-3 h-3 inline mr-1" />
-            Every export is billed at <strong>provider cost + 5% platform fee</strong> (Runway video, ElevenLabs voiceover) plus a small Lovable compute charge. Minimum $0.25/render. You see the exact total before exporting — no surprise fees.
+            Every export is billed in <strong>coins</strong> (provider cost + 5% platform fee for Runway video & ElevenLabs voiceover) plus a small Lovable compute charge. Minimum {formatUsdAsCoins(0.25)} coins per render. You see the exact total before exporting — no surprise fees.
           </p>
         </Card>
 
@@ -119,7 +120,7 @@ const MovieStudioProPage = () => {
           {!ownsMovieStudio && !isAdmin && (
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                💎 <strong className="text-primary">$1 Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render wallet charges still apply (we have to pay Runway + ElevenLabs).{" "}
+                💎 <strong className="text-primary">{formatUsdAsCoins(1)}-coin Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render coin charges still apply (we have to pay Runway + ElevenLabs).{" "}
                 <button onClick={() => navigate("/subscribe")} className="text-primary underline">See plans</button>
               </p>
             </div>
@@ -146,7 +147,7 @@ const MovieStudioProPage = () => {
               <div className="flex-1">
                 <p className="text-sm font-bold text-destructive">Wallet empty</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  You need at least <strong>$0.25</strong> in your wallet to export a movie.
+                  You need at least <strong>{formatUsdAsCoins(0.25)} coins</strong> in your wallet to export a movie.
                   You can still build, preview, and edit your timeline — you'll just be charged when you tap Export.
                 </p>
                 <Button onClick={() => navigate("/wallet")} size="sm" className="mt-3">
