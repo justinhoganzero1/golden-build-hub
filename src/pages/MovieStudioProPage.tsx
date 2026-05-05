@@ -19,6 +19,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
 import { getMovieLimits } from "@/lib/moviePaywall";
+import { formatCentsAsCoins, formatUsdAsCoins } from "@/lib/coins";
 
 const MIN_BALANCE_CENTS = 25;
 
