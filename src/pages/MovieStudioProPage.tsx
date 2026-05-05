@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, Zap, Trophy, Star } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -201,123 +201,7 @@ const MovieStudioProPage = () => {
           {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small ORACLE LUNAR watermark."}
         </p>
 
-        {/* ===== PRICING TIERS ===== */}
-        <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-card to-card border-primary/30">
-          <div className="text-center mb-5">
-            <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Choose Your Studio
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Free to start. Pay only for what you render. No hidden fees.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <PricingTier
-              icon={<Sparkles className="w-5 h-5" />}
-              name="Free Taster"
-              price="Free"
-              tagline="One shot, on us"
-              features={[
-                "1 lifetime 8-second clip",
-                "720p Ken Burns slideshow",
-                "AI narration included",
-                "Oracle 22-Q director",
-                "Watermarked export",
-              ]}
-              cta="Start Free Clip"
-              onClick={() => setDirectorOpen(true)}
-            />
-
-            <PricingTier
-              icon={<Zap className="w-5 h-5" />}
-              name="Pay-Per-Render"
-              price="$0.50+"
-              tagline="No subscription · top up wallet"
-              features={[
-                "Standard 720p — $0.50/min",
-                "HD 1080p — $2.00/min",
-                "Burn-in captions included",
-                "Pause / cancel anytime",
-                "No watermark · full ownership",
-              ]}
-              cta="Top Up Wallet"
-              onClick={() => navigate("/wallet")}
-            />
-
-            <PricingTier
-              icon={<Star className="w-5 h-5" />}
-              name="Starter"
-              price="$5/mo"
-              tagline="Hobby creators"
-              features={[
-                "Up to 2-min movies",
-                "Captions included",
-                "Wallet still pays per render",
-                "All 42 app features unlocked",
-                "Removes the free-clip cap",
-              ]}
-              cta="Get Starter"
-              onClick={() => navigate("/subscribe")}
-            />
-
-            <PricingTier
-              icon={<Zap className="w-5 h-5" />}
-              name="Full Access"
-              price="$10/mo"
-              tagline="Most popular"
-              highlight
-              features={[
-                "Up to 5-min movies",
-                "HD 1080p unlocked",
-                "1-click YouTube publish",
-                "Priority render queue",
-                "10GB asset storage",
-              ]}
-              cta="Subscribe"
-              onClick={() => navigate("/subscribe")}
-            />
-
-            <PricingTier
-              icon={<Trophy className="w-5 h-5" />}
-              name="Pro Quarterly"
-              price="$20"
-              tagline="3 months · best value"
-              features={[
-                "Up to 15-min movies",
-                "HD 1080p unlocked",
-                "1-click YouTube publish",
-                "Priority queue · 50GB storage",
-                "Pay-per-render still applies",
-              ]}
-              cta="Go Pro"
-              onClick={() => navigate("/subscribe")}
-            />
-
-            <PricingTier
-              icon={<Crown className="w-5 h-5" />}
-              name="Movie Studio Lifetime"
-              price="$1 once"
-              tagline="Limited launch unlock"
-              founder
-              features={[
-                "Lifts the free-clip cap forever",
-                "Up to 30-min movies",
-                "HD 1080p unlocked",
-                "1-click YouTube publish",
-                "Wallet pay-per-render still applies",
-              ]}
-              cta="Unlock for $1"
-              onClick={() => navigate("/subscribe")}
-            />
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-border/50 text-center">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              🛡️ <strong>Margin protection:</strong> every render is wallet-funded before it starts and we add a 5% platform markup on every external provider call (Runway, ElevenLabs, Replicate). Subscriptions lift the duration cap — they do not give you free rendering.
-            </p>
-          </div>
-        </Card>
+        {/* "Choose Your Studio" pricing tiers removed — coin-only economy, no tiers. */}
 
         <MovieProjectDashboard />
       </div>
@@ -344,62 +228,5 @@ const FeatureRow = ({ ok, label }: { ok: boolean; label: string }) => (
   </div>
 );
 
-const PricingTier = ({
-  icon, name, price, tagline, features, cta, onClick, highlight, founder,
-}: {
-  icon: React.ReactNode;
-  name: string;
-  price: string;
-  tagline: string;
-  features: string[];
-  cta: string;
-  onClick: () => void;
-  highlight?: boolean;
-  founder?: boolean;
-}) => (
-  <Card
-    className={`p-4 flex flex-col gap-3 transition-all hover:scale-[1.02] ${
-      founder
-        ? "border-primary bg-gradient-to-br from-primary/15 via-card to-card shadow-[0_0_25px_hsl(var(--primary)/0.35)]"
-        : highlight
-        ? "border-primary/60 bg-primary/5 shadow-[0_0_15px_hsl(var(--primary)/0.2)]"
-        : "border-border"
-    }`}
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-sm font-bold leading-tight">{name}</h3>
-          <p className="text-[10px] text-muted-foreground">{tagline}</p>
-        </div>
-      </div>
-      {(highlight || founder) && (
-        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground uppercase tracking-wide">
-          {founder ? "Limited" : "Popular"}
-        </span>
-      )}
-    </div>
-    <div className="text-2xl font-extrabold text-foreground">{price}</div>
-    <ul className="text-[11px] space-y-1 flex-1">
-      {features.map((f, i) => (
-        <li key={i} className="flex items-start gap-1.5 text-muted-foreground">
-          <Check className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-          <span>{f}</span>
-        </li>
-      ))}
-    </ul>
-    <Button
-      onClick={onClick}
-      size="sm"
-      variant={founder || highlight ? "default" : "outline"}
-      className="w-full mt-1"
-    >
-      {cta}
-    </Button>
-  </Card>
-);
 
 export default MovieStudioProPage;
