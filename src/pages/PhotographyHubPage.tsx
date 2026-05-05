@@ -37,7 +37,25 @@ const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
  */
 const PhotographyHubPage = () => {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
   const saveMedia = useSaveMedia();
+  const [trialCount, setTrialCount] = useState(() => getPhotoTrialCount(user?.id));
+  const trialRemaining = Math.max(0, PHOTO_TRIAL_LIMIT - trialCount);
+  const trialExhausted = !isAdmin && trialRemaining <= 0;
+  const bumpTrial = () => {
+    if (isAdmin) return;
+    setTrialCount(incrementPhotoTrial(user?.id));
+  };
+  const enforceTrial = (count = 1): boolean => {
+    if (isAdmin) return true;
+    if (getPhotoTrialCount(user?.id) + count > PHOTO_TRIAL_LIMIT) {
+      toast.error("🔒 Free trial used (6 images). Upgrade to keep generating.");
+      navigate("/subscribe");
+      return false;
+    }
+    return true;
+  };
   const [prompt, setPrompt] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("None");
   const [isGenerating, setIsGenerating] = useState(false);
