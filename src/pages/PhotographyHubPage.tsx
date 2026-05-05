@@ -474,6 +474,54 @@ const PhotographyHubPage = () => {
           }}
         />
 
+        {/* Photo Story — 10 sequential frames, same characters & wardrobe */}
+        <div className="mt-6 mb-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-amber-500/10 via-background to-primary/15 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ImagePlus className="w-5 h-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">📸 Photo Story — 10 Frames</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Generate <strong>10 sequential photos</strong> featuring the same characters in the same outfits across different scenes.
+            Describe your story and characters, and Oracle will keep them consistent through all 10 frames.
+          </p>
+          <textarea
+            value={storyDescription}
+            onChange={(e) => setStoryDescription(e.target.value)}
+            rows={3}
+            placeholder="e.g. Maya (red leather jacket, dark curly hair) and Jake (blue denim, blonde) explore an abandoned mansion at night — finding clues, discovering a hidden room, escaping at dawn."
+            className="w-full px-3 py-2 rounded-xl bg-input border border-border text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-primary mb-2"
+          />
+          <button
+            onClick={generatePhotoStory}
+            disabled={generatingStory || !storyDescription.trim()}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg disabled:opacity-50">
+            {generatingStory ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />
+                Generating frame {storyProgress?.done ?? 0} of {storyProgress?.total ?? 10}…
+              </>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Generate 10-Frame Photo Story</>
+            )}
+          </button>
+          {storyFrames.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {storyFrames.map((src, i) => (
+                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/30 group">
+                  <img src={src} alt={`Story frame ${i + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-bold text-primary">
+                    {i + 1}/10
+                  </div>
+                  <button
+                    onClick={() => downloadFileFromUrl(src, `photo-story-${i + 1}-${Date.now()}`)}
+                    className="absolute bottom-1 right-1 p-1 rounded bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Download className="w-3 h-3 text-primary-foreground" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Story → Image → Storyboard → Movie pipeline */}
         <div className="mt-6 mb-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-background to-amber-500/10 p-4">
           <div className="flex items-center gap-2 mb-2">
