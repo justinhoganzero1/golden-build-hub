@@ -16,7 +16,15 @@ import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import PhotoAIPowerLab from "@/components/PhotoAIPowerLab";
 import MovieStudio from "@/components/MovieStudio";
-import { Film } from "lucide-react";
+import { Film, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import {
+  PHOTO_TRIAL_LIMIT,
+  getPhotoTrialCount,
+  incrementPhotoTrial,
+  hasPhotoTrialRemaining,
+} from "@/lib/photoTrial";
 
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
