@@ -31,9 +31,9 @@ const OwnerDashboardPage = () => {
   const { user, loading, signOut } = useAuth();
   const { isReady, accessToken } = useAuthReady();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "failed-signups">("overview");
+  const [tab, setTab] = useState<"overview" | "suggestions" | "freebies" | "vault" | "marketing" | "advertising" | "advertisers" | "library" | "leads" | "ai-studio" | "builder" | "sources" | "crawler" | "users" | "trials" | "failed-signups">("overview");
   // Users tab — list of all members, split into online/offline sub-tabs
-  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; wallet_balance_cents?: number }>>([]);
+  const [usersList, setUsersList] = useState<Array<{ id: string; email: string; created_at: string; last_sign_in_at: string | null; online: boolean; member?: boolean; freebie_active?: boolean; free_for_life?: boolean; grant_expires_at?: string | null; grant_reason?: string | null; wallet_balance_cents?: number }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
@@ -367,7 +367,7 @@ const OwnerDashboardPage = () => {
 
   // Load all users (with online/offline split) when the Users tab opens
   useEffect(() => {
-    if (!hasAdminAccess || tab !== "users" || !accessToken) return;
+    if (!hasAdminAccess || (tab !== "users" && tab !== "trials") || !accessToken) return;
     let cancelled = false;
     (async () => {
       setUsersLoading(true);
@@ -480,6 +480,21 @@ const OwnerDashboardPage = () => {
     }
   };
 
+  const grantFreeForLife = async (email: string, userId: string) => {
+    if (!confirm(`Grant FREE FOR LIFE to ${email}? This is permanent and unlimited.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
+        body: { userId, email, freeForLife: true, reason: "free_for_life" },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`💎 ${email} is now Free For Life!`);
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, free_for_life: true, grant_expires_at: (data as any)?.expiresAt ?? u.grant_expires_at, grant_reason: "free_for_life", wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+    } catch (e: any) {
+      toast.error(e?.message || "Free For Life grant failed");
+    }
+  };
+
   const addVaultUser = () => {
     if (!vaultEmail.trim()) return;
     setVaultUsers(prev => [...prev, { email: vaultEmail, level: vaultLevel }]);
@@ -511,6 +526,7 @@ const OwnerDashboardPage = () => {
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "advertisers", label: "Advertisers", icon: <Megaphone className="w-4 h-4" /> },
     { key: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { key: "trials", label: "Trial Users", icon: <Zap className="w-4 h-4" /> },
     { key: "failed-signups", label: "Failed Sign-ups", icon: <XCircle className="w-4 h-4" /> },
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
     { key: "ai-studio", label: "AI Studio (Beta)", icon: <Sparkles className="w-4 h-4" /> },
@@ -1518,6 +1534,70 @@ const OwnerDashboardPage = () => {
         </Dialog>
 
         {/* TRAFFIC SOURCES — admin-only bar graph showing where visitors came from */}
+        {tab === "trials" && (
+          <div className="space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Zap className="w-5 h-5 text-purple-400" /> Trial Users</h2>
+                  <p className="text-xs text-gray-400">Everyone with an active reward / freebie grant — full email + one-click Free For Life upgrade.</p>
+                </div>
+                <span className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded-lg">
+                  {usersList.filter(u => u.freebie_active).length} active
+                </span>
+              </div>
+              {usersLoading ? (
+                <p className="text-xs text-gray-400 py-6 text-center">Loading trial users…</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-white/10">
+                        <th className="py-2 pr-3">Email</th>
+                        <th className="py-2 pr-3">Joined</th>
+                        <th className="py-2 pr-3">Last sign-in</th>
+                        <th className="py-2 pr-3">Grant</th>
+                        <th className="py-2 pr-3">Expires</th>
+                        <th className="py-2 pr-3 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList.filter(u => u.freebie_active).map(u => (
+                        <tr key={u.id} className="border-b border-white/5">
+                          <td className="py-2 pr-3 text-white font-medium">{u.email || <span className="text-gray-500">—</span>}</td>
+                          <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
+                          <td className="py-2 pr-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.free_for_life ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-purple-500/15 text-purple-300 border border-purple-500/30"}`}>
+                              {u.free_for_life ? "💎 Free For Life" : (u.grant_reason || "trial")}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3 text-gray-400">{u.grant_expires_at ? new Date(u.grant_expires_at).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 pr-3 text-right">
+                            {u.free_for_life ? (
+                              <span className="text-[10px] text-emerald-400">Active ✓</span>
+                            ) : (
+                              <button
+                                onClick={() => u.email && grantFreeForLife(u.email, u.id)}
+                                className="px-3 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:brightness-110"
+                              >
+                                Make Free For Life
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {usersList.filter(u => u.freebie_active).length === 0 && (
+                        <tr><td colSpan={6} className="py-6 text-center text-gray-500">No active trial users yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "users" && (
           <div className="space-y-4">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -1579,12 +1659,24 @@ const OwnerDashboardPage = () => {
                               </span>
                             </td>
                             <td className="py-2 pr-3 text-right">
-                              <button
-                                onClick={() => u.email && grantFreeForUser(u.email, u.id)}
-                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:brightness-110"
-                              >
-                                Grant Free Access
-                              </button>
+                              {u.free_for_life ? (
+                                <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">💎 Free For Life</span>
+                              ) : (
+                                <div className="flex gap-1.5 justify-end">
+                                  <button
+                                    onClick={() => u.email && grantFreeForUser(u.email, u.id)}
+                                    className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-white/10 text-white hover:bg-white/20 border border-white/20"
+                                  >
+                                    +Credits
+                                  </button>
+                                  <button
+                                    onClick={() => u.email && grantFreeForLife(u.email, u.id)}
+                                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-black hover:brightness-110"
+                                  >
+                                    Free For Life
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         ))}

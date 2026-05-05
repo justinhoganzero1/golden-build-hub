@@ -45,18 +45,23 @@ Deno.serve(async (req) => {
     const adminEmails = ["justinbretthogan@gmail.com"];
     const isAdmin = adminEmails.includes((user.email ?? "").toLowerCase());
     let userTier = "free";
+    let isFreeForLife = false;
     if (isAdmin) {
       userTier = "lifetime";
     } else {
       const { data: rewards } = await supabase.from("reward_grants")
-        .select("reward_type").eq("user_id", user.id).eq("active", true)
-        .gt("expires_at", new Date().toISOString()).limit(1);
-      if (rewards?.length) userTier = "monthly";
+        .select("reward_type, reason").eq("user_id", user.id).eq("active", true)
+        .gt("expires_at", new Date().toISOString()).limit(5);
+      if (rewards?.length) {
+        userTier = "monthly";
+        isFreeForLife = rewards.some((r: any) => r.reward_type === "free_for_life" || r.reason === "free_for_life");
+        if (isFreeForLife) userTier = "lifetime";
+      }
     }
 
     const requestedDur = Math.max(0.1, Math.min(60, Number(target_duration_minutes) || 0.15));
     const quality = String(quality_tier || "hd");
-    const isFreeTier = !isAdmin && userTier === "free";
+    const isFreeTier = !isAdmin && !isFreeForLife && userTier === "free";
 
     // ===== FREE TIER: only 1 clip ever, fixed 8 seconds, SD only =====
     if (isFreeTier) {
@@ -76,7 +81,7 @@ Deno.serve(async (req) => {
       var estimateCents = 0;                    // free for the user
     } else {
       // ===== Paid tier: enforce minute caps + valid quality =====
-      const maxDur = isAdmin ? 60 : (MAX_DURATION_MIN[userTier] ?? 0);
+      const maxDur = (isAdmin || isFreeForLife) ? 60 : (MAX_DURATION_MIN[userTier] ?? 0);
       if (requestedDur > maxDur) {
         return new Response(JSON.stringify({
           error: `Your tier allows up to ${maxDur} min. Upgrade to unlock ${requestedDur} min.`,
@@ -89,11 +94,11 @@ Deno.serve(async (req) => {
       }
       var dur = requestedDur;
       var enforcedQuality = quality;
-      var estimateCents = Math.ceil(dur * PRICING[quality]);
+      var estimateCents = (isFreeForLife) ? 0 : Math.ceil(dur * PRICING[quality]);
     }
 
     // ===== ATOMIC WALLET CHARGE UPFRONT (skip for admin and free clip) =====
-    if (!isAdmin && estimateCents > 0) {
+    if (!isAdmin && !isFreeForLife && estimateCents > 0) {
       await supabase.from("wallet_balances")
         .upsert({ user_id: user.id, balance_cents: 0 }, { onConflict: "user_id", ignoreDuplicates: true });
 
@@ -122,12 +127,12 @@ Deno.serve(async (req) => {
       quality_tier: enforcedQuality,
       brief: brief || {},
       estimated_cost_cents: estimateCents,
-      user_paid_cents: isAdmin || isFreeTier ? 0 : estimateCents,
+      user_paid_cents: (isAdmin || isFreeTier || isFreeForLife) ? 0 : estimateCents,
       status: "draft",
     }).select().single();
 
     if (error) {
-      if (!isAdmin && estimateCents > 0) {
+      if (!isAdmin && !isFreeForLife && estimateCents > 0) {
         await supabase.rpc("wallet_topup", { _user_id: user.id, _amount_cents: estimateCents });
       }
       throw error;
