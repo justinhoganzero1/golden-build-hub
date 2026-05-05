@@ -189,6 +189,7 @@ const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const VerifyPhonePage = lazy(() => import("./pages/VerifyPhonePage"));
+const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const WebWrapperPage = lazy(loaders["/web-wrapper"]);
 
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
@@ -310,6 +311,7 @@ const App = () => (
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/verify-phone" element={<ErrorBoundary pageName="Verify Phone"><VerifyPhonePage /></ErrorBoundary>} />
+                  <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<RequireAuth><AppUnlockGate appKey="app_wrapper"><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />

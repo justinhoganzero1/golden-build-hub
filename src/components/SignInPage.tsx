@@ -11,6 +11,7 @@ const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dob, setDob] = useState(""); // YYYY-MM-DD, only used on signup
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -61,12 +62,34 @@ const SignInPage = () => {
     try {
       if (isSignUp) {
         if (isOwnerAccess) { toast.error("Owner access is sign-in only."); return; }
+        // Hard 16+ age gate at signup
+        if (!dob) { toast.error("Date of birth is required."); return; }
+        const dobDate = new Date(dob);
+        if (isNaN(dobDate.getTime())) { toast.error("Please enter a valid date of birth."); return; }
+        const today = new Date();
+        const sixteenYearsAgo = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+        if (dobDate > sixteenYearsAgo) {
+          toast.error("You must be at least 16 years old to use Oracle Lunar.");
+          return;
+        }
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
           email, password, options: { emailRedirectTo: emailReturnUrl },
         });
         if (error) throw error;
+        // Persist DOB to profiles (server-side trigger re-validates 16+)
+        if (signUpData.user) {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            user_id: signUpData.user.id,
+            date_of_birth: dob,
+          });
+          if (profileError) {
+            // If under-age trigger blocks, sign them out and stop
+            await supabase.auth.signOut();
+            throw new Error(profileError.message);
+          }
+        }
         if (signUpData.session) {
           try {
             await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
@@ -196,6 +219,36 @@ const SignInPage = () => {
               />
             </div>
           </div>
+
+          {isSignUp && !isOwnerAccess && (
+            <div>
+              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
+                Date of Birth <span className="text-primary">(must be 16+)</span>
+              </label>
+              <div
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+                style={{
+                  background: "hsl(0 0% 4% / 0.7)",
+                  border: "1px solid hsl(45 100% 55% / 0.35)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  max={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())
+                    .toISOString().slice(0, 10)}
+                  min="1900-01-01"
+                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
+                  required
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Oracle Lunar is restricted to users aged 16 and over.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-muted-foreground text-xs cursor-pointer">

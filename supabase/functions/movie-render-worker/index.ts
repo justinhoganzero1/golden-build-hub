@@ -485,12 +485,24 @@ async function replicateUpscale(version: string, videoUrl: string, scale: number
 
 // ============= STITCH (FFmpeg via Replicate, with caption burn-in) =============
 async function stitchProject(job: any) {
+  // Idempotency: if the project already has a final video, do not re-stitch.
+  const { data: existing } = await supabase.from("movie_projects")
+    .select("user_id, quality_tier, brief, final_video_url, status").eq("id", job.project_id).maybeSingle();
+  if (existing?.final_video_url) {
+    if (existing.status !== "completed") {
+      await supabase.from("movie_projects").update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      }).eq("id", job.project_id);
+    }
+    return { stitched: true, finalUrl: existing.final_video_url, skipped: "already_stitched" };
+  }
+
   await supabase.from("movie_projects").update({ status: "stitching" }).eq("id", job.project_id);
 
   const { data: scenes } = await supabase.from("movie_scenes")
     .select("*").eq("project_id", job.project_id).order("scene_number", { ascending: true });
-  const { data: project } = await supabase.from("movie_projects")
-    .select("user_id, quality_tier, brief").eq("id", job.project_id).maybeSingle();
+  const project = existing;
   if (!scenes?.length || !project) throw new Error("no scenes to stitch");
 
   // Pick best resolution per scene
@@ -519,16 +531,21 @@ async function stitchProject(job: any) {
   })).filter(x => x.url);
 
   let finalUrl = "";
+  let stitchError = "";
   if (SHOTSTACK_API_KEY && bestScenes.length) {
-    finalUrl = await shotstackStitch(
-      bestScenes as Array<{ url: string; audio: string | null; duration: number }>,
-      project.quality_tier,
-    );
+    try {
+      finalUrl = await shotstackStitch(
+        bestScenes as Array<{ url: string; audio: string | null; duration: number }>,
+        project.quality_tier,
+      );
+    } catch (e: any) {
+      stitchError = e?.message || String(e);
+    }
+  } else if (!SHOTSTACK_API_KEY) {
+    stitchError = "SHOTSTACK_API_KEY not configured";
   }
-  // CRITICAL: never accept a non-mp4 (e.g. a still PNG) as the final movie.
-  // If Shotstack failed, throw so the job retries instead of silently saving a still.
   if (!finalUrl) {
-    throw new Error("Shotstack stitch failed — refusing to fall back to a still image. Will retry.");
+    throw new Error(`Shotstack stitch failed: ${stitchError || "unknown error"}`);
   }
   finalUrl = await mirrorToBucket(finalUrl, `${project.user_id}/${job.project_id}/final.mp4`, "video/mp4");
 
@@ -601,12 +618,13 @@ async function shotstackStitch(
     }),
   });
   if (!submit.ok) {
-    console.error("[shotstack submit failed]", submit.status, await submit.text());
-    return "";
+    const txt = await submit.text();
+    console.error("[shotstack submit failed]", submit.status, txt);
+    throw new Error(`Shotstack submit ${submit.status}: ${txt.slice(0, 300)}`);
   }
   const sj = await submit.json();
   const renderId = sj?.response?.id;
-  if (!renderId) return "";
+  if (!renderId) throw new Error(`Shotstack returned no render id: ${JSON.stringify(sj).slice(0, 300)}`);
 
   // Poll up to 5 minutes (every 10s)
   for (let i = 0; i < 30; i++) {
@@ -620,7 +638,7 @@ async function shotstackStitch(
     if (status === "done") return pj.response.url;
     if (status === "failed") {
       console.error("[shotstack failed]", pj.response?.error);
-      return "";
+      throw new Error(`Shotstack render failed: ${pj.response?.error || "unknown"}`);
     }
   }
   console.warn("[shotstack] still rendering after 5min");
