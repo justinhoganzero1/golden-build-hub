@@ -32,9 +32,16 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const targetEmail = String(body.email || "").trim().toLowerCase();
     const userId = body.userId ? String(body.userId) : null;
-    const days = Number.isFinite(Number(body.days)) ? Math.max(1, Math.min(3650, Number(body.days))) : 365;
-    const amountCents = Number.isFinite(Number(body.amountCents)) ? Math.max(1, Math.min(50000, Number(body.amountCents))) : 1860;
-    const reason = String(body.reason || "admin_grant");
+    const freeForLife = body.freeForLife === true || body.reason === "free_for_life";
+    // Free-for-life = 100-year grant + huge coin top-up. Otherwise normal freebie.
+    const days = freeForLife
+      ? 36500
+      : (Number.isFinite(Number(body.days)) ? Math.max(1, Math.min(36500, Number(body.days))) : 365);
+    const amountCents = freeForLife
+      ? 1000000 // ~$10,000 worth of coins, effectively unlimited
+      : (Number.isFinite(Number(body.amountCents)) ? Math.max(1, Math.min(50000, Number(body.amountCents))) : 1860);
+    const reason = freeForLife ? "free_for_life" : String(body.reason || "admin_grant");
+    const rewardType = freeForLife ? "free_for_life" : "admin_freebie_coins";
 
     if (!targetEmail && !userId) {
       return new Response(JSON.stringify({ error: "email or userId required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
@@ -46,7 +53,6 @@ Deno.serve(async (req) => {
     let resolvedUserId = userId;
     let resolvedEmail = targetEmail;
     if (!resolvedUserId) {
-      // Page through users to find by email (admin.listUsers)
       let page = 1;
       const perPage = 1000;
       while (page < 50 && !resolvedUserId) {
@@ -67,6 +73,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `No registered user with email ${targetEmail}. They must sign up first.` }), { status: 404, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
+    // For Free-For-Life: deactivate any prior FFL grants so we have one clean active row
+    if (freeForLife) {
+      await admin.from("reward_grants")
+        .update({ active: false })
+        .eq("user_id", resolvedUserId)
+        .eq("reward_type", "free_for_life");
+    }
+
     const { data: newBalance, error: topupErr } = await admin.rpc("wallet_topup", {
       _user_id: resolvedUserId,
       _amount_cents: amountCents,
@@ -78,17 +92,17 @@ Deno.serve(async (req) => {
       .from("reward_grants")
       .insert({
         user_id: resolvedUserId,
-        reward_type: "admin_freebie_coins",
+        reward_type: rewardType,
         reason,
         starts_at: new Date().toISOString(),
         expires_at: expiresAt,
         active: true,
       })
-      .select("id, expires_at")
+      .select("id, expires_at, reward_type")
       .single();
     if (insErr) throw insErr;
 
-    return new Response(JSON.stringify({ ok: true, userId: resolvedUserId, email: resolvedEmail, grantId: grant.id, expiresAt: grant.expires_at, amountCents, newBalanceCents: newBalance }), {
+    return new Response(JSON.stringify({ ok: true, userId: resolvedUserId, email: resolvedEmail, grantId: grant.id, expiresAt: grant.expires_at, rewardType: grant.reward_type, freeForLife, amountCents, newBalanceCents: newBalance }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (e: any) {
