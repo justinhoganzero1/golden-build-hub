@@ -367,7 +367,7 @@ const OwnerDashboardPage = () => {
 
   // Load all users (with online/offline split) when the Users tab opens
   useEffect(() => {
-    if (!hasAdminAccess || tab !== "users" || !accessToken) return;
+    if (!hasAdminAccess || (tab !== "users" && tab !== "trials") || !accessToken) return;
     let cancelled = false;
     (async () => {
       setUsersLoading(true);
