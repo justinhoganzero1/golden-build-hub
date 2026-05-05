@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { moderatePrompt } from "@/lib/contentSafety";
+import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
+import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -35,6 +37,8 @@ const VOICE_MAP: Record<string, string> = {
   "hero": "bIHbv24MWmeRgasZH58o", // Will
 };
 const voiceFor = (style?: string) => VOICE_MAP[style || ""] || VOICE_MAP["narrator-male-warm"];
+const resolveVoiceId = (scene: { voice_id?: string; voice_style?: string }) =>
+  scene.voice_id || voiceFor(scene.voice_style);
 
 type Motion = "pan-left" | "pan-right" | "zoom-in" | "zoom-out" | "ken-burns" | "static";
 type SceneTone = "calm" | "tense" | "emotional" | "epic" | "playful" | "neutral";
@@ -86,6 +90,7 @@ interface Scene {
   narration?: string;
   speaker?: string;
   voice_style?: string;
+  voice_id?: string; // explicit ElevenLabs voice (overrides voice_style)
   audio_url?: string; // data URL of generated mp3
   generatingAudio?: boolean;
   // SFX (per scene)
@@ -562,7 +567,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const resp = await fetch(TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({ text, voiceId: voiceFor(scene.voice_style) }),
+        body: JSON.stringify({ text, voiceId: resolveVoiceId(scene) }),
       });
       if (!resp.ok) {
         if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
@@ -1642,15 +1647,40 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
             <div className="rounded-lg p-3 border border-primary/30 bg-primary/5 space-y-2">
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-primary">MUSIC SCORE (ElevenLabs)</span>
-                <span className="text-[10px] text-muted-foreground ml-auto">Plays under the entire movie</span>
+                <span className="text-xs font-bold text-primary">MUSIC SCORE (Top 100 Trending Vibes)</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Instrumental only · plays under whole movie</span>
               </div>
+              <select
+                onChange={(e) => {
+                  const preset = MUSIC_PRESETS_TOP_100.find(p => p.id === e.target.value);
+                  if (preset) {
+                    setMusicPrompt(preset.prompt);
+                    toast.success(`🎵 Loaded: ${preset.name} (${preset.genre})`);
+                  }
+                }}
+                defaultValue=""
+                className="w-full h-8 text-[11px] bg-input border border-border rounded px-2"
+              >
+                <option value="" disabled>🎵 Pick a trending instrumental track ({MUSIC_PRESETS_TOP_100.length} options)…</option>
+                {Object.entries(
+                  MUSIC_PRESETS_TOP_100.reduce((acc, p) => {
+                    (acc[p.genre] ||= []).push(p);
+                    return acc;
+                  }, {} as Record<string, typeof MUSIC_PRESETS_TOP_100>)
+                ).map(([genre, list]) => (
+                  <optgroup key={genre} label={genre}>
+                    {list.map(p => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.mood}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               <Textarea
                 value={musicPrompt}
                 onChange={e => setMusicPrompt(e.target.value)}
                 rows={2}
                 className="text-xs"
-                placeholder="e.g. Cinematic orchestral score, slow build, melancholy strings, hopeful finale, 90 BPM"
+                placeholder="Or describe your own (instrumental only — no vocals)…"
               />
               <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={generateMusic} size="sm" variant="secondary" className="h-7 text-xs"
@@ -1843,11 +1873,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           <Input value={s.speaker || ""} onChange={e => updateScene(s.id, { speaker: e.target.value, audio_url: undefined })}
                             className="h-6 text-[11px] w-32" placeholder="Speaker (e.g. Maya)" />
                           <select
-                            value={s.voice_style || "narrator-male-warm"}
-                            onChange={e => updateScene(s.id, { voice_style: e.target.value, audio_url: undefined })}
-                            className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            value={s.voice_id || resolveVoiceId(s)}
+                            onChange={e => updateScene(s.id, { voice_id: e.target.value, audio_url: undefined })}
+                            className="h-6 text-[11px] bg-input border border-border rounded px-1 max-w-[200px]"
                           >
-                            {Object.keys(VOICE_MAP).map(k => <option key={k} value={k}>{k}</option>)}
+                            <optgroup label="Female">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Female").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Male">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Male").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Neutral">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Neutral").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
                           </select>
                           {s.audio_url && (
                             <audio src={s.audio_url} controls className="h-6 max-w-[180px]" />
@@ -1903,12 +1947,34 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           <span className="text-[10px] font-bold">SCENE BACKING MUSIC</span>
                           {s.music_url && <audio src={s.music_url} controls className="h-6 max-w-[200px] ml-auto" />}
                         </div>
+                        <select
+                          onChange={(e) => {
+                            const preset = MUSIC_PRESETS_TOP_100.find(p => p.id === e.target.value);
+                            if (preset) updateScene(s.id, { music_prompt: preset.prompt });
+                          }}
+                          defaultValue=""
+                          className="w-full h-7 text-[11px] bg-input border border-border rounded px-1"
+                        >
+                          <option value="" disabled>🎵 Pick instrumental track for this scene…</option>
+                          {Object.entries(
+                            MUSIC_PRESETS_TOP_100.reduce((acc, p) => {
+                              (acc[p.genre] ||= []).push(p);
+                              return acc;
+                            }, {} as Record<string, typeof MUSIC_PRESETS_TOP_100>)
+                          ).map(([genre, list]) => (
+                            <optgroup key={genre} label={genre}>
+                              {list.map(p => (
+                                <option key={p.id} value={p.id}>{p.name} — {p.mood}</option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
                         <Textarea
                           value={s.music_prompt || ""}
                           onChange={e => updateScene(s.id, { music_prompt: e.target.value })}
                           rows={2}
                           className="text-xs"
-                          placeholder="Describe the backing track — e.g. 'tense orchestral strings building suspense', 'warm acoustic guitar, hopeful', 'dark synth pulse, 90 bpm'"
+                          placeholder="Or describe your own (instrumental only — no vocals)…"
                         />
                         <div className="flex flex-wrap gap-1 items-center">
                           <Button onClick={() => generateSceneMusic(s.id, 3)} size="sm" variant="secondary" className="h-7 text-xs"
