@@ -187,6 +187,7 @@ const PhotographyHubPage = () => {
     if (!prompt.trim()) return;
     const moderation = moderatePrompt(prompt);
     if (!moderation.ok) { toast.error(moderation.reason); return; }
+    if (!enforceTrial(1)) return;
     setIsGenerating(true);
     setGeneratedImage(null);
     const filterPrompt = selectedFilter !== "None" ? `, ${selectedFilter.toLowerCase()} photography style` : "";
