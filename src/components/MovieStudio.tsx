@@ -1873,11 +1873,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
                           <Input value={s.speaker || ""} onChange={e => updateScene(s.id, { speaker: e.target.value, audio_url: undefined })}
                             className="h-6 text-[11px] w-32" placeholder="Speaker (e.g. Maya)" />
                           <select
-                            value={s.voice_style || "narrator-male-warm"}
-                            onChange={e => updateScene(s.id, { voice_style: e.target.value, audio_url: undefined })}
-                            className="h-6 text-[11px] bg-input border border-border rounded px-1"
+                            value={s.voice_id || resolveVoiceId(s)}
+                            onChange={e => updateScene(s.id, { voice_id: e.target.value, audio_url: undefined })}
+                            className="h-6 text-[11px] bg-input border border-border rounded px-1 max-w-[200px]"
                           >
-                            {Object.keys(VOICE_MAP).map(k => <option key={k} value={k}>{k}</option>)}
+                            <optgroup label="Female">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Female").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Male">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Male").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Neutral">
+                              {CURATED_ELEVENLABS_VOICES.filter(v => v.gender === "Neutral").map(v => (
+                                <option key={v.id} value={v.id}>{v.name} — {v.accent} · {v.description}</option>
+                              ))}
+                            </optgroup>
                           </select>
                           {s.audio_url && (
                             <audio src={s.audio_url} controls className="h-6 max-w-[180px]" />
