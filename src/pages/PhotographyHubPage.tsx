@@ -680,6 +680,8 @@ const PhotographyHubPage = () => {
         open={showMovieStudio}
         onOpenChange={setShowMovieStudio}
         seedImage={movieSeedImage}
+        seedFrames={movieSeedFrames}
+        seedScript={movieSeedScript}
       />
     </div>
     </PaywallGate>
