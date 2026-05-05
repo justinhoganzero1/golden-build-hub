@@ -3,8 +3,9 @@
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Wallet, Crown } from "lucide-react";
+import { Coins, Wallet, Crown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { formatCentsAsCoins } from "@/lib/coins";
 
 const PRICING_CENTS_PER_MIN: Record<string, number> = {
   sd: 50, hd: 200, "4k": 800, "8k_ultimate": 5000,
