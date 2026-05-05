@@ -567,7 +567,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       const resp = await fetch(TTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({ text, voiceId: voiceFor(scene.voice_style) }),
+        body: JSON.stringify({ text, voiceId: resolveVoiceId(scene) }),
       });
       if (!resp.ok) {
         if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
