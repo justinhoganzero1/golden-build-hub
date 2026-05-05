@@ -123,11 +123,16 @@ interface MovieStudioProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   seedImage?: string | null;
+  /** Pre-rendered sequential photos (e.g. from the Photo Story 10-frame generator). When provided, MovieStudio
+   *  pre-populates scenes from these images and skips the planning step. */
+  seedFrames?: string[];
+  /** Script/intent text used when seedFrames are provided (becomes the movie's narration backbone). */
+  seedScript?: string;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
+const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: MovieStudioProps) => {
   const { user } = useAuth();
   const saveMedia = useSaveMedia();
   const [script, setScript] = useState("");
@@ -304,6 +309,33 @@ const MovieStudio = ({ open, onOpenChange, seedImage }: MovieStudioProps) => {
       setSavedTracks(favs.map((d: any) => ({ id: d.id, title: d.title, url: d.url })));
     })();
   }, [open, user]);
+
+  // Pre-populate scenes from Photo Story 10-frame seed (skips planning step)
+  useEffect(() => {
+    if (!open) return;
+    if (!seedFrames || seedFrames.length === 0) return;
+    if (scenes.length > 0) return; // don't overwrite existing
+    const baseScript = (seedScript || "").trim();
+    if (baseScript && !script.trim()) setScript(baseScript);
+    if (!title) setTitle(baseScript ? baseScript.slice(0, 60) : "Photo Story Movie");
+    const built: Scene[] = seedFrames.map((url, i) => ({
+      id: uid(),
+      caption: `Scene ${i + 1}`,
+      photo_prompt: baseScript || `Scene ${i + 1}`,
+      motion: "ken-burns",
+      duration_sec: CLIP_SECONDS,
+      image_url: url,
+      narration: baseScript ? `${baseScript} — moment ${i + 1}.` : `Scene ${i + 1}.`,
+      speaker: "narrator",
+      voice_style: "narrator-male-warm",
+      music_prompt: `Cinematic underscore for: ${baseScript || "photo story"}`,
+      music_volume: 0.25,
+    }));
+    setScenes(built);
+    setBlocksProduced(1);
+    if (baseScript) setMusicPrompt(`Cinematic score matching: ${baseScript.slice(0, 200)}`);
+    toast.success(`${built.length} scenes loaded from your Photo Story — ready to render.`);
+  }, [open, seedFrames, seedScript]);
 
   // Save a generated music track to the user's favourites library
   const saveTrackToFavourites = (url: string, label: string) => {

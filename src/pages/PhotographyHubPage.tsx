@@ -73,6 +73,8 @@ const PhotographyHubPage = () => {
   const [compilingVideo, setCompilingVideo] = useState(false);
   const [showMovieStudio, setShowMovieStudio] = useState(false);
   const [movieSeedImage, setMovieSeedImage] = useState<string | null>(null);
+  const [movieSeedFrames, setMovieSeedFrames] = useState<string[] | undefined>(undefined);
+  const [movieSeedScript, setMovieSeedScript] = useState<string | undefined>(undefined);
   // Photo Story: 10 sequential frames with consistent characters/wardrobe
   const [storyDescription, setStoryDescription] = useState("");
   const [storyFrames, setStoryFrames] = useState<string[]>([]);
@@ -564,21 +566,36 @@ const PhotographyHubPage = () => {
             )}
           </button>
           {storyFrames.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {storyFrames.map((src, i) => (
-                <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/30 group">
-                  <img src={src} alt={`Story frame ${i + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-bold text-primary">
-                    {i + 1}/10
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {storyFrames.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-primary/30 group">
+                    <img src={src} alt={`Story frame ${i + 1}`} className="w-full h-full object-cover" />
+                    <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-bold text-primary">
+                      {i + 1}/10
+                    </div>
+                    <button
+                      onClick={() => downloadFileFromUrl(src, `photo-story-${i + 1}-${Date.now()}`)}
+                      className="absolute bottom-1 right-1 p-1 rounded bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Download className="w-3 h-3 text-primary-foreground" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => downloadFileFromUrl(src, `photo-story-${i + 1}-${Date.now()}`)}
-                    className="absolute bottom-1 right-1 p-1 rounded bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Download className="w-3 h-3 text-primary-foreground" />
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setMovieSeedFrames(storyFrames);
+                  setMovieSeedScript(storyDescription);
+                  setMovieSeedImage(storyFrames[0] || null);
+                  setShowMovieStudio(true);
+                  toast.success("Loading your 10 photos into Movie Studio…");
+                }}
+                className="mt-3 w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg">
+                <Film className="w-4 h-4" />
+                🎬 Turn These 10 Photos Into a Movie
+                <Sparkles className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
 
@@ -598,6 +615,8 @@ const PhotographyHubPage = () => {
                 toast.error("Write your story in the prompt box above first.");
                 return;
               }
+              setMovieSeedFrames(undefined);
+              setMovieSeedScript(undefined);
               setMovieSeedImage(generatedImage);
               setShowMovieStudio(true);
               if (!generatedImage) {
@@ -661,6 +680,8 @@ const PhotographyHubPage = () => {
         open={showMovieStudio}
         onOpenChange={setShowMovieStudio}
         seedImage={movieSeedImage}
+        seedFrames={movieSeedFrames}
+        seedScript={movieSeedScript}
       />
     </div>
     </PaywallGate>
