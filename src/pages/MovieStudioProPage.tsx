@@ -147,7 +147,7 @@ const MovieStudioProPage = () => {
               <div className="flex-1">
                 <p className="text-sm font-bold text-destructive">Wallet empty</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  You need at least <strong>$0.25</strong> in your wallet to export a movie.
+                  You need at least <strong>{formatUsdAsCoins(0.25)} coins</strong> in your wallet to export a movie.
                   You can still build, preview, and edit your timeline — you'll just be charged when you tap Export.
                 </p>
                 <Button onClick={() => navigate("/wallet")} size="sm" className="mt-3">
