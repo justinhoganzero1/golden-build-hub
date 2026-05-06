@@ -1213,8 +1213,9 @@ a[aria-disabled="true"],
   margin: 24px 18px 70px !important;
   /* STRAIGHTENED — no backward tilt. Front face offset to the right so the
      back/left side wall is exposed, giving the box real volume. */
-  transform: translateY(-10px) translateZ(0);
-  transform-origin: center bottom;
+  /* Phone-on-a-table view: slight side angle, gentle forward tilt */
+  transform: perspective(1400px) rotateX(8deg) rotateY(-16deg) translateY(-8px) translateZ(0);
+  transform-origin: center center;
   background: transparent !important;
   border: none !important;
   border-radius: 16px !important;
