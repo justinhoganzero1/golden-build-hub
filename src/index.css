@@ -1209,15 +1209,28 @@ a[aria-disabled="true"],
 .holo-tile,
 .holo-card {
   margin: 10px !important;
-  /* Isometric 3D anchor — locked tilt, facing forward-ish with depth */
-  transform: scale(0.82) perspective(900px) rotateX(18deg) rotateY(-22deg) rotateZ(0deg);
+  /* TRUE isometric — slight tilt + EXTRUDED side faces via stacked shadows */
+  transform: scale(0.82) perspective(1100px) rotateX(14deg) rotateY(-18deg);
   transform-origin: center;
   background: transparent !important;
   border: none !important;
+  /* Stacked shadows fake 14px of physical thickness on the side faces */
   box-shadow:
-    /* deep cast shadow on the floor to sell isometric lift */
-    18px 22px 40px hsl(0 0% 0% / 0.7),
-    8px 10px 16px hsl(0 0% 0% / 0.55) !important;
+    1px 1px 0 hsl(210 40% 18% / 0.95),
+    2px 2px 0 hsl(210 40% 16% / 0.95),
+    3px 3px 0 hsl(210 40% 15% / 0.95),
+    4px 4px 0 hsl(210 40% 14% / 0.95),
+    5px 5px 0 hsl(210 40% 13% / 0.95),
+    6px 6px 0 hsl(210 40% 12% / 0.95),
+    7px 7px 0 hsl(210 40% 11% / 0.95),
+    8px 8px 0 hsl(210 40% 10% / 0.95),
+    9px 9px 0 hsl(210 40% 9% / 0.95),
+    10px 10px 0 hsl(210 40% 8% / 0.95),
+    11px 11px 0 hsl(210 40% 7% / 0.95),
+    12px 12px 0 hsl(210 40% 6% / 0.95),
+    /* deep cast shadow on the floor */
+    22px 28px 40px hsl(0 0% 0% / 0.75),
+    14px 18px 22px hsl(0 0% 0% / 0.6) !important;
   animation: none !important;
 }
 
