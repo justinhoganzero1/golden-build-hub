@@ -515,10 +515,22 @@ const AppBuilderPage = () => {
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
               <Bot className="w-4 h-4 text-primary animate-pulse" />
             </div>
-            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Building your app...
+            <div className="bg-card border border-primary/40 rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%] shadow-[0_0_24px_hsl(var(--primary)/0.2)]">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary mb-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Autonomous build in progress…
               </div>
+              <ol className="space-y-1 text-xs">
+                {buildStages.map((s, i) => {
+                  const isLast = i === buildStages.length - 1;
+                  return (
+                    <li key={i} className={`flex items-start gap-2 ${isLast ? "text-foreground" : "text-muted-foreground"}`}>
+                      <span className="mt-0.5">{isLast ? "▸" : "✓"}</span>
+                      <span><span className="uppercase text-[10px] font-bold tracking-wide text-primary/80 mr-1">{s.stage}</span>{s.message}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="text-[10px] text-muted-foreground mt-2 italic">Architect → Backend → Frontend → Flesh-out → Smoke test → Auto-fix loop. No interruptions until done.</p>
             </div>
           </div>
         )}
