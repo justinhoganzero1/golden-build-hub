@@ -22,7 +22,7 @@ import { saveToLibrary } from "@/lib/saveToLibrary";
 import { useDraggable } from "@/hooks/useDraggable";
 import { runFullDiagnostic, type DoctorReport } from "@/lib/systemDoctor";
 
-type TaskKind = "image" | "video" | "text" | "research" | "diagnose";
+type TaskKind = "image" | "video" | "text" | "research" | "diagnose" | "phoenix";
 type Job = {
   id: string;
   prompt: string;
