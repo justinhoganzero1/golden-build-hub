@@ -1209,33 +1209,25 @@ a[aria-disabled="true"],
 .holo-tile,
 .holo-card {
   margin: 14px !important;
-  /* Flat front view, lifted up off the page */
-  transform: scale(0.82) translateY(-6px);
+  /* Dead-on front view, lifted slightly off the page */
+  transform: translateY(-4px);
   transform-origin: center;
   background: transparent !important;
   border: none !important;
-  /* Stacked shadows now fake ~26px of physical thickness with a slightly
-     larger back face (offset grows faster than 1:1 toward the rear) */
+  border-radius: 22px !important;
+  /* Real transparent button — crisp glass rim, soft outer halo,
+     drop shadow for lift. No diagonal extrusion. */
   box-shadow:
-    1px 1px 0 hsl(210 40% 20% / 0.95),
-    2px 3px 0 hsl(210 40% 19% / 0.95),
-    3px 5px 0 hsl(210 40% 18% / 0.95),
-    4px 7px 0 hsl(210 40% 17% / 0.95),
-    5px 9px 0 hsl(210 40% 16% / 0.95),
-    6px 11px 0 hsl(210 40% 15% / 0.95),
-    7px 13px 0 hsl(210 40% 14% / 0.95),
-    8px 15px 0 hsl(210 40% 13% / 0.95),
-    9px 17px 0 hsl(210 40% 12% / 0.95),
-    10px 19px 0 hsl(210 40% 11% / 0.95),
-    11px 21px 0 hsl(210 40% 10% / 0.95),
-    12px 23px 0 hsl(210 40% 9% / 0.95),
-    13px 25px 0 hsl(210 40% 8% / 0.95),
-    14px 27px 0 hsl(210 40% 7% / 0.95),
-    15px 29px 0 hsl(210 40% 6% / 0.95),
-    16px 31px 0 hsl(210 40% 5% / 0.95),
-    /* deep cast shadow further away — sells the lift */
-    30px 44px 56px hsl(0 0% 0% / 0.8),
-    20px 30px 30px hsl(0 0% 0% / 0.65) !important;
+    /* outer ambient halo */
+    0 0 0 1px hsl(200 100% 80% / 0.25),
+    0 0 18px hsl(200 100% 70% / 0.18),
+    /* lift shadow straight down */
+    0 10px 18px hsl(0 0% 0% / 0.55),
+    0 22px 36px hsl(0 0% 0% / 0.45),
+    /* inner glass bevel — top light, bottom dark */
+    inset 0 1.5px 0 hsl(0 0% 100% / 0.55),
+    inset 0 -1.5px 0 hsl(220 60% 10% / 0.55),
+    inset 0 0 30px hsl(200 100% 80% / 0.06) !important;
   animation: none !important;
 }
 
