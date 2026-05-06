@@ -17,6 +17,54 @@ const MODEL_FAST = "openai/gpt-5-mini"; // used for smoke test reasoning
 
 const MAX_FIX_LOOPS = 3;
 
+// ───────────── Web research (Firecrawl) ─────────────
+// Lets the builder look up real solutions on the web when smoke tests fail.
+// Safety: refuses queries that look like attempts to attack/exploit systems.
+
+const HACK_PATTERNS = [
+  /\b(exploit|0[- ]?day|cve[- ]\d|payload|reverse shell|metasploit|sqlmap|burp|cobalt strike)\b/i,
+  /\b(bypass (auth|login|paywall|2fa|mfa)|crack (password|license|drm)|keygen|carding)\b/i,
+  /\b(ddos|botnet|malware|ransomware|keylogger|rootkit|backdoor)\b/i,
+  /\b(steal (cookies|tokens|credentials|session)|exfiltrate|harvest credentials)\b/i,
+  /\b(hack into|gain unauthorized access|escalate privileges|jailbreak (ios|android|the system))\b/i,
+];
+function looksLikeHacking(q: string): boolean {
+  return HACK_PATTERNS.some((re) => re.test(q));
+}
+
+async function webResearch(query: string): Promise<{ summary: string; sources: { url: string; title?: string }[] }> {
+  const FIRECRAWL = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL) return { summary: "(web research unavailable — no FIRECRAWL_API_KEY)", sources: [] };
+  if (looksLikeHacking(query)) {
+    return { summary: "REFUSED: query looks like an attempt to attack or exploit a system. The builder only researches legitimate dev/UX problems.", sources: [] };
+  }
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/search", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${FIRECRAWL}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query, limit: 4, scrapeOptions: { formats: ["markdown"] } }),
+    });
+    const d = await r.json().catch(() => ({}));
+    const arr = d?.data || d?.web?.results || [];
+    const sources = (Array.isArray(arr) ? arr : []).slice(0, 4).map((s: any) => ({
+      url: s.url, title: s.title,
+      md: (s.markdown || s.description || "").slice(0, 2500),
+    }));
+    const summary = sources.map((s: any, i: number) => `[${i + 1}] ${s.title || s.url}\n${s.url}\n${s.md}`).join("\n\n---\n\n") || "(no results)";
+    return { summary, sources: sources.map(({ url, title }) => ({ url, title })) };
+  } catch (e) {
+    return { summary: `(web research failed: ${e instanceof Error ? e.message : String(e)})`, sources: [] };
+  }
+}
+
+// Allow-list of CDN hosts the builder may add to <script> / <link> tags.
+const SAFE_CDN_HOSTS = [
+  "cdn.tailwindcss.com", "cdn.jsdelivr.net", "unpkg.com", "esm.sh",
+  "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com",
+  "ga.jspm.io", "code.iconify.design", "api.iconify.design",
+];
+
+
 async function callAI(opts: {
   apiKey: string;
   system: string;
