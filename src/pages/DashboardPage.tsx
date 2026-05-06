@@ -8,7 +8,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Smartphone, CreditCard, BarChart3,
-  Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock
+  Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock, LogOut
 } from "lucide-react";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
@@ -74,7 +74,7 @@ const tiles: AppTile[] = [
 ];
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
@@ -134,6 +134,16 @@ const DashboardPage = () => {
         </div>
         <div className="flex items-center gap-2">
           <SecurityShield />
+          {user && (
+            <button
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
+              aria-label="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
+          )}
         </div>
       </div>
 
