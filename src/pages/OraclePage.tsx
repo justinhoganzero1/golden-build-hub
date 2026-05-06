@@ -92,6 +92,18 @@ function getStoredOracleMasterVoice(): { id?: string; settings?: Record<string, 
   }
 }
 
+const FINAL_ONLY_PATTERNS = [
+  /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run|try|retry|search|look|build|make|create|generate|code|finish)\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl)\b[\s\S]{0,240}\b(?:totally\s+|fully\s+|completely\s+|all\s+the\s+way\s+)?(?:finished|finish|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:don'?t|do\s+not|dont|never|stop)\s+(?:reply|respond|answer|message|talk|speak|update|say\s+anything)\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl|before)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:only|just)\s+(?:reply|respond|answer|message|talk|speak|update)\b[\s\S]{0,240}\b(?:when|after|once)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:silent|quiet|no\s+(?:reply|response|updates?|messages?|talking|speaking))\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl|while|during)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun|working|building|generating)\b/i,
+];
+
+function wantsFinalOnlyMode(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  return FINAL_ONLY_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 const OraclePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -1602,7 +1614,7 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
-    const finalOnlyMode = !isIntroTrigger && /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run)\b[\s\S]{0,140}\b(?:till|until)\b[\s\S]{0,140}\b(?:totally\s+)?(?:finished|done|complete|completed)\b|\b(?:don'?t|do\s+not|dont)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,140}\b(?:till|until)\b[\s\S]{0,140}\b(?:finished|done|complete|completed)\b|\b(?:only|just)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,140}\b(?:when|after)\b[\s\S]{0,140}\b(?:finished|done|complete|completed)\b/i.test(text);
+    const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
     // ── FIRST-VISIT SETUP INTERCEPT ──
     // While the Oracle is asking the user for its name + appearance, every
@@ -1747,8 +1759,8 @@ const OraclePage = () => {
           ? "Running a full system diagnostic now — the panel is open so you can watch."
           : "On it — I'll run a full diagnostic and quietly auto-repair anything I find. Just say \"show me the report\" if you want to see the details."
       };
-      setMessages(prev => [...prev, { id: (Date.now()-1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }, ack]);
-      if (!isMuted) speakAsAgent(ack.content, oracleName);
+      setMessages(prev => finalOnlyMode ? [...prev, { id: (Date.now()-1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }] : [...prev, { id: (Date.now()-1).toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }, ack]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ack.content, oracleName);
       return;
     }
 
@@ -2115,6 +2127,7 @@ const OraclePage = () => {
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 oracleContent += content;
+                if (finalOnlyMode) continue;
                 // Strip self-naming prefix
                 let displayContent = stripSelfNaming(oracleContent);
                 setMessages(prev => {
@@ -2162,7 +2175,17 @@ const OraclePage = () => {
 
       // Update displayed message with cleaned content
       const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
-      setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.sender === oracleName) {
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: finalDisplayContent } : m);
+        }
+        return [...prev, {
+          id: "oracle-" + Date.now(), role: "assistant", sender: oracleName,
+          emoji: oracleAvatar ? "👤" : "🔮", color: "#9b87f5", content: finalDisplayContent,
+          avatar_url: oracleAvatar?.image_url || undefined,
+        }];
+      });
 
       // Auto-save every Oracle answer to the user's library as a text note.
       // Users own their library and can delete any item from My Library.
