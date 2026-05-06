@@ -1289,11 +1289,20 @@ a[aria-disabled="true"],
     0 44px 24px -10px hsl(0 0% 0% / 0.78),
     0 60px 50px -12px hsl(0 0% 0% / 0.55),
     0 90px 90px -24px hsl(0 0% 0% / 0.42),
-    /* ── Inner top bevel (gloss on the top face) ── */
-    inset 0 3px 0 hsl(0 0% 100% / 0.6),
-    inset 0 -2px 0 hsl(228 90% 6% / 0.7),
-    inset 1px 0 0 hsl(0 0% 100% / 0.18),
-    inset -1px 0 0 hsl(228 90% 8% / 0.5),
+    /* ── SCULPTED KEYCAP TOP — chamfered bevel + concave dish ── */
+    /* Bright top-edge chamfer (the lit lip of the key) */
+    inset 0 6px 4px -3px hsl(200 100% 97% / 0.95),
+    inset 0 4px 0 hsl(0 0% 100% / 0.55),
+    /* Side wall chamfers — tapered light on left, dark on right */
+    inset 5px 0 5px -4px hsl(195 100% 92% / 0.55),
+    inset -5px 0 5px -4px hsl(228 90% 4% / 0.7),
+    /* Deep bottom shadow inside the dish (grounds the keycap concavity) */
+    inset 0 -10px 10px -6px hsl(228 95% 3% / 0.85),
+    inset 0 -3px 0 hsl(228 90% 5% / 0.85),
+    /* Concave dish — soft dark vignette pulls the center down */
+    inset 0 0 50px hsl(228 90% 6% / 0.35),
+    inset 0 -22px 28px -18px hsl(228 95% 4% / 0.6),
+    /* Faint cyan glow inside the dish to keep the holographic feel */
     inset 0 0 40px hsl(200 100% 75% / 0.08) !important;
   animation: none !important;
 }
