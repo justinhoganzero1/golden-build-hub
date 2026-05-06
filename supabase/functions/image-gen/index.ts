@@ -15,8 +15,13 @@ const ABSOLUTE_BLOCK: RegExp[] = [
 ];
 const M_RATED = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip|fetish|orgasm|masturbat)\b/i;
 
-// Image generation provider cost (Gemini 3 Pro Image): ~3¢/image
-const IMAGE_GEN_COST_CENTS = 3;
+// Multi-agent image router (same Lovable AI Gateway, different specialist):
+//   - "fast"    → google/gemini-3.1-flash-image-preview (Nano Banana 2) ~1¢/image
+//   - "premium" → google/gemini-3-pro-image-preview                     ~3¢/image
+const IMAGE_MODELS: Record<string, { model: string; cost: number }> = {
+  fast:    { model: "google/gemini-3.1-flash-image-preview", cost: 1 },
+  premium: { model: "google/gemini-3-pro-image-preview",     cost: 3 },
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -29,7 +34,14 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, ownerBypass, inputImage } = await req.json();
+    const { prompt, ownerBypass, inputImage, tier } = await req.json();
+    // Auto-pick tier: caller can force "fast"/"premium". Otherwise short prompts → fast, long/brand → premium.
+    const chosenTier: "fast" | "premium" =
+      tier === "premium" ? "premium" :
+      tier === "fast"    ? "fast"    :
+      (typeof prompt === "string" && (prompt.length > 220 || /logo|brand|hero|poster|cinematic|8k|magazine cover|product shot/i.test(prompt)))
+        ? "premium" : "fast";
+    const { model: IMAGE_MODEL, cost: IMAGE_GEN_COST_CENTS } = IMAGE_MODELS[chosenTier];
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
@@ -58,7 +70,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     try {
-      await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage });
+      await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage, tier: chosenTier });
     } catch (e) {
       if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
       throw e;
@@ -81,7 +93,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
+        model: IMAGE_MODEL,
         messages: [{ role: "user", content: userContent }],
         modalities: ["image", "text"],
       }),
@@ -109,7 +121,7 @@ serve(async (req) => {
     const text = data.choices?.[0]?.message?.content || "";
     const images = data.choices?.[0]?.message?.images || [];
 
-    return new Response(JSON.stringify({ text, images }), {
+    return new Response(JSON.stringify({ text, images, tier: chosenTier, model: IMAGE_MODEL, cost_cents: IMAGE_GEN_COST_CENTS }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

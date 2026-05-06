@@ -499,8 +499,20 @@ Everything else is OPEN:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // Owner gets the stronger model + more headroom; public users keep flash-lite for speed.
-        model: userEmail?.toLowerCase() === ADMIN_EMAIL ? "google/gemini-2.5-flash" : "google/gemini-2.5-flash-lite",
+        // Multi-agent auto-router (same Lovable AI Gateway, different specialist):
+        //   - Owner: gemini-2.5-flash for headroom on R-rated dev work.
+        //   - "Deep" prompts (long, reasoning, advice, code, life decisions) → gemini-2.5-pro.
+        //   - Everything else (casual, fast chat) → gemini-2.5-flash-lite.
+        model: (() => {
+          if (userEmail?.toLowerCase() === ADMIN_EMAIL) return "google/gemini-2.5-flash";
+          const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
+          const txt = String(lastUser?.content || "").slice(0, 2000);
+          const isDeep =
+            txt.length > 280 ||
+            /\b(why|how come|explain|analy[sz]e|reason|prove|debate|compare|trade[- ]?off|architect|design|plan|strategy|debug|stack trace|error|legal|contract|diagnos|symptom|grief|trauma|relationship|breakup|invest|tax|crisis|suicid|self[- ]harm)\b/i.test(txt) ||
+            (txt.match(/\?/g)?.length || 0) >= 2;
+          return isDeep ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash-lite";
+        })(),
         messages: [
           { role: "system", content: personalitySystem },
           ...messages,

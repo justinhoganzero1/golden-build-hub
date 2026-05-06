@@ -180,13 +180,14 @@ Keep under 500 words. Markdown bullet form.`,
         });
         send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
 
-        // === STAGE 2: BACKEND (in-page data layer) ===
-        send("stage", { stage: "backend", message: "Building backend / data layer…" });
-        const backend = await callAI({
-          apiKey,
-          model: MODEL_PRIMARY,
-          reasoning: "medium",
-          system: `You are a senior backend engineer. Given the architecture, write the complete BACKEND LAYER as a self-contained <script> block intended to be embedded in a single HTML file.
+        // === STAGE 2: BACKEND + DESIGN PLAN (parallel multi-agent) ===
+        send("stage", { stage: "backend", message: "Backend agent + Design agent working in parallel…" });
+        const [backend, designPlan] = await Promise.all([
+          callAI({
+            apiKey,
+            model: MODEL_PRIMARY,
+            reasoning: "medium",
+            system: `You are a senior backend engineer. Given the architecture, write the complete BACKEND LAYER as a self-contained <script> block intended to be embedded in a single HTML file.
 Include:
 - LocalStorage-backed data store with CRUD helpers per entity
 - Mock REST-style async functions (api.get/post/put/delete) returning Promises
@@ -195,9 +196,25 @@ Include:
 - Analytics queue (window.track)
 - Error/event bus
 Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
-          user: `ARCHITECTURE:\n${architecture}`,
-        });
-        send("stage", { stage: "backend", message: "Backend complete" });
+            user: `ARCHITECTURE:\n${architecture}`,
+          }),
+          callAI({
+            apiKey,
+            model: MODEL_FAST,
+            reasoning: "low",
+            system: `You are a senior product designer + copywriter. From the architecture, output a tight DESIGN & COPY PLAN the frontend agent will execute. Include:
+- Color palette (3-5 hex), typography pair, motion principles
+- Section order with one-line purpose each
+- Hero headline + subhead, primary CTA label
+- 3-6 feature cards (title + 1-line value prop)
+- 3 testimonial stubs, 4 FAQ Q/A
+- Empty/error/loading state copy
+- Footer links
+Markdown bullets, < 400 words, no preamble.`,
+            user: `ARCHITECTURE:\n${architecture}\n\nUSER REQUEST:\n${userPrompt}`,
+          }),
+        ]);
+        send("stage", { stage: "backend", message: "Backend + Design plan complete" });
 
         // === STAGE 3: FRONTEND skeleton ===
         send("stage", { stage: "frontend", message: "Constructing frontend frame…" });
@@ -205,7 +222,7 @@ Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
           apiKey,
           model: MODEL_PRIMARY,
           reasoning: "medium",
-          system: `You are a senior frontend engineer. Build a COMPLETE single-file HTML app skeleton wired to the provided backend script.
+          system: `You are a senior frontend engineer. Build a COMPLETE single-file HTML app skeleton wired to the provided backend script and following the design plan.
 Requirements:
 - <!DOCTYPE html> with <html lang="en">
 - Proper SEO <head>: title, meta description, Open Graph, Twitter, JSON-LD WebApplication schema
@@ -218,7 +235,7 @@ Requirements:
 - Include social share, paywall UI if monetized
 - <meta name="oracle-lunar-app-config" content='{"paid":...,"price":"...","play_ready":true,"pwa":true,"social":true,"ai":true,"version":3}'>
 Output ONLY the complete HTML document, no markdown fences, no commentary.`,
-          user: `ARCHITECTURE:\n${architecture}\n\nBACKEND SCRIPT:\n${backend}`,
+          user: `ARCHITECTURE:\n${architecture}\n\nDESIGN & COPY PLAN:\n${designPlan}\n\nBACKEND SCRIPT:\n${backend}`,
         });
         let code = extractCode(frontend) || frontend.trim();
         if (!/<!doctype/i.test(code)) {
