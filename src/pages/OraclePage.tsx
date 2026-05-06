@@ -2127,6 +2127,7 @@ const OraclePage = () => {
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 oracleContent += content;
+                if (finalOnlyMode) continue;
                 // Strip self-naming prefix
                 let displayContent = stripSelfNaming(oracleContent);
                 setMessages(prev => {
@@ -2174,7 +2175,17 @@ const OraclePage = () => {
 
       // Update displayed message with cleaned content
       const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
-      setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.sender === oracleName ? { ...m, content: finalDisplayContent } : m));
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.sender === oracleName) {
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: finalDisplayContent } : m);
+        }
+        return [...prev, {
+          id: "oracle-" + Date.now(), role: "assistant", sender: oracleName,
+          emoji: oracleAvatar ? "👤" : "🔮", color: "#9b87f5", content: finalDisplayContent,
+          avatar_url: oracleAvatar?.image_url || undefined,
+        }];
+      });
 
       // Auto-save every Oracle answer to the user's library as a text note.
       // Users own their library and can delete any item from My Library.
