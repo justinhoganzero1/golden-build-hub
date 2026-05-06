@@ -42,6 +42,7 @@ const loaders = {
   "/live-vision": () => import("./pages/LiveVisionPage"),
   "/voice-studio": () => import("./pages/VoiceStudioPage"),
   "/photography-hub": () => import("./pages/PhotographyHubPage"),
+  "/creator-studio": () => import("./pages/CreatorStudioPage"),
   "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
   "/ai-tutor": () => import("./pages/AITutorPage"),
   "/interpreter": () => import("./pages/InterpreterPage"),
