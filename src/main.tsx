@@ -23,11 +23,12 @@ const initNative = async () => {
         document.body.classList.remove("keyboard-open");
       });
 
-      // Handle Android back button
+      // Handle Android back button: never walk browser history back to sign-in/logout screens.
       const { App: CapApp } = await import("@capacitor/app");
-      CapApp.addListener("backButton", ({ canGoBack }) => {
-        if (canGoBack) {
-          window.history.back();
+      CapApp.addListener("backButton", () => {
+        const path = window.location.pathname;
+        if (path && path !== "/" && path !== "/dashboard") {
+          window.location.assign("/dashboard");
         } else {
           CapApp.exitApp();
         }
