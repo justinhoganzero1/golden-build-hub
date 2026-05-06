@@ -121,7 +121,7 @@ serve(async (req) => {
     const text = data.choices?.[0]?.message?.content || "";
     const images = data.choices?.[0]?.message?.images || [];
 
-    return new Response(JSON.stringify({ text, images }), {
+    return new Response(JSON.stringify({ text, images, tier: chosenTier, model: IMAGE_MODEL, cost_cents: IMAGE_GEN_COST_CENTS }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
