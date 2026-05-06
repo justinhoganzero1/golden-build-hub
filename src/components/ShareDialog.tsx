@@ -276,6 +276,48 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     const url = `https://vk.com/share.php?url=${u}&title=${t}`;
     await universalShare("VK", { mobile: url, desktop: url });
   };
+  // Platforms without a public share intent — copy text + open the app/site so user can paste.
+  const shareCopyAndOpen = async (provider: string, target: string) => {
+    const message = `${shareText} ${shareUrl}`;
+    const ok = await robustCopy(message);
+    if (ok) {
+      toast.success(`${provider}: link copied — paste it in your post.`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    void robustOpen(target);
+  };
+  const shareInstagram = () => shareCopyAndOpen("Instagram", "https://www.instagram.com/");
+  const shareTikTok = () => shareCopyAndOpen("TikTok", "https://www.tiktok.com/upload");
+  const shareYouTube = () => shareCopyAndOpen("YouTube", "https://studio.youtube.com/");
+  const shareDiscord = () => shareCopyAndOpen("Discord", "https://discord.com/channels/@me");
+  const shareMessenger = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.facebook.com/dialog/send?link=${u}&app_id=140586622674265&redirect_uri=${u}`;
+    await universalShare("Messenger", { mobile: `fb-messenger://share?link=${u}`, desktop: url });
+  };
+  const shareMastodon = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://mastodonshare.com/?text=${text}`;
+    await universalShare("Mastodon", { mobile: url, desktop: url });
+  };
+  const shareXing = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.xing.com/spi/shares/new?url=${u}`;
+    await universalShare("Xing", { mobile: url, desktop: url });
+  };
+  const shareHackerNews = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://news.ycombinator.com/submitlink?u=${u}&t=${t}`;
+    await universalShare("Hacker News", { mobile: url, desktop: url });
+  };
+  const shareWeibo = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(`${shareText}`);
+    const url = `https://service.weibo.com/share/share.php?url=${u}&title=${t}`;
+    await universalShare("Weibo", { mobile: url, desktop: url });
+  };
 
   const nativeShare = async () => {
     if (typeof navigator !== "undefined" && (navigator as any).share) {
@@ -390,10 +432,46 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <Link2 className="w-5 h-5 text-blue-400" />
               <span className="text-[10px] text-foreground">VK</span>
             </button>
+            <button onClick={shareInstagram} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-pink-400" />
+              <span className="text-[10px] text-foreground">Instagram</span>
+            </button>
+            <button onClick={shareTikTok} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-foreground" />
+              <span className="text-[10px] text-foreground">TikTok</span>
+            </button>
+            <button onClick={shareYouTube} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-red-500" />
+              <span className="text-[10px] text-foreground">YouTube</span>
+            </button>
+            <button onClick={shareDiscord} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-indigo-400" />
+              <span className="text-[10px] text-foreground">Discord</span>
+            </button>
+            <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] text-foreground">Messenger</span>
+            </button>
+            <button onClick={shareMastodon} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-purple-400" />
+              <span className="text-[10px] text-foreground">Mastodon</span>
+            </button>
+            <button onClick={shareXing} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-teal-500" />
+              <span className="text-[10px] text-foreground">Xing</span>
+            </button>
+            <button onClick={shareHackerNews} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-orange-400" />
+              <span className="text-[10px] text-foreground">HN</span>
+            </button>
+            <button onClick={shareWeibo} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-rose-500" />
+              <span className="text-[10px] text-foreground">Weibo</span>
+            </button>
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Some platforms are blocked in certain browsers/devices — those buttons fall back to your share sheet or copy-ready text.
+            Some platforms (Instagram, TikTok, YouTube) don't allow direct web posting — we copy your link and open the app so you can paste it into your post.
           </p>
 
           {/* Email */}
