@@ -153,6 +153,7 @@ const MediaLibraryPage = lazy(loaders["/media-library"]);
 const LiveVisionPage = lazy(loaders["/live-vision"]);
 const VoiceStudioPage = lazy(loaders["/voice-studio"]);
 const PhotographyHubPage = lazy(loaders["/photography-hub"]);
+const CreatorStudioPage = lazy(loaders["/creator-studio"]);
 const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
 const AITutorPage = lazy(loaders["/ai-tutor"]);
 const InterpreterPage = lazy(loaders["/interpreter"]);
