@@ -489,11 +489,34 @@ const PhotographyHubPage = () => {
               : "Describe the 8K photo you want (e.g. sunset over mountains)…"
             }
             className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-primary mb-3" />
-          <button onClick={generatePhoto} disabled={busy || !prompt.trim() || (mode === "edit" && !uploadedPhoto)}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {isUpscaling ? "Upscaling to 8K…" : isGenerating ? "Generating…" : mode === "edit" ? "Transform to 8K" : "Generate 8K Photo"}
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button onClick={generatePhoto} disabled={busy || !prompt.trim() || (mode === "edit" && !uploadedPhoto)}
+              className="py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isUpscaling ? "Upscaling to 8K…" : isGenerating ? "Generating…" : mode === "edit" ? "Transform to 8K" : "Generate 1 Photo"}
+            </button>
+            <button
+              onClick={() => {
+                if (!prompt.trim()) { toast.error("Type your scene/character first."); return; }
+                setStoryDescription(prompt);
+                // Defer so state lands before kicking off the 10-frame pipeline
+                setTimeout(() => generatePhotoStory(), 50);
+                toast.info("Generating 10 photos with the same character — pick your favourite at the bottom.");
+              }}
+              disabled={generatingStory || busy || !prompt.trim()}
+              className="py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-primary/20">
+              {generatingStory ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />
+                  Frame {storyProgress?.done ?? 0}/10…
+                </>
+              ) : (
+                <><ImagePlus className="w-4 h-4" /> Generate 10 in Sequence</>
+              )}
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
+            <strong>Generate 10 in Sequence</strong> = same character, 10 different scenes — pick your favourite below.
+          </p>
         </div>
 
         {/* Filters */}
