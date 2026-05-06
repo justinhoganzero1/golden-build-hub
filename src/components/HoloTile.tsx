@@ -103,7 +103,7 @@ const HoloTile = ({
   );
 
   const baseClasses = `holo-card ${variant === "violet" ? "holo-violet" : ""} ${
-    compact ? "p-3 flex items-center gap-3" : "p-4 sm:p-5 flex flex-col items-center justify-center aspect-square"
+    compact ? "p-3 flex items-center gap-3" : "p-4 sm:p-5 flex flex-col items-center justify-center aspect-[4/3]"
   } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${className}`;
 
   if (href && !disabled) {
