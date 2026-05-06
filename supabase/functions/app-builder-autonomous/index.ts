@@ -282,17 +282,58 @@ FAIL
             send("stage", { stage: "smoke", message: "Max fix loops reached — shipping best version" });
             break;
           }
-          // FIX
+          // === RESEARCH (web) — find real solutions for the QA issues ===
+          let researchBlock = "";
+          let researchSources: { url: string; title?: string }[] = [];
+          try {
+            send("stage", { stage: "research", message: "Searching the web for solutions…" });
+            // Ask the fast model to turn the QA report into a concise search query.
+            const queryRaw = await callAI({
+              apiKey, model: MODEL_FAST, reasoning: "minimal",
+              system: `Turn this QA bug report into ONE Google search query (max 12 words) that would find a fix or a library that solves it. Output ONLY the query, no quotes, no preamble.`,
+              user: report.slice(0, 2000),
+            });
+            const query = queryRaw.split("\n")[0].trim().replace(/^["']|["']$/g, "").slice(0, 200);
+            if (query) {
+              const research = await webResearch(query);
+              researchBlock = research.summary;
+              researchSources = research.sources;
+              send("stage", {
+                stage: "research",
+                message: research.sources.length ? `Found ${research.sources.length} sources` : "No useful results — fixing from training knowledge",
+                detail: query,
+                sources: research.sources,
+              });
+            }
+          } catch (e) {
+            send("stage", { stage: "research", message: `Research skipped (${e instanceof Error ? e.message : "error"})` });
+          }
+
+          // FIX (with research + permission to add safe libraries via CDN)
           send("stage", { stage: "fix", message: `Applying fixes (pass ${attempt})…` });
           const fixed = await callAI({
             apiKey,
             model: MODEL_PRIMARY,
             reasoning: "high",
-            system: `You are a senior engineer fixing a production HTML app. Apply ALL the QA issues listed. Preserve everything that works. Output ONLY the complete fixed HTML document. No markdown fences. No commentary.`,
-            user: `QA REPORT:\n${report}\n\nCURRENT HTML:\n${code}`,
+            system: `You are a senior engineer fixing a production single-file HTML app.
+Apply ALL the QA issues listed. Preserve everything that works.
+
+YOU ARE ALLOWED TO PULL IN ANY LIBRARY OR DEPENDENCY YOU NEED, as long as:
+- It is loaded from a public CDN on this allow-list: ${SAFE_CDN_HOSTS.join(", ")}
+- It is a legitimate open-source library (no warez, cracked, or obfuscated payloads)
+- It does NOT attempt to access the host system, exfiltrate data, bypass auth, or contact suspicious endpoints
+- All <script src> and <link href> tags use https://
+
+If web research notes are provided below, use them — cite the helpful one(s) in an HTML comment at the top like <!-- fix-source: <url> -->.
+
+Output ONLY the complete fixed HTML document. No markdown fences. No commentary.`,
+            user: `QA REPORT:\n${report}\n\n${researchBlock ? `WEB RESEARCH (live, may help):\n${researchBlock}\n\n` : ""}CURRENT HTML:\n${code}`,
           });
           const fixedCode = extractCode(fixed) || fixed.trim();
           if (/<!doctype/i.test(fixedCode)) code = fixedCode;
+
+          // Re-emit sources so the UI can show them in the build log.
+          if (researchSources.length) send("research_sources", { sources: researchSources });
         }
 
         // === DONE ===
