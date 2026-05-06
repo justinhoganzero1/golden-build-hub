@@ -276,6 +276,48 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     const url = `https://vk.com/share.php?url=${u}&title=${t}`;
     await universalShare("VK", { mobile: url, desktop: url });
   };
+  // Platforms without a public share intent — copy text + open the app/site so user can paste.
+  const shareCopyAndOpen = async (provider: string, target: string) => {
+    const message = `${shareText} ${shareUrl}`;
+    const ok = await robustCopy(message);
+    if (ok) {
+      toast.success(`${provider}: link copied — paste it in your post.`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    void robustOpen(target);
+  };
+  const shareInstagram = () => shareCopyAndOpen("Instagram", "https://www.instagram.com/");
+  const shareTikTok = () => shareCopyAndOpen("TikTok", "https://www.tiktok.com/upload");
+  const shareYouTube = () => shareCopyAndOpen("YouTube", "https://studio.youtube.com/");
+  const shareDiscord = () => shareCopyAndOpen("Discord", "https://discord.com/channels/@me");
+  const shareMessenger = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.facebook.com/dialog/send?link=${u}&app_id=140586622674265&redirect_uri=${u}`;
+    await universalShare("Messenger", { mobile: `fb-messenger://share?link=${u}`, desktop: url });
+  };
+  const shareMastodon = async () => {
+    const text = encodeURIComponent(`${shareText} ${shareUrl}`);
+    const url = `https://mastodonshare.com/?text=${text}`;
+    await universalShare("Mastodon", { mobile: url, desktop: url });
+  };
+  const shareXing = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const url = `https://www.xing.com/spi/shares/new?url=${u}`;
+    await universalShare("Xing", { mobile: url, desktop: url });
+  };
+  const shareHackerNews = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(title);
+    const url = `https://news.ycombinator.com/submitlink?u=${u}&t=${t}`;
+    await universalShare("Hacker News", { mobile: url, desktop: url });
+  };
+  const shareWeibo = async () => {
+    const u = encodeURIComponent(shareUrl);
+    const t = encodeURIComponent(`${shareText}`);
+    const url = `https://service.weibo.com/share/share.php?url=${u}&title=${t}`;
+    await universalShare("Weibo", { mobile: url, desktop: url });
+  };
 
   const nativeShare = async () => {
     if (typeof navigator !== "undefined" && (navigator as any).share) {
