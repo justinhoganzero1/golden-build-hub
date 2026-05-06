@@ -42,6 +42,7 @@ const loaders = {
   "/live-vision": () => import("./pages/LiveVisionPage"),
   "/voice-studio": () => import("./pages/VoiceStudioPage"),
   "/photography-hub": () => import("./pages/PhotographyHubPage"),
+  "/creator-studio": () => import("./pages/CreatorStudioPage"),
   "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
   "/ai-tutor": () => import("./pages/AITutorPage"),
   "/interpreter": () => import("./pages/InterpreterPage"),
@@ -152,6 +153,7 @@ const MediaLibraryPage = lazy(loaders["/media-library"]);
 const LiveVisionPage = lazy(loaders["/live-vision"]);
 const VoiceStudioPage = lazy(loaders["/voice-studio"]);
 const PhotographyHubPage = lazy(loaders["/photography-hub"]);
+const CreatorStudioPage = lazy(loaders["/creator-studio"]);
 const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
 const AITutorPage = lazy(loaders["/ai-tutor"]);
 const InterpreterPage = lazy(loaders["/interpreter"]);
@@ -268,6 +270,9 @@ const App = () => (
                   <Route path="/live-vision" element={<RequireAuth><ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/voice-studio" element={<RequireAuth><ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/photography-hub" element={<RequireAuth><ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/creator-studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-assistant" element={<RequireAuth><ErrorBoundary pageName="Personal Assistant"><PersonalAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-tutor" element={<RequireAuth><ErrorBoundary pageName="AI Tutor"><AITutorPage /></ErrorBoundary></RequireAuth>} />
                   
