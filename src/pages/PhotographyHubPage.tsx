@@ -172,7 +172,7 @@ const PhotographyHubPage = () => {
     try {
       setIsUpscaling(true);
       const { data, error } = await supabase.functions.invoke("replicate-upscale", {
-        body: { imageUrl, scale: 4 },
+        body: { image_url: imageUrl, scale: 4 },
       });
       if (error) throw error;
       const upscaled = (data as any)?.url || (data as any)?.imageUrl;
