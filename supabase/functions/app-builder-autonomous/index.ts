@@ -1,0 +1,270 @@
+// Autonomous multi-stage app builder.
+// Pipeline: ARCHITECT -> BACKEND -> FRONTEND -> FLESH -> SMOKE TEST -> FIX (loop up to N) -> FINAL
+// Streams Server-Sent Events with stage updates and the final HTML code.
+// Uses Lovable AI Gateway (no extra API key required).
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+// Most powerful model available via Lovable AI Gateway.
+const MODEL_PRIMARY = "openai/gpt-5.5";
+const MODEL_FAST = "openai/gpt-5-mini"; // used for smoke test reasoning
+
+const MAX_FIX_LOOPS = 3;
+
+async function callAI(opts: {
+  apiKey: string;
+  system: string;
+  user: string;
+  model?: string;
+  reasoning?: "minimal" | "low" | "medium" | "high";
+  images?: string[];
+}): Promise<string> {
+  const { apiKey, system, user, model = MODEL_PRIMARY, reasoning = "medium", images = [] } = opts;
+
+  const userContent: any =
+    images.length > 0
+      ? [
+          { type: "text", text: user },
+          ...images.slice(0, 4).map((url) => ({ type: "image_url", image_url: { url } })),
+        ]
+      : user;
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: userContent },
+    ],
+  };
+  if (model.startsWith("openai/gpt-5")) {
+    body.reasoning = { effort: reasoning };
+  }
+
+  const resp = await fetch(GATEWAY, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`AI ${resp.status}: ${t.slice(0, 300)}`);
+  }
+  const data = await resp.json();
+  return data?.choices?.[0]?.message?.content ?? "";
+}
+
+function extractCode(text: string): string {
+  // 1. Look for explicit fenced HTML
+  const fence = text.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  if (fence && /<!doctype|<html/i.test(fence[1])) return fence[1].trim();
+  // 2. Look for raw <!DOCTYPE...</html>
+  const doc = text.match(/<!DOCTYPE[\s\S]*?<\/html>/i);
+  if (doc) return doc[0];
+  // 3. Try CODE_START/END
+  const tag = text.match(/CODE_START\s*([\s\S]*?)\s*CODE_END/);
+  if (tag) return tag[1].trim();
+  return "";
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  let payload: { prompt?: string; images?: string[]; currentCode?: string } = {};
+  try {
+    payload = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const userPrompt = (payload.prompt || "").slice(0, 8000);
+  const images = Array.isArray(payload.images) ? payload.images.slice(0, 4) : [];
+  const currentCode = (payload.currentCode || "").slice(0, 12000);
+
+  if (!userPrompt && images.length === 0 && !currentCode) {
+    return new Response(JSON.stringify({ error: "Empty prompt" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder();
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(enc.encode(`data: ${JSON.stringify({ event, ...((typeof data === "object" && data) || { value: data }) })}\n\n`));
+      };
+
+      try {
+        // === STAGE 1: ARCHITECT ===
+        send("stage", { stage: "architect", message: "Designing app architecture & framework…" });
+        const architecture = await callAI({
+          apiKey,
+          model: MODEL_PRIMARY,
+          reasoning: "high",
+          system: `You are a principal software architect. Output ONLY a concise, dense spec (no preamble, no closing) covering:
+- App name & tagline
+- Core user flows (numbered, max 8)
+- Page sections / routes
+- Data model (fields per entity)
+- Backend endpoints / mock APIs (since output must be single-file HTML, design as in-page JS modules + localStorage persistence)
+- Third-party APIs needed (Stripe, Web Speech, etc.)
+- Visual style (colors, typography, motion)
+- Monetization model
+Keep under 500 words. Markdown bullet form.`,
+          user: `USER REQUEST:\n${userPrompt}\n\n${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
+          images,
+        });
+        send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
+
+        // === STAGE 2: BACKEND (in-page data layer) ===
+        send("stage", { stage: "backend", message: "Building backend / data layer…" });
+        const backend = await callAI({
+          apiKey,
+          model: MODEL_PRIMARY,
+          reasoning: "medium",
+          system: `You are a senior backend engineer. Given the architecture, write the complete BACKEND LAYER as a self-contained <script> block intended to be embedded in a single HTML file.
+Include:
+- LocalStorage-backed data store with CRUD helpers per entity
+- Mock REST-style async functions (api.get/post/put/delete) returning Promises
+- Stripe Checkout helper stub (window.openCheckout) if monetized
+- Auth stub (sign in/up via localStorage or Supabase if hinted)
+- Analytics queue (window.track)
+- Error/event bus
+Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
+          user: `ARCHITECTURE:\n${architecture}`,
+        });
+        send("stage", { stage: "backend", message: "Backend complete" });
+
+        // === STAGE 3: FRONTEND skeleton ===
+        send("stage", { stage: "frontend", message: "Constructing frontend frame…" });
+        const frontend = await callAI({
+          apiKey,
+          model: MODEL_PRIMARY,
+          reasoning: "medium",
+          system: `You are a senior frontend engineer. Build a COMPLETE single-file HTML app skeleton wired to the provided backend script.
+Requirements:
+- <!DOCTYPE html> with <html lang="en">
+- Proper SEO <head>: title, meta description, Open Graph, Twitter, JSON-LD WebApplication schema
+- PWA manifest as data: URL link, basic service worker registration with inline blob
+- TailwindCSS via CDN (https://cdn.tailwindcss.com) configured for dark glass theme (bg #0a0a0a, primary gold #f59e0b)
+- Mobile-first responsive layout, semantic HTML (header/main/section/footer), accessible (aria, alt)
+- Include the backend <script> EXACTLY as given, then a <script id="app"> that renders all sections defined in the architecture
+- Include all routes/sections (single-page nav)
+- Include floating "Ask AI" chat bubble stub
+- Include social share, paywall UI if monetized
+- <meta name="oracle-lunar-app-config" content='{"paid":...,"price":"...","play_ready":true,"pwa":true,"social":true,"ai":true,"version":3}'>
+Output ONLY the complete HTML document, no markdown fences, no commentary.`,
+          user: `ARCHITECTURE:\n${architecture}\n\nBACKEND SCRIPT:\n${backend}`,
+        });
+        let code = extractCode(frontend) || frontend.trim();
+        if (!/<!doctype/i.test(code)) {
+          throw new Error("Frontend stage did not return valid HTML");
+        }
+        send("stage", { stage: "frontend", message: "Frontend frame standing" });
+
+        // === STAGE 4: FLESH OUT ===
+        send("stage", { stage: "flesh", message: "Fleshing out content, copy, and interactions…" });
+        const fleshed = await callAI({
+          apiKey,
+          model: MODEL_PRIMARY,
+          reasoning: "high",
+          system: `You are a product designer + copywriter + senior engineer. Take the HTML and FLESH IT OUT to production quality:
+- Replace ALL placeholder text with real, on-brand, useful copy
+- Add hero, features grid, testimonials, FAQ, CTA, footer (only those that fit the app)
+- Wire every button to real handlers using the backend
+- Add micro-interactions (hover, focus, smooth transitions, loading states)
+- Add empty states, error states, toasts
+- Ensure 60fps and no layout shift
+- Keep file size reasonable
+Output ONLY the complete updated HTML document. No markdown fences. No commentary.`,
+          user: `CURRENT HTML (improve in place):\n${code}`,
+        });
+        const fleshedCode = extractCode(fleshed) || fleshed.trim();
+        if (/<!doctype/i.test(fleshedCode)) code = fleshedCode;
+        send("stage", { stage: "flesh", message: "Content fleshed out" });
+
+        // === STAGE 5+: SMOKE TEST → FIX loop ===
+        for (let attempt = 1; attempt <= MAX_FIX_LOOPS; attempt++) {
+          send("stage", { stage: "smoke", message: `Smoke testing (pass ${attempt}/${MAX_FIX_LOOPS})…` });
+          const report = await callAI({
+            apiKey,
+            model: MODEL_FAST,
+            reasoning: "medium",
+            system: `You are a strict QA engineer. Statically analyze the provided HTML for runtime/render bugs. Check:
+- Valid <!DOCTYPE html> and matching tags
+- All referenced JS functions exist
+- No undefined variables, no typos in element IDs used by JS
+- All onclick / addEventListener handlers resolve
+- Tailwind CDN present, no missing classes that break layout
+- No empty hrefs, broken nav, dead buttons
+- JSON.parse safe, try/catch around storage
+- Service worker registration safe-guarded
+- No CSP violations from inline (single-file is OK)
+Respond with EXACTLY one of:
+PASS
+or
+FAIL
+<numbered list of concrete issues, each with a specific fix instruction>`,
+            user: `HTML TO TEST (truncated if huge):\n${code.slice(0, 60000)}`,
+          });
+          const pass = /^\s*PASS\b/i.test(report.trim());
+          send("stage", {
+            stage: "smoke",
+            message: pass ? "Smoke test PASSED ✓" : "Issues found — auto-fixing…",
+            detail: report.slice(0, 800),
+          });
+          if (pass) break;
+          if (attempt === MAX_FIX_LOOPS) {
+            send("stage", { stage: "smoke", message: "Max fix loops reached — shipping best version" });
+            break;
+          }
+          // FIX
+          send("stage", { stage: "fix", message: `Applying fixes (pass ${attempt})…` });
+          const fixed = await callAI({
+            apiKey,
+            model: MODEL_PRIMARY,
+            reasoning: "high",
+            system: `You are a senior engineer fixing a production HTML app. Apply ALL the QA issues listed. Preserve everything that works. Output ONLY the complete fixed HTML document. No markdown fences. No commentary.`,
+            user: `QA REPORT:\n${report}\n\nCURRENT HTML:\n${code}`,
+          });
+          const fixedCode = extractCode(fixed) || fixed.trim();
+          if (/<!doctype/i.test(fixedCode)) code = fixedCode;
+        }
+
+        // === DONE ===
+        send("done", { code, architecture: architecture.slice(0, 1200) });
+        controller.close();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("autonomous builder error", msg);
+        send("error", { message: msg });
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+});
