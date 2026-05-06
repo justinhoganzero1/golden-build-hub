@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
+const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 // Male voice — George (per ElevenLabs voice pool)
 const BUILDER_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
@@ -43,6 +44,7 @@ const AppBuilderPage = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentCode, setCurrentCode] = useState<string | null>(null);
+  const [buildStages, setBuildStages] = useState<{ stage: string; message: string; ok?: boolean }[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -248,7 +250,7 @@ const AppBuilderPage = () => {
     } catch (e) { console.error("Failed to save app", e); toast.error("Failed to save app to library"); }
   }, [user]);
 
-  // ===== Send =====
+  // ===== Send (autonomous multi-stage pipeline) =====
   const sendMessage = async () => {
     const trimmed = input.trim();
     if ((!trimmed && attachments.length === 0) || isBuilding) return;
@@ -263,117 +265,104 @@ const AppBuilderPage = () => {
     const sentAttachments = attachments;
     setAttachments([]);
     setIsBuilding(true);
+    setBuildStages([{ stage: "init", message: "Spinning up autonomous build pipeline…" }]);
+
+    let code = "";
+    let architecture = "";
+    let errorMsg = "";
 
     try {
-      const conversationContext = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join("\n");
-
-      const attachmentSummary = sentAttachments.length
-        ? `\n\nUSER ATTACHED ${sentAttachments.length} FILE(S):\n` +
-          sentAttachments.map(a => `- ${a.name} (${a.type}, ${Math.round(a.size / 1024)}KB)${a.type.startsWith("image/") ? " [IMAGE — analyze visually as a design reference / screenshot to clone or improve]" : ""}`).join("\n")
-        : "";
-
-      const resp = await fetch(TOOLS_URL, {
+      const resp = await fetch(AUTONOMOUS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
-          type: "assistant",
-          // Pass image data URLs so the AI tool function can forward them as vision input where supported
+          prompt: trimmed,
           images: sentAttachments.filter(a => a.type.startsWith("image/")).map(a => a.dataUrl),
-          prompt: `You are ORACLE LUNAR Master App Builder — an elite, autonomous AI coding agent with ULTIMATE coding knowledge across HTML, CSS, JS, TS, React, Tailwind, Node, Deno, Python, Stripe, PWA, native wrappers, databases, RLS, and deployment. You behave EXACTLY like the main Oracle: obey direct commands, never refuse legal requests, and ship production code.
-
-CONVERSATION:
-${conversationContext}
-
-USER MESSAGE: "${trimmed}"${attachmentSummary}
-
-${currentCode ? `CURRENT APP CODE (modify this if user is iterating):\n${currentCode.substring(0, 3000)}` : ""}
-
-If the user pasted a SCREENSHOT, treat it as a design reference and clone/improve the layout precisely.
-
-EVERY app you generate MUST include:
-1. Friendly conversational reply (2-3 sentences). Detect PAID via $, price, subscribe, premium.
-2. PWA-ready (manifest data URL, service worker blob, install button).
-3. Stripe paywall if PAID (localStorage gate, tiered cards, lock badges).
-4. Social share (navigator.share + X + Instagram + OG/Twitter meta).
-5. Floating "Ask AI" chat bubble stub.
-6. Analytics fetch('/api/track').
-7. Full SEO + JSON-LD WebApplication schema.
-8. Mobile-first dark glass theme (bg #0a0a0a, gold #f59e0b), 60fps.
-9. <meta name="oracle-lunar-app-config" content='{"paid":true|false,"price":"$X","play_ready":true,"pwa":true,"social":true,"ai":true,"version":2}'>
-10. Single self-contained HTML file.
-
-FORMAT EXACTLY:
-CHAT: [conversational reply]
-CODE_START
-[complete production HTML]
-CODE_END
-
-Ship-quality. No layout placeholders.`
+          currentCode: currentCode || undefined,
         }),
       });
-
-      if (!resp.ok) throw new Error("Build failed");
-      const data = await resp.json();
-      const result = data.result || "";
-
-      let chatText = "Here's your app!";
-      let code = "";
-      const chatMatch = result.match(/CHAT:\s*([\s\S]*?)(?:CODE_START|$)/);
-      if (chatMatch) chatText = chatMatch[1].trim();
-      const codeMatch = result.match(/CODE_START\s*([\s\S]*?)\s*CODE_END/);
-      if (codeMatch) code = codeMatch[1].trim();
-      else if (result.includes("<!DOCTYPE") || result.includes("<html")) {
-        const htmlMatch = result.match(/(<!DOCTYPE[\s\S]*<\/html>)/i);
-        if (htmlMatch) code = htmlMatch[1];
+      if (!resp.ok || !resp.body) {
+        const txt = await resp.text().catch(() => "");
+        throw new Error(txt || `HTTP ${resp.status}`);
       }
-      if (!code && !chatText) chatText = result.substring(0, 500);
 
-      const assistantMsg: ChatMessage = { role: "assistant", content: chatText, code: code || undefined };
-      setMessages(prev => [...prev, assistantMsg]);
-      speak(chatText);
-
-      if (code) {
-        setCurrentCode(code);
-        const appName = (trimmed || "My App").substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
-        let isPaid = false;
-        let pricePoint: string | undefined;
-        const metaMatch = code.match(/<meta\s+name=["']oracle-lunar-app-config["']\s+content=["']([^"']+)["']/i);
-        if (metaMatch) {
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n\n")) !== -1) {
+          const block = buffer.slice(0, idx).trim();
+          buffer = buffer.slice(idx + 2);
+          if (!block.startsWith("data:")) continue;
+          const json = block.slice(5).trim();
           try {
-            const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
-            isPaid = !!cfg.paid; pricePoint = cfg.price;
-          } catch { /* ignore */ }
+            const evt = JSON.parse(json);
+            if (evt.event === "stage") {
+              setBuildStages(prev => [...prev, { stage: evt.stage, message: evt.message }]);
+            } else if (evt.event === "done") {
+              code = evt.code || "";
+              architecture = evt.architecture || "";
+            } else if (evt.event === "error") {
+              errorMsg = evt.message || "Build error";
+            }
+          } catch { /* ignore parse */ }
         }
-        if (!isPaid && /\$\d|subscribe|paywall|premium|paid/i.test(trimmed)) isPaid = true;
-
-        const existingProject = projects.find(p => p.name === appName);
-        const project: AppProject = {
-          id: existingProject?.id || Date.now().toString(),
-          name: appName, type: "custom", description: trimmed, code,
-          created: new Date().toLocaleDateString(),
-          mediaId: existingProject?.mediaId, isPaid, pricePoint,
-        };
-        const mediaId = await saveAppToLibrary(project);
-        if (mediaId) {
-          project.mediaId = mediaId;
-          if (!project.id || project.id === Date.now().toString()) project.id = mediaId;
-        }
-        setProjects(prev => {
-          const updated = [...prev];
-          const existingIdx = updated.findIndex(p => p.name === appName);
-          if (existingIdx >= 0) updated[existingIdx] = project; else updated.unshift(project);
-          return updated;
-        });
-        setPreviewProject(project);
-        toast.success("App saved to Media Library!");
       }
-    } catch {
-      const errMsg = "Sorry, I had trouble building that. Try describing your app again.";
-      setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
-      speak(errMsg);
+      if (errorMsg) throw new Error(errorMsg);
+      if (!code) throw new Error("Pipeline finished without code");
+
+      const chatText = `Done! Built end-to-end across architect → backend → frontend → flesh-out → smoke test. ${architecture ? "\n\nArchitecture summary:\n" + architecture.slice(0, 400) : ""}`;
+      const assistantMsg: ChatMessage = { role: "assistant", content: chatText, code };
+      setMessages(prev => [...prev, assistantMsg]);
+      speak("Your app is ready. Launch it to take a look.");
+
+      setCurrentCode(code);
+      const appName = (trimmed || "My App").substring(0, 30).replace(/[^a-zA-Z0-9 ]/g, "").trim() || "My App";
+      let isPaid = false;
+      let pricePoint: string | undefined;
+      const metaMatch = code.match(/<meta\s+name=["']oracle-lunar-app-config["']\s+content=["']([^"']+)["']/i);
+      if (metaMatch) {
+        try {
+          const cfg = JSON.parse(metaMatch[1].replace(/&quot;/g, '"'));
+          isPaid = !!cfg.paid; pricePoint = cfg.price;
+        } catch { /* ignore */ }
+      }
+      if (!isPaid && /\$\d|subscribe|paywall|premium|paid/i.test(trimmed)) isPaid = true;
+
+      const existingProject = projects.find(p => p.name === appName);
+      const project: AppProject = {
+        id: existingProject?.id || Date.now().toString(),
+        name: appName, type: "custom", description: trimmed, code,
+        created: new Date().toLocaleDateString(),
+        mediaId: existingProject?.mediaId, isPaid, pricePoint,
+      };
+      const mediaId = await saveAppToLibrary(project);
+      if (mediaId) {
+        project.mediaId = mediaId;
+        if (!project.id || project.id === Date.now().toString()) project.id = mediaId;
+      }
+      setProjects(prev => {
+        const updated = [...prev];
+        const existingIdx = updated.findIndex(p => p.name === appName);
+        if (existingIdx >= 0) updated[existingIdx] = project; else updated.unshift(project);
+        return updated;
+      });
+      setPreviewProject(project);
+      toast.success("App built & saved to Library!");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Build failed";
+      const errText = `Sorry, the autonomous build hit an error: ${msg}. Try again or simplify the request.`;
+      setMessages(prev => [...prev, { role: "assistant", content: errText }]);
+      speak("Build hit an error. Please try again.");
       toast.error("Build failed — try again");
     } finally {
       setIsBuilding(false);
+      // Keep stages visible briefly so user can read final status
+      setTimeout(() => setBuildStages([]), 4000);
     }
   };
 
@@ -526,10 +515,22 @@ Ship-quality. No layout placeholders.`
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
               <Bot className="w-4 h-4 text-primary animate-pulse" />
             </div>
-            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Building your app...
+            <div className="bg-card border border-primary/40 rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%] shadow-[0_0_24px_hsl(var(--primary)/0.2)]">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary mb-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Autonomous build in progress…
               </div>
+              <ol className="space-y-1 text-xs">
+                {buildStages.map((s, i) => {
+                  const isLast = i === buildStages.length - 1;
+                  return (
+                    <li key={i} className={`flex items-start gap-2 ${isLast ? "text-foreground" : "text-muted-foreground"}`}>
+                      <span className="mt-0.5">{isLast ? "▸" : "✓"}</span>
+                      <span><span className="uppercase text-[10px] font-bold tracking-wide text-primary/80 mr-1">{s.stage}</span>{s.message}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+              <p className="text-[10px] text-muted-foreground mt-2 italic">Architect → Backend → Frontend → Flesh-out → Smoke test → Auto-fix loop. No interruptions until done.</p>
             </div>
           </div>
         )}
