@@ -1751,6 +1751,98 @@ const OraclePage = () => {
       return;
     }
 
+    // ── Background FULL APP / WEBSITE BUILD intent (autonomous app-builder pipeline) ──
+    // Phrases like "build me a personal trainer website with voice instructions and food
+    // planning + ordering", "make a working e-commerce store", "create a finished app".
+    // Runs the multi-agent architect→backend→frontend→flesh→smoke pipeline in the
+    // background and saves the finished single-file HTML site straight to the Library.
+    const buildMatch = isIntroTrigger ? null : text.match(
+      /\b(?:build|make|create|generate|design|develop|code|put together|spin up|whip up|finish)(?:\s+(?:me|us))?\s+(?:a|an|the|my|our|some)\s+(?:complete\s+|full\s+|finished\s+|working\s+|whole\s+|entire\s+|production\s+|real\s+|live\s+)?(?:personal\s+\w+\s+)?(web ?site|website|web\s*app|webapp|app|application|landing\s*page|online\s+store|store|shop|portal|dashboard|platform|saas|tool|page|site)\b([\s\S]*)/i
+    );
+    if (buildMatch) {
+      const promptTail = (buildMatch[2] || "").trim();
+      const fullPrompt = (text || "").trim();
+      const userMsgB: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ackB: Message = {
+        id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🛠️", color: "#FFD700",
+        content: `On it — handing this to the Master App Builder agents. They'll architect, code, flesh out and smoke-test the whole thing in the background, then drop the finished site straight into your Library. Keep chatting with me while it builds.`
+      };
+      setShowChat(true);
+      setMessages(prev => [...prev, userMsgB, ackB]);
+      if (!isMuted) speakAsAgent(ackB.content, oracleName);
+      (async () => {
+        try {
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+            body: JSON.stringify({ prompt: fullPrompt }),
+          });
+          if (!resp.ok || !resp.body) {
+            const t = await resp.text().catch(() => "");
+            throw new Error(t || `HTTP ${resp.status}`);
+          }
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let code = "";
+          let architecture = "";
+          let lastStageToastAt = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let idx: number;
+            while ((idx = buffer.indexOf("\n\n")) !== -1) {
+              const block = buffer.slice(0, idx).trim();
+              buffer = buffer.slice(idx + 2);
+              if (!block.startsWith("data:")) continue;
+              try {
+                const evt = JSON.parse(block.slice(5).trim());
+                if (evt.event === "stage" && evt.message) {
+                  const now = Date.now();
+                  if (now - lastStageToastAt > 2500) {
+                    lastStageToastAt = now;
+                    toast(`Builder: ${evt.message}`);
+                  }
+                } else if (evt.event === "done") {
+                  code = evt.code || "";
+                  architecture = evt.architecture || "";
+                } else if (evt.event === "error") {
+                  throw new Error(evt.message || "Build error");
+                }
+              } catch { /* ignore parse */ }
+            }
+          }
+          if (!code) throw new Error("Pipeline finished without code");
+          const dataUrl = `data:text/html;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(code)))}`;
+          const niceName = (promptTail || fullPrompt).slice(0, 60).replace(/\s+/g, " ").trim() || "My App";
+          saveMedia.mutate({
+            media_type: "app" as any,
+            title: `App: ${niceName}`,
+            url: dataUrl,
+            source_page: "app-builder",
+            metadata: { kind: "app", prompt: fullPrompt, architecture: architecture.slice(0, 1500), built_by: "oracle-master" } as any,
+          });
+          toast.success("Your new app is ready in your Library");
+          const doneMsg: Message = {
+            id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🚀", color: "#FFD700",
+            content: `Done — your new app is built and saved to your Library. Open the App Builder any time to launch, share, or keep iterating on it.`
+          };
+          setMessages(prev => [...prev, doneMsg]);
+          if (!isMuted) speakAsAgent(doneMsg.content, oracleName);
+        } catch (e) {
+          console.error(e);
+          toast.error("App build failed");
+          const failMsg: Message = {
+            id: (Date.now()+3).toString(), role: "assistant", sender: oracleName, emoji: "⚠️", color: "#FFD700",
+            content: `The build hit a snag — try rephrasing what you want and I'll fire it off again.`
+          };
+          setMessages(prev => [...prev, failMsg]);
+        }
+      })();
+      return;
+    }
+
     // ── Background IMAGE generation intent (Gemini image) ──
     // Triggered by "make/draw/paint/generate an image/picture/photo of ..."
     const imgMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me\s+)?(?:a|an|some))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene)\s+(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+|in\s+the\s+style\s+of\s+)?(.+)/i);
