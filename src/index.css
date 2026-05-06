@@ -1205,18 +1205,26 @@ a[aria-disabled="true"],
   transform-style: preserve-3d;
 }
 
-/* CHROME BEZEL — thin polished metallic frame around the tile */
+/* CHROME BEZEL — thick polished metallic ring; tile body sits INSIDE it */
 .holo-tile,
 .holo-card {
-  /* Shrink chiclet so the parent grid cell shows around it */
-  margin: 6px !important;
-  transform: scale(0.88);
+  /* Shrink chiclet a bit and remove the old outer dark frame entirely */
+  margin: 10px !important;
+  transform: scale(0.78);
   transform-origin: center;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Spinning chrome ring + icon — rotate the WHOLE tile so the icon spins with it */
+.holo-tile,
+.holo-card {
+  animation: chrome-spin 18s linear infinite;
 }
 
 .holo-tile::before,
 .holo-card::before {
-  /* Override prior rainbow rim with a THICK 3D chrome ring */
   background: conic-gradient(
     from 0deg,
     hsl(0 0% 92%) 0%,
@@ -1230,18 +1238,18 @@ a[aria-disabled="true"],
     hsl(0 0% 92%) 100%
   ) !important;
   padding: 9px !important;
-  inset: -5px !important;
+  inset: 0 !important;
   filter: drop-shadow(0 2px 3px hsl(0 0% 100% / 0.85))
           drop-shadow(0 4px 10px hsl(0 0% 0% / 0.85))
           drop-shadow(0 -1px 2px hsl(0 0% 100% / 0.6))
           drop-shadow(0 0 2px hsl(0 0% 100% / 0.95)) !important;
-  animation: chrome-spin 18s linear infinite !important;
+  animation: none !important;
 }
 @keyframes chrome-spin {
   to { transform: rotate(360deg); }
 }
 
-/* Realistic deep-glass body with refractive highlights */
+/* Inner glass body — sits inside the chrome ring */
 .holo-tile,
 .holo-card {
   background:
@@ -1256,10 +1264,6 @@ a[aria-disabled="true"],
       hsl(0 0% 100% / 0.02) 40%,
       hsl(0 0% 0% / 0.25) 100%) !important;
   box-shadow:
-    /* outer drop — depth on the page */
-    0 14px 40px hsl(0 0% 0% / 0.65),
-    0 6px 14px hsl(0 0% 0% / 0.55),
-    /* chrome polish */
     inset 0 1.5px 0 hsl(0 0% 100% / 0.55),
     inset 0 -1.5px 0 hsl(0 0% 0% / 0.6),
     inset 0 0 22px hsl(0 0% 0% / 0.35) !important;
