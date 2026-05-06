@@ -134,6 +134,16 @@ const DashboardPage = () => {
         </div>
         <div className="flex items-center gap-2">
           <SecurityShield />
+          {user && (
+            <button
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
+              aria-label="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+              Log out
+            </button>
+          )}
         </div>
       </div>
 
