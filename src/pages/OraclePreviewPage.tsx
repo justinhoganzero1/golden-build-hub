@@ -27,6 +27,15 @@ const previewMessages = [
 ];
 
 const OraclePreviewPage = () => {
+  const navigate = useNavigate();
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const text = input.trim();
+    navigate(`/oracle${text ? `?q=${encodeURIComponent(text)}` : ""}`);
+  };
+
   return (
     <>
       <SEO
