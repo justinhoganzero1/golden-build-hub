@@ -20,8 +20,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { useDraggable } from "@/hooks/useDraggable";
+import { runFullDiagnostic, type DoctorReport } from "@/lib/systemDoctor";
 
-type TaskKind = "image" | "video" | "text";
+type TaskKind = "image" | "video" | "text" | "research" | "diagnose";
 type Job = {
   id: string;
   prompt: string;
@@ -29,6 +30,8 @@ type Job = {
   status: "running" | "done" | "error";
   resultUrl?: string;
   resultText?: string;
+  sources?: { url: string; title?: string; description?: string }[];
+  report?: DoctorReport;
   error?: string;
 };
 
@@ -39,9 +42,12 @@ const SUPA = import.meta.env.VITE_SUPABASE_URL;
 const IMAGE_URL = `${SUPA}/functions/v1/image-gen`;
 const VIDEO_URL = `${SUPA}/functions/v1/gemini-video`;
 const ORACLE_URL = `${SUPA}/functions/v1/oracle-chat`;
+const RESEARCH_URL = `${SUPA}/functions/v1/oracle-research`;
 
 function classify(prompt: string): TaskKind {
   const p = prompt.toLowerCase();
+  if (/\b(diagnose|self[- ]?test|self[- ]?check|scan the app|run diagnostic|system check|check the app|fix the app|something(?:'s| is) wrong|app is broken|not working)\b/.test(p)) return "diagnose";
+  if (/\b(search|google|look ?up|find online|research|how do i|how to|why does|fix error|solution|on the (web|net|internet))\b/.test(p)) return "research";
   if (/\b(video|clip|animate|movie|short film|moving|footage)\b/.test(p)) return "video";
   if (/\b(image|picture|photo|art|illustration|logo|poster|wallpaper|draw|paint|render|design)\b/.test(p)) return "image";
   return "text";
@@ -107,7 +113,8 @@ export default function OracleAgent() {
     setJob(j);
     setOpen(false);
     setShowResult(false);
-    toast.success(`Oracle is making your ${kind}…`, { duration: 2500 });
+    const verb = kind === "research" ? "researching online" : kind === "diagnose" ? "running self-diagnosis" : `making your ${kind}`;
+    toast.success(`Oracle is ${verb}…`, { duration: 2500 });
 
     try {
       const token = getEdgeAuthTokenSync();
@@ -143,6 +150,28 @@ export default function OracleAgent() {
         const done: Job = { ...j, status: "done", resultUrl: url };
         setJob(done);
         await maybeSave(done);
+      } else if (kind === "research") {
+        const r = await fetch(RESEARCH_URL, {
+          method: "POST", headers,
+          body: JSON.stringify({ query: prompt, context: `Route: ${location.pathname}` }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Research failed");
+        const done: Job = { ...j, status: "done", resultText: data.answer || "(no answer)", sources: data.sources || [] };
+        setJob(done);
+        await maybeSave(done);
+      } else if (kind === "diagnose") {
+        const report = await runFullDiagnostic((step) => {
+          // could surface progress later
+          console.log("[oracle-doctor]", step);
+        });
+        const summary =
+          `🔍 Self-Diagnosis Complete\n\n` +
+          `✅ Passed: ${report.passed}   ⚠️ Warnings: ${report.warned}   ❌ Failed: ${report.failed}   🛠 Repaired: ${report.repaired}\n\n` +
+          report.results.map(r => `${r.status === "ok" ? "✅" : r.status === "warn" ? "⚠️" : r.status === "repaired" ? "🛠" : "❌"} ${r.name} — ${r.detail}`).join("\n") +
+          `\n\n${report.summary}`;
+        const done: Job = { ...j, status: "done", resultText: summary, report };
+        setJob(done);
       } else {
         // Text — call oracle-chat (streaming)
         const r = await fetch(ORACLE_URL, {
@@ -179,16 +208,20 @@ export default function OracleAgent() {
       setJob({ ...j, status: "error", error: e?.message || "Failed" });
       toast.error(e?.message || "Oracle task failed");
     }
-  }, [user, consent]);
+  }, [user, consent, location.pathname]);
 
   const maybeSave = async (j: Job) => {
-    if (consent !== "keep" || !j.resultUrl && !j.resultText) return;
+    if (consent !== "keep") return;
+    if (j.kind === "diagnose") return;
+    if (!j.resultUrl && !j.resultText) return;
+    const mediaType: "image" | "video" | "text" =
+      j.kind === "image" ? "image" : j.kind === "video" ? "video" : "text";
     const id = await saveToLibrary({
-      media_type: j.kind === "text" ? "text" : j.kind,
+      media_type: mediaType,
       title: j.prompt.slice(0, 80),
       url: j.resultUrl || j.resultText || "",
       source_page: "oracle-agent",
-      metadata: { prompt: j.prompt, oracle: "agent", kind: j.kind },
+      metadata: { prompt: j.prompt, oracle: "agent", kind: j.kind, sources: j.sources },
     });
     lastSavedIdRef.current = id;
   };
@@ -272,13 +305,14 @@ export default function OracleAgent() {
               <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <p className="text-xs text-zinc-400 mb-3">
-              Ask me to make <em>anything</em> — image, short video, story, plan. I work in the background and show you the result.
+              Ask me to make <em>anything</em> — image, video, story, or to <strong>search the web</strong> ("how do I…")
+              or <strong>diagnose the app</strong> ("scan the app", "something's wrong"). I work in the background.
             </p>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { runJob(input); setInput(""); } }}
-              placeholder="e.g. A cinematic 8K poster of a rottweiler in Bali sunglasses…"
+              placeholder="e.g. Scan the app for problems · How do I fix a black screen on iOS? · 8K poster of a rottweiler in Bali"
               rows={4}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500"
             />
@@ -323,8 +357,25 @@ export default function OracleAgent() {
             {job.kind === "video" && job.resultUrl && (
               <video src={job.resultUrl} controls autoPlay className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />
             )}
-            {job.kind === "text" && job.resultText && (
-              <div className="prose prose-invert max-w-2xl whitespace-pre-wrap text-zinc-100">{job.resultText}</div>
+            {(job.kind === "text" || job.kind === "research" || job.kind === "diagnose") && job.resultText && (
+              <div className="max-w-2xl w-full space-y-4">
+                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-100">{job.resultText}</div>
+                {job.sources && job.sources.length > 0 && (
+                  <div className="border-t border-zinc-800 pt-3">
+                    <div className="text-xs text-amber-400 font-bold tracking-widest mb-2">SOURCES</div>
+                    <ol className="space-y-1 text-xs">
+                      {job.sources.map((s, i) => (
+                        <li key={i}>
+                          <a href={s.url} target="_blank" rel="noreferrer" className="text-amber-300 hover:underline">
+                            [{i + 1}] {s.title || s.url}
+                          </a>
+                          {s.description && <div className="text-zinc-500 ml-4">{s.description}</div>}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <div className="p-3 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
