@@ -92,6 +92,18 @@ function getStoredOracleMasterVoice(): { id?: string; settings?: Record<string, 
   }
 }
 
+const FINAL_ONLY_PATTERNS = [
+  /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run|try|retry|search|look|build|make|create|generate|code|finish)\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl)\b[\s\S]{0,240}\b(?:totally\s+|fully\s+|completely\s+|all\s+the\s+way\s+)?(?:finished|finish|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:don'?t|do\s+not|dont|never|stop)\s+(?:reply|respond|answer|message|talk|speak|update|say\s+anything)\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl|before)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:only|just)\s+(?:reply|respond|answer|message|talk|speak|update)\b[\s\S]{0,240}\b(?:when|after|once)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun)\b/i,
+  /\b(?:silent|quiet|no\s+(?:reply|response|updates?|messages?|talking|speaking))\b[\s\S]{0,240}\b(?:til+l?|until|untill|untl|while|during)\b[\s\S]{0,240}\b(?:finished|done|complete|completed|fixed|finshed|finised|compleat|dun|working|building|generating)\b/i,
+];
+
+function wantsFinalOnlyMode(text: string): boolean {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  return FINAL_ONLY_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 const OraclePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
