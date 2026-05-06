@@ -1205,38 +1205,51 @@ a[aria-disabled="true"],
   transform-style: preserve-3d;
 }
 
-/* CHROME BEZEL — thick polished metallic ring; tile body sits INSIDE it */
+/* DOMINO ON A TABLE — real extruded 3D body that sits up off the page.
+   Uses a slight forward tilt so you can see the top edge, plus a stack of
+   downward-offset shadows that draw the side/bottom faces of the slab. */
 .holo-tile,
 .holo-card {
-  margin: 14px !important;
-  /* Dead-on front view, lifted slightly off the page */
-  transform: translateY(-4px);
-  transform-origin: center;
+  margin: 18px 14px 26px !important;
+  /* Tilt the slab back a few degrees so the viewer sees the top face,
+     just like a domino standing on a table. */
+  transform: perspective(900px) rotateX(10deg) translateY(-6px);
+  transform-origin: center bottom;
   background: transparent !important;
   border: none !important;
-  border-radius: 22px !important;
-  /* Real transparent button — crisp glass rim, soft outer halo,
-     drop shadow for lift. No diagonal extrusion. */
+  border-radius: 18px !important;
   box-shadow:
-    /* TRIPLE-THICK outer glass rim — stacked outlines transitioning to deep navy */
-    0 0 0 2px hsl(200 100% 85% / 0.65),
-    0 0 0 5px hsl(205 90% 65% / 0.60),
-    0 0 0 8px hsl(215 85% 40% / 0.70),
-    0 0 0 12px hsl(222 80% 22% / 0.82),
-    0 0 0 15px hsl(225 85% 14% / 0.88),
-    0 0 0 18px hsl(228 90% 8% / 0.80),
-    /* outer halo */
-    0 0 32px hsl(200 100% 70% / 0.32),
-    /* deeper lift shadow to support the chunkier body */
-    0 20px 36px hsl(0 0% 0% / 0.70),
-    0 40px 70px hsl(0 0% 0% / 0.60),
-    /* TRIPLE-THICK inner glass bevels — deep navy bottom/back */
-    inset 0 12px 0 hsl(0 0% 100% / 0.55),
-    inset 0 -12px 0 hsl(228 90% 6% / 0.88),
-    inset 0 -20px 4px hsl(225 80% 12% / 0.60),
-    inset 9px 0 0 hsl(0 0% 100% / 0.20),
-    inset -9px 0 0 hsl(225 85% 10% / 0.70),
-    inset 0 0 50px hsl(200 100% 80% / 0.10) !important;
+    /* ── Crisp top edge highlight (the lit upper face of the slab) ── */
+    0 -1px 0 hsl(200 100% 95% / 0.85),
+    /* ── EXTRUDED SIDE FACE — many 1px stacked shadows = solid thickness ── */
+    0 1px 0 hsl(222 60% 35%),
+    0 2px 0 hsl(222 62% 32%),
+    0 3px 0 hsl(222 64% 29%),
+    0 4px 0 hsl(222 66% 26%),
+    0 5px 0 hsl(222 68% 23%),
+    0 6px 0 hsl(222 70% 20%),
+    0 7px 0 hsl(222 72% 18%),
+    0 8px 0 hsl(222 74% 16%),
+    0 9px 0 hsl(225 76% 14%),
+    0 10px 0 hsl(225 78% 12%),
+    0 11px 0 hsl(225 80% 11%),
+    0 12px 0 hsl(225 82% 10%),
+    0 13px 0 hsl(225 84% 9%),
+    0 14px 0 hsl(228 86% 8%),
+    0 15px 0 hsl(228 88% 7%),
+    0 16px 0 hsl(228 90% 6%),
+    /* ── Hairline crisp outline so the slab edge reads sharp ── */
+    0 0 0 1px hsl(228 90% 5% / 0.9),
+    /* ── CONTACT SHADOW on the table — soft, wide, grounds the slab ── */
+    0 22px 18px -8px hsl(0 0% 0% / 0.75),
+    0 38px 40px -10px hsl(0 0% 0% / 0.55),
+    0 60px 70px -20px hsl(0 0% 0% / 0.40),
+    /* ── Inner top bevel (gloss on the top face) ── */
+    inset 0 2px 0 hsl(0 0% 100% / 0.55),
+    inset 0 -1px 0 hsl(228 90% 6% / 0.7),
+    inset 1px 0 0 hsl(0 0% 100% / 0.18),
+    inset -1px 0 0 hsl(228 90% 8% / 0.5),
+    inset 0 0 40px hsl(200 100% 75% / 0.08) !important;
   animation: none !important;
 }
 
