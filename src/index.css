@@ -1209,8 +1209,8 @@ a[aria-disabled="true"],
 .holo-tile,
 .holo-card {
   margin: 10px !important;
-  /* TRUE isometric — slight tilt + EXTRUDED side faces via stacked shadows */
-  transform: scale(0.82) perspective(1100px) rotateX(14deg) rotateY(-18deg);
+  /* Flat front-on view — no tilt */
+  transform: scale(0.82);
   transform-origin: center;
   background: transparent !important;
   border: none !important;
