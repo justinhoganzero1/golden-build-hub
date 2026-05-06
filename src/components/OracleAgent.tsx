@@ -113,7 +113,8 @@ export default function OracleAgent() {
     setJob(j);
     setOpen(false);
     setShowResult(false);
-    toast.success(`Oracle is making your ${kind}…`, { duration: 2500 });
+    const verb = kind === "research" ? "researching online" : kind === "diagnose" ? "running self-diagnosis" : `making your ${kind}`;
+    toast.success(`Oracle is ${verb}…`, { duration: 2500 });
 
     try {
       const token = getEdgeAuthTokenSync();
