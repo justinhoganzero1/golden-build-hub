@@ -95,14 +95,14 @@ const PRESETS: Preset[] = [
   { id: "dub",            group: "voice", icon: <Languages className="w-4 h-4" />,              title: "Dub My Reel",              desc: "Auto-dub your reel into 29 languages.",                        partner: "elevenlabs" },
 ];
 
-const GROUPS: { key: Preset["group"]; label: string }[] = [
-  { key: "headshots", label: "Headshots & Portraits" },
-  { key: "creative",  label: "Creative & Artistic" },
-  { key: "products",  label: "Products & Brand" },
-  { key: "lifestyle", label: "Lifestyle & Travel" },
-  { key: "fun",       label: "Fun & Family" },
-  { key: "video",     label: "Video Magic (HeyGen)" },
-  { key: "voice",     label: "Voice & Audio (ElevenLabs)" },
+const GROUPS: { key: Preset["group"]; label: string; emoji: string; blurb: string }[] = [
+  { key: "headshots", label: "Headshots & Portraits",      emoji: "📸", blurb: "LinkedIn, actor, dating, passport & more." },
+  { key: "creative",  label: "Creative & Artistic",        emoji: "🎨", blurb: "Anime, oil paint, comic, cyberpunk." },
+  { key: "products",  label: "Products & Brand",           emoji: "🛍️", blurb: "Amazon-style, magazine, billboards." },
+  { key: "lifestyle", label: "Lifestyle & Travel",         emoji: "🌴", blurb: "Travel, supercars, beach, nightlife." },
+  { key: "fun",       label: "Fun & Family",               emoji: "💖", blurb: "Babies, pets, couples, age-me." },
+  { key: "video",     label: "Video Magic (HeyGen)",       emoji: "🎬", blurb: "Talking photos, AI presenters, dubs." },
+  { key: "voice",     label: "Voice & Audio (ElevenLabs)", emoji: "🎙️", blurb: "Voice-overs, cloning, music, SFX." },
 ];
 
 interface Props {
