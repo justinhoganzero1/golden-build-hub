@@ -650,6 +650,16 @@ const OwnerDashboardPage = () => {
   return (
     <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
       <UniversalBackButton fallbackPath="/dashboard" />
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard", { replace: false })}
+        aria-label="Go to main dashboard"
+        className="fixed right-3 z-[60] flex items-center gap-2 rounded-full border border-primary/50 bg-background/90 px-4 py-2.5 text-sm font-bold text-primary shadow-[0_0_24px_hsl(var(--primary)/0.35)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_36px_hsl(var(--primary)/0.55)] active:scale-95"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
+        <Home className="h-4 w-4" />
+        Main Dashboard
+      </button>
       <div className="px-4 pt-14 pb-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
