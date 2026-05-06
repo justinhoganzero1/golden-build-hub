@@ -22,7 +22,7 @@ import { saveToLibrary } from "@/lib/saveToLibrary";
 import { useDraggable } from "@/hooks/useDraggable";
 import { runFullDiagnostic, type DoctorReport } from "@/lib/systemDoctor";
 
-type TaskKind = "image" | "video" | "text" | "research" | "diagnose";
+type TaskKind = "image" | "video" | "text" | "research" | "diagnose" | "phoenix";
 type Job = {
   id: string;
   prompt: string;
@@ -43,9 +43,11 @@ const IMAGE_URL = `${SUPA}/functions/v1/image-gen`;
 const VIDEO_URL = `${SUPA}/functions/v1/gemini-video`;
 const ORACLE_URL = `${SUPA}/functions/v1/oracle-chat`;
 const RESEARCH_URL = `${SUPA}/functions/v1/oracle-research`;
+const PHOENIX_URL = `${SUPA}/functions/v1/oracle-phoenix`;
 
 function classify(prompt: string): TaskKind {
   const p = prompt.toLowerCase();
+  if (/\b(phoenix|reboot (the )?app|rebuild (the )?app|restore (the )?app|emergency (recover|reboot)|bring (it|the app) back|app is dead|full system (reboot|restore)|regenerate (the )?(app|system))\b/.test(p)) return "phoenix";
   if (/\b(diagnose|self[- ]?test|self[- ]?check|scan the app|run diagnostic|system check|check the app|fix the app|something(?:'s| is) wrong|app is broken|not working)\b/.test(p)) return "diagnose";
   if (/\b(search|google|look ?up|find online|research|how do i|how to|why does|fix error|solution|on the (web|net|internet))\b/.test(p)) return "research";
   if (/\b(video|clip|animate|movie|short film|moving|footage)\b/.test(p)) return "video";
@@ -113,7 +115,10 @@ export default function OracleAgent() {
     setJob(j);
     setOpen(false);
     setShowResult(false);
-    const verb = kind === "research" ? "researching online" : kind === "diagnose" ? "running self-diagnosis" : `making your ${kind}`;
+    const verb = kind === "research" ? "researching online"
+      : kind === "diagnose" ? "running self-diagnosis"
+      : kind === "phoenix" ? "🔥 PHOENIX REBOOT — rebuilding the app"
+      : `making your ${kind}`;
     toast.success(`Oracle is ${verb}…`, { duration: 2500 });
 
     try {
@@ -172,6 +177,30 @@ export default function OracleAgent() {
           `\n\n${report.summary}`;
         const done: Job = { ...j, status: "done", resultText: summary, report };
         setJob(done);
+      } else if (kind === "phoenix") {
+        // First a client-side diagnose to clear local stuck state…
+        let local = "";
+        try {
+          const report = await runFullDiagnostic(() => {});
+          local = `Local self-heal: ${report.repaired} repaired, ${report.failed} unresolved.\n`;
+        } catch { /* ignore */ }
+        // …then ask the server to rebuild infrastructure (owner-only on the server side).
+        const r = await fetch(PHOENIX_URL, {
+          method: "POST", headers,
+          body: JSON.stringify({ mode: "reboot" }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Phoenix reboot failed");
+        const lines = (data.steps || []).map((s: any) =>
+          `${s.ok ? "✅" : "❌"} ${s.id} — ${s.detail} (${s.ms}ms)`
+        ).join("\n");
+        const summary =
+          `🔥 ORACLE PHOENIX — FULL SYSTEM REBOOT\n\n` +
+          local +
+          `\n${lines}\n\n` +
+          `${data.summary}`;
+        const done: Job = { ...j, status: "done", resultText: summary };
+        setJob(done);
       } else {
         // Text — call oracle-chat (streaming)
         const r = await fetch(ORACLE_URL, {
@@ -212,7 +241,7 @@ export default function OracleAgent() {
 
   const maybeSave = async (j: Job) => {
     if (consent !== "keep") return;
-    if (j.kind === "diagnose") return;
+    if (j.kind === "diagnose" || j.kind === "phoenix") return;
     if (!j.resultUrl && !j.resultText) return;
     const mediaType: "image" | "video" | "text" =
       j.kind === "image" ? "image" : j.kind === "video" ? "video" : "text";
@@ -357,7 +386,7 @@ export default function OracleAgent() {
             {job.kind === "video" && job.resultUrl && (
               <video src={job.resultUrl} controls autoPlay className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />
             )}
-            {(job.kind === "text" || job.kind === "research" || job.kind === "diagnose") && job.resultText && (
+            {(job.kind === "text" || job.kind === "research" || job.kind === "diagnose" || job.kind === "phoenix") && job.resultText && (
               <div className="max-w-2xl w-full space-y-4">
                 <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-100">{job.resultText}</div>
                 {job.sources && job.sources.length > 0 && (
