@@ -143,46 +143,61 @@ const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
         </span>
       </div>
       <p className="text-[11px] text-muted-foreground mb-3">
-        One-tap presets that auto-fill the 8K Photo Studio, plus video & voice extensions via our partners.
+        Tap a folder to open it. Each folder groups one-tap presets that auto-fill the 8K Photo Studio.
       </p>
 
-      {GROUPS.map(g => {
-        const items = visible.filter(p => p.group === g.key);
-        if (items.length === 0) return null;
-        return (
-          <div key={g.key} className="mb-4">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              {g.label}
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {items.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handleClick(p)}
-                  className="text-left p-3 rounded-lg holo-tile bg-background/40 border border-border/40 hover:border-amber-500/60 transition-colors group"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`p-1.5 rounded-md ${
-                      p.partner === "heygen" ? "bg-pink-500/15 text-pink-300"
-                      : p.partner === "elevenlabs" ? "bg-blue-500/15 text-blue-300"
-                      : "bg-amber-500/15 text-amber-300"
-                    }`}>
-                      {p.icon}
+      <div className="space-y-2">
+        {GROUPS.map(g => {
+          const items = visible.filter(p => p.group === g.key);
+          if (items.length === 0) return null;
+          return (
+            <details
+              key={g.key}
+              className="group/folder rounded-xl border border-amber-500/20 bg-background/30 overflow-hidden open:border-amber-500/50 open:bg-background/50 transition-colors"
+            >
+              <summary className="flex items-center gap-3 p-3 cursor-pointer list-none select-none hover:bg-amber-500/5">
+                <span className="text-2xl leading-none" aria-hidden>{g.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-foreground truncate">{g.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                      {items.length}
                     </span>
-                    <span className="text-xs font-semibold text-foreground truncate">{p.title}</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{p.desc}</p>
-                  {p.partner && (
-                    <p className="text-[9px] text-muted-foreground/60 mt-1 uppercase tracking-wide">
-                      via {p.partner === "heygen" ? "HeyGen" : "ElevenLabs"}
-                    </p>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+                  <p className="text-[10px] text-muted-foreground truncate">{g.blurb}</p>
+                </div>
+                <span className="text-amber-300 text-xs transition-transform group-open/folder:rotate-90">▶</span>
+              </summary>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 pt-1">
+                {items.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleClick(p)}
+                    className="text-left p-3 rounded-lg holo-tile bg-background/40 border border-border/40 hover:border-amber-500/60 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`p-1.5 rounded-md ${
+                        p.partner === "heygen" ? "bg-pink-500/15 text-pink-300"
+                        : p.partner === "elevenlabs" ? "bg-blue-500/15 text-blue-300"
+                        : "bg-amber-500/15 text-amber-300"
+                      }`}>
+                        {p.icon}
+                      </span>
+                      <span className="text-xs font-semibold text-foreground truncate">{p.title}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{p.desc}</p>
+                    {p.partner && (
+                      <p className="text-[9px] text-muted-foreground/60 mt-1 uppercase tracking-wide">
+                        via {p.partner === "heygen" ? "HeyGen" : "ElevenLabs"}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </details>
+          );
+        })}
+      </div>
     </Card>
   );
 };
