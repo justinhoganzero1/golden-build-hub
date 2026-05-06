@@ -1602,7 +1602,7 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
-    const finalOnlyMode = !isIntroTrigger && /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run)\b[\s\S]{0,80}\b(?:till|until)\b[\s\S]{0,80}\b(?:totally\s+)?(?:finished|done|complete|completed)\b|\b(?:don'?t|do\s+not)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,80}\b(?:till|until)\b[\s\S]{0,80}\b(?:finished|done|complete|completed)\b|\b(?:only|just)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,80}\b(?:when|after)\b[\s\S]{0,80}\b(?:finished|done|complete|completed)\b/i.test(text);
+    const finalOnlyMode = !isIntroTrigger && /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run)\b[\s\S]{0,140}\b(?:till|until)\b[\s\S]{0,140}\b(?:totally\s+)?(?:finished|done|complete|completed)\b|\b(?:don'?t|do\s+not|dont)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,140}\b(?:till|until)\b[\s\S]{0,140}\b(?:finished|done|complete|completed)\b|\b(?:only|just)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,140}\b(?:when|after)\b[\s\S]{0,140}\b(?:finished|done|complete|completed)\b/i.test(text);
 
     // ── FIRST-VISIT SETUP INTERCEPT ──
     // While the Oracle is asking the user for its name + appearance, every
