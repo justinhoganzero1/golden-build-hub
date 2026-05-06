@@ -46,6 +46,8 @@ const RESEARCH_URL = `${SUPA}/functions/v1/oracle-research`;
 
 function classify(prompt: string): TaskKind {
   const p = prompt.toLowerCase();
+  if (/\b(diagnose|self[- ]?test|self[- ]?check|scan the app|run diagnostic|system check|check the app|fix the app|something(?:'s| is) wrong|app is broken|not working)\b/.test(p)) return "diagnose";
+  if (/\b(search|google|look ?up|find online|research|how do i|how to|why does|fix error|solution|on the (web|net|internet))\b/.test(p)) return "research";
   if (/\b(video|clip|animate|movie|short film|moving|footage)\b/.test(p)) return "video";
   if (/\b(image|picture|photo|art|illustration|logo|poster|wallpaper|draw|paint|render|design)\b/.test(p)) return "image";
   return "text";
