@@ -50,7 +50,7 @@ function classify(prompt: string): TaskKind {
 export default function OracleAgent() {
   const { user } = useAuth();
   const location = useLocation();
-  const drag = useDraggable({ defaultX: window.innerWidth - 88, defaultY: window.innerHeight - 200 });
+  const drag = useDraggable("oracle-agent-orb-pos", 16, 120);
 
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
