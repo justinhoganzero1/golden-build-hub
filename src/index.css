@@ -1221,63 +1221,62 @@ a[aria-disabled="true"],
   animation: none !important;
 }
 
+/* ═══ 6D ISOMETRIC GLASS — near-invisible body, whisper rainbow,
+       soft ice-blue neon edge. World-first signature look. ═══ */
 .holo-tile::before,
 .holo-card::before {
-  /* Beveled iridescent rim — top-lit highlight, bottom shadow for 3D depth */
+  /* Ultra-light ice-blue neon rim with hint of bevel */
   background:
-    /* directional bevel light: bright top-left, dark bottom-right */
     linear-gradient(135deg,
-      hsl(0 0% 100% / 0.95) 0%,
-      hsl(0 0% 100% / 0.4) 18%,
-      hsl(0 0% 0% / 0.05) 45%,
-      hsl(0 0% 0% / 0.55) 80%,
-      hsl(0 0% 0% / 0.85) 100%),
-    /* iridescent translucent base */
-    conic-gradient(
-      from 0deg,
-      hsl(280 100% 65% / 0.55),
-      hsl(200 100% 60% / 0.55),
-      hsl(160 100% 55% / 0.55),
-      hsl(60 100% 60% / 0.55),
-      hsl(20 100% 60% / 0.55),
-      hsl(330 100% 65% / 0.55),
-      hsl(280 100% 65% / 0.55)
-    ) !important;
-  background-blend-mode: overlay, normal !important;
-  padding: 8px !important;
+      hsl(195 100% 92% / 0.55) 0%,
+      hsl(200 100% 80% / 0.18) 30%,
+      hsl(210 80% 60% / 0.05) 60%,
+      hsl(220 60% 30% / 0.20) 100%),
+    linear-gradient(180deg,
+      hsl(190 100% 85% / 0.30),
+      hsl(220 100% 70% / 0.18)) !important;
+  background-blend-mode: screen, normal !important;
+  padding: 1.5px !important;
   inset: 0 !important;
-  opacity: 0.95 !important;
-  /* Outer rainbow halo bleeding from the SIDES + crisp inner bevel shadow */
+  opacity: 1 !important;
+  /* Soft ice-blue neon halo bleeding from edges only */
   filter:
-    drop-shadow(-1px -1px 0 hsl(0 0% 100% / 0.7))
-    drop-shadow(2px 2px 1px hsl(0 0% 0% / 0.85))
-    drop-shadow(0 0 8px hsl(280 100% 65% / 0.65))
-    drop-shadow(0 0 16px hsl(200 100% 60% / 0.5))
-    drop-shadow(0 0 24px hsl(330 100% 65% / 0.4)) !important;
+    drop-shadow(0 0 1px hsl(195 100% 95% / 0.95))
+    drop-shadow(0 0 6px hsl(200 100% 70% / 0.65))
+    drop-shadow(0 0 14px hsl(205 100% 60% / 0.45))
+    drop-shadow(0 0 28px hsl(210 100% 55% / 0.25)) !important;
   animation: none !important;
 }
-@keyframes chrome-spin {
-  to { transform: rotate(360deg); }
-}
 
-/* Inner glass body — sits inside the chrome ring */
+/* Near-transparent glass body with a barely-there rainbow shimmer */
 .holo-tile,
 .holo-card {
   background:
-    radial-gradient(ellipse 120% 60% at 50% -10%,
-      hsl(0 0% 100% / 0.18),
-      transparent 55%),
-    radial-gradient(ellipse 120% 80% at 50% 110%,
-      hsl(220 30% 8% / 0.55),
+    /* whisper rainbow — extremely subtle, only catches the eye in motion */
+    conic-gradient(
+      from 200deg at 50% 50%,
+      hsl(280 100% 70% / 0.05),
+      hsl(200 100% 65% / 0.05),
+      hsl(160 100% 60% / 0.04),
+      hsl(60  100% 65% / 0.05),
+      hsl(20  100% 65% / 0.05),
+      hsl(330 100% 70% / 0.05),
+      hsl(280 100% 70% / 0.05)),
+    /* faint top-light glass highlight */
+    radial-gradient(ellipse 120% 50% at 50% -10%,
+      hsl(195 100% 95% / 0.10),
       transparent 60%),
+    /* almost-invisible glass tint */
     linear-gradient(160deg,
-      hsl(0 0% 100% / 0.05) 0%,
-      hsl(0 0% 100% / 0.02) 40%,
-      hsl(0 0% 0% / 0.25) 100%) !important;
+      hsl(200 60% 90% / 0.04) 0%,
+      hsl(220 40% 60% / 0.02) 50%,
+      hsl(0 0% 0% / 0.06) 100%) !important;
+  backdrop-filter: blur(2px) saturate(1.1);
+  -webkit-backdrop-filter: blur(2px) saturate(1.1);
   box-shadow:
-    inset 0 1.5px 0 hsl(0 0% 100% / 0.55),
-    inset 0 -1.5px 0 hsl(0 0% 0% / 0.6),
-    inset 0 0 22px hsl(0 0% 0% / 0.35) !important;
+    inset 0 1px 0 hsl(195 100% 95% / 0.30),
+    inset 0 -1px 0 hsl(220 80% 50% / 0.20),
+    inset 0 0 24px hsl(200 100% 70% / 0.05) !important;
   transform-style: preserve-3d;
   will-change: transform;
 }
