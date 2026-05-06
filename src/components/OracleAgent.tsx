@@ -115,7 +115,10 @@ export default function OracleAgent() {
     setJob(j);
     setOpen(false);
     setShowResult(false);
-    const verb = kind === "research" ? "researching online" : kind === "diagnose" ? "running self-diagnosis" : `making your ${kind}`;
+    const verb = kind === "research" ? "researching online"
+      : kind === "diagnose" ? "running self-diagnosis"
+      : kind === "phoenix" ? "🔥 PHOENIX REBOOT — rebuilding the app"
+      : `making your ${kind}`;
     toast.success(`Oracle is ${verb}…`, { duration: 2500 });
 
     try {
