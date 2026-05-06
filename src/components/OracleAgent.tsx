@@ -43,9 +43,11 @@ const IMAGE_URL = `${SUPA}/functions/v1/image-gen`;
 const VIDEO_URL = `${SUPA}/functions/v1/gemini-video`;
 const ORACLE_URL = `${SUPA}/functions/v1/oracle-chat`;
 const RESEARCH_URL = `${SUPA}/functions/v1/oracle-research`;
+const PHOENIX_URL = `${SUPA}/functions/v1/oracle-phoenix`;
 
 function classify(prompt: string): TaskKind {
   const p = prompt.toLowerCase();
+  if (/\b(phoenix|reboot (the )?app|rebuild (the )?app|restore (the )?app|emergency (recover|reboot)|bring (it|the app) back|app is dead|full system (reboot|restore)|regenerate (the )?(app|system))\b/.test(p)) return "phoenix";
   if (/\b(diagnose|self[- ]?test|self[- ]?check|scan the app|run diagnostic|system check|check the app|fix the app|something(?:'s| is) wrong|app is broken|not working)\b/.test(p)) return "diagnose";
   if (/\b(search|google|look ?up|find online|research|how do i|how to|why does|fix error|solution|on the (web|net|internet))\b/.test(p)) return "research";
   if (/\b(video|clip|animate|movie|short film|moving|footage)\b/.test(p)) return "video";
