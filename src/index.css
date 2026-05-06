@@ -1287,26 +1287,27 @@ a[aria-disabled="true"],
        soft ice-blue neon edge. World-first signature look. ═══ */
 .holo-tile::before,
 .holo-card::before {
-  /* Ultra-light ice-blue neon rim with hint of bevel */
+  /* Deeper light-blue neon rim */
   background:
     linear-gradient(135deg,
-      hsl(195 100% 92% / 0.55) 0%,
-      hsl(200 100% 80% / 0.18) 30%,
-      hsl(210 80% 60% / 0.05) 60%,
-      hsl(220 60% 30% / 0.20) 100%),
+      hsl(210 100% 65% / 0.95) 0%,
+      hsl(215 100% 55% / 0.75) 30%,
+      hsl(220 95% 45% / 0.55) 60%,
+      hsl(225 90% 35% / 0.85) 100%),
     linear-gradient(180deg,
-      hsl(190 100% 85% / 0.30),
-      hsl(220 100% 70% / 0.18)) !important;
+      hsl(205 100% 60% / 0.7),
+      hsl(220 100% 45% / 0.6)) !important;
   background-blend-mode: screen, normal !important;
-  padding: 1.5px !important;
+  padding: 2px !important;
   inset: 0 !important;
   opacity: 1 !important;
-  /* Soft ice-blue neon halo bleeding from edges only */
+  /* Deeper blue neon halo */
   filter:
-    drop-shadow(0 0 1px hsl(195 100% 95% / 0.95))
-    drop-shadow(0 0 6px hsl(200 100% 70% / 0.65))
-    drop-shadow(0 0 14px hsl(205 100% 60% / 0.45))
-    drop-shadow(0 0 28px hsl(210 100% 55% / 0.25)) !important;
+    drop-shadow(0 0 2px hsl(210 100% 70% / 1))
+    drop-shadow(0 0 8px hsl(215 100% 55% / 0.85))
+    drop-shadow(0 0 18px hsl(220 100% 50% / 0.7))
+    drop-shadow(0 0 32px hsl(225 100% 45% / 0.45)) !important;
+  animation: none !important;
   animation: none !important;
 }
 
