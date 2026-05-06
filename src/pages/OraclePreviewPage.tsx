@@ -1,4 +1,6 @@
 import { LayoutGrid, Mic, Paperclip, Send, Sparkles, Users, Volume2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
 import LivingAvatar from "@/components/LivingAvatar";
 import { MASTER_AI_AVATAR, MASTER_AI_AVATAR_ALT } from "@/assets/master-ai-avatar";
