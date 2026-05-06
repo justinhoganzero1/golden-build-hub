@@ -1206,9 +1206,17 @@ a[aria-disabled="true"],
 }
 
 /* CHROME BEZEL — thin polished metallic frame around the tile */
+.holo-tile,
+.holo-card {
+  /* Shrink chiclet so the parent grid cell shows around it */
+  margin: 6px !important;
+  transform: scale(0.88);
+  transform-origin: center;
+}
+
 .holo-tile::before,
 .holo-card::before {
-  /* Override prior rainbow rim with a real chrome ring */
+  /* Override prior rainbow rim with a THICK 3D chrome ring */
   background: conic-gradient(
     from 0deg,
     hsl(0 0% 92%) 0%,
@@ -1221,9 +1229,11 @@ a[aria-disabled="true"],
     hsl(0 0% 50%) 80%,
     hsl(0 0% 92%) 100%
   ) !important;
-  padding: 1.5px !important;
-  filter: drop-shadow(0 0 2px hsl(0 0% 100% / 0.6))
-          drop-shadow(0 0 6px hsl(0 0% 0% / 0.6)) !important;
+  padding: 4px !important;
+  inset: -2px !important;
+  filter: drop-shadow(0 1px 2px hsl(0 0% 100% / 0.7))
+          drop-shadow(0 2px 6px hsl(0 0% 0% / 0.75))
+          drop-shadow(0 0 1px hsl(0 0% 100% / 0.9)) !important;
   animation: chrome-spin 18s linear infinite !important;
 }
 @keyframes chrome-spin {
