@@ -1213,8 +1213,10 @@ a[aria-disabled="true"],
   margin: 18px 14px 26px !important;
   /* Tilt the slab back a few degrees so the viewer sees the top face,
      just like a domino standing on a table. */
-  transform: perspective(900px) rotateX(10deg) translateY(-6px);
-  transform-origin: center bottom;
+  /* Isometric tilt — rotate slightly to the right around Y axis so the
+     LEFT side face of the slab is visible to the viewer (depth on the left). */
+  transform: perspective(900px) rotateX(10deg) rotateY(-14deg) translateY(-6px);
+  transform-origin: right center;
   background: transparent !important;
   border: none !important;
   border-radius: 18px !important;
