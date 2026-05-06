@@ -24,6 +24,7 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // would unmount the persistent Oracle iframe and start a "second voice" on
 // remount, which is the bug we're killing for good.
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
+import OracleAgent from "@/components/OracleAgent";
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
 
@@ -250,6 +251,7 @@ const App = () => (
                 <PreviewModeBanner />
               </Suspense>
               <MasterMuteButton />
+              <OracleAgent />
 
               <Suspense fallback={<Loading />}>
                 <Routes>
