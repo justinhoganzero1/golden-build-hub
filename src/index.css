@@ -1208,18 +1208,16 @@ a[aria-disabled="true"],
 /* CHROME BEZEL — thick polished metallic ring; tile body sits INSIDE it */
 .holo-tile,
 .holo-card {
-  /* Shrink chiclet a bit and remove the old outer dark frame entirely */
   margin: 10px !important;
-  transform: scale(0.78);
+  /* Isometric 3D anchor — locked tilt, facing forward-ish with depth */
+  transform: scale(0.82) perspective(900px) rotateX(18deg) rotateY(-22deg) rotateZ(0deg);
   transform-origin: center;
   background: transparent !important;
   border: none !important;
-  box-shadow: none !important;
-}
-
-/* Anchored facing forward — no rotation */
-.holo-tile,
-.holo-card {
+  box-shadow:
+    /* deep cast shadow on the floor to sell isometric lift */
+    18px 22px 40px hsl(0 0% 0% / 0.7),
+    8px 10px 16px hsl(0 0% 0% / 0.55) !important;
   animation: none !important;
 }
 
