@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, ArrowLeft, PlayCircle } from "lucide-react";
+import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, Home, PlayCircle } from "lucide-react";
 import { DownloadButton } from "@/components/DownloadButton";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
@@ -166,8 +166,8 @@ const LivingGifStudioPage = () => {
         description="Generate 20-second 8K animated avatar GIFs of your Oracle. Bank unlimited GIFs forever, set any one as your active Oracle face."
       />
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
-          <ArrowLeft className="w-4 h-4 mr-1" /> Back
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard", { replace: false })} className="-ml-2">
+          <Home className="w-4 h-4 mr-1" /> USER DASHBOARD
         </Button>
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-xs font-bold text-primary">
