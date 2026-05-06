@@ -1208,29 +1208,34 @@ a[aria-disabled="true"],
 /* CHROME BEZEL — thick polished metallic ring; tile body sits INSIDE it */
 .holo-tile,
 .holo-card {
-  margin: 10px !important;
-  /* Flat front-on view — no tilt */
-  transform: scale(0.82);
+  margin: 14px !important;
+  /* Flat front view, lifted up off the page */
+  transform: scale(0.82) translateY(-6px);
   transform-origin: center;
   background: transparent !important;
   border: none !important;
-  /* Stacked shadows fake 14px of physical thickness on the side faces */
+  /* Stacked shadows now fake ~26px of physical thickness with a slightly
+     larger back face (offset grows faster than 1:1 toward the rear) */
   box-shadow:
-    1px 1px 0 hsl(210 40% 18% / 0.95),
-    2px 2px 0 hsl(210 40% 16% / 0.95),
-    3px 3px 0 hsl(210 40% 15% / 0.95),
-    4px 4px 0 hsl(210 40% 14% / 0.95),
-    5px 5px 0 hsl(210 40% 13% / 0.95),
-    6px 6px 0 hsl(210 40% 12% / 0.95),
-    7px 7px 0 hsl(210 40% 11% / 0.95),
-    8px 8px 0 hsl(210 40% 10% / 0.95),
-    9px 9px 0 hsl(210 40% 9% / 0.95),
-    10px 10px 0 hsl(210 40% 8% / 0.95),
-    11px 11px 0 hsl(210 40% 7% / 0.95),
-    12px 12px 0 hsl(210 40% 6% / 0.95),
-    /* deep cast shadow on the floor */
-    22px 28px 40px hsl(0 0% 0% / 0.75),
-    14px 18px 22px hsl(0 0% 0% / 0.6) !important;
+    1px 1px 0 hsl(210 40% 20% / 0.95),
+    2px 3px 0 hsl(210 40% 19% / 0.95),
+    3px 5px 0 hsl(210 40% 18% / 0.95),
+    4px 7px 0 hsl(210 40% 17% / 0.95),
+    5px 9px 0 hsl(210 40% 16% / 0.95),
+    6px 11px 0 hsl(210 40% 15% / 0.95),
+    7px 13px 0 hsl(210 40% 14% / 0.95),
+    8px 15px 0 hsl(210 40% 13% / 0.95),
+    9px 17px 0 hsl(210 40% 12% / 0.95),
+    10px 19px 0 hsl(210 40% 11% / 0.95),
+    11px 21px 0 hsl(210 40% 10% / 0.95),
+    12px 23px 0 hsl(210 40% 9% / 0.95),
+    13px 25px 0 hsl(210 40% 8% / 0.95),
+    14px 27px 0 hsl(210 40% 7% / 0.95),
+    15px 29px 0 hsl(210 40% 6% / 0.95),
+    16px 31px 0 hsl(210 40% 5% / 0.95),
+    /* deep cast shadow further away — sells the lift */
+    30px 44px 56px hsl(0 0% 0% / 0.8),
+    20px 30px 30px hsl(0 0% 0% / 0.65) !important;
   animation: none !important;
 }
 
