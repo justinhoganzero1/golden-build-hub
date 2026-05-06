@@ -30,6 +30,8 @@ type Job = {
   status: "running" | "done" | "error";
   resultUrl?: string;
   resultText?: string;
+  sources?: { url: string; title?: string; description?: string }[];
+  report?: DoctorReport;
   error?: string;
 };
 
@@ -40,6 +42,7 @@ const SUPA = import.meta.env.VITE_SUPABASE_URL;
 const IMAGE_URL = `${SUPA}/functions/v1/image-gen`;
 const VIDEO_URL = `${SUPA}/functions/v1/gemini-video`;
 const ORACLE_URL = `${SUPA}/functions/v1/oracle-chat`;
+const RESEARCH_URL = `${SUPA}/functions/v1/oracle-research`;
 
 function classify(prompt: string): TaskKind {
   const p = prompt.toLowerCase();
