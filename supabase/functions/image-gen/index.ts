@@ -34,7 +34,14 @@ serve(async (req) => {
       });
     }
 
-    const { prompt, ownerBypass, inputImage } = await req.json();
+    const { prompt, ownerBypass, inputImage, tier } = await req.json();
+    // Auto-pick tier: caller can force "fast"/"premium". Otherwise short prompts → fast, long/brand → premium.
+    const chosenTier: "fast" | "premium" =
+      tier === "premium" ? "premium" :
+      tier === "fast"    ? "fast"    :
+      (typeof prompt === "string" && (prompt.length > 220 || /logo|brand|hero|poster|cinematic|8k|magazine cover|product shot/i.test(prompt)))
+        ? "premium" : "fast";
+    const { model: IMAGE_MODEL, cost: IMAGE_GEN_COST_CENTS } = IMAGE_MODELS[chosenTier];
     if (!prompt || typeof prompt !== "string") {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
