@@ -188,13 +188,17 @@ export default function OracleAgent() {
   }, [user, consent]);
 
   const maybeSave = async (j: Job) => {
-    if (consent !== "keep" || !j.resultUrl && !j.resultText) return;
+    if (consent !== "keep") return;
+    if (j.kind === "diagnose") return;
+    if (!j.resultUrl && !j.resultText) return;
+    const mediaType: "image" | "video" | "text" =
+      j.kind === "image" ? "image" : j.kind === "video" ? "video" : "text";
     const id = await saveToLibrary({
-      media_type: j.kind === "text" ? "text" : j.kind,
+      media_type: mediaType,
       title: j.prompt.slice(0, 80),
       url: j.resultUrl || j.resultText || "",
       source_page: "oracle-agent",
-      metadata: { prompt: j.prompt, oracle: "agent", kind: j.kind },
+      metadata: { prompt: j.prompt, oracle: "agent", kind: j.kind, sources: j.sources },
     });
     lastSavedIdRef.current = id;
   };
