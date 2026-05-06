@@ -174,6 +174,30 @@ export default function OracleAgent() {
           `\n\n${report.summary}`;
         const done: Job = { ...j, status: "done", resultText: summary, report };
         setJob(done);
+      } else if (kind === "phoenix") {
+        // First a client-side diagnose to clear local stuck state…
+        let local = "";
+        try {
+          const report = await runFullDiagnostic(() => {});
+          local = `Local self-heal: ${report.repaired} repaired, ${report.failed} unresolved.\n`;
+        } catch { /* ignore */ }
+        // …then ask the server to rebuild infrastructure (owner-only on the server side).
+        const r = await fetch(PHOENIX_URL, {
+          method: "POST", headers,
+          body: JSON.stringify({ mode: "reboot" }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Phoenix reboot failed");
+        const lines = (data.steps || []).map((s: any) =>
+          `${s.ok ? "✅" : "❌"} ${s.id} — ${s.detail} (${s.ms}ms)`
+        ).join("\n");
+        const summary =
+          `🔥 ORACLE PHOENIX — FULL SYSTEM REBOOT\n\n` +
+          local +
+          `\n${lines}\n\n` +
+          `${data.summary}`;
+        const done: Job = { ...j, status: "done", resultText: summary };
+        setJob(done);
       } else {
         // Text — call oracle-chat (streaming)
         const r = await fetch(ORACLE_URL, {
