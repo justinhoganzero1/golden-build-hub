@@ -1189,3 +1189,185 @@ a[aria-disabled="true"],
   100% { background-position:   0% 50%; }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   CHICLET v5 — 3D 8K REALISTIC CHROME-FRAMED TILES
+   Thin polished chrome bezel, deep glass body, parallax hover that
+   pops the icon out of the screen and slowly rotates it in 3D until
+   the user clicks or moves to another tile. Applies globally to
+   .holo-tile and .holo-card.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Give every tile parent a 3D stage so children can pop forward */
+.holo-tile,
+.holo-card {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* CHROME BEZEL — thin polished metallic frame around the tile */
+.holo-tile::before,
+.holo-card::before {
+  /* Override prior rainbow rim with a real chrome ring */
+  background: conic-gradient(
+    from 0deg,
+    hsl(0 0% 92%) 0%,
+    hsl(0 0% 55%) 8%,
+    hsl(0 0% 98%) 18%,
+    hsl(0 0% 40%) 28%,
+    hsl(0 0% 88%) 42%,
+    hsl(0 0% 30%) 55%,
+    hsl(0 0% 96%) 68%,
+    hsl(0 0% 50%) 80%,
+    hsl(0 0% 92%) 100%
+  ) !important;
+  padding: 1.5px !important;
+  filter: drop-shadow(0 0 2px hsl(0 0% 100% / 0.6))
+          drop-shadow(0 0 6px hsl(0 0% 0% / 0.6)) !important;
+  animation: chrome-spin 18s linear infinite !important;
+}
+@keyframes chrome-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Realistic deep-glass body with refractive highlights */
+.holo-tile,
+.holo-card {
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%,
+      hsl(0 0% 100% / 0.18),
+      transparent 55%),
+    radial-gradient(ellipse 120% 80% at 50% 110%,
+      hsl(220 30% 8% / 0.55),
+      transparent 60%),
+    linear-gradient(160deg,
+      hsl(0 0% 100% / 0.05) 0%,
+      hsl(0 0% 100% / 0.02) 40%,
+      hsl(0 0% 0% / 0.25) 100%) !important;
+  box-shadow:
+    /* outer drop — depth on the page */
+    0 14px 40px hsl(0 0% 0% / 0.65),
+    0 6px 14px hsl(0 0% 0% / 0.55),
+    /* chrome polish */
+    inset 0 1.5px 0 hsl(0 0% 100% / 0.55),
+    inset 0 -1.5px 0 hsl(0 0% 0% / 0.6),
+    inset 0 0 22px hsl(0 0% 0% / 0.35) !important;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Ambient floor reflection beneath each tile (sells the realism) */
+.holo-tile::after,
+.holo-card::after {
+  content: '';
+  position: absolute;
+  inset: auto 8% -14px 8%;
+  height: 22px;
+  background: radial-gradient(ellipse 60% 100% at 50% 0%,
+    hsl(0 0% 0% / 0.55), transparent 70%);
+  filter: blur(6px);
+  z-index: -1;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+/* Subtle 3D tilt on hover — tile leans toward viewer */
+.holo-tile:hover,
+.holo-card:hover {
+  transform: perspective(1200px) translateZ(14px) rotateX(4deg) rotateY(-4deg) !important;
+  box-shadow:
+    0 28px 60px hsl(0 0% 0% / 0.8),
+    0 12px 22px hsl(0 0% 0% / 0.65),
+    inset 0 1.5px 0 hsl(0 0% 100% / 0.85),
+    inset 0 -1.5px 0 hsl(0 0% 0% / 0.65),
+    0 0 50px hsl(45 100% 60% / 0.25),
+    0 0 90px hsl(280 90% 60% / 0.20) !important;
+}
+.holo-tile:hover::after,
+.holo-card:hover::after {
+  transform: scaleX(1.25);
+  opacity: 1;
+}
+
+/* THE ICON SLAP — pops out of the screen in 3D and slowly rotates
+   on Y-axis until the user moves away or clicks. Targets common
+   icon containers used across tiles. */
+.holo-tile .holo-float,
+.holo-tile .holo-bubble,
+.holo-tile > svg,
+.holo-tile img,
+.holo-tile [data-tile-icon],
+.holo-card .holo-float,
+.holo-card .holo-bubble,
+.holo-card > svg,
+.holo-card img,
+.holo-card [data-tile-icon] {
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.34, 1.6, 0.5, 1),
+              filter 0.45s ease;
+  will-change: transform, filter;
+  backface-visibility: hidden;
+}
+
+.holo-tile:hover .holo-float,
+.holo-tile:hover .holo-bubble,
+.holo-tile:hover > svg,
+.holo-tile:hover img,
+.holo-tile:hover [data-tile-icon],
+.holo-card:hover .holo-float,
+.holo-card:hover .holo-bubble,
+.holo-card:hover > svg,
+.holo-card:hover img,
+.holo-card:hover [data-tile-icon] {
+  /* Punch toward user, then slow continuous Y-axis rotation */
+  animation: chiclet-icon-pop 0.55s cubic-bezier(0.34, 1.8, 0.5, 1) forwards,
+             chiclet-icon-spin 6s linear 0.55s infinite;
+  filter:
+    drop-shadow(0 14px 28px hsl(0 0% 0% / 0.75))
+    drop-shadow(0 0 18px hsl(45 100% 60% / 0.55))
+    drop-shadow(0 0 36px hsl(280 90% 65% / 0.40))
+    contrast(1.08) saturate(1.15);
+}
+
+@keyframes chiclet-icon-pop {
+  0%   { transform: translateZ(0) scale(1) rotateY(0deg); }
+  60%  { transform: translateZ(110px) scale(1.85) rotateY(20deg); }
+  100% { transform: translateZ(70px) scale(1.55) rotateY(0deg); }
+}
+@keyframes chiclet-icon-spin {
+  0%   { transform: translateZ(70px) scale(1.55) rotateY(0deg); }
+  100% { transform: translateZ(70px) scale(1.55) rotateY(360deg); }
+}
+
+/* On click freeze the spin so the user can read the icon */
+.holo-tile:active .holo-float,
+.holo-tile:active .holo-bubble,
+.holo-tile:active > svg,
+.holo-tile:active img,
+.holo-tile:active [data-tile-icon],
+.holo-card:active .holo-float,
+.holo-card:active .holo-bubble,
+.holo-card:active > svg,
+.holo-card:active img,
+.holo-card:active [data-tile-icon] {
+  animation-play-state: paused !important;
+}
+
+/* Reduced motion — keep depth, drop the spin */
+@media (prefers-reduced-motion: reduce) {
+  .holo-tile:hover .holo-float,
+  .holo-tile:hover .holo-bubble,
+  .holo-tile:hover > svg,
+  .holo-tile:hover img,
+  .holo-tile:hover [data-tile-icon],
+  .holo-card:hover .holo-float,
+  .holo-card:hover .holo-bubble,
+  .holo-card:hover > svg,
+  .holo-card:hover img,
+  .holo-card:hover [data-tile-icon] {
+    animation: none;
+    transform: translateZ(40px) scale(1.3);
+  }
+  .holo-tile::before,
+  .holo-card::before { animation: none !important; }
+}
