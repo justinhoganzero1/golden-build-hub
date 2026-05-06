@@ -1218,25 +1218,25 @@ a[aria-disabled="true"],
   /* Real transparent button — crisp glass rim, soft outer halo,
      drop shadow for lift. No diagonal extrusion. */
   box-shadow:
-    /* THICK outer glass rim — stacked outlines, darker navy back edges */
-    0 0 0 1px hsl(200 100% 85% / 0.60),
-    0 0 0 2px hsl(205 90% 65% / 0.55),
-    0 0 0 3px hsl(215 85% 40% / 0.65),
-    0 0 0 4px hsl(222 80% 22% / 0.80),
-    0 0 0 5px hsl(225 85% 14% / 0.85),
-    0 0 0 6px hsl(228 90% 8% / 0.75),
+    /* TRIPLE-THICK outer glass rim — stacked outlines transitioning to deep navy */
+    0 0 0 2px hsl(200 100% 85% / 0.65),
+    0 0 0 5px hsl(205 90% 65% / 0.60),
+    0 0 0 8px hsl(215 85% 40% / 0.70),
+    0 0 0 12px hsl(222 80% 22% / 0.82),
+    0 0 0 15px hsl(225 85% 14% / 0.88),
+    0 0 0 18px hsl(228 90% 8% / 0.80),
     /* outer halo */
-    0 0 24px hsl(200 100% 70% / 0.28),
-    /* deeper lift shadow */
-    0 14px 26px hsl(0 0% 0% / 0.65),
-    0 30px 50px hsl(0 0% 0% / 0.55),
-    /* THICKER inner glass bevel — deep navy bottom/back */
-    inset 0 4px 0 hsl(0 0% 100% / 0.55),
-    inset 0 -4px 0 hsl(228 90% 6% / 0.85),
-    inset 0 -7px 2px hsl(225 80% 12% / 0.55),
-    inset 3px 0 0 hsl(0 0% 100% / 0.18),
-    inset -3px 0 0 hsl(225 85% 10% / 0.65),
-    inset 0 0 40px hsl(200 100% 80% / 0.08) !important;
+    0 0 32px hsl(200 100% 70% / 0.32),
+    /* deeper lift shadow to support the chunkier body */
+    0 20px 36px hsl(0 0% 0% / 0.70),
+    0 40px 70px hsl(0 0% 0% / 0.60),
+    /* TRIPLE-THICK inner glass bevels — deep navy bottom/back */
+    inset 0 12px 0 hsl(0 0% 100% / 0.55),
+    inset 0 -12px 0 hsl(228 90% 6% / 0.88),
+    inset 0 -20px 4px hsl(225 80% 12% / 0.60),
+    inset 9px 0 0 hsl(0 0% 100% / 0.20),
+    inset -9px 0 0 hsl(225 85% 10% / 0.70),
+    inset 0 0 50px hsl(200 100% 80% / 0.10) !important;
   animation: none !important;
 }
 
