@@ -20,8 +20,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { useDraggable } from "@/hooks/useDraggable";
+import { runFullDiagnostic, type DoctorReport } from "@/lib/systemDoctor";
 
-type TaskKind = "image" | "video" | "text";
+type TaskKind = "image" | "video" | "text" | "research" | "diagnose";
 type Job = {
   id: string;
   prompt: string;
