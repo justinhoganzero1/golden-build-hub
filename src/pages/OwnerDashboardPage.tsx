@@ -6,7 +6,6 @@ import {
   Search, Filter, Send, Crown, Zap, Image, Video, Music,
   Camera, Grid, List, Trash2, Play, Download, Share2, LogOut, Home
 } from "lucide-react";
-import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -649,18 +648,17 @@ const OwnerDashboardPage = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
-      <UniversalBackButton fallbackPath="/dashboard" />
       <button
         type="button"
         onClick={() => navigate("/dashboard", { replace: false })}
-        aria-label="Go to user dashboard"
-        className="fixed left-4 z-[999] flex items-center gap-2 rounded-full border border-primary/60 bg-background/95 px-5 py-3 text-sm font-black text-primary shadow-[0_0_32px_hsl(var(--primary)/0.45)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_44px_hsl(var(--primary)/0.65)] active:scale-95"
-        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        aria-label="Go back to user dashboard"
+        className="fixed left-3 z-[1000] flex items-center gap-2 rounded-full border-2 border-primary bg-primary px-5 py-3 text-sm font-black uppercase tracking-normal text-primary-foreground shadow-[0_0_44px_hsl(var(--primary)/0.75)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary/90 active:scale-95"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
       >
         <Home className="h-5 w-5" />
-        User Dashboard
+        USER DASHBOARD
       </button>
-      <div className="px-4 pt-14 pb-4">
+      <div className="px-4 pt-20 pb-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <div className="p-3 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
