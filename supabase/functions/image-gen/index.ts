@@ -70,7 +70,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     try {
-      await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage });
+      await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage, tier: chosenTier });
     } catch (e) {
       if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
       throw e;
