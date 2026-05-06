@@ -74,7 +74,7 @@ const tiles: AppTile[] = [
 ];
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
