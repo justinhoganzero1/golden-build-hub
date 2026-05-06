@@ -8,7 +8,7 @@ import {
   BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
   Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
   Bell, Map, Smartphone, CreditCard, BarChart3,
-  Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock
+  Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock, LogOut
 } from "lucide-react";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
