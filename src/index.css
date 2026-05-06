@@ -1225,26 +1225,37 @@ a[aria-disabled="true"],
 
 .holo-tile::before,
 .holo-card::before {
-  /* Translucent iridescent rim — light passes THROUGH the edge */
-  background: conic-gradient(
-    from 0deg,
-    hsl(280 100% 65% / 0.55),
-    hsl(200 100% 60% / 0.55),
-    hsl(160 100% 55% / 0.55),
-    hsl(60 100% 60% / 0.55),
-    hsl(20 100% 60% / 0.55),
-    hsl(330 100% 65% / 0.55),
-    hsl(280 100% 65% / 0.55)
-  ) !important;
-  padding: 7px !important;
+  /* Beveled iridescent rim — top-lit highlight, bottom shadow for 3D depth */
+  background:
+    /* directional bevel light: bright top-left, dark bottom-right */
+    linear-gradient(135deg,
+      hsl(0 0% 100% / 0.95) 0%,
+      hsl(0 0% 100% / 0.4) 18%,
+      hsl(0 0% 0% / 0.05) 45%,
+      hsl(0 0% 0% / 0.55) 80%,
+      hsl(0 0% 0% / 0.85) 100%),
+    /* iridescent translucent base */
+    conic-gradient(
+      from 0deg,
+      hsl(280 100% 65% / 0.55),
+      hsl(200 100% 60% / 0.55),
+      hsl(160 100% 55% / 0.55),
+      hsl(60 100% 60% / 0.55),
+      hsl(20 100% 60% / 0.55),
+      hsl(330 100% 65% / 0.55),
+      hsl(280 100% 65% / 0.55)
+    ) !important;
+  background-blend-mode: overlay, normal !important;
+  padding: 8px !important;
   inset: 0 !important;
-  opacity: 0.85 !important;
-  /* Rainbow glow bleeding out the SIDES of the chiclet */
-  filter: blur(0.4px)
-          drop-shadow(0 0 6px hsl(280 100% 65% / 0.7))
-          drop-shadow(0 0 12px hsl(200 100% 60% / 0.55))
-          drop-shadow(0 0 18px hsl(160 100% 55% / 0.45))
-          drop-shadow(0 0 24px hsl(330 100% 65% / 0.4)) !important;
+  opacity: 0.95 !important;
+  /* Outer rainbow halo bleeding from the SIDES + crisp inner bevel shadow */
+  filter:
+    drop-shadow(-1px -1px 0 hsl(0 0% 100% / 0.7))
+    drop-shadow(2px 2px 1px hsl(0 0% 0% / 0.85))
+    drop-shadow(0 0 8px hsl(280 100% 65% / 0.65))
+    drop-shadow(0 0 16px hsl(200 100% 60% / 0.5))
+    drop-shadow(0 0 24px hsl(330 100% 65% / 0.4)) !important;
   animation: none !important;
 }
 @keyframes chrome-spin {
