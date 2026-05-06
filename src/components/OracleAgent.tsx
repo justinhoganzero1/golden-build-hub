@@ -149,6 +149,28 @@ export default function OracleAgent() {
         const done: Job = { ...j, status: "done", resultUrl: url };
         setJob(done);
         await maybeSave(done);
+      } else if (kind === "research") {
+        const r = await fetch(RESEARCH_URL, {
+          method: "POST", headers,
+          body: JSON.stringify({ query: prompt, context: `Route: ${location.pathname}` }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Research failed");
+        const done: Job = { ...j, status: "done", resultText: data.answer || "(no answer)", sources: data.sources || [] };
+        setJob(done);
+        await maybeSave(done);
+      } else if (kind === "diagnose") {
+        const report = await runFullDiagnostic((step) => {
+          // could surface progress later
+          console.log("[oracle-doctor]", step);
+        });
+        const summary =
+          `🔍 Self-Diagnosis Complete\n\n` +
+          `✅ Passed: ${report.passed}   ⚠️ Warnings: ${report.warned}   ❌ Failed: ${report.failed}   🛠 Repaired: ${report.repaired}\n\n` +
+          report.results.map(r => `${r.status === "ok" ? "✅" : r.status === "warn" ? "⚠️" : r.status === "repaired" ? "🛠" : "❌"} ${r.name} — ${r.detail}`).join("\n") +
+          `\n\n${report.summary}`;
+        const done: Job = { ...j, status: "done", resultText: summary, report };
+        setJob(done);
       } else {
         // Text — call oracle-chat (streaming)
         const r = await fetch(ORACLE_URL, {
@@ -185,7 +207,7 @@ export default function OracleAgent() {
       setJob({ ...j, status: "error", error: e?.message || "Failed" });
       toast.error(e?.message || "Oracle task failed");
     }
-  }, [user, consent]);
+  }, [user, consent, location.pathname]);
 
   const maybeSave = async (j: Job) => {
     if (consent !== "keep") return;
