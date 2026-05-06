@@ -1865,8 +1865,8 @@ const OraclePage = () => {
         content: `On it — painting that for you in the background. I'll drop the finished image into your Library.`
       };
       setShowChat(true);
-      setMessages(prev => [...prev, userMsg, ack]);
-      if (!isMuted) speakAsAgent(ack.content, oracleName);
+        setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
+        if (!finalOnlyMode && !isMuted) speakAsAgent(ack.content, oracleName);
       (async () => {
         try {
           const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
@@ -1901,8 +1901,8 @@ const OraclePage = () => {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🌊", color: "#FFD700",
         content: `On it — generating that sound effect quietly in the background. I'll save it straight to your Library.`
       };
-      setMessages(prev => [...prev, userMsg, ack]);
-      if (!isMuted) speakAsAgent(ack.content, oracleName);
+        setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
+        if (!finalOnlyMode && !isMuted) speakAsAgent(ack.content, oracleName);
       // Fire and forget
       (async () => {
         try {
@@ -1930,8 +1930,8 @@ const OraclePage = () => {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎵", color: "#FFD700",
         content: `Composing that for you in the background — I'll drop the finished track into your Library when it's ready.`
       };
-      setMessages(prev => [...prev, userMsg, ack]);
-      if (!isMuted) speakAsAgent(ack.content, oracleName);
+        setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
+        if (!finalOnlyMode && !isMuted) speakAsAgent(ack.content, oracleName);
       (async () => {
         try {
           const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`, {
