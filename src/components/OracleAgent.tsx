@@ -241,7 +241,7 @@ export default function OracleAgent() {
 
   const maybeSave = async (j: Job) => {
     if (consent !== "keep") return;
-    if (j.kind === "diagnose") return;
+    if (j.kind === "diagnose" || j.kind === "phoenix") return;
     if (!j.resultUrl && !j.resultText) return;
     const mediaType: "image" | "video" | "text" =
       j.kind === "image" ? "image" : j.kind === "video" ? "video" : "text";
