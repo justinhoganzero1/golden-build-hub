@@ -1602,6 +1602,7 @@ const OraclePage = () => {
     if (!text.trim()) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
+    const finalOnlyMode = !isIntroTrigger && /\b(?:loop|work|keep\s+(?:going|working|trying)|continue|run)\b[\s\S]{0,80}\b(?:till|until)\b[\s\S]{0,80}\b(?:totally\s+)?(?:finished|done|complete|completed)\b|\b(?:don'?t|do\s+not)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,80}\b(?:till|until)\b[\s\S]{0,80}\b(?:finished|done|complete|completed)\b|\b(?:only|just)\s+(?:reply|respond|message|talk|speak|update)\b[\s\S]{0,80}\b(?:when|after)\b[\s\S]{0,80}\b(?:finished|done|complete|completed)\b/i.test(text);
 
     // ── FIRST-VISIT SETUP INTERCEPT ──
     // While the Oracle is asking the user for its name + appearance, every
@@ -1768,8 +1769,8 @@ const OraclePage = () => {
         content: `On it — handing this to the Master App Builder agents. They'll architect, code, flesh out and smoke-test the whole thing in the background, then drop the finished site straight into your Library. Keep chatting with me while it builds.`
       };
       setShowChat(true);
-      setMessages(prev => [...prev, userMsgB, ackB]);
-      if (!isMuted) speakAsAgent(ackB.content, oracleName);
+      setMessages(prev => finalOnlyMode ? [...prev, userMsgB] : [...prev, userMsgB, ackB]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ackB.content, oracleName);
       (async () => {
         try {
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`, {
@@ -1802,15 +1803,17 @@ const OraclePage = () => {
                   const now = Date.now();
                   if (now - lastStageToastAt > 1500) {
                     lastStageToastAt = now;
-                    toast(`Builder: ${evt.message}`);
+                    if (!finalOnlyMode) toast(`Builder: ${evt.message}`);
                     // Also stream the progress into the chat so the user
                     // sees live updates instead of a silent agent.
-                    const progressMsg: Message = {
-                      id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-                      role: "assistant", sender: oracleName, emoji: "⚙️", color: "#FFD700",
-                      content: `🔧 ${evt.message}`,
-                    };
-                    setMessages(prev => [...prev, progressMsg]);
+                    if (!finalOnlyMode) {
+                      const progressMsg: Message = {
+                        id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+                        role: "assistant", sender: oracleName, emoji: "⚙️", color: "#FFD700",
+                        content: `🔧 ${evt.message}`,
+                      };
+                      setMessages(prev => [...prev, progressMsg]);
+                    }
                   }
                 } else if (evt.event === "done") {
                   code = evt.code || "";
