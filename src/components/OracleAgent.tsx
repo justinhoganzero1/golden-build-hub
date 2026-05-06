@@ -305,13 +305,14 @@ export default function OracleAgent() {
               <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <p className="text-xs text-zinc-400 mb-3">
-              Ask me to make <em>anything</em> — image, short video, story, plan. I work in the background and show you the result.
+              Ask me to make <em>anything</em> — image, video, story, or to <strong>search the web</strong> ("how do I…")
+              or <strong>diagnose the app</strong> ("scan the app", "something's wrong"). I work in the background.
             </p>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { runJob(input); setInput(""); } }}
-              placeholder="e.g. A cinematic 8K poster of a rottweiler in Bali sunglasses…"
+              placeholder="e.g. Scan the app for problems · How do I fix a black screen on iOS? · 8K poster of a rottweiler in Bali"
               rows={4}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500"
             />
