@@ -1300,7 +1300,7 @@ a[aria-disabled="true"],
 
 /* Extra room beneath each tile so the deep slab + contact shadow don't clip into the next row */
 .holo-tile,
-.holo-card { margin-bottom: 56px !important; }
+.holo-card { margin-bottom: 80px !important; }
 
 /* ═══ 6D ISOMETRIC GLASS — near-invisible body, whisper rainbow,
        soft ice-blue neon edge. World-first signature look. ═══ */
