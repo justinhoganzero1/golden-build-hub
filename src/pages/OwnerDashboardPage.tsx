@@ -653,12 +653,12 @@ const OwnerDashboardPage = () => {
       <button
         type="button"
         onClick={() => navigate("/dashboard", { replace: false })}
-        aria-label="Go to main dashboard"
-        className="fixed right-3 z-[60] flex items-center gap-2 rounded-full border border-primary/50 bg-background/90 px-4 py-2.5 text-sm font-bold text-primary shadow-[0_0_24px_hsl(var(--primary)/0.35)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_36px_hsl(var(--primary)/0.55)] active:scale-95"
-        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+        aria-label="Go to user dashboard"
+        className="fixed left-4 z-[999] flex items-center gap-2 rounded-full border border-primary/60 bg-background/95 px-5 py-3 text-sm font-black text-primary shadow-[0_0_32px_hsl(var(--primary)/0.45)] backdrop-blur-md transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_44px_hsl(var(--primary)/0.65)] active:scale-95"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
       >
-        <Home className="h-4 w-4" />
-        Main Dashboard
+        <Home className="h-5 w-5" />
+        User Dashboard
       </button>
       <div className="px-4 pt-14 pb-4">
         {/* Header */}
@@ -672,10 +672,10 @@ const OwnerDashboardPage = () => {
           </div>
           <button
             onClick={() => navigate("/dashboard", { replace: false })}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground border border-primary/40 shadow-[0_0_24px_hsl(var(--primary)/0.35)] hover:bg-primary/90 transition"
             title="Go to the normal user dashboard"
           >
-            <Home className="w-4 h-4" /> Main App
+            <Home className="w-4 h-4" /> User Dashboard
           </button>
           <button
             onClick={async () => {
