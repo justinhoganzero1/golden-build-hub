@@ -386,7 +386,7 @@ export default function OracleAgent() {
             {job.kind === "video" && job.resultUrl && (
               <video src={job.resultUrl} controls autoPlay className="max-w-full max-h-[80vh] rounded-xl shadow-2xl" />
             )}
-            {(job.kind === "text" || job.kind === "research" || job.kind === "diagnose") && job.resultText && (
+            {(job.kind === "text" || job.kind === "research" || job.kind === "diagnose" || job.kind === "phoenix") && job.resultText && (
               <div className="max-w-2xl w-full space-y-4">
                 <div className="prose prose-invert max-w-none whitespace-pre-wrap text-zinc-100">{job.resultText}</div>
                 {job.sources && job.sources.length > 0 && (
