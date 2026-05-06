@@ -115,18 +115,41 @@ const OraclePreviewPage = () => {
                 </div>
 
                 <div className="border-t border-border/80 bg-background/80 px-4 py-3">
-                  <div className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-background px-3 py-2 shadow-inner">
-                    <button className="rounded-full p-2 text-primary bg-primary/10" aria-label="Microphone preview">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex items-center gap-2 rounded-2xl border border-primary/20 bg-background px-3 py-2 shadow-inner"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => navigate("/oracle?mic=1")}
+                      className="rounded-full p-2 text-primary bg-primary/10 hover:bg-primary/20 transition"
+                      aria-label="Open microphone"
+                    >
                       <Mic className="w-5 h-5" />
                     </button>
-                    <button className="rounded-full p-2 text-primary/80 bg-primary/5" aria-label="Attachment preview">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/oracle?attach=1")}
+                      className="rounded-full p-2 text-primary/80 bg-primary/5 hover:bg-primary/15 transition"
+                      aria-label="Add attachment"
+                    >
                       <Paperclip className="w-5 h-5" />
                     </button>
-                    <div className="flex-1 text-sm text-muted-foreground">Speak, type, or attach for Oracle...</div>
-                    <button className="rounded-full bg-primary p-2 text-primary-foreground" aria-label="Send preview">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Speak, type, or attach for Oracle..."
+                      className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-primary p-2 text-primary-foreground hover:opacity-90 transition"
+                      aria-label="Send to Oracle"
+                    >
                       <Send className="w-5 h-5" />
                     </button>
-                  </div>
+                  </form>
                 </div>
               </div>
             </div>
