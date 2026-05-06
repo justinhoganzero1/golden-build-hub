@@ -44,6 +44,7 @@ const AppBuilderPage = () => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentCode, setCurrentCode] = useState<string | null>(null);
+  const [buildStages, setBuildStages] = useState<{ stage: string; message: string; ok?: boolean }[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
