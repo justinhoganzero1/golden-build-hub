@@ -207,24 +207,17 @@ export default function OracleAgent() {
   if (ORB_HIDDEN_ROUTES.some((p) => location.pathname.startsWith(p))) return null;
 
   const busy = job?.status === "running";
-  const orbStyle: React.CSSProperties = {
-    position: "fixed",
-    left: drag.x,
-    top: drag.y,
-    zIndex: 60,
-    touchAction: "none",
-  };
 
   return (
     <>
       {/* Floating orb */}
       <button
-        ref={drag.ref as any}
-        onPointerDown={drag.onPointerDown}
-        onClick={() => { if (!drag.didDrag) setOpen(true); }}
-        style={orbStyle}
+        ref={drag.ref}
+        {...drag.dragHandlers}
+        onClick={() => { if (!drag.justDragged) setOpen(true); }}
+        style={{ ...drag.style, zIndex: 60 }}
         aria-label="Oracle Agent"
-        className="group select-none"
+        className="select-none"
       >
         <div className={`relative w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-700 shadow-[0_0_30px_rgba(251,191,36,0.5)] flex items-center justify-center ${busy ? "animate-pulse" : ""}`}>
           {busy && (
