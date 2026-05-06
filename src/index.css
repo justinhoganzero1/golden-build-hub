@@ -1217,14 +1217,10 @@ a[aria-disabled="true"],
   box-shadow: none !important;
 }
 
-/* Upright Y-axis spin only — no diagonal wobble */
+/* Anchored facing forward — no rotation */
 .holo-tile,
 .holo-card {
-  animation: chiclet-spin-y 14s linear infinite;
-}
-@keyframes chiclet-spin-y {
-  0%   { transform: scale(0.78) perspective(1200px) rotateY(0deg); }
-  100% { transform: scale(0.78) perspective(1200px) rotateY(360deg); }
+  animation: none !important;
 }
 
 .holo-tile::before,
