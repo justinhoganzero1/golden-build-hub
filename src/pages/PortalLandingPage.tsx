@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Shield as AdminShield } from "lucide-react";
 import SEO from "@/components/SEO";
 import HomepageMailbox from "@/components/HomepageMailbox";
+import WeeklyWinnerShowcase from "@/components/WeeklyWinnerShowcase";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const HOME_JSON_LD = [
@@ -401,6 +402,8 @@ const PortalLandingPage = () => {
 
 
       {/* "Why people love" 3-card section removed per owner request. */}
+
+      <WeeklyWinnerShowcase />
 
       {/* ── Features (holographic tiles like Dashboard) ── */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-20">
