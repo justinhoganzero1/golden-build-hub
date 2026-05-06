@@ -1800,9 +1800,17 @@ const OraclePage = () => {
                 const evt = JSON.parse(block.slice(5).trim());
                 if (evt.event === "stage" && evt.message) {
                   const now = Date.now();
-                  if (now - lastStageToastAt > 2500) {
+                  if (now - lastStageToastAt > 1500) {
                     lastStageToastAt = now;
                     toast(`Builder: ${evt.message}`);
+                    // Also stream the progress into the chat so the user
+                    // sees live updates instead of a silent agent.
+                    const progressMsg: Message = {
+                      id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+                      role: "assistant", sender: oracleName, emoji: "⚙️", color: "#FFD700",
+                      content: `🔧 ${evt.message}`,
+                    };
+                    setMessages(prev => [...prev, progressMsg]);
                   }
                 } else if (evt.event === "done") {
                   code = evt.code || "";
