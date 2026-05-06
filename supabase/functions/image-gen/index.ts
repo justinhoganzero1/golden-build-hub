@@ -15,8 +15,13 @@ const ABSOLUTE_BLOCK: RegExp[] = [
 ];
 const M_RATED = /\b(nude|naked|nsfw|explicit|sexual|erotic|xxx|porn|hentai|topless|lingerie|underwear|seductive|provocative|undress|strip|fetish|orgasm|masturbat)\b/i;
 
-// Image generation provider cost (Gemini 3 Pro Image): ~3¢/image
-const IMAGE_GEN_COST_CENTS = 3;
+// Multi-agent image router (same Lovable AI Gateway, different specialist):
+//   - "fast"    → google/gemini-3.1-flash-image-preview (Nano Banana 2) ~1¢/image
+//   - "premium" → google/gemini-3-pro-image-preview                     ~3¢/image
+const IMAGE_MODELS: Record<string, { model: string; cost: number }> = {
+  fast:    { model: "google/gemini-3.1-flash-image-preview", cost: 1 },
+  premium: { model: "google/gemini-3-pro-image-preview",     cost: 3 },
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
