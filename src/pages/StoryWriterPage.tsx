@@ -542,6 +542,20 @@ const StoryWriterPage = () => {
           </div>
         )}
 
+        {/* Big share-to-social CTA — always available */}
+        <div className="px-4 mt-4 mb-8">
+          <button
+            onClick={() => setShareOpen(true)}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:scale-[1.01] transition"
+          >
+            <Share2 className="w-5 h-5" />
+            Share to Social Media (WhatsApp, Facebook, X, Instagram, TikTok & more)
+          </button>
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
+            Publish first to share a public link, or share the Oracle Lunar link to invite friends.
+          </p>
+        </div>
+
         <ShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
