@@ -432,10 +432,46 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <Link2 className="w-5 h-5 text-blue-400" />
               <span className="text-[10px] text-foreground">VK</span>
             </button>
+            <button onClick={shareInstagram} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-pink-400" />
+              <span className="text-[10px] text-foreground">Instagram</span>
+            </button>
+            <button onClick={shareTikTok} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-foreground" />
+              <span className="text-[10px] text-foreground">TikTok</span>
+            </button>
+            <button onClick={shareYouTube} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-red-500" />
+              <span className="text-[10px] text-foreground">YouTube</span>
+            </button>
+            <button onClick={shareDiscord} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-indigo-400" />
+              <span className="text-[10px] text-foreground">Discord</span>
+            </button>
+            <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <MessageCircle className="w-5 h-5 text-blue-500" />
+              <span className="text-[10px] text-foreground">Messenger</span>
+            </button>
+            <button onClick={shareMastodon} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-purple-400" />
+              <span className="text-[10px] text-foreground">Mastodon</span>
+            </button>
+            <button onClick={shareXing} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-teal-500" />
+              <span className="text-[10px] text-foreground">Xing</span>
+            </button>
+            <button onClick={shareHackerNews} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-orange-400" />
+              <span className="text-[10px] text-foreground">HN</span>
+            </button>
+            <button onClick={shareWeibo} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Link2 className="w-5 h-5 text-rose-500" />
+              <span className="text-[10px] text-foreground">Weibo</span>
+            </button>
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Some platforms are blocked in certain browsers/devices — those buttons fall back to your share sheet or copy-ready text.
+            Some platforms (Instagram, TikTok, YouTube) don't allow direct web posting — we copy your link and open the app so you can paste it into your post.
           </p>
 
           {/* Email */}
