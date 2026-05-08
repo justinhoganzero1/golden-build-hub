@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
