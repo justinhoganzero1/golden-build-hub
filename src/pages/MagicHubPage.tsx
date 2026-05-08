@@ -2,6 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Star, Wand2, Sparkles, Palette, Zap, Gift, Loader2, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { moderatePrompt } from "@/lib/contentSafety";
