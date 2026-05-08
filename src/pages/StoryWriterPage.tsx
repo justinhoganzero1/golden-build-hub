@@ -15,6 +15,7 @@ import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import StoragePanel from "@/components/StoragePanel";
 
 interface StoryChapter {
   title: string;
