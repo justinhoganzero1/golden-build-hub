@@ -317,7 +317,84 @@ Write the full chapter now (5000+ words):`;
     }
   };
 
-  const addChapter = () => {
+  // Build context summary from previous chapters (truncated)
+  const buildPrevContext = (uptoIdx: number): string => {
+    return story.chapters
+      .slice(0, uptoIdx)
+      .map((c, i) => `${c.title}:\n${c.content.slice(0, 800)}${c.content.length > 800 ? "..." : ""}`)
+      .join("\n\n");
+  };
+
+  const aiGenerateFullChapter = async (guidance?: string) => {
+    const ch = story.chapters[activeChapter];
+    if (!ch) return;
+    try {
+      toast.info("Generating full chapter (5000+ words). This may take a minute...");
+      const text = await generateLongChapter(
+        ch.title,
+        guidance ?? chapterGuidance,
+        buildPrevContext(activeChapter)
+      );
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...ch, content: text };
+        return { ...s, chapters: next };
+      });
+      const wc = text.split(/\s+/).filter(Boolean).length;
+      toast.success(`Chapter generated — ${wc.toLocaleString()} words`);
+      setChapterGuidance("");
+      setFlowStage("askEdit");
+      void saveToLibrary({
+        media_type: "text",
+        title: `Story Chapter: ${ch.title}`,
+        url: text,
+        source_page: "story-writer",
+        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc },
+      });
+    } catch (e: any) {
+      toast.error("Chapter generation failed: " + (e?.message || "unknown"));
+    }
+  };
+
+  const aiEditChapterWithInstructions = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content.trim()) { toast.error("Nothing to edit"); return; }
+    if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
+    try {
+      const text = await callAI(
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 5000+ words). Return only the revised chapter prose.`,
+        `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+      );
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...ch, content: text };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter edited");
+      setEditInstructions("");
+      setFlowStage("askEdit");
+    } catch (e: any) {
+      toast.error("Edit failed: " + (e?.message || "unknown"));
+    }
+  };
+
+  const goToNextChapter = async (guidance: string) => {
+    // Add a new chapter if needed, then generate it.
+    const newIdx = activeChapter + 1;
+    if (newIdx >= story.chapters.length) {
+      setStory(s => ({
+        ...s,
+        chapters: [...s.chapters, { title: `Chapter ${s.chapters.length + 1}`, content: "" }],
+      }));
+    }
+    setActiveChapter(newIdx);
+    setNextGuidance("");
+    setFlowStage("idle");
+    // give state a tick, then generate
+    setTimeout(() => { void aiGenerateFullChapter(guidance); }, 50);
+  };
+
     setStory(s => ({
       ...s,
       chapters: [...s.chapters, { title: `Chapter ${s.chapters.length + 1}`, content: "" }],
