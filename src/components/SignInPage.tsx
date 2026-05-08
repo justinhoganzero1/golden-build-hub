@@ -32,10 +32,19 @@ const SignInPage = () => {
     if (authLoading || !user) return;
     const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
     const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
-    const safeRedirect = requestedAdmin && !isOwner ? "/dashboard" : redirectPath;
-    const nextPath = isOwner ? "/owner-dashboard" : safeRedirect;
+    // Non-owners may NOT visit admin routes — bounce to user dashboard.
+    // Owners may visit ANY route, including the regular user dashboard. Only
+    // force them into the owner dashboard when they didn't ask for somewhere
+    // specific (i.e. arrived at /sign-in with no redirect).
+    const cameFromOwnerLink = isOwnerAccess; // explicit ?redirect=/owner-dashboard
+    let nextPath: string;
+    if (!isOwner) {
+      nextPath = requestedAdmin ? "/dashboard" : redirectPath;
+    } else {
+      nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
+    }
     navigate(nextPath, { replace: true });
-  }, [authLoading, user, ownerEmail, redirectPath, navigate]);
+  }, [authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess]);
 
   useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 
