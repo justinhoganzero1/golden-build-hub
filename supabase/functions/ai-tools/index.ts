@@ -13,7 +13,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { type, prompt } = await req.json();
+    const { type, prompt, model: modelOverride, maxTokens } = await req.json();
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
