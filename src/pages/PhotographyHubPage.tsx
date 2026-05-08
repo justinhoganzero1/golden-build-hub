@@ -340,7 +340,11 @@ const PhotographyHubPage = () => {
           <div>
             <h1 className="text-xl font-bold text-primary">8K Photo Studio</h1>
             <p className="text-muted-foreground text-xs">Ultra-high-resolution still images · Generate or Edit</p>
-          </div>
+        </div>
+
+        <div className="mb-4">
+          <StoragePanel sourcePages={["photography-hub", "photo-edit-studio"]} mediaTypes={["image"]} title="My Photo Storage" />
+        </div>
         </div>
 
         {/* Free trial counter */}
