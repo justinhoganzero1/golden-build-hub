@@ -183,6 +183,8 @@ const LivingGifStudioPage = () => {
           </p>
         </header>
 
+        <StoragePanel sourcePages={["living-avatars"]} title="My Living Avatar Storage" />
+
         {/* Generator */}
         <Card className="p-5 space-y-4 border-primary/30 bg-gradient-to-br from-card to-card/70">
           <div>
