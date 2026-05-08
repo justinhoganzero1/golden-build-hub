@@ -150,7 +150,11 @@ const StoryWriterPage = () => {
     [story.chapters]
   );
 
-  const callAI = async (system: string, prompt: string): Promise<string> => {
+  const callAI = async (
+    system: string,
+    prompt: string,
+    opts?: { model?: string; maxTokens?: number }
+  ): Promise<string> => {
     const mod = (await import("@/lib/contentSafety")).moderatePrompt(`${system}\n\n${prompt}`);
     if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); throw new Error("blocked"); }
     setAiBusy(true);
@@ -161,7 +165,12 @@ const StoryWriterPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
-        body: JSON.stringify({ type: "assistant", prompt: `${system}\n\n${prompt}` }),
+        body: JSON.stringify({
+          type: "assistant",
+          prompt: `${system}\n\n${prompt}`,
+          model: opts?.model,
+          maxTokens: opts?.maxTokens,
+        }),
       });
       if (!resp.ok) throw new Error(await resp.text());
       const data = await resp.json();
@@ -169,6 +178,51 @@ const StoryWriterPage = () => {
     } finally {
       setAiBusy(false);
     }
+  };
+
+  // Long-chapter generator: targets 5000+ words, with multi-pass continuation if model returns short.
+  const MIN_WORDS = 5000;
+  const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+  const generateLongChapter = async (
+    chapterTitle: string,
+    guidance: string,
+    previousContext: string
+  ): Promise<string> => {
+    const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
+Write a COMPLETE chapter of AT LEAST 5000 words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines. Write only the chapter prose. You may include the chapter title as the first line.`;
+
+    const userPrompt = `STORY TITLE: ${story.title}
+GENRE: ${story.genre}
+PREMISE: ${story.premise}
+
+PREVIOUS CHAPTERS (summary/context):
+${previousContext || "(none — this is an early chapter)"}
+
+CHAPTER TO WRITE: ${chapterTitle}
+USER GUIDANCE FOR THIS CHAPTER:
+${guidance || "(no extra guidance — follow the natural arc)"}
+
+Write the full chapter now (5000+ words):`;
+
+    let text = await callAI(baseSystem, userPrompt, {
+      model: "google/gemini-2.5-pro",
+      maxTokens: 16000,
+    });
+
+    // If short, request continuations until we hit MIN_WORDS or 3 attempts.
+    let attempts = 0;
+    while (wordCount(text) < MIN_WORDS && attempts < 3) {
+      attempts++;
+      const tail = text.slice(-2000);
+      const more = await callAI(
+        `You are continuing the same ${story.genre} chapter seamlessly. Do not repeat. Add several more rich scenes/paragraphs to extend the chapter. Continue the prose only.`,
+        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter (target total ${MIN_WORDS}+ words):`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+      );
+      text = (text + "\n\n" + more).trim();
+    }
+    return text;
   };
 
   const aiContinue = async () => {
