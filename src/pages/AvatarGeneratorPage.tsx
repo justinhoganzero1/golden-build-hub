@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -268,6 +269,9 @@ const AvatarGeneratorPage = () => {
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
+        <div className="mb-4">
+          <StoragePanel sourcePages={["Avatar Generator", "avatar-generator"]} mediaTypes={["image"]} title="My Avatar Storage" />
+        </div>
         {purchasedProduct && (
           <div className="bg-gradient-to-r from-green-600/30 to-emerald-600/30 border border-green-500/30 rounded-2xl p-4 mb-4 flex items-center gap-3">
             <CreditCard className="w-6 h-6 text-green-400" />

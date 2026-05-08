@@ -4,6 +4,7 @@ import { Sparkles, Wand2, Check, Trash2, Loader2, Crown, Download, Home, PlayCir
 import { DownloadButton } from "@/components/DownloadButton";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import StoragePanel from "@/components/StoragePanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -181,6 +182,8 @@ const LivingGifStudioPage = () => {
             Bank unlimited GIFs forever — set any one as your active Oracle face.
           </p>
         </header>
+
+        <StoragePanel sourcePages={["living-avatars"]} title="My Living Avatar Storage" />
 
         {/* Generator */}
         <Card className="p-5 space-y-4 border-primary/30 bg-gradient-to-br from-card to-card/70">

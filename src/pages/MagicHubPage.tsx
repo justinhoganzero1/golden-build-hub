@@ -2,6 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Star, Wand2, Sparkles, Palette, Zap, Gift, Loader2, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { moderatePrompt } from "@/lib/contentSafety";
@@ -85,6 +86,10 @@ const MagicHubPage = () => {
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-xl bg-primary/10"><Star className="w-7 h-7 text-primary" /></div>
           <div><h1 className="text-xl font-bold text-primary">Magic Hub</h1><p className="text-muted-foreground text-xs">AI magic at your fingertips</p></div>
+        </div>
+
+        <div className="mb-4">
+          <StoragePanel sourcePages={["magic-hub"]} title="My Magic Hub Storage" />
         </div>
 
         {activeTool && currentTool ? (

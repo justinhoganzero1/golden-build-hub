@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen, Pencil } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
@@ -339,7 +340,11 @@ const PhotographyHubPage = () => {
           <div>
             <h1 className="text-xl font-bold text-primary">8K Photo Studio</h1>
             <p className="text-muted-foreground text-xs">Ultra-high-resolution still images · Generate or Edit</p>
-          </div>
+        </div>
+
+        <div className="mb-4">
+          <StoragePanel sourcePages={["photography-hub", "photo-edit-studio"]} mediaTypes={["image"]} title="My Photo Storage" />
+        </div>
         </div>
 
         {/* Free trial counter */}

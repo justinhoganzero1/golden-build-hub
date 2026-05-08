@@ -15,6 +15,7 @@ import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import StoragePanel from "@/components/StoragePanel";
 
 interface StoryChapter {
   title: string;
@@ -542,28 +543,17 @@ Write the full chapter now (5000+ words):`;
           </div>
         </div>
 
-        {/* Saved library strip */}
-        {savedStories.length > 0 && (
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-[11px] text-muted-foreground mb-2">Your saved stories</p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {savedStories.map((s: any) => (
-                <button
-                  key={s.id}
-                  onClick={() => loadSaved(s.id)}
-                  className={`shrink-0 px-3 py-2 rounded-lg border text-xs ${
-                    savingId === s.id
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "bg-card border-border text-foreground hover:border-primary/50"
-                  }`}
-                >
-                  <FileText className="w-3 h-3 inline mr-1" />
-                  {s.title || "Untitled"}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Storage: drafts + finished stories */}
+        <div className="px-4 py-3 border-b border-border">
+          <StoragePanel
+            sourcePages={["story-writer"]}
+            mediaTypes={["story"]}
+            title="My Story Storage (drafts + finished)"
+            thumbnails={false}
+            emptyText="No saved stories yet — start writing and they'll appear here automatically."
+            onLoad={(it) => loadSaved(it.id)}
+          />
+        </div>
 
         {/* Title + Genre + Premise */}
         <div className="px-4 py-4 space-y-3">
