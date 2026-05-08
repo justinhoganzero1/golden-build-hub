@@ -627,7 +627,117 @@ Write the full chapter now (5000+ words):`;
             className="w-full bg-card border border-border rounded-lg px-3 py-3 text-sm text-foreground leading-relaxed resize-y font-serif"
           />
 
-          {/* AI Tools */}
+          {/* === AI CHAPTER WORKFLOW === */}
+          <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-3">
+            {flowStage === "idle" && (
+              <>
+                <p className="text-xs font-semibold text-primary">
+                  ✨ Generate Full Chapter (5,000+ words)
+                </p>
+                <textarea
+                  value={chapterGuidance}
+                  onChange={e => setChapterGuidance(e.target.value)}
+                  placeholder="Optional: tell the AI what should happen in this chapter (key scenes, characters, tone, twists...). Leave blank to follow the natural arc."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <button
+                  onClick={() => aiGenerateFullChapter()}
+                  disabled={aiBusy}
+                  className="w-full py-2.5 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Generate Full Chapter
+                </button>
+              </>
+            )}
+
+            {flowStage === "askEdit" && (
+              <>
+                <p className="text-sm font-semibold text-foreground">
+                  ✅ Chapter generated. Would you like to edit it?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setFlowStage("editing")}
+                    className="py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm"
+                  >
+                    Yes, edit it
+                  </button>
+                  <button
+                    onClick={() => setFlowStage("askNext")}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground font-semibold text-sm"
+                  >
+                    No, continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {flowStage === "editing" && (
+              <>
+                <p className="text-xs font-semibold text-primary">
+                  ✏️ Edit chapter — describe the changes
+                </p>
+                <textarea
+                  value={editInstructions}
+                  onChange={e => setEditInstructions(e.target.value)}
+                  placeholder="e.g. Make the dialogue sharper, add a betrayal in the middle, soften the villain's monologue..."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={aiEditChapterWithInstructions}
+                    disabled={aiBusy || !editInstructions.trim()}
+                    className="py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                    Apply Edits
+                  </button>
+                  <button
+                    onClick={() => { setEditInstructions(""); setFlowStage("askEdit"); }}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+
+            {flowStage === "askNext" && (
+              <>
+                <p className="text-sm font-semibold text-foreground">
+                  📖 Any suggestions for the next chapter?
+                </p>
+                <textarea
+                  value={nextGuidance}
+                  onChange={e => setNextGuidance(e.target.value)}
+                  placeholder="Optional: what should happen next? Leave blank and the AI will continue naturally."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => goToNextChapter(nextGuidance)}
+                    disabled={aiBusy}
+                    className="py-2 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Generate Next Chapter
+                  </button>
+                  <button
+                    onClick={() => setFlowStage("idle")}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground text-sm"
+                  >
+                    Done for now
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Quick AI Tools */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={aiContinue}
