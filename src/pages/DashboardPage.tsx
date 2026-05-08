@@ -15,6 +15,7 @@ import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import HomePublicGallery from "@/components/HomePublicGallery";
 
 interface AppTile {
   label: string;
@@ -209,6 +210,9 @@ const DashboardPage = () => {
         url={`https://oracle-lunar.online/?ref=${user ? `ORACLE LUNAR${user.id.slice(0,6).toUpperCase()}` : ""}`}
         description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
+
+      {/* Creators' Gallery — auto-loads opt-in public creations */}
+      <HomePublicGallery />
 
       {/* Expand/collapse controls */}
       <div className="px-4 flex items-center gap-2 mb-3">
