@@ -65,6 +65,46 @@ const StoryWriterPage = () => {
   const [editInstructions, setEditInstructions] = useState("");
   const [nextGuidance, setNextGuidance] = useState("");
 
+  // === Autosave AI inputs to localStorage (per story + chapter) ===
+  const draftKey = useMemo(
+    () => `story-writer-drafts:${savingId || "new"}:${activeChapter}`,
+    [savingId, activeChapter]
+  );
+
+  // Load drafts when story/chapter changes
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        setChapterGuidance(d.chapterGuidance || "");
+        setEditInstructions(d.editInstructions || "");
+        setNextGuidance(d.nextGuidance || "");
+      } else {
+        setChapterGuidance("");
+        setEditInstructions("");
+        setNextGuidance("");
+      }
+    } catch { /* ignore */ }
+  }, [draftKey]);
+
+  // Persist drafts (debounced)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        if (chapterGuidance || editInstructions || nextGuidance) {
+          localStorage.setItem(
+            draftKey,
+            JSON.stringify({ chapterGuidance, editInstructions, nextGuidance })
+          );
+        } else {
+          localStorage.removeItem(draftKey);
+        }
+      } catch { /* ignore */ }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [draftKey, chapterGuidance, editInstructions, nextGuidance]);
+
   // Load saved stories from library
   const { data: savedStories = [] } = useQuery({
     queryKey: ["story-writer-library", user?.id],
