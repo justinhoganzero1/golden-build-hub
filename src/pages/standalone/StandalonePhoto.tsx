@@ -2,6 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Upload, Loader2, Sparkles } from "lucide-react";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
