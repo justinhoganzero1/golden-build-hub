@@ -4,80 +4,137 @@ import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
-  Wallet, Calendar, Clock, Settings, User, Sparkles, Phone,
-  BookOpen, Users, Zap, Globe, Star, Lightbulb, Film,
-  Eye, Mic, ShoppingCart, Palette, GraduationCap, Home,
-  Bell, Map, Smartphone, CreditCard, BarChart3,
-  Pill, Gift, Share2, Wrench, TrendingUp, Code, Lock, LogOut
+  Wallet, Calendar, Clock, Settings, User, Sparkles,
+  BookOpen, Globe, Star, Lightbulb, Film,
+  Eye, Palette, GraduationCap, Home,
+  Bell, CreditCard, BarChart3,
+  Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AppTile {
   label: string;
   icon: React.ReactNode;
   path: string;
-  /** Minimum tier needed. null = free */
-  tier: string | null;
 }
 
-// FREE: Oracle, Subscribe, Settings, Profile, Suggestion Box, Referral, About/Legal
-// STARTER: Most features
-// MONTHLY: Premium features  
-// GOLDEN: Ultra premium
-const tiles: AppTile[] = [
-  { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle", tier: null },
-  { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub", tier: "starter" },
-  { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub", tier: null },
-  { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter", tier: null },
-  { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault", tier: "starter" },
-  { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet", tier: "starter" },
-  
-  { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor", tier: "monthly" },
-  { label: "Movie Studio", icon: <Film className="w-6 h-6" />, path: "/movie-studio-pro", tier: "monthly" },
-  { label: "YouTube Studio", icon: <Video className="w-6 h-6" />, path: "/youtube-show-studio", tier: "monthly" },
-  
-  { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library", tier: "starter" },
-  { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision", tier: "monthly" },
-  { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio", tier: "monthly" },
-  { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub", tier: "monthly" },
-  { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant", tier: "starter" },
-  // Claims removed from dashboard — still accessible via direct route if needed.
-  { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor", tier: "starter" },
-  { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter", tier: "starter" },
-  { label: "Inventor", icon: <Lightbulb className="w-6 h-6" />, path: "/inventor", tier: "monthly" },
-  { label: "Calendar", icon: <Calendar className="w-6 h-6" />, path: "/calendar", tier: "starter" },
-  { label: "Alarm Clock", icon: <Clock className="w-6 h-6" />, path: "/alarm-clock", tier: "starter" },
-  { label: "Safety Center", icon: <Shield className="w-6 h-6" />, path: "/safety-center", tier: null },
-  { label: "Diagnostics", icon: <Heart className="w-6 h-6" />, path: "/diagnostics", tier: "starter" },
-  { label: "Elderly Care", icon: <Pill className="w-6 h-6" />, path: "/elderly-care", tier: "starter" },
-  { label: "Avatar Gen", icon: <Palette className="w-6 h-6" />, path: "/avatar-generator", tier: "starter" },
-  { label: "Pro Hub", icon: <BarChart3 className="w-6 h-6" />, path: "/professional-hub", tier: "monthly" },
-  { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub", tier: "starter" },
-  { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub", tier: "starter" },
-  
-  { label: "Occasions", icon: <Gift className="w-6 h-6" />, path: "/special-occasions", tier: "starter" },
-  { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box", tier: null },
-  { label: "Referral", icon: <Gift className="w-6 h-6" />, path: "/referral", tier: null },
-  { label: "Share App", icon: <Share2 className="w-6 h-6" />, path: "__share__", tier: null },
-  { label: "Coins", icon: <Star className="w-6 h-6" />, path: "/wallet", tier: null },
-  { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder", tier: "quarterly" },
-  { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn", tier: "starter" },
-  { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer", tier: "starter" },
-  { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings", tier: null },
-  { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile", tier: null },
-  { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion", tier: "monthly" },
-  { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor", tier: null },
-  { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators", tier: null },
+interface TileGroup {
+  id: string;
+  label: string;
+  emoji: string;
+  defaultOpen?: boolean;
+  tiles: AppTile[];
+}
+
+const groups: TileGroup[] = [
+  {
+    id: "featured",
+    label: "Talk to Oracle",
+    emoji: "✨",
+    defaultOpen: true,
+    tiles: [
+      { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle" },
+      { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
+      { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
+      { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
+      { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
+      { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
+    ],
+  },
+  {
+    id: "creator",
+    label: "Create & Studio",
+    emoji: "🎬",
+    defaultOpen: true,
+    tiles: [
+      { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
+      { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
+      { label: "Movie Studio", icon: <Film className="w-6 h-6" />, path: "/movie-studio-pro" },
+      { label: "YouTube Studio", icon: <Video className="w-6 h-6" />, path: "/youtube-show-studio" },
+      { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
+      { label: "Avatar Gen", icon: <Palette className="w-6 h-6" />, path: "/avatar-generator" },
+      { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub" },
+      { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer" },
+      { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
+    ],
+  },
+  {
+    id: "care",
+    label: "Care & Safety",
+    emoji: "🛡️",
+    tiles: [
+      { label: "Crisis Hub", icon: <Shield className="w-6 h-6" />, path: "/crisis-hub" },
+      { label: "Safety Center", icon: <Shield className="w-6 h-6" />, path: "/safety-center" },
+      { label: "Elderly Care", icon: <Pill className="w-6 h-6" />, path: "/elderly-care" },
+      { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub" },
+      { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub" },
+      { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter" },
+    ],
+  },
+  {
+    id: "productivity",
+    label: "Daily Life",
+    emoji: "📅",
+    tiles: [
+      { label: "Calendar", icon: <Calendar className="w-6 h-6" />, path: "/calendar" },
+      { label: "Alarm Clock", icon: <Clock className="w-6 h-6" />, path: "/alarm-clock" },
+      { label: "Occasions", icon: <Gift className="w-6 h-6" />, path: "/special-occasions" },
+      { label: "Inventor", icon: <Lightbulb className="w-6 h-6" />, path: "/inventor" },
+      { label: "Pro Hub", icon: <BarChart3 className="w-6 h-6" />, path: "/professional-hub" },
+      { label: "App Builder", icon: <Wrench className="w-6 h-6" />, path: "/app-builder" },
+      { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
+    ],
+  },
+  {
+    id: "money",
+    label: "Wallet & Vault",
+    emoji: "💰",
+    tiles: [
+      { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet" },
+      { label: "Coins", icon: <Star className="w-6 h-6" />, path: "/wallet" },
+      { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault" },
+      { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor" },
+      { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators" },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings & Account",
+    emoji: "⚙️",
+    tiles: [
+      { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
+      { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
+      { label: "Diagnostics", icon: <Heart className="w-6 h-6" />, path: "/diagnostics" },
+      { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box" },
+      { label: "Referral", icon: <Gift className="w-6 h-6" />, path: "/referral" },
+      { label: "Share App", icon: <Share2 className="w-6 h-6" />, path: "__share__" },
+    ],
+  },
 ];
+
+const STORAGE_KEY = "oracle-lunar-dash-groups-open";
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
   const { isAdmin } = useIsAdmin();
+
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return Object.fromEntries(groups.map(g => [g.id, !!g.defaultOpen]));
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openMap)); } catch {}
+  }, [openMap]);
 
   const [layout, setLayout] = useState(() => {
     try {
@@ -93,27 +150,25 @@ const DashboardPage = () => {
   }, []);
 
   const gridCols = layout?.gridCols || 4;
-  const iconSize = layout?.iconSize || "w-6 h-6";
   const labelSize = layout?.fontSize || "text-[10px]";
   const gridGap = layout?.gap || "gap-3";
   const tileBR = layout?.borderRadius || "rounded-xl";
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
-    // Coin economy: every signed-in member can enter every tool.
-    // Paid AI actions charge coins server-side when used.
     navigate(tile.path);
   };
+
+  const expandAll = () => setOpenMap(Object.fromEntries(groups.map(g => [g.id, true])));
+  const collapseAll = () => setOpenMap(Object.fromEntries(groups.map(g => [g.id, false])));
 
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      {/* Banner */}
       <div className="w-full overflow-hidden">
         <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-40 object-cover" />
       </div>
 
-      {/* Welcome + Security Shield + Share */}
       <div className="px-4 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
@@ -147,8 +202,6 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Subscription/pricing banners removed: ORACLE LUNAR now uses coins only. */}
-
       <ShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
@@ -157,31 +210,52 @@ const DashboardPage = () => {
         description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
 
-      {/* App Grid */}
-      <div className={`grid ${gridGap} px-4 pb-24`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
-        {tiles.map((tile) => {
-          const locked = false;
+      {/* Expand/collapse controls */}
+      <div className="px-4 flex items-center gap-2 mb-3">
+        <button onClick={expandAll} className="text-[11px] px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition">Expand all</button>
+        <button onClick={collapseAll} className="text-[11px] px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground hover:bg-muted/70 transition">Collapse all</button>
+      </div>
+
+      {/* Grouped sections */}
+      <div className="px-4 pb-24 space-y-3">
+        {groups.map((group) => {
+          const open = !!openMap[group.id];
           return (
-            <button
-              key={tile.path + tile.label}
-              onClick={() => handleTileClick(tile)}
-              className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR} relative ${locked ? "opacity-70" : ""}`}
+            <Collapsible
+              key={group.id}
+              open={open}
+              onOpenChange={(v) => setOpenMap(prev => ({ ...prev, [group.id]: v }))}
+              className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm overflow-hidden"
             >
-              {locked && (
-                <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center z-10">
-                  <Lock className="w-3 h-3 text-primary-foreground" />
+              <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{group.emoji}</span>
+                  <span className="font-semibold text-foreground text-sm">{group.label}</span>
+                  <span className="text-[10px] text-muted-foreground">({group.tiles.length})</span>
                 </div>
-              )}
-              <div className={`holo-icon text-primary [&>svg]:${iconSize}`}>{tile.icon}</div>
-              <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
-                {tile.label}
-              </span>
-            </button>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className={`grid ${gridGap} px-3 pb-4 pt-1`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
+                  {group.tiles.map((tile) => (
+                    <button
+                      key={group.id + tile.path + tile.label}
+                      onClick={() => handleTileClick(tile)}
+                      className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR} relative`}
+                    >
+                      <div className="holo-icon text-primary">{tile.icon}</div>
+                      <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
+                        {tile.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           );
         })}
       </div>
 
-      {/* Bottom Nav */}
       <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around py-3">
         <button onClick={() => navigate("/dashboard")} className="flex flex-col items-center gap-1 text-primary">
           <div className="holo-icon"><Home className="w-5 h-5" /></div>
