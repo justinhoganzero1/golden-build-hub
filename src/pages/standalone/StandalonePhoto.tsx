@@ -60,6 +60,7 @@ const StandalonePhoto = () => {
 
   return (
     <div className="space-y-4">
+      <StoragePanel sourcePages={["standalone-photo"]} mediaTypes={["image"]} title="My Photo Storage" />
       <label className="block">
         <div className="aspect-video rounded-2xl border-2 border-dashed border-border bg-card flex items-center justify-center cursor-pointer hover:border-primary/40 overflow-hidden">
           {preview ? (
