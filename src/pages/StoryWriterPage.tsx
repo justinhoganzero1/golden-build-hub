@@ -57,6 +57,13 @@ const StoryWriterPage = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [chapterGuidance, setChapterGuidance] = useState("");
+  // Workflow stage after a chapter is generated:
+  // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
+  // 'editing' = collecting edit instructions; 'askNext' = ask for next chapter guidance.
+  const [flowStage, setFlowStage] = useState<"idle" | "askEdit" | "editing" | "askNext">("idle");
+  const [editInstructions, setEditInstructions] = useState("");
+  const [nextGuidance, setNextGuidance] = useState("");
 
   // Load saved stories from library
   const { data: savedStories = [] } = useQuery({
