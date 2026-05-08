@@ -211,6 +211,9 @@ const DashboardPage = () => {
         description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
 
+      {/* Creators' Gallery — auto-loads opt-in public creations */}
+      <HomePublicGallery />
+
       {/* Expand/collapse controls */}
       <div className="px-4 flex items-center gap-2 mb-3">
         <button onClick={expandAll} className="text-[11px] px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition">Expand all</button>
