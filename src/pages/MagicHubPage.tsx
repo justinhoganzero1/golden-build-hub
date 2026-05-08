@@ -88,6 +88,10 @@ const MagicHubPage = () => {
           <div><h1 className="text-xl font-bold text-primary">Magic Hub</h1><p className="text-muted-foreground text-xs">AI magic at your fingertips</p></div>
         </div>
 
+        <div className="mb-4">
+          <StoragePanel sourcePages={["magic-hub"]} title="My Magic Hub Storage" />
+        </div>
+
         {activeTool && currentTool ? (
           <div className="space-y-4">
             <button onClick={() => { setActiveTool(null); setResult(null); setPrompt(""); }} className="flex items-center gap-2 text-sm text-primary"><ArrowLeft className="w-4 h-4" /> Back to tools</button>
