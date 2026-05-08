@@ -57,6 +57,13 @@ const StoryWriterPage = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [chapterGuidance, setChapterGuidance] = useState("");
+  // Workflow stage after a chapter is generated:
+  // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
+  // 'editing' = collecting edit instructions; 'askNext' = ask for next chapter guidance.
+  const [flowStage, setFlowStage] = useState<"idle" | "askEdit" | "editing" | "askNext">("idle");
+  const [editInstructions, setEditInstructions] = useState("");
+  const [nextGuidance, setNextGuidance] = useState("");
 
   // Load saved stories from library
   const { data: savedStories = [] } = useQuery({
@@ -150,7 +157,11 @@ const StoryWriterPage = () => {
     [story.chapters]
   );
 
-  const callAI = async (system: string, prompt: string): Promise<string> => {
+  const callAI = async (
+    system: string,
+    prompt: string,
+    opts?: { model?: string; maxTokens?: number }
+  ): Promise<string> => {
     const mod = (await import("@/lib/contentSafety")).moderatePrompt(`${system}\n\n${prompt}`);
     if (!mod.ok) { toast.error(mod.reason || "Prompt blocked by content filter"); throw new Error("blocked"); }
     setAiBusy(true);
@@ -161,7 +172,12 @@ const StoryWriterPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
-        body: JSON.stringify({ type: "assistant", prompt: `${system}\n\n${prompt}` }),
+        body: JSON.stringify({
+          type: "assistant",
+          prompt: `${system}\n\n${prompt}`,
+          model: opts?.model,
+          maxTokens: opts?.maxTokens,
+        }),
       });
       if (!resp.ok) throw new Error(await resp.text());
       const data = await resp.json();
@@ -169,6 +185,51 @@ const StoryWriterPage = () => {
     } finally {
       setAiBusy(false);
     }
+  };
+
+  // Long-chapter generator: targets 5000+ words, with multi-pass continuation if model returns short.
+  const MIN_WORDS = 5000;
+  const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+  const generateLongChapter = async (
+    chapterTitle: string,
+    guidance: string,
+    previousContext: string
+  ): Promise<string> => {
+    const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
+Write a COMPLETE chapter of AT LEAST 5000 words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines. Write only the chapter prose. You may include the chapter title as the first line.`;
+
+    const userPrompt = `STORY TITLE: ${story.title}
+GENRE: ${story.genre}
+PREMISE: ${story.premise}
+
+PREVIOUS CHAPTERS (summary/context):
+${previousContext || "(none — this is an early chapter)"}
+
+CHAPTER TO WRITE: ${chapterTitle}
+USER GUIDANCE FOR THIS CHAPTER:
+${guidance || "(no extra guidance — follow the natural arc)"}
+
+Write the full chapter now (5000+ words):`;
+
+    let text = await callAI(baseSystem, userPrompt, {
+      model: "google/gemini-2.5-pro",
+      maxTokens: 16000,
+    });
+
+    // If short, request continuations until we hit MIN_WORDS or 3 attempts.
+    let attempts = 0;
+    while (wordCount(text) < MIN_WORDS && attempts < 3) {
+      attempts++;
+      const tail = text.slice(-2000);
+      const more = await callAI(
+        `You are continuing the same ${story.genre} chapter seamlessly. Do not repeat. Add several more rich scenes/paragraphs to extend the chapter. Continue the prose only.`,
+        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter (target total ${MIN_WORDS}+ words):`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+      );
+      text = (text + "\n\n" + more).trim();
+    }
+    return text;
   };
 
   const aiContinue = async () => {
@@ -254,6 +315,84 @@ const StoryWriterPage = () => {
     } catch (e: any) {
       toast.error("Rewrite failed: " + (e?.message || "unknown"));
     }
+  };
+
+  // Build context summary from previous chapters (truncated)
+  const buildPrevContext = (uptoIdx: number): string => {
+    return story.chapters
+      .slice(0, uptoIdx)
+      .map((c, i) => `${c.title}:\n${c.content.slice(0, 800)}${c.content.length > 800 ? "..." : ""}`)
+      .join("\n\n");
+  };
+
+  const aiGenerateFullChapter = async (guidance?: string) => {
+    const ch = story.chapters[activeChapter];
+    if (!ch) return;
+    try {
+      toast.info("Generating full chapter (5000+ words). This may take a minute...");
+      const text = await generateLongChapter(
+        ch.title,
+        guidance ?? chapterGuidance,
+        buildPrevContext(activeChapter)
+      );
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...ch, content: text };
+        return { ...s, chapters: next };
+      });
+      const wc = text.split(/\s+/).filter(Boolean).length;
+      toast.success(`Chapter generated — ${wc.toLocaleString()} words`);
+      setChapterGuidance("");
+      setFlowStage("askEdit");
+      void saveToLibrary({
+        media_type: "text",
+        title: `Story Chapter: ${ch.title}`,
+        url: text,
+        source_page: "story-writer",
+        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc },
+      });
+    } catch (e: any) {
+      toast.error("Chapter generation failed: " + (e?.message || "unknown"));
+    }
+  };
+
+  const aiEditChapterWithInstructions = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content.trim()) { toast.error("Nothing to edit"); return; }
+    if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
+    try {
+      const text = await callAI(
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 5000+ words). Return only the revised chapter prose.`,
+        `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+      );
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...ch, content: text };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter edited");
+      setEditInstructions("");
+      setFlowStage("askEdit");
+    } catch (e: any) {
+      toast.error("Edit failed: " + (e?.message || "unknown"));
+    }
+  };
+
+  const goToNextChapter = async (guidance: string) => {
+    // Add a new chapter if needed, then generate it.
+    const newIdx = activeChapter + 1;
+    if (newIdx >= story.chapters.length) {
+      setStory(s => ({
+        ...s,
+        chapters: [...s.chapters, { title: `Chapter ${s.chapters.length + 1}`, content: "" }],
+      }));
+    }
+    setActiveChapter(newIdx);
+    setNextGuidance("");
+    setFlowStage("idle");
+    // give state a tick, then generate
+    setTimeout(() => { void aiGenerateFullChapter(guidance); }, 50);
   };
 
   const addChapter = () => {
@@ -488,7 +627,117 @@ const StoryWriterPage = () => {
             className="w-full bg-card border border-border rounded-lg px-3 py-3 text-sm text-foreground leading-relaxed resize-y font-serif"
           />
 
-          {/* AI Tools */}
+          {/* === AI CHAPTER WORKFLOW === */}
+          <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-3">
+            {flowStage === "idle" && (
+              <>
+                <p className="text-xs font-semibold text-primary">
+                  ✨ Generate Full Chapter (5,000+ words)
+                </p>
+                <textarea
+                  value={chapterGuidance}
+                  onChange={e => setChapterGuidance(e.target.value)}
+                  placeholder="Optional: tell the AI what should happen in this chapter (key scenes, characters, tone, twists...). Leave blank to follow the natural arc."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <button
+                  onClick={() => aiGenerateFullChapter()}
+                  disabled={aiBusy}
+                  className="w-full py-2.5 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Generate Full Chapter
+                </button>
+              </>
+            )}
+
+            {flowStage === "askEdit" && (
+              <>
+                <p className="text-sm font-semibold text-foreground">
+                  ✅ Chapter generated. Would you like to edit it?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setFlowStage("editing")}
+                    className="py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm"
+                  >
+                    Yes, edit it
+                  </button>
+                  <button
+                    onClick={() => setFlowStage("askNext")}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground font-semibold text-sm"
+                  >
+                    No, continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {flowStage === "editing" && (
+              <>
+                <p className="text-xs font-semibold text-primary">
+                  ✏️ Edit chapter — describe the changes
+                </p>
+                <textarea
+                  value={editInstructions}
+                  onChange={e => setEditInstructions(e.target.value)}
+                  placeholder="e.g. Make the dialogue sharper, add a betrayal in the middle, soften the villain's monologue..."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={aiEditChapterWithInstructions}
+                    disabled={aiBusy || !editInstructions.trim()}
+                    className="py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                    Apply Edits
+                  </button>
+                  <button
+                    onClick={() => { setEditInstructions(""); setFlowStage("askEdit"); }}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+
+            {flowStage === "askNext" && (
+              <>
+                <p className="text-sm font-semibold text-foreground">
+                  📖 Any suggestions for the next chapter?
+                </p>
+                <textarea
+                  value={nextGuidance}
+                  onChange={e => setNextGuidance(e.target.value)}
+                  placeholder="Optional: what should happen next? Leave blank and the AI will continue naturally."
+                  rows={3}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => goToNextChapter(nextGuidance)}
+                    disabled={aiBusy}
+                    className="py-2 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                  >
+                    {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    Generate Next Chapter
+                  </button>
+                  <button
+                    onClick={() => setFlowStage("idle")}
+                    className="py-2 rounded-lg bg-card border border-border text-foreground text-sm"
+                  >
+                    Done for now
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Quick AI Tools */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={aiContinue}

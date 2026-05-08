@@ -13,7 +13,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { type, prompt } = await req.json();
+    const { type, prompt, model: modelOverride, maxTokens } = await req.json();
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -65,12 +65,15 @@ serve(async (req) => {
     const wantJson = ["email", "social", "ad", "seo"].includes(type);
 
     const body: any = {
-      model: "google/gemini-3-flash-preview",
+      model: modelOverride || "google/gemini-3-flash-preview",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
     };
+    if (typeof maxTokens === "number" && maxTokens > 0) {
+      body.max_tokens = maxTokens;
+    }
 
     if (wantJson) {
       body.messages[0].content += "\n\nIMPORTANT: Return ONLY valid JSON, no markdown code fences.";
