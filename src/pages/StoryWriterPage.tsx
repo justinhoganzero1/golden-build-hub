@@ -395,6 +395,7 @@ Write the full chapter now (5000+ words):`;
     setTimeout(() => { void aiGenerateFullChapter(guidance); }, 50);
   };
 
+  const addChapter = () => {
     setStory(s => ({
       ...s,
       chapters: [...s.chapters, { title: `Chapter ${s.chapters.length + 1}`, content: "" }],
