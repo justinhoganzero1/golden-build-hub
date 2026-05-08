@@ -487,6 +487,22 @@ const OwnerDashboardPage = () => {
     }
   };
 
+  // Verify the grant actually landed in reward_grants for the target user.
+  const verifyGrant = async (userId: string, expectFreeForLife: boolean) => {
+    const { data } = await supabase
+      .from("reward_grants")
+      .select("reward_type, reason, expires_at, active")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return false;
+    if (expectFreeForLife) return data.reward_type === "free_for_life" || data.reason === "free_for_life";
+    return true;
+  };
+
   const grantFreeForUser = async (email: string, userId: string) => {
     try {
       const { data, error } = await supabase.functions.invoke("admin-grant-free-access", {
@@ -494,8 +510,14 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Freebie credits linked to ${email}`);
-      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+      const ok = await verifyGrant(userId, false);
+      const bal = (data as any)?.newBalanceCents;
+      if (ok) {
+        toast.success(`✅ Linked to ${email}${bal != null ? ` — wallet $${(bal/100).toFixed(2)}` : ""}`);
+      } else {
+        toast.error(`Grant call returned OK but no active reward_grants row found for ${email}. Check user ID.`);
+      }
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, wallet_balance_cents: bal ?? u.wallet_balance_cents } : u));
       setFreebies(prev => [...prev, { email, date: new Date().toLocaleDateString(), reason: "Admin free AI credits" }]);
     } catch (e: any) {
       toast.error(e?.message || "Grant failed");
@@ -510,8 +532,15 @@ const OwnerDashboardPage = () => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`💎 ${email} is now Free For Life!`);
-      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, free_for_life: true, grant_expires_at: (data as any)?.expiresAt ?? u.grant_expires_at, grant_reason: "free_for_life", wallet_balance_cents: (data as any)?.newBalanceCents ?? u.wallet_balance_cents } : u));
+      const ok = await verifyGrant(userId, true);
+      const bal = (data as any)?.newBalanceCents;
+      const exp = (data as any)?.expiresAt;
+      if (ok) {
+        toast.success(`💎 ${email} is Free For Life — linked to account${bal != null ? ` (wallet $${(bal/100).toFixed(2)})` : ""}`);
+      } else {
+        toast.error(`Free For Life call returned OK but couldn't verify the grant for ${email}. Ask them to log out and back in.`);
+      }
+      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, freebie_active: true, free_for_life: true, grant_expires_at: exp ?? u.grant_expires_at, grant_reason: "free_for_life", wallet_balance_cents: bal ?? u.wallet_balance_cents } : u));
     } catch (e: any) {
       toast.error(e?.message || "Free For Life grant failed");
     }
