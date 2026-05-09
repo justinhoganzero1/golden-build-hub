@@ -47,11 +47,24 @@ export const MasterOracleLauncher = () => {
     }
   }, [isAdmin, everAdmin]);
 
+  // Sticky "has the user opened Oracle at least once this session?" flag.
+  // We never preload the /oracle iframe (which would auto-start voice).
+  // Only after the user clicks "open" do we mount the iframe — and from
+  // that point on we keep it mounted to preserve chat / voice state.
+  const [everOpened, setEverOpened] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(EVER_OPENED_KEY) === "1"; } catch { return false; }
+  });
+
   const setOpen = (next: boolean) => {
     setOpenState(next);
     try {
-      if (next) sessionStorage.setItem(OPEN_STORAGE_KEY, "1");
-      else sessionStorage.removeItem(OPEN_STORAGE_KEY);
+      if (next) {
+        sessionStorage.setItem(OPEN_STORAGE_KEY, "1");
+        sessionStorage.setItem(EVER_OPENED_KEY, "1");
+        setEverOpened(true);
+      } else {
+        sessionStorage.removeItem(OPEN_STORAGE_KEY);
+      }
     } catch {}
   };
 
