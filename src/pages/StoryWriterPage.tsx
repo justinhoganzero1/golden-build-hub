@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
-  Share2, FileText, Loader2, ChevronLeft, Crown, Lock,
+  Share2, FileText, Loader2, ChevronLeft, Crown, Lock, Image as ImageIcon, X,
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import ShareDialog from "@/components/ShareDialog";
@@ -20,6 +20,8 @@ import StoragePanel from "@/components/StoragePanel";
 interface StoryChapter {
   title: string;
   content: string;
+  /** Up to 2 AI-generated illustrations per chapter (data URLs). */
+  images?: string[];
 }
 interface StoryDoc {
   id?: string;
@@ -27,6 +29,10 @@ interface StoryDoc {
   genre: string;
   premise: string;
   chapters: StoryChapter[];
+  /** AI-generated front cover image (data URL). */
+  coverImage?: string;
+  /** AI-generated back cover image (data URL). */
+  backImage?: string;
   published?: boolean;
   publishedUrl?: string;
 }
@@ -142,6 +148,8 @@ const StoryWriterPage = () => {
             genre: meta.genre || "Fantasy",
             premise: meta.premise || "",
             chapters: meta.chapters || [{ title: "Chapter 1", content: "" }],
+            coverImage: meta.coverImage,
+            backImage: meta.backImage,
             published: meta.published,
             publishedUrl: meta.publishedUrl,
           });
@@ -168,6 +176,8 @@ const StoryWriterPage = () => {
             genre: story.genre,
             premise: story.premise,
             chapters: story.chapters,
+            coverImage: story.coverImage,
+            backImage: story.backImage,
             wordCount,
             published: story.published || false,
             publishedUrl: story.publishedUrl,
@@ -197,6 +207,96 @@ const StoryWriterPage = () => {
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
     [story.chapters]
   );
+
+  // ====== AI ILLUSTRATION GENERATOR ======
+  // Cover, back cover, and up to 2 illustrations per chapter.
+  const [imgBusy, setImgBusy] = useState<string | null>(null);
+
+  const generateStoryImage = async (
+    slot: "cover" | "back" | { kind: "chapter"; index: number },
+    customPrompt?: string,
+  ): Promise<void> => {
+    const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
+    if (imgBusy) return;
+    const ch = typeof slot === "string" ? null : story.chapters[slot.index];
+
+    let basePrompt = customPrompt?.trim() || "";
+    if (!basePrompt) {
+      if (slot === "cover") {
+        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 8K, magazine cover quality, no text, no typography.`;
+      } else if (slot === "back") {
+        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 8K, no text.`;
+      } else if (ch) {
+        const snippet = (ch.content || "").slice(0, 1200);
+        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 8K, no text, no captions.`;
+      }
+    }
+
+    setImgBusy(slotKey);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
+        },
+        body: JSON.stringify({ prompt: basePrompt, tier: "premium" }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Image generation failed");
+      }
+      const data = await resp.json();
+      const url: string | undefined =
+        data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+      if (!url) throw new Error("No image returned");
+
+      setStory((s) => {
+        if (slot === "cover") return { ...s, coverImage: url };
+        if (slot === "back") return { ...s, backImage: url };
+        const next = [...s.chapters];
+        const target = next[slot.index];
+        const existing = target.images || [];
+        if (existing.length >= 2) {
+          toast.info("Max 2 images per chapter — replacing the oldest.");
+          next[slot.index] = { ...target, images: [existing[1], url] };
+        } else {
+          next[slot.index] = { ...target, images: [...existing, url] };
+        }
+        return { ...s, chapters: next };
+      });
+
+      try {
+        const label =
+          slot === "cover" ? `${story.title} — Cover`
+          : slot === "back" ? `${story.title} — Back Cover`
+          : `${story.title} — ${ch?.title || "Chapter"} illustration`;
+        await saveToLibrary({
+          media_type: "image",
+          title: label,
+          url,
+          source_page: "story-writer",
+          metadata: { story_id: savingId, slot: slotKey, story_title: story.title },
+        });
+      } catch { /* non-fatal */ }
+      toast.success("Illustration ready!");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not generate image");
+    } finally {
+      setImgBusy(null);
+    }
+  };
+
+  const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
+    setStory((s) => {
+      const next = [...s.chapters];
+      const target = next[chapterIdx];
+      const imgs = (target.images || []).filter((_, i) => i !== imageIdx);
+      next[chapterIdx] = { ...target, images: imgs };
+      return { ...s, chapters: next };
+    });
+  };
+
 
   const callAI = async (
     system: string,
@@ -585,6 +685,47 @@ Write the full chapter now (5000+ words):`;
             rows={2}
             className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
           />
+
+          {/* Front + Back Cover Illustrations */}
+          <div className="grid grid-cols-2 gap-2">
+            {(["cover", "back"] as const).map((slot) => {
+              const url = slot === "cover" ? story.coverImage : story.backImage;
+              const isBusy = imgBusy === slot;
+              const label = slot === "cover" ? "Front Cover" : "Back Cover";
+              return (
+                <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
+                    {url ? (
+                      <>
+                        <img src={url} alt={label} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => setStory(s => ({
+                            ...s,
+                            ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
+                          }))}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label={`Remove ${label}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => generateStoryImage(slot)}
+                    disabled={!!imgBusy}
+                    className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {url ? `Re-generate ${label}` : `Generate ${label}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
           <button
             onClick={aiOutline}
             disabled={aiBusy}
@@ -656,6 +797,51 @@ Write the full chapter now (5000+ words):`;
             rows={16}
             className="w-full bg-card border border-border rounded-lg px-3 py-3 text-sm text-foreground leading-relaxed resize-y font-serif"
           />
+
+          {/* Chapter illustrations — max 2 per chapter */}
+          {(() => {
+            const ch = story.chapters[activeChapter];
+            const imgs = ch?.images || [];
+            const slotKey = `chapter-${activeChapter}`;
+            const isBusy = imgBusy === slotKey;
+            return (
+              <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/2)
+                  </p>
+                  <button
+                    onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
+                    disabled={!!imgBusy}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                  >
+                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {imgs.length >= 2 ? "Replace" : "Generate"}
+                  </button>
+                </div>
+                {imgs.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imgs.map((src, i) => (
+                      <div key={i} className="relative rounded-lg overflow-hidden border border-border">
+                        <img src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
+                        <button
+                          onClick={() => removeChapterImage(activeChapter, i)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label="Remove image"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Auto-illustrated from this chapter's content. Up to 2 per chapter.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* === AI CHAPTER WORKFLOW === */}
           <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-3">
