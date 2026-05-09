@@ -103,11 +103,11 @@ const WeeklyWinnerShowcase = () => {
               <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-foreground">
-                  Lifetime Free Photo Studio
+                  Monthly Winner · Discounted Paywalls
                 </span>
               </div>
               <span className="text-[10px] md:text-xs font-bold text-primary">
-                · No Paywalls · Forever ·
+                · Yearly Champion: Lifetime Free ·
               </span>
             </div>
             <div className="mt-1.5 flex items-center justify-between gap-3 flex-wrap">
@@ -118,7 +118,7 @@ const WeeklyWinnerShowcase = () => {
                 </span>
               </div>
               <div className="text-[10px] md:text-xs font-bold text-primary">
-                Lifetime Studio · $0 forever
+                Discounted studio access this month
               </div>
             </div>
           </div>
