@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import {
   Wand2, Loader2, Sparkles, Sliders, Scissors, RotateCw, FlipHorizontal, FlipVertical,
   Sun, Contrast, Droplet, Palette, Eraser, Maximize2, Image as ImageIcon, Brush,
@@ -93,6 +94,7 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const current = history[historyIndex];
+  const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
 
   useEffect(() => {
     if (open) {
@@ -155,6 +157,9 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
           url,
           source_page: "photo-edit-studio",
           metadata: { kind: "ai_photo_edit", prompt },
+          is_public: publishSell.is_public,
+          shop_enabled: publishSell.shop_enabled,
+          shop_price_cents: publishSell.shop_price_cents,
         });
         toast.success("Edit applied ✨ Saved to your Library");
       } else {
@@ -231,6 +236,15 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
             />
           </div>
           <canvas ref={canvasRef} className="hidden" />
+        </div>
+
+        {/* Publish & Sell opt-in */}
+        <div className="px-4 pt-3">
+          <PublishSellControls
+            value={publishSell}
+            onChange={setPublishSell}
+            kind="photo"
+          />
         </div>
 
         {/* Tabs */}

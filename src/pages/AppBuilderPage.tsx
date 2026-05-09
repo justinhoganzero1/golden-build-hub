@@ -8,6 +8,7 @@ import { useUserMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
@@ -48,6 +49,7 @@ const AppBuilderPage = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
 
   // Voice I/O state
@@ -229,16 +231,26 @@ const AppBuilderPage = () => {
     try {
       let savedId: string | undefined;
       if (project.mediaId) {
+        const wantsShop = publishSell.shop_enabled && publishSell.shop_price_cents > 0;
+        const isPublic = publishSell.is_public || wantsShop;
         await supabase.from("user_media").update({
           title: project.name, url: project.code,
           metadata: { description: project.description, type: project.type } as any,
+          is_public: isPublic,
+          shop_enabled: wantsShop,
+          shop_price_cents: wantsShop ? publishSell.shop_price_cents : 0,
         }).eq("id", project.mediaId);
         savedId = project.mediaId;
       } else {
+        const wantsShop = publishSell.shop_enabled && publishSell.shop_price_cents > 0;
+        const isPublic = publishSell.is_public || wantsShop;
         const { data, error } = await supabase.from("user_media").insert([{
           user_id: user.id, media_type: "app", title: project.name, url: project.code,
           source_page: "app-builder",
           metadata: { description: project.description, type: project.type } as any,
+          is_public: isPublic,
+          shop_enabled: wantsShop,
+          shop_price_cents: wantsShop ? publishSell.shop_price_cents : 0,
         }]).select("id").single();
         if (error) throw error;
         savedId = data?.id;
@@ -248,7 +260,7 @@ const AppBuilderPage = () => {
       toast.success("App saved to your Library");
       return savedId;
     } catch (e) { console.error("Failed to save app", e); toast.error("Failed to save app to library"); }
-  }, [user]);
+  }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
   const sendMessage = async () => {
@@ -580,6 +592,9 @@ const AppBuilderPage = () => {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-card">
+        <div className="mb-2">
+          <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
+        </div>
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}

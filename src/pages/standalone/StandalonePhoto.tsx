@@ -2,6 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Upload, Loader2, Sparkles } from "lucide-react";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import StoragePanel from "@/components/StoragePanel";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ const StandalonePhoto = () => {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
 
   const onFile = (f: File | null) => {
     setFile(f);
@@ -48,6 +50,9 @@ const StandalonePhoto = () => {
           url: out,
           source_page: "standalone-photo",
           metadata: { prompt, mode: "edit" },
+          is_public: publishSell.is_public,
+          shop_enabled: publishSell.shop_enabled,
+          shop_price_cents: publishSell.shop_price_cents,
         });
         if (id) toast.success("Saved to your Library");
       }
@@ -78,6 +83,7 @@ const StandalonePhoto = () => {
         rows={3}
         className="w-full bg-muted rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/40 resize-none"
       />
+      <PublishSellControls value={publishSell} onChange={setPublishSell} kind="photo" />
       <button
         onClick={transform}
         disabled={loading || !file || !prompt.trim()}

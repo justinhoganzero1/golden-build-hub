@@ -26,6 +26,10 @@ export interface SaveToLibraryInput {
   thumbnail_url?: string;
   metadata?: Record<string, unknown>;
   is_public?: boolean;
+  /** Optional: list this item in the Creators Shop. Implies is_public=true. */
+  shop_enabled?: boolean;
+  /** Optional: price in cents when shop_enabled is true. */
+  shop_price_cents?: number;
 }
 
 export async function saveToLibrary(input: SaveToLibraryInput): Promise<string | null> {
@@ -36,6 +40,11 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
       return null;
     }
 
+    const wantsShop = !!input.shop_enabled && (input.shop_price_cents ?? 0) > 0;
+    const isPublic = !!input.is_public || wantsShop;
+
+    let savedId: string | null = null;
+
     const { data: rpcId, error: rpcError } = await (supabase as any).rpc("save_library_item", {
       _media_type: input.media_type,
       _title: input.title,
@@ -43,30 +52,54 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
       _source_page: input.source_page,
       _thumbnail_url: input.thumbnail_url ?? null,
       _metadata: input.metadata ?? {},
-      _is_public: input.is_public ?? false,
+      _is_public: isPublic,
     });
     if (!rpcError && rpcId) {
-      try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: rpcId } })); } catch { /* noop */ }
-      return rpcId;
+      savedId = rpcId as string;
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.warn("[saveToLibrary] skipped — user not signed in");
+        return null;
+      }
+      const { data, error } = await supabase
+        .from("user_media")
+        .insert([{
+          media_type: input.media_type,
+          title: input.title,
+          url: input.url,
+          source_page: input.source_page,
+          thumbnail_url: input.thumbnail_url ?? null,
+          metadata: input.metadata ?? {},
+          is_public: isPublic,
+          user_id: user.id,
+        } as any])
+        .select("id")
+        .single();
+      if (error) {
+        console.warn("[saveToLibrary] insert failed", error.message, error);
+        return null;
+      }
+      savedId = data?.id ?? null;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn("[saveToLibrary] skipped — user not signed in");
-      return null;
+    // Apply shop fields as a post-save update (RPC doesn't accept them)
+    if (savedId && wantsShop) {
+      const { error: updErr } = await supabase
+        .from("user_media")
+        .update({
+          shop_enabled: true,
+          shop_price_cents: input.shop_price_cents ?? 0,
+          is_public: true,
+        } as any)
+        .eq("id", savedId);
+      if (updErr) console.warn("[saveToLibrary] shop update failed", updErr.message);
     }
-    const { data, error } = await supabase
-      .from("user_media")
-      .insert([{ ...input, user_id: user.id } as any])
-      .select("id")
-      .single();
-    if (error) {
-      console.warn("[saveToLibrary] insert failed", error.message, error);
-      return null;
-    }
-    // Notify any listeners (Library page) so it refetches immediately
-    try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: data?.id } })); } catch { /* noop */ }
-    return data?.id ?? null;
+
+    try {
+      window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: savedId } }));
+    } catch { /* noop */ }
+    return savedId;
   } catch (e) {
     console.warn("[saveToLibrary] unexpected", e);
     return null;
