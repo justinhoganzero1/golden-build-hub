@@ -148,6 +148,43 @@ const WeeklyWinnerShowcase = () => {
         />
       </div>
 
+      {/* 2nd & 3rd place podium */}
+      {(second || third) && (
+        <div className="max-w-3xl mx-auto mt-8 grid grid-cols-2 gap-4">
+          {[
+            { row: second, rank: 2, label: "2nd", color: "text-zinc-200", border: "border-zinc-300/60" },
+            { row: third, rank: 3, label: "3rd", color: "text-orange-300", border: "border-orange-400/60" },
+          ].map(({ row, rank, label, color, border }) => (
+            <div key={rank} className={`rounded-xl overflow-hidden border ${border} bg-card/60 backdrop-blur-sm`}>
+              <div className="aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
+                {row ? (
+                  <img
+                    src={row.image_url}
+                    alt={row.title || `${label} place winner`}
+                    loading="lazy"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">Awaiting pick</span>
+                )}
+              </div>
+              <div className="px-3 py-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Medal className={`h-4 w-4 shrink-0 ${color}`} />
+                  <span className={`text-xs font-bold uppercase tracking-widest ${color}`}>{label}</span>
+                  <span className="text-xs text-foreground truncate ml-1">
+                    {row?.creator_name || "—"}
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-primary whitespace-nowrap">
+                  Discounted paywalls
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
     </section>
   );
 };
