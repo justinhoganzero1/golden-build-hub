@@ -93,7 +93,7 @@ const groups: TileGroup[] = [
   // those are now reached via the bottom-nav Vault and Settings tabs.
 ];
 
-const STORAGE_KEY = "oracle-lunar-dash-groups-open";
+const STORAGE_KEY = "oracle-lunar-dash-groups-open-v2";
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
