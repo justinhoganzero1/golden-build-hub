@@ -244,27 +244,23 @@ const DashboardPage = () => {
         })}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around py-3">
-        <button onClick={() => navigate("/dashboard")} className="flex flex-col items-center gap-1 text-primary">
-          <div className="holo-icon"><Home className="w-5 h-5" /></div>
-          <span className="text-[10px]">Home</span>
-        </button>
-        <button onClick={() => navigate("/oracle")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <div className="holo-icon"><MessageCircle className="w-5 h-5" /></div>
-          <span className="text-[10px]">Oracle</span>
-        </button>
-        <button onClick={() => navigate("/vault")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <div className="holo-icon"><Shield className="w-5 h-5" /></div>
-          <span className="text-[10px]">Vault</span>
-        </button>
-        <button onClick={() => navigate("/settings")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <div className="holo-icon"><Settings className="w-5 h-5" /></div>
-          <span className="text-[10px]">Settings</span>
-        </button>
-        <button onClick={() => navigate("/profile")} className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-          <div className="holo-icon"><User className="w-5 h-5" /></div>
-          <span className="text-[10px]">Profile</span>
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around gap-2 px-2 py-2">
+        {[
+          { label: "Home",     icon: <Home className="w-5 h-5" />,          path: "/dashboard" },
+          { label: "Oracle",   icon: <MessageCircle className="w-5 h-5" />, path: "/oracle" },
+          { label: "Vault",    icon: <Shield className="w-5 h-5" />,        path: "/vault" },
+          { label: "Settings", icon: <Settings className="w-5 h-5" />,      path: "/settings" },
+          { label: "Profile",  icon: <User className="w-5 h-5" />,          path: "/profile" },
+        ].map((t) => (
+          <button
+            key={t.path}
+            onClick={() => navigate(t.path)}
+            className="holo-tile flex-1 flex flex-col items-center gap-1 p-2 rounded-xl"
+          >
+            <div className="holo-icon text-sky-400">{t.icon}</div>
+            <span className="text-[10px] text-foreground font-medium leading-tight">{t.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
