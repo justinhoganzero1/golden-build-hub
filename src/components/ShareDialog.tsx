@@ -443,9 +443,11 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const shareYouTube = () => shareCopyAndOpen("YouTube", "https://studio.youtube.com/");
   const shareDiscord = () => shareCopyAndOpen("Discord", "https://discord.com/channels/@me");
   const shareMessenger = async () => {
-    const u = encodeURIComponent(shareUrl);
-    const url = `https://www.facebook.com/dialog/send?link=${u}&app_id=140586622674265&redirect_uri=${u}`;
-    await universalShare("Messenger", { mobile: `fb-messenger://share?link=${u}`, desktop: url });
+    if (!facebookGate("messenger")) return;
+    await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Messenger…", { description: "Paste your link if it doesn't pre-fill." });
+    const ok = await runFacebookChain("messenger");
+    if (!ok) setShowTroubleshoot(true);
   };
   const shareMastodon = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
