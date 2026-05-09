@@ -529,31 +529,94 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
 
           {/* Dedicated Facebook quick-actions row — most-requested platform */}
           <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-2.5">
-            <div className="flex items-center gap-2 mb-2">
-              <Facebook className="w-4 h-4 text-blue-500" />
-              <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Facebook className="w-4 h-4 text-blue-500" />
+                <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+                {fbSignedIn && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/40">signed in</span>}
+              </div>
+              <button onClick={() => setShowTroubleshoot(s => !s)} className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300">
+                <HelpCircle className="w-3 h-3" /> Troubleshoot
+              </button>
             </div>
+
+            {/* Sign-in gate banner */}
+            {!fbSignedIn && (
+              <div className="mb-2 rounded-lg bg-amber-500/10 border border-amber-500/40 p-2 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] text-foreground leading-tight">
+                    Facebook blocks share windows for signed-out users. Sign in once, then we'll auto-retry your share.
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  <button onClick={openFacebook} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition">
+                    <LogIn className="w-3 h-3" /> Open Facebook & Sign in
+                  </button>
+                  <button onClick={markFbSignedIn} className="flex-1 px-2 py-1.5 rounded-md bg-green-600 hover:bg-green-500 text-white text-[10px] font-semibold transition">
+                    ✓ I'm signed in — retry
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 gap-1.5">
-              <button onClick={shareFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareFacebook} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <Facebook className="w-4 h-4 text-blue-500" />
                 <span className="text-[9px] text-foreground leading-tight">Feed Post</span>
               </button>
-              <button onClick={shareFacebookStory} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareFacebookStory} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <Facebook className="w-4 h-4 text-blue-400" />
                 <span className="text-[9px] text-foreground leading-tight">Story</span>
               </button>
-              <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareMessenger} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <MessageCircle className="w-4 h-4 text-blue-500" />
                 <span className="text-[9px] text-foreground leading-tight">Messenger</span>
               </button>
               <button onClick={openFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
                 <ExternalLink className="w-4 h-4 text-blue-400" />
-                <span className="text-[9px] text-foreground leading-tight">Sign in</span>
+                <span className="text-[9px] text-foreground leading-tight">Open FB</span>
               </button>
             </div>
+
+            {/* Dedicated copy buttons — separate URL & caption */}
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <button onClick={copyFacebookLink} className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-card border border-blue-500/40 hover:border-blue-500 text-[10px] font-medium text-foreground transition">
+                <Copy className="w-3 h-3 text-blue-400" /> Copy Facebook Link
+              </button>
+              <button onClick={copyFacebookCaption} className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-card border border-blue-500/40 hover:border-blue-500 text-[10px] font-medium text-foreground transition">
+                <FileText className="w-3 h-3 text-blue-400" /> Copy Caption
+              </button>
+            </div>
+
             <p className="text-[10px] text-muted-foreground mt-2">
-              Tip: if Facebook asks you to sign in, do that first — your story link & caption are copied so you can paste straight into the post.
+              Tip: if Facebook asks you to sign in, do that first — your link & caption are copied so you can paste straight into the post.
             </p>
+
+            {/* Troubleshooting panel */}
+            {showTroubleshoot && (
+              <div className="mt-2 rounded-lg bg-card/60 border border-blue-500/40 p-2 space-y-2 text-[10px] text-foreground">
+                <p className="font-semibold flex items-center gap-1"><HelpCircle className="w-3 h-3 text-blue-400" /> Why Facebook share fails</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                  <li><b>Not signed in:</b> FB blocks composers for guests. Use "Open Facebook & Sign in" above.</li>
+                  <li><b>Pop-up blocked:</b> your browser blocked the new window — allow pop-ups for this site.</li>
+                  <li><b>In-app browser (FB/IG):</b> open this page in Chrome/Safari instead.</li>
+                  <li><b>Quote stripped:</b> FB ignores prefilled text for non-app shares — paste manually (caption is copied).</li>
+                  <li><b>App not installed:</b> the <code>fb://</code> deep link silently fails — we then try the web version.</li>
+                  <li><b>Iframe (preview):</b> open the live site at oracle-lunar.online to share.</li>
+                </ul>
+                <p className="font-semibold pt-1">Fail-proof fallback ({fbAttempts} attempt{fbAttempts === 1 ? "" : "s"}):</p>
+                <ol className="list-decimal pl-4 space-y-0.5 text-muted-foreground">
+                  <li>Tap <b>Copy Facebook Link</b> + <b>Copy Caption</b> above.</li>
+                  <li>Tap <b>Open FB</b> to launch Facebook.com in a new tab.</li>
+                  <li>Sign in if prompted, then start a new post.</li>
+                  <li>Paste the link, then paste the caption — done.</li>
+                </ol>
+                <button onClick={openFacebook} className="w-full mt-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition">
+                  <ExternalLink className="w-3 h-3" /> Open Facebook then paste
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Quick social buttons */}
