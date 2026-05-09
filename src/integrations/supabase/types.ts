@@ -414,6 +414,7 @@ export type Database = {
           id: string
           image_url: string
           media_id: string | null
+          rank: number
           source_kind: string
           title: string | null
           updated_at: string
@@ -427,6 +428,7 @@ export type Database = {
           id?: string
           image_url: string
           media_id?: string | null
+          rank?: number
           source_kind?: string
           title?: string | null
           updated_at?: string
@@ -440,6 +442,7 @@ export type Database = {
           id?: string
           image_url?: string
           media_id?: string | null
+          rank?: number
           source_kind?: string
           title?: string | null
           updated_at?: string

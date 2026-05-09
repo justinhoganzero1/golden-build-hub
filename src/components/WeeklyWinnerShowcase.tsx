@@ -1,39 +1,47 @@
 import { useEffect, useState } from "react";
 import winnerPhoto from "@/assets/winner-photo-week.jpg";
-import { Trophy, Sparkles } from "lucide-react";
+import { Trophy, Sparkles, Medal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Featured {
   image_url: string;
   title: string | null;
   creator_name: string | null;
+  rank: number;
 }
 
 /**
- * Futuristic laptop screen displaying the admin-picked Photo of the Month
- * (falls back to the default winner asset).
+ * Futuristic laptop screen displaying the admin-picked monthly podium
+ * (1st = featured big, 2nd & 3rd shown below).
  */
 const WeeklyWinnerShowcase = () => {
-  const [featured, setFeatured] = useState<Featured | null>(null);
+  const [podium, setPodium] = useState<Record<number, Featured>>({});
 
   useEffect(() => {
     let cancelled = false;
     supabase
       .from("featured_photos")
-      .select("image_url, title, creator_name")
+      .select("image_url, title, creator_name, rank")
       .eq("active", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order("rank", { ascending: true })
       .then(({ data }) => {
-        if (!cancelled && data) setFeatured(data as Featured);
+        if (cancelled || !data) return;
+        const map: Record<number, Featured> = {};
+        (data as any[]).forEach((row) => {
+          if (row?.rank) map[row.rank] = row as Featured;
+        });
+        setPodium(map);
       });
     return () => { cancelled = true; };
   }, []);
 
-  const imageSrc = featured?.image_url || winnerPhoto;
-  const winnerName = featured?.creator_name || 'Zephyrina "MoonQuill" Vexbloom';
-  const winnerTitle = featured?.title;
+  const first = podium[1];
+  const second = podium[2];
+  const third = podium[3];
+  const imageSrc = first?.image_url || winnerPhoto;
+  const winnerName = first?.creator_name || 'Zephyrina "MoonQuill" Vexbloom';
+  const winnerTitle = first?.title;
+
 
   return (
     <section className="max-w-5xl mx-auto px-4 py-16">
@@ -139,6 +147,43 @@ const WeeklyWinnerShowcase = () => {
           style={{ width: "30%" }}
         />
       </div>
+
+      {/* 2nd & 3rd place podium */}
+      {(second || third) && (
+        <div className="max-w-3xl mx-auto mt-8 grid grid-cols-2 gap-4">
+          {[
+            { row: second, rank: 2, label: "2nd", color: "text-zinc-200", border: "border-zinc-300/60" },
+            { row: third, rank: 3, label: "3rd", color: "text-orange-300", border: "border-orange-400/60" },
+          ].map(({ row, rank, label, color, border }) => (
+            <div key={rank} className={`rounded-xl overflow-hidden border ${border} bg-card/60 backdrop-blur-sm`}>
+              <div className="aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
+                {row ? (
+                  <img
+                    src={row.image_url}
+                    alt={row.title || `${label} place winner`}
+                    loading="lazy"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground italic">Awaiting pick</span>
+                )}
+              </div>
+              <div className="px-3 py-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Medal className={`h-4 w-4 shrink-0 ${color}`} />
+                  <span className={`text-xs font-bold uppercase tracking-widest ${color}`}>{label}</span>
+                  <span className="text-xs text-foreground truncate ml-1">
+                    {row?.creator_name || "—"}
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-primary whitespace-nowrap">
+                  Discounted paywalls
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
     </section>
   );
