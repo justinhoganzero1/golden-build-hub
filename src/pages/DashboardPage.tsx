@@ -10,7 +10,7 @@ import {
   Bell, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner-dashboard-crop.jpg";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -142,11 +142,11 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      <div className="w-full overflow-hidden bg-background">
+      <div className="w-full h-48 sm:h-64 overflow-hidden bg-background">
         <img
           src={oracleLunarBanner}
           alt="Oracle Lunar Banner"
-          className="w-full h-48 sm:h-64 object-cover object-bottom"
+          className="w-full h-full object-cover object-top"
         />
       </div>
 
