@@ -2190,11 +2190,109 @@ const OraclePage = () => {
         }
       }
 
-      // Strip memory/trial markers from displayed content
+      // Strip memory/trial/creation markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
+        .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         .trim();
+
+      // ─── FAIL-PROOF CREATION MARKERS ───
+      // Oracle emits [[GEN_*: prompt]] markers whenever the user asks to create
+      // anything. Fire the real generation pipelines here so Oracle never just
+      // "talks about" creating — it actually creates.
+      try {
+        const genRe = /\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi;
+        const fired = new Set<string>();
+        let gm: RegExpExecArray | null;
+        while ((gm = genRe.exec(oracleContent)) !== null) {
+          const kind = gm[1].toUpperCase();
+          const prompt = gm[2].trim().replace(/^["']|["']$/g, "");
+          const key = kind + "::" + prompt;
+          if (fired.has(key) || !prompt) continue;
+          fired.add(key);
+
+          if (kind === "IMAGE") {
+            toast.success("Painting that for you…");
+            (async () => {
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ prompt }),
+                });
+                if (!r.ok) throw new Error("image-gen failed");
+                const data = await r.json();
+                const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+                if (!imgUrl) throw new Error("no image");
+                saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+                toast.success("Image saved to your Library");
+              } catch (e) { console.error(e); toast.error("Image generation failed"); }
+            })();
+          } else if (kind === "MUSIC") {
+            toast.success("Composing that track…");
+            (async () => {
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ prompt, duration_seconds: 30 }),
+                });
+                if (!r.ok) throw new Error("music failed");
+                const blob = await r.blob();
+                const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
+                saveMedia.mutate({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } });
+                toast.success("Music saved to your Library");
+              } catch (e) { console.error(e); toast.error("Music generation failed"); }
+            })();
+          } else if (kind === "SFX") {
+            toast.success("Generating sound effect…");
+            (async () => {
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ prompt, duration_seconds: 6, prompt_influence: 0.5 }),
+                });
+                if (!r.ok) throw new Error("sfx failed");
+                const blob = await r.blob();
+                const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
+                saveMedia.mutate({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } });
+                toast.success("Sound effect saved to your Library");
+              } catch (e) { console.error(e); toast.error("SFX generation failed"); }
+            })();
+          } else if (kind === "STORY" || kind === "POEM") {
+            // Save the brief; navigate to Story Writer with the prompt prefilled.
+            try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
+            toast.success(`Opening Story Writer with your ${kind.toLowerCase()}…`);
+            setTimeout(() => navigate(`/story-writer?prompt=${encodeURIComponent(prompt)}`), 800);
+          } else if (kind === "APP") {
+            try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
+            toast.success("Opening App Builder…");
+            setTimeout(() => navigate(`/app-builder?prompt=${encodeURIComponent(prompt)}`), 800);
+          } else if (kind === "VIDEO") {
+            // No native video pipeline yet — fall back to image + concierge note.
+            toast("Short video pipeline is rolling out — I'll generate a hero image for now.");
+            (async () => {
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ prompt: `Cinematic still frame: ${prompt}` }),
+                });
+                if (!r.ok) throw new Error("image-gen failed");
+                const data = await r.json();
+                const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+                if (imgUrl) {
+                  saveMedia.mutate({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });
+                  toast.success("Hero frame saved to your Library");
+                }
+              } catch (e) { console.error(e); }
+            })();
+          }
+        }
+      } catch (e) { console.error("creation marker parse failed", e); }
+
 
       // Handle navigation commands in Oracle response
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
