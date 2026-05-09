@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import {
   Wand2, Loader2, Sparkles, Sliders, Scissors, RotateCw, FlipHorizontal, FlipVertical,
   Sun, Contrast, Droplet, Palette, Eraser, Maximize2, Image as ImageIcon, Brush,
