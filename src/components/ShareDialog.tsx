@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2 } from "lucide-react";
+import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText } from "lucide-react";
 import { toast } from "sonner";
+
+const FB_SIGNIN_KEY = "oracle-lunar-fb-signed-in";
+const FB_PENDING_KEY = "oracle-lunar-fb-pending-share";
 
 interface ShareDialogProps {
   open: boolean;
