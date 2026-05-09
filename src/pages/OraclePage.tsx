@@ -2106,6 +2106,7 @@ const OraclePage = () => {
             .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
             .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
             .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
+            .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
       const flushSpeakableSentences = (final = false) => {
         if (isMuted) return;
