@@ -272,10 +272,10 @@ const StoryWriterPage = () => {
           : slot === "back" ? `${story.title} — Back Cover`
           : `${story.title} — ${ch?.title || "Chapter"} illustration`;
         await saveToLibrary({
-          mediaType: "image",
+          media_type: "image",
           title: label,
           url,
-          sourcePage: "story-writer",
+          source_page: "story-writer",
           metadata: { story_id: savingId, slot: slotKey, story_title: story.title },
         });
       } catch { /* non-fatal */ }
