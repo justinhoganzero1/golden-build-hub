@@ -204,45 +204,156 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     }
   };
 
-  // Facebook share — copies text first (so user can paste even if FB strips the quote),
-  // then opens the Feed composer. Falls back to opening facebook.com so the user can sign in
-  // and paste the copied content.
-  const shareFacebook = async () => {
+  // ============= FACEKBOOK FAIL-PROOF SHARING =============
+  // Build a long ordered chain of share/composer endpoints to try in sequence.
+  // This is intentionally exhaustive (50+ entries across mobile, desktop, m., mbasic.,
+  // app deep links, dialog endpoints, mirrors, language hosts) so even if some are
+  // blocked or removed by Facebook, at least one will open.
+  const buildFacebookFallbacks = (target: "feed" | "story" | "messenger" | "any"): string[] => {
     const u = encodeURIComponent(shareUrl);
     const q = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
-    // Pre-copy so user can paste once signed in
-    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
-    if (copiedOk) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+    const t = encodeURIComponent(title);
+    const APP_ID = "140586622674265";
+    const feedFallbacks = [
+      `fb://composer?text=${q}`,
+      `fb://publish/profile/me?text=${q}`,
+      `fb://faceweb/f?href=${u}`,
+      `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
+      `https://m.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/sharer.php?u=${u}&quote=${q}`,
+      `https://en-gb.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://es-la.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://fr-fr.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://de-de.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/dialog/feed?app_id=${APP_ID}&link=${u}&quote=${q}&display=popup&redirect_uri=${u}`,
+      `https://www.facebook.com/dialog/share?app_id=${APP_ID}&href=${u}&quote=${q}&display=popup&redirect_uri=${u}`,
+      `https://m.facebook.com/dialog/feed?app_id=${APP_ID}&link=${u}&quote=${q}&redirect_uri=${u}`,
+      `https://mbasic.facebook.com/sharer.php?u=${u}`,
+      `https://mbasic.facebook.com/composer/?text=${q}`,
+      `https://touch.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/share?u=${u}`,
+      `https://www.facebook.com/share/url/?url=${u}`,
+    ];
+    const storyFallbacks = [
+      `fb://story_composer?link=${u}`,
+      `fb://reels/create?link=${u}`,
+      `fb://camera?link=${u}`,
+      `https://m.facebook.com/stories/create/?link=${u}`,
+      `https://www.facebook.com/stories/create/?link=${u}`,
+      `https://www.facebook.com/stories/create/`,
+      `https://m.facebook.com/stories/`,
+      `https://www.facebook.com/stories/`,
+    ];
+    const messengerFallbacks = [
+      `fb-messenger://share?link=${u}`,
+      `fb-messenger://share/?link=${u}`,
+      `fb-messenger://compose?text=${q}`,
+      `https://www.messenger.com/new?link=${u}`,
+      `https://m.me/?link=${u}`,
+      `https://www.facebook.com/dialog/send?app_id=${APP_ID}&link=${u}&redirect_uri=${u}`,
+      `https://m.facebook.com/messages/`,
+      `https://www.messenger.com/`,
+    ];
+    const lastResort = [
+      `https://m.facebook.com/`,
+      `https://mbasic.facebook.com/`,
+      `https://www.facebook.com/`,
+      `https://touch.facebook.com/`,
+      `fb://`,
+    ];
+    if (target === "feed") return [...feedFallbacks, ...lastResort];
+    if (target === "story") return [...storyFallbacks, ...feedFallbacks.slice(0, 6), ...lastResort];
+    if (target === "messenger") return [...messengerFallbacks, ...feedFallbacks.slice(0, 4), ...lastResort];
+    return [...feedFallbacks, ...storyFallbacks, ...messengerFallbacks, ...lastResort];
+  };
+
+  // Open the FB chain progressively. We try the first; if it appears blocked
+  // (window.open returns null on web), we move down the list automatically.
+  const runFacebookChain = async (target: "feed" | "story" | "messenger" | "any") => {
+    const chain = buildFacebookFallbacks(target);
+    for (const href of chain) {
+      try {
+        // App-scheme deep links: just attempt — they fail silently if uninstalled.
+        if (href.startsWith("fb://") || href.startsWith("fb-messenger://")) {
+          try { window.location.href = href; } catch {}
+          await new Promise(r => setTimeout(r, 350));
+          continue;
+        }
+        const ok = await robustOpen(href);
+        if (ok) return true;
+      } catch {}
     }
+    return false;
+  };
+
+  const markFbSignedIn = () => {
+    try { localStorage.setItem(FB_SIGNIN_KEY, "1"); } catch {}
+    setFbSignedIn(true);
+    toast.success("Facebook marked as signed in — share buttons unlocked.");
+    // Auto-retry pending share if any
+    try {
+      const pending = localStorage.getItem(FB_PENDING_KEY);
+      if (pending) {
+        localStorage.removeItem(FB_PENDING_KEY);
+        toast.message("Retrying your Facebook share…");
+        if (pending === "story") void shareFacebookStory();
+        else if (pending === "messenger") void shareMessenger();
+        else void shareFacebook();
+      }
+    } catch {}
+  };
+
+  const facebookGate = (target: "feed" | "story" | "messenger"): boolean => {
+    if (fbSignedIn) return true;
+    try { localStorage.setItem(FB_PENDING_KEY, target); } catch {}
+    toast.message("Sign in to Facebook first", {
+      description: "Tap 'Open Facebook & Sign in', then tap 'I'm signed in' — we'll auto-retry your share.",
+    });
+    setShowTroubleshoot(true);
+    return false;
+  };
+
+  // Facebook share — copy text first, then walk the fallback chain.
+  const shareFacebook = async () => {
+    if (!facebookGate("feed")) return;
+    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    if (copiedOk) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+    setFbAttempts(a => a + 1);
     toast.message("Opening Facebook…", {
       description: copiedOk
-        ? "Sign in to Facebook if asked. Your link & text are copied — just paste into the post."
-        : "Sign in to Facebook if asked, then paste your link into the post.",
+        ? "Your link & caption are copied. Paste into the post if it doesn't pre-fill."
+        : "Paste your link into the post if it doesn't pre-fill.",
     });
-    await universalShare("Facebook", {
-      mobile: `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
-      desktop: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
-    });
+    const ok = await runFacebookChain("feed");
+    if (!ok) { setShowTroubleshoot(true); toast.error("Facebook is blocking the share window. Use the troubleshooter below."); }
   };
-  // Facebook Story — mobile deep link with web fallback
   const shareFacebookStory = async () => {
-    const u = encodeURIComponent(shareUrl);
+    if (!facebookGate("story")) return;
     await robustCopy(`${shareText}\n\n${shareUrl}`);
+    setFbAttempts(a => a + 1);
     toast.message("Opening Facebook Story…", { description: "Paste your link in the story composer." });
-    await universalShare("Facebook Story", {
-      mobile: `fb://story_composer?link=${u}`,
-      desktop: `https://www.facebook.com/stories/create/`,
-    });
+    const ok = await runFacebookChain("story");
+    if (!ok) setShowTroubleshoot(true);
   };
   // Plain "Open Facebook" — last-resort sign-in helper
   const openFacebook = async () => {
     const ok = await robustCopy(`${shareText}\n\n${shareUrl}`);
     toast.message("Opening Facebook", {
-      description: ok ? "Link copied — sign in and paste into a new post." : "Sign in and paste your link.",
+      description: ok ? "Link copied — sign in, then tap 'I'm signed in' to retry." : "Sign in, then tap 'I'm signed in'.",
     });
-    await robustOpen("https://www.facebook.com/");
+    await runFacebookChain("any");
+  };
+  // Dedicated copy helpers
+  const copyFacebookLink = async () => {
+    const ok = await robustCopy(shareUrl);
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2500); toast.success("Facebook URL copied!"); }
+    else toast.error("Couldn't copy — long-press the URL field above.");
+  };
+  const copyFacebookCaption = async () => {
+    const ok = await robustCopy(shareText);
+    if (ok) toast.success("Caption copied — paste it into your Facebook post!");
+    else toast.error("Couldn't copy caption.");
   };
   const shareTwitter = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
