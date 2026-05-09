@@ -50,7 +50,6 @@ const groups: TileGroup[] = [
     id: "creator",
     label: "Create & Studio",
     emoji: "🎬",
-    defaultOpen: true,
     tiles: [
       { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
       { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
