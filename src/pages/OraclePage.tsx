@@ -138,9 +138,35 @@ const OraclePage = () => {
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
+  const [oracleMedia, setOracleMedia] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+
+  // Oracle "step aside" — when she shows generated media she fades out, then fades back in
+  // when the media ends (video) or after ~20s (image). Trigger via:
+  //   window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image"|"video", url } }))
+  useEffect(() => {
+    const onShow = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind: "image" | "video"; url: string } | undefined;
+      if (!detail?.url) return;
+      setOracleMedia({ kind: detail.kind === "video" ? "video" : "image", url: detail.url });
+    };
+    const onHide = () => setOracleMedia(null);
+    window.addEventListener("oracle:show-media", onShow as EventListener);
+    window.addEventListener("oracle:hide-media", onHide);
+    return () => {
+      window.removeEventListener("oracle:show-media", onShow as EventListener);
+      window.removeEventListener("oracle:hide-media", onHide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (oracleMedia?.kind === "image") {
+      const t = setTimeout(() => setOracleMedia(null), 20000);
+      return () => clearTimeout(t);
+    }
+  }, [oracleMedia]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2487,31 +2513,64 @@ const OraclePage = () => {
             <span className="text-[10px] text-muted-foreground">Listening now</span>
           </div>
         )}
-        {oracleMode.mode === "orb" ? (
-          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-        ) : (
-          <div className="flex flex-col items-center gap-3 z-10">
-            <div
-              className={`relative w-[260px] h-[260px] sm:w-[340px] sm:h-[340px] md:w-[420px] md:h-[420px] rounded-full overflow-hidden border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
-              style={undefined}
-            >
-              <LivingAvatar
-                imageUrl={oracleAvatar?.image_url || MASTER_AI_AVATAR}
-                alt={oracleName}
-                intensity="subtle"
-                className="w-full h-full"
-              />
-              {isListening && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                  {[0, 1, 2].map(i => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
-                  ))}
-                </div>
-              )}
+        <div className={`transition-opacity duration-1000 ${oracleMedia ? "opacity-0 pointer-events-none" : "opacity-100"} ${oracleMode.mode === "orb" ? "absolute inset-0" : "flex flex-col items-center gap-3 z-10"}`}>
+          {oracleMode.mode === "orb" ? (
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+          ) : (
+            <div className="flex flex-col items-center gap-3 z-10">
+              <div
+                className={`relative w-[260px] h-[260px] sm:w-[340px] sm:h-[340px] md:w-[420px] md:h-[420px] rounded-full overflow-hidden border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
+                style={undefined}
+              >
+                <LivingAvatar
+                  imageUrl={oracleAvatar?.image_url || MASTER_AI_AVATAR}
+                  alt={oracleName}
+                  intensity="subtle"
+                  className="w-full h-full"
+                />
+                {isListening && (
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
             </div>
-            <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
+          )}
+        </div>
+
+        {/* Generated media overlay — Oracle steps aside while showing the user's creation */}
+        {oracleMedia && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center p-4 animate-fade-in">
+            <button
+              type="button"
+              onClick={() => setOracleMedia(null)}
+              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-background/70 border border-border flex items-center justify-center hover:bg-background"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            {oracleMedia.kind === "video" ? (
+              <video
+                src={oracleMedia.url}
+                autoPlay
+                playsInline
+                controls
+                onEnded={() => setOracleMedia(null)}
+                className="max-w-full max-h-full rounded-2xl shadow-2xl"
+              />
+            ) : (
+              <img
+                src={oracleMedia.url}
+                alt="Generated"
+                className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain"
+              />
+            )}
           </div>
         )}
+
 
         {/* Orbiting agents */}
         {activeAgents.map((a, i) => {
