@@ -17,6 +17,7 @@ import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl, isLowPowerMobile } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import FeaturedPhotoPicker from "@/components/admin/FeaturedPhotoPicker";
 
 const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
@@ -1454,6 +1455,7 @@ const OwnerDashboardPage = () => {
         {/* USERS LIBRARY */}
         {tab === "library" && (
           <div className="space-y-4">
+            <FeaturedPhotoPicker />
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-bold text-white">All Users' Media ({filteredLib.length})</h2>
               <button onClick={() => setLibView(libView === "grid" ? "list" : "grid")} className="p-2 rounded-lg bg-white/5 border border-white/10">

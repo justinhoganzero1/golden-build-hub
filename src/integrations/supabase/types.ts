@@ -404,6 +404,48 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_photos: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          creator_name: string | null
+          featured_until: string | null
+          id: string
+          image_url: string
+          media_id: string | null
+          source_kind: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          creator_name?: string | null
+          featured_until?: string | null
+          id?: string
+          image_url: string
+          media_id?: string | null
+          source_kind?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          creator_name?: string | null
+          featured_until?: string | null
+          id?: string
+          image_url?: string
+          media_id?: string | null
+          source_kind?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       global_sound_signatures: {
         Row: {
           action: string

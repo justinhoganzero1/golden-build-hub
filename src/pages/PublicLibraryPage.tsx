@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Sparkles, Lock, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
+import { Sparkles, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -10,21 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
 import { usePublicLibrary, PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFileFromUrl } from "@/lib/utils";
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-const isMember = (tier: string) =>
-  ["starter", "monthly", "quarterly", "biannual", "annual", "golden", "lifetime"].includes(tier);
-
 type SortKey = "newest" | "popular" | "price_low" | "price_high";
 
 const PublicLibraryPage = () => {
   const { user } = useAuth();
-  const { effectiveTier, loading: subLoading } = useSubscription();
   const [filter, setFilter] = useState<"all" | "shop" | "media" | "gif" | "movie">("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
@@ -52,17 +46,9 @@ const PublicLibraryPage = () => {
     return sorted;
   }, [rawItems, search, sort]);
 
-  const member = useMemo(() => isMember(effectiveTier), [effectiveTier]);
-
   const handleDownload = async (item: PublicLibraryItem) => {
     if (!user) {
       toast.error("Sign in to download from the Public Library.");
-      return;
-    }
-    if (!member) {
-      toast.error("Membership required — any paid plan unlocks downloads.", {
-        action: { label: "Upgrade", onClick: () => (window.location.href = "/subscribe") },
-      });
       return;
     }
     if (!item.url) {
@@ -86,12 +72,6 @@ const PublicLibraryPage = () => {
   const handleBuy = async (item: PublicLibraryItem) => {
     if (!user) {
       toast.error("Sign in to purchase from the Creators Shop.");
-      return;
-    }
-    if (!member) {
-      toast.error("Membership required to buy from creators.", {
-        action: { label: "Upgrade", onClick: () => (window.location.href = "/subscribe") },
-      });
       return;
     }
     setBusyId(item.id);
@@ -124,16 +104,9 @@ const PublicLibraryPage = () => {
             <p className="font-semibold mb-1">A community gallery, powered by every member.</p>
             <p className="text-muted-foreground">
               All items here were marked <span className="text-foreground font-medium">public</span> by their creator.
-              Anyone can view; <span className="text-foreground font-medium">members can download</span> for free, or
+              Anyone can view; <span className="text-foreground font-medium">signed-in users can download</span> for free, or
               <span className="text-foreground font-medium"> buy</span> shop items (creators keep 70%).
             </p>
-            {!member && (
-              <Button size="sm" className="mt-3" asChild>
-                <Link to="/subscribe">
-                  <Lock className="w-3.5 h-3.5 mr-1.5" /> Become a member to unlock downloads
-                </Link>
-              </Button>
-            )}
           </div>
         </div>
       </Card>
@@ -191,7 +164,7 @@ const PublicLibraryPage = () => {
       </p>
 
       {/* Grid */}
-      {isLoading || subLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
@@ -277,13 +250,9 @@ const PublicLibraryPage = () => {
                     >
                       {busy ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : member ? (
-                        <>
-                          <Download className="w-3 h-3 mr-1" /> Download
-                        </>
                       ) : (
                         <>
-                          <Lock className="w-3 h-3 mr-1" /> Members only
+                          <Download className="w-3 h-3 mr-1" /> Download
                         </>
                       )}
                     </Button>
