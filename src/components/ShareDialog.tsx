@@ -406,6 +406,35 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
             </button>
           )}
 
+          {/* Dedicated Facebook quick-actions row — most-requested platform */}
+          <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-2.5">
+            <div className="flex items-center gap-2 mb-2">
+              <Facebook className="w-4 h-4 text-blue-500" />
+              <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              <button onClick={shareFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <Facebook className="w-4 h-4 text-blue-500" />
+                <span className="text-[9px] text-foreground leading-tight">Feed Post</span>
+              </button>
+              <button onClick={shareFacebookStory} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <Facebook className="w-4 h-4 text-blue-400" />
+                <span className="text-[9px] text-foreground leading-tight">Story</span>
+              </button>
+              <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <MessageCircle className="w-4 h-4 text-blue-500" />
+                <span className="text-[9px] text-foreground leading-tight">Messenger</span>
+              </button>
+              <button onClick={openFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <ExternalLink className="w-4 h-4 text-blue-400" />
+                <span className="text-[9px] text-foreground leading-tight">Sign in</span>
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Tip: if Facebook asks you to sign in, do that first — your story link & caption are copied so you can paste straight into the post.
+            </p>
+          </div>
+
           {/* Quick social buttons */}
           <div className="grid grid-cols-4 gap-2">
             <button onClick={shareWhatsApp} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
