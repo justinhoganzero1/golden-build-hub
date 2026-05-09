@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Sparkles, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
+import WeeklyWinnerShowcase from "@/components/WeeklyWinnerShowcase";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,11 @@ const PublicLibraryPage = () => {
         title="Public Library — Oracle Lunar"
         description="Browse and download photos, GIFs, videos and apps shared by Oracle Lunar members. Membership unlocks downloads and the Creators Shop."
       />
+
+      {/* Winner of the Week — featured at the top */}
+      <div className="mb-6">
+        <WeeklyWinnerShowcase />
+      </div>
 
       {/* Banner */}
       <Card className="p-4 mb-6 bg-gradient-to-br from-primary/10 to-amber-500/10 border-primary/30">
