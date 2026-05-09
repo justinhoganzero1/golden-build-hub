@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
-import { Trophy, Loader2, Check, Medal } from "lucide-react";
+import { Trophy, Loader2, Check, Medal, Image as ImageIcon, BookOpen, Video, Palette, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface PublicPhoto {
+interface PublicMedia {
   id: string;
   title: string | null;
   url: string;
   thumbnail_url: string | null;
   creator_display_name: string | null;
+  media_type: string | null;
 }
 
 type Rank = 1 | 2 | 3;
+type Category = "photo" | "story" | "video" | "art" | "general";
 
 const RANK_META: Record<Rank, { label: string; color: string; ring: string; chip: string }> = {
   1: { label: "1st", color: "text-amber-300", ring: "border-amber-400 shadow-[0_0_20px_hsl(45_100%_50%/0.5)]", chip: "bg-amber-400 text-amber-950" },
@@ -20,51 +22,69 @@ const RANK_META: Record<Rank, { label: string; color: string; ring: string; chip
   3: { label: "3rd", color: "text-orange-300", ring: "border-orange-400 shadow-[0_0_18px_hsl(25_90%_55%/0.4)]", chip: "bg-orange-400 text-orange-950" },
 };
 
+const CATEGORIES: { id: Category; label: string; icon: any; types: string[] | null }[] = [
+  { id: "photo",   label: "Photo",   icon: ImageIcon, types: ["image", "photo"] },
+  { id: "story",   label: "Story",   icon: BookOpen,  types: ["story", "text", "book"] },
+  { id: "video",   label: "Video",   icon: Video,     types: ["video"] },
+  { id: "art",     label: "Art",     icon: Palette,   types: ["art", "illustration", "drawing"] },
+  { id: "general", label: "General", icon: Sparkles,  types: null },
+];
+
 const FeaturedPhotoPicker = () => {
   const { user } = useAuth();
-  const [photos, setPhotos] = useState<PublicPhoto[]>([]);
-  /** mediaId -> rank (1/2/3) */
-  const [activeByRank, setActiveByRank] = useState<Record<number, string>>({});
+  const [media, setMedia] = useState<PublicMedia[]>([]);
+  /** category -> { rank -> media_id } */
+  const [activeMap, setActiveMap] = useState<Record<Category, Record<number, string>>>({
+    photo: {}, story: {}, video: {}, art: {}, general: {},
+  });
+  const [category, setCategory] = useState<Category>("photo");
   const [selectedRank, setSelectedRank] = useState<Rank>(1);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [photosRes, featuredRes] = await Promise.all([
+    const [mediaRes, featuredRes] = await Promise.all([
       supabase
         .from("user_media")
-        .select("id, title, url, thumbnail_url, creator_display_name")
+        .select("id, title, url, thumbnail_url, creator_display_name, media_type")
         .eq("is_public", true)
-        .in("media_type", ["image", "photo"])
         .order("created_at", { ascending: false })
-        .limit(120),
+        .limit(240),
       supabase
         .from("featured_photos")
-        .select("media_id, rank")
+        .select("media_id, rank, category")
         .eq("active", true),
     ]);
-    setPhotos((photosRes.data as any) || []);
-    const map: Record<number, string> = {};
+    setMedia((mediaRes.data as any) || []);
+    const map: Record<Category, Record<number, string>> = {
+      photo: {}, story: {}, video: {}, art: {}, general: {},
+    };
     ((featuredRes.data as any[]) || []).forEach((r) => {
-      if (r?.rank && r?.media_id) map[r.rank] = r.media_id;
+      const cat = (r?.category || "photo") as Category;
+      if (r?.rank && r?.media_id && map[cat]) map[cat][r.rank] = r.media_id;
     });
-    setActiveByRank(map);
+    setActiveMap(map);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const pick = async (p: PublicPhoto) => {
+  const catMeta = CATEGORIES.find((c) => c.id === category)!;
+  const filteredMedia = catMeta.types
+    ? media.filter((m) => catMeta.types!.includes((m.media_type || "").toLowerCase()))
+    : media;
+
+  const pick = async (p: PublicMedia) => {
     if (!user) return;
     setSavingId(p.id);
     try {
-      // Deactivate any previous pick for THIS rank only
       await supabase
         .from("featured_photos")
         .update({ active: false })
         .eq("active", true)
-        .eq("rank", selectedRank);
+        .eq("rank", selectedRank)
+        .eq("category", category);
 
       const { error } = await supabase.from("featured_photos").insert({
         media_id: p.id,
@@ -74,11 +94,15 @@ const FeaturedPhotoPicker = () => {
         creator_name: p.creator_display_name,
         active: true,
         rank: selectedRank,
+        category,
         created_by: user.id,
       } as any);
       if (error) throw error;
-      setActiveByRank((prev) => ({ ...prev, [selectedRank]: p.id }));
-      toast.success(`${RANK_META[selectedRank].label} place set.`);
+      setActiveMap((prev) => ({
+        ...prev,
+        [category]: { ...prev[category], [selectedRank]: p.id },
+      }));
+      toast.success(`${catMeta.label} · ${RANK_META[selectedRank].label} place set.`);
     } catch (e: any) {
       toast.error(e?.message || "Could not set winner.");
     } finally {
@@ -91,19 +115,21 @@ const FeaturedPhotoPicker = () => {
       .from("featured_photos")
       .update({ active: false })
       .eq("active", true)
-      .eq("rank", r);
-    setActiveByRank((prev) => {
-      const next = { ...prev };
+      .eq("rank", r)
+      .eq("category", category);
+    setActiveMap((prev) => {
+      const next = { ...prev[category] };
       delete next[r];
-      return next;
+      return { ...prev, [category]: next };
     });
-    toast.success(`${RANK_META[r].label} place cleared.`);
+    toast.success(`${catMeta.label} · ${RANK_META[r].label} place cleared.`);
   };
 
-  const rankForPhoto = (id: string): Rank | null => {
-    if (activeByRank[1] === id) return 1;
-    if (activeByRank[2] === id) return 2;
-    if (activeByRank[3] === id) return 3;
+  const rankForMedia = (id: string): Rank | null => {
+    const m = activeMap[category];
+    if (m[1] === id) return 1;
+    if (m[2] === id) return 2;
+    if (m[3] === id) return 3;
     return null;
   };
 
@@ -112,21 +138,49 @@ const FeaturedPhotoPicker = () => {
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <Trophy className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-foreground">Monthly Podium · 1st / 2nd / 3rd</h3>
+          <h3 className="text-sm font-bold text-foreground">Monthly Podiums · Per Category</h3>
         </div>
       </div>
 
       <p className="text-[11px] text-muted-foreground mb-3">
-        Pick the prize tier, then tap a public user photo to award it. The 1st-place winner is the
-        feature; 2nd & 3rd appear on the podium below.
+        Pick a category, pick a prize tier, then tap a public user creation to award it.
+        Each category (Photo, Story, Video, Art, General) has its own 1st/2nd/3rd podium.
       </p>
+
+      {/* Category tabs */}
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {CATEGORIES.map((c) => {
+          const Icon = c.icon;
+          const active = category === c.id;
+          const filled = Object.keys(activeMap[c.id]).length;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setCategory(c.id)}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                active
+                  ? "border-primary bg-primary/15 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {c.label}
+              {filled > 0 && (
+                <span className="ml-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[9px] px-1.5 py-0.5">
+                  {filled}/3
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Rank selector */}
       <div className="flex gap-2 mb-3">
         {([1, 2, 3] as Rank[]).map((r) => {
           const m = RANK_META[r];
           const active = selectedRank === r;
-          const filled = !!activeByRank[r];
+          const filled = !!activeMap[category][r];
           return (
             <button
               key={r}
@@ -145,11 +199,11 @@ const FeaturedPhotoPicker = () => {
         })}
       </div>
 
-      {/* Current podium */}
+      {/* Current podium for active category */}
       <div className="grid grid-cols-3 gap-2 mb-4">
         {([1, 2, 3] as Rank[]).map((r) => {
-          const id = activeByRank[r];
-          const photo = photos.find((p) => p.id === id);
+          const id = activeMap[category][r];
+          const item = media.find((p) => p.id === id);
           const m = RANK_META[r];
           return (
             <div
@@ -159,11 +213,11 @@ const FeaturedPhotoPicker = () => {
               <span className={`text-[10px] font-bold uppercase tracking-widest ${m.color}`}>
                 {m.label}
               </span>
-              {photo ? (
+              {item ? (
                 <>
                   <img
-                    src={photo.thumbnail_url || photo.url}
-                    alt={photo.title || ""}
+                    src={item.thumbnail_url || item.url}
+                    alt={item.title || ""}
                     className="w-full aspect-square rounded object-cover"
                   />
                   <button
@@ -187,14 +241,14 @@ const FeaturedPhotoPicker = () => {
         <div className="flex items-center justify-center py-10">
           <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
         </div>
-      ) : photos.length === 0 ? (
+      ) : filteredMedia.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-6">
-          No public photos yet. Users opt in by ticking "Share publicly" when they create a photo.
+          No public {catMeta.label.toLowerCase()} entries yet. Users opt in by ticking "Share publicly".
         </p>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-[480px] overflow-y-auto">
-          {photos.map((p) => {
-            const r = rankForPhoto(p.id);
+          {filteredMedia.map((p) => {
+            const r = rankForMedia(p.id);
             const busy = savingId === p.id;
             const m = r ? RANK_META[r] : null;
             return (
@@ -205,11 +259,11 @@ const FeaturedPhotoPicker = () => {
                 className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
                   m ? m.ring : "border-transparent hover:border-amber-400/50"
                 }`}
-                title={`Tap to award ${RANK_META[selectedRank].label} place`}
+                title={`Tap to award ${catMeta.label} · ${RANK_META[selectedRank].label} place`}
               >
                 <img
                   src={p.thumbnail_url || p.url}
-                  alt={p.title || "Public photo"}
+                  alt={p.title || "Public entry"}
                   loading="lazy"
                   className="w-full aspect-square object-cover"
                 />
