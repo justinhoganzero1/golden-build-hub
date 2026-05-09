@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
-  Share2, FileText, Loader2, ChevronLeft, Crown, Lock,
+  Share2, FileText, Loader2, ChevronLeft, Crown, Lock, Image as ImageIcon, X,
 } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import ShareDialog from "@/components/ShareDialog";
@@ -20,6 +20,8 @@ import StoragePanel from "@/components/StoragePanel";
 interface StoryChapter {
   title: string;
   content: string;
+  /** Up to 2 AI-generated illustrations per chapter (data URLs). */
+  images?: string[];
 }
 interface StoryDoc {
   id?: string;
@@ -27,6 +29,10 @@ interface StoryDoc {
   genre: string;
   premise: string;
   chapters: StoryChapter[];
+  /** AI-generated front cover image (data URL). */
+  coverImage?: string;
+  /** AI-generated back cover image (data URL). */
+  backImage?: string;
   published?: boolean;
   publishedUrl?: string;
 }
