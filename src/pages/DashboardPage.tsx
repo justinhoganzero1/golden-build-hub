@@ -142,11 +142,11 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      <div className="w-full overflow-hidden bg-background">
+      <div className="w-full h-48 sm:h-64 overflow-hidden bg-background">
         <img
           src={oracleLunarBanner}
           alt="Oracle Lunar Banner"
-          className="w-full h-48 sm:h-64 object-cover object-bottom"
+          className="w-full h-full object-cover [object-position:center_145%] sm:[object-position:center_130%]"
         />
       </div>
 
