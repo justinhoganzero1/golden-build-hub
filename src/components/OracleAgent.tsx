@@ -265,7 +265,7 @@ export default function OracleAgent() {
   };
 
   // Hide on certain routes (Oracle's own page handles it natively)
-  if (!user) return null;
+  if (!user || location.pathname === "/") return null;
   if (ORB_HIDDEN_ROUTES.some((p) => location.pathname.startsWith(p))) return null;
 
   const busy = job?.status === "running";
