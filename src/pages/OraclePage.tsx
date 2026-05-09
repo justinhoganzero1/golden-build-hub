@@ -2536,7 +2536,6 @@ const OraclePage = () => {
                   </div>
                 )}
               </div>
-              <p className="text-sm text-purple-300 font-medium">{oracleName}</p>
             </div>
           )}
         </div>
