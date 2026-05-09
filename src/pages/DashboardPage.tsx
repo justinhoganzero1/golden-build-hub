@@ -142,8 +142,12 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      <div className="w-full overflow-hidden">
-        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-40 object-cover" />
+      <div className="w-full overflow-hidden bg-background">
+        <img
+          src={oracleLunarBanner}
+          alt="Oracle Lunar Banner"
+          className="w-full h-48 sm:h-64 object-cover object-bottom"
+        />
       </div>
 
       <div className="px-4 py-4 flex items-center justify-between">

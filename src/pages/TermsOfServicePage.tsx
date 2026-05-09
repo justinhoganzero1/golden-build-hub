@@ -75,7 +75,6 @@ const TermsOfServicePage = () => (
           <ul className="list-disc pl-5 space-y-1">
             <li>Only creations you mark as public may appear in the public gallery and Creators Shop.</li>
             <li>You may set a sale price on your public creations and offer them for purchase by other users.</li>
-            <li>Oracle Lunar charges a 30% platform fee on every sale; the remaining 70% is paid out to the creator.</li>
             <li>Payouts are sent to the creator's connected Stripe account. You are responsible for keeping your Stripe Connect details accurate and for any taxes owed on your earnings.</li>
             <li>By enabling sales you confirm you own or have the rights to the content you publish and agree to our content and acceptable-use rules.</li>
           </ul>
