@@ -798,6 +798,51 @@ Write the full chapter now (5000+ words):`;
             className="w-full bg-card border border-border rounded-lg px-3 py-3 text-sm text-foreground leading-relaxed resize-y font-serif"
           />
 
+          {/* Chapter illustrations — max 2 per chapter */}
+          {(() => {
+            const ch = story.chapters[activeChapter];
+            const imgs = ch?.images || [];
+            const slotKey = `chapter-${activeChapter}`;
+            const isBusy = imgBusy === slotKey;
+            return (
+              <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/2)
+                  </p>
+                  <button
+                    onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
+                    disabled={!!imgBusy}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                  >
+                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {imgs.length >= 2 ? "Replace" : "Generate"}
+                  </button>
+                </div>
+                {imgs.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imgs.map((src, i) => (
+                      <div key={i} className="relative rounded-lg overflow-hidden border border-border">
+                        <img src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
+                        <button
+                          onClick={() => removeChapterImage(activeChapter, i)}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label="Remove image"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Auto-illustrated from this chapter's content. Up to 2 per chapter.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* === AI CHAPTER WORKFLOW === */}
           <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-3">
             {flowStage === "idle" && (
