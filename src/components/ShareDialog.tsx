@@ -94,6 +94,11 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
+  const [fbSignedIn, setFbSignedIn] = useState<boolean>(() => {
+    try { return localStorage.getItem(FB_SIGNIN_KEY) === "1"; } catch { return false; }
+  });
+  const [fbAttempts, setFbAttempts] = useState(0);
 
   // Always share the public production domain — never the lovable preview/editor URL.
   const PUBLIC_ORIGIN = "https://oracle-lunar.online";
