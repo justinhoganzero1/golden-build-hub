@@ -592,6 +592,9 @@ const AppBuilderPage = () => {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-card">
+        <div className="mb-2">
+          <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
+        </div>
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}
