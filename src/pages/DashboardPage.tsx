@@ -90,31 +90,8 @@ const groups: TileGroup[] = [
       { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
     ],
   },
-  {
-    id: "money",
-    label: "Wallet & Vault",
-    emoji: "💰",
-    tiles: [
-      { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet" },
-      { label: "Coins", icon: <Star className="w-6 h-6" />, path: "/wallet" },
-      { label: "Vault", icon: <CreditCard className="w-6 h-6" />, path: "/vault" },
-      { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor" },
-      { label: "Creators", icon: <Code className="w-6 h-6" />, path: "/creators" },
-    ],
-  },
-  {
-    id: "settings",
-    label: "Settings & Account",
-    emoji: "⚙️",
-    tiles: [
-      { label: "Profile", icon: <User className="w-6 h-6" />, path: "/profile" },
-      { label: "Settings", icon: <Settings className="w-6 h-6" />, path: "/settings" },
-      { label: "Diagnostics", icon: <Heart className="w-6 h-6" />, path: "/diagnostics" },
-      { label: "Suggestions", icon: <Bell className="w-6 h-6" />, path: "/suggestion-box" },
-      { label: "Referral", icon: <Gift className="w-6 h-6" />, path: "/referral" },
-      { label: "Share App", icon: <Share2 className="w-6 h-6" />, path: "__share__" },
-    ],
-  },
+  // Wallet & Vault and Settings & Account groups removed from dashboard —
+  // those are now reached via the bottom-nav Vault and Settings tabs.
 ];
 
 const STORAGE_KEY = "oracle-lunar-dash-groups-open";
