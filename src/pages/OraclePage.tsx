@@ -138,6 +138,7 @@ const OraclePage = () => {
   const [pendingNav, setPendingNav] = useState<string | null>(null);
   // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
+  const [oracleMedia, setOracleMedia] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
