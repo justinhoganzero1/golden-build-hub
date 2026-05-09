@@ -1,39 +1,47 @@
 import { useEffect, useState } from "react";
 import winnerPhoto from "@/assets/winner-photo-week.jpg";
-import { Trophy, Sparkles } from "lucide-react";
+import { Trophy, Sparkles, Medal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Featured {
   image_url: string;
   title: string | null;
   creator_name: string | null;
+  rank: number;
 }
 
 /**
- * Futuristic laptop screen displaying the admin-picked Photo of the Month
- * (falls back to the default winner asset).
+ * Futuristic laptop screen displaying the admin-picked monthly podium
+ * (1st = featured big, 2nd & 3rd shown below).
  */
 const WeeklyWinnerShowcase = () => {
-  const [featured, setFeatured] = useState<Featured | null>(null);
+  const [podium, setPodium] = useState<Record<number, Featured>>({});
 
   useEffect(() => {
     let cancelled = false;
     supabase
       .from("featured_photos")
-      .select("image_url, title, creator_name")
+      .select("image_url, title, creator_name, rank")
       .eq("active", true)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order("rank", { ascending: true })
       .then(({ data }) => {
-        if (!cancelled && data) setFeatured(data as Featured);
+        if (cancelled || !data) return;
+        const map: Record<number, Featured> = {};
+        (data as any[]).forEach((row) => {
+          if (row?.rank) map[row.rank] = row as Featured;
+        });
+        setPodium(map);
       });
     return () => { cancelled = true; };
   }, []);
 
-  const imageSrc = featured?.image_url || winnerPhoto;
-  const winnerName = featured?.creator_name || 'Zephyrina "MoonQuill" Vexbloom';
-  const winnerTitle = featured?.title;
+  const first = podium[1];
+  const second = podium[2];
+  const third = podium[3];
+  const imageSrc = first?.image_url || winnerPhoto;
+  const winnerName = first?.creator_name || 'Zephyrina "MoonQuill" Vexbloom';
+  const winnerTitle = first?.title;
+
 
   return (
     <section className="max-w-5xl mx-auto px-4 py-16">
