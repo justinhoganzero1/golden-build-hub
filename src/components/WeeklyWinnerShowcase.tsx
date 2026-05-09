@@ -77,8 +77,8 @@ const WeeklyWinnerShowcase = () => {
           {/* Screen */}
           <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-primary/30 bg-black">
             <img
-              src={winnerPhoto}
-              alt="This week's winning creative photo by an Oracle Lunar member"
+              src={imageSrc}
+              alt={winnerTitle || "This week's winning creative photo by an Oracle Lunar member"}
               loading="lazy"
               width={1024}
               height={640}
