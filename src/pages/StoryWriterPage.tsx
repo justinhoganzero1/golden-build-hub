@@ -208,6 +208,96 @@ const StoryWriterPage = () => {
     [story.chapters]
   );
 
+  // ====== AI ILLUSTRATION GENERATOR ======
+  // Cover, back cover, and up to 2 illustrations per chapter.
+  const [imgBusy, setImgBusy] = useState<string | null>(null);
+
+  const generateStoryImage = async (
+    slot: "cover" | "back" | { kind: "chapter"; index: number },
+    customPrompt?: string,
+  ): Promise<void> => {
+    const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
+    if (imgBusy) return;
+    const ch = typeof slot === "string" ? null : story.chapters[slot.index];
+
+    let basePrompt = customPrompt?.trim() || "";
+    if (!basePrompt) {
+      if (slot === "cover") {
+        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 8K, magazine cover quality, no text, no typography.`;
+      } else if (slot === "back") {
+        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 8K, no text.`;
+      } else if (ch) {
+        const snippet = (ch.content || "").slice(0, 1200);
+        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 8K, no text, no captions.`;
+      }
+    }
+
+    setImgBusy(slotKey);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
+        },
+        body: JSON.stringify({ prompt: basePrompt, tier: "premium" }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Image generation failed");
+      }
+      const data = await resp.json();
+      const url: string | undefined =
+        data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+      if (!url) throw new Error("No image returned");
+
+      setStory((s) => {
+        if (slot === "cover") return { ...s, coverImage: url };
+        if (slot === "back") return { ...s, backImage: url };
+        const next = [...s.chapters];
+        const target = next[slot.index];
+        const existing = target.images || [];
+        if (existing.length >= 2) {
+          toast.info("Max 2 images per chapter — replacing the oldest.");
+          next[slot.index] = { ...target, images: [existing[1], url] };
+        } else {
+          next[slot.index] = { ...target, images: [...existing, url] };
+        }
+        return { ...s, chapters: next };
+      });
+
+      try {
+        const label =
+          slot === "cover" ? `${story.title} — Cover`
+          : slot === "back" ? `${story.title} — Back Cover`
+          : `${story.title} — ${ch?.title || "Chapter"} illustration`;
+        await saveToLibrary({
+          mediaType: "image",
+          title: label,
+          url,
+          sourcePage: "story-writer",
+          metadata: { story_id: savingId, slot: slotKey, story_title: story.title },
+        });
+      } catch { /* non-fatal */ }
+      toast.success("Illustration ready!");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not generate image");
+    } finally {
+      setImgBusy(null);
+    }
+  };
+
+  const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
+    setStory((s) => {
+      const next = [...s.chapters];
+      const target = next[chapterIdx];
+      const imgs = (target.images || []).filter((_, i) => i !== imageIdx);
+      next[chapterIdx] = { ...target, images: imgs };
+      return { ...s, chapters: next };
+    });
+  };
+
+
   const callAI = async (
     system: string,
     prompt: string,
