@@ -196,13 +196,45 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     }
   };
 
+  // Facebook share — copies text first (so user can paste even if FB strips the quote),
+  // then opens the Feed composer. Falls back to opening facebook.com so the user can sign in
+  // and paste the copied content.
   const shareFacebook = async () => {
     const u = encodeURIComponent(shareUrl);
-    const q = encodeURIComponent(shareText);
+    const q = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
+    // Pre-copy so user can paste once signed in
+    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    if (copiedOk) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+    toast.message("Opening Facebook…", {
+      description: copiedOk
+        ? "Sign in to Facebook if asked. Your link & text are copied — just paste into the post."
+        : "Sign in to Facebook if asked, then paste your link into the post.",
+    });
     await universalShare("Facebook", {
-      mobile: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      mobile: `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
       desktop: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
     });
+  };
+  // Facebook Story — mobile deep link with web fallback
+  const shareFacebookStory = async () => {
+    const u = encodeURIComponent(shareUrl);
+    await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Facebook Story…", { description: "Paste your link in the story composer." });
+    await universalShare("Facebook Story", {
+      mobile: `fb://story_composer?link=${u}`,
+      desktop: `https://www.facebook.com/stories/create/`,
+    });
+  };
+  // Plain "Open Facebook" — last-resort sign-in helper
+  const openFacebook = async () => {
+    const ok = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Facebook", {
+      description: ok ? "Link copied — sign in and paste into a new post." : "Sign in and paste your link.",
+    });
+    await robustOpen("https://www.facebook.com/");
   };
   const shareTwitter = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
