@@ -90,7 +90,24 @@ const VaultPage = () => {
         </div>
       </div>
 
-      {/* Personal Vault entry — claim & identity details */}
+      {/* Quick links — moved from dashboard "Wallet & Vault" group */}
+      <div className="px-4 mb-4 grid grid-cols-3 sm:grid-cols-5 gap-2">
+        {[
+          { label: "Wallet", path: "/wallet" },
+          { label: "Coins", path: "/wallet" },
+          { label: "Personal Vault", path: "/personal-vault" },
+          { label: "Investor", path: "/investor" },
+          { label: "Creators", path: "/creators" },
+        ].map((q) => (
+          <Link
+            key={q.label}
+            to={q.path}
+            className="px-2 py-3 rounded-xl bg-card border border-border text-xs font-medium text-center hover:border-primary/50 hover:bg-primary/5 transition"
+          >
+            {q.label}
+          </Link>
+        ))}
+      </div>
       <div className="px-4 mb-4">
         <Link
           to="/personal-vault"
