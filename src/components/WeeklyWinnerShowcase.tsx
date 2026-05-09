@@ -131,7 +131,7 @@ const WeeklyWinnerShowcase = () => {
                     🏆 Congratulations
                   </div>
                   <div className="text-base md:text-lg font-bold text-foreground">
-                    Zephyrina "MoonQuill" Vexbloom
+                    {winnerName}
                   </div>
                   <div className="text-xs text-muted-foreground font-mono">
                     z█████████a@█████.com
