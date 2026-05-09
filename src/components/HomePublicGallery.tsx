@@ -169,9 +169,6 @@ const HomePublicGallery = () => {
           })}
         </div>
 
-        <p className="px-4 pb-3 text-[10px] text-muted-foreground">
-          Public creations only. Creators can sell their work — Oracle Lunar takes 30% of any sale; payouts go to the creator’s connected Stripe account.
-        </p>
       </div>
     </section>
   );
