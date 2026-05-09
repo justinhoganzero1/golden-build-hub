@@ -9,6 +9,7 @@ import { isLowPowerMobile } from "@/lib/utils";
 
 const OPEN_STORAGE_KEY = "master-oracle-open";
 const EVER_ADMIN_KEY = "master-oracle-ever-admin";
+const EVER_OPENED_KEY = "master-oracle-ever-opened";
 
 /**
  * Admin-only floating launcher that opens the REAL master Oracle (/oracle)
@@ -46,11 +47,24 @@ export const MasterOracleLauncher = () => {
     }
   }, [isAdmin, everAdmin]);
 
+  // Sticky "has the user opened Oracle at least once this session?" flag.
+  // We never preload the /oracle iframe (which would auto-start voice).
+  // Only after the user clicks "open" do we mount the iframe — and from
+  // that point on we keep it mounted to preserve chat / voice state.
+  const [everOpened, setEverOpened] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(EVER_OPENED_KEY) === "1"; } catch { return false; }
+  });
+
   const setOpen = (next: boolean) => {
     setOpenState(next);
     try {
-      if (next) sessionStorage.setItem(OPEN_STORAGE_KEY, "1");
-      else sessionStorage.removeItem(OPEN_STORAGE_KEY);
+      if (next) {
+        sessionStorage.setItem(OPEN_STORAGE_KEY, "1");
+        sessionStorage.setItem(EVER_OPENED_KEY, "1");
+        setEverOpened(true);
+      } else {
+        sessionStorage.removeItem(OPEN_STORAGE_KEY);
+      }
     } catch {}
   };
 
@@ -110,8 +124,10 @@ export const MasterOracleLauncher = () => {
         </button>
       )}
 
-      {/* Iframe shell. ALWAYS mounted once admin has been confirmed even ONCE
-          in this session. Only visibility toggles via CSS. Never unmount. */}
+      {/* Iframe shell. Mounted only AFTER the user opens Oracle for the first
+          time this session — that way no audio auto-plays before they ask
+          for it. Once mounted, it stays mounted and only visibility toggles. */}
+      {everOpened && (
       <div
         className={`fixed inset-0 z-[100] bg-background/95 flex-col ${lowPowerMode ? "" : "backdrop-blur-sm"} ${
           open && !onOracleRoute && !hiddenRoute ? "flex" : "hidden"
@@ -200,6 +216,7 @@ export const MasterOracleLauncher = () => {
           allow="microphone; camera; autoplay; clipboard-read; clipboard-write"
         />
       </div>
+      )}
     </>
   );
 };
