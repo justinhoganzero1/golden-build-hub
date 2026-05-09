@@ -39,13 +39,14 @@ const WeeklyWinnerShowcase = () => {
     <section className="max-w-5xl mx-auto px-4 py-16">
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary mb-3">
-          <Trophy className="h-3.5 w-3.5" /> Winner of the Week
+          <Trophy className="h-3.5 w-3.5" /> Yearly Photo Competition
         </div>
         <h2 className="text-3xl md:text-4xl font-bold">
-          This Week's <span className="text-primary">Creative Photo</span> Champion
+          This Month's <span className="text-primary">Creative Photo</span> Champion
         </h2>
         <p className="text-muted-foreground mt-2 text-sm">
-          Every week one creator wins lifetime free studio access. No paywalls. Forever.
+          12 monthly winners earn discounted paywalls all year. The grand yearly champion wins
+          <span className="text-primary font-semibold"> lifetime free studio access — no paywalls, forever.</span>
         </p>
       </div>
 
@@ -78,7 +79,7 @@ const WeeklyWinnerShowcase = () => {
           <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-primary/30 bg-black">
             <img
               src={imageSrc}
-              alt={winnerTitle || "This week's winning creative photo by an Oracle Lunar member"}
+              alt={winnerTitle || "This month's winning creative photo by an Oracle Lunar member"}
               loading="lazy"
               width={1024}
               height={640}
