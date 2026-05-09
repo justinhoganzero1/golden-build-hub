@@ -85,59 +85,43 @@ const WeeklyWinnerShowcase = () => {
               className="absolute inset-0 w-full h-full object-contain bg-black"
             />
 
-            {/* Scanline overlay */}
+            {/* Scanline overlay (subtle, doesn't hide image) */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay"
+              className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
               style={{
                 backgroundImage:
                   "repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3px)",
               }}
             />
+          </div>
 
-            {/* HUD corners */}
-            <div className="absolute top-2 left-2 text-[10px] font-mono text-primary/80 tracking-widest">
-              ◉ LIVE · WEEK 19
-            </div>
-            <div className="absolute top-2 right-2 text-[10px] font-mono text-primary/80 tracking-widest">
-              ORACLE://STUDIO
-            </div>
-
-            {/* Diagonal Ribbon */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div
-                className="absolute top-8 -right-16 rotate-[28deg] px-20 py-2 text-center shadow-2xl border-y-2 border-amber-300"
-                style={{
-                  background:
-                    "linear-gradient(90deg, hsl(var(--primary)) 0%, #f5c542 50%, hsl(var(--primary)) 100%)",
-                }}
-              >
-                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-background flex items-center justify-center gap-1">
-                  <Sparkles className="h-3 w-3" />
+          {/* Banner — under the photo */}
+          <div className="mt-3 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/15 via-amber-500/15 to-primary/15 px-3 py-2">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.25em] text-foreground">
                   Lifetime Free Photo Studio
-                  <Sparkles className="h-3 w-3" />
-                </div>
-                <div className="text-[9px] font-bold uppercase tracking-widest text-background/90">
-                  · No Paywalls · Forever ·
-                </div>
+                </span>
               </div>
+              <span className="text-[10px] md:text-xs font-bold text-primary">
+                · No Paywalls · Forever ·
+              </span>
             </div>
-
-            {/* Winner card overlay (compact) */}
-            <div className="absolute bottom-0 left-0 right-0 backdrop-blur-md bg-background/60 border-t border-primary/40 px-3 py-1.5">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[10px] uppercase tracking-widest text-primary/80 font-bold shrink-0">🏆</span>
-                  <span className="text-xs md:text-sm font-bold text-foreground truncate">
-                    {winnerName}
-                  </span>
-                </div>
-                <div className="text-[10px] md:text-xs font-bold text-primary">
-                  Lifetime Studio · $0 forever
-                </div>
+            <div className="mt-1.5 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] uppercase tracking-widest text-primary/80 font-bold shrink-0">🏆</span>
+                <span className="text-xs md:text-sm font-bold text-foreground truncate">
+                  {winnerName}
+                </span>
+              </div>
+              <div className="text-[10px] md:text-xs font-bold text-primary">
+                Lifetime Studio · $0 forever
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Laptop base */}
