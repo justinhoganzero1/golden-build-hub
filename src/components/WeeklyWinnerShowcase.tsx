@@ -82,7 +82,7 @@ const WeeklyWinnerShowcase = () => {
               loading="lazy"
               width={1024}
               height={640}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-contain bg-black"
             />
 
             {/* Scanline overlay */}
@@ -123,27 +123,17 @@ const WeeklyWinnerShowcase = () => {
               </div>
             </div>
 
-            {/* Winner card overlay (bottom) */}
-            <div className="absolute bottom-0 left-0 right-0 backdrop-blur-md bg-background/70 border-t border-primary/40 p-3 md:p-4">
+            {/* Winner card overlay (compact) */}
+            <div className="absolute bottom-0 left-0 right-0 backdrop-blur-md bg-background/60 border-t border-primary/40 px-3 py-1.5">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-primary/80 font-bold">
-                    🏆 Congratulations
-                  </div>
-                  <div className="text-base md:text-lg font-bold text-foreground">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] uppercase tracking-widest text-primary/80 font-bold shrink-0">🏆</span>
+                  <span className="text-xs md:text-sm font-bold text-foreground truncate">
                     {winnerName}
-                  </div>
-                  <div className="text-xs text-muted-foreground font-mono">
-                    z█████████a@█████.com
-                  </div>
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    Prize
-                  </div>
-                  <div className="text-sm font-bold text-primary">
-                    Lifetime Studio · $0 forever
-                  </div>
+                <div className="text-[10px] md:text-xs font-bold text-primary">
+                  Lifetime Studio · $0 forever
                 </div>
               </div>
             </div>
@@ -166,9 +156,6 @@ const WeeklyWinnerShowcase = () => {
         />
       </div>
 
-      <p className="text-center text-[11px] text-muted-foreground mt-6 italic">
-        Winner's email partially hidden to protect their privacy.
-      </p>
     </section>
   );
 };
