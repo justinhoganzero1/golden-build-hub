@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Sparkles, Lock, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
+import { Sparkles, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -10,21 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSubscription } from "@/hooks/useSubscription";
 import { usePublicLibrary, PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFileFromUrl } from "@/lib/utils";
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-const isMember = (tier: string) =>
-  ["starter", "monthly", "quarterly", "biannual", "annual", "golden", "lifetime"].includes(tier);
-
 type SortKey = "newest" | "popular" | "price_low" | "price_high";
 
 const PublicLibraryPage = () => {
   const { user } = useAuth();
-  const { effectiveTier, loading: subLoading } = useSubscription();
   const [filter, setFilter] = useState<"all" | "shop" | "media" | "gif" | "movie">("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
