@@ -549,7 +549,7 @@ Everything else is OPEN:
         ],
         stream: true,
         // SPEED: cap output so Oracle doesn't ramble — owner gets more room for R-rated / dev work.
-        max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 400,
+        max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 700,
       }),
     });
 
