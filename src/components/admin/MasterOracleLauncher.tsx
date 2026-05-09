@@ -216,6 +216,7 @@ export const MasterOracleLauncher = () => {
           allow="microphone; camera; autoplay; clipboard-read; clipboard-write"
         />
       </div>
+      )}
     </>
   );
 };
