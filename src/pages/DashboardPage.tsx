@@ -50,7 +50,6 @@ const groups: TileGroup[] = [
     id: "creator",
     label: "Create & Studio",
     emoji: "🎬",
-    defaultOpen: true,
     tiles: [
       { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
       { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
@@ -94,7 +93,7 @@ const groups: TileGroup[] = [
   // those are now reached via the bottom-nav Vault and Settings tabs.
 ];
 
-const STORAGE_KEY = "oracle-lunar-dash-groups-open";
+const STORAGE_KEY = "oracle-lunar-dash-groups-open-v2";
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
