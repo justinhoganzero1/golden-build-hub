@@ -9,6 +9,7 @@ import { isLowPowerMobile } from "@/lib/utils";
 
 const OPEN_STORAGE_KEY = "master-oracle-open";
 const EVER_ADMIN_KEY = "master-oracle-ever-admin";
+const EVER_OPENED_KEY = "master-oracle-ever-opened";
 
 /**
  * Admin-only floating launcher that opens the REAL master Oracle (/oracle)
