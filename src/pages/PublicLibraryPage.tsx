@@ -104,16 +104,9 @@ const PublicLibraryPage = () => {
             <p className="font-semibold mb-1">A community gallery, powered by every member.</p>
             <p className="text-muted-foreground">
               All items here were marked <span className="text-foreground font-medium">public</span> by their creator.
-              Anyone can view; <span className="text-foreground font-medium">members can download</span> for free, or
+              Anyone can view; <span className="text-foreground font-medium">signed-in users can download</span> for free, or
               <span className="text-foreground font-medium"> buy</span> shop items (creators keep 70%).
             </p>
-            {!member && (
-              <Button size="sm" className="mt-3" asChild>
-                <Link to="/subscribe">
-                  <Lock className="w-3.5 h-3.5 mr-1.5" /> Become a member to unlock downloads
-                </Link>
-              </Button>
-            )}
           </div>
         </div>
       </Card>
