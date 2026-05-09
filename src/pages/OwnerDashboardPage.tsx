@@ -720,6 +720,13 @@ const OwnerDashboardPage = () => {
           >
             <LogOut className="w-4 h-4" /> Sign out
           </button>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-black border border-yellow-400 hover:opacity-90 transition"
+            title="Open the regular User Dashboard"
+          >
+            <Home className="w-4 h-4" /> User Dashboard
+          </button>
         </div>
 
         {/* Tabs */}
