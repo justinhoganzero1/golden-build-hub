@@ -164,7 +164,7 @@ const PublicLibraryPage = () => {
       </p>
 
       {/* Grid */}
-      {isLoading || subLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
