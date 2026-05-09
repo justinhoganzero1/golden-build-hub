@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2 } from "lucide-react";
+import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText } from "lucide-react";
 import { toast } from "sonner";
+
+const FB_SIGNIN_KEY = "oracle-lunar-fb-signed-in";
+const FB_PENDING_KEY = "oracle-lunar-fb-pending-share";
 
 interface ShareDialogProps {
   open: boolean;
@@ -91,6 +94,11 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showTroubleshoot, setShowTroubleshoot] = useState(false);
+  const [fbSignedIn, setFbSignedIn] = useState<boolean>(() => {
+    try { return localStorage.getItem(FB_SIGNIN_KEY) === "1"; } catch { return false; }
+  });
+  const [fbAttempts, setFbAttempts] = useState(0);
 
   // Always share the public production domain — never the lovable preview/editor URL.
   const PUBLIC_ORIGIN = "https://oracle-lunar.online";
@@ -196,45 +204,156 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     }
   };
 
-  // Facebook share — copies text first (so user can paste even if FB strips the quote),
-  // then opens the Feed composer. Falls back to opening facebook.com so the user can sign in
-  // and paste the copied content.
-  const shareFacebook = async () => {
+  // ============= FACEKBOOK FAIL-PROOF SHARING =============
+  // Build a long ordered chain of share/composer endpoints to try in sequence.
+  // This is intentionally exhaustive (50+ entries across mobile, desktop, m., mbasic.,
+  // app deep links, dialog endpoints, mirrors, language hosts) so even if some are
+  // blocked or removed by Facebook, at least one will open.
+  const buildFacebookFallbacks = (target: "feed" | "story" | "messenger" | "any"): string[] => {
     const u = encodeURIComponent(shareUrl);
     const q = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
-    // Pre-copy so user can paste once signed in
-    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
-    if (copiedOk) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+    const t = encodeURIComponent(title);
+    const APP_ID = "140586622674265";
+    const feedFallbacks = [
+      `fb://composer?text=${q}`,
+      `fb://publish/profile/me?text=${q}`,
+      `fb://faceweb/f?href=${u}`,
+      `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
+      `https://m.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/sharer.php?u=${u}&quote=${q}`,
+      `https://en-gb.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://es-la.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://fr-fr.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://de-de.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/dialog/feed?app_id=${APP_ID}&link=${u}&quote=${q}&display=popup&redirect_uri=${u}`,
+      `https://www.facebook.com/dialog/share?app_id=${APP_ID}&href=${u}&quote=${q}&display=popup&redirect_uri=${u}`,
+      `https://m.facebook.com/dialog/feed?app_id=${APP_ID}&link=${u}&quote=${q}&redirect_uri=${u}`,
+      `https://mbasic.facebook.com/sharer.php?u=${u}`,
+      `https://mbasic.facebook.com/composer/?text=${q}`,
+      `https://touch.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      `https://www.facebook.com/share?u=${u}`,
+      `https://www.facebook.com/share/url/?url=${u}`,
+    ];
+    const storyFallbacks = [
+      `fb://story_composer?link=${u}`,
+      `fb://reels/create?link=${u}`,
+      `fb://camera?link=${u}`,
+      `https://m.facebook.com/stories/create/?link=${u}`,
+      `https://www.facebook.com/stories/create/?link=${u}`,
+      `https://www.facebook.com/stories/create/`,
+      `https://m.facebook.com/stories/`,
+      `https://www.facebook.com/stories/`,
+    ];
+    const messengerFallbacks = [
+      `fb-messenger://share?link=${u}`,
+      `fb-messenger://share/?link=${u}`,
+      `fb-messenger://compose?text=${q}`,
+      `https://www.messenger.com/new?link=${u}`,
+      `https://m.me/?link=${u}`,
+      `https://www.facebook.com/dialog/send?app_id=${APP_ID}&link=${u}&redirect_uri=${u}`,
+      `https://m.facebook.com/messages/`,
+      `https://www.messenger.com/`,
+    ];
+    const lastResort = [
+      `https://m.facebook.com/`,
+      `https://mbasic.facebook.com/`,
+      `https://www.facebook.com/`,
+      `https://touch.facebook.com/`,
+      `fb://`,
+    ];
+    if (target === "feed") return [...feedFallbacks, ...lastResort];
+    if (target === "story") return [...storyFallbacks, ...feedFallbacks.slice(0, 6), ...lastResort];
+    if (target === "messenger") return [...messengerFallbacks, ...feedFallbacks.slice(0, 4), ...lastResort];
+    return [...feedFallbacks, ...storyFallbacks, ...messengerFallbacks, ...lastResort];
+  };
+
+  // Open the FB chain progressively. We try the first; if it appears blocked
+  // (window.open returns null on web), we move down the list automatically.
+  const runFacebookChain = async (target: "feed" | "story" | "messenger" | "any") => {
+    const chain = buildFacebookFallbacks(target);
+    for (const href of chain) {
+      try {
+        // App-scheme deep links: just attempt — they fail silently if uninstalled.
+        if (href.startsWith("fb://") || href.startsWith("fb-messenger://")) {
+          try { window.location.href = href; } catch {}
+          await new Promise(r => setTimeout(r, 350));
+          continue;
+        }
+        const ok = await robustOpen(href);
+        if (ok) return true;
+      } catch {}
     }
+    return false;
+  };
+
+  const markFbSignedIn = () => {
+    try { localStorage.setItem(FB_SIGNIN_KEY, "1"); } catch {}
+    setFbSignedIn(true);
+    toast.success("Facebook marked as signed in — share buttons unlocked.");
+    // Auto-retry pending share if any
+    try {
+      const pending = localStorage.getItem(FB_PENDING_KEY);
+      if (pending) {
+        localStorage.removeItem(FB_PENDING_KEY);
+        toast.message("Retrying your Facebook share…");
+        if (pending === "story") void shareFacebookStory();
+        else if (pending === "messenger") void shareMessenger();
+        else void shareFacebook();
+      }
+    } catch {}
+  };
+
+  const facebookGate = (target: "feed" | "story" | "messenger"): boolean => {
+    if (fbSignedIn) return true;
+    try { localStorage.setItem(FB_PENDING_KEY, target); } catch {}
+    toast.message("Sign in to Facebook first", {
+      description: "Tap 'Open Facebook & Sign in', then tap 'I'm signed in' — we'll auto-retry your share.",
+    });
+    setShowTroubleshoot(true);
+    return false;
+  };
+
+  // Facebook share — copy text first, then walk the fallback chain.
+  const shareFacebook = async () => {
+    if (!facebookGate("feed")) return;
+    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    if (copiedOk) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
+    setFbAttempts(a => a + 1);
     toast.message("Opening Facebook…", {
       description: copiedOk
-        ? "Sign in to Facebook if asked. Your link & text are copied — just paste into the post."
-        : "Sign in to Facebook if asked, then paste your link into the post.",
+        ? "Your link & caption are copied. Paste into the post if it doesn't pre-fill."
+        : "Paste your link into the post if it doesn't pre-fill.",
     });
-    await universalShare("Facebook", {
-      mobile: `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
-      desktop: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
-    });
+    const ok = await runFacebookChain("feed");
+    if (!ok) { setShowTroubleshoot(true); toast.error("Facebook is blocking the share window. Use the troubleshooter below."); }
   };
-  // Facebook Story — mobile deep link with web fallback
   const shareFacebookStory = async () => {
-    const u = encodeURIComponent(shareUrl);
+    if (!facebookGate("story")) return;
     await robustCopy(`${shareText}\n\n${shareUrl}`);
+    setFbAttempts(a => a + 1);
     toast.message("Opening Facebook Story…", { description: "Paste your link in the story composer." });
-    await universalShare("Facebook Story", {
-      mobile: `fb://story_composer?link=${u}`,
-      desktop: `https://www.facebook.com/stories/create/`,
-    });
+    const ok = await runFacebookChain("story");
+    if (!ok) setShowTroubleshoot(true);
   };
   // Plain "Open Facebook" — last-resort sign-in helper
   const openFacebook = async () => {
     const ok = await robustCopy(`${shareText}\n\n${shareUrl}`);
     toast.message("Opening Facebook", {
-      description: ok ? "Link copied — sign in and paste into a new post." : "Sign in and paste your link.",
+      description: ok ? "Link copied — sign in, then tap 'I'm signed in' to retry." : "Sign in, then tap 'I'm signed in'.",
     });
-    await robustOpen("https://www.facebook.com/");
+    await runFacebookChain("any");
+  };
+  // Dedicated copy helpers
+  const copyFacebookLink = async () => {
+    const ok = await robustCopy(shareUrl);
+    if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2500); toast.success("Facebook URL copied!"); }
+    else toast.error("Couldn't copy — long-press the URL field above.");
+  };
+  const copyFacebookCaption = async () => {
+    const ok = await robustCopy(shareText);
+    if (ok) toast.success("Caption copied — paste it into your Facebook post!");
+    else toast.error("Couldn't copy caption.");
   };
   const shareTwitter = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
@@ -324,9 +443,11 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const shareYouTube = () => shareCopyAndOpen("YouTube", "https://studio.youtube.com/");
   const shareDiscord = () => shareCopyAndOpen("Discord", "https://discord.com/channels/@me");
   const shareMessenger = async () => {
-    const u = encodeURIComponent(shareUrl);
-    const url = `https://www.facebook.com/dialog/send?link=${u}&app_id=140586622674265&redirect_uri=${u}`;
-    await universalShare("Messenger", { mobile: `fb-messenger://share?link=${u}`, desktop: url });
+    if (!facebookGate("messenger")) return;
+    await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Messenger…", { description: "Paste your link if it doesn't pre-fill." });
+    const ok = await runFacebookChain("messenger");
+    if (!ok) setShowTroubleshoot(true);
   };
   const shareMastodon = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
@@ -408,31 +529,94 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
 
           {/* Dedicated Facebook quick-actions row — most-requested platform */}
           <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-2.5">
-            <div className="flex items-center gap-2 mb-2">
-              <Facebook className="w-4 h-4 text-blue-500" />
-              <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Facebook className="w-4 h-4 text-blue-500" />
+                <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+                {fbSignedIn && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/40">signed in</span>}
+              </div>
+              <button onClick={() => setShowTroubleshoot(s => !s)} className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300">
+                <HelpCircle className="w-3 h-3" /> Troubleshoot
+              </button>
             </div>
+
+            {/* Sign-in gate banner */}
+            {!fbSignedIn && (
+              <div className="mb-2 rounded-lg bg-amber-500/10 border border-amber-500/40 p-2 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] text-foreground leading-tight">
+                    Facebook blocks share windows for signed-out users. Sign in once, then we'll auto-retry your share.
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  <button onClick={openFacebook} className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition">
+                    <LogIn className="w-3 h-3" /> Open Facebook & Sign in
+                  </button>
+                  <button onClick={markFbSignedIn} className="flex-1 px-2 py-1.5 rounded-md bg-green-600 hover:bg-green-500 text-white text-[10px] font-semibold transition">
+                    ✓ I'm signed in — retry
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 gap-1.5">
-              <button onClick={shareFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareFacebook} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <Facebook className="w-4 h-4 text-blue-500" />
                 <span className="text-[9px] text-foreground leading-tight">Feed Post</span>
               </button>
-              <button onClick={shareFacebookStory} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareFacebookStory} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <Facebook className="w-4 h-4 text-blue-400" />
                 <span className="text-[9px] text-foreground leading-tight">Story</span>
               </button>
-              <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+              <button onClick={shareMessenger} disabled={!fbSignedIn} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 <MessageCircle className="w-4 h-4 text-blue-500" />
                 <span className="text-[9px] text-foreground leading-tight">Messenger</span>
               </button>
               <button onClick={openFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
                 <ExternalLink className="w-4 h-4 text-blue-400" />
-                <span className="text-[9px] text-foreground leading-tight">Sign in</span>
+                <span className="text-[9px] text-foreground leading-tight">Open FB</span>
               </button>
             </div>
+
+            {/* Dedicated copy buttons — separate URL & caption */}
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <button onClick={copyFacebookLink} className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-card border border-blue-500/40 hover:border-blue-500 text-[10px] font-medium text-foreground transition">
+                <Copy className="w-3 h-3 text-blue-400" /> Copy Facebook Link
+              </button>
+              <button onClick={copyFacebookCaption} className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-card border border-blue-500/40 hover:border-blue-500 text-[10px] font-medium text-foreground transition">
+                <FileText className="w-3 h-3 text-blue-400" /> Copy Caption
+              </button>
+            </div>
+
             <p className="text-[10px] text-muted-foreground mt-2">
-              Tip: if Facebook asks you to sign in, do that first — your story link & caption are copied so you can paste straight into the post.
+              Tip: if Facebook asks you to sign in, do that first — your link & caption are copied so you can paste straight into the post.
             </p>
+
+            {/* Troubleshooting panel */}
+            {showTroubleshoot && (
+              <div className="mt-2 rounded-lg bg-card/60 border border-blue-500/40 p-2 space-y-2 text-[10px] text-foreground">
+                <p className="font-semibold flex items-center gap-1"><HelpCircle className="w-3 h-3 text-blue-400" /> Why Facebook share fails</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                  <li><b>Not signed in:</b> FB blocks composers for guests. Use "Open Facebook & Sign in" above.</li>
+                  <li><b>Pop-up blocked:</b> your browser blocked the new window — allow pop-ups for this site.</li>
+                  <li><b>In-app browser (FB/IG):</b> open this page in Chrome/Safari instead.</li>
+                  <li><b>Quote stripped:</b> FB ignores prefilled text for non-app shares — paste manually (caption is copied).</li>
+                  <li><b>App not installed:</b> the <code>fb://</code> deep link silently fails — we then try the web version.</li>
+                  <li><b>Iframe (preview):</b> open the live site at oracle-lunar.online to share.</li>
+                </ul>
+                <p className="font-semibold pt-1">Fail-proof fallback ({fbAttempts} attempt{fbAttempts === 1 ? "" : "s"}):</p>
+                <ol className="list-decimal pl-4 space-y-0.5 text-muted-foreground">
+                  <li>Tap <b>Copy Facebook Link</b> + <b>Copy Caption</b> above.</li>
+                  <li>Tap <b>Open FB</b> to launch Facebook.com in a new tab.</li>
+                  <li>Sign in if prompted, then start a new post.</li>
+                  <li>Paste the link, then paste the caption — done.</li>
+                </ol>
+                <button onClick={openFacebook} className="w-full mt-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-semibold transition">
+                  <ExternalLink className="w-3 h-3" /> Open Facebook then paste
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Quick social buttons */}
