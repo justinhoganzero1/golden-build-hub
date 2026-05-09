@@ -196,13 +196,45 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
     }
   };
 
+  // Facebook share — copies text first (so user can paste even if FB strips the quote),
+  // then opens the Feed composer. Falls back to opening facebook.com so the user can sign in
+  // and paste the copied content.
   const shareFacebook = async () => {
     const u = encodeURIComponent(shareUrl);
-    const q = encodeURIComponent(shareText);
+    const q = encodeURIComponent(`${shareText}\n\n${shareUrl}`);
+    // Pre-copy so user can paste once signed in
+    const copiedOk = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    if (copiedOk) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+    toast.message("Opening Facebook…", {
+      description: copiedOk
+        ? "Sign in to Facebook if asked. Your link & text are copied — just paste into the post."
+        : "Sign in to Facebook if asked, then paste your link into the post.",
+    });
     await universalShare("Facebook", {
-      mobile: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
+      mobile: `https://m.facebook.com/sharer.php?u=${u}&quote=${q}`,
       desktop: `https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`,
     });
+  };
+  // Facebook Story — mobile deep link with web fallback
+  const shareFacebookStory = async () => {
+    const u = encodeURIComponent(shareUrl);
+    await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Facebook Story…", { description: "Paste your link in the story composer." });
+    await universalShare("Facebook Story", {
+      mobile: `fb://story_composer?link=${u}`,
+      desktop: `https://www.facebook.com/stories/create/`,
+    });
+  };
+  // Plain "Open Facebook" — last-resort sign-in helper
+  const openFacebook = async () => {
+    const ok = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    toast.message("Opening Facebook", {
+      description: ok ? "Link copied — sign in and paste into a new post." : "Sign in and paste your link.",
+    });
+    await robustOpen("https://www.facebook.com/");
   };
   const shareTwitter = async () => {
     const text = encodeURIComponent(`${shareText} ${shareUrl}`);
@@ -373,6 +405,35 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               </div>
             </button>
           )}
+
+          {/* Dedicated Facebook quick-actions row — most-requested platform */}
+          <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-2.5">
+            <div className="flex items-center gap-2 mb-2">
+              <Facebook className="w-4 h-4 text-blue-500" />
+              <p className="text-xs font-semibold text-foreground">Share to Facebook</p>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              <button onClick={shareFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <Facebook className="w-4 h-4 text-blue-500" />
+                <span className="text-[9px] text-foreground leading-tight">Feed Post</span>
+              </button>
+              <button onClick={shareFacebookStory} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <Facebook className="w-4 h-4 text-blue-400" />
+                <span className="text-[9px] text-foreground leading-tight">Story</span>
+              </button>
+              <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <MessageCircle className="w-4 h-4 text-blue-500" />
+                <span className="text-[9px] text-foreground leading-tight">Messenger</span>
+              </button>
+              <button onClick={openFacebook} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-card border border-border hover:border-blue-500 transition-all">
+                <ExternalLink className="w-4 h-4 text-blue-400" />
+                <span className="text-[9px] text-foreground leading-tight">Sign in</span>
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              Tip: if Facebook asks you to sign in, do that first — your story link & caption are copied so you can paste straight into the post.
+            </p>
+          </div>
 
           {/* Quick social buttons */}
           <div className="grid grid-cols-4 gap-2">
