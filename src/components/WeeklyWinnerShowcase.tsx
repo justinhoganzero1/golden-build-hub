@@ -122,7 +122,6 @@ const WeeklyWinnerShowcase = () => {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Laptop base */}
         <div
