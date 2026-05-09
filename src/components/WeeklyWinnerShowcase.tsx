@@ -1,11 +1,40 @@
+import { useEffect, useState } from "react";
 import winnerPhoto from "@/assets/winner-photo-week.jpg";
 import { Trophy, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Featured {
+  image_url: string;
+  title: string | null;
+  creator_name: string | null;
+}
 
 /**
- * Futuristic laptop screen displaying this week's winning creative photo.
- * The winner's email is partially blanked out for privacy.
+ * Futuristic laptop screen displaying the admin-picked Photo of the Month
+ * (falls back to the default winner asset).
  */
 const WeeklyWinnerShowcase = () => {
+  const [featured, setFeatured] = useState<Featured | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("featured_photos")
+      .select("image_url, title, creator_name")
+      .eq("active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setFeatured(data as Featured);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const imageSrc = featured?.image_url || winnerPhoto;
+  const winnerName = featured?.creator_name || 'Zephyrina "MoonQuill" Vexbloom';
+  const winnerTitle = featured?.title;
+
   return (
     <section className="max-w-5xl mx-auto px-4 py-16">
       <div className="text-center mb-8">
