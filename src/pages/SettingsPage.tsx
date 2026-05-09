@@ -848,6 +848,26 @@ const SettingsPage = () => {
           <div className="p-2 rounded-xl bg-primary/10"><Settings className="w-7 h-7 text-primary" /></div>
           <h1 className="text-xl font-bold text-primary">Settings</h1>
         </div>
+
+        {/* Quick links — moved from dashboard "Settings & Account" group */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
+          {[
+            { label: "Profile", path: "/profile" },
+            { label: "Diagnostics", path: "/diagnostics" },
+            { label: "Suggestions", path: "/suggestion-box" },
+            { label: "Referral", path: "/referral" },
+            { label: "Wallet", path: "/wallet" },
+            { label: "Vault", path: "/vault" },
+          ].map((q) => (
+            <button
+              key={q.path}
+              onClick={() => navigate(q.path)}
+              className="px-2 py-3 rounded-xl bg-card border border-border text-xs font-medium hover:border-primary/50 hover:bg-primary/5 transition"
+            >
+              {q.label}
+            </button>
+          ))}
+        </div>
         {sections.map(section => (
           <div key={section.title} className="mb-6">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">{section.title}</h2>
