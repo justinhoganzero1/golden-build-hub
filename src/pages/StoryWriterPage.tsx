@@ -148,6 +148,8 @@ const StoryWriterPage = () => {
             genre: meta.genre || "Fantasy",
             premise: meta.premise || "",
             chapters: meta.chapters || [{ title: "Chapter 1", content: "" }],
+            coverImage: meta.coverImage,
+            backImage: meta.backImage,
             published: meta.published,
             publishedUrl: meta.publishedUrl,
           });
@@ -174,6 +176,8 @@ const StoryWriterPage = () => {
             genre: story.genre,
             premise: story.premise,
             chapters: story.chapters,
+            coverImage: story.coverImage,
+            backImage: story.backImage,
             wordCount,
             published: story.published || false,
             publishedUrl: story.publishedUrl,
