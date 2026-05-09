@@ -17,6 +17,7 @@ import ShareDialog from "@/components/ShareDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadFileFromUrl, isLowPowerMobile } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import FeaturedPhotoPicker from "@/components/admin/FeaturedPhotoPicker";
 
 const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
