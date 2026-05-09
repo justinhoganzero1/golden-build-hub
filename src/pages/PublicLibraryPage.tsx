@@ -46,17 +46,9 @@ const PublicLibraryPage = () => {
     return sorted;
   }, [rawItems, search, sort]);
 
-  const member = useMemo(() => isMember(effectiveTier), [effectiveTier]);
-
   const handleDownload = async (item: PublicLibraryItem) => {
     if (!user) {
       toast.error("Sign in to download from the Public Library.");
-      return;
-    }
-    if (!member) {
-      toast.error("Membership required — any paid plan unlocks downloads.", {
-        action: { label: "Upgrade", onClick: () => (window.location.href = "/subscribe") },
-      });
       return;
     }
     if (!item.url) {
@@ -80,12 +72,6 @@ const PublicLibraryPage = () => {
   const handleBuy = async (item: PublicLibraryItem) => {
     if (!user) {
       toast.error("Sign in to purchase from the Creators Shop.");
-      return;
-    }
-    if (!member) {
-      toast.error("Membership required to buy from creators.", {
-        action: { label: "Upgrade", onClick: () => (window.location.href = "/subscribe") },
-      });
       return;
     }
     setBusyId(item.id);
