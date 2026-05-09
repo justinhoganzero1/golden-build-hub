@@ -143,6 +143,31 @@ const OraclePage = () => {
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
 
+  // Oracle "step aside" — when she shows generated media she fades out, then fades back in
+  // when the media ends (video) or after ~20s (image). Trigger via:
+  //   window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image"|"video", url } }))
+  useEffect(() => {
+    const onShow = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { kind: "image" | "video"; url: string } | undefined;
+      if (!detail?.url) return;
+      setOracleMedia({ kind: detail.kind === "video" ? "video" : "image", url: detail.url });
+    };
+    const onHide = () => setOracleMedia(null);
+    window.addEventListener("oracle:show-media", onShow as EventListener);
+    window.addEventListener("oracle:hide-media", onHide);
+    return () => {
+      window.removeEventListener("oracle:show-media", onShow as EventListener);
+      window.removeEventListener("oracle:hide-media", onHide);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (oracleMedia?.kind === "image") {
+      const t = setTimeout(() => setOracleMedia(null), 20000);
+      return () => clearTimeout(t);
+    }
+  }, [oracleMedia]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (e.target) e.target.value = "";
