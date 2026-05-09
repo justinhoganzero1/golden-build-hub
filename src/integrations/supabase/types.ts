@@ -407,6 +407,7 @@ export type Database = {
       featured_photos: {
         Row: {
           active: boolean
+          category: string
           created_at: string
           created_by: string | null
           creator_name: string | null
@@ -421,6 +422,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category?: string
           created_at?: string
           created_by?: string | null
           creator_name?: string | null
@@ -435,6 +437,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category?: string
           created_at?: string
           created_by?: string | null
           creator_name?: string | null
