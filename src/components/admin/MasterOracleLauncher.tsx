@@ -124,8 +124,10 @@ export const MasterOracleLauncher = () => {
         </button>
       )}
 
-      {/* Iframe shell. ALWAYS mounted once admin has been confirmed even ONCE
-          in this session. Only visibility toggles via CSS. Never unmount. */}
+      {/* Iframe shell. Mounted only AFTER the user opens Oracle for the first
+          time this session — that way no audio auto-plays before they ask
+          for it. Once mounted, it stays mounted and only visibility toggles. */}
+      {everOpened && (
       <div
         className={`fixed inset-0 z-[100] bg-background/95 flex-col ${lowPowerMode ? "" : "backdrop-blur-sm"} ${
           open && !onOracleRoute && !hiddenRoute ? "flex" : "hidden"
