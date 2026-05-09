@@ -685,6 +685,47 @@ Write the full chapter now (5000+ words):`;
             rows={2}
             className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
           />
+
+          {/* Front + Back Cover Illustrations */}
+          <div className="grid grid-cols-2 gap-2">
+            {(["cover", "back"] as const).map((slot) => {
+              const url = slot === "cover" ? story.coverImage : story.backImage;
+              const isBusy = imgBusy === slot;
+              const label = slot === "cover" ? "Front Cover" : "Back Cover";
+              return (
+                <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
+                    {url ? (
+                      <>
+                        <img src={url} alt={label} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => setStory(s => ({
+                            ...s,
+                            ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
+                          }))}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
+                          aria-label={`Remove ${label}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => generateStoryImage(slot)}
+                    disabled={!!imgBusy}
+                    className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {url ? `Re-generate ${label}` : `Generate ${label}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
           <button
             onClick={aiOutline}
             disabled={aiBusy}
