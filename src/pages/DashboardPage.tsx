@@ -10,7 +10,7 @@ import {
   Bell, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner-dashboard-crop.jpg";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
