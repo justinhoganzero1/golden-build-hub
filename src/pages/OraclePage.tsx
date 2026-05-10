@@ -2202,6 +2202,32 @@ const OraclePage = () => {
       // Oracle emits [[GEN_*: prompt]] markers whenever the user asks to create
       // anything. Fire the real generation pipelines here so Oracle never just
       // "talks about" creating — it actually creates.
+      // After every creation, offer the user a CHOICE: view inline (here in
+      // the chat / Oracle media overlay) OR open the actual creation in its
+      // proper screen — never just dump it into the library list.
+      const askOpenChoice = (opts: { kind: "image" | "audio" | "story" | "app" | "video"; url?: string; deepPath: string }) => {
+        toast.success(`Your ${opts.kind} is ready — how do you want to see it?`, {
+          duration: 20000,
+          action: {
+            label: "Open it now",
+            onClick: () => {
+              if (opts.kind === "image" && opts.url) window.open(opts.url, "_blank");
+              else navigate(opts.deepPath);
+            },
+          },
+          cancel: {
+            label: "View here",
+            onClick: () => {
+              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
+                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
+              } else if (opts.kind === "audio" && opts.url) {
+                try { new Audio(opts.url).play(); } catch {}
+              }
+            },
+          },
+        });
+      };
+
       try {
         const genRe = /\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi;
         const fired = new Set<string>();
