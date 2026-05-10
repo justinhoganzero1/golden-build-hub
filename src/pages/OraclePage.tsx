@@ -2202,6 +2202,32 @@ const OraclePage = () => {
       // Oracle emits [[GEN_*: prompt]] markers whenever the user asks to create
       // anything. Fire the real generation pipelines here so Oracle never just
       // "talks about" creating — it actually creates.
+      // After every creation, offer the user a CHOICE: view inline (here in
+      // the chat / Oracle media overlay) OR open the actual creation in its
+      // proper screen — never just dump it into the library list.
+      const askOpenChoice = (opts: { kind: "image" | "audio" | "story" | "app" | "video"; url?: string; deepPath: string }) => {
+        toast.success(`Your ${opts.kind} is ready — how do you want to see it?`, {
+          duration: 20000,
+          action: {
+            label: "Open it now",
+            onClick: () => {
+              if (opts.kind === "image" && opts.url) window.open(opts.url, "_blank");
+              else navigate(opts.deepPath);
+            },
+          },
+          cancel: {
+            label: "View here",
+            onClick: () => {
+              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
+                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
+              } else if (opts.kind === "audio" && opts.url) {
+                try { new Audio(opts.url).play(); } catch {}
+              }
+            },
+          },
+        });
+      };
+
       try {
         const genRe = /\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi;
         const fired = new Set<string>();
@@ -2226,8 +2252,9 @@ const OraclePage = () => {
                 const data = await r.json();
                 const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
                 if (!imgUrl) throw new Error("no image");
-                saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
-                toast.success("Image saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Image generation failed"); }
             })();
           } else if (kind === "MUSIC") {
@@ -2242,8 +2269,9 @@ const OraclePage = () => {
                 if (!r.ok) throw new Error("music failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-                saveMedia.mutate({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } });
-                toast.success("Music saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Music generation failed"); }
             })();
           } else if (kind === "SFX") {
@@ -2258,19 +2286,17 @@ const OraclePage = () => {
                 if (!r.ok) throw new Error("sfx failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-                saveMedia.mutate({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } });
-                toast.success("Sound effect saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
             })();
           } else if (kind === "STORY" || kind === "POEM") {
-            // Save the brief; navigate to Story Writer with the prompt prefilled.
             try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
-            toast.success(`Opening Story Writer with your ${kind.toLowerCase()}…`);
-            setTimeout(() => navigate(`/story-writer?prompt=${encodeURIComponent(prompt)}`), 800);
+            askOpenChoice({ kind: "story", deepPath: `/story-writer?prompt=${encodeURIComponent(prompt)}` });
           } else if (kind === "APP") {
             try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
-            toast.success("Opening App Builder…");
-            setTimeout(() => navigate(`/app-builder?prompt=${encodeURIComponent(prompt)}`), 800);
+            askOpenChoice({ kind: "app", deepPath: `/app-builder?prompt=${encodeURIComponent(prompt)}` });
           } else if (kind === "VIDEO") {
             // No native video pipeline yet — fall back to image + concierge note.
             toast("Short video pipeline is rolling out — I'll generate a hero image for now.");
