@@ -73,10 +73,12 @@ export default function OracleAgent() {
   // Load privacy preference
   useEffect(() => {
     const stored = localStorage.getItem(PRIVACY_KEY);
-    if (!stored && user) {
-      setAskConsent(true);
-    } else if (stored === "keep" || stored === "auto-delete") {
+    if (stored === "keep" || stored === "auto-delete") {
       setConsent(stored);
+    } else if (user) {
+      // Default to "keep" silently — no blocking modal. User can change in Settings.
+      localStorage.setItem(PRIVACY_KEY, "keep");
+      setConsent("keep");
     }
   }, [user]);
 
