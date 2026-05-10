@@ -144,6 +144,14 @@ registerRoutes(loaders);
 const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
+
+// Root route: signed-in users see the Dashboard (full app); visitors see the public website.
+const RootRoute = () => {
+  const { useAuth } = require("@/contexts/AuthContext");
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  return user ? <DashboardPage /> : <PortalLandingPage />;
+};
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
 const VaultPage = lazy(loaders["/vault"]);
