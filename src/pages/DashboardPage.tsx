@@ -10,7 +10,7 @@ import {
   Bell, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner-dashboard-crop.jpg";
+import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
@@ -142,12 +142,32 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      <div className="w-full h-48 sm:h-64 overflow-hidden bg-background">
-        <img
-          src={oracleLunarBanner}
-          alt="Oracle Lunar Banner"
-          className="w-full h-full object-cover object-top"
-        />
+      <div className="w-full bg-gradient-to-b from-background via-amber-950/10 to-background border-b border-amber-500/20 px-4 py-6 sm:py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-3 group"
+          aria-label="Oracle Lunar home"
+        >
+          <img
+            src={oracleLunarLogo}
+            alt="Oracle Lunar"
+            className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(251,191,36,0.4)] group-hover:drop-shadow-[0_0_30px_rgba(251,191,36,0.7)] transition-all"
+          />
+          <div className="text-left">
+            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
+              Oracle Lunar
+            </div>
+            <div className="text-[11px] sm:text-xs text-muted-foreground">Your AI best friend, always here for you</div>
+          </div>
+        </button>
+        {!isAdmin && (
+          <button
+            onClick={() => navigate("/subscribe")}
+            className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-lg hover:shadow-amber-500/50 hover:scale-105 transition-all whitespace-nowrap"
+          >
+            ✨ Join Membership
+          </button>
+        )}
       </div>
 
       <div className="px-4 py-4 flex items-center justify-between">
