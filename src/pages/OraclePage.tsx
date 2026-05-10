@@ -2269,8 +2269,9 @@ const OraclePage = () => {
                 if (!r.ok) throw new Error("music failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-                saveMedia.mutate({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } });
-                toast.success("Music saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Music generation failed"); }
             })();
           } else if (kind === "SFX") {
@@ -2285,19 +2286,17 @@ const OraclePage = () => {
                 if (!r.ok) throw new Error("sfx failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-                saveMedia.mutate({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } });
-                toast.success("Sound effect saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
             })();
           } else if (kind === "STORY" || kind === "POEM") {
-            // Save the brief; navigate to Story Writer with the prompt prefilled.
             try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
-            toast.success(`Opening Story Writer with your ${kind.toLowerCase()}…`);
-            setTimeout(() => navigate(`/story-writer?prompt=${encodeURIComponent(prompt)}`), 800);
+            askOpenChoice({ kind: "story", deepPath: `/story-writer?prompt=${encodeURIComponent(prompt)}` });
           } else if (kind === "APP") {
             try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
-            toast.success("Opening App Builder…");
-            setTimeout(() => navigate(`/app-builder?prompt=${encodeURIComponent(prompt)}`), 800);
+            askOpenChoice({ kind: "app", deepPath: `/app-builder?prompt=${encodeURIComponent(prompt)}` });
           } else if (kind === "VIDEO") {
             // No native video pipeline yet — fall back to image + concierge note.
             toast("Short video pipeline is rolling out — I'll generate a hero image for now.");
