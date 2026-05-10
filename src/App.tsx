@@ -146,11 +146,9 @@ const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
 // Root route: signed-in users see the Dashboard (full app); visitors see the public website.
-const RootRoute = () => {
-  const { user, loading } = useAuth();
-  if (loading) return <Loading />;
-  return user ? <DashboardPage /> : <PortalLandingPage />;
-};
+// Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
+// The public marketing website is still reachable at /website.
+const RootRoute = () => <DashboardPage />;
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
 const VaultPage = lazy(loaders["/vault"]);
