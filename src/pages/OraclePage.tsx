@@ -2252,8 +2252,9 @@ const OraclePage = () => {
                 const data = await r.json();
                 const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
                 if (!imgUrl) throw new Error("no image");
-                saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
-                toast.success("Image saved to your Library");
+                let savedId: string | undefined;
+                try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
+                askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Image generation failed"); }
             })();
           } else if (kind === "MUSIC") {
