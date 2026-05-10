@@ -147,7 +147,6 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 
 // Root route: signed-in users see the Dashboard (full app); visitors see the public website.
 const RootRoute = () => {
-  const { useAuth } = require("@/contexts/AuthContext");
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   return user ? <DashboardPage /> : <PortalLandingPage />;
