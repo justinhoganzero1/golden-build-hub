@@ -104,6 +104,25 @@ function wantsFinalOnlyMode(text: string): boolean {
   return FINAL_ONLY_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
+const DIRECT_TASK_RE = /\b(?:make|create|generate|draw|paint|render|design|compose|produce|record|write|build|develop|code|open|launch|go to|take me to|show me|diagnose|fix|repair)\b/i;
+
+function isDirectOracleTask(text: string): boolean {
+  return DIRECT_TASK_RE.test(text);
+}
+
+function extractImagePrompt(text: string): string | null {
+  const patterns = [
+    /\b(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me|us))?(?:\s+(?:a|an|some|the))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene|mockup|icon|sticker)\s*(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+)?([\s\S]+)/i,
+    /\b(?:draw|paint|render|illustrate|sketch)(?:\s+(?:me|us))?\s+(?:a|an|the|some)?\s*([\s\S]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const prompt = match?.[1]?.replace(/[.!?]+$/, "").trim();
+    if (prompt) return prompt;
+  }
+  return null;
+}
+
 const OraclePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
