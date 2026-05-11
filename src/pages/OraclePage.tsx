@@ -1496,14 +1496,8 @@ const OraclePage = () => {
       try { speakAsAgent(ack, myName); } catch {}
       try {
         const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
-        const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-          body: JSON.stringify({ prompt }),
-        });
-        if (!r.ok) throw new Error("image-gen failed");
-        const data = await r.json();
-        const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+        const gen = await generateImage({ prompt, tier: "premium" });
+        const imgUrl = gen.url;
         if (!imgUrl) throw new Error("no image");
 
         // Save the new avatar to the DB so it persists across logins, and mark
