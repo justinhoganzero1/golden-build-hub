@@ -263,8 +263,8 @@ const AppBuilderPage = () => {
   }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (overridePrompt?: string) => {
+    const trimmed = (overridePrompt ?? input).trim();
     if ((!trimmed && attachments.length === 0) || isBuilding) return;
     if (trimmed) {
       const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
@@ -377,6 +377,21 @@ const AppBuilderPage = () => {
       setTimeout(() => setBuildStages([]), 4000);
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlPrompt = params.get("prompt") || "";
+    const storedPrompt = sessionStorage.getItem("app-builder-prefill") || "";
+    const storedAutostart = sessionStorage.getItem("app-builder-autostart") === "1";
+    const prompt = (urlPrompt || storedPrompt).trim();
+    if (!prompt || isBuilding) return;
+    sessionStorage.removeItem("app-builder-prefill");
+    sessionStorage.removeItem("app-builder-autostart");
+    setInput(prompt);
+    if (storedAutostart || params.get("autostart") === "1") {
+      setTimeout(() => sendMessage(prompt), 250);
+    }
+  }, [isBuilding]);
 
   const downloadApp = (project: AppProject) => {
     const blob = new Blob([project.code], { type: "text/html" });
