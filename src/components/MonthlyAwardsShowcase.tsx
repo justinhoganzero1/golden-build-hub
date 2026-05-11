@@ -44,7 +44,7 @@ type Category = {
 // from the user's media library) or an Unsplash photo id fallback.
 const ux = (idOrUrl: string, w = 800, h = 800) => {
   if (!idOrUrl) return "";
-  if (/^https?:\/\//i.test(idOrUrl)) return idOrUrl;
+  if (/^(https?:\/\/|\/|data:|blob:)/i.test(idOrUrl)) return idOrUrl;
   return `https://images.unsplash.com/photo-${idOrUrl}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
 };
 
