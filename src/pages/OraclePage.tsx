@@ -2310,13 +2310,27 @@ const OraclePage = () => {
       const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
       const recodeMarkers = [...oracleContent.matchAll(/\[\[RECODE:([\s\S]+?)\]\]/gi)];
 
-      // Strip memory/trial/creation markers from displayed content
+      // ── Operator control markers in Oracle's reply (NAV/CLICK/FILL/SCROLL/BACK/OPEN) ──
+      const controlMarkers = [
+        ...oracleContent.matchAll(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi),
+      ];
+      for (const cm of controlMarkers) {
+        const cmd = resolveOracleCommand(cm[0]);
+        if (cmd) {
+          // Slight stagger so multiple commands land cleanly.
+          setTimeout(() => dispatchOracleCommand(cmd), 200);
+        }
+      }
+
+      // Strip memory/trial/creation/control markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
         .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
+        .replace(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi, "")
         .trim();
+
 
       // ─── FAIL-PROOF CREATION MARKERS ───
       // Oracle emits [[GEN_*: prompt]] markers whenever the user asks to create
