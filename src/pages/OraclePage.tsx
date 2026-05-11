@@ -1989,7 +1989,7 @@ const OraclePage = () => {
 
     // ── Background IMAGE generation intent (Gemini image) ──
     // Triggered by "make/draw/paint/generate an image/picture/photo of ..."
-    const directImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
+    const directImagePrompt = preRoutedImagePrompt;
     if (directImagePrompt) {
       const prompt = directImagePrompt;
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
