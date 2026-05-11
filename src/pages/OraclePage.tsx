@@ -2339,8 +2339,11 @@ const OraclePage = () => {
           action: {
             label: "Open it now",
             onClick: () => {
-              if (opts.kind === "image" && opts.url) window.open(opts.url, "_blank");
-              else navigate(opts.deepPath);
+              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
+                // Show inline rather than a fragile window.open which sometimes
+                // produces an empty tab for large data: URLs.
+                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
+              } else navigate(opts.deepPath);
             },
           },
           cancel: {
