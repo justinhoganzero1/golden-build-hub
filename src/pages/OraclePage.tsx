@@ -1927,7 +1927,7 @@ const OraclePage = () => {
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
       const ack: Message = {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎨", color: "#FFD700",
-        content: `On it — painting that for you in the background. I'll drop the finished image into your Library.`
+        content: `On it — generating it now.`
       };
       setShowChat(true);
         setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
@@ -1943,11 +1943,16 @@ const OraclePage = () => {
           const data = await r.json();
           const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
           if (!imgUrl) { toast.error("No image returned"); return; }
-          saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+          let savedId: string | undefined;
+          try {
+            const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+            savedId = saved?.id || saved;
+          } catch {}
+          window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
           toast.success("Image ready in your Library");
           const done: Message = {
             id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🖼️", color: "#FFD700",
-            content: `Done — your new image is saved. Open the Media Library any time to grab it.`
+            content: `Done — I made it, saved it, and opened it here.${savedId ? " It is also in your Library." : ""}`
           };
           setMessages(prev => [...prev, done]);
           if (!isMuted) speakAsAgent(done.content, oracleName);
