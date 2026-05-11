@@ -2290,12 +2290,14 @@ const OraclePage = () => {
       // display below removes those markers, but this raw string is what tells
       // the client to run the real generator.
       const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+      const recodeMarkers = [...oracleContent.matchAll(/\[\[RECODE:([\s\S]+?)\]\]/gi)];
 
       // Strip memory/trial/creation markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
         .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
+        .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
         .trim();
 
       // ─── FAIL-PROOF CREATION MARKERS ───
