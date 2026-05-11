@@ -15,6 +15,7 @@ import SecurityShield from "@/components/SecurityShield";
 import ShareDialog from "@/components/ShareDialog";
 import WelcomeModal from "@/components/WelcomeModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 import HomePublicGallery from "@/components/HomePublicGallery";
 
 interface AppTile {
@@ -161,12 +162,14 @@ const DashboardPage = () => {
           </div>
         </button>
         {!isAdmin && (
-          <button
+          <Button
             onClick={() => navigate("/subscribe")}
-            className="px-5 py-2.5 rounded-full font-bold text-sm bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-lg hover:shadow-amber-500/50 hover:scale-105 transition-all whitespace-nowrap"
+            size="lg"
+            className="group relative overflow-hidden rounded-full px-8 h-12 text-base font-bold text-black bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-500 shadow-[0_0_24px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.6)] hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 border-0 [&_svg]:size-5"
           >
-            ✨ Join Membership
-          </button>
+            <Sparkles className="w-5 h-5 mr-1 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+            Join Membership
+          </Button>
         )}
       </div>
 
