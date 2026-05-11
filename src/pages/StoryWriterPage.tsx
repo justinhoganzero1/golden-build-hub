@@ -809,7 +809,7 @@ Write the full chapter now (5000+ words):`;
               <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/2)
+                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/6)
                   </p>
                   <button
                     onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
@@ -817,7 +817,7 @@ Write the full chapter now (5000+ words):`;
                     className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
                   >
                     {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {imgs.length >= 2 ? "Replace" : "Generate"}
+                    {imgs.length === 0 ? "Illustrate Chapter" : imgs.length >= 6 ? "Replace Oldest" : "Add Illustration"}
                   </button>
                 </div>
                 {imgs.length > 0 ? (
