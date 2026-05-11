@@ -289,6 +289,32 @@ const StoryWriterPage = () => {
     }
   };
 
+  // Re-illustrate one chapter (adds a new image, replacing oldest if at cap).
+  const reIllustrateChapter = async (idx: number) => {
+    if (imgBusy) return;
+    await generateStoryImage({ kind: "chapter", index: idx });
+  };
+
+  // Bulk: re-illustrate every chapter, sequentially.
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const reIllustrateAllChapters = async () => {
+    if (bulkBusy || imgBusy) return;
+    if (!confirm(`Generate a new illustration for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
+    setBulkBusy(true);
+    let ok = 0, fail = 0;
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        try {
+          await generateStoryImage({ kind: "chapter", index: i });
+          ok++;
+        } catch { fail++; }
+      }
+      toast.success(`Bulk illustration done — ${ok} ok${fail ? `, ${fail} failed` : ""}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
     setStory((s) => {
       const next = [...s.chapters];
