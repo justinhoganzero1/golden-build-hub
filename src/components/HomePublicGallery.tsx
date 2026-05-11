@@ -65,7 +65,7 @@ const DEMO_ITEMS: DemoItem[] = [
   { id: "d13", title: "Halo Coffee",           creator: "Jules Aren",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1495474472287-4d71bcdd2085"), priceCents: 1500, views: 14220, downloads: 1620 },
   { id: "d14", title: "North & Pine",          creator: "Petra Cole",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1441986300917-64674bd600d8"), priceCents: 1200, views: 9241,  downloads: 1080 },
   { id: "d15", title: "Pocket Habit Tracker",  creator: "Ren Iwata",    genre: "Apps",           emoji: "📱", thumb: monthlyWinnerApp, priceCents: 1900, views: 8412,  downloads: 510 },
-  { id: "d16", title: "Mood Journal",          creator: "Coco Ling",    genre: "Apps",           emoji: "📱", thumb: ux("1499951360447-b19be8fe80f5"), priceCents: 1500, views: 7220,  downloads: 430 },
+  { id: "d16", title: "Lunar Creation Kit",    creator: "Vega Kade",    genre: "Other",          emoji: "🌐", thumb: monthlyWinnerGeneral, priceCents: 2200, views: 24380, downloads: 1320 },
 ];
 
 // Map demo genre → (source_page, kind, media_type) so demo items
@@ -79,6 +79,7 @@ const DEMO_TO_SOURCE: Record<string, { source_page: string; kind: "media" | "gif
   "Living Avatars":{ source_page: "living-avatars",  kind: "gif",   media_type: "gif"   },
   "Brand & Logo":  { source_page: "photography-hub", kind: "media", media_type: "image" },
   Apps:            { source_page: "app-builder",     kind: "media", media_type: "image" },
+  Other:           { source_page: "general-ai",      kind: "media", media_type: "image" },
 };
 
 // Add Brand & Logo + Apps to GENRE_MAP so labels show through genreFor()
