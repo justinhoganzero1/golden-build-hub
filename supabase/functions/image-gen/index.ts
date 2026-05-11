@@ -153,9 +153,15 @@ serve(async (req) => {
       throw e;
     }
 
+    // Strip any text/words/names from rendered image (no captions, no speech bubble text, no watermarks)
+    const NO_TEXT_SUFFIX =
+      " — IMPORTANT: do NOT render any text, letters, words, names, captions, signatures, watermarks, logos, labels, speech bubbles with writing, or written language of any kind anywhere in the image. Speech bubbles, signs, and labels must be empty/blank if present.";
+    const cleanPrompt = /no text|no words|no letters|no watermark/i.test(prompt)
+      ? prompt
+      : prompt + NO_TEXT_SUFFIX;
     const userContent: any = inputImage
-      ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: inputImage } }]
-      : prompt;
+      ? [{ type: "text", text: cleanPrompt }, { type: "image_url", image_url: { url: inputImage } }]
+      : cleanPrompt;
 
     let lastStatus = 0;
     let lastBody = "";
