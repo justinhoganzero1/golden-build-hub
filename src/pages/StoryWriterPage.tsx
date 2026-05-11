@@ -712,14 +712,27 @@ Write the full chapter now (5000+ words):`;
           <StoryLibraryBrowser onOpen={loadSaved} currentId={savingId} />
         </div>
 
-        {/* Title + Genre + Premise */}
-        <div className="px-4 py-4 space-y-3">
-          <input
-            value={story.title}
-            onChange={e => setStory(s => ({ ...s, title: e.target.value }))}
-            placeholder="Story title..."
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-lg font-bold text-foreground"
-          />
+        {/* Title + Author (REQUIRED) + Genre + Premise */}
+        <div id="story-meta-gate" className="px-4 py-4 space-y-3">
+          {!hasMeta && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <strong className="font-semibold">Title and Author required.</strong> Add both so your story is saved to your library and credited to you. The writer is locked until you do.
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-2">
+            <input
+              value={story.title}
+              onChange={e => setStory(s => ({ ...s, title: e.target.value }))}
+              placeholder="Story title... (required)"
+              className={`w-full bg-card border rounded-lg px-3 py-2 text-lg font-bold text-foreground ${!story.title.trim() ? "border-amber-500/60" : "border-border"}`}
+            />
+            <input
+              value={story.author}
+              onChange={e => setStory(s => ({ ...s, author: e.target.value }))}
+              placeholder="Author name... (required)"
+              className={`w-full bg-card border rounded-lg px-3 py-2 text-sm text-foreground ${!story.author.trim() ? "border-amber-500/60" : "border-border"}`}
+            />
+          </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {GENRES.map(g => (
               <button
