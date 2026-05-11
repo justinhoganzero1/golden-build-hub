@@ -325,17 +325,29 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       let fallbackUrl = priorJob?.result_url || null;
+      let fallbackLibraryId: string | null = null;
+      if (fallbackUrl) {
+        fallbackLibraryId = await ensureLibraryImage(admin, {
+          userId: user.id,
+          prompt,
+          promptHash,
+          url: fallbackUrl,
+          jobId: priorJob?.id,
+          model: priorJob?.last_model || usedModel,
+        });
+      }
       // Otherwise, the user's most recent image from their media library.
       if (!fallbackUrl) {
         const { data: media } = await admin
           .from("user_media")
-          .select("url")
+          .select("id, url")
           .eq("user_id", user.id)
           .eq("media_type", "image")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         fallbackUrl = media?.url || null;
+        fallbackLibraryId = media?.id || null;
       }
       if (fallbackUrl) {
         if (jobId) await admin.from("image_generation_jobs").update({
@@ -355,7 +367,7 @@ serve(async (req) => {
           fallback: true,
           job_id: jobId,
           attempts: attemptsDone,
-          library_id: priorJob?.id || null,
+          library_id: fallbackLibraryId,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
