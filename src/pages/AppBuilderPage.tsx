@@ -58,6 +58,7 @@ const AppBuilderPage = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prefillConsumedRef = useRef(false);
 
   // Load saved apps
   useEffect(() => {
@@ -379,14 +380,17 @@ const AppBuilderPage = () => {
   };
 
   useEffect(() => {
+    if (prefillConsumedRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const urlPrompt = params.get("prompt") || "";
     const storedPrompt = sessionStorage.getItem("app-builder-prefill") || "";
     const storedAutostart = sessionStorage.getItem("app-builder-autostart") === "1";
     const prompt = (urlPrompt || storedPrompt).trim();
     if (!prompt || isBuilding) return;
+    prefillConsumedRef.current = true;
     sessionStorage.removeItem("app-builder-prefill");
     sessionStorage.removeItem("app-builder-autostart");
+    if (urlPrompt) window.history.replaceState({}, "", window.location.pathname);
     setInput(prompt);
     if (storedAutostart || params.get("autostart") === "1") {
       setTimeout(() => sendMessage(prompt), 250);
