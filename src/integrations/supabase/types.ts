@@ -506,6 +506,63 @@ export type Database = {
         }
         Relationships: []
       }
+      image_generation_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          fallback_used: boolean
+          id: string
+          last_model: string | null
+          max_attempts: number
+          model_chain: Json
+          prompt: string
+          prompt_hash: string
+          result_url: string | null
+          status: string
+          tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          fallback_used?: boolean
+          id?: string
+          last_model?: string | null
+          max_attempts?: number
+          model_chain?: Json
+          prompt: string
+          prompt_hash: string
+          result_url?: string | null
+          status?: string
+          tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          fallback_used?: boolean
+          id?: string
+          last_model?: string | null
+          max_attempts?: number
+          model_chain?: Json
+          prompt?: string
+          prompt_hash?: string
+          result_url?: string | null
+          status?: string
+          tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inquiry_leads: {
         Row: {
           ai_summary: string | null
