@@ -62,15 +62,56 @@ const DEMO_ITEMS: DemoItem[] = [
   { id: "d16", title: "Mood Journal",          creator: "Coco Ling",    genre: "Apps",           emoji: "📱", thumb: ux("1499951360447-b19be8fe80f5"), priceCents: 1500, views: 7220,  downloads: 430 },
 ];
 
-const DEMO_GENRES = Array.from(new Set(DEMO_ITEMS.map((d) => d.genre)));
+// Map demo genre → (source_page, kind, media_type) so demo items
+// route through the same grouping/filtering as real publishes.
+const DEMO_TO_SOURCE: Record<string, { source_page: string; kind: "media" | "gif" | "movie"; media_type: string }> = {
+  Photography:     { source_page: "photography-hub", kind: "media", media_type: "image" },
+  Avatars:         { source_page: "avatar-generator", kind: "media", media_type: "image" },
+  Movies:          { source_page: "movie-studio",    kind: "movie", media_type: "video" },
+  "Magic Photos":  { source_page: "magic-hub",       kind: "media", media_type: "image" },
+  Stories:         { source_page: "story-writer",    kind: "media", media_type: "image" },
+  "Living Avatars":{ source_page: "living-avatars",  kind: "gif",   media_type: "gif"   },
+  "Brand & Logo":  { source_page: "photography-hub", kind: "media", media_type: "image" },
+  Apps:            { source_page: "app-builder",     kind: "media", media_type: "image" },
+};
+
+// Add Brand & Logo + Apps to GENRE_MAP so labels show through genreFor()
+GENRE_MAP["app-builder"] = { label: "Apps", emoji: "📱" };
+
+const demoAsLibrary = (): PublicLibraryItem[] =>
+  DEMO_ITEMS.map((d) => {
+    const meta = DEMO_TO_SOURCE[d.genre] ?? { source_page: "photography-hub", kind: "media" as const, media_type: "image" };
+    return {
+      id: d.id,
+      kind: meta.kind,
+      user_id: "demo",
+      title: d.title,
+      url: d.thumb,
+      thumbnail_url: d.thumb,
+      media_type: meta.media_type,
+      created_at: new Date(0).toISOString(),
+      shop_enabled: true,
+      shop_price_cents: d.priceCents,
+      creator_display_name: d.creator,
+      download_count: d.downloads,
+      view_count: d.views,
+      source_page: meta.source_page,
+    };
+  });
 
 const HomePublicGallery = () => {
   const navigate = useNavigate();
-  const { data: items = [], isLoading } = usePublicLibrary("all");
+  const { data: realItems = [], isLoading } = usePublicLibrary("all");
   const [activeGenre, setActiveGenre] = useState<string>("All");
-  const [activeDemoGenre, setActiveDemoGenre] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "popular" | "price_low" | "price_high">("newest");
+
+  // Always merge demo creations after real ones so the gallery is
+  // never sparse — real publishes lead, showcase pieces fill the rest.
+  const items = useMemo<PublicLibraryItem[]>(
+    () => [...realItems, ...demoAsLibrary()],
+    [realItems],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, { emoji: string; items: PublicLibraryItem[] }>();
