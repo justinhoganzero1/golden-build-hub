@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Crown, Sparkles, ChevronLeft, ChevronRight, Heart, Eye, Download, X, ShoppingBag } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAllUserMedia } from "@/hooks/useAllUserMedia";
 
 /**
  * Monthly Awards Showcase — curated AI-themed categories with this
@@ -33,9 +34,25 @@ type Category = {
   winners: Winner[];
 };
 
-// Helper to build an Unsplash image URL by photo id
-const ux = (id: string, w = 800, h = 800) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
+// Helper to build an image URL. Accepts either a full http(s) URL (e.g.
+// from the user's media library) or an Unsplash photo id fallback.
+const ux = (idOrUrl: string, w = 800, h = 800) => {
+  if (!idOrUrl) return "";
+  if (/^https?:\/\//i.test(idOrUrl)) return idOrUrl;
+  return `https://images.unsplash.com/photo-${idOrUrl}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
+};
+
+// Heuristic mapping: which source_page values feed which category
+const CATEGORY_SOURCE_HINTS: Record<string, string[]> = {
+  "cinematic-portraits": ["avatar", "portrait", "photo", "magic"],
+  "story-of-month": ["story"],
+  "movie-magic": ["movie", "video"],
+  "magic-hub": ["magic", "edit", "photo"],
+  "avatar-icons": ["avatar"],
+  "living-avatars": ["living", "gif", "avatar"],
+  "voice-virtuoso": ["voice"],
+  "logo-design": ["logo", "brand", "photography"],
+};
 
 const CATEGORIES: Category[] = [
   {
@@ -241,7 +258,48 @@ export default function MonthlyAwardsShowcase() {
   const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
   const [openWinner, setOpenWinner] = useState<{ cat: Category; w: Winner } | null>(null);
-  const cat = CATEGORIES[activeIdx];
+
+  // Pull real generated images from the admin / user library and weave them
+  // into the curated awards so the gallery always reflects actual creator work.
+  const { data: media } = useAllUserMedia();
+  const liveCategories = useMemo<Category[]>(() => {
+    const imgs = (media || []).filter(
+      (m: any) => (m.media_type === "image" || m.media_type === "photo") && !!m.url
+    );
+    if (imgs.length === 0) return CATEGORIES;
+
+    return CATEGORIES.map((c) => {
+      const hints = CATEGORY_SOURCE_HINTS[c.id] || [];
+      const matched = imgs.filter((m: any) =>
+        hints.some((h) => (m.source_page || "").toLowerCase().includes(h))
+      );
+      const pool = (matched.length >= 4 ? matched : imgs).slice();
+      // Stable shuffle by category id so it doesn't reorder every render
+      pool.sort((a: any, b: any) =>
+        (a.id + c.id).localeCompare(b.id + c.id)
+      );
+      let cursor = 0;
+      const take = () => {
+        const item = pool[cursor % pool.length];
+        cursor++;
+        return item;
+      };
+      const winners = c.winners.map((w) => {
+        const heroItem = take();
+        const gallery = [take(), take(), take(), take()].map(
+          (g, i) => (g?.thumbnail_url || g?.url || w.gallery[i])
+        );
+        return {
+          ...w,
+          hero: heroItem?.url || w.hero,
+          gallery,
+        };
+      }) as [Winner, Winner, Winner];
+      return { ...c, winners };
+    });
+  }, [media]);
+
+  const cat = liveCategories[activeIdx];
 
   return (
     <section className="px-4 mb-4" aria-label="Monthly creator awards">
