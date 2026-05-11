@@ -1719,6 +1719,7 @@ const OraclePage = () => {
 
     if (!isIntroTrigger && wantsComputerOperatorMode(text)) {
       sessionStorage.setItem("app-builder-prefill", text);
+      sessionStorage.setItem("app-builder-autostart", "1");
       const userMsgComputer: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
       const ackComputer: Message = {
         id: (Date.now() + 1).toString(), role: "assistant", sender: oracleName, emoji: "🛠️", color: "#FFD700",
