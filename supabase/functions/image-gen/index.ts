@@ -32,6 +32,61 @@ async function sha256(input: string): Promise<string> {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+async function ensureLibraryImage(admin: any, opts: {
+  userId: string;
+  prompt: string;
+  promptHash: string;
+  url: string;
+  jobId?: string | null;
+  model?: string | null;
+  fallback?: boolean;
+}): Promise<string | null> {
+  if (!opts.url || opts.fallback) return null;
+  try {
+    const { data: existing } = await admin
+      .from("user_media")
+      .select("id")
+      .eq("user_id", opts.userId)
+      .eq("media_type", "image")
+      .eq("source_page", "oracle-image")
+      .contains("metadata", { prompt_hash: opts.promptHash })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return existing.id;
+
+    const cleanTitle = opts.prompt.replace(/\s+/g, " ").trim().slice(0, 60) || "Oracle image";
+    const { data, error } = await admin
+      .from("user_media")
+      .insert({
+        user_id: opts.userId,
+        media_type: "image",
+        title: `Image: ${cleanTitle}`,
+        url: opts.url,
+        source_page: "oracle-image",
+        metadata: {
+          kind: "image",
+          prompt: opts.prompt,
+          prompt_hash: opts.promptHash,
+          image_generation_job_id: opts.jobId || null,
+          model: opts.model || null,
+          saved_by: "image-gen-server",
+        },
+        is_public: false,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      console.error("image-gen library save failed:", error.message);
+      return null;
+    }
+    return data?.id || null;
+  } catch (err) {
+    console.error("image-gen library save unexpected:", err);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -112,6 +167,14 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (cached?.result_url) {
+        const libraryId = await ensureLibraryImage(admin, {
+          userId: user.id,
+          prompt,
+          promptHash,
+          url: cached.result_url,
+          jobId: cached.id,
+          model: cached.last_model || defaultModel,
+        });
         return new Response(JSON.stringify({
           text: "",
           images: [{ image_url: { url: cached.result_url } }],
@@ -120,6 +183,7 @@ serve(async (req) => {
           cost_cents: 0,
           cached: true,
           job_id: cached.id,
+          library_id: libraryId,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
@@ -216,6 +280,14 @@ serve(async (req) => {
 
     if (succeeded) {
       const resultUrl = images[0]?.image_url?.url || images[0]?.url || (typeof images[0] === "string" ? images[0] : null);
+      const libraryId = resultUrl ? await ensureLibraryImage(admin, {
+        userId: user.id,
+        prompt,
+        promptHash,
+        url: resultUrl,
+        jobId,
+        model: usedModel,
+      }) : null;
       if (jobId) {
         await admin.from("image_generation_jobs").update({
           status: "completed",
@@ -228,6 +300,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         text: textOut, images, tier: chosenTier, model: usedModel,
         cost_cents: IMAGE_GEN_COST_CENTS, attempts: attemptsDone, job_id: jobId,
+        library_id: libraryId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -252,17 +325,29 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       let fallbackUrl = priorJob?.result_url || null;
+      let fallbackLibraryId: string | null = null;
+      if (fallbackUrl) {
+        fallbackLibraryId = await ensureLibraryImage(admin, {
+          userId: user.id,
+          prompt,
+          promptHash,
+          url: fallbackUrl,
+          jobId: priorJob?.id,
+          model: priorJob?.last_model || usedModel,
+        });
+      }
       // Otherwise, the user's most recent image from their media library.
       if (!fallbackUrl) {
         const { data: media } = await admin
           .from("user_media")
-          .select("url")
+          .select("id, url")
           .eq("user_id", user.id)
           .eq("media_type", "image")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
         fallbackUrl = media?.url || null;
+        fallbackLibraryId = media?.id || null;
       }
       if (fallbackUrl) {
         if (jobId) await admin.from("image_generation_jobs").update({
@@ -282,6 +367,7 @@ serve(async (req) => {
           fallback: true,
           job_id: jobId,
           attempts: attemptsDone,
+          library_id: fallbackLibraryId,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
