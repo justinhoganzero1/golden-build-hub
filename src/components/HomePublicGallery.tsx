@@ -26,10 +26,49 @@ const genreFor = (item: PublicLibraryItem) => {
 const formatPrice = (cents: number) =>
   cents > 0 ? `$${(cents / 100).toFixed(2)}` : "Free";
 
+// Curated demo creations so the gallery never looks empty.
+// These are showcase pieces — clicking opens the Public Library / Shop.
+const ux = (id: string, w = 600) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&h=${w}&q=85`;
+
+type DemoItem = {
+  id: string;
+  title: string;
+  creator: string;
+  genre: string;
+  emoji: string;
+  thumb: string;
+  priceCents: number;
+  views: number;
+  downloads: number;
+};
+
+const DEMO_ITEMS: DemoItem[] = [
+  { id: "d1",  title: "Velvet Saint",          creator: "Aurora Vex",   genre: "Photography",    emoji: "📸", thumb: ux("1531746020798-e6953c6e8e04"), priceCents: 1200, views: 18432, downloads: 920 },
+  { id: "d2",  title: "Midnight Monarch",      creator: "Kiyan Mori",   genre: "Photography",    emoji: "📸", thumb: ux("1506794778202-cad84cf45f1d"), priceCents: 800,  views: 14201, downloads: 612 },
+  { id: "d3",  title: "Solar Empress",         creator: "Vega Kade",    genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1488426862026-3ee34a7d66df"), priceCents: 600,  views: 41022, downloads: 3140 },
+  { id: "d4",  title: "Obsidian Knight",       creator: "Indra Noor",   genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1492562080023-ab3db95bfbce"), priceCents: 700,  views: 25678, downloads: 1820 },
+  { id: "d5",  title: "Echoes of Mars",        creator: "Dax Halberg",  genre: "Movies",         emoji: "🎬", thumb: ux("1451187580459-43490279c0fa"), priceCents: 1500, views: 32042, downloads: 2410 },
+  { id: "d6",  title: "Last Light",            creator: "Mira Solé",    genre: "Movies",         emoji: "🎬", thumb: ux("1493514789931-586cb221d7a7"), priceCents: 1200, views: 19840, downloads: 1410 },
+  { id: "d7",  title: "Phoenix Bloom",         creator: "Iris Vohr",    genre: "Magic Photos",   emoji: "✨", thumb: ux("1495103033382-fe343886b671"), priceCents: 900,  views: 28031, downloads: 1980 },
+  { id: "d8",  title: "Glass Garden",          creator: "Theo Rask",    genre: "Magic Photos",   emoji: "✨", thumb: ux("1465146344425-f00d5f5c8f07"), priceCents: 700,  views: 17230, downloads: 1190 },
+  { id: "d9",  title: "The Gilded Comet",      creator: "Nyx Rivers",   genre: "Stories",        emoji: "📖", thumb: ux("1419242902214-272b3f66ee7a"), priceCents: 900,  views: 21040, downloads: 1820 },
+  { id: "d10", title: "Hymn of the Wolf",      creator: "Sable Quinn",  genre: "Stories",        emoji: "📖", thumb: ux("1448375240586-882707db888b"), priceCents: 800,  views: 15610, downloads: 1240 },
+  { id: "d11", title: "Soft Static",           creator: "Eden Roux",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1517841905240-472988babdf9"), priceCents: 500,  views: 19833, downloads: 1320 },
+  { id: "d12", title: "Glass Idol",            creator: "Mako Kira",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1521119989659-a83eee488004"), priceCents: 500,  views: 15422, downloads: 1010 },
+  { id: "d13", title: "Halo Coffee",           creator: "Jules Aren",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1495474472287-4d71bcdd2085"), priceCents: 1500, views: 14220, downloads: 1620 },
+  { id: "d14", title: "North & Pine",          creator: "Petra Cole",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1441986300917-64674bd600d8"), priceCents: 1200, views: 9241,  downloads: 1080 },
+  { id: "d15", title: "Pocket Habit Tracker",  creator: "Ren Iwata",    genre: "Apps",           emoji: "📱", thumb: ux("1517292987719-0369a794ec0f"), priceCents: 1900, views: 8412,  downloads: 510 },
+  { id: "d16", title: "Mood Journal",          creator: "Coco Ling",    genre: "Apps",           emoji: "📱", thumb: ux("1499951360447-b19be8fe80f5"), priceCents: 1500, views: 7220,  downloads: 430 },
+];
+
+const DEMO_GENRES = Array.from(new Set(DEMO_ITEMS.map((d) => d.genre)));
+
 const HomePublicGallery = () => {
   const navigate = useNavigate();
   const { data: items = [], isLoading } = usePublicLibrary("all");
   const [activeGenre, setActiveGenre] = useState<string>("All");
+  const [activeDemoGenre, setActiveDemoGenre] = useState<string>("All");
 
   const grouped = useMemo(() => {
     const map = new Map<string, { emoji: string; items: PublicLibraryItem[] }>();
@@ -62,18 +101,88 @@ const HomePublicGallery = () => {
   }
 
   if (items.length === 0) {
+    const visibleDemo =
+      activeDemoGenre === "All"
+        ? DEMO_ITEMS
+        : DEMO_ITEMS.filter((d) => d.genre === activeDemoGenre);
+    const demoGenres = ["All", ...DEMO_GENRES];
     return (
-      <div className="px-4 mb-4">
-        <div className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm p-4 text-center">
-          <p className="text-sm font-semibold text-foreground flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            Creators’ Gallery
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Be the first to publish a creation. Open any studio, then toggle “Share to Public Library”.
-          </p>
+      <section className="px-4 mb-4" aria-label="Creators public gallery (showcase)">
+        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-950/15 via-card/60 to-background backdrop-blur-sm overflow-hidden">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-amber-500/20">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              <h2 className="text-sm font-bold bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent truncate">
+                Creators’ Gallery
+              </h2>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
+                Showcase
+              </span>
+            </div>
+            <button
+              onClick={() => navigate("/public-library")}
+              className="text-[11px] px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition shrink-0"
+            >
+              View all
+            </button>
+          </header>
+
+          <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+            {demoGenres.map((g) => {
+              const active = g === activeDemoGenre;
+              const meta = g === "All" ? "🌐" : (DEMO_ITEMS.find((d) => d.genre === g)?.emoji ?? "🎨");
+              return (
+                <button
+                  key={g}
+                  onClick={() => setActiveDemoGenre(g)}
+                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition border ${
+                    active
+                      ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black border-amber-300"
+                      : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70"
+                  }`}
+                >
+                  <span>{meta}</span><span>{g}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3">
+            {visibleDemo.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => navigate("/public-library")}
+                className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted/30 text-left hover:border-amber-400/60 transition"
+                aria-label={d.title}
+              >
+                <img
+                  src={d.thumb}
+                  alt={d.title}
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2">
+                  <p className="text-[10px] font-semibold text-white line-clamp-1">{d.title}</p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className="text-[9px] text-white/70 line-clamp-1">{d.creator}</span>
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-bold">
+                      <ShoppingBag className="w-2.5 h-2.5" />
+                      {formatPrice(d.priceCents)}
+                    </span>
+                  </div>
+                </div>
+                <span className="absolute top-1.5 left-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-black/60 text-amber-200 border border-amber-400/30">
+                  {d.emoji} {d.genre}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="px-4 pb-3 text-center text-[10px] text-muted-foreground">
+            These are showcase pieces. Publish your own from any studio to appear here.
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
