@@ -12,6 +12,7 @@ import MasterMuteButton from "@/components/MasterMuteButton";
 // Vaulted: CallControlBanner (Twilio) — disabled until telephony returns.
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
+import { OracleControlListener } from "@/lib/oracleControl";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
 import RequireAdmin from "@/components/RequireAdmin";
@@ -256,6 +257,7 @@ const App = () => (
               </Suspense>
               <MasterMuteButton />
               <OracleAgent />
+              <OracleControlListener />
 
               <Suspense fallback={<Loading />}>
                 <Routes>
