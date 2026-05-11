@@ -21,6 +21,7 @@ import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/componen
 import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
+import { resolveOracleCommand, dispatchOracleCommand, stripOracleMarkers } from "@/lib/oracleControl";
 
 interface Message {
   id: string;
