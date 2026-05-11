@@ -163,49 +163,76 @@ const StoryWriterPage = () => {
     })();
   }, [params, user]);
 
-  // Auto-save to library (debounced)
+  // Default the author to the signed-in user's name/email once known.
   useEffect(() => {
     if (!user) return;
-    if (!story.title.trim() && !story.premise.trim() && !story.chapters.some(c => c.content.trim())) return;
+    setStory(s => s.author?.trim() ? s : { ...s, author: (user.user_metadata?.full_name as string) || user.email?.split("@")[0] || "" });
+  }, [user]);
+
+  // Hard gate: title + author are required before any AI work.
+  const hasMeta = !!story.title.trim() && !!story.author.trim();
+  const requireMeta = (): boolean => {
+    if (!hasMeta) {
+      toast.error("Add a Title and Author before the writer can begin.");
+      try { document.getElementById("story-meta-gate")?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+      return false;
+    }
+    return true;
+  };
+
+  // Auto-save to library (debounced) — only after Title + Author exist so the
+  // very first save lands in the user's (and admin's) library with proper
+  // attribution. Routed through the central save_library_item RPC so the
+  // admin library pipeline picks it up.
+  useEffect(() => {
+    if (!user) return;
+    if (!hasMeta) return;
     const handle = setTimeout(async () => {
       try {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
-        const payload: any = {
-          user_id: user.id,
-          media_type: "story",
-          title: story.title || "Untitled Story",
-          url: `oracle-lunar://story/${savingId || "draft"}`,
-          source_page: "story-writer",
-          metadata: {
-            genre: story.genre,
-            premise: story.premise,
-            chapters: story.chapters,
-            coverImage: story.coverImage,
-            backImage: story.backImage,
-            wordCount,
-            published: story.published || false,
-            publishedUrl: story.publishedUrl,
-          },
+        const metadata = {
+          author: story.author,
+          genre: story.genre,
+          premise: story.premise,
+          chapters: story.chapters,
+          coverImage: story.coverImage,
+          backImage: story.backImage,
+          wordCount,
+          published: story.published || false,
+          publishedUrl: story.publishedUrl,
+          admin_library_visible: true,
+          kind: "story_doc",
         };
         if (savingId) {
-          await supabase.from("user_media").update(payload).eq("id", savingId);
+          await supabase.from("user_media").update({
+            title: story.title,
+            metadata,
+          } as any).eq("id", savingId);
         } else {
           const { data, error } = await supabase
             .from("user_media")
-            .insert([payload])
+            .insert([{
+              user_id: user.id,
+              media_type: "story",
+              title: story.title,
+              url: `oracle-lunar://story/${crypto.randomUUID()}`,
+              source_page: "story-writer",
+              metadata,
+            } as any])
             .select("id")
             .single();
           if (!error && data) setSavingId(data.id);
         }
         qc.invalidateQueries({ queryKey: ["story-writer-library"] });
         qc.invalidateQueries({ queryKey: ["user-media"] });
+        qc.invalidateQueries({ queryKey: ["all-user-media"] });
       } catch (e) {
         console.error("auto-save error", e);
       }
-    }, 1500);
+    }, 1200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story, user, savingId]);
+  }, [story, user, savingId, hasMeta]);
 
   const totalWords = useMemo(
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
