@@ -375,6 +375,15 @@ serve(async (req) => {
     }).eq("id", jobId);
 
     console.error("Image gen exhausted all fallbacks:", lastStatus, lastBody);
+    if (creditsExhausted) {
+      return new Response(JSON.stringify({
+        error: "AI credits exhausted. Please try again later or top up credits.",
+        code: "credits_exhausted",
+        fallback: true,
+        images: [],
+        job_id: jobId,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     return new Response(JSON.stringify({ error: "Image generation failed after all fallbacks", detail: lastBody, job_id: jobId }), {
       status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
