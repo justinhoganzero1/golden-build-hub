@@ -104,20 +104,28 @@ function wantsFinalOnlyMode(text: string): boolean {
   return FINAL_ONLY_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-const DIRECT_TASK_RE = /\b(?:make|create|generate|draw|paint|render|design|compose|produce|record|write|build|develop|code|open|launch|go to|take me to|show me|diagnose|fix|repair)\b/i;
+const DIRECT_TASK_RE = /\b(?:make|create|generate|genrate|genrste|genrarte|draw|paint|render|design|imagine|compose|produce|record|write|build|develop|code|open|launch|go to|take me to|show me|diagnose|fix|repair)\b/i;
 
 function isDirectOracleTask(text: string): boolean {
   return DIRECT_TASK_RE.test(text);
 }
 
 function extractImagePrompt(text: string): string | null {
+  const polish = (value: string) => value
+    .replace(/\b8\s*k\b/gi, "8K")
+    .replace(/\bmonk+ey\b/gi, "monkey")
+    .replace(/^[\s,.:;!?-]*(?:of|for|showing|depicting|that\s+is|like|with|a|an|the|some)\s+/i, "")
+    .replace(/[.!?]+$/, "")
+    .trim();
   const patterns = [
-    /\b(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me|us))?(?:\s+(?:a|an|some|the))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene|mockup|icon|sticker)\s*(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+)?([\s\S]+)/i,
+    /\b(?:make|create|generate|genrate|genrste|genrarte|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me|us))?(?:\s+\w+){0,5}?\s+(?:image|img|imge|picture|pic|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene|mockup|icon|sticker)\s*(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+)?([\s\S]+)/i,
+    /\b(?:make|create|generate|genrate|genrste|genrarte|render|design|give me|i need|show me)(?:\s+(?:me|us))?\s+(?:a|an|the|some)?\s*([\s\S]+?)\s+(?:image|img|imge|picture|pic|photo|photograph|painting|drawing|illustration|artwork|wallpaper|poster|portrait|scene)$/i,
     /\b(?:draw|paint|render|illustrate|sketch)(?:\s+(?:me|us))?\s+(?:a|an|the|some)?\s*([\s\S]+)/i,
+    /\b(?:make|create|generate|genrate|genrste|genrarte)(?:\s+(?:me|us))?\s+(?:a|an|the|some)?\s*([\s\S]*\b8\s*k\b[\s\S]*)/i,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    const prompt = match?.[1]?.replace(/[.!?]+$/, "").trim();
+    const prompt = match?.[1] ? polish(match[1]) : "";
     if (prompt) return prompt;
   }
   return null;
@@ -1919,7 +1927,7 @@ const OraclePage = () => {
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
       const ack: Message = {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎨", color: "#FFD700",
-        content: `On it — painting that for you in the background. I'll drop the finished image into your Library.`
+        content: `On it — generating it now.`
       };
       setShowChat(true);
         setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
@@ -1935,11 +1943,16 @@ const OraclePage = () => {
           const data = await r.json();
           const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
           if (!imgUrl) { toast.error("No image returned"); return; }
-          saveMedia.mutate({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+          let savedId: string | undefined;
+          try {
+            const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+            savedId = saved?.id || saved;
+          } catch {}
+          window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
           toast.success("Image ready in your Library");
           const done: Message = {
             id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🖼️", color: "#FFD700",
-            content: `Done — your new image is saved. Open the Media Library any time to grab it.`
+            content: `Done — I made it, saved it, and opened it here.${savedId ? " It is also in your Library." : ""}`
           };
           setMessages(prev => [...prev, done]);
           if (!isMuted) speakAsAgent(done.content, oracleName);
