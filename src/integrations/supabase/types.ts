@@ -2340,6 +2340,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_unlimited_ai: { Args: { _user_id: string }; Returns: boolean }
       increment_oracle_usage: {
         Args: { _limit: number; _user_id: string }
         Returns: {
