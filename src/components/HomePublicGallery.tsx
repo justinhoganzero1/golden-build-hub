@@ -157,7 +157,7 @@ const HomePublicGallery = () => {
       </div>
     );
   }
-
+  return (
     <section className="px-4 mb-4" aria-label="Creators public gallery">
       <div className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm overflow-hidden">
         <header className="flex items-center justify-between px-4 py-3 border-b border-border/60">
