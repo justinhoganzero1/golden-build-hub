@@ -14,13 +14,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // 🔒 FORT KNOX: require valid JWT
+    // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Sign up required. Download the ORACLE LUNAR app and sign in to use Oracle." }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
