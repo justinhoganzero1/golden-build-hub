@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Crown, Sparkles, ChevronLeft, ChevronRight, Heart, Eye, Download, X, ShoppingBag } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useAllUserMedia } from "@/hooks/useAllUserMedia";
 
 /**
  * Monthly Awards Showcase — curated AI-themed categories with this
@@ -33,9 +34,25 @@ type Category = {
   winners: Winner[];
 };
 
-// Helper to build an Unsplash image URL by photo id
-const ux = (id: string, w = 800, h = 800) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
+// Helper to build an image URL. Accepts either a full http(s) URL (e.g.
+// from the user's media library) or an Unsplash photo id fallback.
+const ux = (idOrUrl: string, w = 800, h = 800) => {
+  if (!idOrUrl) return "";
+  if (/^https?:\/\//i.test(idOrUrl)) return idOrUrl;
+  return `https://images.unsplash.com/photo-${idOrUrl}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
+};
+
+// Heuristic mapping: which source_page values feed which category
+const CATEGORY_SOURCE_HINTS: Record<string, string[]> = {
+  "cinematic-portraits": ["avatar", "portrait", "photo", "magic"],
+  "story-of-month": ["story"],
+  "movie-magic": ["movie", "video"],
+  "magic-hub": ["magic", "edit", "photo"],
+  "avatar-icons": ["avatar"],
+  "living-avatars": ["living", "gif", "avatar"],
+  "voice-virtuoso": ["voice"],
+  "logo-design": ["logo", "brand", "photography"],
+};
 
 const CATEGORIES: Category[] = [
   {
