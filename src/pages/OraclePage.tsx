@@ -56,6 +56,7 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
+const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
 // ============ NAMING SYSTEM ============
 function getAgentNames(): Record<string, string> {
@@ -129,6 +130,37 @@ function extractImagePrompt(text: string): string | null {
     if (prompt) return prompt;
   }
   return null;
+}
+
+const ORACLE_APP_ROUTES = [
+  { label: "App Builder", path: "/app-builder", re: /\b(app\s*builder|coding\s*app|code\s*builder|app\s*maker|build\s+apps?|make\s+apps?)\b/i },
+  { label: "Media Library", path: "/media-library", re: /\b(media\s*library|my\s*library|library|saved\s*(?:files|media|apps|images))\b/i },
+  { label: "Live Vision", path: "/live-vision", re: /\b(live\s*vision|camera|see\s+through|look\s+at\s+this|scan\s+this)\b/i },
+  { label: "Photography Hub", path: "/photography-hub", re: /\b(photo(?:graphy)?\s*hub|photo\s*studio|edit\s+(?:a\s+)?photo|picture\s*editor)\b/i },
+  { label: "Voice Studio", path: "/voice-studio", re: /\b(voice\s*studio|voice\s*builder|change\s+(?:your\s+)?voice|clone\s+voice)\b/i },
+  { label: "AI Studio", path: "/ai-studio", re: /\b(ai\s*studio|ai\s*team|agents?\s*studio)\b/i },
+  { label: "Diagnostics", path: "/diagnostics", re: /\b(diagnostics?|system\s*doctor|system\s*check|health\s*check)\b/i },
+  { label: "Dashboard", path: "/dashboard", re: /\b(dashboard|home\s*screen|main\s*menu)\b/i },
+  { label: "Settings", path: "/settings", re: /\b(settings|account\s*settings|preferences)\b/i },
+  { label: "Profile", path: "/profile", re: /\b(profile|my\s*account)\b/i },
+  { label: "Wallet", path: "/wallet", re: /\b(wallet|payments?|bills?|payid|bpay)\b/i },
+  { label: "Calendar", path: "/calendar", re: /\b(calendar|diary|schedule|appointments?)\b/i },
+  { label: "Story Writer", path: "/story-writer", re: /\b(story\s*writer|write\s+(?:a\s+)?story|author\s*studio)\b/i },
+  { label: "Avatar Generator", path: "/avatar-generator", re: /\b(avatar\s*generator|make\s+(?:an?\s+)?avatar|change\s+(?:your\s+)?face)\b/i },
+  { label: "Owner Dashboard", path: "/owner-dashboard", re: /\b(owner\s*dashboard|admin\s*dashboard|admin\s*panel)\b/i },
+];
+
+function resolveDirectOracleRoute(text: string): { label: string; path: string; prefill?: string } | null {
+  const navIntent = /\b(open|launch|start|use|run|go\s+to|take\s+me\s+to|show\s+me|bring\s+up|switch\s+to)\b/i.test(text);
+  if (!navIntent) return null;
+  const route = ORACLE_APP_ROUTES.find((item) => item.re.test(text));
+  if (!route) return null;
+  const prefill = route.path === "/app-builder" ? text.replace(/\b(open|launch|start|use|run|go\s+to|take\s+me\s+to|show\s+me|bring\s+up|switch\s+to)\b/gi, "").trim() : undefined;
+  return { ...route, prefill };
+}
+
+function wantsComputerOperatorMode(text: string): boolean {
+  return /\b(?:take|gain|have|get|give\s+you|grant\s+you|allow\s+you\s+to|let\s+you)\s+(?:full\s+)?(?:control|access|charge|over)\s+(?:of\s+)?(?:my\s+)?(?:entire\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b|\bcontrol\s+(?:my\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b|\brun\s+(?:my\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b/i.test(text);
 }
 
 const OraclePage = () => {
