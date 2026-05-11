@@ -169,8 +169,13 @@ const StoryWriterPage = () => {
     setStory(s => s.author?.trim() ? s : { ...s, author: (user.user_metadata?.full_name as string) || user.email?.split("@")[0] || "" });
   }, [user]);
 
-  // Hard gate: title + author are required before any AI work.
-  const hasMeta = !!story.title.trim() && !!story.author.trim();
+  // Hard gate: title + author are required before any AI work or autosave.
+  // Reject default placeholder titles so the very first save lands with a real
+  // human-chosen title in the user's (and admin's) library.
+  const PLACEHOLDER_TITLES = ["", "untitled story", "untitled"];
+  const cleanTitle = story.title.trim();
+  const cleanAuthor = story.author.trim();
+  const hasMeta = !!cleanTitle && !!cleanAuthor && !PLACEHOLDER_TITLES.includes(cleanTitle.toLowerCase());
   const requireMeta = (): boolean => {
     if (!hasMeta) {
       toast.error("Add a Title and Author before the writer can begin.");

@@ -189,6 +189,7 @@ const WalletPage = lazy(loaders["/wallet"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
 const AdminEditorPage = lazy(loaders["/admin/editor"]);
+const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
@@ -315,6 +316,7 @@ const App = () => (
                   <Route path="/owner-dashboard" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/library" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Library"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/editor" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/usage-audit" element={<RequireAuth><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
