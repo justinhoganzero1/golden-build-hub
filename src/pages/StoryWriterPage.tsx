@@ -289,6 +289,32 @@ const StoryWriterPage = () => {
     }
   };
 
+  // Re-illustrate one chapter (adds a new image, replacing oldest if at cap).
+  const reIllustrateChapter = async (idx: number) => {
+    if (imgBusy) return;
+    await generateStoryImage({ kind: "chapter", index: idx });
+  };
+
+  // Bulk: re-illustrate every chapter, sequentially.
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const reIllustrateAllChapters = async () => {
+    if (bulkBusy || imgBusy) return;
+    if (!confirm(`Generate a new illustration for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
+    setBulkBusy(true);
+    let ok = 0, fail = 0;
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        try {
+          await generateStoryImage({ kind: "chapter", index: i });
+          ok++;
+        } catch { fail++; }
+      }
+      toast.success(`Bulk illustration done — ${ok} ok${fail ? `, ${fail} failed` : ""}`);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
     setStory((s) => {
       const next = [...s.chapters];
@@ -754,6 +780,69 @@ Write the full chapter now (5000+ words):`;
             <Plus className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Chapter quick-list — jump to any chapter, see illustration status, bulk illustrate */}
+        <div className="px-4 pt-3">
+          <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                Chapters ({story.chapters.length})
+              </p>
+              <button
+                onClick={reIllustrateAllChapters}
+                disabled={bulkBusy || !!imgBusy}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+              >
+                {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Illustrate ALL chapters
+              </button>
+            </div>
+            <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+              {story.chapters.map((c, i) => {
+                const imgs = c.images?.length || 0;
+                const wc = c.content.split(/\s+/).filter(Boolean).length;
+                const slotKey = `chapter-${i}`;
+                const busy = imgBusy === slotKey;
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs ${
+                      i === activeChapter
+                        ? "bg-primary/15 border-primary/50"
+                        : "bg-card border-border"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setActiveChapter(i)}
+                      className="flex-1 text-left min-w-0"
+                    >
+                      <div className={`font-medium truncate ${i === activeChapter ? "text-primary" : "text-foreground"}`}>
+                        {c.title || `Chapter ${i + 1}`}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {wc.toLocaleString()} words ·{" "}
+                        <span className={imgs > 0 ? "text-primary" : "text-muted-foreground"}>
+                          {imgs > 0 ? `🖼 ${imgs}/6 illustrated` : "no illustrations"}
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => reIllustrateChapter(i)}
+                      disabled={!!imgBusy || bulkBusy}
+                      className="shrink-0 p-1.5 rounded text-primary hover:bg-primary/10 disabled:opacity-40"
+                      aria-label="Re-illustrate this chapter"
+                      title="Add a new illustration"
+                    >
+                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
 
         {/* Chapter editor */}
         <div className="px-4 py-3 space-y-3">
