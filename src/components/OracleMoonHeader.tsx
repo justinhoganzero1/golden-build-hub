@@ -32,7 +32,7 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
     <div className="relative overflow-hidden border-b border-amber-500/30">
       {/* ── Cinematic video background ── */}
       <video
-        src={heroVideo.url}
+        src={`${heroVideo.url}${heroVideo.url.includes("?") ? "&" : "?"}v=${(heroVideo as any).version || (heroVideo as any).updated_at || (heroVideo as any).hash || "earth-moon-2"}`}
         autoPlay
         loop
         muted

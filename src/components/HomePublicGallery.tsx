@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePublicLibrary, type PublicLibraryItem } from "@/hooks/usePublicLibrary";
-import { Sparkles, ShoppingBag, Eye, Download } from "lucide-react";
+import { Sparkles, ShoppingBag, Eye, Download, Search, X } from "lucide-react";
 
 // Map raw source_page values into friendly genre groups (bubbles)
 const GENRE_MAP: Record<string, { label: string; emoji: string }> = {
@@ -69,6 +69,8 @@ const HomePublicGallery = () => {
   const { data: items = [], isLoading } = usePublicLibrary("all");
   const [activeGenre, setActiveGenre] = useState<string>("All");
   const [activeDemoGenre, setActiveDemoGenre] = useState<string>("All");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"newest" | "popular" | "price_low" | "price_high">("newest");
 
   const grouped = useMemo(() => {
     const map = new Map<string, { emoji: string; items: PublicLibraryItem[] }>();
@@ -86,9 +88,24 @@ const HomePublicGallery = () => {
   );
 
   const visibleItems = useMemo(() => {
-    if (activeGenre === "All") return items.slice(0, 24);
-    return grouped.get(activeGenre)?.items.slice(0, 24) ?? [];
-  }, [activeGenre, items, grouped]);
+    const base = activeGenre === "All" ? items : (grouped.get(activeGenre)?.items ?? []);
+    const q = search.trim().toLowerCase();
+    let list = q
+      ? base.filter(
+          (i) =>
+            (i.title || "").toLowerCase().includes(q) ||
+            (i.creator_display_name || "").toLowerCase().includes(q),
+        )
+      : base.slice();
+    if (sort === "popular") {
+      list.sort((a, b) => (b.view_count + b.download_count) - (a.view_count + a.download_count));
+    } else if (sort === "price_low") {
+      list.sort((a, b) => (a.shop_price_cents || 0) - (b.shop_price_cents || 0));
+    } else if (sort === "price_high") {
+      list.sort((a, b) => (b.shop_price_cents || 0) - (a.shop_price_cents || 0));
+    }
+    return list.slice(0, 24);
+  }, [activeGenre, items, grouped, search, sort]);
 
   if (isLoading) {
     return (
@@ -223,6 +240,49 @@ const HomePublicGallery = () => {
               </button>
             );
           })}
+        </div>
+
+        {/* Search + sort */}
+        <div className="px-3 pb-2 flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search title or creator…"
+              className="w-full pl-8 pr-7 py-1.5 rounded-full bg-muted/40 border border-border text-[11px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {([
+              ["newest", "Newest"],
+              ["popular", "Popular"],
+              ["price_low", "$ ↑"],
+              ["price_high", "$ ↓"],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setSort(k)}
+                className={`px-2 py-1 rounded-full text-[10px] font-semibold border transition ${
+                  sort === k
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}
