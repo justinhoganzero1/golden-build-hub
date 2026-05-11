@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import winnerPhoto from "@/assets/winner-photo-week.jpg";
 import { Trophy, Sparkles, Medal, Image as ImageIcon, BookOpen, Video, Palette } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Featured {
@@ -13,13 +14,44 @@ interface Featured {
 
 type Category = "photo" | "story" | "video" | "art" | "general";
 
-const CATEGORIES: { id: Category; label: string; icon: any }[] = [
+const CATEGORIES: { id: Category; label: string; icon: LucideIcon }[] = [
   { id: "photo",   label: "Photo",   icon: ImageIcon },
   { id: "story",   label: "Story",   icon: BookOpen },
   { id: "video",   label: "Video",   icon: Video },
   { id: "art",     label: "Art",     icon: Palette },
   { id: "general", label: "General", icon: Sparkles },
 ];
+
+const cinematic = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1200&h=760&q=90`;
+
+const DEMO_PODIUM: Record<Category, Record<number, Featured>> = {
+  photo: {
+    1: { image_url: winnerPhoto, title: "Moonlit Empress", creator_name: "Aurora Vex", rank: 1, category: "photo" },
+    2: { image_url: cinematic("1531746020798-e6953c6e8e04"), title: "Velvet Saint", creator_name: "Kiyan Mori", rank: 2, category: "photo" },
+    3: { image_url: cinematic("1524504388940-b1c1722653e1"), title: "Golden Aura", creator_name: "Lumi Park", rank: 3, category: "photo" },
+  },
+  story: {
+    1: { image_url: cinematic("1419242902214-272b3f66ee7a"), title: "The Gilded Comet", creator_name: "Nyx Rivers", rank: 1, category: "story" },
+    2: { image_url: cinematic("1448375240586-882707db888b"), title: "Hymn of the Wolf", creator_name: "Sable Quinn", rank: 2, category: "story" },
+    3: { image_url: cinematic("1528360983277-13d401cdc186"), title: "Paper Lanterns", creator_name: "Ren Iwata", rank: 3, category: "story" },
+  },
+  video: {
+    1: { image_url: cinematic("1451187580459-43490279c0fa"), title: "Echoes of Mars", creator_name: "Dax Halberg", rank: 1, category: "video" },
+    2: { image_url: cinematic("1493514789931-586cb221d7a7"), title: "Last Light", creator_name: "Mira Solé", rank: 2, category: "video" },
+    3: { image_url: cinematic("1518972559570-7cc1309f3229"), title: "Neon Rain", creator_name: "Jonas Vrij", rank: 3, category: "video" },
+  },
+  art: {
+    1: { image_url: cinematic("1495103033382-fe343886b671"), title: "Phoenix Bloom", creator_name: "Iris Vohr", rank: 1, category: "art" },
+    2: { image_url: cinematic("1465146344425-f00d5f5c8f07"), title: "Glass Garden", creator_name: "Theo Rask", rank: 2, category: "art" },
+    3: { image_url: cinematic("1522383225653-ed111181a951"), title: "Neon Sakura", creator_name: "Coco Ling", rank: 3, category: "art" },
+  },
+  general: {
+    1: { image_url: cinematic("1488426862026-3ee34a7d66df"), title: "Solar Empress", creator_name: "Vega Kade", rank: 1, category: "general" },
+    2: { image_url: cinematic("1495474472287-4d71bcdd2085"), title: "Halo Coffee", creator_name: "Jules Aren", rank: 2, category: "general" },
+    3: { image_url: cinematic("1517292987719-0369a794ec0f"), title: "Pocket Habit Tracker", creator_name: "Mako Kira", rank: 3, category: "general" },
+  },
+};
 
 const WeeklyWinnerShowcase = () => {
   const [byCat, setByCat] = useState<Record<Category, Record<number, Featured>>>({
@@ -39,7 +71,7 @@ const WeeklyWinnerShowcase = () => {
         const map: Record<Category, Record<number, Featured>> = {
           photo: {}, story: {}, video: {}, art: {}, general: {},
         };
-        (data as any[]).forEach((row) => {
+        (data as Featured[]).forEach((row) => {
           const cat = (row?.category || "photo") as Category;
           if (row?.rank && map[cat]) map[cat][row.rank] = row as Featured;
         });
@@ -48,12 +80,12 @@ const WeeklyWinnerShowcase = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const podium = byCat[category];
+  const podium = { ...DEMO_PODIUM[category], ...byCat[category] };
   const first = podium[1];
   const second = podium[2];
   const third = podium[3];
   const imageSrc = first?.image_url || winnerPhoto;
-  const winnerName = first?.creator_name || 'Awaiting Champion';
+  const winnerName = first?.creator_name || "Oracle Lunar Creator";
   const winnerTitle = first?.title;
   const catLabel = CATEGORIES.find((c) => c.id === category)!.label;
 
@@ -78,7 +110,7 @@ const WeeklyWinnerShowcase = () => {
         {CATEGORIES.map((c) => {
           const Icon = c.icon;
           const active = category === c.id;
-          const filled = Object.keys(byCat[c.id]).length > 0;
+              const filled = Object.keys({ ...DEMO_PODIUM[c.id], ...byCat[c.id] }).length > 0;
           return (
             <button
               key={c.id}
