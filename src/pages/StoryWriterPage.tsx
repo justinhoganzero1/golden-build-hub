@@ -147,7 +147,8 @@ const StoryWriterPage = () => {
           const meta = (data.metadata || {}) as any;
           setStory({
             id: data.id,
-            title: data.title || "Untitled Story",
+            title: data.title || "",
+            author: meta.author || "",
             genre: meta.genre || "Fantasy",
             premise: meta.premise || "",
             chapters: meta.chapters || [{ title: "Chapter 1", content: "" }],
