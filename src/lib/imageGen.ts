@@ -18,14 +18,19 @@ async function hash(input: string): Promise<string> {
   return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function readCache(key: string): string | null {
+function readCache(key: string): { url: string; libraryId?: string } | null {
   try {
     const v = sessionStorage.getItem(CACHE_PREFIX + key);
-    return v || null;
+    if (!v) return null;
+    try {
+      const parsed = JSON.parse(v);
+      if (parsed?.url) return { url: parsed.url, libraryId: parsed.libraryId };
+    } catch { /* old cache stored raw url */ }
+    return { url: v };
   } catch { return null; }
 }
-function writeCache(key: string, url: string) {
-  try { sessionStorage.setItem(CACHE_PREFIX + key, url); } catch {}
+function writeCache(key: string, url: string, libraryId?: string) {
+  try { sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ url, libraryId })); } catch {}
 }
 
 export interface GenerateImageOptions {
@@ -50,6 +55,7 @@ export interface GenerateImageResult {
   fallback: boolean;
   attempts: number;
   jobId?: string;
+  libraryId?: string;
   model?: string;
 }
 
@@ -70,7 +76,7 @@ export async function generateImage(opts: GenerateImageOptions): Promise<Generat
   const cacheKey = await hash(`${prompt}|${inputImage || ""}|${tier || ""}`);
   if (!noCache) {
     const cached = readCache(cacheKey);
-    if (cached) return { url: cached, cached: true, fallback: false, attempts: 0 };
+    if (cached) return { url: cached.url, cached: true, fallback: false, attempts: 0, libraryId: cached.libraryId };
   }
 
   let lastErr = "";
@@ -92,13 +98,15 @@ export async function generateImage(opts: GenerateImageOptions): Promise<Generat
         const data = await r.json();
         const url = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
         if (url) {
-          writeCache(cacheKey, url);
+          const libraryId = data.library_id || data.libraryId;
+          writeCache(cacheKey, url, libraryId);
           return {
             url,
             cached: !!data.cached,
             fallback: !!data.fallback,
             attempts: data.attempts || 0,
             jobId: data.job_id,
+            libraryId,
             model: data.model,
           };
         }
