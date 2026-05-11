@@ -143,37 +143,42 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
-      <div className="w-full bg-gradient-to-b from-background via-amber-950/10 to-background border-b border-amber-500/20 px-4 py-6 sm:py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-3 group"
-          aria-label="Oracle Lunar home"
-        >
-          <img
-            src={oracleLunarLogo}
-            alt="Oracle Lunar"
-            className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(251,191,36,0.4)] group-hover:drop-shadow-[0_0_30px_rgba(251,191,36,0.7)] transition-all"
-          />
-          <div className="text-left">
-            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
-              Oracle Lunar
-            </div>
-            <div className="text-[11px] sm:text-xs text-muted-foreground">Your AI best friend, always here for you</div>
-          </div>
-        </button>
-        {!isAdmin && (
-          <Button
-            onClick={() => navigate("/subscribe")}
-            size="lg"
-            className="group relative overflow-hidden rounded-full px-8 h-12 text-base font-bold text-black bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-500 shadow-[0_0_24px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.6)] hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 border-0 [&_svg]:size-5"
-          >
-            <Sparkles className="w-5 h-5 mr-1 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-            Join Membership
-          </Button>
-        )}
-      </div>
+      <OracleMoonHeader>
+        {/* Action bar under the moon */}
+        <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
+          {isAdmin ? (
+            <button
+              onClick={() => navigate("/admin/editor")}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
+            >
+              ✏️ Live Editor
+            </button>
+          ) : (
+            <Button
+              onClick={() => navigate("/subscribe")}
+              size="sm"
+              className="group relative overflow-hidden rounded-full px-6 h-9 text-sm font-bold text-black bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_32px_rgba(245,158,11,0.55)] hover:scale-105 transition-all duration-300 border-0"
+            >
+              <Sparkles className="w-4 h-4 mr-1 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
+              Join Membership
+            </Button>
+          )}
+          <SecurityShield />
+          {user && (
+            <button
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
+              aria-label="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Log out
+            </button>
+          )}
+        </div>
+      </OracleMoonHeader>
 
-      <div className="px-4 py-4 flex items-center justify-between">
+      {/* Welcome + status line */}
+      <div className="px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
@@ -185,27 +190,6 @@ const DashboardPage = () => {
             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-primary to-amber-500 text-primary-foreground shadow-sm">
               ✨ Member
             </span>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => navigate("/admin/editor")}
-              className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
-            >
-              ✏️ Live Editor
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <SecurityShield />
-          {user && (
-            <button
-              onClick={async () => { await signOut(); navigate("/"); }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
-              aria-label="Log out"
-            >
-              <LogOut className="w-4 h-4" />
-              Log out
-            </button>
           )}
         </div>
       </div>
