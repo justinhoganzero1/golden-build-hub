@@ -167,6 +167,14 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (cached?.result_url) {
+        const libraryId = await ensureLibraryImage(admin, {
+          userId: user.id,
+          prompt,
+          promptHash,
+          url: cached.result_url,
+          jobId: cached.id,
+          model: cached.last_model || defaultModel,
+        });
         return new Response(JSON.stringify({
           text: "",
           images: [{ image_url: { url: cached.result_url } }],
@@ -175,6 +183,7 @@ serve(async (req) => {
           cost_cents: 0,
           cached: true,
           job_id: cached.id,
+          library_id: libraryId,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
@@ -271,6 +280,14 @@ serve(async (req) => {
 
     if (succeeded) {
       const resultUrl = images[0]?.image_url?.url || images[0]?.url || (typeof images[0] === "string" ? images[0] : null);
+      const libraryId = resultUrl ? await ensureLibraryImage(admin, {
+        userId: user.id,
+        prompt,
+        promptHash,
+        url: resultUrl,
+        jobId,
+        model: usedModel,
+      }) : null;
       if (jobId) {
         await admin.from("image_generation_jobs").update({
           status: "completed",
@@ -283,6 +300,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         text: textOut, images, tier: chosenTier, model: usedModel,
         cost_cents: IMAGE_GEN_COST_CENTS, attempts: attemptsDone, job_id: jobId,
+        library_id: libraryId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
