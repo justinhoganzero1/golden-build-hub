@@ -32,6 +32,61 @@ async function sha256(input: string): Promise<string> {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+async function ensureLibraryImage(admin: any, opts: {
+  userId: string;
+  prompt: string;
+  promptHash: string;
+  url: string;
+  jobId?: string | null;
+  model?: string | null;
+  fallback?: boolean;
+}): Promise<string | null> {
+  if (!opts.url || opts.fallback) return null;
+  try {
+    const { data: existing } = await admin
+      .from("user_media")
+      .select("id")
+      .eq("user_id", opts.userId)
+      .eq("media_type", "image")
+      .eq("source_page", "oracle-image")
+      .contains("metadata", { prompt_hash: opts.promptHash })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return existing.id;
+
+    const cleanTitle = opts.prompt.replace(/\s+/g, " ").trim().slice(0, 60) || "Oracle image";
+    const { data, error } = await admin
+      .from("user_media")
+      .insert({
+        user_id: opts.userId,
+        media_type: "image",
+        title: `Image: ${cleanTitle}`,
+        url: opts.url,
+        source_page: "oracle-image",
+        metadata: {
+          kind: "image",
+          prompt: opts.prompt,
+          prompt_hash: opts.promptHash,
+          image_generation_job_id: opts.jobId || null,
+          model: opts.model || null,
+          saved_by: "image-gen-server",
+        },
+        is_public: false,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      console.error("image-gen library save failed:", error.message);
+      return null;
+    }
+    return data?.id || null;
+  } catch (err) {
+    console.error("image-gen library save unexpected:", err);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
