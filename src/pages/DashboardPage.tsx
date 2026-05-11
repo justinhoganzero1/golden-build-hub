@@ -204,6 +204,7 @@ const DashboardPage = () => {
       />
 
       {/* Creators' Gallery — auto-loads opt-in public creations */}
+      <MonthlyAwardsShowcase />
       <HomePublicGallery />
 
       {/* Expand/collapse controls */}
