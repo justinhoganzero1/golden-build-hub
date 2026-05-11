@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Trophy, Crown, Sparkles, ChevronLeft, ChevronRight, Heart, Eye, Download, X, ShoppingBag } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import monthlyWinnerPhoto from "@/assets/monthly-winner-photo.jpg";
+import monthlyWinnerStory from "@/assets/monthly-winner-story.jpg";
+import monthlyWinnerVideo from "@/assets/monthly-winner-video.jpg";
+import monthlyWinnerArt from "@/assets/monthly-winner-art.jpg";
+import monthlyWinnerApp from "@/assets/monthly-winner-app.jpg";
+import monthlyWinnerGeneral from "@/assets/monthly-winner-general.jpg";
 
 /**
  * Monthly Awards Showcase — curated AI-themed categories with this
@@ -38,7 +44,7 @@ type Category = {
 // from the user's media library) or an Unsplash photo id fallback.
 const ux = (idOrUrl: string, w = 800, h = 800) => {
   if (!idOrUrl) return "";
-  if (/^https?:\/\//i.test(idOrUrl)) return idOrUrl;
+  if (/^(https?:\/\/|\/|data:|blob:)/i.test(idOrUrl)) return idOrUrl;
   return `https://images.unsplash.com/photo-${idOrUrl}?auto=format&fit=crop&w=${w}&h=${h}&q=85`;
 };
 
@@ -48,6 +54,9 @@ const CATEGORY_SOURCE_HINTS: Record<string, string[]> = {
   "story-of-month": ["story"],
   "movie-magic": ["movie", "video"],
   "magic-hub": ["magic", "edit", "photo"],
+  "ai-art": ["art", "magic", "photo"],
+  "app-of-month": ["app", "builder", "wrapper"],
+  "general-ai": ["general", "library", "creation"],
   "avatar-icons": ["avatar"],
   "living-avatars": ["living", "gif", "avatar"],
   "voice-virtuoso": ["voice"],
@@ -63,8 +72,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Aurora Vex", handle: "@auroravex", title: "Velvet Saint",
         bio: "Cinematic portrait artist blending Renaissance lighting with futurist couture.",
-        hero: "1531746020798-e6953c6e8e04",
-        gallery: ["1502823403499-6ccfcf4fb453","1488161628813-04466f872be2","1494790108377-be9c29b29330","1524504388940-b1c1722653e1"],
+        hero: monthlyWinnerPhoto,
+        gallery: [monthlyWinnerPhoto,"1502823403499-6ccfcf4fb453","1494790108377-be9c29b29330","1524504388940-b1c1722653e1"],
         likes: 12480, views: 184320, downloads: 920, priceCents: 1200 },
       { rank: 2, name: "Kiyan Mori", handle: "@kiyan.studio", title: "Midnight Monarch",
         bio: "Tokyo-based AI photographer specialising in moody nocturnal portraits.",
@@ -86,8 +95,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Nyx Rivers", handle: "@nyxrivers", title: "The Gilded Comet",
         bio: "Nine chapters of cosmic mystery, fully illustrated in cinematic gold.",
-        hero: "1419242902214-272b3f66ee7a",
-        gallery: ["1465101046530-73398c7f28ca","1444080748397-f442aa95c3e5","1419242902214-272b3f66ee7a","1502134249126-9f3755a50d78"],
+        hero: monthlyWinnerStory,
+        gallery: [monthlyWinnerStory,"1465101046530-73398c7f28ca","1444080748397-f442aa95c3e5","1502134249126-9f3755a50d78"],
         likes: 14210, views: 210400, downloads: 1820, priceCents: 900 },
       { rank: 2, name: "Sable Quinn", handle: "@sablequinn", title: "Hymn of the Wolf",
         bio: "A folkloric novella with hand-painted forest spreads.",
@@ -109,8 +118,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Dax Halberg", handle: "@daxfilms", title: "Echoes of Mars",
         bio: "A 4-minute sci-fi short rendered entirely in Oracle Movie Studio.",
-        hero: "1451187580459-43490279c0fa",
-        gallery: ["1446776811953-b23d57bd21aa","1462331940025-496dfbfc7564","1502134249126-9f3755a50d78","1419242902214-272b3f66ee7a"],
+        hero: monthlyWinnerVideo,
+        gallery: [monthlyWinnerVideo,"1446776811953-b23d57bd21aa","1502134249126-9f3755a50d78","1419242902214-272b3f66ee7a"],
         likes: 18540, views: 320420, downloads: 2410, priceCents: 1500 },
       { rank: 2, name: "Mira Solé", handle: "@mirasole", title: "Last Light",
         bio: "Quiet drama about a coastal lighthouse keeper at the end of an era.",
@@ -132,8 +141,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Iris Vohr", handle: "@irisvohr", title: "Phoenix Bloom",
         bio: "Self-portrait fused with feathers of fire — Magic Hub remix winner.",
-        hero: "1495103033382-fe343886b671",
-        gallery: ["1502691876148-a84978e59af8","1531297484001-80022131f5a1","1518770660439-4636190af475","1517242810446-cc8951b2be40"],
+        hero: monthlyWinnerArt,
+        gallery: [monthlyWinnerArt,"1502691876148-a84978e59af8","1531297484001-80022131f5a1","1517242810446-cc8951b2be40"],
         likes: 16210, views: 280310, downloads: 1980 },
       { rank: 2, name: "Theo Rask", handle: "@theorask", title: "Glass Garden",
         bio: "A botanical portrait built from refracted prisms.",
@@ -145,6 +154,75 @@ const CATEGORIES: Category[] = [
         hero: "1522383225653-ed111181a951",
         gallery: ["1494790108377-be9c29b29330","1531746020798-e6953c6e8e04","1524504388940-b1c1722653e1","1500648767791-00dcc994a43e"],
         likes: 8120, views: 119450, downloads: 740 },
+    ],
+  },
+  {
+    id: "ai-art",
+    label: "AI Art",
+    emoji: "🎨",
+    blurb: "Best pure AI artwork created this month",
+    winners: [
+      { rank: 1, name: "Iris Vohr", handle: "@irisvohr", title: "Phoenix Bloom",
+        bio: "Molten gold phoenix rising through a lunar flower garden — the month's most collected art piece.",
+        hero: monthlyWinnerArt,
+        gallery: [monthlyWinnerArt,"1495103033382-fe343886b671","1465146344425-f00d5f5c8f07","1522383225653-ed111181a951"],
+        likes: 22410, views: 388900, downloads: 2810, priceCents: 1400 },
+      { rank: 2, name: "Theo Rask", handle: "@theorask", title: "Glass Garden",
+        bio: "A crystalline botanical world painted with lunar refractions and amber light.",
+        hero: "1465146344425-f00d5f5c8f07",
+        gallery: ["1416879595882-3373a0480b5b","1490750967868-88aa4486c946","1501004318641-b39e6451bec6","1462275646964-a0e3386b89fa"],
+        likes: 17340, views: 240300, downloads: 1690, priceCents: 900 },
+      { rank: 3, name: "Coco Ling", handle: "@cocoling", title: "Neon Sakura",
+        bio: "A cyber-lunar blossom study with saturated neon petals and soft cinematic haze.",
+        hero: "1522383225653-ed111181a951",
+        gallery: ["1522383225653-ed111181a951","1494790108377-be9c29b29330","1531746020798-e6953c6e8e04","1524504388940-b1c1722653e1"],
+        likes: 12120, views: 177450, downloads: 1040, priceCents: 700 },
+    ],
+  },
+  {
+    id: "app-of-month",
+    label: "Apps",
+    emoji: "📱",
+    blurb: "Best AI-built app ready for buyers",
+    winners: [
+      { rank: 1, name: "Mako Kira", handle: "@makokira", title: "Pocket Habit Tracker",
+        bio: "A polished micro-SaaS app with lunar streak tracking, mood notes, and creator-ready onboarding.",
+        hero: monthlyWinnerApp,
+        gallery: [monthlyWinnerApp,"1517292987719-0369a794ec0f","1499951360447-b19be8fe80f5","1500530855697-b586d89ba3ee"],
+        likes: 15180, views: 208410, downloads: 910, priceCents: 1900 },
+      { rank: 2, name: "Coco Ling", handle: "@cocoling", title: "Mood Journal",
+        bio: "A calming journaling app with AI prompts, private reflections, and soft moonlit analytics.",
+        hero: "1499951360447-b19be8fe80f5",
+        gallery: ["1499951360447-b19be8fe80f5","1516321318423-f06f85e504b3","1515879218367-8466d910aaa4","1500530855697-b586d89ba3ee"],
+        likes: 10920, views: 164220, downloads: 730, priceCents: 1500 },
+      { rank: 3, name: "Ren Iwata", handle: "@reniwata", title: "Launch Checklist AI",
+        bio: "A startup launch assistant that turns rough ideas into step-by-step builder tasks.",
+        hero: "1516321318423-f06f85e504b3",
+        gallery: ["1516321318423-f06f85e504b3","1517292987719-0369a794ec0f","1499951360447-b19be8fe80f5","1500530855697-b586d89ba3ee"],
+        likes: 8820, views: 121880, downloads: 560, priceCents: 1200 },
+    ],
+  },
+  {
+    id: "general-ai",
+    label: "General AI",
+    emoji: "🌐",
+    blurb: "Best all-round AI creation across every tool",
+    winners: [
+      { rank: 1, name: "Vega Kade", handle: "@vegakade", title: "Lunar Creation Kit",
+        bio: "A complete mixed-media drop: avatar, image pack, prompt set, logo, and app concept in one bundle.",
+        hero: monthlyWinnerGeneral,
+        gallery: [monthlyWinnerGeneral, monthlyWinnerPhoto, monthlyWinnerStory, monthlyWinnerApp],
+        likes: 24110, views: 432800, downloads: 3420, priceCents: 2200 },
+      { rank: 2, name: "Jules Aren", handle: "@julesaren", title: "Halo Coffee Launch",
+        bio: "Brand visuals, product photography, logo direction, and social kit created as a complete launch package.",
+        hero: "1495474472287-4d71bcdd2085",
+        gallery: ["1495474472287-4d71bcdd2085","1442975631115-c4f7b05b8a2c","1497935586351-b67a49e012bf","1453614512568-c4024d13c247"],
+        likes: 15120, views: 211200, downloads: 1720, priceCents: 1600 },
+      { rank: 3, name: "Petra Cole", handle: "@petracole", title: "North & Pine Studio",
+        bio: "A rugged creator bundle with logos, campaign imagery, and prompt recipes for outdoor brands.",
+        hero: "1441986300917-64674bd600d8",
+        gallery: ["1518495973542-4542c06a5843","1441974231531-c6227db76b6e","1500382017468-9049fed747ef","1426604966848-d7adac402bff"],
+        likes: 11420, views: 162410, downloads: 1180, priceCents: 1200 },
     ],
   },
   {
@@ -340,6 +418,41 @@ export default function MonthlyAwardsShowcase() {
               >
                 <span>{c.emoji}</span>
                 <span>{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-3 pb-3 flex gap-2 overflow-x-auto scrollbar-thin">
+          {liveCategories.map((c, i) => {
+            const champion = c.winners[0];
+            const active = i === activeIdx;
+            return (
+              <button
+                key={`${c.id}-preview`}
+                onClick={() => setActiveIdx(i)}
+                className={`shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden border text-left bg-card/70 transition ${
+                  active ? "border-amber-300 shadow-[0_0_18px_hsl(var(--primary)/0.35)]" : "border-border hover:border-primary/60"
+                }`}
+              >
+                <div className="relative aspect-square bg-muted overflow-hidden">
+                  <img
+                    src={ux(champion.hero, 360, 360)}
+                    alt={`${champion.title} ${c.label} monthly winner`}
+                    loading="lazy"
+                    width={360}
+                    height={360}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                  <span className="absolute top-1.5 left-1.5 text-[10px] rounded-full bg-black/55 border border-amber-400/40 px-1.5 py-0.5 text-amber-200">
+                    {c.emoji} {c.label}
+                  </span>
+                </div>
+                <div className="px-2 py-1.5">
+                  <p className="text-[10px] font-bold text-foreground line-clamp-1">{champion.title}</p>
+                  <p className="text-[9px] text-muted-foreground line-clamp-1">{champion.name}</p>
+                </div>
               </button>
             );
           })}
