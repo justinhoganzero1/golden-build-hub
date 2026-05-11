@@ -256,6 +256,7 @@ const App = () => (
               </Suspense>
               <MasterMuteButton />
               <OracleAgent />
+              <OracleControlListener />
 
               <Suspense fallback={<Loading />}>
                 <Routes>
