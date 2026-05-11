@@ -1701,6 +1701,37 @@ const OraclePage = () => {
     if (!isIntroTrigger) setInput("");
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
+    const directRoute = isIntroTrigger ? null : resolveDirectOracleRoute(text);
+    if (directRoute) {
+      if (directRoute.prefill) sessionStorage.setItem("app-builder-prefill", directRoute.prefill);
+      const userMsgNav: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ackNav: Message = {
+        id: (Date.now() + 1).toString(), role: "assistant", sender: oracleName, emoji: "🚀", color: "#FFD700",
+        content: `On it — opening ${directRoute.label} now.`,
+      };
+      setShowChat(true);
+      setMessages(prev => finalOnlyMode ? [...prev, userMsgNav] : [...prev, userMsgNav, ackNav]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ackNav.content, oracleName);
+      toast(`Opening ${directRoute.label}...`);
+      setTimeout(() => triggerExplosion(directRoute.path), 650);
+      return;
+    }
+
+    if (!isIntroTrigger && wantsComputerOperatorMode(text)) {
+      sessionStorage.setItem("app-builder-prefill", text);
+      const userMsgComputer: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ackComputer: Message = {
+        id: (Date.now() + 1).toString(), role: "assistant", sender: oracleName, emoji: "🛠️", color: "#FFD700",
+        content: "I can run Oracle Lunar’s tools from here. Opening the coding app now, with your command loaded.",
+      };
+      setShowChat(true);
+      setMessages(prev => finalOnlyMode ? [...prev, userMsgComputer] : [...prev, userMsgComputer, ackComputer]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ackComputer.content, oracleName);
+      toast("Opening App Builder...");
+      setTimeout(() => triggerExplosion("/app-builder"), 650);
+      return;
+    }
+
     // ── FIRST-VISIT SETUP INTERCEPT ──
     // While the Oracle is asking the user for its name + appearance, every
     // user reply is consumed by the setup flow instead of being forwarded
