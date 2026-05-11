@@ -20,6 +20,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
 import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
+import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 
 interface Message {
   id: string;
@@ -1495,14 +1496,8 @@ const OraclePage = () => {
       try { speakAsAgent(ack, myName); } catch {}
       try {
         const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
-        const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-          body: JSON.stringify({ prompt }),
-        });
-        if (!r.ok) throw new Error("image-gen failed");
-        const data = await r.json();
-        const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+        const gen = await generateImage({ prompt, tier: "premium" });
+        const imgUrl = gen.url;
         if (!imgUrl) throw new Error("no image");
 
         // Save the new avatar to the DB so it persists across logins, and mark
@@ -2001,48 +1996,33 @@ const OraclePage = () => {
         setMessages(prev => finalOnlyMode ? [...prev, userMsg] : [...prev, userMsg, ack]);
         if (!finalOnlyMode && !isMuted) speakAsAgent(ack.content, oracleName);
       (async () => {
-        // Client-side retry loop — multiple attempts with backoff so a single
-        // hiccup never bubbles up as a "failed" message. Combined with the
-        // server-side multi-model fallback chain this gives ~12 effective tries.
-        const MAX_TRIES = 4;
+        // Resilient pipeline: 100-deep server fallback chain × 4 client retries,
+        // plus session/server cache and library-fallback if everything else fails.
         let imgUrl: string | null = null;
-        let lastErr = "";
-        for (let attempt = 1; attempt <= MAX_TRIES && !imgUrl; attempt++) {
-          try {
-            const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-              body: JSON.stringify({ prompt }),
-            });
-            if (r.status === 402) { toast.error("Out of AI credits."); return; }
-            if (!r.ok) { lastErr = `HTTP ${r.status}`; }
-            else {
-              const data = await r.json();
-              imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0] || null;
-              if (!imgUrl) lastErr = "no image returned";
-            }
-          } catch (e: any) {
-            lastErr = e?.message || "network error";
-          }
-          if (!imgUrl && attempt < MAX_TRIES) {
-            await new Promise(res => setTimeout(res, 600 * attempt));
-          }
-        }
-        if (!imgUrl) {
-          console.error("Image generation failed after retries:", lastErr);
+        let wasFallback = false;
+        try {
+          const gen = await generateImage({ prompt });
+          imgUrl = gen.url;
+          wasFallback = gen.fallback;
+        } catch (e: any) {
+          if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
+          console.error("Image generation failed after retries:", e?.message);
           toast.error("Image generation failed — please try again");
           return;
         }
+        if (!imgUrl) { toast.error("Image generation failed — please try again"); return; }
         let savedId: string | undefined;
         try {
-          const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } });
+          const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } });
           savedId = saved?.id || saved;
         } catch {}
         window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
-        toast.success("Image ready in your Library");
+        toast.success(wasFallback ? "Showing your most recent image while I retry" : "Image ready in your Library");
         const done: Message = {
           id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🖼️", color: "#FFD700",
-          content: `Done — I made it, saved it, and opened it here.${savedId ? " It is also in your Library." : ""}`
+          content: wasFallback
+            ? `Generation is rough right now — I queued the job and pulled your most recent image so we don't lose momentum.`
+            : `Done — I made it, saved it, and opened it here.${savedId ? " It is also in your Library." : ""}`
         };
         setMessages(prev => [...prev, done]);
         if (!isMuted) speakAsAgent(done.content, oracleName);
@@ -2371,37 +2351,23 @@ const OraclePage = () => {
           if (kind === "IMAGE") {
             toast.success("Painting that for you…");
             (async () => {
-              // Same retry safety net as the direct-image path: 4 client tries,
-              // each hitting the server's 9-try fallback chain.
-              const MAX_TRIES = 4;
               let imgUrl: string | null = null;
-              let lastErr = "";
-              for (let attempt = 1; attempt <= MAX_TRIES && !imgUrl; attempt++) {
-                try {
-                  const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-                    body: JSON.stringify({ prompt }),
-                  });
-                  if (r.status === 402) { toast.error("Out of AI credits."); return; }
-                  if (!r.ok) { lastErr = `HTTP ${r.status}`; }
-                  else {
-                    const data = await r.json();
-                    imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0] || null;
-                    if (!imgUrl) lastErr = "no image returned";
-                  }
-                } catch (e: any) { lastErr = e?.message || "network error"; }
-                if (!imgUrl && attempt < MAX_TRIES) await new Promise(res => setTimeout(res, 600 * attempt));
-              }
-              if (!imgUrl) {
-                console.error("GEN_IMAGE failed after retries:", lastErr);
+              let wasFallback = false;
+              try {
+                const gen = await generateImage({ prompt });
+                imgUrl = gen.url;
+                wasFallback = gen.fallback;
+              } catch (e: any) {
+                if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
+                console.error("GEN_IMAGE failed after retries:", e?.message);
                 toast.error("Image generation failed — please try again");
                 return;
               }
+              if (!imgUrl) { toast.error("Image generation failed — please try again"); return; }
               let savedId: string | undefined;
-              try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
-              // Show inline immediately — no empty new tab, no waiting for the toast button.
+              try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } }); savedId = saved?.id || saved; } catch {}
               window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
+              if (wasFallback) toast("Showing your most recent image while I retry");
               askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "MUSIC") {
