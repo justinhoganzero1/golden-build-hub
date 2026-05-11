@@ -1,7 +1,7 @@
 // Centralized image generation client with client-side cache and configurable
 // retry/backoff. The matching server fallback chain lives in
 // supabase/functions/image-gen/index.ts.
-import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import { getEdgeAuthToken } from "@/lib/edgeAuth";
 
 const CACHE_PREFIX = "og_img_cache_v1::";
 // Maximum number of fallbacks the server will run for a single call.
@@ -82,9 +82,10 @@ export async function generateImage(opts: GenerateImageOptions): Promise<Generat
   let lastErr = "";
   for (let attempt = 1; attempt <= DEFAULT_CLIENT_TRIES; attempt++) {
     try {
+      const authToken = await getEdgeAuthToken();
       const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({
           prompt, inputImage, tier, ownerBypass,
           maxAttempts, modelChain, libraryFallback,
