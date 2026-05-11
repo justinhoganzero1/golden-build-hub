@@ -258,7 +258,48 @@ export default function MonthlyAwardsShowcase() {
   const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
   const [openWinner, setOpenWinner] = useState<{ cat: Category; w: Winner } | null>(null);
-  const cat = CATEGORIES[activeIdx];
+
+  // Pull real generated images from the admin / user library and weave them
+  // into the curated awards so the gallery always reflects actual creator work.
+  const { data: media } = useAllUserMedia();
+  const liveCategories = useMemo<Category[]>(() => {
+    const imgs = (media || []).filter(
+      (m: any) => (m.media_type === "image" || m.media_type === "photo") && !!m.url
+    );
+    if (imgs.length === 0) return CATEGORIES;
+
+    return CATEGORIES.map((c) => {
+      const hints = CATEGORY_SOURCE_HINTS[c.id] || [];
+      const matched = imgs.filter((m: any) =>
+        hints.some((h) => (m.source_page || "").toLowerCase().includes(h))
+      );
+      const pool = (matched.length >= 4 ? matched : imgs).slice();
+      // Stable shuffle by category id so it doesn't reorder every render
+      pool.sort((a: any, b: any) =>
+        (a.id + c.id).localeCompare(b.id + c.id)
+      );
+      let cursor = 0;
+      const take = () => {
+        const item = pool[cursor % pool.length];
+        cursor++;
+        return item;
+      };
+      const winners = c.winners.map((w) => {
+        const heroItem = take();
+        const gallery = [take(), take(), take(), take()].map(
+          (g, i) => (g?.thumbnail_url || g?.url || w.gallery[i])
+        );
+        return {
+          ...w,
+          hero: heroItem?.url || w.hero,
+          gallery,
+        };
+      }) as [Winner, Winner, Winner];
+      return { ...c, winners };
+    });
+  }, [media]);
+
+  const cat = liveCategories[activeIdx];
 
   return (
     <section className="px-4 mb-4" aria-label="Monthly creator awards">
