@@ -20,6 +20,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
 import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
+import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 
 interface Message {
   id: string;
