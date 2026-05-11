@@ -62,15 +62,56 @@ const DEMO_ITEMS: DemoItem[] = [
   { id: "d16", title: "Mood Journal",          creator: "Coco Ling",    genre: "Apps",           emoji: "📱", thumb: ux("1499951360447-b19be8fe80f5"), priceCents: 1500, views: 7220,  downloads: 430 },
 ];
 
-const DEMO_GENRES = Array.from(new Set(DEMO_ITEMS.map((d) => d.genre)));
+// Map demo genre → (source_page, kind, media_type) so demo items
+// route through the same grouping/filtering as real publishes.
+const DEMO_TO_SOURCE: Record<string, { source_page: string; kind: "media" | "gif" | "movie"; media_type: string }> = {
+  Photography:     { source_page: "photography-hub", kind: "media", media_type: "image" },
+  Avatars:         { source_page: "avatar-generator", kind: "media", media_type: "image" },
+  Movies:          { source_page: "movie-studio",    kind: "movie", media_type: "video" },
+  "Magic Photos":  { source_page: "magic-hub",       kind: "media", media_type: "image" },
+  Stories:         { source_page: "story-writer",    kind: "media", media_type: "image" },
+  "Living Avatars":{ source_page: "living-avatars",  kind: "gif",   media_type: "gif"   },
+  "Brand & Logo":  { source_page: "photography-hub", kind: "media", media_type: "image" },
+  Apps:            { source_page: "app-builder",     kind: "media", media_type: "image" },
+};
+
+// Add Brand & Logo + Apps to GENRE_MAP so labels show through genreFor()
+GENRE_MAP["app-builder"] = { label: "Apps", emoji: "📱" };
+
+const demoAsLibrary = (): PublicLibraryItem[] =>
+  DEMO_ITEMS.map((d) => {
+    const meta = DEMO_TO_SOURCE[d.genre] ?? { source_page: "photography-hub", kind: "media" as const, media_type: "image" };
+    return {
+      id: d.id,
+      kind: meta.kind,
+      user_id: "demo",
+      title: d.title,
+      url: d.thumb,
+      thumbnail_url: d.thumb,
+      media_type: meta.media_type,
+      created_at: new Date(0).toISOString(),
+      shop_enabled: true,
+      shop_price_cents: d.priceCents,
+      creator_display_name: d.creator,
+      download_count: d.downloads,
+      view_count: d.views,
+      source_page: meta.source_page,
+    };
+  });
 
 const HomePublicGallery = () => {
   const navigate = useNavigate();
-  const { data: items = [], isLoading } = usePublicLibrary("all");
+  const { data: realItems = [], isLoading } = usePublicLibrary("all");
   const [activeGenre, setActiveGenre] = useState<string>("All");
-  const [activeDemoGenre, setActiveDemoGenre] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "popular" | "price_low" | "price_high">("newest");
+
+  // Always merge demo creations after real ones so the gallery is
+  // never sparse — real publishes lead, showcase pieces fill the rest.
+  const items = useMemo<PublicLibraryItem[]>(
+    () => [...realItems, ...demoAsLibrary()],
+    [realItems],
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, { emoji: string; items: PublicLibraryItem[] }>();
@@ -116,93 +157,6 @@ const HomePublicGallery = () => {
       </div>
     );
   }
-
-  if (items.length === 0) {
-    const visibleDemo =
-      activeDemoGenre === "All"
-        ? DEMO_ITEMS
-        : DEMO_ITEMS.filter((d) => d.genre === activeDemoGenre);
-    const demoGenres = ["All", ...DEMO_GENRES];
-    return (
-      <section className="px-4 mb-4" aria-label="Creators public gallery (showcase)">
-        <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-950/15 via-card/60 to-background backdrop-blur-sm overflow-hidden">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-amber-500/20">
-            <div className="flex items-center gap-2 min-w-0">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              <h2 className="text-sm font-bold bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent truncate">
-                Creators’ Gallery
-              </h2>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 shrink-0">
-                Showcase
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("/public-library")}
-              className="text-[11px] px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition shrink-0"
-            >
-              View all
-            </button>
-          </header>
-
-          <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-thin">
-            {demoGenres.map((g) => {
-              const active = g === activeDemoGenre;
-              const meta = g === "All" ? "🌐" : (DEMO_ITEMS.find((d) => d.genre === g)?.emoji ?? "🎨");
-              return (
-                <button
-                  key={g}
-                  onClick={() => setActiveDemoGenre(g)}
-                  className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition border ${
-                    active
-                      ? "bg-gradient-to-r from-amber-500 to-yellow-400 text-black border-amber-300"
-                      : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70"
-                  }`}
-                >
-                  <span>{meta}</span><span>{g}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3">
-            {visibleDemo.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => navigate("/public-library")}
-                className="group relative aspect-square rounded-xl overflow-hidden border border-border bg-muted/30 text-left hover:border-amber-400/60 transition"
-                aria-label={d.title}
-              >
-                <img
-                  src={d.thumb}
-                  alt={d.title}
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2">
-                  <p className="text-[10px] font-semibold text-white line-clamp-1">{d.title}</p>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-[9px] text-white/70 line-clamp-1">{d.creator}</span>
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-bold">
-                      <ShoppingBag className="w-2.5 h-2.5" />
-                      {formatPrice(d.priceCents)}
-                    </span>
-                  </div>
-                </div>
-                <span className="absolute top-1.5 left-1.5 text-[9px] px-1.5 py-0.5 rounded-full bg-black/60 text-amber-200 border border-amber-400/30">
-                  {d.emoji} {d.genre}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="px-4 pb-3 text-center text-[10px] text-muted-foreground">
-            These are showcase pieces. Publish your own from any studio to appear here.
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="px-4 mb-4" aria-label="Creators public gallery">
       <div className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm overflow-hidden">
