@@ -2012,10 +2012,12 @@ const OraclePage = () => {
         // plus session/server cache and library-fallback if everything else fails.
         let imgUrl: string | null = null;
         let wasFallback = false;
+        let savedId: string | undefined;
         try {
           const gen = await generateImage({ prompt });
           imgUrl = gen.url;
           wasFallback = gen.fallback;
+          savedId = gen.libraryId;
         } catch (e: any) {
           if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
           console.error("Image generation failed after retries:", e?.message);
@@ -2023,11 +2025,12 @@ const OraclePage = () => {
           return;
         }
         if (!imgUrl) { toast.error("Image generation failed — please try again"); return; }
-        let savedId: string | undefined;
-        try {
-          const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } });
-          savedId = saved?.id || saved;
-        } catch {}
+        if (!savedId && !wasFallback) {
+          try {
+            const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } });
+            savedId = saved?.id || saved;
+          } catch (err) { console.error("Oracle image library save failed", err); toast.error("Image made, but library save failed"); }
+        }
         window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
         toast.success(wasFallback ? "Showing your most recent image while I retry" : "Image ready in your Library");
         const done: Message = {
