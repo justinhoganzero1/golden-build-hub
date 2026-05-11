@@ -257,9 +257,10 @@ const StoryWriterPage = () => {
         const next = [...s.chapters];
         const target = next[slot.index];
         const existing = target.images || [];
-        if (existing.length >= 2) {
-          toast.info("Max 2 images per chapter — replacing the oldest.");
-          next[slot.index] = { ...target, images: [existing[1], url] };
+        const MAX_PER_CHAPTER = 6;
+        if (existing.length >= MAX_PER_CHAPTER) {
+          toast.info(`Max ${MAX_PER_CHAPTER} images per chapter — replacing the oldest.`);
+          next[slot.index] = { ...target, images: [...existing.slice(1), url] };
         } else {
           next[slot.index] = { ...target, images: [...existing, url] };
         }
