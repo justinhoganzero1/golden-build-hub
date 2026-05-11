@@ -304,15 +304,13 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (lastStatus === 402) {
-      if (jobId) await admin.from("image_generation_jobs").update({ status: "failed", attempts: attemptsDone, error: "insufficient_credits", completed_at: new Date().toISOString() }).eq("id", jobId);
-      return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const creditsExhausted = lastStatus === 402;
+    if (creditsExhausted && jobId) {
+      await admin.from("image_generation_jobs").update({ status: "failed", attempts: attemptsDone, error: "insufficient_credits", completed_at: new Date().toISOString() }).eq("id", jobId);
     }
 
-    // ── Library fallback: serve most recent successful image variant ──
-    if (libraryFallback) {
+    // ── Library fallback: serve most recent successful image variant (also on 402) ──
+    if (libraryFallback || creditsExhausted) {
       // Try a previous job for the same prompt (any status) first.
       const { data: priorJob } = await admin
         .from("image_generation_jobs")
@@ -377,6 +375,15 @@ serve(async (req) => {
     }).eq("id", jobId);
 
     console.error("Image gen exhausted all fallbacks:", lastStatus, lastBody);
+    if (creditsExhausted) {
+      return new Response(JSON.stringify({
+        error: "AI credits exhausted. Please try again later or top up credits.",
+        code: "credits_exhausted",
+        fallback: true,
+        images: [],
+        job_id: jobId,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     return new Response(JSON.stringify({ error: "Image generation failed after all fallbacks", detail: lastBody, job_id: jobId }), {
       status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
