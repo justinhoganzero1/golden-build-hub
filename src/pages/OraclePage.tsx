@@ -2210,6 +2210,11 @@ const OraclePage = () => {
         }
       }
 
+      // Parse creation markers before cleaning the assistant text. The cleaned
+      // display below removes those markers, but this raw string is what tells
+      // the client to run the real generator.
+      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+
       // Strip memory/trial/creation markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
@@ -2248,10 +2253,8 @@ const OraclePage = () => {
       };
 
       try {
-        const genRe = /\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi;
         const fired = new Set<string>();
-        let gm: RegExpExecArray | null;
-        while ((gm = genRe.exec(oracleContent)) !== null) {
+        for (const gm of creationMarkers) {
           const kind = gm[1].toUpperCase();
           const prompt = gm[2].trim().replace(/^["']|["']$/g, "");
           const key = kind + "::" + prompt;
