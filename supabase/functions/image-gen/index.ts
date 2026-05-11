@@ -355,6 +355,7 @@ serve(async (req) => {
           fallback: true,
           job_id: jobId,
           attempts: attemptsDone,
+          library_id: priorJob?.id || null,
         }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
