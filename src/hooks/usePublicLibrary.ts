@@ -128,6 +128,8 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
       filtered.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       return filtered;
     },
-    staleTime: 30_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   });
 };
