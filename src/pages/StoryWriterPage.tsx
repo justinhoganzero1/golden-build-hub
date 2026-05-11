@@ -16,6 +16,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import StoragePanel from "@/components/StoragePanel";
+import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 
 interface StoryChapter {
   title: string;
