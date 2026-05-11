@@ -249,6 +249,7 @@ const StoryWriterPage = () => {
   ): Promise<void> => {
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
     if (imgBusy) return;
+    if (!requireMeta()) return;
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
     let basePrompt = customPrompt?.trim() || "";
