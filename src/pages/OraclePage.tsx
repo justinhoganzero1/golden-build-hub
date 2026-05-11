@@ -1700,7 +1700,13 @@ const OraclePage = () => {
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
     const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
-    const directRoute = preRoutedImagePrompt ? null : isIntroTrigger ? null : resolveDirectOracleRoute(text);
+
+    // ── Universal command resolver — gives Oracle full operator control ──
+    // Recognises any of the 70+ app routes plus click/fill/scroll/back markers.
+    const oracleCmd = preRoutedImagePrompt || isIntroTrigger ? null : resolveOracleCommand(text);
+    const directRoute = (oracleCmd && oracleCmd.kind === "nav")
+      ? { label: oracleCmd.label, path: oracleCmd.path, prefill: oracleCmd.path === "/app-builder" ? text : undefined }
+      : null;
     if (directRoute) {
       if (directRoute.prefill) sessionStorage.setItem("app-builder-prefill", directRoute.prefill);
       const userMsgNav: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
@@ -1713,6 +1719,11 @@ const OraclePage = () => {
       if (!finalOnlyMode && !isMuted) speakAsAgent(ackNav.content, oracleName);
       toast(`Opening ${directRoute.label}...`);
       setTimeout(() => triggerExplosion(directRoute.path), 650);
+      return;
+    }
+    // Non-nav direct commands (click/fill/scroll/back/open) — fire immediately.
+    if (oracleCmd && oracleCmd.kind !== "nav") {
+      dispatchOracleCommand(oracleCmd);
       return;
     }
 
