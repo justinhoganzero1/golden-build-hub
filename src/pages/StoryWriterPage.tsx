@@ -16,6 +16,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import StoragePanel from "@/components/StoragePanel";
+import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 
 interface StoryChapter {
   title: string;
@@ -257,9 +258,10 @@ const StoryWriterPage = () => {
         const next = [...s.chapters];
         const target = next[slot.index];
         const existing = target.images || [];
-        if (existing.length >= 2) {
-          toast.info("Max 2 images per chapter — replacing the oldest.");
-          next[slot.index] = { ...target, images: [existing[1], url] };
+        const MAX_PER_CHAPTER = 6;
+        if (existing.length >= MAX_PER_CHAPTER) {
+          toast.info(`Max ${MAX_PER_CHAPTER} images per chapter — replacing the oldest.`);
+          next[slot.index] = { ...target, images: [...existing.slice(1), url] };
         } else {
           next[slot.index] = { ...target, images: [...existing, url] };
         }
@@ -643,16 +645,9 @@ Write the full chapter now (5000+ words):`;
           </div>
         </div>
 
-        {/* Storage: drafts + finished stories */}
+        {/* Browse ALL my stories — searchable + paginated */}
         <div className="px-4 py-3 border-b border-border">
-          <StoragePanel
-            sourcePages={["story-writer"]}
-            mediaTypes={["story"]}
-            title="My Story Storage (drafts + finished)"
-            thumbnails={false}
-            emptyText="No saved stories yet — start writing and they'll appear here automatically."
-            onLoad={(it) => loadSaved(it.id)}
-          />
+          <StoryLibraryBrowser onOpen={loadSaved} currentId={savingId} />
         </div>
 
         {/* Title + Genre + Premise */}
@@ -808,7 +803,7 @@ Write the full chapter now (5000+ words):`;
               <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/2)
+                    <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/6)
                   </p>
                   <button
                     onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
@@ -816,11 +811,11 @@ Write the full chapter now (5000+ words):`;
                     className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
                   >
                     {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {imgs.length >= 2 ? "Replace" : "Generate"}
+                    {imgs.length === 0 ? "Illustrate Chapter" : imgs.length >= 6 ? "Replace Oldest" : "Add Illustration"}
                   </button>
                 </div>
                 {imgs.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {imgs.map((src, i) => (
                       <div key={i} className="relative rounded-lg overflow-hidden border border-border">
                         <img src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
@@ -836,7 +831,7 @@ Write the full chapter now (5000+ words):`;
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Auto-illustrated from this chapter's content. Up to 2 per chapter.
+                    Auto-illustrated from this chapter's content. Up to 6 per chapter — tap to add a new one for every scene.
                   </p>
                 )}
               </div>
