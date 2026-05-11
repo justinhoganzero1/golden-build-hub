@@ -104,6 +104,25 @@ function wantsFinalOnlyMode(text: string): boolean {
   return FINAL_ONLY_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
+const DIRECT_TASK_RE = /\b(?:make|create|generate|draw|paint|render|design|compose|produce|record|write|build|develop|code|open|launch|go to|take me to|show me|diagnose|fix|repair)\b/i;
+
+function isDirectOracleTask(text: string): boolean {
+  return DIRECT_TASK_RE.test(text);
+}
+
+function extractImagePrompt(text: string): string | null {
+  const patterns = [
+    /\b(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me|us))?(?:\s+(?:a|an|some|the))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene|mockup|icon|sticker)\s*(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+)?([\s\S]+)/i,
+    /\b(?:draw|paint|render|illustrate|sketch)(?:\s+(?:me|us))?\s+(?:a|an|the|some)?\s*([\s\S]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    const prompt = match?.[1]?.replace(/[.!?]+$/, "").trim();
+    if (prompt) return prompt;
+  }
+  return null;
+}
+
 const OraclePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -1646,7 +1665,7 @@ const OraclePage = () => {
     // While the Oracle is asking the user for its name + appearance, every
     // user reply is consumed by the setup flow instead of being forwarded
     // to the chat backend.
-    if (!isIntroTrigger) {
+    if (!isIntroTrigger && !isDirectOracleTask(text)) {
       const consumed = await handleSetupReply(text);
       if (consumed) return;
     }
@@ -1894,9 +1913,9 @@ const OraclePage = () => {
 
     // ── Background IMAGE generation intent (Gemini image) ──
     // Triggered by "make/draw/paint/generate an image/picture/photo of ..."
-    const imgMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me\s+)?(?:a|an|some))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene)\s+(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+|in\s+the\s+style\s+of\s+)?(.+)/i);
-    if (imgMatch && imgMatch[2]) {
-      const prompt = imgMatch[2].replace(/[.!?]+$/, "").trim();
+    const directImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
+    if (directImagePrompt) {
+      const prompt = directImagePrompt;
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
       const ack: Message = {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎨", color: "#FFD700",
@@ -2191,6 +2210,11 @@ const OraclePage = () => {
         }
       }
 
+      // Parse creation markers before cleaning the assistant text. The cleaned
+      // display below removes those markers, but this raw string is what tells
+      // the client to run the real generator.
+      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+
       // Strip memory/trial/creation markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
@@ -2229,10 +2253,8 @@ const OraclePage = () => {
       };
 
       try {
-        const genRe = /\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi;
         const fired = new Set<string>();
-        let gm: RegExpExecArray | null;
-        while ((gm = genRe.exec(oracleContent)) !== null) {
+        for (const gm of creationMarkers) {
           const kind = gm[1].toUpperCase();
           const prompt = gm[2].trim().replace(/^["']|["']$/g, "");
           const key = kind + "::" + prompt;
