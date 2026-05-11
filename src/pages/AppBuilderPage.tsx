@@ -58,6 +58,7 @@ const AppBuilderPage = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const prefillConsumedRef = useRef(false);
 
   // Load saved apps
   useEffect(() => {
@@ -263,8 +264,8 @@ const AppBuilderPage = () => {
   }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (overridePrompt?: string) => {
+    const trimmed = (overridePrompt ?? input).trim();
     if ((!trimmed && attachments.length === 0) || isBuilding) return;
     if (trimmed) {
       const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
@@ -377,6 +378,24 @@ const AppBuilderPage = () => {
       setTimeout(() => setBuildStages([]), 4000);
     }
   };
+
+  useEffect(() => {
+    if (prefillConsumedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlPrompt = params.get("prompt") || "";
+    const storedPrompt = sessionStorage.getItem("app-builder-prefill") || "";
+    const storedAutostart = sessionStorage.getItem("app-builder-autostart") === "1";
+    const prompt = (urlPrompt || storedPrompt).trim();
+    if (!prompt || isBuilding) return;
+    prefillConsumedRef.current = true;
+    sessionStorage.removeItem("app-builder-prefill");
+    sessionStorage.removeItem("app-builder-autostart");
+    if (urlPrompt) window.history.replaceState({}, "", window.location.pathname);
+    setInput(prompt);
+    if (storedAutostart || params.get("autostart") === "1") {
+      setTimeout(() => sendMessage(prompt), 250);
+    }
+  }, [isBuilding]);
 
   const downloadApp = (project: AppProject) => {
     const blob = new Blob([project.code], { type: "text/html" });
@@ -637,7 +656,7 @@ const AppBuilderPage = () => {
             className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary resize-none max-h-32 select-text"
             disabled={isBuilding}
           />
-          <button onClick={sendMessage} disabled={isBuilding || (!input.trim() && attachments.length === 0)}
+          <button onClick={() => sendMessage()} disabled={isBuilding || (!input.trim() && attachments.length === 0)}
             className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50">
             <Send className="w-5 h-5" />
           </button>

@@ -56,6 +56,7 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
+const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
 // ============ NAMING SYSTEM ============
 function getAgentNames(): Record<string, string> {
@@ -129,6 +130,37 @@ function extractImagePrompt(text: string): string | null {
     if (prompt) return prompt;
   }
   return null;
+}
+
+const ORACLE_APP_ROUTES = [
+  { label: "App Builder", path: "/app-builder", re: /\b(app\s*builder|coding\s*app|code\s*builder|app\s*maker|build\s+apps?|make\s+apps?)\b/i },
+  { label: "Media Library", path: "/media-library", re: /\b(media\s*library|my\s*library|library|saved\s*(?:files|media|apps|images))\b/i },
+  { label: "Live Vision", path: "/live-vision", re: /\b(live\s*vision|camera|see\s+through|look\s+at\s+this|scan\s+this)\b/i },
+  { label: "Photography Hub", path: "/photography-hub", re: /\b(photo(?:graphy)?\s*hub|photo\s*studio|edit\s+(?:a\s+)?photo|picture\s*editor)\b/i },
+  { label: "Voice Studio", path: "/voice-studio", re: /\b(voice\s*studio|voice\s*builder|change\s+(?:your\s+)?voice|clone\s+voice)\b/i },
+  { label: "AI Studio", path: "/ai-studio", re: /\b(ai\s*studio|ai\s*team|agents?\s*studio)\b/i },
+  { label: "Diagnostics", path: "/diagnostics", re: /\b(diagnostics?|system\s*doctor|system\s*check|health\s*check)\b/i },
+  { label: "Dashboard", path: "/dashboard", re: /\b(dashboard|home\s*screen|main\s*menu)\b/i },
+  { label: "Settings", path: "/settings", re: /\b(settings|account\s*settings|preferences)\b/i },
+  { label: "Profile", path: "/profile", re: /\b(profile|my\s*account)\b/i },
+  { label: "Wallet", path: "/wallet", re: /\b(wallet|payments?|bills?|payid|bpay)\b/i },
+  { label: "Calendar", path: "/calendar", re: /\b(calendar|diary|schedule|appointments?)\b/i },
+  { label: "Story Writer", path: "/story-writer", re: /\b(story\s*writer|write\s+(?:a\s+)?story|author\s*studio)\b/i },
+  { label: "Avatar Generator", path: "/avatar-generator", re: /\b(avatar\s*generator|make\s+(?:an?\s+)?avatar|change\s+(?:your\s+)?face)\b/i },
+  { label: "Owner Dashboard", path: "/owner-dashboard", re: /\b(owner\s*dashboard|admin\s*dashboard|admin\s*panel)\b/i },
+];
+
+function resolveDirectOracleRoute(text: string): { label: string; path: string; prefill?: string } | null {
+  const navIntent = /\b(open|launch|start|use|run|go\s+to|take\s+me\s+to|show\s+me|bring\s+up|switch\s+to)\b/i.test(text);
+  if (!navIntent) return null;
+  const route = ORACLE_APP_ROUTES.find((item) => item.re.test(text));
+  if (!route) return null;
+  const prefill = route.path === "/app-builder" ? text.replace(/\b(open|launch|start|use|run|go\s+to|take\s+me\s+to|show\s+me|bring\s+up|switch\s+to)\b/gi, "").trim() : undefined;
+  return { ...route, prefill };
+}
+
+function wantsComputerOperatorMode(text: string): boolean {
+  return /\b(?:take|gain|have|get|give\s+you|grant\s+you|allow\s+you\s+to|let\s+you)\s+(?:full\s+)?(?:control|access|charge|over)\s+(?:of\s+)?(?:my\s+)?(?:entire\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b|\bcontrol\s+(?:my\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b|\brun\s+(?:my\s+)?(?:computer|pc|desktop|laptop|machine|device|system)\b/i.test(text);
 }
 
 const OraclePage = () => {
@@ -1669,6 +1701,38 @@ const OraclePage = () => {
     if (!isIntroTrigger) setInput("");
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
+    const directRoute = isIntroTrigger ? null : resolveDirectOracleRoute(text);
+    if (directRoute) {
+      if (directRoute.prefill) sessionStorage.setItem("app-builder-prefill", directRoute.prefill);
+      const userMsgNav: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ackNav: Message = {
+        id: (Date.now() + 1).toString(), role: "assistant", sender: oracleName, emoji: "🚀", color: "#FFD700",
+        content: `On it — opening ${directRoute.label} now.`,
+      };
+      setShowChat(true);
+      setMessages(prev => finalOnlyMode ? [...prev, userMsgNav] : [...prev, userMsgNav, ackNav]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ackNav.content, oracleName);
+      toast(`Opening ${directRoute.label}...`);
+      setTimeout(() => triggerExplosion(directRoute.path), 650);
+      return;
+    }
+
+    if (!isIntroTrigger && wantsComputerOperatorMode(text)) {
+      sessionStorage.setItem("app-builder-prefill", text);
+      sessionStorage.setItem("app-builder-autostart", "1");
+      const userMsgComputer: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+      const ackComputer: Message = {
+        id: (Date.now() + 1).toString(), role: "assistant", sender: oracleName, emoji: "🛠️", color: "#FFD700",
+        content: "I can run Oracle Lunar’s tools from here. Opening the coding app now, with your command loaded.",
+      };
+      setShowChat(true);
+      setMessages(prev => finalOnlyMode ? [...prev, userMsgComputer] : [...prev, userMsgComputer, ackComputer]);
+      if (!finalOnlyMode && !isMuted) speakAsAgent(ackComputer.content, oracleName);
+      toast("Opening App Builder...");
+      setTimeout(() => triggerExplosion("/app-builder"), 650);
+      return;
+    }
+
     // ── FIRST-VISIT SETUP INTERCEPT ──
     // While the Oracle is asking the user for its name + appearance, every
     // user reply is consumed by the setup flow instead of being forwarded
@@ -2227,12 +2291,14 @@ const OraclePage = () => {
       // display below removes those markers, but this raw string is what tells
       // the client to run the real generator.
       const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+      const recodeMarkers = [...oracleContent.matchAll(/\[\[RECODE:([\s\S]+?)\]\]/gi)];
 
       // Strip memory/trial/creation markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
         .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
+        .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
         .trim();
 
       // ─── FAIL-PROOF CREATION MARKERS ───
@@ -2354,6 +2420,49 @@ const OraclePage = () => {
           }
         }
       } catch (e) { console.error("creation marker parse failed", e); }
+
+      try {
+        for (const rm of recodeMarkers) {
+          const summary = rm[1].trim().replace(/^['"]|['"]$/g, "");
+          if (!summary || !isOwner) continue;
+          const fullRequest = `${text}\n\nOwner coding request summary: ${summary}`;
+          toast.success("Oracle Coder is working on that now…");
+          (async () => {
+            try {
+              const r = await fetch(ORACLE_CODER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                body: JSON.stringify({ messages: [{ role: "user", content: fullRequest }], mode: "chat", reasoning: "medium" }),
+              });
+              if (!r.ok) throw new Error(await r.text().catch(() => `HTTP ${r.status}`));
+              const raw = r.body ? await new Response(r.body).text() : await r.text();
+              const coderText = raw.split("\n").map((line) => {
+                if (!line.startsWith("data: ")) return "";
+                const data = line.slice(6).trim();
+                if (!data || data === "[DONE]") return "";
+                try { return JSON.parse(data).choices?.[0]?.delta?.content || ""; } catch { return ""; }
+              }).join("").replace(/\[\[\/?CHAT\]\]/g, "").trim();
+              const dataUrl = `data:text/plain;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(coderText || fullRequest)))}`;
+              await saveMedia.mutateAsync({
+                media_type: "text",
+                title: `Oracle Coder: ${summary.slice(0, 60)}`,
+                url: dataUrl,
+                source_page: "oracle-coder",
+                metadata: { kind: "code-plan", request: fullRequest },
+              });
+              const coderMsg: Message = {
+                id: `${Date.now()}-coder`, role: "assistant", sender: oracleName, emoji: "🧑‍💻", color: "#FFD700",
+                content: `Oracle Coder finished a code plan and saved it to your Library. To change the live app source, keep using Lovable build mode here.`,
+              };
+              setMessages(prev => [...prev, coderMsg]);
+              if (!isMuted) speakAsAgent(coderMsg.content, oracleName);
+            } catch (e) {
+              console.error(e);
+              toast.error("Oracle Coder could not finish that request");
+            }
+          })();
+        }
+      } catch (e) { console.error("recode marker parse failed", e); }
 
 
       // Handle navigation commands in Oracle response
