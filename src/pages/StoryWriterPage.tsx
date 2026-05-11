@@ -821,7 +821,7 @@ Write the full chapter now (5000+ words):`;
                   </button>
                 </div>
                 {imgs.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {imgs.map((src, i) => (
                       <div key={i} className="relative rounded-lg overflow-hidden border border-border">
                         <img src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
@@ -837,7 +837,7 @@ Write the full chapter now (5000+ words):`;
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Auto-illustrated from this chapter's content. Up to 2 per chapter.
+                    Auto-illustrated from this chapter's content. Up to 6 per chapter — tap to add a new one for every scene.
                   </p>
                 )}
               </div>
