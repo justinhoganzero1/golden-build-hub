@@ -652,7 +652,7 @@ const AppBuilderPage = () => {
             className="flex-1 px-4 py-3 bg-input border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary resize-none max-h-32 select-text"
             disabled={isBuilding}
           />
-          <button onClick={sendMessage} disabled={isBuilding || (!input.trim() && attachments.length === 0)}
+          <button onClick={() => sendMessage()} disabled={isBuilding || (!input.trim() && attachments.length === 0)}
             className="p-3 bg-primary text-primary-foreground rounded-xl disabled:opacity-50">
             <Send className="w-5 h-5" />
           </button>
