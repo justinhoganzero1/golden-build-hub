@@ -423,6 +423,41 @@ export default function MonthlyAwardsShowcase() {
           })}
         </div>
 
+        <div className="px-3 pb-3 flex gap-2 overflow-x-auto scrollbar-thin">
+          {liveCategories.map((c, i) => {
+            const champion = c.winners[0];
+            const active = i === activeIdx;
+            return (
+              <button
+                key={`${c.id}-preview`}
+                onClick={() => setActiveIdx(i)}
+                className={`shrink-0 w-28 sm:w-32 rounded-xl overflow-hidden border text-left bg-card/70 transition ${
+                  active ? "border-amber-300 shadow-[0_0_18px_hsl(var(--primary)/0.35)]" : "border-border hover:border-primary/60"
+                }`}
+              >
+                <div className="relative aspect-square bg-muted overflow-hidden">
+                  <img
+                    src={ux(champion.hero, 360, 360)}
+                    alt={`${champion.title} ${c.label} monthly winner`}
+                    loading="lazy"
+                    width={360}
+                    height={360}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                  <span className="absolute top-1.5 left-1.5 text-[10px] rounded-full bg-black/55 border border-amber-400/40 px-1.5 py-0.5 text-amber-200">
+                    {c.emoji} {c.label}
+                  </span>
+                </div>
+                <div className="px-2 py-1.5">
+                  <p className="text-[10px] font-bold text-foreground line-clamp-1">{champion.title}</p>
+                  <p className="text-[9px] text-muted-foreground line-clamp-1">{champion.name}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="px-4 pb-1 flex items-center justify-between text-[11px] text-muted-foreground">
           <span className="italic">{cat.blurb}</span>
           <div className="flex items-center gap-1">
