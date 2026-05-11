@@ -242,6 +242,49 @@ const HomePublicGallery = () => {
           })}
         </div>
 
+        {/* Search + sort */}
+        <div className="px-3 pb-2 flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search title or creator…"
+              className="w-full pl-8 pr-7 py-1.5 rounded-full bg-muted/40 border border-border text-[11px] text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {([
+              ["newest", "Newest"],
+              ["popular", "Popular"],
+              ["price_low", "$ ↑"],
+              ["price_high", "$ ↓"],
+            ] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setSort(k)}
+                className={`px-2 py-1 rounded-full text-[10px] font-semibold border transition ${
+                  sort === k
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/40 text-muted-foreground border-border hover:bg-muted/70"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-3">
           {visibleItems.map((item) => {
