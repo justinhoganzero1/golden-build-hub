@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import winnerPhoto from "@/assets/winner-photo-week.jpg";
 import { Trophy, Sparkles, Medal, Image as ImageIcon, BookOpen, Video, Palette } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Featured {
@@ -13,7 +14,7 @@ interface Featured {
 
 type Category = "photo" | "story" | "video" | "art" | "general";
 
-const CATEGORIES: { id: Category; label: string; icon: any }[] = [
+const CATEGORIES: { id: Category; label: string; icon: LucideIcon }[] = [
   { id: "photo",   label: "Photo",   icon: ImageIcon },
   { id: "story",   label: "Story",   icon: BookOpen },
   { id: "video",   label: "Video",   icon: Video },
@@ -70,7 +71,7 @@ const WeeklyWinnerShowcase = () => {
         const map: Record<Category, Record<number, Featured>> = {
           photo: {}, story: {}, video: {}, art: {}, general: {},
         };
-        (data as any[]).forEach((row) => {
+        (data as Featured[]).forEach((row) => {
           const cat = (row?.category || "photo") as Category;
           if (row?.rank && map[cat]) map[cat][row.rank] = row as Featured;
         });
