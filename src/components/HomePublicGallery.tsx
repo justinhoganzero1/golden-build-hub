@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePublicLibrary, type PublicLibraryItem } from "@/hooks/usePublicLibrary";
-import { Sparkles, ShoppingBag, Eye, Download } from "lucide-react";
+import { Sparkles, ShoppingBag, Eye, Download, Search, X } from "lucide-react";
 
 // Map raw source_page values into friendly genre groups (bubbles)
 const GENRE_MAP: Record<string, { label: string; emoji: string }> = {
@@ -69,6 +69,8 @@ const HomePublicGallery = () => {
   const { data: items = [], isLoading } = usePublicLibrary("all");
   const [activeGenre, setActiveGenre] = useState<string>("All");
   const [activeDemoGenre, setActiveDemoGenre] = useState<string>("All");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"newest" | "popular" | "price_low" | "price_high">("newest");
 
   const grouped = useMemo(() => {
     const map = new Map<string, { emoji: string; items: PublicLibraryItem[] }>();
@@ -86,9 +88,24 @@ const HomePublicGallery = () => {
   );
 
   const visibleItems = useMemo(() => {
-    if (activeGenre === "All") return items.slice(0, 24);
-    return grouped.get(activeGenre)?.items.slice(0, 24) ?? [];
-  }, [activeGenre, items, grouped]);
+    const base = activeGenre === "All" ? items : (grouped.get(activeGenre)?.items ?? []);
+    const q = search.trim().toLowerCase();
+    let list = q
+      ? base.filter(
+          (i) =>
+            (i.title || "").toLowerCase().includes(q) ||
+            (i.creator_display_name || "").toLowerCase().includes(q),
+        )
+      : base.slice();
+    if (sort === "popular") {
+      list.sort((a, b) => (b.view_count + b.download_count) - (a.view_count + a.download_count));
+    } else if (sort === "price_low") {
+      list.sort((a, b) => (a.shop_price_cents || 0) - (b.shop_price_cents || 0));
+    } else if (sort === "price_high") {
+      list.sort((a, b) => (b.shop_price_cents || 0) - (a.shop_price_cents || 0));
+    }
+    return list.slice(0, 24);
+  }, [activeGenre, items, grouped, search, sort]);
 
   if (isLoading) {
     return (
