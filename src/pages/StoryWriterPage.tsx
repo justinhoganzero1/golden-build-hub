@@ -433,6 +433,7 @@ Write the full chapter now (5000+ words):`;
   };
 
   const aiContinue = async () => {
+    if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch) return;
     const last = ch.content.slice(-1500);
@@ -460,6 +461,7 @@ Write the full chapter now (5000+ words):`;
   };
 
   const aiOutline = async () => {
+    if (!requireMeta()) return;
     if (!story.premise.trim()) {
       toast.error("Add a premise first");
       return;
@@ -489,6 +491,7 @@ Write the full chapter now (5000+ words):`;
   };
 
   const aiRewrite = async () => {
+    if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch?.content.trim()) {
       toast.error("Nothing to rewrite yet");
@@ -526,6 +529,7 @@ Write the full chapter now (5000+ words):`;
   };
 
   const aiGenerateFullChapter = async (guidance?: string) => {
+    if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch) return;
     try {
@@ -557,6 +561,7 @@ Write the full chapter now (5000+ words):`;
   };
 
   const aiEditChapterWithInstructions = async () => {
+    if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch?.content.trim()) { toast.error("Nothing to edit"); return; }
     if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
