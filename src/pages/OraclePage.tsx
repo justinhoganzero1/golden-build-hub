@@ -2351,37 +2351,23 @@ const OraclePage = () => {
           if (kind === "IMAGE") {
             toast.success("Painting that for you…");
             (async () => {
-              // Same retry safety net as the direct-image path: 4 client tries,
-              // each hitting the server's 9-try fallback chain.
-              const MAX_TRIES = 4;
               let imgUrl: string | null = null;
-              let lastErr = "";
-              for (let attempt = 1; attempt <= MAX_TRIES && !imgUrl; attempt++) {
-                try {
-                  const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-                    body: JSON.stringify({ prompt }),
-                  });
-                  if (r.status === 402) { toast.error("Out of AI credits."); return; }
-                  if (!r.ok) { lastErr = `HTTP ${r.status}`; }
-                  else {
-                    const data = await r.json();
-                    imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0] || null;
-                    if (!imgUrl) lastErr = "no image returned";
-                  }
-                } catch (e: any) { lastErr = e?.message || "network error"; }
-                if (!imgUrl && attempt < MAX_TRIES) await new Promise(res => setTimeout(res, 600 * attempt));
-              }
-              if (!imgUrl) {
-                console.error("GEN_IMAGE failed after retries:", lastErr);
+              let wasFallback = false;
+              try {
+                const gen = await generateImage({ prompt });
+                imgUrl = gen.url;
+                wasFallback = gen.fallback;
+              } catch (e: any) {
+                if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
+                console.error("GEN_IMAGE failed after retries:", e?.message);
                 toast.error("Image generation failed — please try again");
                 return;
               }
+              if (!imgUrl) { toast.error("Image generation failed — please try again"); return; }
               let savedId: string | undefined;
-              try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
-              // Show inline immediately — no empty new tab, no waiting for the toast button.
+              try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } }); savedId = saved?.id || saved; } catch {}
               window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
+              if (wasFallback) toast("Showing your most recent image while I retry");
               askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "MUSIC") {
