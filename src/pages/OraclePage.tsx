@@ -1913,9 +1913,9 @@ const OraclePage = () => {
 
     // ── Background IMAGE generation intent (Gemini image) ──
     // Triggered by "make/draw/paint/generate an image/picture/photo of ..."
-    const imgMatch = isIntroTrigger ? null : text.match(/(?:make|create|generate|draw|paint|render|design|imagine|give me|i need|show me)(?:\s+(?:me\s+)?(?:a|an|some))?\s+(?:image|picture|photo|photograph|painting|drawing|illustration|artwork|art|wallpaper|poster|logo|portrait|scene)\s+(?:of\s+|for\s+|showing\s+|depicting\s+|that\s+is\s+|like\s+|with\s+|in\s+the\s+style\s+of\s+)?(.+)/i);
-    if (imgMatch && imgMatch[2]) {
-      const prompt = imgMatch[2].replace(/[.!?]+$/, "").trim();
+    const directImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
+    if (directImagePrompt) {
+      const prompt = directImagePrompt;
       const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
       const ack: Message = {
         id: (Date.now()+1).toString(), role: "assistant", sender: oracleName, emoji: "🎨", color: "#FFD700",
