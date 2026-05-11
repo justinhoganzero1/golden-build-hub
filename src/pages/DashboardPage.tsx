@@ -17,6 +17,7 @@ import WelcomeModal from "@/components/WelcomeModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import HomePublicGallery from "@/components/HomePublicGallery";
+import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 
 interface AppTile {
   label: string;
@@ -203,6 +204,7 @@ const DashboardPage = () => {
       />
 
       {/* Creators' Gallery — auto-loads opt-in public creations */}
+      <MonthlyAwardsShowcase />
       <HomePublicGallery />
 
       {/* Expand/collapse controls */}
