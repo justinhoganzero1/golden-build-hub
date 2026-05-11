@@ -2339,8 +2339,11 @@ const OraclePage = () => {
           action: {
             label: "Open it now",
             onClick: () => {
-              if (opts.kind === "image" && opts.url) window.open(opts.url, "_blank");
-              else navigate(opts.deepPath);
+              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
+                // Show inline rather than a fragile window.open which sometimes
+                // produces an empty tab for large data: URLs.
+                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
+              } else navigate(opts.deepPath);
             },
           },
           cancel: {
@@ -2368,20 +2371,38 @@ const OraclePage = () => {
           if (kind === "IMAGE") {
             toast.success("Painting that for you…");
             (async () => {
-              try {
-                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-                  body: JSON.stringify({ prompt }),
-                });
-                if (!r.ok) throw new Error("image-gen failed");
-                const data = await r.json();
-                const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
-                if (!imgUrl) throw new Error("no image");
-                let savedId: string | undefined;
-                try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
-                askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
-              } catch (e) { console.error(e); toast.error("Image generation failed"); }
+              // Same retry safety net as the direct-image path: 4 client tries,
+              // each hitting the server's 9-try fallback chain.
+              const MAX_TRIES = 4;
+              let imgUrl: string | null = null;
+              let lastErr = "";
+              for (let attempt = 1; attempt <= MAX_TRIES && !imgUrl; attempt++) {
+                try {
+                  const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                    body: JSON.stringify({ prompt }),
+                  });
+                  if (r.status === 402) { toast.error("Out of AI credits."); return; }
+                  if (!r.ok) { lastErr = `HTTP ${r.status}`; }
+                  else {
+                    const data = await r.json();
+                    imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0] || null;
+                    if (!imgUrl) lastErr = "no image returned";
+                  }
+                } catch (e: any) { lastErr = e?.message || "network error"; }
+                if (!imgUrl && attempt < MAX_TRIES) await new Promise(res => setTimeout(res, 600 * attempt));
+              }
+              if (!imgUrl) {
+                console.error("GEN_IMAGE failed after retries:", lastErr);
+                toast.error("Image generation failed — please try again");
+                return;
+              }
+              let savedId: string | undefined;
+              try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt } }); savedId = saved?.id || saved; } catch {}
+              // Show inline immediately — no empty new tab, no waiting for the toast button.
+              window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
+              askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "MUSIC") {
             toast.success("Composing that track…");
