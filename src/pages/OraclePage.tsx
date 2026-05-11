@@ -115,6 +115,9 @@ function extractImagePrompt(text: string): string | null {
   const polish = (value: string) => value
     .replace(/\b8\s*k\b/gi, "8K")
     .replace(/\bmonk+ey\b/gi, "monkey")
+    .replace(/\b(?:in|on)\s+thi?s\s+screen\b/gi, "")
+    .replace(/\b(?:then\s+|and\s+)?(?:save|saved|drop|put|add)\s+(?:it|this|that)?\s*(?:to|in|into)?\s*(?:the|my|your)?\s*(?:media\s*)?library\b[\s\S]*$/i, "")
+    .replace(/\b(?:then\s+|and\s+)?(?:show|open|display)\s+(?:it|this|that)?\s*(?:to\s+me\s+)?(?:here|in\s+thi?s\s+screen)?\b[\s\S]*$/i, "")
     .replace(/^[\s,.:;!?-]*(?:of|for|showing|depicting|that\s+is|like|with|a|an|the|some)\s+/i, "")
     .replace(/[.!?]+$/, "")
     .trim();
@@ -1701,7 +1704,8 @@ const OraclePage = () => {
     if (!isIntroTrigger) setInput("");
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
-    const directRoute = isIntroTrigger ? null : resolveDirectOracleRoute(text);
+    const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
+    const directRoute = preRoutedImagePrompt ? null : isIntroTrigger ? null : resolveDirectOracleRoute(text);
     if (directRoute) {
       if (directRoute.prefill) sessionStorage.setItem("app-builder-prefill", directRoute.prefill);
       const userMsgNav: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
