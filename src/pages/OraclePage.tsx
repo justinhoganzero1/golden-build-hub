@@ -2420,6 +2420,49 @@ const OraclePage = () => {
         }
       } catch (e) { console.error("creation marker parse failed", e); }
 
+      try {
+        for (const rm of recodeMarkers) {
+          const summary = rm[1].trim().replace(/^['"]|['"]$/g, "");
+          if (!summary || !isOwner) continue;
+          const fullRequest = `${text}\n\nOwner coding request summary: ${summary}`;
+          toast.success("Oracle Coder is working on that now…");
+          (async () => {
+            try {
+              const r = await fetch(ORACLE_CODER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                body: JSON.stringify({ messages: [{ role: "user", content: fullRequest }], mode: "chat", reasoning: "medium" }),
+              });
+              if (!r.ok) throw new Error(await r.text().catch(() => `HTTP ${r.status}`));
+              const raw = r.body ? await new Response(r.body).text() : await r.text();
+              const coderText = raw.split("\n").map((line) => {
+                if (!line.startsWith("data: ")) return "";
+                const data = line.slice(6).trim();
+                if (!data || data === "[DONE]") return "";
+                try { return JSON.parse(data).choices?.[0]?.delta?.content || ""; } catch { return ""; }
+              }).join("").replace(/\[\[\/?CHAT\]\]/g, "").trim();
+              const dataUrl = `data:text/plain;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(coderText || fullRequest)))}`;
+              await saveMedia.mutateAsync({
+                media_type: "text",
+                title: `Oracle Coder: ${summary.slice(0, 60)}`,
+                url: dataUrl,
+                source_page: "oracle-coder",
+                metadata: { kind: "code-plan", request: fullRequest },
+              });
+              const coderMsg: Message = {
+                id: `${Date.now()}-coder`, role: "assistant", sender: oracleName, emoji: "🧑‍💻", color: "#FFD700",
+                content: `Oracle Coder finished a code plan and saved it to your Library. To change the live app source, keep using Lovable build mode here.`,
+              };
+              setMessages(prev => [...prev, coderMsg]);
+              if (!isMuted) speakAsAgent(coderMsg.content, oracleName);
+            } catch (e) {
+              console.error(e);
+              toast.error("Oracle Coder could not finish that request");
+            }
+          })();
+        }
+      } catch (e) { console.error("recode marker parse failed", e); }
+
 
       // Handle navigation commands in Oracle response
       const { cleanContent, navPath, isBackground } = parseAndHandleNavigation(cleanedOracleContent);
