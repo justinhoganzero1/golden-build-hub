@@ -148,12 +148,26 @@ const DashboardPage = () => {
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
           {isAdmin ? (
-            <button
-              onClick={() => navigate("/admin/editor")}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
-            >
-              ✏️ Live Editor
-            </button>
+            <>
+              <button
+                onClick={() => navigate("/owner-dashboard")}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black uppercase bg-amber-500/20 border border-amber-400/60 text-amber-300 hover:bg-amber-500/30 transition shadow-[0_0_18px_rgba(245,158,11,0.35)]"
+              >
+                👑 Admin Dashboard
+              </button>
+              <button
+                onClick={() => navigate("/admin/editor")}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
+              >
+                ✏️ Live Editor
+              </button>
+              <button
+                onClick={() => navigate("/admin/usage-audit")}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
+              >
+                📊 Usage Audit
+              </button>
+            </>
           ) : (
             <Button
               onClick={() => navigate("/subscribe")}
