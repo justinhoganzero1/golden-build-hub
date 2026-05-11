@@ -57,7 +57,8 @@ const StoryWriterPage = () => {
   const canPublish = isAdmin || hasAccess(tier, "monthly");
 
   const [story, setStory] = useState<StoryDoc>({
-    title: params.get("title") || "Untitled Story",
+    title: params.get("title") || "",
+    author: "",
     genre: "Fantasy",
     premise: params.get("prompt") || "",
     chapters: [{ title: "Chapter 1", content: "" }],
