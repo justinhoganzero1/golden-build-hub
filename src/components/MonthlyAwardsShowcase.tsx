@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Trophy, Crown, Sparkles, ChevronLeft, ChevronRight, Heart, Eye, Download, X, ShoppingBag } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useAllUserMedia } from "@/hooks/useAllUserMedia";
+import monthlyWinnerPhoto from "@/assets/monthly-winner-photo.jpg";
+import monthlyWinnerStory from "@/assets/monthly-winner-story.jpg";
+import monthlyWinnerVideo from "@/assets/monthly-winner-video.jpg";
+import monthlyWinnerArt from "@/assets/monthly-winner-art.jpg";
+import monthlyWinnerApp from "@/assets/monthly-winner-app.jpg";
+import monthlyWinnerGeneral from "@/assets/monthly-winner-general.jpg";
 
 /**
  * Monthly Awards Showcase — curated AI-themed categories with this
@@ -48,6 +54,9 @@ const CATEGORY_SOURCE_HINTS: Record<string, string[]> = {
   "story-of-month": ["story"],
   "movie-magic": ["movie", "video"],
   "magic-hub": ["magic", "edit", "photo"],
+  "ai-art": ["art", "magic", "photo"],
+  "app-of-month": ["app", "builder", "wrapper"],
+  "general-ai": ["general", "library", "creation"],
   "avatar-icons": ["avatar"],
   "living-avatars": ["living", "gif", "avatar"],
   "voice-virtuoso": ["voice"],
@@ -63,8 +72,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Aurora Vex", handle: "@auroravex", title: "Velvet Saint",
         bio: "Cinematic portrait artist blending Renaissance lighting with futurist couture.",
-        hero: "1531746020798-e6953c6e8e04",
-        gallery: ["1502823403499-6ccfcf4fb453","1488161628813-04466f872be2","1494790108377-be9c29b29330","1524504388940-b1c1722653e1"],
+        hero: monthlyWinnerPhoto,
+        gallery: [monthlyWinnerPhoto,"1502823403499-6ccfcf4fb453","1494790108377-be9c29b29330","1524504388940-b1c1722653e1"],
         likes: 12480, views: 184320, downloads: 920, priceCents: 1200 },
       { rank: 2, name: "Kiyan Mori", handle: "@kiyan.studio", title: "Midnight Monarch",
         bio: "Tokyo-based AI photographer specialising in moody nocturnal portraits.",
@@ -86,8 +95,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Nyx Rivers", handle: "@nyxrivers", title: "The Gilded Comet",
         bio: "Nine chapters of cosmic mystery, fully illustrated in cinematic gold.",
-        hero: "1419242902214-272b3f66ee7a",
-        gallery: ["1465101046530-73398c7f28ca","1444080748397-f442aa95c3e5","1419242902214-272b3f66ee7a","1502134249126-9f3755a50d78"],
+        hero: monthlyWinnerStory,
+        gallery: [monthlyWinnerStory,"1465101046530-73398c7f28ca","1444080748397-f442aa95c3e5","1502134249126-9f3755a50d78"],
         likes: 14210, views: 210400, downloads: 1820, priceCents: 900 },
       { rank: 2, name: "Sable Quinn", handle: "@sablequinn", title: "Hymn of the Wolf",
         bio: "A folkloric novella with hand-painted forest spreads.",
@@ -109,8 +118,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Dax Halberg", handle: "@daxfilms", title: "Echoes of Mars",
         bio: "A 4-minute sci-fi short rendered entirely in Oracle Movie Studio.",
-        hero: "1451187580459-43490279c0fa",
-        gallery: ["1446776811953-b23d57bd21aa","1462331940025-496dfbfc7564","1502134249126-9f3755a50d78","1419242902214-272b3f66ee7a"],
+        hero: monthlyWinnerVideo,
+        gallery: [monthlyWinnerVideo,"1446776811953-b23d57bd21aa","1502134249126-9f3755a50d78","1419242902214-272b3f66ee7a"],
         likes: 18540, views: 320420, downloads: 2410, priceCents: 1500 },
       { rank: 2, name: "Mira Solé", handle: "@mirasole", title: "Last Light",
         bio: "Quiet drama about a coastal lighthouse keeper at the end of an era.",
@@ -132,8 +141,8 @@ const CATEGORIES: Category[] = [
     winners: [
       { rank: 1, name: "Iris Vohr", handle: "@irisvohr", title: "Phoenix Bloom",
         bio: "Self-portrait fused with feathers of fire — Magic Hub remix winner.",
-        hero: "1495103033382-fe343886b671",
-        gallery: ["1502691876148-a84978e59af8","1531297484001-80022131f5a1","1518770660439-4636190af475","1517242810446-cc8951b2be40"],
+        hero: monthlyWinnerArt,
+        gallery: [monthlyWinnerArt,"1502691876148-a84978e59af8","1531297484001-80022131f5a1","1517242810446-cc8951b2be40"],
         likes: 16210, views: 280310, downloads: 1980 },
       { rank: 2, name: "Theo Rask", handle: "@theorask", title: "Glass Garden",
         bio: "A botanical portrait built from refracted prisms.",
