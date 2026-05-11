@@ -189,6 +189,7 @@ const WalletPage = lazy(loaders["/wallet"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
 const AdminEditorPage = lazy(loaders["/admin/editor"]);
+const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
