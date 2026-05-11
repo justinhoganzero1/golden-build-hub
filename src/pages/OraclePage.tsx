@@ -1665,7 +1665,7 @@ const OraclePage = () => {
     // While the Oracle is asking the user for its name + appearance, every
     // user reply is consumed by the setup flow instead of being forwarded
     // to the chat backend.
-    if (!isIntroTrigger) {
+    if (!isIntroTrigger && !isDirectOracleTask(text)) {
       const consumed = await handleSetupReply(text);
       if (consumed) return;
     }
