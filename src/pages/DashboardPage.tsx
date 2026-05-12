@@ -147,7 +147,7 @@ const DashboardPage = () => {
       <OracleMoonHeader>
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
-          {isAdmin ? (
+          {adminLoading ? null : isAdmin ? (
             <>
               <button
                 onClick={() => navigate("/owner-dashboard")}
