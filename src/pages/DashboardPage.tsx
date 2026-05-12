@@ -217,9 +217,17 @@ const DashboardPage = () => {
         description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
 
-      {/* Creators' Gallery — auto-loads opt-in public creations */}
-      <MonthlyAwardsShowcase />
-      <HomePublicGallery />
+      {/* Creators' Gallery & Monthly Awards — collapsed by default so the full dashboard is visible on load */}
+      <details className="px-4 mb-3 group">
+        <summary className="cursor-pointer list-none inline-flex items-center gap-2 text-[12px] px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition">
+          <span className="group-open:hidden">▸ Show Creators' Gallery & Monthly Awards</span>
+          <span className="hidden group-open:inline">▾ Hide Creators' Gallery & Monthly Awards</span>
+        </summary>
+        <div className="mt-3 space-y-4">
+          <MonthlyAwardsShowcase />
+          <HomePublicGallery />
+        </div>
+      </details>
 
       {/* Expand/collapse controls */}
       <div className="px-4 flex items-center gap-2 mb-3">
