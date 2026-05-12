@@ -101,7 +101,7 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     try {
