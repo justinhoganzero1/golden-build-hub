@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 const WELCOME_KEY_PREFIX = "oracle-lunar-welcome-shown-";
 
 const WelcomeModal = () => {
+  // Disabled: visitors and users go straight to the dashboard, no welcome popup.
+  return null;
+  // eslint-disable-next-line no-unreachable
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
