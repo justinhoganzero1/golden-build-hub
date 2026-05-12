@@ -101,7 +101,7 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     try {
@@ -147,7 +147,7 @@ const DashboardPage = () => {
       <OracleMoonHeader>
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
-          {isAdmin ? (
+          {adminLoading ? null : isAdmin ? (
             <>
               <button
                 onClick={() => navigate("/owner-dashboard")}
@@ -197,7 +197,7 @@ const DashboardPage = () => {
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
-          {isAdmin ? (
+          {adminLoading ? null : isAdmin ? (
             <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-sm">
               👑 Lifetime Owner — Full Access
             </span>
