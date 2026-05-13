@@ -30,16 +30,15 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
 
   return (
     <div className="relative overflow-hidden border-b border-amber-500/30">
-      {/* ── Cinematic video background ── */}
-      <video
-        src={`${heroVideo.url}${heroVideo.url.includes("?") ? "&" : "?"}v=${(heroVideo as any).version || (heroVideo as any).updated_at || (heroVideo as any).hash || "earth-moon-2"}`}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
+      {/* ── Cinematic gold-particle background ── */}
+      <img
+        src={heroBackground}
+        alt=""
+        aria-hidden="true"
+        width={1920}
+        height={1080}
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "saturate(1.15) contrast(1.08) brightness(0.95)" }}
+        style={{ filter: "saturate(1.1) contrast(1.05) brightness(0.95)" }}
       />
 
       {/* Cinematic vignette + gold glow overlays */}
