@@ -255,14 +255,16 @@ const PortalLandingPage = () => {
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <button type="button" onClick={() => goMemberSignUp("/wallet")} className="hover:text-primary transition-colors">Coins</button>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
-            <button
-              type="button"
-              onClick={() => navigate(user ? "/owner-dashboard" : (goOwnerSignIn(), "/"))}
-              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-              aria-label="Owner access"
-            >
-              <AdminShield className="h-3.5 w-3.5" /> Owner
-            </button>
+            {!adminLoading && isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/owner-dashboard")}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label="Owner access"
+              >
+                <AdminShield className="h-3.5 w-3.5" /> Owner
+              </button>
+            )}
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
