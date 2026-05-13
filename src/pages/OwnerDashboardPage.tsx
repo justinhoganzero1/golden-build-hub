@@ -78,6 +78,8 @@ const OwnerDashboardPage = () => {
   const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0 });
   // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
   const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
+  // Top pages viewed (admin-only): which pages are most-visited
+  const [topPages, setTopPages] = useState<{ page: string; visits: number }[]>([]);
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
@@ -331,12 +333,13 @@ const OwnerDashboardPage = () => {
       try {
         const { data } = await supabase
           .from("page_views")
-          .select("utm_source, referrer")
+          .select("utm_source, referrer, page")
           .order("created_at", { ascending: false })
           .limit(lowPowerMode ? 1000 : 5000);
         if (!data) return;
         const counts: Record<string, number> = {};
-        for (const row of data as Array<{ utm_source: string | null; referrer: string | null }>) {
+        const pageCounts: Record<string, number> = {};
+        for (const row of data as Array<{ utm_source: string | null; referrer: string | null; page: string | null }>) {
           let src = row.utm_source?.trim().toLowerCase() || "";
           if (!src && row.referrer) {
             try { src = new URL(row.referrer).hostname.replace(/^www\./, "").toLowerCase(); }
@@ -344,12 +347,22 @@ const OwnerDashboardPage = () => {
           }
           if (!src) src = "direct";
           counts[src] = (counts[src] || 0) + 1;
+
+          const pg = (row.page || "").trim() || "(unknown)";
+          pageCounts[pg] = (pageCounts[pg] || 0) + 1;
         }
         const arr = Object.entries(counts)
           .map(([source, visits]) => ({ source, visits }))
           .sort((a, b) => b.visits - a.visits)
           .slice(0, 12);
-        if (!cancelled) setTrafficSources(arr);
+        const pagesArr = Object.entries(pageCounts)
+          .map(([page, visits]) => ({ page, visits }))
+          .sort((a, b) => b.visits - a.visits)
+          .slice(0, 20);
+        if (!cancelled) {
+          setTrafficSources(arr);
+          setTopPages(pagesArr);
+        }
       } catch {}
     };
 
@@ -1834,6 +1847,44 @@ const OwnerDashboardPage = () => {
                           <div className="h-3 bg-white/5 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* Top pages viewed */}
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-5 h-5 text-emerald-300" />
+                <h3 className="text-sm font-bold text-white">Top pages viewed</h3>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-4">
+                Most-visited pages across the last 5,000 visits.
+              </p>
+
+              {topPages.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-xs">No page views recorded yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {(() => {
+                    const max = Math.max(...topPages.map(p => p.visits), 1);
+                    return topPages.map((p, i) => {
+                      const pct = (p.visits / max) * 100;
+                      return (
+                        <div key={p.page + i} className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-white font-medium truncate max-w-[70%]" title={p.page}>{p.page}</span>
+                            <span className="text-emerald-300 font-bold">{p.visits.toLocaleString()}</span>
+                          </div>
+                          <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
