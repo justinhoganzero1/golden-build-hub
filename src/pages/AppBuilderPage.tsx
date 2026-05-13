@@ -281,6 +281,8 @@ const AppBuilderPage = () => {
     setAttachments([]);
     setIsBuilding(true);
     setBuildStages([{ stage: "init", message: "Spinning up autonomous build pipeline…" }]);
+    setLivePartial("");
+    setShowProgress(true);
 
     let code = "";
     let architecture = "";
