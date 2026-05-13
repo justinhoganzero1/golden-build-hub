@@ -826,6 +826,45 @@ export type Database = {
           },
         ]
       }
+      margin_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          est_provider_cost_cents: number
+          id: string
+          margin_pct: number
+          period_end: string
+          period_start: string
+          revenue_cents: number
+          severity: string
+          threshold_pct: number
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          est_provider_cost_cents: number
+          id?: string
+          margin_pct: number
+          period_end: string
+          period_start: string
+          revenue_cents: number
+          severity?: string
+          threshold_pct: number
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          est_provider_cost_cents?: number
+          id?: string
+          margin_pct?: number
+          period_end?: string
+          period_start?: string
+          revenue_cents?: number
+          severity?: string
+          threshold_pct?: number
+        }
+        Relationships: []
+      }
       module_publish_prefs: {
         Row: {
           auto_publish: boolean
@@ -2264,6 +2303,66 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_limits: {
+        Row: {
+          daily_spend_cap_cents: number
+          min_balance_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_spend_cap_cents?: number
+          min_balance_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_spend_cap_cents?: number
+          min_balance_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_topups: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          fee_cents: number
+          gross_cents: number
+          id: string
+          metadata: Json
+          source: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          fee_cents?: number
+          gross_cents?: number
+          id?: string
+          metadata?: Json
+          source?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          fee_cents?: number
+          gross_cents?: number
+          id?: string
+          metadata?: Json
+          source?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       creator_comments_public: {
@@ -2295,6 +2394,10 @@ export type Database = {
       _reschedule_cron: {
         Args: { _command: string; _name: string; _schedule: string }
         Returns: undefined
+      }
+      check_margin_and_alert: {
+        Args: { _days?: number; _threshold_pct?: number }
+        Returns: string
       }
       claim_next_living_gif: {
         Args: { _worker_id: string }
@@ -2363,6 +2466,17 @@ export type Database = {
           unlocked: boolean
         }[]
       }
+      provider_pnl_summary: {
+        Args: { _days?: number }
+        Returns: {
+          charges_count: number
+          margin_pct: number
+          platform_fee_cents: number
+          provider_cost_cents: number
+          revenue_cents: number
+          service: string
+        }[]
+      }
       recalc_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
@@ -2392,6 +2506,16 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      user_usage_breakdown: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          services: Json
+          total_generations: number
+          total_spent_cents: number
+          user_email: string
+          user_id: string
+        }[]
       }
       wallet_charge_ai: {
         Args: {
@@ -2425,6 +2549,19 @@ export type Database = {
       }
       wallet_topup: {
         Args: { _amount_cents: number; _user_id: string }
+        Returns: number
+      }
+      wallet_topup_logged: {
+        Args: {
+          _amount_cents: number
+          _fee_cents: number
+          _gross_cents: number
+          _metadata?: Json
+          _source: string
+          _stripe_payment_intent?: string
+          _stripe_session_id?: string
+          _user_id: string
+        }
         Returns: number
       }
     }
