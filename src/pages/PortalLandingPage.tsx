@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import HomepageMailbox from "@/components/HomepageMailbox";
 import WeeklyWinnerShowcase from "@/components/WeeklyWinnerShowcase";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const HOME_JSON_LD = [
   {
@@ -113,7 +114,7 @@ const PortalLandingPage = () => {
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
   const { subscribed } = useSubscription();
-  const isAdmin = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const isMember = !!user && (subscribed || isAdmin);
 
   const handleTileClick = (to: string) => {
@@ -254,14 +255,16 @@ const PortalLandingPage = () => {
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <button type="button" onClick={() => goMemberSignUp("/wallet")} className="hover:text-primary transition-colors">Coins</button>
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
-            <button
-              type="button"
-              onClick={() => navigate(user ? "/owner-dashboard" : (goOwnerSignIn(), "/"))}
-              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-              aria-label="Owner access"
-            >
-              <AdminShield className="h-3.5 w-3.5" /> Owner
-            </button>
+            {!adminLoading && isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/owner-dashboard")}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label="Owner access"
+              >
+                <AdminShield className="h-3.5 w-3.5" /> Owner
+              </button>
+            )}
           </nav>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button
@@ -661,22 +664,18 @@ const PortalLandingPage = () => {
             <a href="/privacy-policy" className="hover:text-primary">Privacy</a>
             <a href="/terms-of-service" className="hover:text-primary">Terms</a>
             <a href="/about" className="hover:text-primary">About</a>
-            <button
-              type="button"
-              onClick={() => {
-                if (user) {
-                  navigate("/owner-dashboard");
-                  return;
-                }
-                goOwnerSignIn();
-              }}
-              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-              aria-label="Owner access"
-              title="Owner access"
-            >
-              <AdminShield className="h-3.5 w-3.5" />
-              <span>Owner</span>
-            </button>
+            {!adminLoading && isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/owner-dashboard")}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label="Owner access"
+                title="Owner access"
+              >
+                <AdminShield className="h-3.5 w-3.5" />
+                <span>Owner</span>
+              </button>
+            )}
             <span className="inline-flex items-center gap-1 text-xs">
               <Lock className="h-3.5 w-3.5" /> AI Anti-Hacker Active
             </span>
