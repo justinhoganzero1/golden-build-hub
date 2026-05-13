@@ -3,6 +3,7 @@
 // HeyGen bubble auto-hides while the affiliate URL is still the placeholder.
 import heygenBubble from "@/assets/partner-bubble-heygen.png";
 import elevenLabsBubble from "@/assets/partner-bubble-elevenlabs.png";
+import lovableBubble from "@/assets/partner-bubble-lovable.png";
 import {
   ELEVENLABS_AFFILIATE_URL,
   HEYGEN_AFFILIATE_URL,
@@ -19,10 +20,22 @@ interface Bubble {
   url: string;
   partner: string;
   hidden?: boolean;
+  featured?: boolean;
+  badge?: string;
 }
 
 const PartnerBubbles = () => {
   const bubbles: Bubble[] = [
+    {
+      key: "lovable",
+      label: "Lovable",
+      tagline: "Built & shipped on Lovable",
+      img: lovableBubble,
+      url: "https://lovable.dev/?via=oracle-lunar",
+      partner: "lovable",
+      featured: true,
+      badge: "PROUDLY BUILT WITH",
+    },
     {
       key: "elevenlabs",
       label: "ElevenLabs",
@@ -33,12 +46,13 @@ const PartnerBubbles = () => {
     },
     {
       key: "heygen",
-      label: "HeyGen",
+      label: "HeyGen — coming soon",
       tagline: "AI Avatars",
       img: heygenBubble,
       url: HEYGEN_AFFILIATE_URL,
       partner: "heygen",
-      hidden: HEYGEN_AFFILIATE_URL === HEYGEN_PLACEHOLDER,
+      // Always show — even if affiliate URL is still placeholder, we want
+      // the "coming soon" brag visible next to the Lovable badge.
     },
   ].filter((b) => !b.hidden);
 

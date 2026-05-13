@@ -27,13 +27,9 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   }
 
   if (!user) {
-    // Anonymous session is being created in AuthContext; show spinner briefly,
-    // never redirect away — every visitor is allowed in.
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    // First click of anything gated → bounce to sign-in so visitors can
+    // either log in or become a member.
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
