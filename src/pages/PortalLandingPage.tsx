@@ -664,22 +664,18 @@ const PortalLandingPage = () => {
             <a href="/privacy-policy" className="hover:text-primary">Privacy</a>
             <a href="/terms-of-service" className="hover:text-primary">Terms</a>
             <a href="/about" className="hover:text-primary">About</a>
-            <button
-              type="button"
-              onClick={() => {
-                if (user) {
-                  navigate("/owner-dashboard");
-                  return;
-                }
-                goOwnerSignIn();
-              }}
-              className="inline-flex items-center gap-1 hover:text-primary transition-colors"
-              aria-label="Owner access"
-              title="Owner access"
-            >
-              <AdminShield className="h-3.5 w-3.5" />
-              <span>Owner</span>
-            </button>
+            {!adminLoading && isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate("/owner-dashboard")}
+                className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                aria-label="Owner access"
+                title="Owner access"
+              >
+                <AdminShield className="h-3.5 w-3.5" />
+                <span>Owner</span>
+              </button>
+            )}
             <span className="inline-flex items-center gap-1 text-xs">
               <Lock className="h-3.5 w-3.5" /> AI Anti-Hacker Active
             </span>
