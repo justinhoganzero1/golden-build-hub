@@ -6,6 +6,7 @@ import SEO from "@/components/SEO";
 import HomepageMailbox from "@/components/HomepageMailbox";
 import WeeklyWinnerShowcase from "@/components/WeeklyWinnerShowcase";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const HOME_JSON_LD = [
   {
