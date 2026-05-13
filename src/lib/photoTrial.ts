@@ -2,7 +2,7 @@
 // Counter is per-user (or per-device for anon) and stored in localStorage.
 // Admins always bypass.
 
-export const PHOTO_TRIAL_LIMIT = 6;
+export const PHOTO_TRIAL_LIMIT = 1;
 
 const keyFor = (userId?: string | null) =>
   `oraclelunar.photoTrial.count.${userId || "anon"}`;
