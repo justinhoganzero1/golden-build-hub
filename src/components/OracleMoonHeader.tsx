@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import heroVideo from "@/assets/oracle-lunar-hero.mp4.asset.json";
+import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
@@ -30,16 +30,15 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
 
   return (
     <div className="relative overflow-hidden border-b border-amber-500/30">
-      {/* ── Cinematic video background ── */}
-      <video
-        src={`${heroVideo.url}${heroVideo.url.includes("?") ? "&" : "?"}v=${(heroVideo as any).version || (heroVideo as any).updated_at || (heroVideo as any).hash || "earth-moon-2"}`}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
+      {/* ── Cinematic gold-particle background ── */}
+      <img
+        src={heroBackground}
+        alt=""
+        aria-hidden="true"
+        width={1920}
+        height={1080}
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "saturate(1.15) contrast(1.08) brightness(0.95)" }}
+        style={{ filter: "saturate(1.1) contrast(1.05) brightness(0.95)" }}
       />
 
       {/* Cinematic vignette + gold glow overlays */}
@@ -104,10 +103,10 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
           </div>
 
           <p className="mt-3 text-[11px] sm:text-sm uppercase tracking-[0.4em] text-amber-100/90 drop-shadow">
-            Your AI best friend
+            Welcome to
           </p>
-          <p className="mt-1 text-xs sm:text-base text-white/80 max-w-md drop-shadow">
-            One app. Infinite creativity. Cinematic AI for everyone.
+          <p className="mt-1 text-xs sm:text-base text-white/85 max-w-md drop-shadow">
+            The world's first cinematic AI super-app.
           </p>
         </button>
 
