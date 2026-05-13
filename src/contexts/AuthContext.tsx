@@ -70,21 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (session) {
         setSession(session);
         setUser(session.user);
-        setLoading(false);
-        return;
       }
-
-      // No session → silently create an anonymous visitor session so wallet,
-      // Stripe top-ups and paywalls all work with a real auth.uid().
-      try {
-        const { data: anonData, error: anonErr } = await supabase.auth.signInAnonymously();
-        if (!anonErr && anonData.session) {
-          setSession(anonData.session);
-          setUser(anonData.user);
-        }
-      } catch (e) {
-        console.warn("Anonymous sign-in failed", e);
-      }
+      // No anonymous fallback — visitors must hit /sign-in to either log in
+      // or join. This is intentional: every action should be tied to a
+      // member account so coins, wallet and exports work end-to-end.
       setLoading(false);
     });
 
