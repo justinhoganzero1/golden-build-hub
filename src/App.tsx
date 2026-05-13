@@ -180,6 +180,7 @@ const SuggestionBoxPage = lazy(loaders["/suggestion-box"]);
 const ReferralPage = lazy(loaders["/referral"]);
 const SubscribePage = lazy(loaders["/subscribe"]);
 const SubscriptionStatusPage = lazy(() => import("./pages/SubscriptionStatusPage"));
+const SubscriptionTimelinePage = lazy(() => import("./pages/SubscriptionTimelinePage"));
 const AppBuilderPage = lazy(loaders["/app-builder"]);
 const POSLearnPage = lazy(loaders["/pos-learn"]);
 const StoryWriterPage = lazy(loaders["/story-writer"]);
