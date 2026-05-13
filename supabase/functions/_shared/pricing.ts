@@ -43,26 +43,38 @@ export function markupCents(provider_cost_cents: number): MarkedUp {
 // These are conservative estimates — adjust as real invoices come in.
 // All values are PROVIDER cost. The +5% markup is added on top automatically.
 export const PROVIDER_RATES = {
-  // Runway image-to-video Gen-3 Turbo: ~$0.05 per second of generated video
+  // Runway image-to-video Gen-3 Turbo: ~$0.05 per second
   runway_image_to_video_per_second: 5,
 
-  // ElevenLabs TTS: ~$0.30 per 1000 characters on Creator plan
+  // ElevenLabs
   elevenlabs_tts_per_1000_chars: 30,
-
-  // ElevenLabs SFX: ~$0.08 per generation (avg 4s clip)
   elevenlabs_sfx_per_clip: 8,
-
-  // ElevenLabs Music: ~$0.30 per 30s of music
   elevenlabs_music_per_30s: 30,
+  elevenlabs_voice_clone_flat: 100,
 
-  // Replicate Real-ESRGAN: ~$0.012 per upscale (4x). 8x runs twice.
+  // HeyGen avatar video: ~$0.50/min on Creator plan
+  heygen_avatar_per_minute: 50,
+  heygen_photo_avatar_flat: 25,
+
+  // Replicate upscaling
   replicate_upscale_4x: 2,
   replicate_upscale_8x: 4,
 
-  // Twilio voice (already handled in wallet_charge_call helper at +50%, kept for reference)
+  // Twilio (also +50% in wallet_charge_call)
   twilio_voice_per_min_inbound: 1,
   twilio_voice_per_min_outbound: 2,
+  twilio_sms_per_segment: 1,
 
-  // Lovable AI Gemini Flash (for movie director, oracle): roughly $0.0003 per call — too small to bill individually
-  // Bundled into the Movie Studio render fee instead.
+  // Lovable AI Gateway — bill at least 1¢ per call so we never go negative
+  lovable_ai_gemini_flash_per_call: 1,
+  lovable_ai_gemini_pro_per_call: 3,
+  lovable_ai_gpt5_per_call: 5,
+  lovable_ai_image_gen_per_image: 4,
+  lovable_ai_image_pro_per_image: 8,
+
+  // Infra passthrough
+  github_actions_per_build_minute: 1,
+  storage_per_gb_month: 2,
+  bandwidth_per_gb: 9,
+  stripe_topup_overhead_pct: 3, // 2.9% + 30¢ — applied at top-up
 } as const;
