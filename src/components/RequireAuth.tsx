@@ -27,8 +27,13 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   }
 
   if (!user) {
-    const redirect = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/sign-in?redirect=${redirect}`} replace />;
+    // Anonymous session is being created in AuthContext; show spinner briefly,
+    // never redirect away — every visitor is allowed in.
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return <>{children}</>;
