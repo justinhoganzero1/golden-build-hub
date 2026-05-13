@@ -251,7 +251,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    log("handler error", { error: e instanceof Error ? e.message : String(e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    log("handler error", { error: msg });
+    await logEvent({
+      source: "webhook",
+      status: "error",
+      event_type: event?.type ?? null,
+      stripe_event_id: event?.id ?? null,
+      message: msg,
+    });
     return new Response(JSON.stringify({ error: "handler error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
