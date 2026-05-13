@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "@/components/SEO";
 import { CreditCard, Lock, Plus, Eye, EyeOff, Copy, Trash2, Shield, Key, Globe, FileText, ChevronRight, Film } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ const VaultPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Personal Vault — Encrypted AI Storage | Oracle Lunar" description="Your private encrypted vault for sensitive notes, photos and credentials." path="/vault" />
       <UniversalBackButton />
       {/* Header */}
       <div className="px-4 pt-14 pb-4">

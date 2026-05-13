@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -143,6 +144,7 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Dashboard — Oracle Lunar AI Super App" description="Your Oracle Lunar dashboard. Access 40+ AI tools: chat, voice, photo, video, tutor, mind & wellness — all free to start." path="/dashboard" />
       <WelcomeModal />
 
       {/* HUGE attention-grabbing hero banner — visible at the very top of the dashboard */}
@@ -152,9 +154,9 @@ const DashboardPage = () => {
         <div className="relative px-5 py-5 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-black tracking-[0.25em] text-black/70 uppercase">★ Limited Time ★</div>
-            <h2 className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm">
+            <p className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm m-0">
               TRY EVERY FEATURE <span className="underline decoration-black/40">FREE</span>
-            </h2>
+            </p>
             <p className="text-black/80 text-xs sm:text-sm font-semibold mt-1">
               3 free goes on every tool — no card needed. Tap any tile below to start.
             </p>
@@ -263,8 +265,8 @@ const DashboardPage = () => {
             >
               <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{group.emoji}</span>
-                  <span className="font-semibold text-foreground text-sm">{group.label}</span>
+                  <span className="text-lg" aria-hidden="true">{group.emoji}</span>
+                  <h2 className="font-semibold text-foreground text-sm m-0">{group.label}</h2>
                   <span className="text-[10px] text-muted-foreground">({group.tiles.length})</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />

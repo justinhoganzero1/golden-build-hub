@@ -1,4 +1,5 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
+import SEO from "@/components/SEO";
 import { Link } from "react-router-dom";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState, useMemo, useEffect } from "react";
@@ -213,6 +214,7 @@ const MediaLibraryPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <SEO title="Media Library — Your AI Creations | Oracle Lunar" description="All your AI photos, voices, avatars and videos saved in one place." path="/media-library" />
       <UniversalBackButton />
 
       {/* ── Header ── */}

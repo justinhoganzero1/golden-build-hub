@@ -77,8 +77,10 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
         ))}
       </div>
 
-      <label className="text-xs text-muted-foreground mb-1.5 block">{cfg.label}</label>
+      <label htmlFor="lead-magnet-prompt" className="text-xs text-muted-foreground mb-1.5 block">{cfg.label}</label>
       <input
+        id="lead-magnet-prompt"
+        name="prompt"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && run()}

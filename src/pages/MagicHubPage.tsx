@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { Star, Wand2, Sparkles, Palette, Zap, Gift, Loader2, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -81,6 +82,7 @@ const MagicHubPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Magic Hub — Creative AI Tools | Oracle Lunar" description="Magical AI experiences: oracle readings, creative play and more inside Oracle Lunar." path="/magic-hub" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">

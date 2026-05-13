@@ -1,5 +1,6 @@
 import { Shield, MapPin, Phone, Users, AlertTriangle, Bell } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import SEO from "@/components/SEO";
 
 const features = [
   { icon: <MapPin className="w-5 h-5" />, title: "Location Sharing", desc: "Share real-time location with trusted contacts", active: true },
@@ -11,6 +12,7 @@ const features = [
 
 const SafetyCenterPage = () => (
   <div className="min-h-screen bg-background pb-20">
+    <SEO title="Safety Center — Oracle Lunar" description="Oracle Lunar safety toolkit: SOS, location sharing, trusted contacts and check-ins." path="/safety-center" />
     <UniversalBackButton />
     <div className="px-4 pt-14 pb-4">
       <div className="flex items-center gap-3 mb-4">

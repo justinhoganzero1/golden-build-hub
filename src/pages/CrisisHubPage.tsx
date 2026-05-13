@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState, useEffect, useRef } from "react";
 import {
   Phone, Shield, AlertTriangle, Heart, MapPin, Globe, Loader2,
@@ -253,6 +254,7 @@ const CrisisHubPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 relative overflow-hidden">
+      <SEO title="Crisis Hub — Free Emotional Support | Oracle Lunar" description="Free, immediate emotional support and crisis resources powered by Oracle Lunar AI. Always here for you." path="/crisis-hub" />
       {/* Holographic backdrop */}
       <div className="absolute inset-0 pointer-events-none opacity-30"
         style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(0 80% 50% / 0.15), transparent 60%), radial-gradient(40% 40% at 80% 80%, hsl(280 80% 50% / 0.1), transparent 60%)" }} />

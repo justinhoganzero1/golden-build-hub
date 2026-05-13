@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
@@ -130,6 +131,7 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Your Profile — Oracle Lunar" description="Manage your Oracle Lunar profile, avatar and personal preferences." path="/profile" />
       <UniversalBackButton />
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
       <div className="px-4 pt-14 pb-4">

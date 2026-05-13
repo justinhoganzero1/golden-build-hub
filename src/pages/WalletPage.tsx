@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import SEO from "@/components/SEO";
 import { Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ const WalletPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Wallet & Credits — Oracle Lunar" description="View your Oracle Lunar credit balance, top-up history and creator payouts." path="/wallet" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-4">

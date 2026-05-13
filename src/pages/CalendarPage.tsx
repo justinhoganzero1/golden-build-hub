@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import SEO from "@/components/SEO";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, BookOpen, Trash2, X, Send } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,6 +153,7 @@ const CalendarPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Calendar & Life Diary — Oracle Lunar" description="Your AI-powered calendar, life diary and smart reminders inside Oracle Lunar." path="/calendar" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         {/* Header */}

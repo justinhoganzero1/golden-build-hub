@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -687,6 +688,7 @@ Write the full chapter now (5000+ words):`;
 
   return (
     <PaywallGate requiredTier="starter" featureName="Story Writer Studio">
+      <SEO title="AI Story Writer — Long-Form Story Generator | Oracle Lunar" description="Generate long-form AI stories, novels and scripts with Oracle Lunar." path="/story-writer" />
       <div className="min-h-screen bg-background pb-24">
         <UniversalBackButton />
 
