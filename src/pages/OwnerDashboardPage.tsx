@@ -776,6 +776,11 @@ const OwnerDashboardPage = () => {
               </div>
             </div>
 
+            {/* Provider P&L — live revenue vs estimated provider cost vs net margin */}
+            <Suspense fallback={null}>
+              <ProviderPnLPanel />
+            </Suspense>
+
             {/* Live Stripe revenue (admin only) */}
             <Suspense fallback={null}>
               <StripeRevenuePanel />
