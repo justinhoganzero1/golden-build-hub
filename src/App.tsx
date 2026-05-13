@@ -306,6 +306,8 @@ const App = () => (
                   <Route path="/referral" element={<RequireAuth><ErrorBoundary pageName="Referral"><ReferralPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/subscribe" element={<RequireAuth><ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/subscription" element={<RequireAuth><ErrorBoundary pageName="Subscription Status"><SubscriptionStatusPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/subscription/timeline" element={<RequireAuth><ErrorBoundary pageName="Subscription Timeline"><SubscriptionTimelinePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/subscription-timeline" element={<RequireAuth><ErrorBoundary pageName="Subscription Timeline"><SubscriptionTimelinePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/app-builder" element={<RequireAuth><AppUnlockGate appKey="app_maker"><ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   <Route path="/unlock-success" element={<RequireAuth><ErrorBoundary pageName="Unlock"><UnlockSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />
