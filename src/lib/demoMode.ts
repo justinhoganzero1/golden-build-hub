@@ -38,7 +38,15 @@ const computeDemoMode = (): boolean => {
   // @ts-expect-error capacitor injects this
   const isNative = !!window.Capacitor?.isNativePlatform?.();
 
-  return !(standalone || isNative);
+  // Lovable editor preview = treat as live trial so visitors
+  // building on Lovable can actually click into features.
+  const host = window.location.hostname;
+  const isLovablePreview =
+    host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovable.dev");
+
+  return !(standalone || isNative || isLovablePreview);
 };
 
 export const isDemoMode = (): boolean => computeDemoMode();
