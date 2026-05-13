@@ -242,6 +242,7 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
           throw new Error("Frontend stage did not return valid HTML");
         }
         send("stage", { stage: "frontend", message: "Frontend frame standing" });
+        send("partial", { code });
 
         // emit partial so the live preview can show frame as soon as it stands
         send("partial", { code });
