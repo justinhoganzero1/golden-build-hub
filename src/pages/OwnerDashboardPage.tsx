@@ -78,6 +78,8 @@ const OwnerDashboardPage = () => {
   const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0 });
   // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
   const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
+  // Top pages viewed (admin-only): which pages are most-visited
+  const [topPages, setTopPages] = useState<{ page: string; visits: number }[]>([]);
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
