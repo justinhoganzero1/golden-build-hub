@@ -227,6 +227,8 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      <FreeGoBanner />
+
       <ShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
@@ -292,6 +294,9 @@ const DashboardPage = () => {
           );
         })}
       </div>
+
+      {/* Affiliate / partner brag bar — Lovable featured, ElevenLabs + HeyGen alongside. */}
+      <PartnerBubbles />
 
       <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around gap-2 px-2 py-2">
         {[
