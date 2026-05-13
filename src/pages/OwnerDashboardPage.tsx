@@ -1858,6 +1858,44 @@ const OwnerDashboardPage = () => {
               )}
             </div>
 
+            {/* Top pages viewed */}
+            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-5 h-5 text-emerald-300" />
+                <h3 className="text-sm font-bold text-white">Top pages viewed</h3>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-4">
+                Most-visited pages across the last 5,000 visits.
+              </p>
+
+              {topPages.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-xs">No page views recorded yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {(() => {
+                    const max = Math.max(...topPages.map(p => p.visits), 1);
+                    return topPages.map((p, i) => {
+                      const pct = (p.visits / max) * 100;
+                      return (
+                        <div key={p.page + i} className="space-y-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-white font-medium truncate max-w-[70%]" title={p.page}>{p.page}</span>
+                            <span className="text-emerald-300 font-bold">{p.visits.toLocaleString()}</span>
+                          </div>
+                          <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+            </div>
+
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[11px] text-gray-400">
               <p className="text-white text-xs font-bold mb-2">💡 Tip — track each campaign</p>
               <p>Share trackable links like:</p>
