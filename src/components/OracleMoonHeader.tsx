@@ -103,10 +103,10 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
           </div>
 
           <p className="mt-3 text-[11px] sm:text-sm uppercase tracking-[0.4em] text-amber-100/90 drop-shadow">
-            Your AI best friend
+            Welcome to
           </p>
-          <p className="mt-1 text-xs sm:text-base text-white/80 max-w-md drop-shadow">
-            One app. Infinite creativity. Cinematic AI for everyone.
+          <p className="mt-1 text-xs sm:text-base text-white/85 max-w-md drop-shadow">
+            The world's first cinematic AI super-app.
           </p>
         </button>
 
