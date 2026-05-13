@@ -14,13 +14,24 @@ const Index = () => {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
   const navigate = useNavigate();
 
+  // Lovable preview visitors (id-preview--*.lovable.app or ?preview=1)
+  // skip the sound→intro→sign-in flow and land directly on the dashboard
+  // so they can browse the full app without authenticating.
+  const isLovablePreview =
+    typeof window !== "undefined" &&
+    (window.location.hostname.includes("lovable.app") ||
+      new URLSearchParams(window.location.search).get("preview") === "1");
+
   useEffect(() => {
     if (loading || adminLoading) return;
+    if (isLovablePreview) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
     if (!user) return;
     // All users — including admins — land on the main ORACLE LUNAR dashboard.
-    // Admins can navigate to /owner-dashboard manually from there.
     navigate("/dashboard", { replace: true });
-  }, [user, loading, isAdmin, adminLoading, navigate]);
+  }, [user, loading, isAdmin, adminLoading, navigate, isLovablePreview]);
 
   if (loading || adminLoading) return null;
 
