@@ -25,6 +25,7 @@ const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/Advertise
 const AudioAnalyticsCard = lazy(() => import("@/components/admin/AudioAnalyticsCard"));
 const PricingEditorPanel = lazy(() => import("@/components/admin/PricingEditorPanel"));
 const ProviderPnLPanel = lazy(() => import("@/components/admin/ProviderPnLPanel"));
+const StripeHealthPanel = lazy(() => import("@/components/admin/StripeHealthPanel"));
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -784,6 +785,11 @@ const OwnerDashboardPage = () => {
             {/* Live Stripe revenue (admin only) */}
             <Suspense fallback={null}>
               <StripeRevenuePanel />
+            </Suspense>
+
+            {/* Stripe health & webhook diagnostics */}
+            <Suspense fallback={null}>
+              <StripeHealthPanel />
             </Suspense>
 
             {/* ElevenLabs Affiliate Tracker */}
