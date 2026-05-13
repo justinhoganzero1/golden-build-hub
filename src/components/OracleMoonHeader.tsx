@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import heroVideo from "@/assets/oracle-lunar-hero.mp4.asset.json";
+import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
