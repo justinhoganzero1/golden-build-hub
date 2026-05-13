@@ -1892,6 +1892,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_event_log: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          event_type: string | null
+          id: string
+          message: string | null
+          payload: Json | null
+          source: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_event_id: string | null
+          stripe_session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          source: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          source?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id?: string | null
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       suggestions: {
         Row: {
           ai_quality_score: number | null
@@ -2506,6 +2551,15 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      stripe_event_summary: {
+        Args: { _hours?: number }
+        Returns: {
+          count: number
+          last_at: string
+          source: string
+          status: string
+        }[]
       }
       user_usage_breakdown: {
         Args: { _days?: number; _limit?: number }
