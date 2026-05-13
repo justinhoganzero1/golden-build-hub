@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Crown, Calendar, CreditCard, Download, RefreshCw, AlertTriangle, ExternalLink } from "lucide-react";
+import { Crown, Calendar, CreditCard, Download, RefreshCw, AlertTriangle, ExternalLink, Activity } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
