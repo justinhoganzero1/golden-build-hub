@@ -24,6 +24,7 @@ const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"))
 const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/AdvertiserInquiriesPanel"));
 const AudioAnalyticsCard = lazy(() => import("@/components/admin/AudioAnalyticsCard"));
 const PricingEditorPanel = lazy(() => import("@/components/admin/PricingEditorPanel"));
+const ProviderPnLPanel = lazy(() => import("@/components/admin/ProviderPnLPanel"));
 
 // Admin access is controlled via user_roles table (RBAC)
 
@@ -774,6 +775,11 @@ const OwnerDashboardPage = () => {
                 </button>
               </div>
             </div>
+
+            {/* Provider P&L — live revenue vs estimated provider cost vs net margin */}
+            <Suspense fallback={null}>
+              <ProviderPnLPanel />
+            </Suspense>
 
             {/* Live Stripe revenue (admin only) */}
             <Suspense fallback={null}>
