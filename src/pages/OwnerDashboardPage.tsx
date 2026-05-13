@@ -333,12 +333,13 @@ const OwnerDashboardPage = () => {
       try {
         const { data } = await supabase
           .from("page_views")
-          .select("utm_source, referrer")
+          .select("utm_source, referrer, page")
           .order("created_at", { ascending: false })
           .limit(lowPowerMode ? 1000 : 5000);
         if (!data) return;
         const counts: Record<string, number> = {};
-        for (const row of data as Array<{ utm_source: string | null; referrer: string | null }>) {
+        const pageCounts: Record<string, number> = {};
+        for (const row of data as Array<{ utm_source: string | null; referrer: string | null; page: string | null }>) {
           let src = row.utm_source?.trim().toLowerCase() || "";
           if (!src && row.referrer) {
             try { src = new URL(row.referrer).hostname.replace(/^www\./, "").toLowerCase(); }
@@ -346,12 +347,22 @@ const OwnerDashboardPage = () => {
           }
           if (!src) src = "direct";
           counts[src] = (counts[src] || 0) + 1;
+
+          const pg = (row.page || "").trim() || "(unknown)";
+          pageCounts[pg] = (pageCounts[pg] || 0) + 1;
         }
         const arr = Object.entries(counts)
           .map(([source, visits]) => ({ source, visits }))
           .sort((a, b) => b.visits - a.visits)
           .slice(0, 12);
-        if (!cancelled) setTrafficSources(arr);
+        const pagesArr = Object.entries(pageCounts)
+          .map(([page, visits]) => ({ page, visits }))
+          .sort((a, b) => b.visits - a.visits)
+          .slice(0, 20);
+        if (!cancelled) {
+          setTrafficSources(arr);
+          setTopPages(pagesArr);
+        }
       } catch {}
     };
 
