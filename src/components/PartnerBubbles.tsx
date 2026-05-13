@@ -54,7 +54,7 @@ const PartnerBubbles = () => {
       // Always show — even if affiliate URL is still placeholder, we want
       // the "coming soon" brag visible next to the Lovable badge.
     },
-  ].filter((b) => !b.hidden);
+  ].filter((b: Bubble) => !b.hidden);
 
   if (bubbles.length === 0) return null;
 
