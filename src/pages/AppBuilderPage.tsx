@@ -320,6 +320,8 @@ const AppBuilderPage = () => {
             const evt = JSON.parse(json);
             if (evt.event === "stage") {
               setBuildStages(prev => [...prev, { stage: evt.stage, message: evt.message }]);
+            } else if (evt.event === "partial" && typeof evt.code === "string") {
+              setLivePartial(evt.code);
             } else if (evt.event === "done") {
               code = evt.code || "";
               architecture = evt.architecture || "";
