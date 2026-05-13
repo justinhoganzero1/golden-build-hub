@@ -179,6 +179,7 @@ const SpecialOccasionsPage = lazy(loaders["/special-occasions"]);
 const SuggestionBoxPage = lazy(loaders["/suggestion-box"]);
 const ReferralPage = lazy(loaders["/referral"]);
 const SubscribePage = lazy(loaders["/subscribe"]);
+const SubscriptionStatusPage = lazy(() => import("./pages/SubscriptionStatusPage"));
 const AppBuilderPage = lazy(loaders["/app-builder"]);
 const POSLearnPage = lazy(loaders["/pos-learn"]);
 const StoryWriterPage = lazy(loaders["/story-writer"]);
@@ -303,6 +304,7 @@ const App = () => (
                   <Route path="/suggestion-box" element={<RequireAuth><ErrorBoundary pageName="Suggestion Box"><SuggestionBoxPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/referral" element={<RequireAuth><ErrorBoundary pageName="Referral"><ReferralPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/subscribe" element={<RequireAuth><ErrorBoundary pageName="Subscribe"><SubscribePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/subscription" element={<RequireAuth><ErrorBoundary pageName="Subscription Status"><SubscriptionStatusPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/app-builder" element={<RequireAuth><AppUnlockGate appKey="app_maker"><ErrorBoundary pageName="App Builder"><AppBuilderPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
                   <Route path="/unlock-success" element={<RequireAuth><ErrorBoundary pageName="Unlock"><UnlockSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />

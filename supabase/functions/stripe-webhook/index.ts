@@ -29,6 +29,36 @@ function log(step: string, details?: unknown) {
   console.log(`[STRIPE-WEBHOOK] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 }
 
+async function logEvent(row: {
+  source?: string;
+  event_type?: string | null;
+  status?: string;
+  stripe_event_id?: string | null;
+  stripe_session_id?: string | null;
+  stripe_customer_id?: string | null;
+  user_id?: string | null;
+  amount_cents?: number | null;
+  message?: string | null;
+  payload?: Record<string, unknown>;
+}) {
+  try {
+    await supabase.from("stripe_event_log").insert({
+      source: row.source ?? "webhook",
+      event_type: row.event_type ?? null,
+      status: row.status ?? "ok",
+      stripe_event_id: row.stripe_event_id ?? null,
+      stripe_session_id: row.stripe_session_id ?? null,
+      stripe_customer_id: row.stripe_customer_id ?? null,
+      user_id: row.user_id ?? null,
+      amount_cents: row.amount_cents ?? null,
+      message: row.message ?? null,
+      payload: row.payload ?? {},
+    });
+  } catch (e) {
+    console.error("[STRIPE-WEBHOOK] failed to write event log", e);
+  }
+}
+
 async function markMoviePaid(projectId: string, paymentIntent: string | null, amount: number | null) {
   const { data: project } = await supabase
     .from("movie_projects")
@@ -100,7 +130,14 @@ Deno.serve(async (req) => {
     }
     event = await stripe.webhooks.constructEventAsync(body, signature, WEBHOOK_SECRET);
   } catch (e) {
-    log("signature verification failed", { error: String(e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    log("signature verification failed", { error: msg });
+    await logEvent({
+      source: "webhook",
+      status: "signature_failed",
+      message: msg,
+      payload: { has_secret: !!WEBHOOK_SECRET, has_signature: !!signature },
+    });
     return new Response(JSON.stringify({ error: "invalid signature" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -108,6 +145,13 @@ Deno.serve(async (req) => {
   }
 
   log("event received", { type: event.type, id: event.id });
+  await logEvent({
+    source: "webhook",
+    status: "ok",
+    event_type: event.type,
+    stripe_event_id: event.id,
+    message: "received",
+  });
 
   try {
     switch (event.type) {
@@ -207,7 +251,15 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    log("handler error", { error: e instanceof Error ? e.message : String(e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    log("handler error", { error: msg });
+    await logEvent({
+      source: "webhook",
+      status: "error",
+      event_type: event?.type ?? null,
+      stripe_event_id: event?.id ?? null,
+      message: msg,
+    });
     return new Response(JSON.stringify({ error: "handler error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
