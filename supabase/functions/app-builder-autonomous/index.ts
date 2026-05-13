@@ -406,7 +406,7 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
             user: `QA REPORT:\n${report}\n\n${researchBlock ? `WEB RESEARCH (live, may help):\n${researchBlock}\n\n` : ""}CURRENT HTML:\n${code}`,
           });
           const fixedCode = extractCode(fixed) || fixed.trim();
-          if (/<!doctype/i.test(fixedCode)) code = fixedCode;
+          if (/<!doctype/i.test(fixedCode)) { code = fixedCode; send("partial", { code }); }
 
           // Re-emit sources so the UI can show them in the build log.
           if (researchSources.length) send("research_sources", { sources: researchSources });
