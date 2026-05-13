@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import HomePublicGallery from "@/components/HomePublicGallery";
 import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 import FreeGoBanner from "@/components/FreeGoBanner";
+import PartnerBubbles from "@/components/PartnerBubbles";
 
 interface AppTile {
   label: string;
