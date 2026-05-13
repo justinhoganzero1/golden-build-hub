@@ -59,13 +59,8 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     return <Navigate to={`/sign-in?redirect=${redirect}`} replace />;
   }
 
-  // Phone verification hard lock — admin bypass
-  const phoneVerified = !!(user as any).phone_confirmed_at || !!user.phone;
-
-  if (!isAdmin && !phoneVerified && location.pathname !== "/verify-phone") {
-    const redirect = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/verify-phone?redirect=${redirect}`} replace />;
-  }
+  // Phone verification disabled — email/Google sign-in is sufficient.
+  // (SMS gateway was unreliable; users were stuck on "can't connect" after entering OTP.)
 
   // Age gate hard lock — admin bypass
   if (!isAdmin && ageState === "blocked" && location.pathname !== "/age-required") {
