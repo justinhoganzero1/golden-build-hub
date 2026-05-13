@@ -114,6 +114,7 @@ const PortalLandingPage = () => {
   const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
   const { user } = useAuth();
   const { subscribed } = useSubscription();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const isAdmin = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
   const isMember = !!user && (subscribed || isAdmin);
 
