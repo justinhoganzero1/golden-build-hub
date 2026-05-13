@@ -9,10 +9,10 @@ interface SEOProps {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const SITE = "https://oracle-lunar.online";
-const DEFAULT_TITLE = "ORACLE LUNAR — AI Companion App for Wellness, Safety & Productivity";
+const SITE = "https://www.oracle-lunar.online";
+const DEFAULT_TITLE = "ORACLE LUNAR — Free AI Companion, Friend & Voice Chat";
 const DEFAULT_DESC =
-  "ORACLE LUNAR is the all-in-one AI companion app: voice oracle, AI tutor, mind hub, crisis support, photography, marketing, and more. Free to start.";
+  "ORACLE LUNAR — your free AI companion. Voice chat, AI friend, tutor, mind & wellness. 24/7 support. Install free today.";
 const DEFAULT_IMAGE = `${SITE}/icons/icon-512.png`;
 
 export default function SEO({
