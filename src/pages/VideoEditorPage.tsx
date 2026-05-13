@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "@/components/SEO";
 import { Video, Scissors, Type, Music, Image, Layers, Play, Upload } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import PaywallGate from "@/components/PaywallGate";
@@ -16,6 +17,7 @@ const VideoEditorPage = () => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   return (
     <PaywallGate requiredTier="monthly" featureName="Video Editor (AI video generation)">
+      <SEO title="AI Video Editor — Oracle Lunar" description="Edit and generate cinematic videos with Oracle Lunar AI." path="/video-editor" />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">

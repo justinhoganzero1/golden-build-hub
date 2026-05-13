@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SEO from "@/components/SEO";
 import { Coins, Loader2, ShieldCheck, Sparkles, Wallet } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +43,7 @@ const SubscribePage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Plans & Pricing — Oracle Lunar AI" description="Top up Oracle Lunar credits. Pay-per-use with no hidden fees. Core chat & voice are free for life." path="/subscribe" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-5">

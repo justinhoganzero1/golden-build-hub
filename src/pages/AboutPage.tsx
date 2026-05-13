@@ -1,4 +1,5 @@
 import { Shield, Heart, Sparkles, Globe, Lock, Users } from "lucide-react";
+import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useNavigate } from "react-router-dom";
 
@@ -16,6 +17,7 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="About Oracle Lunar — Your AI Best Friend" description="Oracle Lunar is the all-in-one AI companion app: voice oracle, AI tutor, mind hub, crisis support and more. Learn our story and mission." path="/about" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         {/* App Identity */}

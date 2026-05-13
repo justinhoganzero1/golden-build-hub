@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import { Palette, Sparkles, Loader2, Camera, Download, UserPlus, Plus, Mic, Heart, Lock, CreditCard, FolderOpen } from "lucide-react";
@@ -267,6 +268,7 @@ const AvatarGeneratorPage = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
+      <SEO title="8K AI Avatar Generator — Free | Oracle Lunar" description="Create cinematic 8K AI avatars from a selfie or prompt. Free to try in Oracle Lunar." path="/avatar-generator" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="mb-4">

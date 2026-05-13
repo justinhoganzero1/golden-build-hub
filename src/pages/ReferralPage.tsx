@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { Share2, Copy, Gift, Users, Trophy, Star, Sparkles, CheckCircle } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +72,7 @@ const ReferralPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Refer Friends, Earn Credits — Oracle Lunar" description="Invite friends to Oracle Lunar and earn free credits when they sign up." path="/referral" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">

@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState, useRef, useEffect } from "react";
 import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, Send, Star, Target, Award, ChevronRight, Mic, MicOff } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -99,6 +100,7 @@ const ProfessionalHubPage = () => {
     const tool = tools.find(t => t.id === activeTool)!;
     return (
       <div className="min-h-screen bg-background pb-20">
+      <SEO title="Professional Hub — AI for Work | Oracle Lunar" description="AI tools for professionals: writing, decks, branding and productivity." path="/professional-hub" />
         <UniversalBackButton />
         <div className="px-4 pt-14 pb-4">
           <div className="flex items-center gap-3 mb-4">

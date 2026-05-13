@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import SEO from "@/components/SEO";
 import { Sparkles, Plus, X, Search, Volume2, ChevronRight, Users, Mic, MessageCircle, Music } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -233,6 +234,7 @@ const AIStudioPage = () => {
 
   return (
     <PaywallGate requiredTier="starter" featureName="AI Studio (avatar &amp; voice creation)">
+      <SEO title="AI Studio — Generate Images, Voices & Videos | Oracle Lunar" description="All-in-one AI generation studio: images, voices, videos and avatars." path="/ai-studio" />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <audio ref={musicRef} preload="auto" />

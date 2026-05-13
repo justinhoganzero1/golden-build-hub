@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -104,6 +105,7 @@ const InvestorPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Investor Information — Oracle Lunar" description="Investment opportunities and submissions for Oracle Lunar — the cinematic AI super-app." path="/investor" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">

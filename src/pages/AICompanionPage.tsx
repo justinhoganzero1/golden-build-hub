@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState, useRef, useEffect } from "react";
 import { Heart, Send, Mic, MicOff, Settings2, Sparkles, Coffee, Moon, Sun, Gift, Star, Palette } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -198,6 +199,7 @@ IMPORTANT RULES:
   if (step === "setup") {
     return (
       <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #1a0a2e, #2d1b4e, #1a1028)" }}>
+      <SEO title="AI Companion — Free AI Friend Chat | Oracle Lunar" description="Chat with your free AI companion 24/7. A caring AI friend that remembers you and is always here for you." path="/ai-companion" />
         <UniversalBackButton />
         <div className="px-4 pt-14 pb-4">
           <div className="text-center mb-6">

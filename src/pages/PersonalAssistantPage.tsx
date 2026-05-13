@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { Sparkles, Bot, MessageCircle, Heart, Send, Loader2, CheckCircle, ListTodo, Calendar } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -68,6 +69,7 @@ const PersonalAssistantPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="AI Personal Assistant — Oracle Lunar" description="Your daily AI personal assistant for tasks, reminders and life admin." path="/personal-assistant" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">

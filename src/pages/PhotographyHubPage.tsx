@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import SEO from "@/components/SEO";
 import { Camera, Wand2, Loader2, Download, Sparkles, Upload, Share2, ImagePlus, FolderOpen, Pencil } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StoragePanel from "@/components/StoragePanel";
@@ -332,6 +333,7 @@ const PhotographyHubPage = () => {
 
   return (
     <PaywallGate requiredTier="starter" featureName="8K Photo Studio">
+      <SEO title="AI Photography Hub — Brand Kit, Logos & Photo Studio | Oracle Lunar" description="Generate AI photos, logos, brand kits and social assets. Pro-grade creative tools, free to start." path="/photography-hub" />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">

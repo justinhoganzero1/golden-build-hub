@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -107,6 +108,7 @@ const CreatorsPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="Creators Shop — Sell Your AI Creations | Oracle Lunar" description="Earn from your AI work. Oracle Lunar Creators Shop with 70/30 revenue share via Stripe Connect." path="/creators" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         {/* Header */}

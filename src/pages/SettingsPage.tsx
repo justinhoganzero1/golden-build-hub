@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import SEO from "@/components/SEO";
 import { Settings, User, Bell, Shield, Palette, Globe, Moon, Volume2, HelpCircle, LogOut, ChevronRight, Smartphone, Watch, Activity, Bluetooth, Check, ArrowLeft, Loader2, X, Signal, FileText, LayoutGrid, Lock } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -558,6 +559,7 @@ const SettingsPage = () => {
   if (tab !== "main") {
     return (
       <div className="min-h-screen bg-background pb-20">
+      <SEO title="Settings — Oracle Lunar" description="Manage your Oracle Lunar account, voice, privacy, notifications and app preferences." path="/settings" />
         <div className="px-4 pt-4 pb-4">
           <button onClick={() => setTab("main")} className="flex items-center gap-2 text-sm text-primary mb-4"><ArrowLeft className="w-4 h-4" /> Settings</button>
 

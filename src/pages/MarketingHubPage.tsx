@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import SEO from "@/components/SEO";
 import { useState } from "react";
 import { Share2, TrendingUp, BarChart3, Mail, Globe, Target, Loader2, Copy, CheckCircle, ArrowLeft, Megaphone, PenTool, Search, Users, Calendar, Hash, MessageSquare, FileText, Zap } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -74,6 +75,7 @@ const MarketingHubPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <SEO title="AI Marketing Hub — Free Copy & Social Assets | Oracle Lunar" description="AI marketing copy, social posts, ad creatives and brand storytelling. Built into Oracle Lunar." path="/marketing-hub" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3 mb-4">
