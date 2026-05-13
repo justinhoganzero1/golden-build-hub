@@ -5,7 +5,18 @@
 //
 // Use markupCents() in any edge function that bills the user wallet for a third-party call.
 
-export const PLATFORM_MARKUP_PCT = 0.05; // +5% on every outside provider charge
+// Bumped from 5% → 25% to fully cover ALL provider costs:
+//   • Lovable AI compute (Gemini, GPT, image gen) bundled into every flow
+//   • ElevenLabs voice / SFX / music
+//   • HeyGen avatar video
+//   • Runway image-to-video
+//   • Replicate upscaling
+//   • Twilio voice (in addition to its own +50% in wallet_charge_call)
+//   • GitHub Actions / Codemagic build minutes
+//   • Supabase storage + bandwidth + edge function invocations
+//   • Stripe payment processing fees on top-ups
+// Anything we forgot is absorbed by this single buffer.
+export const PLATFORM_MARKUP_PCT = 0.25;
 export const MIN_BILLABLE_CENTS = 1;     // never bill 0
 
 export interface MarkedUp {
