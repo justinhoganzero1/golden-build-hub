@@ -28,33 +28,41 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user) throw new Error("User not authenticated");
+
+    // Anonymous Supabase users have no email — Stripe Checkout will collect it.
+    const isAnon = !user.email || (user as any).is_anonymous === true;
+    const visitorMultiplier = isAnon ? 3 : 1;
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
+    let customerId: string | undefined;
+    if (user.email) {
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (customers.data.length > 0) customerId = customers.data[0].id;
     }
 
     const origin = req.headers.get("origin") || "https://golden-vault-builder.lovable.app";
 
     const isCoinTopup = !priceId;
-    const amountCents = Math.round(dollars * 100);
+    // Visitors pay 3× for the same coin pack; signed-up members pay 1×.
+    const amountCents = Math.round(dollars * 100 * visitorMultiplier);
+    const coinsDelivered = (dollars * 5.37).toFixed(2);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
+      customer_email: customerId || !user.email ? undefined : user.email,
       line_items: isCoinTopup
         ? [{
             price_data: {
               currency: "usd",
               unit_amount: amountCents,
               product_data: {
-                name: `${(dollars * 5.37).toFixed(2)} ORACLE LUNAR coins`,
-                description: "$1 = 5.37 coins. Coins are used for paid AI actions inside the app.",
+                name: `${coinsDelivered} ORACLE LUNAR coins${isAnon ? " (visitor 3× price)" : ""}`,
+                description: isAnon
+                  ? "Visitor pricing: 3× the member rate. Sign up free to get the normal price."
+                  : "$1 = 5.37 coins. Coins are used for paid AI actions inside the app.",
               },
             },
             quantity: 1,
@@ -66,7 +74,9 @@ serve(async (req) => {
             purchase_type: "coin_topup",
             user_id: user.id,
             coin_pack_dollars: String(dollars),
-            wallet_cents: String(amountCents),
+            wallet_cents: String(Math.round(dollars * 100)),
+            visitor_multiplier: String(visitorMultiplier),
+            is_anonymous: String(isAnon),
           }
         : undefined,
       success_url: `${origin}/wallet?coins=success`,

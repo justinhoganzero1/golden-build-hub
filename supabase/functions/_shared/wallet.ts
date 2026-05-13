@@ -41,17 +41,39 @@ export async function getUserFromRequest(req: Request): Promise<{ id: string; em
 }
 
 /**
+ * Returns true if this request originated from a Lovable preview/published
+ * URL (lovable.app / lovable.dev / lovableproject.com). On those origins
+ * Lovable covers AI fees so visitors can preview freely — no wallet charge.
+ */
+export function isLovablePreviewOrigin(req: Request): boolean {
+  const origin = (req.headers.get("origin") || req.headers.get("referer") || "").toLowerCase();
+  if (!origin) return false;
+  try {
+    const u = new URL(origin);
+    const h = u.hostname;
+    return h.endsWith(".lovable.app") || h.endsWith(".lovable.dev") || h.endsWith(".lovableproject.com");
+  } catch {
+    return /\.lovable\.app|\.lovable\.dev|\.lovableproject\.com/.test(origin);
+  }
+}
+
+/**
  * Charge a user's coin wallet for an AI call.
  * Provider cost is marked up by 5% (see pricing.ts) and recorded in ai_charges.
- * Throws InsufficientCoinsError if balance is too low. Admins are bypassed
- * inside the SQL function — they're charged 0 but the call is logged.
+ * Anonymous visitors are billed 3× by the SQL function automatically.
+ * Lovable preview origins are not charged at all (Lovable covers preview AI).
+ * Throws InsufficientCoinsError if balance is too low.
  */
 export async function chargeAI(
   user_id: string,
   service: string,
   provider_cost_cents: number,
   metadata: Record<string, unknown> = {},
+  req?: Request,
 ): Promise<ChargeResult> {
+  if (req && isLovablePreviewOrigin(req)) {
+    return { charge_id: "preview-free", total_cents: 0, new_balance_cents: 0 };
+  }
   const { provider_cost_cents: prov, platform_fee_cents: fee } = markupCents(provider_cost_cents);
   const client = createClient(SUPABASE_URL, SERVICE_KEY);
   const { data, error } = await client.rpc("wallet_charge_ai", {

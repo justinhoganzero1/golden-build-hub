@@ -67,14 +67,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error && /refresh token/i.test(error.message)) {
         await supabase.auth.signOut({ scope: "local" });
-        setSession(null);
-        setUser(null);
+      } else if (session) {
+        setSession(session);
+        setUser(session.user);
         setLoading(false);
         return;
       }
 
-      setSession(session);
-      setUser(session?.user ?? null);
+      // No session → silently create an anonymous visitor session so wallet,
+      // Stripe top-ups and paywalls all work with a real auth.uid().
+      try {
+        const { data: anonData, error: anonErr } = await supabase.auth.signInAnonymously();
+        if (!anonErr && anonData.session) {
+          setSession(anonData.session);
+          setUser(anonData.user);
+        }
+      } catch (e) {
+        console.warn("Anonymous sign-in failed", e);
+      }
       setLoading(false);
     });
 
