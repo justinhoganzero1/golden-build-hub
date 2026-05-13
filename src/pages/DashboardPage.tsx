@@ -168,16 +168,7 @@ const DashboardPage = () => {
                 📊 Usage Audit
               </button>
             </>
-          ) : (
-            <Button
-              onClick={() => navigate("/subscribe")}
-              size="sm"
-              className="group relative overflow-hidden rounded-full px-6 h-9 text-sm font-bold text-black bg-gradient-to-r from-amber-500 via-yellow-300 to-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_32px_rgba(245,158,11,0.55)] hover:scale-105 transition-all duration-300 border-0"
-            >
-              <Sparkles className="w-4 h-4 mr-1 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110" />
-              Join Membership
-            </Button>
-          )}
+          ) : null}
           <SecurityShield />
           {user && (
             <button
