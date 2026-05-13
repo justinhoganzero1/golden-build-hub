@@ -2497,6 +2497,7 @@ export type Database = {
           over_limit: boolean
         }[]
       }
+      is_anon_visitor: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_owner_email_locked: { Args: never; Returns: boolean }
       library_media_type_from_url: {
