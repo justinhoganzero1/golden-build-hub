@@ -23,6 +23,17 @@ const SignInPage = () => {
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
 
+  // Lovable preview visitors skip sign-in entirely and view the dashboard.
+  useEffect(() => {
+    const isLovablePreview =
+      typeof window !== "undefined" &&
+      (window.location.hostname.includes("lovable.app") ||
+        searchParams.get("preview") === "1");
+    if (isLovablePreview && !isOwnerAccess) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, searchParams, isOwnerAccess]);
+
   useEffect(() => {
     if (isOwnerAccess) return;
     setIsSignUp(requestedSignUp);
