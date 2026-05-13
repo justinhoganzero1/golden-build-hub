@@ -207,18 +207,22 @@ const InvestorPage = () => {
               <h3 className="font-semibold text-foreground">Submit Investment Offer</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <input value={name} onChange={e => setName(e.target.value)} placeholder="Your Name *" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
+                  <User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <label htmlFor="investor-name" className="sr-only">Your name</label>
+                  <input id="investor-name" name="name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name *" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
                 </div>
                 <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your Email *" type="email" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
+                  <Mail className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <label htmlFor="investor-email" className="sr-only">Your email</label>
+                  <input id="investor-email" name="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Your Email *" type="email" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
                 </div>
                 <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                  <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="Investment Amount (negotiable)" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
+                  <DollarSign className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  <label htmlFor="investor-amount" className="sr-only">Investment amount</label>
+                  <input id="investor-amount" name="amount" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Investment Amount (negotiable)" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
                 </div>
-                <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell us about your investment interest... *" rows={4} className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none text-foreground placeholder:text-muted-foreground resize-none" />
+                <label htmlFor="investor-message" className="sr-only">Investment interest message</label>
+                <textarea id="investor-message" name="message" value={message} onChange={e => setMessage(e.target.value)} placeholder="Tell us about your investment interest... *" rows={4} className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none text-foreground placeholder:text-muted-foreground resize-none" />
               </div>
               <button onClick={submitOffer} disabled={sending} className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50">
                 {sending ? "Submitting..." : <><Send className="w-4 h-4" /> Submit Offer</>}

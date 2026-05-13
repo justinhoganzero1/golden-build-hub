@@ -181,14 +181,17 @@ const CreatorsPage = () => {
         {/* Comment Form */}
         <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
-            <User className="w-4 h-4 text-muted-foreground" />
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="Your Name *" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
+            <User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <label htmlFor="creator-name" className="sr-only">Your name</label>
+            <input id="creator-name" name="name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name *" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 bg-secondary/50 rounded-lg px-3 py-2">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
+            <Mail className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <label htmlFor="creator-email" className="sr-only">Email (optional)</label>
+            <input id="creator-email" name="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" type="email" className="bg-transparent flex-1 text-sm outline-none text-foreground placeholder:text-muted-foreground" />
           </div>
-          <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Leave a comment... *" rows={3} className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none text-foreground placeholder:text-muted-foreground resize-none" />
+          <label htmlFor="creator-message" className="sr-only">Comment</label>
+          <textarea id="creator-message" name="message" value={message} onChange={e => setMessage(e.target.value)} placeholder="Leave a comment... *" rows={3} className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm outline-none text-foreground placeholder:text-muted-foreground resize-none" />
           <button onClick={submitComment} disabled={sending} className="w-full py-2.5 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
             {sending ? "Posting..." : <><Send className="w-4 h-4" /> Post Comment</>}
           </button>

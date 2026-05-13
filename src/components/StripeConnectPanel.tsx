@@ -231,18 +231,27 @@ export default function StripeConnectPanel() {
           <h4 className="text-sm font-semibold flex items-center gap-2">
             <Plus className="w-4 h-4" /> Create a product
           </h4>
+          <label htmlFor="stripe-product-name" className="sr-only">Product name</label>
           <Input
+            id="stripe-product-name"
+            name="productName"
             placeholder="Product name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <label htmlFor="stripe-product-description" className="sr-only">Product description</label>
           <Textarea
+            id="stripe-product-description"
+            name="productDescription"
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
           />
+          <label htmlFor="stripe-product-price" className="sr-only">Product price in USD</label>
           <Input
+            id="stripe-product-price"
+            name="productPrice"
             type="number"
             step="0.01"
             min="0.50"
