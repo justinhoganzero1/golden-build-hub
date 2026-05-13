@@ -13,5 +13,5 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://oracle-lunar.online/sitemap.xml
-Host: https://oracle-lunar.online
+Sitemap: https://www.oracle-lunar.online/sitemap.xml
+Host: https://www.oracle-lunar.online
