@@ -263,8 +263,8 @@ const DashboardPage = () => {
             >
               <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{group.emoji}</span>
-                  <span className="font-semibold text-foreground text-sm">{group.label}</span>
+                  <span className="text-lg" aria-hidden="true">{group.emoji}</span>
+                  <h2 className="font-semibold text-foreground text-sm m-0">{group.label}</h2>
                   <span className="text-[10px] text-muted-foreground">({group.tiles.length})</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />

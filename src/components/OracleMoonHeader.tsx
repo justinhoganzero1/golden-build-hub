@@ -79,7 +79,9 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
           className="group flex flex-col items-center"
           aria-label="Oracle Lunar home"
         >
-          <h1
+          <div
+            role="text"
+            aria-label="Oracle Lunar"
             className="text-4xl sm:text-7xl font-black tracking-[0.22em] leading-none"
             style={{
               fontFamily: "'Cinzel','Trajan Pro',Georgia,serif",
@@ -93,7 +95,7 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             }}
           >
             ORACLE&nbsp;LUNAR
-          </h1>
+          </div>
 
           {/* Gold flourish */}
           <div className="mt-3 flex items-center gap-3 opacity-90">
