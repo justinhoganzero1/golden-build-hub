@@ -46,6 +46,8 @@ const AppBuilderPage = () => {
   const [isBuilding, setIsBuilding] = useState(false);
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [buildStages, setBuildStages] = useState<{ stage: string; message: string; ok?: boolean }[]>([]);
+  const [livePartial, setLivePartial] = useState<string>("");
+  const [showProgress, setShowProgress] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -279,6 +281,8 @@ const AppBuilderPage = () => {
     setAttachments([]);
     setIsBuilding(true);
     setBuildStages([{ stage: "init", message: "Spinning up autonomous build pipeline…" }]);
+    setLivePartial("");
+    setShowProgress(true);
 
     let code = "";
     let architecture = "";
@@ -316,6 +320,8 @@ const AppBuilderPage = () => {
             const evt = JSON.parse(json);
             if (evt.event === "stage") {
               setBuildStages(prev => [...prev, { stage: evt.stage, message: evt.message }]);
+            } else if (evt.event === "partial" && typeof evt.code === "string") {
+              setLivePartial(evt.code);
             } else if (evt.event === "done") {
               code = evt.code || "";
               architecture = evt.architecture || "";
@@ -427,6 +433,65 @@ const AppBuilderPage = () => {
     <SEO title="AI App Builder — Build Web Apps By Chatting" description="ORACLE LUNAR App Builder: voice + screenshot + file input. Describe an app and the AI builds it." path="/app-builder" />
     <div className="min-h-screen bg-background flex flex-col">
       <UniversalBackButton />
+
+      {/* Full-screen Build Progress with live preview */}
+      {showProgress && (
+        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              {isBuilding ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Rocket className="w-5 h-5 text-primary" />}
+              <h2 className="text-base font-bold text-primary">{isBuilding ? "Building your app…" : "Build complete"}</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/30">
+                {buildStages.length} agents
+              </span>
+            </div>
+            <button onClick={() => setShowProgress(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground" title="Hide (build keeps running)">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 grid md:grid-cols-[320px_1fr] overflow-hidden">
+            <div className="border-r border-border overflow-y-auto p-3 space-y-1.5 bg-card/30">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-2">Agent pipeline</p>
+              {buildStages.map((s, i) => {
+                const isLast = i === buildStages.length - 1 && isBuilding;
+                return (
+                  <div key={i} className={`flex items-start gap-2 text-xs p-2 rounded-lg ${isLast ? "bg-primary/10 border border-primary/30" : ""}`}>
+                    <span className="mt-0.5">{isLast ? <Loader2 className="w-3 h-3 animate-spin text-primary" /> : <span className="text-primary">✓</span>}</span>
+                    <div className="min-w-0">
+                      <div className="text-[9px] uppercase font-bold tracking-wide text-primary/80">{s.stage}</div>
+                      <div className={isLast ? "text-foreground" : "text-muted-foreground"}>{s.message}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {!isBuilding && (
+                <button onClick={() => setShowProgress(false)} className="w-full mt-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold">
+                  Open my finished app
+                </button>
+              )}
+            </div>
+            <div className="flex flex-col bg-black/40">
+              <div className="px-3 py-2 border-b border-border flex items-center gap-2 text-[11px] text-muted-foreground">
+                <Play className="w-3 h-3 text-primary" />
+                Live preview {livePartial ? "" : "(waiting for first frame…)"}
+              </div>
+              <div className="flex-1 relative">
+                {livePartial ? (
+                  <iframe srcDoc={livePartial} className="absolute inset-0 w-full h-full bg-white" sandbox="allow-scripts" title="Build preview" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                    <div className="text-center space-y-2">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                      <p>Architect agent is sketching the structure…</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 pt-14 pb-2">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 rounded-xl bg-primary/10"><Wrench className="w-7 h-7 text-primary" /></div>

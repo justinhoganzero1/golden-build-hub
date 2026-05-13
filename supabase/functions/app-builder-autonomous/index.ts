@@ -242,6 +242,10 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
           throw new Error("Frontend stage did not return valid HTML");
         }
         send("stage", { stage: "frontend", message: "Frontend frame standing" });
+        send("partial", { code });
+
+        // emit partial so the live preview can show frame as soon as it stands
+        send("partial", { code });
 
         // === STAGE 4: FLESH OUT ===
         send("stage", { stage: "flesh", message: "Fleshing out content, copy, and interactions…" });
@@ -263,6 +267,61 @@ Output ONLY the complete updated HTML document. No markdown fences. No commentar
         const fleshedCode = extractCode(fleshed) || fleshed.trim();
         if (/<!doctype/i.test(fleshedCode)) code = fleshedCode;
         send("stage", { stage: "flesh", message: "Content fleshed out" });
+        send("partial", { code });
+
+        // === STAGE 4b: COPYWRITER agent — eradicate generic/placeholder copy ===
+        send("stage", { stage: "copywriter", message: "Copywriter agent rewriting every placeholder into real copy…" });
+        const copyPass = await callAI({
+          apiKey, model: MODEL_PRIMARY, reasoning: "medium",
+          system: `You are a senior conversion copywriter. Scan the HTML and REPLACE every weak, generic, or placeholder phrase with sharp, specific, on-brand copy that a paying customer would respect.
+ZERO TOLERANCE for: "Lorem ipsum", "Your text here", "Placeholder", "Sample", "TODO", "Coming soon" (unless the feature is genuinely roadmap), "Lipsum", "Click here", "Learn more" without context, single-word buttons that aren't action verbs, vague headlines like "Welcome to our app".
+Add: real testimonials with names + roles + cities, real-sounding company stats, concrete benefits with numbers, clear CTAs ("Start my 7-day trial", "Book a free 15-min consult"), founder note, trust line.
+Preserve ALL existing JS, IDs, classes, structure, and the <meta name="oracle-lunar-app-config"> tag. Only rewrite visible text content.
+Output ONLY the complete HTML document. No fences. No commentary.`,
+          user: `HTML:\n${code}`,
+        });
+        const copyCode = extractCode(copyPass) || copyPass.trim();
+        if (/<!doctype/i.test(copyCode)) code = copyCode;
+        send("stage", { stage: "copywriter", message: "All placeholder copy replaced with production wording" });
+        send("partial", { code });
+
+        // === STAGE 4c: ASSETS agent — fill every missing image / icon ===
+        send("stage", { stage: "assets", message: "Assets agent wiring real images, icons, and OG art…" });
+        const assetPass = await callAI({
+          apiKey, model: MODEL_FAST, reasoning: "low",
+          system: `You are an asset director. Scan the HTML for ANY <img> with empty/placeholder/broken src, missing alt, missing favicon, missing og:image, missing apple-touch-icon, or empty avatar circles.
+Replace with real working URLs from these CDNs ONLY (allow-listed):
+- https://images.unsplash.com/...?auto=format&fit=crop&w=...&q=80  (use real Unsplash photo IDs you know)
+- https://picsum.photos/seed/<keyword>/<w>/<h>  (deterministic stock)
+- https://api.dicebear.com/7.x/avataaars/svg?seed=<name>  (avatars)
+- https://api.iconify.design/<set>/<icon>.svg  (icons)
+Pick subjects that match the app theme. Add descriptive alt text on every image. Ensure favicon, og:image, apple-touch-icon, and a manifest icon are all set (data: SVG is fine for favicon if needed).
+Preserve all other markup, scripts, and IDs. Output ONLY the complete HTML document.`,
+          user: `HTML:\n${code}`,
+        });
+        const assetCode = extractCode(assetPass) || assetPass.trim();
+        if (/<!doctype/i.test(assetCode)) code = assetCode;
+        send("stage", { stage: "assets", message: "Images, icons, and OG art in place" });
+        send("partial", { code });
+
+        // === STAGE 4d: MARKETING agent — Play Store listing baked in ===
+        send("stage", { stage: "marketing", message: "Marketing agent generating Play Store listing + share assets…" });
+        const marketing = await callAI({
+          apiKey, model: MODEL_FAST, reasoning: "low",
+          system: `You are an ASO/Play Store specialist. From the HTML, output a single JSON object with these exact keys (no preamble):
+{"title":"<≤30 chars>","short_description":"<≤80 chars>","full_description":"<≤4000 chars, persuasive, with bullet feature list>","keywords":["..."],"category":"<Play category>","content_rating":"<Everyone|Teen|Mature 17+>","price_tier":"<free|$0.99|$2.99|$4.99|$9.99|subscription>","privacy_summary":"<2 sentences>","support_email":"support@example.com"}
+Output ONLY valid JSON. No markdown.`,
+          user: `HTML:\n${code.slice(0, 30000)}`,
+        });
+        try {
+          const listing = JSON.parse(marketing.match(/\{[\s\S]*\}/)?.[0] || "{}");
+          const tag = `<script type="application/json" id="play-store-listing">${JSON.stringify(listing).replace(/</g, "\\u003c")}</script>`;
+          if (!/id="play-store-listing"/.test(code)) {
+            code = code.replace(/<\/body>/i, `${tag}\n</body>`);
+          }
+        } catch { /* ignore bad JSON */ }
+        send("stage", { stage: "marketing", message: "Play Store listing embedded (visible in the published HTML)" });
+        send("partial", { code });
 
         // === STAGE 5+: SMOKE TEST → FIX loop ===
         for (let attempt = 1; attempt <= MAX_FIX_LOOPS; attempt++) {
@@ -347,7 +406,7 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
             user: `QA REPORT:\n${report}\n\n${researchBlock ? `WEB RESEARCH (live, may help):\n${researchBlock}\n\n` : ""}CURRENT HTML:\n${code}`,
           });
           const fixedCode = extractCode(fixed) || fixed.trim();
-          if (/<!doctype/i.test(fixedCode)) code = fixedCode;
+          if (/<!doctype/i.test(fixedCode)) { code = fixedCode; send("partial", { code }); }
 
           // Re-emit sources so the UI can show them in the build log.
           if (researchSources.length) send("research_sources", { sources: researchSources });
