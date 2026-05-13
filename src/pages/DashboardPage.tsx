@@ -152,9 +152,9 @@ const DashboardPage = () => {
         <div className="relative px-5 py-5 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-black tracking-[0.25em] text-black/70 uppercase">★ Limited Time ★</div>
-            <h2 className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm">
+            <p className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm m-0">
               TRY EVERY FEATURE <span className="underline decoration-black/40">FREE</span>
-            </h2>
+            </p>
             <p className="text-black/80 text-xs sm:text-sm font-semibold mt-1">
               3 free goes on every tool — no card needed. Tap any tile below to start.
             </p>
