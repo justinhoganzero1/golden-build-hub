@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import HomePublicGallery from "@/components/HomePublicGallery";
 import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
+import FreeGoBanner from "@/components/FreeGoBanner";
 
 interface AppTile {
   label: string;
