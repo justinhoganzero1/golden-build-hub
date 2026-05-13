@@ -1,0 +1,36 @@
+# ORACLE LUNAR
+
+> Your AI best friend, always here for you. A free all-in-one AI companion app: voice oracle, AI tutor, mind & wellness hub, crisis support, photography, marketing, app builder and more.
+
+ORACLE LUNAR is a cinematic, mobile-first AI super-app. Core chat and voice companion features are free for life. Premium generations (avatars, video, voice cloning) use a pay-per-use credit wallet so users only pay for what they create.
+
+## Pages
+
+- [Home](/): Landing page and app entry.
+- [About](/about): What ORACLE LUNAR is and who it's for.
+- [Dashboard](/dashboard): Main super-app grid of 40+ modules.
+- [Oracle](/oracle): Voice + chat AI companion.
+- [AI Companion](/ai-companion): Conversational AI friend.
+- [AI Tutor](/ai-tutor): Personalized learning companion.
+- [Mind Hub](/mind-hub): Wellness, journaling and mental health tools.
+- [Crisis Hub](/crisis-hub): Immediate emotional support resources.
+- [Photography Hub](/photography-hub): AI photo studio, brand kit, logos.
+- [Marketing Hub](/marketing-hub): AI marketing copy, social assets.
+- [Voice Studio](/voice-studio): 120+ voices and voice cloning.
+- [Avatar Generator](/avatar-generator): 8K AI avatars.
+- [Live Vision](/live-vision): Real-time camera analysis.
+- [App Builder](/app-builder): Multi-agent autonomous app generator.
+- [Movie Studio Pro](/movie-studio-pro): AI cinematic video generation.
+- [Story Writer](/story-writer): Long-form AI story creation.
+- [Calendar](/calendar): Life diary and AI reminders.
+- [Wallet](/wallet): Credits, top-ups and payouts.
+- [Subscribe](/subscribe): Plans and pricing.
+- [Creators](/creators): Creator shop and revenue share.
+- [Investor](/investor): Investor information.
+- [Referral](/referral): Invite friends and earn credits.
+- [Safety Center](/safety-center): Safety, moderation and policies.
+
+## Optional
+
+- [Privacy Policy](/privacy-policy): How user data is handled.
+- [Terms of Service](/terms-of-service): Terms of use.
