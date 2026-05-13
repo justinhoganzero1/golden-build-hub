@@ -86,19 +86,24 @@ const PartnerBubbles = () => {
                 animation: `bubbleFloat 6s ease-in-out ${i * 0.8}s infinite`,
               }}
             >
+              {b.badge && (
+                <span className="text-[9px] font-black uppercase tracking-widest text-pink-300 mb-1">
+                  {b.badge}
+                </span>
+              )}
               <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-2xl scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className={`absolute inset-0 rounded-full blur-2xl scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${b.featured ? "bg-pink-400/40" : "bg-amber-400/20"}`} />
                 <img
                   src={b.img}
                   alt={`${b.label} — ${b.tagline}`}
-                  width={120}
-                  height={120}
+                  width={160}
+                  height={160}
                   loading="lazy"
-                  className="relative w-24 h-24 sm:w-28 sm:h-28 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-transform duration-300 group-hover:scale-110 group-active:scale-95"
+                  className={`relative object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-transform duration-300 group-hover:scale-110 group-active:scale-95 ${b.featured ? "w-32 h-32 sm:w-40 sm:h-40" : "w-24 h-24 sm:w-28 sm:h-28"}`}
                 />
               </div>
               <div className="text-center">
-                <div className="text-sm font-bold text-foreground">{b.label}</div>
+                <div className={`font-bold ${b.featured ? "text-base text-pink-300" : "text-sm text-foreground"}`}>{b.label}</div>
                 <div className="text-[11px] text-muted-foreground">{b.tagline}</div>
               </div>
             </a>
