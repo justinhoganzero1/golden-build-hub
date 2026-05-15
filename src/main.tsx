@@ -61,7 +61,7 @@ try {
 // Default Oracle name = "Lunar". Users can still rename via Oracle UI.
 try {
   const names = JSON.parse(localStorage.getItem("oracle-lunar-agent-names") || "{}");
-  if (!names.Oracle || names.Oracle === "Oracle Lunar" || names.Oracle === "Oracle" || names.Oracle === "Peggy") {
+  if (!names.Oracle || names.Oracle === "Oracle Lunar" || names.Oracle === "Oracle" || names.Oracle === "Peggy" || names.Oracle === "Eric") {
     names.Oracle = "Lunar";
     localStorage.setItem("oracle-lunar-agent-names", JSON.stringify(names));
   }
