@@ -385,28 +385,69 @@ const MediaLibraryPage = () => {
           </div>
         ) : view === "grid" ? (
           <div className="grid grid-cols-3 gap-2">
-            {filtered.map((m: any) => (
+            {filtered.map((m: any) => {
+              const thumb = m.thumbnail_url || (m.metadata && (m.metadata.thumbnail || m.metadata.cover || m.metadata.poster || m.metadata.preview_url || m.metadata.image)) || null;
+              const isAudio = m.media_type === "audio";
+              const isText = m.media_type === "text" || m.media_type === "story" || m.media_type === "document";
+              const isApp = m.media_type === "app";
+              return (
               <button key={m.id} onClick={() => setSelected(m)}
-                className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
+                className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
                 {isImageLike(m) ? (
                   <>
                     <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-1 left-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[8px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
+                    <div className="absolute bottom-1 left-1.5 right-1.5">
+                      <p className="text-[9px] text-foreground truncate font-medium drop-shadow">{m.title || "Untitled"}</p>
                     </div>
                   </>
                 ) : isVideoLike(m) ? (
                   <>
-                    <video src={m.url} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
+                    <video src={m.url} poster={thumb || undefined} muted loop playsInline className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-                    <Play className="absolute w-7 h-7 text-primary drop-shadow-lg" />
+                    <Play className="absolute inset-0 m-auto w-7 h-7 text-primary drop-shadow-lg" />
+                    <div className="absolute bottom-1 left-1.5 right-1.5">
+                      <p className="text-[9px] text-foreground truncate font-medium drop-shadow">{m.title || "Untitled"}</p>
+                    </div>
                   </>
-                ) : (
+                ) : thumb ? (
                   <>
-                    {getMediaIcon(m.media_type)}
-                    <p className="text-[9px] text-muted-foreground truncate w-full text-center px-1">{m.title}</p>
+                    <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
+                    <div className="absolute bottom-1 left-1.5 right-1.5">
+                      <p className="text-[9px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
+                    </div>
                   </>
+                ) : isText ? (
+                  <div className="w-full h-full flex flex-col p-2 bg-gradient-to-br from-card to-muted/30">
+                    <p className="text-[8px] leading-tight text-foreground/85 line-clamp-[8] flex-1 overflow-hidden whitespace-pre-wrap break-words">
+                      {(m.url || m.title || "").slice(0, 280)}
+                    </p>
+                    <p className="text-[8px] text-primary truncate font-semibold mt-1 border-t border-border/50 pt-1">{m.title || "Note"}</p>
+                  </div>
+                ) : isAudio ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 bg-gradient-to-br from-primary/10 to-card">
+                    <Music className="w-7 h-7 text-primary" />
+                    <div className="flex items-end gap-0.5 h-4">
+                      {[3,5,2,6,4,7,3,5,2].map((h,i) => (
+                        <div key={i} className="w-0.5 bg-primary/60 rounded-full" style={{ height: `${h*3}px` }} />
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-foreground truncate w-full text-center font-medium">{m.title || "Audio"}</p>
+                  </div>
+                ) : isApp ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 bg-gradient-to-br from-primary/15 to-card">
+                    <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/40 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <p className="text-[9px] text-foreground truncate w-full text-center font-semibold">{m.title || "App"}</p>
+                    {m.url && <p className="text-[7px] text-muted-foreground truncate w-full text-center">{String(m.url).replace(/^https?:\/\//, "").slice(0, 22)}</p>}
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+                    {getMediaIcon(m.media_type)}
+                    <p className="text-[9px] text-muted-foreground truncate w-full text-center">{m.title}</p>
+                  </div>
                 )}
                 {/* Source badge */}
                 <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
