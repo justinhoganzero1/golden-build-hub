@@ -456,7 +456,8 @@ const MediaLibraryPage = () => {
                   </div>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-2">
