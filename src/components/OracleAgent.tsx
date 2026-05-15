@@ -36,7 +36,7 @@ type Job = {
 };
 
 const PRIVACY_KEY = "oracle-agent-storage-consent"; // "keep" | "auto-delete"
-const ORB_HIDDEN_ROUTES = ["/oracle", "/sign-in", "/auth", "/verify-phone", "/age-required", "/consent"];
+const ORB_HIDDEN_ROUTES = ["/oracle", "/sign-in", "/auth", "/age-required", "/consent"];
 
 const SUPA = import.meta.env.VITE_SUPABASE_URL;
 const IMAGE_URL = `${SUPA}/functions/v1/image-gen`;
