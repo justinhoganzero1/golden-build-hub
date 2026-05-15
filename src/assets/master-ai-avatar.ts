@@ -14,5 +14,5 @@
 import masterAvatar from "@/assets/avatars/oracle-peggy.png";
 
 export const MASTER_AI_AVATAR = masterAvatar;
-export const MASTER_AI_AVATAR_NAME = "Peggy";
-export const MASTER_AI_AVATAR_ALT = "Peggy — Oracle Lunar AI assistant";
+export const MASTER_AI_AVATAR_NAME = "Lunar";
+export const MASTER_AI_AVATAR_ALT = "Lunar — Oracle Lunar AI assistant";
