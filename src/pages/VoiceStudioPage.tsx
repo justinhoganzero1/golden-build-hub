@@ -41,25 +41,20 @@ async function readTtsAudio(res: Response) {
   const contentType = res.headers.get("content-type") || "";
   if (!res.ok) {
     const errText = await res.text();
+    let parsed: { message?: string; error?: string; status?: number } | null = null;
     try {
-      const body = JSON.parse(errText) as { message?: string; error?: string; status?: number };
-      throw new Error(body.message || body.error || `Voice preview failed: ${res.status}`);
-    } catch (error) {
-      if (error instanceof Error && error.message !== errText) throw error;
-      throw new Error(errText || `Voice preview failed: ${res.status}`);
-    }
+      parsed = JSON.parse(errText) as { message?: string; error?: string; status?: number };
+    } catch { /* raw text below */ }
+    throw new Error(parsed?.message || parsed?.error || errText || `Voice preview failed: ${res.status}`);
   }
 
   if (!contentType.toLowerCase().startsWith("audio/")) {
     const bodyText = await res.text();
+    let parsed: { message?: string; error?: string; status?: number } | null = null;
     try {
-      const body = JSON.parse(bodyText) as { message?: string; error?: string; status?: number };
-      const message = body.message || body.error || "Voice preview returned no audio";
-      throw new Error(message);
-    } catch {
-      // Non-JSON, non-audio response: throw the raw response below.
-    }
-    throw new Error(bodyText || "Voice preview returned no audio");
+      parsed = JSON.parse(bodyText) as { message?: string; error?: string; status?: number };
+    } catch { /* raw text below */ }
+    throw new Error(parsed?.message || parsed?.error || bodyText || "Voice preview returned no audio");
   }
 
   const blob = await res.blob();

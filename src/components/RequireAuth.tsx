@@ -22,7 +22,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     );
   }
 
-  if (!user) {
+  if (!user && !freeAccess) {
     const cleanSearch = new URLSearchParams(location.search);
     cleanSearch.delete("preview");
     cleanSearch.delete("__lovable_token");
