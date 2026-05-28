@@ -5,9 +5,11 @@ import { useSiteContent } from "@/hooks/useSiteContent";
 
 interface IntroSplashProps {
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
-const IntroSplash = ({ onComplete }: IntroSplashProps) => {
+const IntroSplash = ({ onComplete, onSkip }: IntroSplashProps) => {
+
   const [visible, setVisible] = useState(true);
   const { get } = useSiteContent();
   const banner = get("landing", "free_trial_banner", "🎁 Sign up free — 30 days of full access, no card required");
