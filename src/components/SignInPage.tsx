@@ -222,7 +222,43 @@ const SignInPage = () => {
           </>
         )}
 
+        {!isOwnerAccess && (
+          <div className="space-y-2.5 mt-3 mb-4">
+            <button
+              type="button"
+              onClick={() => handleOAuth("google")}
+              disabled={oauthLoading !== null || loading}
+              className="w-full py-3 rounded-[14px] font-semibold text-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 bg-white text-[hsl(0_0%_8%)] hover:brightness-95 border border-white/80 shadow-[0_4px_14px_hsl(0_0%_0%/0.35)]"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.8 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                <path fill="#4CAF50" d="M24 44c5.3 0 10.1-2 13.7-5.3l-6.3-5.3C29.4 35 26.8 36 24 36c-5.2 0-9.6-3.2-11.3-7.7l-6.5 5C9.6 39.6 16.2 44 24 44z"/>
+                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.4 4.3-4.4 5.7l6.3 5.3C40.9 36.4 44 30.9 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+              </svg>
+              {oauthLoading === "google" ? "Opening Google…" : isSignUp ? "Sign up with Google" : "Continue with Google"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOAuth("apple")}
+              disabled={oauthLoading !== null || loading}
+              className="w-full py-3 rounded-[14px] font-semibold text-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50 bg-[hsl(0_0%_4%)] text-white hover:brightness-125 border border-white/30"
+            >
+              <Apple className="w-[18px] h-[18px]" />
+              {oauthLoading === "apple" ? "Opening Apple…" : isSignUp ? "Sign up with Apple" : "Continue with Apple"}
+            </button>
+
+            <div className="flex items-center gap-3 pt-1">
+              <div className="h-px flex-1 bg-primary/20" />
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">or email</span>
+              <div className="h-px flex-1 bg-primary/20" />
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+
           <div>
             <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Email</label>
             <div
