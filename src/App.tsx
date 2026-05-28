@@ -9,6 +9,7 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
+import PreviewWatermark from "@/components/PreviewWatermark";
 // Vaulted: CallControlBanner (Twilio) — disabled until telephony returns.
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
@@ -262,6 +263,7 @@ const App = () => (
                 <PreviewModeBanner />
               </Suspense>
               <MasterMuteButton />
+              <PreviewWatermark />
               <OracleAgent />
               <OracleControlListener />
 
