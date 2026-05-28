@@ -295,13 +295,13 @@ const PortalLandingPage = () => {
         {/* Full-bleed Earth-in-space hero — 20K cinematic, no top wash */}
         <img
           src={oracleLunarBanner}
-          alt="Planet Earth floating in deep space with a golden stardust ring orbiting like satellites"
+          alt="Planet Earth floating in deep space"
           className="absolute inset-0 w-full h-full object-contain object-center"
           style={{ zIndex: 5 }}
           fetchPriority="high"
         />
 
-        {/* Soft bottom-only fade so text below stays readable — keeps the globe fully visible */}
+        {/* Soft bottom-only fade so text below stays readable */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -311,87 +311,69 @@ const PortalLandingPage = () => {
           }}
         />
 
-        {/* ── Orbiting satellite tabs — single tilted plane, text always faces viewer,
-              tabs pass BEHIND the globe via z-index + scale + opacity changes ── */}
+        {/* ── Merry-go-round orbit: ONE direction, ONE plane, tabs always upright,
+              tabs vanish (opacity 0) as they pass BEHIND the globe ── */}
         <style>{`
           :root {
-            --orbit-rx-1: clamp(140px, 38vw, 320px);
-            --orbit-ry-1: clamp(28px, 7vw, 70px);
-            --orbit-rx-2: clamp(180px, 50vw, 440px);
-            --orbit-ry-2: clamp(36px, 10vw, 95px);
+            --orbit-rx: clamp(150px, 40vw, 360px);
+            --orbit-ry: clamp(30px, 8vw, 80px);
           }
-          /* Front-half (0-50%) = above globe & large; Back-half (50-100%) = behind globe & shrunk */
-          @keyframes orbit-ring-1 {
-            0%   { transform: translate(calc(-50% + var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
-            25%  { transform: translate(-50%, calc(-50% + var(--orbit-ry-1))) scale(1.18); opacity:1; }
-            50%  { transform: translate(calc(-50% - var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
-            50.01% { z-index:1; }
-            75%  { transform: translate(-50%, calc(-50% - var(--orbit-ry-1))) scale(0.58); opacity:.45; }
-            99.99% { z-index:1; }
-            100% { transform: translate(calc(-50% + var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
+          /* All tabs share this single keyframe — same direction (clockwise),
+             upright at every frame. Front half = visible & in front of globe.
+             Back half = faded out (behind globe). */
+          @keyframes orbit-merry {
+            0%   { transform: translate(calc(-50% + var(--orbit-rx)), -50%); opacity: 1; }
+            25%  { transform: translate(-50%, calc(-50% + var(--orbit-ry))); opacity: 1; }
+            50%  { transform: translate(calc(-50% - var(--orbit-rx)), -50%); opacity: 1; }
+            60%  { opacity: 0; }
+            75%  { transform: translate(-50%, calc(-50% - var(--orbit-ry))); opacity: 0; }
+            90%  { opacity: 0; }
+            100% { transform: translate(calc(-50% + var(--orbit-rx)), -50%); opacity: 1; }
           }
-          @keyframes orbit-ring-1-z {
-            0%, 50% { z-index: 20; }
-            50.01%, 100% { z-index: 1; }
+          .sat-orbit {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            pointer-events: auto;
+            will-change: transform, opacity;
+            z-index: 10;
           }
-          @keyframes orbit-ring-2 {
-            0%   { transform: translate(calc(-50% + var(--orbit-rx-2)), -50%) scale(0.58); opacity:.45; }
-            25%  { transform: translate(-50%, calc(-50% - var(--orbit-ry-2))) scale(0.58); opacity:.45; }
-            50%  { transform: translate(calc(-50% - var(--orbit-rx-2)), -50%) scale(1.05); opacity:1; }
-            75%  { transform: translate(-50%, calc(-50% + var(--orbit-ry-2))) scale(1.18); opacity:1; }
-            100% { transform: translate(calc(-50% + var(--orbit-rx-2)), -50%) scale(0.58); opacity:.45; }
-          }
-          @keyframes orbit-ring-2-z {
-            0%, 25% { z-index: 1; }
-            25.01%, 75% { z-index: 20; }
-            75.01%, 100% { z-index: 1; }
-          }
-          .sat-orbit { position:absolute; left:50%; top:50%; pointer-events:auto; will-change:transform, opacity; }
         `}</style>
         <div className="absolute inset-0 pointer-events-none">
           {(() => {
-            const ring1 = FEATURES.slice(0, 6);
-            const ring2 = FEATURES.slice(6, 12);
-            const renderSat = (
-              f: typeof FEATURES[number],
-              i: number,
-              total: number,
-              dur: number,
-              kf: string,
-              zKf: string,
-            ) => {
+            const tabs = FEATURES.slice(0, 10);
+            const dur = 42; // seconds per full orbit
+            return tabs.map((f, i) => {
               const Icon = f.icon;
-              const delay = -(dur * (i / total));
+              const delay = -(dur * (i / tabs.length));
               return (
                 <div
                   key={f.title}
                   className="sat-orbit"
                   style={{
-                    animation: `${kf} ${dur}s linear infinite, ${zKf} ${dur}s step-end infinite`,
-                    animationDelay: `${delay}s, ${delay}s`,
+                    animation: `orbit-merry ${dur}s linear infinite`,
+                    animationDelay: `${delay}s`,
                   }}
                 >
                   <button
                     onClick={() => handleTileClick(f.to)}
                     aria-label={`Preview ${f.title}`}
-                    className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/70 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
+                    className="group flex items-center gap-2 rounded-full border border-primary/60 bg-background/20 backdrop-blur-sm px-3 py-1.5 shadow-[0_0_18px_hsl(var(--primary)/0.5)] hover:bg-background/40 hover:shadow-[0_0_32px_hsl(var(--primary)/0.9)] hover:scale-110 transition-all"
                   >
-                    <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <Icon className="h-3.5 w-3.5 text-primary drop-shadow-[0_0_4px_hsl(var(--primary))]" />
+                    <span
+                      className="text-[11px] font-semibold whitespace-nowrap text-primary"
+                      style={{ textShadow: "0 0 6px hsl(var(--background)), 0 0 10px hsl(var(--background))" }}
+                    >
+                      {f.title}
                     </span>
-                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
                   </button>
                 </div>
               );
-            };
-            return (
-              <>
-                {ring1.map((f, i) => renderSat(f, i, ring1.length, 38, "orbit-ring-1", "orbit-ring-1-z"))}
-                {ring2.map((f, i) => renderSat(f, i, ring2.length, 56, "orbit-ring-2", "orbit-ring-2-z"))}
-              </>
-            );
+            });
           })()}
         </div>
+
 
 
 
