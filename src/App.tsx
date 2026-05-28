@@ -79,6 +79,7 @@ const loaders = {
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
   "/about": () => import("./pages/AboutPage"),
+  "/commandments": () => import("./pages/CommandmentsPage"),
   "/investor": () => import("./pages/InvestorPage"),
   "/creators": () => import("./pages/CreatorsPage"),
   "/sign-in": () => import("./components/SignInPage"),
@@ -198,6 +199,7 @@ const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
 const TermsOfServicePage = lazy(loaders["/terms-of-service"]);
 const AboutPage = lazy(loaders["/about"]);
+const CommandmentsPage = lazy(loaders["/commandments"]);
 const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
@@ -328,6 +330,7 @@ const App = () => (
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
                   <Route path="/terms-of-service" element={<ErrorBoundary pageName="Terms of Service"><TermsOfServicePage /></ErrorBoundary>} />
                   <Route path="/about" element={<ErrorBoundary pageName="About"><AboutPage /></ErrorBoundary>} />
+                  <Route path="/commandments" element={<ErrorBoundary pageName="Commandments"><CommandmentsPage /></ErrorBoundary>} />
                   <Route path="/investor" element={<RequireAuth><ErrorBoundary pageName="Investor"><InvestorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />

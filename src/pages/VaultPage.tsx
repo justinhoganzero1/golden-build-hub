@@ -90,7 +90,22 @@ const VaultPage = () => {
           <span className="text-xs text-muted-foreground">Vault locked • Biometric ready</span>
           <Lock className="w-3 h-3 text-primary ml-auto" />
         </div>
+
+        {/* The 100 Commandments — gated rails live here */}
+        <Link
+          to="/commandments"
+          className="mt-3 flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-transparent hover:from-amber-500/20 transition-colors"
+        >
+          <FileText className="w-5 h-5 text-amber-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-foreground">The 100 Commandments</div>
+            <div className="text-[11px] text-muted-foreground">Every gated rail Oracle Lunar AI must obey</div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-amber-500" />
+        </Link>
       </div>
+
+
 
       {/* Quick links — moved from dashboard "Wallet & Vault" group */}
       <div className="px-4 mb-4 grid grid-cols-3 sm:grid-cols-5 gap-2">

@@ -1,4 +1,5 @@
-import { Shield, Heart, Sparkles, Globe, Lock, Users } from "lucide-react";
+import { Shield, Heart, Sparkles, Globe, Lock, Users, Scroll } from "lucide-react";
+import { COMMANDMENTS, SUPREME_COMMANDMENTS } from "@/data/commandments";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useNavigate } from "react-router-dom";
@@ -57,8 +58,42 @@ const AboutPage = () => {
           ))}
         </div>
 
+        {/* The 100 Commandments */}
+        <section className="mb-6">
+          <div className="rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-transparent p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Scroll className="w-5 h-5 text-amber-500" />
+              <h2 className="text-lg font-semibold text-primary">The 100 Commandments</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              The rails every AI in Oracle Lunar must obey. Two supreme rules outrank everything else:
+            </p>
+            <ol className="space-y-2 mb-3">
+              {SUPREME_COMMANDMENTS.map((c) => (
+                <li key={c.n} className="text-sm text-foreground">
+                  <span className="font-bold text-amber-500">#{c.n}.</span> {c.rule}
+                </li>
+              ))}
+            </ol>
+            <button
+              onClick={() => navigate("/commandments")}
+              className="w-full text-center text-sm font-medium text-amber-500 hover:text-amber-400 py-2 border-t border-amber-500/20"
+            >
+              Read all {COMMANDMENTS.length} commandments →
+            </button>
+          </div>
+        </section>
+
         {/* Legal Links */}
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border mb-6">
+          <button onClick={() => navigate("/commandments")} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/50 transition-colors text-left">
+            <span className="text-sm text-foreground">The 100 Commandments</span>
+            <span className="text-xs text-muted-foreground">→</span>
+          </button>
+          <button onClick={() => navigate("/vault")} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/50 transition-colors text-left">
+            <span className="text-sm text-foreground">Vault (rails & gated rules)</span>
+            <span className="text-xs text-muted-foreground">→</span>
+          </button>
           <button onClick={() => navigate("/privacy-policy")} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/50 transition-colors text-left">
             <span className="text-sm text-foreground">Privacy Policy</span>
             <span className="text-xs text-muted-foreground">→</span>
@@ -68,6 +103,7 @@ const AboutPage = () => {
             <span className="text-xs text-muted-foreground">→</span>
           </button>
         </div>
+
 
         {/* Credits */}
         <div className="text-center text-xs text-muted-foreground space-y-1">
