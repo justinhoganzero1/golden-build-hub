@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, Sparkles, Apple } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
+
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
