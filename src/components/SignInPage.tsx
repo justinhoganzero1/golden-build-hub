@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,14 +19,16 @@ const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const redirectBasePath = redirectPath.split(/[?#]/)[0];
   const requestedSignUp = searchParams.get("mode") === "signup";
   const freshAuth = searchParams.get("fresh") === "1";
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
-  const isOwnerAccess = redirectPath === "/owner-dashboard";
+  const isOwnerAccess = redirectBasePath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
+  const freshSignOutStartedRef = useRef(false);
 
 
   useEffect(() => {
@@ -36,24 +38,24 @@ const SignInPage = () => {
 
   useEffect(() => {
     if (!freshAuth || authLoading || !user) return;
+    if (freshSignOutStartedRef.current) return;
+    freshSignOutStartedRef.current = true;
     supabase.auth.signOut({ scope: "local" })
       .catch(() => {})
       .finally(() => {
         // Strip ?fresh=1 so the next successful sign-in isn't immediately
         // logged out again by this same effect.
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(searchParams);
         params.delete("fresh");
-        const qs = params.toString();
-        const newUrl = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
-        window.history.replaceState({}, "", newUrl);
+        setSearchParams(params, { replace: true });
       });
-  }, [freshAuth, authLoading, user]);
+  }, [freshAuth, authLoading, user, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (freshAuth) return;
     if (authLoading || !user) return;
     const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
-    const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
+    const requestedAdmin = redirectBasePath.startsWith("/owner-dashboard") || redirectBasePath.startsWith("/admin");
     // Non-owners may NOT visit admin routes — bounce to user dashboard.
     // Owners may visit ANY route, including the regular user dashboard. Only
     // force them into the owner dashboard when they didn't ask for somewhere
@@ -66,7 +68,7 @@ const SignInPage = () => {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
     }
     navigate(nextPath, { replace: true });
-  }, [freshAuth, authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess]);
+  }, [freshAuth, authLoading, user, ownerEmail, redirectPath, redirectBasePath, navigate, isOwnerAccess]);
 
   useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 
