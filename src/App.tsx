@@ -155,7 +155,7 @@ const RootRoute = () => {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (user) return <DashboardPage />;
-  return <Navigate to="/sign-in?mode=signup&redirect=%2Fdashboard" replace />;
+  return <PortalLandingPage />;
 };
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
@@ -275,7 +275,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
-                  <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/welcome" element={<ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />

@@ -10,7 +10,7 @@ interface RequireAuthProps {
   freeAccess?: boolean;
 }
 
-const RequireAuth = ({ children }: RequireAuthProps) => {
+const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -22,7 +22,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
     );
   }
 
-  if (!user) {
+  if (!user && !freeAccess) {
     const cleanSearch = new URLSearchParams(location.search);
     cleanSearch.delete("preview");
     cleanSearch.delete("__lovable_token");
