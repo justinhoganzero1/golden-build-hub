@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
+import { setAIFullControl } from "@/lib/aiControl";
 
 
 const SignInPage = () => {
@@ -15,6 +16,8 @@ const SignInPage = () => {
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState(""); // YYYY-MM-DD, only used on signup
   const [rememberMe, setRememberMe] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [aiFullControl, setAiFullControlState] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -121,6 +124,12 @@ const SignInPage = () => {
           toast.error("You must be at least 16 years old to use Oracle Lunar.");
           return;
         }
+        if (!acceptTerms) {
+          toast.error("Please accept the Terms & Privacy Policy to continue.");
+          return;
+        }
+        // Persist the AI Full Control preference (user can flip in Settings anytime)
+        setAIFullControl(aiFullControl);
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
