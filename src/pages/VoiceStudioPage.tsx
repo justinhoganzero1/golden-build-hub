@@ -213,6 +213,7 @@ export default function VoiceStudioPage() {
   function stopAudio() {
     audioRef.current?.pause();
     audioRef.current = null;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }
 
   function pickFromLibrary(v: AccountVoice) {
