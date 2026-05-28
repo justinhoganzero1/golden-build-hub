@@ -164,7 +164,7 @@ const DashboardPage = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate(user ? "/dashboard" : "/sign-in?mode=signup&redirect=/dashboard")}
+            onClick={() => navigate(user ? "/oracle" : "/sign-in?mode=signup&redirect=/dashboard")}
             className="shrink-0 px-5 py-3 rounded-full bg-black text-amber-300 font-black text-sm uppercase tracking-wider shadow-xl hover:scale-105 active:scale-95 transition border-2 border-amber-300/60 animate-pulse"
           >
             ✨ {user ? "Start Now" : "Sign Up Free"}
