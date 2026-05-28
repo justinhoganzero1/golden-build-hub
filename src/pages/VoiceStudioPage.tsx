@@ -37,35 +37,24 @@ type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
 
-function playDevicePreview(text: string, voiceName?: string) {
-  if (!("speechSynthesis" in window)) {
-    throw new Error("Voice preview is temporarily unavailable");
-  }
-
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.96;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-  window.speechSynthesis.speak(utterance);
-  toast.success(`Playing ${voiceName || "preview"}`);
-}
-
 async function readTtsAudio(res: Response) {
   const contentType = res.headers.get("content-type") || "";
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(errText || `TTS failed: ${res.status}`);
+    try {
+      const body = JSON.parse(errText) as { message?: string; error?: string; status?: number };
+      throw new Error(body.message || body.error || `Voice preview failed: ${res.status}`);
+    } catch (error) {
+      if (error instanceof Error && error.message !== errText) throw error;
+      throw new Error(errText || `Voice preview failed: ${res.status}`);
+    }
   }
 
   if (!contentType.toLowerCase().startsWith("audio/")) {
     const bodyText = await res.text();
     try {
-      const body = JSON.parse(bodyText) as { fallback?: boolean; error?: string; status?: number };
-      if (body.fallback) {
-        console.warn("TTS fallback response", body);
-        return null;
-      }
+      const body = JSON.parse(bodyText) as { message?: string; error?: string; status?: number };
+      throw new Error(body.message || body.error || "Voice preview returned no audio");
     } catch {
       // Non-JSON, non-audio response: throw the raw response below.
     }
