@@ -64,7 +64,17 @@ const SignInPage = () => {
 
   useEffect(() => {
     if (!freshAuth || authLoading || !user) return;
-    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    supabase.auth.signOut({ scope: "local" })
+      .catch(() => {})
+      .finally(() => {
+        // Strip ?fresh=1 so the next successful sign-in isn't immediately
+        // logged out again by this same effect.
+        const params = new URLSearchParams(window.location.search);
+        params.delete("fresh");
+        const qs = params.toString();
+        const newUrl = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+        window.history.replaceState({}, "", newUrl);
+      });
   }, [freshAuth, authLoading, user]);
 
   useEffect(() => {
