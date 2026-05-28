@@ -67,7 +67,7 @@ const LivingGifStudioPage = () => {
       params.delete("gif_id");
       params.delete("session_id");
       setParams(params, { replace: true });
-      toast.info("Payment received. Queuing your 8K GIF (~60-90s)…");
+      toast.info("Payment received. Queuing your 4K GIF (~60-90s)…");
       supabase.functions
         .invoke("generate-living-gif", { body: { gif_id: gifId, session_id: sessionId } })
         .then(({ data, error }) => {
@@ -137,7 +137,7 @@ const LivingGifStudioPage = () => {
 
       // Admin bypass — generate directly, no Stripe
       if (data?.admin_bypass && data?.gif_id) {
-        toast.success("Admin bypass — rendering free 8K GIF (~60–90s)…");
+        toast.success("Admin bypass — rendering free 4K GIF (~60–90s)…");
         setVerifying(true);
         const sourceImageUrl = typeof sourceImage === "string" ? sourceImage : picked.image_url;
         const genErr = await startGeneration(data.gif_id, sourceImageUrl).catch((error) => error);
@@ -163,8 +163,8 @@ const LivingGifStudioPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Living GIF Studio — 20s 8K Animated Avatars"
-        description="Generate 20-second 8K animated avatar GIFs of your Oracle. Bank unlimited GIFs forever, set any one as your active Oracle face."
+        title="Living GIF Studio — 20s 4K Animated Avatars"
+        description="Generate 20-second 4K animated avatar GIFs of your Oracle. Bank unlimited GIFs forever, set any one as your active Oracle face."
       />
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard", { replace: false })} className="-ml-2">
@@ -178,7 +178,7 @@ const LivingGifStudioPage = () => {
             Living GIF Studio
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-            Generate 20-second 8K animated GIFs of any avatar doing anything you describe.
+            Generate 20-second 4K animated GIFs of any avatar doing anything you describe.
             Bank unlimited GIFs forever — set any one as your active Oracle face.
           </p>
         </header>
@@ -272,7 +272,7 @@ const LivingGifStudioPage = () => {
           <Card className="p-4 flex items-center gap-3 bg-primary/5 border-primary/30">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
             <div className="text-sm">
-              <p className="font-bold">Rendering your 8K GIF…</p>
+              <p className="font-bold">Rendering your 4K GIF…</p>
               <p className="text-xs text-muted-foreground">
                 This takes 60–90 seconds. You can leave this page — it'll appear in your bank when ready.
               </p>
@@ -336,7 +336,7 @@ const LivingGifStudioPage = () => {
                               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-1 text-primary" />
                               <p>
                                 {g.status === "queued" && "Queued… starting render"}
-                                {(g.status === "running" || g.status === "generating") && "Rendering 8K…"}
+                                {(g.status === "running" || g.status === "generating") && "Rendering 4K…"}
                                 {g.status === "upscaling" && "Upscaling final video…"}
                               </p>
                             </>

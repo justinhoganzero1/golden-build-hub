@@ -20,7 +20,7 @@ const TIERS = [
   { key: "sd",           label: "SD",           resolution: "720p",      price: "$9",   cents: 900,   blurb: "Quick share-ready render. Good for drafts and social clips." },
   { key: "hd",           label: "HD Cinema",    resolution: "1080p",     price: "$29",  cents: 2900,  blurb: "Cinematic 1080p with audio mix. Most popular choice.", popular: true },
   { key: "4k",           label: "4K Pro",       resolution: "3840×2160", price: "$79",  cents: 7900,  blurb: "Real-ESRGAN 4K upscale. Cinema-grade detail.", premium: true },
-  { key: "8k_ultimate",  label: "8K Ultimate",  resolution: "7680×4320", price: "$199", cents: 19900, blurb: "Topaz-grade 8K master. Reserved for showcase films.", ultimate: true },
+  { key: "8k_ultimate",  label: "4K Ultimate",  resolution: "7680×4320", price: "$199", cents: 19900, blurb: "Topaz-grade 4K master. Reserved for showcase films.", ultimate: true },
 ];
 
 export default function MoviePaymentDialog({ open, onOpenChange, projectId, projectTitle }: MoviePaymentDialogProps) {

@@ -125,7 +125,7 @@ const PhotoBrandKitPanel = ({ currentImage, prompt, filter, mode, onApplyTemplat
           Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
         },
         body: JSON.stringify({
-          prompt: `Minimalist professional logo, ${logoPrompt}, centered on solid white background, vector style, sharp edges, high contrast, 8K`,
+          prompt: `Minimalist professional logo, ${logoPrompt}, centered on solid white background, vector style, sharp edges, high contrast, 4K`,
         }),
       });
       const data = await resp.json();

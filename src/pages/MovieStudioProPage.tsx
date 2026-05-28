@@ -65,7 +65,7 @@ const MovieStudioProPage = () => {
     <>
     <SEO
       title="Movie Studio Pro — AI Cinematic Video Editor"
-      description="ORACLE LUNAR Movie Studio Pro: script→scenes, 8K AI frames, voiceover, music, SFX, captions, HD export. Build films with AI."
+      description="ORACLE LUNAR Movie Studio Pro: script→scenes, 4K AI frames, voiceover, music, SFX, captions, HD export. Build films with AI."
       path="/movie-studio-pro"
     />
     <PageShell title="🎬 Movie Studio Pro" subtitle="Full cinematic editor — script→scenes, VO, music, SFX, captions, HD export">
@@ -131,7 +131,7 @@ const MovieStudioProPage = () => {
         <Card className="p-4">
           <h3 className="text-sm font-bold mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> What you get</h3>
           <ul className="text-xs space-y-1.5 text-muted-foreground">
-            <li>• <strong className="text-foreground">Script → Scenes:</strong> AI writes, generates 8K cinematic frames, voices each line</li>
+            <li>• <strong className="text-foreground">Script → Scenes:</strong> AI writes, generates 4K cinematic frames, voices each line</li>
             <li>• <strong className="text-foreground">Multi-track timeline:</strong> video, voiceover, music, SFX, text overlays</li>
             <li>• <strong className="text-foreground">120+ ElevenLabs voices</strong> + custom voice cloning</li>
             <li>• <strong className="text-foreground">AI music & SFX</strong> auto-mixed under dialogue</li>

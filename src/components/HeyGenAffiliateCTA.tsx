@@ -21,7 +21,7 @@ export function HeyGenAffiliateCTA({
   placement,
   variant = "card",
   title = "Animate Your Story with HeyGen",
-  description = "Turn your storyboard into a lifelike AI character video. 8K talking avatars, lip-sync, and 175+ voices.",
+  description = "Turn your storyboard into a lifelike AI character video. 4K talking avatars, lip-sync, and 175+ voices.",
   ctaLabel = "Try HeyGen Free →",
   className = "",
 }: HeyGenAffiliateCTAProps) {
