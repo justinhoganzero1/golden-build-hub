@@ -82,9 +82,10 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
           <div
             role="text"
             aria-label="Oracle Lunar"
-            className="text-4xl sm:text-7xl font-black tracking-[0.22em] leading-none"
+            className="font-black leading-none tracking-[0.12em] sm:tracking-[0.22em] max-w-full"
             style={{
               fontFamily: "'Cinzel','Trajan Pro',Georgia,serif",
+              fontSize: "clamp(1.5rem, 9vw, 4.5rem)",
               backgroundImage:
                 "linear-gradient(180deg, hsl(48 100% 88%) 0%, hsl(45 100% 62%) 45%, hsl(38 100% 38%) 100%)",
               WebkitBackgroundClip: "text",
