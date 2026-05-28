@@ -2,9 +2,11 @@ import { Headphones, Volume2 } from "lucide-react";
 
 interface SoundSplashProps {
   onEnable: () => void;
+  onSkip?: () => void;
 }
 
-const SoundSplash = ({ onEnable }: SoundSplashProps) => {
+const SoundSplash = ({ onEnable, onSkip }: SoundSplashProps) => {
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-fade-in">
@@ -31,6 +33,17 @@ const SoundSplash = ({ onEnable }: SoundSplashProps) => {
         <p className="text-muted-foreground text-xs flex items-center gap-1">
           🔊 Remembered for 30 days
         </p>
+
+        {onSkip && (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="mt-2 text-[11px] uppercase tracking-widest text-primary/90 hover:text-primary underline underline-offset-4"
+          >
+            Press S to skip → Sign in
+          </button>
+        )}
+
       </div>
     </div>
   );

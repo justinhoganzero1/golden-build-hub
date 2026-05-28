@@ -5,9 +5,11 @@ import { useSiteContent } from "@/hooks/useSiteContent";
 
 interface IntroSplashProps {
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
-const IntroSplash = ({ onComplete }: IntroSplashProps) => {
+const IntroSplash = ({ onComplete, onSkip }: IntroSplashProps) => {
+
   const [visible, setVisible] = useState(true);
   const { get } = useSiteContent();
   const banner = get("landing", "free_trial_banner", "🎁 Sign up free — 30 days of full access, no card required");
@@ -54,7 +56,15 @@ const IntroSplash = ({ onComplete }: IntroSplashProps) => {
         <p className="text-2xl md:text-3xl font-bold drop-shadow-lg text-foreground">
           {tagline}
         </p>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSkip ? onSkip() : onComplete(); }}
+          className="mt-2 text-[11px] uppercase tracking-widest text-primary/90 hover:text-primary underline underline-offset-4"
+        >
+          Press S to skip → Sign in
+        </button>
       </div>
+
     </div>
   );
 };

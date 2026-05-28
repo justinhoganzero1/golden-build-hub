@@ -33,6 +33,21 @@ const Index = () => {
     navigate("/dashboard", { replace: true });
   }, [user, loading, isAdmin, adminLoading, navigate, isLovablePreview]);
 
+  // Keyboard shortcut: S / Enter / Escape skip the splash chain
+  // and jump straight to the sign-in / sign-up chooser.
+  useEffect(() => {
+    if (stage === "signin") return;
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === "s" || k === "enter" || k === "escape") {
+        e.preventDefault();
+        setStage("signin");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage]);
+
   if (loading || adminLoading) return null;
 
   if (loading) return null;
@@ -40,14 +55,15 @@ const Index = () => {
   return (
     <>
       {stage === "sound" && (
-        <SoundSplash onEnable={() => setStage("intro")} />
+        <SoundSplash onEnable={() => setStage("intro")} onSkip={() => setStage("signin")} />
       )}
       {stage === "intro" && (
-        <IntroSplash onComplete={() => setStage("signin")} />
+        <IntroSplash onComplete={() => setStage("signin")} onSkip={() => setStage("signin")} />
       )}
       {stage === "signin" && <SignInPage />}
     </>
   );
 };
+
 
 export default Index;
