@@ -75,7 +75,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
-import oracleLunarBanner from "@/assets/earth-orbit-stardust.jpg";
+import oracleLunarBanner from "@/assets/earth-globe-transparent.png";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
@@ -291,7 +291,7 @@ const PortalLandingPage = () => {
       </header>
 
       {/* ── Hero (mirrors IntroSplash) ────────── */}
-      <section className="relative overflow-hidden min-h-[92vh] bg-black">
+      <section className="relative overflow-hidden min-h-[92vh] bg-background">
         {/* Full-bleed Earth-in-space hero — 20K cinematic, no top wash */}
         <img
           src={oracleLunarBanner}
