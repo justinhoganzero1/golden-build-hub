@@ -67,7 +67,7 @@ const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: 
       </div>
 
       <p className="text-xs text-muted-foreground mb-3">
-        Tap any tool to publish full social-ready videos using our preferred AI partners.
+        Tap any tool to unlock with coins and use it straight inside Oracle Lunar.
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -78,15 +78,12 @@ const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: 
             className="text-left p-3 rounded-lg bg-background/40 border border-border/40 hover:border-amber-500/60 hover:bg-amber-500/5 transition-colors group"
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className={`p-1.5 rounded-md ${f.partner === "heygen" ? "bg-pink-500/15 text-pink-300" : "bg-blue-500/15 text-blue-300"}`}>
+              <span className="p-1.5 rounded-md bg-amber-500/15 text-amber-300">
                 {f.icon}
               </span>
               <span className="text-xs font-semibold text-foreground truncate">{f.title}</span>
             </div>
             <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{f.desc}</p>
-            <p className="text-[9px] text-muted-foreground/50 mt-1 uppercase tracking-wide">
-              via {f.partner === "heygen" ? "HeyGen" : "ElevenLabs"}
-            </p>
           </button>
         ))}
       </div>
