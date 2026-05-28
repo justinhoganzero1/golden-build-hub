@@ -43,27 +43,39 @@ Deno.serve(async (req) => {
     // Higher quality MP3 by default — 128kbps is a tiny bandwidth cost for
     // a massive quality improvement over 32kbps (which sounds compressed/robotic).
     const selectedFormat = outputFormat || "mp3_44100_128";
-    const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
+    // Cadence helper: insert natural micro-pauses so long, flat sentences
+    // breathe like a real person. ElevenLabs honours "..." and " — " as pauses.
+    const humanize = (raw: string) => {
+      let t = raw.replace(/\s{3,}/g, "  ").trim();
+      // Soft pause after sentence-ending punctuation when the next char is a capital
+      t = t.replace(/([.!?])\s+(?=[A-Z])/g, "$1 ");
+      // Add a tiny breath before conjunctions inside long clauses
+      t = t.replace(/,\s+(but|and|so|because|though|however)\s/gi, ", $1 ");
+      // Tighten double spaces
+      t = t.replace(/[ \t]{2,}/g, " ");
+      return t;
+    };
+    const normalizedText = humanize(text);
 
-    // Natural human voice settings:
-    //  - stability 0.55  → consistent without being monotone
-    //  - similarity 0.80 → preserves voice identity
-    //  - style 0.20      → subtle inflection, no over-acting "moan"
-    //  - speed 1.0       → natural pace, no drag
+    // Most natural human-cadence settings:
+    //  - stability 0.42  → enough variance for emotion, not jittery
+    //  - similarity 0.85 → keeps the voice identity locked in
+    //  - style 0.35      → real inflection, no flat "robot read" and no moan
+    //  - speed 0.97      → a hair under 1.0 = warmer, more thoughtful pace
     const voice_settings = {
-      stability: settings?.stability ?? 0.55,
-      similarity_boost: settings?.similarity_boost ?? 0.8,
-      style: settings?.style ?? 0.2,
+      stability: settings?.stability ?? 0.42,
+      similarity_boost: settings?.similarity_boost ?? 0.85,
+      style: settings?.style ?? 0.35,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 1.0,
+      speed: settings?.speed ?? 0.97,
     };
 
-    // optimize_streaming_latency=2 is the sweet spot — faster TTFB without
-    // the heavy quality loss of levels 3-4 (which cause the robotic sound).
+    // optimize_streaming_latency=1 keeps low latency but avoids the
+    // quality degradation that 2-4 introduce (that's the "robot" sound).
     let response: Response;
     try {
       response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=2`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=1`,
         {
           method: "POST",
           headers: {
