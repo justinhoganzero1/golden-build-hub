@@ -115,7 +115,7 @@ export default function VoiceStudioPage() {
       if (error) throw error;
       setAccountVoices((data?.voices || []) as AccountVoice[]);
     } catch (err) {
-      console.error(err);
+      console.warn("[voice-studio] account voices unavailable:", err);
       toast.error("Could not refresh account voices");
     } finally {
       setLoadingAccount(false);
@@ -201,8 +201,15 @@ export default function VoiceStudioPage() {
         reader.readAsDataURL(blob);
       } catch { /* non-blocking */ }
     } catch (err) {
-      console.error(err);
-      toast.error(err instanceof Error ? err.message : "Preview failed");
+      const msg = err instanceof Error ? err.message : "Preview failed";
+      console.warn("[voice-studio] preview failed:", msg);
+      if (/subscription|invoice|payment|quota|credit/i.test(msg)) {
+        toast.error("ElevenLabs billing issue", {
+          description: "The voice provider account has a failed or incomplete payment. Update billing in the ElevenLabs dashboard to resume previews.",
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setGenerating(false);
     }
@@ -295,7 +302,15 @@ export default function VoiceStudioPage() {
       await audio.play();
       toast.success(`🎉 ${p.name}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Preview failed");
+      const msg = err instanceof Error ? err.message : "Preview failed";
+      console.warn("[voice-studio] party preview failed:", msg);
+      if (/subscription|invoice|payment|quota|credit/i.test(msg)) {
+        toast.error("ElevenLabs billing issue", {
+          description: "The voice provider account has a failed or incomplete payment. Update billing to resume previews.",
+        });
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setGenerating(false);
     }
