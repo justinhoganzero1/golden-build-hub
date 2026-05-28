@@ -23,8 +23,8 @@ const PreviewWatermark = () => {
   if (user) return null;
   if (isAuthPage) return null;
 
-  const goSignUp = () => navigate("/sign-in?mode=signup");
-  const goSignIn = () => navigate("/sign-in");
+  const goSignUp = () => navigate("/sign-in?fresh=1&mode=signup&redirect=/dashboard");
+  const goSignIn = () => navigate("/sign-in?fresh=1&redirect=/dashboard");
 
   return (
     <>
