@@ -37,14 +37,16 @@ const WelcomePage = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [stage]);
 
+  if (loading) return null;
 
   return (
     <>
-      {stage === "sound" && <SoundSplash onEnable={() => setStage("intro")} />}
-      {stage === "intro" && <IntroSplash onComplete={() => setStage("signin")} />}
+      {stage === "sound" && <SoundSplash onEnable={() => setStage("intro")} onSkip={() => setStage("signin")} />}
+      {stage === "intro" && <IntroSplash onComplete={() => setStage("signin")} onSkip={() => setStage("signin")} />}
       {stage === "signin" && <SignInPage />}
     </>
   );
+
 };
 
 export default WelcomePage;
