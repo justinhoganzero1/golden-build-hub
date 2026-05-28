@@ -62,6 +62,12 @@ async function readTtsAudio(res: Response) {
   return blob;
 }
 
+function stopCurrentVoicePlayback(audioRef: React.MutableRefObject<HTMLAudioElement | null>) {
+  audioRef.current?.pause();
+  audioRef.current = null;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
 export default function VoiceStudioPage() {
   const { user, session } = useAuth();
   const [searchParams] = useSearchParams();
@@ -158,6 +164,7 @@ export default function VoiceStudioPage() {
       toast.error("Type some text first");
       return;
     }
+    stopCurrentVoicePlayback(audioRef);
     setGenerating(true);
     try {
       const res = await fetch(TTS_URL, {
@@ -202,9 +209,7 @@ export default function VoiceStudioPage() {
   }
 
   function stopAudio() {
-    audioRef.current?.pause();
-    audioRef.current = null;
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    stopCurrentVoicePlayback(audioRef);
   }
 
   function pickFromLibrary(v: AccountVoice) {
@@ -266,6 +271,7 @@ export default function VoiceStudioPage() {
       toast.error("Type some text first");
       return;
     }
+    stopCurrentVoicePlayback(audioRef);
     setGenerating(true);
     try {
       const res = await fetch(TTS_URL, {
