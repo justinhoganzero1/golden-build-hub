@@ -2,7 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen, LogOut } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ const STYLES = [
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const saveMedia = useSaveMedia();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState({
@@ -51,6 +51,11 @@ const ProfilePage = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => { setEditing(false); toast.success("Profile updated!"); };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out");
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -269,6 +274,14 @@ const ProfilePage = () => {
             </div>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-4 w-full rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
       </div>
 
       {/* Enlarged avatar dialog */}
