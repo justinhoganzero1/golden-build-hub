@@ -149,15 +149,11 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: signed-in users see the Dashboard; visitors get the sign-in/sign-up chooser.
+// Root route is always the public website. App access starts only after an
+// explicit sign-in/sign-up action, so opening the website never drops a saved
+// browser session straight into Oracle or Dashboard.
 const RootRoute = () => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-  if (loading) return <Loading />;
-  if (user) return <DashboardPage />;
-  const params = new URLSearchParams(location.search);
-  const mode = params.get("mode") === "signin" ? "" : "?mode=signup&redirect=%2Fdashboard";
-  return <Navigate to={`/sign-in${mode}`} replace />;
+  return <PortalLandingPage />;
 };
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
