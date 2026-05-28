@@ -36,6 +36,46 @@ type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
 
+function playDevicePreview(text: string, voiceName?: string) {
+  if (!("speechSynthesis" in window)) {
+    throw new Error("Voice preview is temporarily unavailable");
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.96;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+  toast.success(`Playing ${voiceName || "preview"}`);
+}
+
+async function readTtsAudio(res: Response) {
+  const contentType = res.headers.get("content-type") || "";
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `TTS failed: ${res.status}`);
+  }
+
+  if (!contentType.toLowerCase().startsWith("audio/")) {
+    const bodyText = await res.text();
+    try {
+      const body = JSON.parse(bodyText) as { fallback?: boolean; error?: string; status?: number };
+      if (body.fallback) {
+        console.warn("TTS fallback response", body);
+        return null;
+      }
+    } catch {
+      // Non-JSON, non-audio response: throw the raw response below.
+    }
+    throw new Error(bodyText || "Voice preview returned no audio");
+  }
+
+  const blob = await res.blob();
+  if (!blob.size) throw new Error("Voice preview returned empty audio");
+  return blob;
+}
+
 export default function VoiceStudioPage() {
   const { user, session } = useAuth();
   const { data: savedVoices = [] } = useSavedVoices();
@@ -133,11 +173,11 @@ export default function VoiceStudioPage() {
         },
         body: JSON.stringify({ text, voiceId, settings, modelId: settings.model_id }),
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `TTS failed: ${res.status}`);
+      const blob = await readTtsAudio(res);
+      if (!blob) {
+        playDevicePreview(text, voiceName);
+        return;
       }
-      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -249,8 +289,11 @@ export default function VoiceStudioPage() {
           settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" },
         }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const blob = await res.blob();
+      const blob = await readTtsAudio(res);
+      if (!blob) {
+        playDevicePreview(text, p.name);
+        return;
+      }
       const url = URL.createObjectURL(blob);
       audioRef.current?.pause();
       const audio = new Audio(url);
