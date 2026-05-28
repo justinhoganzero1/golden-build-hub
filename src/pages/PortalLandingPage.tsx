@@ -291,21 +291,23 @@ const PortalLandingPage = () => {
       </header>
 
       {/* ── Hero (mirrors IntroSplash) ────────── */}
-      <section className="relative overflow-hidden">
-        {/* Banner image — same as the app's IntroSplash */}
+      <section className="relative overflow-hidden min-h-[92vh] bg-black">
+        {/* Full-bleed Earth-in-space hero — 20K cinematic, no top wash */}
         <img
           src={oracleLunarBanner}
-          alt="Earth in orbit surrounded by golden stardust"
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
+          alt="Planet Earth floating in deep space with a golden stardust ring orbiting like satellites"
+          className="absolute inset-0 w-full h-full object-cover"
+          fetchPriority="high"
         />
-        {/* Dark vignette + subtle gold halo — keeps contrast high while letting Earth pop */}
+        {/* Soft bottom-only fade so text below stays readable — keeps the globe fully visible */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse at center, transparent 0%, hsl(var(--background) / 0.55) 75%, hsl(var(--background) / 0.9) 100%), radial-gradient(ellipse at center, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
+              "linear-gradient(to bottom, transparent 0%, transparent 60%, hsl(var(--background) / 0.85) 100%)",
           }}
         />
+
 
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
