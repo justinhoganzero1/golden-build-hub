@@ -358,7 +358,7 @@ const PortalLandingPage = () => {
                   <button
                     onClick={() => handleTileClick(f.to)}
                     aria-label={`Preview ${f.title}`}
-                    className="group flex items-center gap-2 rounded-full border border-primary/60 bg-background/20 backdrop-blur-sm px-3 py-1.5 shadow-[0_0_18px_hsl(var(--primary)/0.5)] hover:bg-background/40 hover:shadow-[0_0_32px_hsl(var(--primary)/0.9)] hover:scale-110 transition-all"
+                    className="group flex items-center gap-1.5 bg-transparent px-2 py-1 transition-transform hover:scale-110"
                   >
                     <Icon className="h-3.5 w-3.5 text-primary drop-shadow-[0_0_4px_hsl(var(--primary))]" />
                     <span
@@ -418,7 +418,7 @@ const PortalLandingPage = () => {
             />
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-6">
+          <div className="inline-flex items-center gap-2 bg-transparent px-2 py-1 text-xs text-primary mb-6">
             <Zap className="h-3.5 w-3.5 text-primary" />
             40+ AI modules · One cinematic super-app
           </div>
