@@ -69,7 +69,7 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
         {/* Crown badge */}
         <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] bg-black/40 backdrop-blur border border-amber-400/40 text-amber-200">
           <span>✦</span>
-          <span>8K Cinematic AI</span>
+          <span>4K Cinematic AI</span>
           <span>✦</span>
         </div>
 
