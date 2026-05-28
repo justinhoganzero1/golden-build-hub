@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -78,6 +79,7 @@ async function readTtsAudio(res: Response) {
 
 export default function VoiceStudioPage() {
   const { user, session } = useAuth();
+  const [searchParams] = useSearchParams();
   const { data: savedVoices = [] } = useSavedVoices();
   const saveVoice = useSaveVoice();
   const deleteVoice = useDeleteSavedVoice();
@@ -103,6 +105,13 @@ export default function VoiceStudioPage() {
   // Assign dialog
   const [assignVoice, setAssignVoice] = useState<SavedVoice | null>(null);
 
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") as Tab | null;
+    if (tabParam && ["library", "party", "saved", "studio"].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, [searchParams]);
+
   // Load account voices on mount
   useEffect(() => {
     void loadAccountVoices();
@@ -116,6 +125,7 @@ export default function VoiceStudioPage() {
       setAccountVoices((data?.voices || []) as AccountVoice[]);
     } catch (err) {
       console.error(err);
+      toast.error("Could not refresh account voices");
     } finally {
       setLoadingAccount(false);
     }
