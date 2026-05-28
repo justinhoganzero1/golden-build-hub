@@ -165,17 +165,46 @@ const SignInPage = () => {
 
   // Defeat any inherited pink tab glow on this page by scoping a wrapper.
   return (
-    <div data-no-tab-glow className="min-h-screen bg-background flex flex-col items-center justify-start pt-6 px-4 pb-10">
+    <div
+      data-no-tab-glow
+      className="min-h-screen relative flex flex-col items-center justify-start pt-6 px-4 pb-10"
+      style={{
+        backgroundImage: `linear-gradient(180deg, hsl(0 0% 0% / 0.55) 0%, hsl(0 0% 0% / 0.78) 100%), url(${earthOrbitBg})`,
+        backgroundSize: "cover, cover",
+        backgroundPosition: "center, center",
+        backgroundAttachment: "fixed, fixed",
+        backgroundRepeat: "no-repeat, no-repeat",
+      }}
+    >
       <style>{`
         [data-no-tab-glow] [role="tab"]::before,
         [data-no-tab-glow] [role="tab"]::after,
         [data-no-tab-glow] [role="tablist"] > button::before,
         [data-no-tab-glow] [role="tablist"] > button::after { content: none !important; display: none !important; }
+        @keyframes orbit-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .orbit-marquee-track { display: flex; gap: 14px; width: max-content; animation: orbit-marquee 38s linear infinite; }
       `}</style>
 
-      <div className="w-full max-w-md overflow-hidden rounded-[22px] mb-6 border border-primary/30 shadow-[0_0_32px_hsl(45_100%_55%/0.25)]">
-        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
+      {/* Right-to-left orbit of feature tiles — like satellites streaming across the sky */}
+      <div className="w-full max-w-3xl overflow-hidden mb-6 py-2 mask-fade-x">
+        <div className="orbit-marquee-track">
+          {[...ORBIT_TILES, ...ORBIT_TILES].map((t, i) => {
+            const Icon = t.icon;
+            return (
+              <div
+                key={`${t.label}-${i}`}
+                className="flex items-center gap-2 rounded-full border border-primary/40 bg-black/60 backdrop-blur-md px-3 py-2 shadow-[0_0_18px_hsl(45_100%_55%/0.35)] whitespace-nowrap"
+              >
+                <span className="h-6 w-6 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+                  <Icon className="h-3.5 w-3.5 text-primary" />
+                </span>
+                <span className="text-[11px] font-semibold text-foreground">{t.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
+
 
       <div
         className="w-full max-w-md rounded-[22px] p-7 animate-slide-up"
