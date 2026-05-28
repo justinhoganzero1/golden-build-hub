@@ -36,7 +36,7 @@ const MasterMuteButton = () => {
       }
       setPos({
         x: clamp(mx - offset.current.x, 4, window.innerWidth - 36),
-        y: clamp(my - offset.current.y, 4, window.innerHeight - 36),
+        y: clamp(my - offset.current.y, 4, window.innerHeight - BOTTOM_NAV_OFFSET),
       });
     };
 
