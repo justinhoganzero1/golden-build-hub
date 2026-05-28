@@ -11,10 +11,9 @@ Deno.serve(async (req) => {
   try {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
-      // Graceful fallback signal — client will use browser TTS instead of crashing
       return new Response(
-        JSON.stringify({ error: "TTS_UNAVAILABLE", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -27,8 +26,8 @@ Deno.serve(async (req) => {
     const { text, voiceId, settings, modelId, fast, outputFormat } = body || {};
     if (!text || typeof text !== "string") {
       return new Response(
-        JSON.stringify({ error: "TEXT_REQUIRED", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TEXT_REQUIRED", message: "Type some text before previewing a voice." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -100,25 +99,30 @@ Deno.serve(async (req) => {
     } catch (netErr) {
       console.error("ElevenLabs network error:", netErr);
       return new Response(
-        JSON.stringify({ error: "NETWORK_ERROR", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.ok) {
       const err = await response.text();
       console.error("ElevenLabs error:", response.status, err);
-      // Always return a soft fallback — never crash the client
+      let message = "Voice preview failed. No fake fallback was played.";
+      try {
+        const parsed = JSON.parse(err);
+        const detail = parsed?.detail;
+        message = detail?.message || parsed?.message || message;
+      } catch { /* keep generic message */ }
       return new Response(
-        JSON.stringify({ error: "TTS_FAILED", status: response.status, fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_FAILED", status: response.status, message }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.body) {
       return new Response(
-        JSON.stringify({ error: "NO_AUDIO", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -133,8 +137,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ error: "INTERNAL_ERROR", fallback: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
