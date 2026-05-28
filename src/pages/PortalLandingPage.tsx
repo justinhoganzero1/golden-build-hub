@@ -296,9 +296,10 @@ const PortalLandingPage = () => {
         <img
           src={oracleLunarBanner}
           alt="Planet Earth floating in deep space with a golden stardust ring orbiting like satellites"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain object-center"
           fetchPriority="high"
         />
+
         {/* Soft bottom-only fade so text below stays readable — keeps the globe fully visible */}
         <div
           className="absolute inset-0 pointer-events-none"
