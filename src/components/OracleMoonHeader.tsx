@@ -119,13 +119,14 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             style={{ animation: "marqueeSlide 28s linear infinite" }}
           >
             {[...capabilities, ...capabilities].map((cap, i) => (
-              <span
+              <Link
                 key={i}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100"
+                to={cap.to}
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/70 backdrop-blur-sm border border-amber-400/60 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
               >
-                <span className="text-amber-300">✦</span>
-                {cap}
-              </span>
+                <span className="text-amber-300 drop-shadow-[0_0_1px_rgba(0,0,0,0.9)]">✦</span>
+                {cap.label}
+              </Link>
             ))}
           </div>
         </div>
