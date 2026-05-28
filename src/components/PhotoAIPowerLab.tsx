@@ -11,13 +11,7 @@ import {
   Leaf, Rocket, Gem, Tag,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import {
-  ELEVENLABS_AFFILIATE_URL,
-  HEYGEN_AFFILIATE_URL,
-  trackAffiliateClick,
-} from "@/lib/affiliateLinks";
-
-const HEYGEN_PLACEHOLDER = "https://www.heygen.com/?sid=oraclelunar";
+import { useFeatureProxy } from "@/lib/featureProxy";
 
 type PhotoMode = "generate" | "edit";
 type Filter = "None" | "Vivid" | "Noir" | "Vintage" | "Dreamy" | "Cinematic";
