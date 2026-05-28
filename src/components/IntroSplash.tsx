@@ -56,7 +56,15 @@ const IntroSplash = ({ onComplete, onSkip }: IntroSplashProps) => {
         <p className="text-2xl md:text-3xl font-bold drop-shadow-lg text-foreground">
           {tagline}
         </p>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSkip ? onSkip() : onComplete(); }}
+          className="mt-2 text-[11px] uppercase tracking-widest text-primary/90 hover:text-primary underline underline-offset-4"
+        >
+          Press S to skip → Sign in
+        </button>
       </div>
+
     </div>
   );
 };
