@@ -22,7 +22,21 @@ const WelcomePage = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) return null;
+  // Keyboard shortcut: press "S" (skip), Enter, or Escape at any splash
+  // stage to jump straight to the sign-in / sign-up chooser.
+  useEffect(() => {
+    if (stage === "signin") return;
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (k === "s" || k === "enter" || k === "escape") {
+        e.preventDefault();
+        setStage("signin");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage]);
+
 
   return (
     <>
