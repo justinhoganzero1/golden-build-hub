@@ -27,7 +27,7 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
     cleanSearch.delete("preview");
     cleanSearch.delete("__lovable_token");
     const redirect = `${location.pathname}${cleanSearch.toString() ? `?${cleanSearch.toString()}` : ""}`;
-    return <Navigate to={`/sign-in?mode=signup&redirect=${encodeURIComponent(redirect)}`} state={{ from: location }} replace />;
+    return <Navigate to={`/sign-in?redirect=${encodeURIComponent(redirect)}`} state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
