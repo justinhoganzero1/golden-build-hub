@@ -331,7 +331,7 @@ const PortalLandingPage = () => {
             <div className="absolute inset-0 pointer-events-none">
               {(() => {
                 const tabs = FEATURES.slice(0, 10);
-                const dur = 42;
+                const dur = 84;
                 return tabs.map((f, i) => {
                   const Icon = f.icon;
                   const delay = -(dur * (i / tabs.length));
