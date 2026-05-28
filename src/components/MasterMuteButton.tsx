@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useMute } from "@/contexts/MuteContext";
 import { useLocation } from "react-router-dom";
@@ -6,12 +6,17 @@ import { useLocation } from "react-router-dom";
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
   const location = useLocation();
+  const isSplashScreen = location.pathname === "/";
+  const getSplashPosition = () => ({
+    x: Math.round((window.innerWidth - 32) / 2),
+    y: Math.round(window.innerHeight * 0.625),
+  });
   // Bottom nav is ~80px tall on mobile — keep the speaker above it so it never
   // overlaps the Home/Oracle/Vault/Settings/Profile icons.
   const BOTTOM_NAV_OFFSET = 110;
   const [pos, setPos] = useState({
-    x: window.innerWidth - 44,
-    y: window.innerHeight - BOTTOM_NAV_OFFSET,
+    x: isSplashScreen ? getSplashPosition().x : window.innerWidth - 44,
+    y: isSplashScreen ? getSplashPosition().y : window.innerHeight - BOTTOM_NAV_OFFSET,
   });
   const dragging = useRef(false);
   const hasMoved = useRef(false);
@@ -21,7 +26,16 @@ const MasterMuteButton = () => {
 
   const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 
+  useEffect(() => {
+    if (!isSplashScreen) return;
+    const lockToSplashSpot = () => setPos(getSplashPosition());
+    lockToSplashSpot();
+    window.addEventListener("resize", lockToSplashSpot);
+    return () => window.removeEventListener("resize", lockToSplashSpot);
+  }, [isSplashScreen]);
+
   const handleStart = useCallback((clientX: number, clientY: number) => {
+    if (isSplashScreen) return;
     dragging.current = true;
     hasMoved.current = false;
     offset.current = { x: clientX - pos.x, y: clientY - pos.y };
@@ -58,7 +72,7 @@ const MasterMuteButton = () => {
     window.addEventListener("mouseup", handleEnd);
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("touchend", handleEnd);
-  }, [pos]);
+  }, [isSplashScreen, pos]);
 
   // Hide on Oracle page — it has its own speaker control
   if (location.pathname === "/oracle") return null;
