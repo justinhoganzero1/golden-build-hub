@@ -222,27 +222,21 @@ const DashboardPage = () => {
           <div className="rounded-2xl bg-background/95 backdrop-blur p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="flex-1 text-center sm:text-left">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-1">
-                ✨ Unlock the full Oracle Lunar
+                ★ Limited time
               </div>
               <h2 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-primary to-amber-300 bg-clip-text text-transparent">
-                Become a Member or Sign In
+                TRY EVERY FEATURE FREE
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                One free go on everything for visitors · Members get 4K, exports, wallet & coins.
+                3 free goes on every tool — no card needed. Tap Start Now to sign in with Google or Apple.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex w-full sm:w-auto">
               <button
                 onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
-                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
               >
-                🚀 Become a Member
-              </button>
-              <button
-                onClick={() => navigate("/sign-in?redirect=/dashboard")}
-                className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-background border-2 border-primary/60 text-primary hover:bg-primary/10 transition"
-              >
-                Sign In
+                ✨ Start Now
               </button>
             </div>
           </div>
