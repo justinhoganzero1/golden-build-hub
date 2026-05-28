@@ -7,9 +7,11 @@ const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
   const location = useLocation();
   const isSplashScreen = location.pathname === "/";
+  // Locked spot for the splash / auth screen: lower-left, just under the
+  // "Trouble signing up?" link, clear of the Create Account button.
   const getSplashPosition = () => ({
-    x: Math.round((window.innerWidth - 32) / 2),
-    y: Math.round(window.innerHeight * 0.625),
+    x: Math.round(window.innerWidth * 0.205),
+    y: Math.round(window.innerHeight * 0.917),
   });
   // Bottom nav is ~80px tall on mobile — keep the speaker above it so it never
   // overlaps the Home/Oracle/Vault/Settings/Profile icons.
