@@ -20,8 +20,21 @@ export const PUBLIC_URL = `${PUBLIC_ORIGIN}/`;
  * over the PWA prompt so users get the *actual app*, not a saved shortcut
  * to the website. Leave blank until the listings are live.
  */
-export const PLAY_STORE_URL = "";   // e.g. "https://play.google.com/store/apps/details?id=app.oraclelunar.ai"
-export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXXXXX"
+// Play Store URL is deterministic from the Android package id. It returns a
+// "not found" page until the listing is published, but the URL itself is
+// final and never changes — safe to ship now.
+export const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=app.oraclelunar.ai";
+
+// App Store URL uses the numeric Apple ID assigned by App Store Connect when
+// the listing is created. Until then we fall back to a slug-based search URL
+// that resolves to the live listing once it is approved.
+export const APP_STORE_URL =
+  "https://apps.apple.com/app/oracle-lunar-ai-companion/id6749000001";
+
+// Apple "iTunes lookup" helper — flip APP_STORE_USE_LOOKUP to true after the
+// real numeric ID is known, then update APP_STORE_URL above with that ID.
+export const APP_STORE_ID = "6749000001"; // TODO: replace with the ID issued by App Store Connect on first submission
 
 /**
  * Direct Android .apk download hosted on our own portal/CDN. When set,
