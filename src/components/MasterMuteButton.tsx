@@ -6,7 +6,13 @@ import { useLocation } from "react-router-dom";
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
   const location = useLocation();
-  const [pos, setPos] = useState({ x: window.innerWidth - 44, y: window.innerHeight - 100 });
+  // Bottom nav is ~80px tall on mobile — keep the speaker above it so it never
+  // overlaps the Home/Oracle/Vault/Settings/Profile icons.
+  const BOTTOM_NAV_OFFSET = 110;
+  const [pos, setPos] = useState({
+    x: window.innerWidth - 44,
+    y: window.innerHeight - BOTTOM_NAV_OFFSET,
+  });
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
