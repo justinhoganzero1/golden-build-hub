@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
+import { setAIFullControl } from "@/lib/aiControl";
 
 
 const SignInPage = () => {
@@ -15,6 +16,8 @@ const SignInPage = () => {
   const [password, setPassword] = useState("");
   const [dob, setDob] = useState(""); // YYYY-MM-DD, only used on signup
   const [rememberMe, setRememberMe] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [aiFullControl, setAiFullControlState] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -121,6 +124,12 @@ const SignInPage = () => {
           toast.error("You must be at least 16 years old to use Oracle Lunar.");
           return;
         }
+        if (!acceptTerms) {
+          toast.error("Please accept the Terms & Privacy Policy to continue.");
+          return;
+        }
+        // Persist the AI Full Control preference (user can flip in Settings anytime)
+        setAIFullControl(aiFullControl);
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
@@ -332,6 +341,37 @@ const SignInPage = () => {
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 Oracle Lunar is restricted to users aged 16 and over.
               </p>
+            </div>
+          )}
+
+          {isSignUp && (
+            <div className="space-y-2.5 rounded-[14px] p-3.5"
+                 style={{ background: "hsl(0 0% 4% / 0.55)", border: "1px solid hsl(45 100% 55% / 0.25)" }}>
+              <button
+                type="button"
+                onClick={() => setAcceptTerms(!acceptTerms)}
+                className="w-full flex items-start gap-2.5 text-left"
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${acceptTerms ? "bg-primary border-primary" : "border-primary/40"}`} />
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiFullControlState(!aiFullControl)}
+                className="w-full flex items-start gap-2.5 text-left pt-2 border-t border-primary/15"
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${aiFullControl ? "bg-primary border-primary" : "border-primary/40"}`} />
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  <span className="text-foreground font-medium">Give Oracle full control.</span>{" "}
+                  Allow the Oracle to learn from my messages, draft replies in my voice, and act on my behalf where useful.
+                  I can switch this off anytime in <span className="text-primary">Settings → Notifications</span>.
+                </span>
+              </button>
             </div>
           )}
 
