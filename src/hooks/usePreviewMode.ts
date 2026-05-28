@@ -2,23 +2,19 @@ import { useEffect, useState } from "react";
 
 /**
  * Detects whether the current page is being rendered inside a preview iframe
- * (e.g., from the landing-page Feature Preview, or the Lovable editor preview).
+ * from an in-app Feature Preview.
  * When true, RequireAuth lets the visitor through so they can trial features
  * without signing in.
  *
  * Triggers when:
  *  - URL has `?preview=1`
- *  - Host is the Lovable editor preview (*.lovableproject.com / *.lovable.app / *.lovable.dev)
+ *
+ * Important: do NOT infer preview mode from the host. A signed-in user on the
+ * Lovable/editor/published host must still be treated as using the real app.
  */
 const computePreview = (): boolean => {
   if (typeof window === "undefined") return false;
-  if (new URLSearchParams(window.location.search).get("preview") === "1") return true;
-  const host = window.location.hostname;
-  return (
-    host.endsWith(".lovableproject.com") ||
-    host.endsWith(".lovable.app") ||
-    host.endsWith(".lovable.dev")
-  );
+  return new URLSearchParams(window.location.search).get("preview") === "1";
 };
 
 export const usePreviewMode = (): boolean => {
