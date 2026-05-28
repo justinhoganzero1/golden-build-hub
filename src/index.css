@@ -1694,3 +1694,23 @@ body.mobile-dim::before,
 body.mobile-dim::after { opacity: 0.75 !important; }
 body.mobile-dim .neon-edge-pulse,
 body.mobile-dim .shield-glow.is-pulsing { animation: none !important; }
+
+/* Blue scrollbar for all textareas — easy on the eyes, matches big platforms */
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--accent-blue)) transparent;
+}
+textarea::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+textarea::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent-blue));
+  border-radius: 4px;
+}
+textarea::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent-blue-glow));
+}
