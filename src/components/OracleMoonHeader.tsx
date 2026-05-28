@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
 
 interface OracleMoonHeaderProps {
@@ -7,7 +7,7 @@ interface OracleMoonHeaderProps {
 }
 
 /**
- * Oracle Lunar Header — 8K cinematic AI hero.
+ * Oracle Lunar Header — 4K cinematic AI hero.
  * Full-bleed AI-generated cosmic video background with engraved gold
  * wordmark, gold flourish, and capability marquee. Designed to look
  * premium on Play Store / App Store hero shots.
@@ -15,17 +15,17 @@ interface OracleMoonHeaderProps {
 export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
   const navigate = useNavigate();
 
-  const capabilities = [
-    "Cinematic AI Portraits",
-    "8K Avatars",
-    "Story Writer",
-    "Movie Studio",
-    "Magic Photo Edit",
-    "Voice Cloning",
-    "Live Vision",
-    "Brand & Logo Lab",
-    "AI Tutor",
-    "App Builder",
+  const capabilities: { label: string; to: string }[] = [
+    { label: "Cinematic AI Portraits", to: "/photography-hub" },
+    { label: "4K Avatars", to: "/avatar-generator" },
+    { label: "Story Writer", to: "/story-writer" },
+    { label: "Movie Studio", to: "/movie-studio-pro" },
+    { label: "Magic Photo Edit", to: "/photography-hub" },
+    { label: "Voice Cloning", to: "/voice-studio" },
+    { label: "Live Vision", to: "/live-vision" },
+    { label: "Brand & Logo Lab", to: "/photography-hub" },
+    { label: "AI Tutor", to: "/ai-tutor" },
+    { label: "App Builder", to: "/app-builder" },
   ];
 
   return (
