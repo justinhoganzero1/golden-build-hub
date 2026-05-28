@@ -10,7 +10,7 @@ interface RequireAuthProps {
   freeAccess?: boolean;
 }
 
-const RequireAuth = ({ children }: RequireAuthProps) => {
+const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
