@@ -297,6 +297,7 @@ const PortalLandingPage = () => {
           src={oracleLunarBanner}
           alt="Planet Earth floating in deep space with a golden stardust ring orbiting like satellites"
           className="absolute inset-0 w-full h-full object-contain object-center"
+          style={{ zIndex: 5 }}
           fetchPriority="high"
         />
 
@@ -304,30 +305,50 @@ const PortalLandingPage = () => {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
+            zIndex: 6,
             background:
               "linear-gradient(to bottom, transparent 0%, transparent 60%, hsl(var(--background) / 0.85) 100%)",
           }}
         />
 
-        {/* ── Orbiting satellite tiles — elliptical ring around Earth, tiles stay upright ── */}
+        {/* ── Orbiting satellite tabs — single tilted plane, text always faces viewer,
+              tabs pass BEHIND the globe via z-index + scale + opacity changes ── */}
         <style>{`
-          @keyframes orbit-ellipse-1 {
-            0%   { transform: translate(calc(-50% + 320px), -50%); }
-            25%  { transform: translate(-50%, calc(-50% + 80px)); }
-            50%  { transform: translate(calc(-50% - 320px), -50%); }
-            75%  { transform: translate(-50%, calc(-50% - 80px)); }
-            100% { transform: translate(calc(-50% + 320px), -50%); }
+          :root {
+            --orbit-rx-1: clamp(140px, 38vw, 320px);
+            --orbit-ry-1: clamp(28px, 7vw, 70px);
+            --orbit-rx-2: clamp(180px, 50vw, 440px);
+            --orbit-ry-2: clamp(36px, 10vw, 95px);
           }
-          @keyframes orbit-ellipse-2 {
-            0%   { transform: translate(calc(-50% + 440px), -50%); }
-            25%  { transform: translate(-50%, calc(-50% - 110px)); }
-            50%  { transform: translate(calc(-50% - 440px), -50%); }
-            75%  { transform: translate(-50%, calc(-50% + 110px)); }
-            100% { transform: translate(calc(-50% + 440px), -50%); }
+          /* Front-half (0-50%) = above globe & large; Back-half (50-100%) = behind globe & shrunk */
+          @keyframes orbit-ring-1 {
+            0%   { transform: translate(calc(-50% + var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
+            25%  { transform: translate(-50%, calc(-50% + var(--orbit-ry-1))) scale(1.18); opacity:1; }
+            50%  { transform: translate(calc(-50% - var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
+            50.01% { z-index:1; }
+            75%  { transform: translate(-50%, calc(-50% - var(--orbit-ry-1))) scale(0.58); opacity:.45; }
+            99.99% { z-index:1; }
+            100% { transform: translate(calc(-50% + var(--orbit-rx-1)), -50%) scale(1.05); opacity:1; }
           }
-          .sat-orbit { position:absolute; left:50%; top:50%; pointer-events:auto; will-change:transform; }
+          @keyframes orbit-ring-1-z {
+            0%, 50% { z-index: 20; }
+            50.01%, 100% { z-index: 1; }
+          }
+          @keyframes orbit-ring-2 {
+            0%   { transform: translate(calc(-50% + var(--orbit-rx-2)), -50%) scale(0.58); opacity:.45; }
+            25%  { transform: translate(-50%, calc(-50% - var(--orbit-ry-2))) scale(0.58); opacity:.45; }
+            50%  { transform: translate(calc(-50% - var(--orbit-rx-2)), -50%) scale(1.05); opacity:1; }
+            75%  { transform: translate(-50%, calc(-50% + var(--orbit-ry-2))) scale(1.18); opacity:1; }
+            100% { transform: translate(calc(-50% + var(--orbit-rx-2)), -50%) scale(0.58); opacity:.45; }
+          }
+          @keyframes orbit-ring-2-z {
+            0%, 25% { z-index: 1; }
+            25.01%, 75% { z-index: 20; }
+            75.01%, 100% { z-index: 1; }
+          }
+          .sat-orbit { position:absolute; left:50%; top:50%; pointer-events:auto; will-change:transform, opacity; }
         `}</style>
-        <div className="absolute inset-0 pointer-events-none hidden md:block">
+        <div className="absolute inset-0 pointer-events-none">
           {(() => {
             const ring1 = FEATURES.slice(0, 6);
             const ring2 = FEATURES.slice(6, 12);
@@ -337,6 +358,7 @@ const PortalLandingPage = () => {
               total: number,
               dur: number,
               kf: string,
+              zKf: string,
             ) => {
               const Icon = f.icon;
               const delay = -(dur * (i / total));
@@ -344,7 +366,10 @@ const PortalLandingPage = () => {
                 <div
                   key={f.title}
                   className="sat-orbit"
-                  style={{ animation: `${kf} ${dur}s linear infinite`, animationDelay: `${delay}s` }}
+                  style={{
+                    animation: `${kf} ${dur}s linear infinite, ${zKf} ${dur}s step-end infinite`,
+                    animationDelay: `${delay}s, ${delay}s`,
+                  }}
                 >
                   <button
                     onClick={() => handleTileClick(f.to)}
@@ -361,12 +386,13 @@ const PortalLandingPage = () => {
             };
             return (
               <>
-                {ring1.map((f, i) => renderSat(f, i, ring1.length, 38, "orbit-ellipse-1"))}
-                {ring2.map((f, i) => renderSat(f, i, ring2.length, 56, "orbit-ellipse-2"))}
+                {ring1.map((f, i) => renderSat(f, i, ring1.length, 38, "orbit-ring-1", "orbit-ring-1-z"))}
+                {ring2.map((f, i) => renderSat(f, i, ring2.length, 56, "orbit-ring-2", "orbit-ring-2-z"))}
               </>
             );
           })()}
         </div>
+
 
 
 
