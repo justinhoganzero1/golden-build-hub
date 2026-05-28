@@ -1,13 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, Sparkles, Heart, Brain, Camera, Eye, Mic, Users, Wand2, Megaphone, Video, Wallet, Calendar, GraduationCap } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import earthOrbitBg from "@/assets/earth-orbit-stardust.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 import { setAIFullControl } from "@/lib/aiControl";
 import { lovable } from "@/integrations/lovable";
+
+const ORBIT_TILES = [
+  { icon: Heart, label: "Crisis Hub" },
+  { icon: Brain, label: "Mind Hub" },
+  { icon: Camera, label: "Photography" },
+  { icon: Eye, label: "Live Vision" },
+  { icon: Mic, label: "Voice Studio" },
+  { icon: Users, label: "AI Companion" },
+  { icon: Wand2, label: "Magic Hub" },
+  { icon: Megaphone, label: "Marketing" },
+  { icon: Video, label: "Video Editor" },
+  { icon: Wallet, label: "Wallet" },
+  { icon: Calendar, label: "Calendar" },
+  { icon: GraduationCap, label: "AI Tutor" },
+];
+
 
 
 const SignInPage = () => {
