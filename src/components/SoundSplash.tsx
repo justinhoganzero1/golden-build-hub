@@ -2,9 +2,11 @@ import { Headphones, Volume2 } from "lucide-react";
 
 interface SoundSplashProps {
   onEnable: () => void;
+  onSkip?: () => void;
 }
 
-const SoundSplash = ({ onEnable }: SoundSplashProps) => {
+const SoundSplash = ({ onEnable, onSkip }: SoundSplashProps) => {
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6 animate-fade-in">
