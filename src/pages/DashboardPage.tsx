@@ -164,7 +164,7 @@ const DashboardPage = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate(user ? "/oracle" : "/sign-in?mode=signup&redirect=/dashboard")}
+            onClick={() => navigate(user ? "/oracle" : "/sign-in?fresh=1&mode=signup&redirect=/dashboard")}
             className="shrink-0 px-5 py-3 rounded-full bg-black text-amber-300 font-black text-sm uppercase tracking-wider shadow-xl hover:scale-105 active:scale-95 transition border-2 border-amber-300/60 animate-pulse"
           >
             ✨ {user ? "Start Now" : "Sign Up Free"}
@@ -244,13 +244,13 @@ const DashboardPage = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
-                onClick={() => navigate("/sign-in?mode=signup")}
+                onClick={() => navigate("/sign-in?fresh=1&mode=signup&redirect=/dashboard")}
                 className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
               >
                 🚀 Become a Member
               </button>
               <button
-                onClick={() => navigate("/sign-in")}
+                onClick={() => navigate("/sign-in?fresh=1&redirect=/dashboard")}
                 className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-background border-2 border-primary/60 text-primary hover:bg-primary/10 transition"
               >
                 Sign In
