@@ -149,29 +149,6 @@ const DashboardPage = () => {
       <SEO title="Dashboard — Oracle Lunar AI Super App" description="Your Oracle Lunar dashboard. Access 40+ AI tools: chat, voice, photo, video, tutor, mind & wellness — all free to start." path="/dashboard" />
       <WelcomeModal />
 
-      {/* HUGE attention-grabbing hero banner — visible at the very top of the dashboard */}
-      <div className="relative mx-3 mt-3 mb-2 overflow-hidden rounded-3xl border-2 border-amber-400/70 bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-700 shadow-[0_0_60px_rgba(245,158,11,0.55)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.35),transparent_60%)] pointer-events-none" />
-        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-yellow-200/30 blur-3xl animate-pulse pointer-events-none" />
-        <div className="relative px-5 py-5 flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-black tracking-[0.25em] text-black/70 uppercase">★ Limited Time ★</div>
-            <p className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm m-0">
-              TRY EVERY FEATURE <span className="underline decoration-black/40">FREE</span>
-            </p>
-            <p className="text-black/80 text-xs sm:text-sm font-semibold mt-1">
-              3 free goes on every tool — no card needed. Tap any tile below to start.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate(user ? "/oracle" : "/sign-in?fresh=1&mode=signup&redirect=/dashboard")}
-            className="shrink-0 px-5 py-3 rounded-full bg-black text-amber-300 font-black text-sm uppercase tracking-wider shadow-xl hover:scale-105 active:scale-95 transition border-2 border-amber-300/60 animate-pulse"
-          >
-            ✨ {user ? "Start Now" : "Sign Up Free"}
-          </button>
-        </div>
-      </div>
-
       <OracleMoonHeader>
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
