@@ -21,7 +21,7 @@ const PreviewWatermark = () => {
   if (loading) return null;
   if (user) return null;
 
-  const goSignUp = () => navigate("/sign-up");
+  const goSignUp = () => navigate("/sign-in?mode=signup");
   const goSignIn = () => navigate("/sign-in");
 
   return (
