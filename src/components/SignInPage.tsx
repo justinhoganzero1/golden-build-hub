@@ -344,6 +344,37 @@ const SignInPage = () => {
             </div>
           )}
 
+          {isSignUp && (
+            <div className="space-y-2.5 rounded-[14px] p-3.5"
+                 style={{ background: "hsl(0 0% 4% / 0.55)", border: "1px solid hsl(45 100% 55% / 0.25)" }}>
+              <button
+                type="button"
+                onClick={() => setAcceptTerms(!acceptTerms)}
+                className="w-full flex items-start gap-2.5 text-left"
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${acceptTerms ? "bg-primary border-primary" : "border-primary/40"}`} />
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiFullControlState(!aiFullControl)}
+                className="w-full flex items-start gap-2.5 text-left pt-2 border-t border-primary/15"
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${aiFullControl ? "bg-primary border-primary" : "border-primary/40"}`} />
+                <span className="text-[11px] leading-snug text-muted-foreground">
+                  <span className="text-foreground font-medium">Give Oracle full control.</span>{" "}
+                  Allow the Oracle to learn from my messages, draft replies in my voice, and act on my behalf where useful.
+                  I can switch this off anytime in <span className="text-primary">Settings → Notifications</span>.
+                </span>
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-muted-foreground text-xs cursor-pointer">
               <button
