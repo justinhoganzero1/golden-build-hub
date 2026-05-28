@@ -24,6 +24,33 @@ const SignInPage = () => {
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+
+  const handleOAuth = async (provider: "google" | "apple") => {
+    if (isOwnerAccess) {
+      toast.error("Owner access is email + password only.");
+      return;
+    }
+    setOauthLoading(provider);
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: `${window.location.origin}${redirectPath.startsWith("/") ? redirectPath : "/dashboard"}`,
+      });
+      if (result.error) {
+        toast.error(result.error.message || `Could not start ${provider} sign-in.`);
+        setOauthLoading(null);
+        return;
+      }
+      // If redirected, the browser is leaving — nothing else to do.
+      if (!result.redirected) {
+        toast.success(`Signed in with ${provider === "google" ? "Google" : "Apple"} — opening your portal.`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || `Could not start ${provider} sign-in.`);
+      setOauthLoading(null);
+    }
+  };
+
 
   // Lovable preview visitors skip sign-in entirely and view the dashboard.
   useEffect(() => {
