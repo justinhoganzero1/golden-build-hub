@@ -8,6 +8,10 @@ const initNative = async () => {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
+      // 📱 Power-saver: dim neon 25% + disable heavy effects on phones.
+      // Tablets/desktop keep full intensity (no class added).
+      document.body.classList.add("mobile-dim", "native-mobile");
+
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setBackgroundColor({ color: "#080808" });

@@ -1625,3 +1625,72 @@ a[aria-disabled="true"],
   transition-duration: 0.06s !important;
 }
 
+
+/* ============================================================
+   📱 MOBILE POWER SAVER — dim neon 25%, disable heavy effects
+   Triggered on:
+     - viewport ≤ 768px (phones AND most foldables in portrait)
+     - <body class="mobile-dim"> applied by JS for native Capacitor
+   Tablets (>768px) and desktop keep full intensity.
+   ============================================================ */
+
+@media (max-width: 768px) {
+  :root {
+    /* Dim all neon-driven glow alphas by 25% via a multiplier */
+    --glow-intensity: 0.75;
+  }
+
+  /* Soften the page-frame neon ring */
+  body::before,
+  body::after {
+    opacity: 0.75 !important;
+  }
+
+  /* Kill the expensive page-edge pulse animation on phones */
+  .neon-edge-pulse,
+  .shield-glow.is-pulsing {
+    animation: none !important;
+  }
+
+  /* Reduce blur radii — blur is the #1 GPU killer on mobile */
+  .tab-pink-glow::before,
+  .tab-pink-glow::after {
+    filter: blur(8px) !important;
+    opacity: 0.7 !important;
+  }
+
+  /* Drop drop-shadow filter chains by a quarter */
+  .shield-glow {
+    filter: drop-shadow(0 0 12px hsl(var(--accent-blue-glow) / 0.45))
+            drop-shadow(0 0 22px hsl(var(--accent-red-glow) / 0.30)) !important;
+  }
+
+  /* Disable backdrop-filter on cards — huge memory win */
+  .glass,
+  [class*="backdrop-blur"] {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+
+  /* Pause infinite background gradients while idle */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-gradient,
+    .animate-pulse-slow {
+      animation-duration: 6s !important;
+    }
+  }
+
+  /* Promote scroll containers to their own layer for jank-free scrolling */
+  main, [data-scroll-root] {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+    will-change: scroll-position;
+  }
+}
+
+/* Explicit JS-applied dim class — used by native Capacitor build to force
+   25% dim even on phablets/foldables wider than 768px. */
+body.mobile-dim::before,
+body.mobile-dim::after { opacity: 0.75 !important; }
+body.mobile-dim .neon-edge-pulse,
+body.mobile-dim .shield-glow.is-pulsing { animation: none !important; }
