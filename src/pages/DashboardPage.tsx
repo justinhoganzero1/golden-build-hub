@@ -138,7 +138,19 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
+    if (!user) {
+      navigate(`/sign-in?redirect=${encodeURIComponent(tile.path)}`);
+      return;
+    }
     navigate(tile.path);
+  };
+
+  const handleMemberAction = (path: string) => {
+    if (!user) {
+      navigate(`/sign-in?redirect=${encodeURIComponent(path)}`);
+      return;
+    }
+    navigate(path);
   };
 
   const expandAll = () => setOpenMap(Object.fromEntries(groups.map(g => [g.id, true])));
@@ -149,25 +161,25 @@ const DashboardPage = () => {
       <SEO title="Dashboard — Oracle Lunar AI Super App" description="Your Oracle Lunar dashboard. Access 40+ AI tools: chat, voice, photo, video, tutor, mind & wellness — all free to start." path="/dashboard" />
       <WelcomeModal />
 
-      <OracleMoonHeader>
+      <OracleMoonHeader onCapabilityClick={handleMemberAction}>
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
           {adminLoading ? null : isAdmin ? (
             <>
               <button
-                onClick={() => navigate("/owner-dashboard")}
+                onClick={() => handleMemberAction("/owner-dashboard")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black uppercase bg-amber-500/20 border border-amber-400/60 text-amber-300 hover:bg-amber-500/30 transition shadow-[0_0_18px_rgba(245,158,11,0.35)]"
               >
                 👑 Admin Dashboard
               </button>
               <button
-                onClick={() => navigate("/admin/editor")}
+                onClick={() => handleMemberAction("/admin/editor")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
               >
                 ✏️ Live Editor
               </button>
               <button
-                onClick={() => navigate("/admin/usage-audit")}
+                onClick={() => handleMemberAction("/admin/usage-audit")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
               >
                 📊 Usage Audit
@@ -221,13 +233,13 @@ const DashboardPage = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
-                onClick={() => navigate("/sign-in?fresh=1&mode=signup&redirect=/dashboard")}
+                onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
                 className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
               >
                 🚀 Become a Member
               </button>
               <button
-                onClick={() => navigate("/sign-in?fresh=1&redirect=/dashboard")}
+                onClick={() => navigate("/sign-in?redirect=/dashboard")}
                 className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-background border-2 border-primary/60 text-primary hover:bg-primary/10 transition"
               >
                 Sign In
@@ -318,7 +330,7 @@ const DashboardPage = () => {
         ].map((t) => (
           <button
             key={t.path}
-            onClick={() => navigate(t.path)}
+            onClick={() => handleMemberAction(t.path)}
             className="holo-tile flex-1 flex flex-col items-center gap-1 p-2 rounded-xl"
           >
             <div className="holo-icon text-sky-400">{t.icon}</div>
