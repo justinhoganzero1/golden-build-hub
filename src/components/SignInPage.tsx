@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield, Sparkles, Apple } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ const SignInPage = () => {
   const [aiFullControl, setAiFullControlState] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
   const requestedSignUp = searchParams.get("mode") === "signup";
@@ -54,17 +55,6 @@ const SignInPage = () => {
     }
   };
 
-
-  // Lovable preview visitors skip sign-in entirely and view the dashboard.
-  useEffect(() => {
-    const isLovablePreview =
-      typeof window !== "undefined" &&
-      (window.location.hostname.includes("lovable.app") ||
-        searchParams.get("preview") === "1");
-    if (isLovablePreview && !isOwnerAccess) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate, searchParams, isOwnerAccess]);
 
   useEffect(() => {
     if (isOwnerAccess) return;
@@ -409,7 +399,7 @@ const SignInPage = () => {
           <>
             <p className="text-center text-muted-foreground text-xs mt-5">
               {isSignUp ? "Already have an account?" : "New here?"}{" "}
-              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => setIsSignUp(!isSignUp)}>
+              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => navigate(`${location.pathname}?${isSignUp ? "" : "mode=signup&"}redirect=${encodeURIComponent(redirectPath)}`, { replace: true })}>
                 {isSignUp ? "Sign in" : "Create an account"}
               </span>
             </p>
