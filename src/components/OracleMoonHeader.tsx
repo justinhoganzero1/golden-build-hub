@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import heroBackground from "@/assets/oracle-lunar-banner-dashboard-crop.jpg";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
+  onCapabilityClick?: (path: string) => void;
 }
 
 /**
@@ -12,7 +13,7 @@ interface OracleMoonHeaderProps {
  * wordmark, gold flourish, and capability marquee. Designed to look
  * premium on Play Store / App Store hero shots.
  */
-export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
+export default function OracleMoonHeader({ children, onCapabilityClick }: OracleMoonHeaderProps) {
   const navigate = useNavigate();
 
   const capabilities: { label: string; to: string }[] = [
@@ -120,14 +121,15 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             style={{ animation: "marqueeSlide 28s linear infinite" }}
           >
             {[...capabilities, ...capabilities].map((cap, i) => (
-              <Link
+              <button
                 key={i}
-                to={cap.to}
+                type="button"
+                onClick={() => onCapabilityClick ? onCapabilityClick(cap.to) : navigate(cap.to)}
                 className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/70 backdrop-blur-sm border border-amber-400/60 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
               >
                 <span className="text-amber-300 drop-shadow-[0_0_1px_rgba(0,0,0,0.9)]">✦</span>
                 {cap.label}
-              </Link>
+              </button>
             ))}
           </div>
         </div>
