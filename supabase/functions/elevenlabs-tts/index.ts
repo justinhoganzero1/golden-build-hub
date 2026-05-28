@@ -57,17 +57,37 @@ Deno.serve(async (req) => {
     };
     const normalizedText = humanize(text);
 
-    // Most natural human-cadence settings:
-    //  - stability 0.42  → enough variance for emotion, not jittery
-    //  - similarity 0.85 → keeps the voice identity locked in
-    //  - style 0.35      → real inflection, no flat "robot read" and no moan
-    //  - speed 0.97      → a hair under 1.0 = warmer, more thoughtful pace
+    // Cadence helper: insert natural micro-pauses so long, flat sentences
+    // breathe like a real person. ElevenLabs honours "..." and " — " as pauses.
+    const humanize = (raw: string) => {
+      let t = raw.replace(/\s{3,}/g, "  ").trim();
+      // Soft pause after sentence-ending punctuation when the next char is a capital
+      t = t.replace(/([.!?])\s+(?=[A-Z])/g, "$1 ");
+      // Add a tiny breath before conjunctions inside long clauses
+      t = t.replace(/,\s+(but|and|so|because|though|however|then)\s/gi, ", $1 ");
+      // Soften list commas — they read flat without a breath
+      t = t.replace(/,\s+/g, ", ");
+      // Slight em-dash pause for parentheticals (real speakers pause here)
+      t = t.replace(/\s-\s/g, " — ");
+      // Lengthen ellipses so the engine actually pauses
+      t = t.replace(/\.{3,}/g, "… ");
+      // Tighten double spaces
+      t = t.replace(/[ \t]{2,}/g, " ");
+      return t;
+    };
+    const normalizedText = humanize(text);
+
+    // Most natural human-cadence settings (tuned again):
+    //  - stability 0.38  → looser, more emotional variation (less flat / less robot)
+    //  - similarity 0.88 → still locked to the chosen voice identity
+    //  - style 0.42      → real inflection, warmer prosody, no monotone read
+    //  - speed 0.96      → slightly slower = warmer, more thoughtful
     const voice_settings = {
-      stability: settings?.stability ?? 0.42,
-      similarity_boost: settings?.similarity_boost ?? 0.85,
-      style: settings?.style ?? 0.35,
+      stability: settings?.stability ?? 0.38,
+      similarity_boost: settings?.similarity_boost ?? 0.88,
+      style: settings?.style ?? 0.42,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.97,
+      speed: settings?.speed ?? 0.96,
     };
 
     // optimize_streaming_latency=1 keeps low latency but avoids the
