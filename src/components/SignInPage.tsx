@@ -345,9 +345,9 @@ const SignInPage = () => {
                 <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${acceptTerms ? "bg-primary border-primary" : "border-primary/40"}`} />
                 <span className="text-[11px] leading-snug text-muted-foreground">
                   I agree to the{" "}
-                  <a href="/terms" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
+                  <a href="/terms-of-service" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
                   {" "}and{" "}
-                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
+                  <a href="/privacy-policy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
                 </span>
               </button>
               <button
