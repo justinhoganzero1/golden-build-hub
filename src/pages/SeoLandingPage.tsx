@@ -572,7 +572,7 @@ export default function SeoLandingPage() {
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{variant.tagline}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-            <Button size="lg" onClick={() => navigate("/ai-companion")} className="text-base">
+            <Button size="lg" onClick={() => navigate(`/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent("/ai-companion")}`)} className="text-base">
               <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/")}>
@@ -640,7 +640,7 @@ export default function SeoLandingPage() {
         <section className="container mx-auto px-4 py-16 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to meet your AI companion?</h2>
           <p className="text-muted-foreground mb-6">Free to install. Free to chat. Always there for you.</p>
-          <Button size="lg" onClick={() => navigate("/ai-companion")}>
+          <Button size="lg" onClick={() => navigate(`/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent("/ai-companion")}`)}>
             <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
           </Button>
         </section>

@@ -24,6 +24,7 @@ const SignInPage = () => {
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
   const requestedSignUp = searchParams.get("mode") === "signup";
+  const freshAuth = searchParams.get("fresh") === "1";
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
@@ -62,6 +63,12 @@ const SignInPage = () => {
   }, [requestedSignUp, isOwnerAccess]);
 
   useEffect(() => {
+    if (!freshAuth || authLoading || !user) return;
+    supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  }, [freshAuth, authLoading, user]);
+
+  useEffect(() => {
+    if (freshAuth) return;
     if (authLoading || !user) return;
     const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
     const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
@@ -77,7 +84,7 @@ const SignInPage = () => {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
     }
     navigate(nextPath, { replace: true });
-  }, [authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess]);
+  }, [freshAuth, authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess]);
 
   useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 
