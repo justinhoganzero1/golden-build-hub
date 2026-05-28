@@ -309,49 +309,67 @@ const PortalLandingPage = () => {
           }}
         />
 
-        {/* ── Orbiting satellite tiles — the actual app previews circling Earth ── */}
+        {/* ── Orbiting satellite tiles — flat Saturn-ring plane around Earth ── */}
         <style>{`
-          @keyframes orbit-spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-          @keyframes orbit-spin-rev { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(-360deg); } }
-          @keyframes sat-counter { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(-360deg); } }
-          @keyframes sat-counter-rev { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-          .orbit-ring { position:absolute; left:50%; top:50%; transform-origin:center; will-change:transform; pointer-events:none; }
-          .orbit-ring > .sat { position:absolute; left:50%; top:50%; pointer-events:auto; }
+          @keyframes orbit-plane-spin { from { transform: translate(-50%,-50%) rotateX(74deg) rotate(0deg); } to { transform: translate(-50%,-50%) rotateX(74deg) rotate(360deg); } }
+          @keyframes orbit-plane-spin-rev { from { transform: translate(-50%,-50%) rotateX(74deg) rotate(0deg); } to { transform: translate(-50%,-50%) rotateX(74deg) rotate(-360deg); } }
+          .orbit-plane { position:absolute; left:50%; top:50%; transform-origin:center; will-change:transform; pointer-events:none; transform-style:preserve-3d; }
+          .orbit-plane > .sat { position:absolute; left:50%; top:50%; pointer-events:auto; }
         `}</style>
-        <div className="absolute inset-0 pointer-events-none hidden md:block">
+        <div className="absolute inset-0 pointer-events-none hidden md:block" style={{ perspective: "1400px" }}>
           {(() => {
             const ring1 = FEATURES.slice(0, 6);
             const ring2 = FEATURES.slice(6, 12);
-            const renderSat = (f: typeof FEATURES[number], i: number, total: number, radius: number, counterAnim: string, counterDur: string) => {
+            const renderSat = (
+              f: typeof FEATURES[number],
+              i: number,
+              total: number,
+              radius: number,
+              spinDur: string,
+              direction: 1 | -1,
+            ) => {
               const angle = (360 / total) * i;
               const Icon = f.icon;
+              // Counter-rotate the tile back to face the viewer (undo plane tilt + ring spin)
+              const counterKf = `sat-face-${direction === 1 ? "fwd" : "rev"}-${spinDur}`;
               return (
                 <div
                   key={f.title}
                   className="sat"
                   style={{ transform: `translate(-50%,-50%) rotate(${angle}deg) translateX(${radius}px) rotate(-${angle}deg)` }}
                 >
-                  <button
-                    onClick={() => handleTileClick(f.to)}
-                    aria-label={`Preview ${f.title}`}
-                    className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/60 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
-                    style={{ animation: `${counterAnim} ${counterDur} linear infinite` }}
+                  <div
+                    style={{
+                      // Undo the plane's rotateX(74deg) so the tile sits flat to camera
+                      transform: "rotateX(-74deg)",
+                      animation: `${counterKf} ${spinDur} linear infinite`,
+                    }}
                   >
-                    <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </span>
-                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
-                  </button>
+                    <button
+                      onClick={() => handleTileClick(f.to)}
+                      aria-label={`Preview ${f.title}`}
+                      className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/60 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
+                    >
+                      <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </span>
+                      <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
+                    </button>
+                  </div>
                 </div>
               );
             };
             return (
               <>
-                <div className="orbit-ring" style={{ width: 1, height: 1, animation: "orbit-spin 38s linear infinite" }}>
-                  {ring1.map((f, i) => renderSat(f, i, ring1.length, 280, "sat-counter", "38s"))}
+                <style>{`
+                  @keyframes sat-face-fwd-38s { from { transform: rotateX(-74deg) rotate(0deg); } to { transform: rotateX(-74deg) rotate(-360deg); } }
+                  @keyframes sat-face-rev-56s { from { transform: rotateX(-74deg) rotate(0deg); } to { transform: rotateX(-74deg) rotate(360deg); } }
+                `}</style>
+                <div className="orbit-plane" style={{ width: 1, height: 1, animation: "orbit-plane-spin 38s linear infinite" }}>
+                  {ring1.map((f, i) => renderSat(f, i, ring1.length, 280, "38s", 1))}
                 </div>
-                <div className="orbit-ring" style={{ width: 1, height: 1, animation: "orbit-spin-rev 56s linear infinite" }}>
-                  {ring2.map((f, i) => renderSat(f, i, ring2.length, 400, "sat-counter-rev", "56s"))}
+                <div className="orbit-plane" style={{ width: 1, height: 1, animation: "orbit-plane-spin-rev 56s linear infinite" }}>
+                  {ring2.map((f, i) => renderSat(f, i, ring2.length, 400, "56s", -1))}
                 </div>
               </>
             );
