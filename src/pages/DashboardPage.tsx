@@ -138,7 +138,19 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
+    if (!user) {
+      navigate(`/sign-in?redirect=${encodeURIComponent(tile.path)}`);
+      return;
+    }
     navigate(tile.path);
+  };
+
+  const handleMemberAction = (path: string) => {
+    if (!user) {
+      navigate(`/sign-in?redirect=${encodeURIComponent(path)}`);
+      return;
+    }
+    navigate(path);
   };
 
   const expandAll = () => setOpenMap(Object.fromEntries(groups.map(g => [g.id, true])));
