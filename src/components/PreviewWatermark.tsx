@@ -9,11 +9,14 @@ import { useAuth } from "@/contexts/AuthContext";
 const PreviewWatermark = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const isAuthPage = typeof window !== "undefined" && window.location.pathname.startsWith("/sign-in");
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "/";
+  const isAuthPage = currentPath.startsWith("/sign-in");
+  const hasBuiltInAuthCtas = currentPath === "/" || currentPath === "/website";
 
   if (loading) return null;
   if (user) return null;
   if (isAuthPage) return null;
+  if (hasBuiltInAuthCtas) return null;
 
   const goSignUp = () => navigate("/sign-in?fresh=1&mode=signup&redirect=/dashboard");
   const goSignIn = () => navigate("/sign-in?fresh=1&redirect=/dashboard");
