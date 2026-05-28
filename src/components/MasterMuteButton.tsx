@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 const MasterMuteButton = () => {
   const { isMuted, toggleMute } = useMute();
   const location = useLocation();
-  const isSplashScreen = location.pathname === "/";
+  const isSplashScreen = false; // unclamped — speaker is freely draggable everywhere
   // Locked spot for the splash / auth screen: lower-left, just under the
   // "Trouble signing up?" link, clear of the Create Account button.
   const getSplashPosition = () => ({
