@@ -30,9 +30,14 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (!voiceId || typeof voiceId !== "string") {
+      return new Response(
+        JSON.stringify({ error: "VOICE_REQUIRED", message: "Select a voice before previewing." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Default to "Sarah" — most popular/downloaded female voice on ElevenLabs
-    const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
+    const selectedVoice = voiceId;
     // QUALITY-FIRST: multilingual_v2 sounds human; flash sounds robotic.
     // Only use flash when caller explicitly opts in AND quality isn't critical.
     const selectedModel =
