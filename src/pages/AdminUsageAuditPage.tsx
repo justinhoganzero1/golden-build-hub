@@ -30,8 +30,7 @@ const AdminUsageAuditPage = () => {
     try {
       const { data, error } = await supabase
         .from("ai_charges")
-        .select("id, service, provider_cost_cents, platform_fee_cents, total_cents, metadata, created_at")
-        .eq("user_id", user.id)
+        .select("id, user_id, service, provider_cost_cents, platform_fee_cents, total_cents, metadata, created_at")
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
