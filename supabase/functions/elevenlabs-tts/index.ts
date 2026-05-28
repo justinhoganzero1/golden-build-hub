@@ -34,33 +34,36 @@ Deno.serve(async (req) => {
 
     // Default to "Sarah" — most popular/downloaded female voice on ElevenLabs
     const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
-    // SPEED: when `fast: true` is sent (Oracle), use Flash v2.5 (~75ms latency vs
-    // ~400ms for multilingual_v2). Quality is still very natural.
+    // QUALITY-FIRST: multilingual_v2 sounds human; flash sounds robotic.
+    // Only use flash when caller explicitly opts in AND quality isn't critical.
     const selectedModel =
       modelId ||
       settings?.model_id ||
-      (fast ? "eleven_flash_v2_5" : "eleven_multilingual_v2");
-    // SPEED: smaller MP3 = faster first-byte. 22kHz/32kbps is fine for voice.
-    const selectedFormat = outputFormat || (fast ? "mp3_22050_32" : "mp3_44100_128");
+      (fast ? "eleven_turbo_v2_5" : "eleven_multilingual_v2");
+    // Higher quality MP3 by default — 128kbps is a tiny bandwidth cost for
+    // a massive quality improvement over 32kbps (which sounds compressed/robotic).
+    const selectedFormat = outputFormat || "mp3_44100_128";
     const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
-    // Tuned for natural breath, rhythm, and intonation rises/falls.
-    //  - Lower stability  → more expressive pitch movement (rises & falls)
-    //  - Higher similarity → keeps voice identity consistent
-    //  - Moderate style    → adds emotional inflection without over-acting
-    //  - Speed ~0.92       → unhurried, lets pauses breathe
+    // Natural human voice settings:
+    //  - stability 0.55  → consistent without being monotone
+    //  - similarity 0.80 → preserves voice identity
+    //  - style 0.20      → subtle inflection, no over-acting "moan"
+    //  - speed 1.0       → natural pace, no drag
     const voice_settings = {
-      stability: settings?.stability ?? 0.45,
-      similarity_boost: settings?.similarity_boost ?? 0.9,
-      style: settings?.style ?? 0.55,
+      stability: settings?.stability ?? 0.55,
+      similarity_boost: settings?.similarity_boost ?? 0.8,
+      style: settings?.style ?? 0.2,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.92,
+      speed: settings?.speed ?? 1.0,
     };
 
+    // optimize_streaming_latency=2 is the sweet spot — faster TTFB without
+    // the heavy quality loss of levels 3-4 (which cause the robotic sound).
     let response: Response;
     try {
       response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=4`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=2`,
         {
           method: "POST",
           headers: {
