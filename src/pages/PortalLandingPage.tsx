@@ -309,14 +309,25 @@ const PortalLandingPage = () => {
           }}
         />
 
-        {/* ── Orbiting satellite tiles — flat Saturn-ring plane around Earth ── */}
+        {/* ── Orbiting satellite tiles — elliptical ring around Earth, tiles stay upright ── */}
         <style>{`
-          @keyframes orbit-plane-spin { from { transform: translate(-50%,-50%) rotateX(74deg) rotate(0deg); } to { transform: translate(-50%,-50%) rotateX(74deg) rotate(360deg); } }
-          @keyframes orbit-plane-spin-rev { from { transform: translate(-50%,-50%) rotateX(74deg) rotate(0deg); } to { transform: translate(-50%,-50%) rotateX(74deg) rotate(-360deg); } }
-          .orbit-plane { position:absolute; left:50%; top:50%; transform-origin:center; will-change:transform; pointer-events:none; transform-style:preserve-3d; }
-          .orbit-plane > .sat { position:absolute; left:50%; top:50%; pointer-events:auto; }
+          @keyframes orbit-ellipse-1 {
+            0%   { transform: translate(calc(-50% + 320px), -50%); }
+            25%  { transform: translate(-50%, calc(-50% + 80px)); }
+            50%  { transform: translate(calc(-50% - 320px), -50%); }
+            75%  { transform: translate(-50%, calc(-50% - 80px)); }
+            100% { transform: translate(calc(-50% + 320px), -50%); }
+          }
+          @keyframes orbit-ellipse-2 {
+            0%   { transform: translate(calc(-50% + 440px), -50%); }
+            25%  { transform: translate(-50%, calc(-50% - 110px)); }
+            50%  { transform: translate(calc(-50% - 440px), -50%); }
+            75%  { transform: translate(-50%, calc(-50% + 110px)); }
+            100% { transform: translate(calc(-50% + 440px), -50%); }
+          }
+          .sat-orbit { position:absolute; left:50%; top:50%; pointer-events:auto; will-change:transform; }
         `}</style>
-        <div className="absolute inset-0 pointer-events-none hidden md:block" style={{ perspective: "1400px" }}>
+        <div className="absolute inset-0 pointer-events-none hidden md:block">
           {(() => {
             const ring1 = FEATURES.slice(0, 6);
             const ring2 = FEATURES.slice(6, 12);
@@ -324,53 +335,34 @@ const PortalLandingPage = () => {
               f: typeof FEATURES[number],
               i: number,
               total: number,
-              radius: number,
-              spinDur: string,
-              direction: 1 | -1,
+              dur: number,
+              kf: string,
             ) => {
-              const angle = (360 / total) * i;
               const Icon = f.icon;
-              // Counter-rotate the tile back to face the viewer (undo plane tilt + ring spin)
-              const counterKf = `sat-face-${direction === 1 ? "fwd" : "rev"}-${spinDur}`;
+              const delay = -(dur * (i / total));
               return (
                 <div
                   key={f.title}
-                  className="sat"
-                  style={{ transform: `translate(-50%,-50%) rotate(${angle}deg) translateX(${radius}px) rotate(-${angle}deg)` }}
+                  className="sat-orbit"
+                  style={{ animation: `${kf} ${dur}s linear infinite`, animationDelay: `${delay}s` }}
                 >
-                  <div
-                    style={{
-                      // Undo the plane's rotateX(74deg) so the tile sits flat to camera
-                      transform: "rotateX(-74deg)",
-                      animation: `${counterKf} ${spinDur} linear infinite`,
-                    }}
+                  <button
+                    onClick={() => handleTileClick(f.to)}
+                    aria-label={`Preview ${f.title}`}
+                    className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/70 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
                   >
-                    <button
-                      onClick={() => handleTileClick(f.to)}
-                      aria-label={`Preview ${f.title}`}
-                      className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/60 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
-                    >
-                      <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </span>
-                      <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
-                    </button>
-                  </div>
+                    <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </span>
+                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
+                  </button>
                 </div>
               );
             };
             return (
               <>
-                <style>{`
-                  @keyframes sat-face-fwd-38s { from { transform: rotateX(-74deg) rotate(0deg); } to { transform: rotateX(-74deg) rotate(-360deg); } }
-                  @keyframes sat-face-rev-56s { from { transform: rotateX(-74deg) rotate(0deg); } to { transform: rotateX(-74deg) rotate(360deg); } }
-                `}</style>
-                <div className="orbit-plane" style={{ width: 1, height: 1, animation: "orbit-plane-spin 38s linear infinite" }}>
-                  {ring1.map((f, i) => renderSat(f, i, ring1.length, 280, "38s", 1))}
-                </div>
-                <div className="orbit-plane" style={{ width: 1, height: 1, animation: "orbit-plane-spin-rev 56s linear infinite" }}>
-                  {ring2.map((f, i) => renderSat(f, i, ring2.length, 400, "56s", -1))}
-                </div>
+                {ring1.map((f, i) => renderSat(f, i, ring1.length, 38, "orbit-ellipse-1"))}
+                {ring2.map((f, i) => renderSat(f, i, ring2.length, 56, "orbit-ellipse-2"))}
               </>
             );
           })()}
