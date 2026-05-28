@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Mic, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
 import { enrollVoice, loadVoicePrint } from "@/lib/audioFilter";
-import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
+import { useFeatureProxy } from "@/lib/featureProxy";
 import { toast } from "sonner";
 
 interface Props {
@@ -86,18 +86,22 @@ export default function VoiceEnrollmentDialog({ open, onOpenChange, onComplete }
           </div>
         )}
 
-        {/* ElevenLabs affiliate footer */}
-        <a
-          href={ELEVENLABS_AFFILIATE_URL}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          onClick={() => trackAffiliateClick("elevenlabs", "voice_enrollment_dialog")}
-          className="mt-4 flex items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground transition-colors"
-        >
-          <span>Want to clone your voice in studio quality? Try ElevenLabs.</span>
-          <ExternalLink className="h-3 w-3 shrink-0" />
-        </a>
+        {/* In-app voice cloning upsell — stays inside Oracle Lunar */}
+        <CloneUpsell />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CloneUpsell() {
+  const { open } = useFeatureProxy();
+  return (
+    <button
+      onClick={() => open("el-clone", "voice_enrollment_dialog")}
+      className="mt-4 flex w-full items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground transition-colors"
+    >
+      <span>Want studio-grade voice cloning? Unlock the in-app studio.</span>
+      <ExternalLink className="h-3 w-3 shrink-0" />
+    </button>
   );
 }

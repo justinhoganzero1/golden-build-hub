@@ -106,18 +106,12 @@ interface Props {
 }
 
 const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
-  const heygenLive = HEYGEN_AFFILIATE_URL !== HEYGEN_PLACEHOLDER;
-
-  const visible = PRESETS.filter(p => {
-    if (p.partner === "heygen" && !heygenLive) return false;
-    return true;
-  });
+  const { open: openProxy } = useFeatureProxy();
+  const visible = PRESETS;
 
   const handleClick = (p: Preset) => {
     if (p.partner) {
-      const url = p.partner === "heygen" ? HEYGEN_AFFILIATE_URL : ELEVENLABS_AFFILIATE_URL;
-      trackAffiliateClick(p.partner, `photo_lab_${p.id}`);
-      window.open(url, "_blank", "noopener,noreferrer,sponsored");
+      openProxy(p.id, `photo_lab_${p.id}`);
       return;
     }
     if (p.prompt && p.filter && p.mode) {
