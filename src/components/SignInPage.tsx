@@ -7,6 +7,7 @@ import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 import { setAIFullControl } from "@/lib/aiControl";
+import { lovable } from "@/integrations/lovable";
 
 
 const SignInPage = () => {
