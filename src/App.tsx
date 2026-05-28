@@ -305,6 +305,7 @@ const App = () => (
                   <Route path="/safety-center" element={<RequireAuth freeAccess><ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics" element={<RequireAuth><ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics/audio" element={<RequireAuth><ErrorBoundary pageName="Audio Diagnostics"><AudioDiagnosticsPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/smoke-test" element={<ErrorBoundary pageName="Smoke Test"><SmokeTestPage /></ErrorBoundary>} />
                   <Route path="/elderly-care" element={<RequireAuth><ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-generator" element={<RequireAuth><ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/professional-hub" element={<RequireAuth><ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary></RequireAuth>} />
