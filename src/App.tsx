@@ -229,6 +229,7 @@ const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
+const SmokeTestPage = lazy(() => import("./pages/SmokeTestPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
