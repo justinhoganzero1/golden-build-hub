@@ -1,19 +1,13 @@
-// PartnerPowerSuite — exposes every HeyGen + ElevenLabs capability we can route
-// users to. Each feature is a clickable card that opens the partner with our
-// affiliate link + tracks the placement. HeyGen cards auto-hide while the
-// affiliate URL is still the placeholder.
+// PartnerPowerSuite — every premium AI capability we offer, exposed as a
+// one-tap unlock that keeps the user 100% inside Oracle Lunar. Clicking a
+// tile opens our themed unlock dialog (pay coins → drop into the matching
+// internal page). No outbound third-party links.
 import { Card } from "@/components/ui/card";
 import {
   Mic, Music, Volume2, Languages, AudioLines, Headphones,
-  Video, User, Sparkles, Globe, Subtitles, Share2, Wand2, Film, Camera, Megaphone,
+  User, Sparkles, Globe, Subtitles, Share2, Wand2, Film, Camera, Megaphone,
 } from "lucide-react";
-import {
-  ELEVENLABS_AFFILIATE_URL,
-  HEYGEN_AFFILIATE_URL,
-  trackAffiliateClick,
-} from "@/lib/affiliateLinks";
-
-const HEYGEN_PLACEHOLDER = "https://www.heygen.com/?sid=oraclelunar";
+import { useFeatureProxy } from "@/lib/featureProxy";
 
 type Feature = {
   id: string;
@@ -21,31 +15,30 @@ type Feature = {
   icon: JSX.Element;
   title: string;
   desc: string;
-  url: string;
 };
 
 const ALL_FEATURES: Feature[] = [
-  // ───── ElevenLabs ─────
-  { id: "el-tts",        partner: "elevenlabs", icon: <Mic className="w-4 h-4" />,        title: "AI Voice-Over",     desc: "Studio-grade narration in 32+ languages, 120+ voices.", url: ELEVENLABS_AFFILIATE_URL },
-  { id: "el-clone",      partner: "elevenlabs", icon: <Headphones className="w-4 h-4" />, title: "Voice Cloning",     desc: "Clone your own voice from 60s of audio.",               url: ELEVENLABS_AFFILIATE_URL },
-  { id: "el-sfx",        partner: "elevenlabs", icon: <Volume2 className="w-4 h-4" />,    title: "Sound Effects",     desc: "Generate any sound effect from a text prompt.",         url: ELEVENLABS_AFFILIATE_URL },
-  { id: "el-music",      partner: "elevenlabs", icon: <Music className="w-4 h-4" />,      title: "AI Music",          desc: "Royalty-free background scores for any mood.",          url: ELEVENLABS_AFFILIATE_URL },
-  { id: "el-dub",        partner: "elevenlabs", icon: <Languages className="w-4 h-4" />,  title: "Dubbing Studio",    desc: "Auto-dub your video into 29 languages.",                url: ELEVENLABS_AFFILIATE_URL },
-  { id: "el-isolate",    partner: "elevenlabs", icon: <AudioLines className="w-4 h-4" />, title: "Voice Isolator",    desc: "Strip background noise from any recording.",            url: ELEVENLABS_AFFILIATE_URL },
+  // ───── ElevenLabs (hosted by us via /voice-studio) ─────
+  { id: "el-tts",        partner: "elevenlabs", icon: <Mic className="w-4 h-4" />,        title: "AI Voice-Over",     desc: "Studio-grade narration in 32+ languages, 120+ voices." },
+  { id: "el-clone",      partner: "elevenlabs", icon: <Headphones className="w-4 h-4" />, title: "Voice Cloning",     desc: "Clone your own voice from 60s of audio." },
+  { id: "el-sfx",        partner: "elevenlabs", icon: <Volume2 className="w-4 h-4" />,    title: "Sound Effects",     desc: "Generate any sound effect from a text prompt." },
+  { id: "el-music",      partner: "elevenlabs", icon: <Music className="w-4 h-4" />,      title: "AI Music",          desc: "Royalty-free background scores for any mood." },
+  { id: "el-dub",        partner: "elevenlabs", icon: <Languages className="w-4 h-4" />,  title: "Dubbing Studio",    desc: "Auto-dub your video into 29 languages." },
+  { id: "el-isolate",    partner: "elevenlabs", icon: <AudioLines className="w-4 h-4" />, title: "Voice Isolator",    desc: "Strip background noise from any recording." },
 
-  // ───── HeyGen ─────
-  { id: "hg-avatar",     partner: "heygen", icon: <User className="w-4 h-4" />,    title: "Talking Avatar",       desc: "Lifelike AI presenter with perfect lip-sync.",          url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-photo",      partner: "heygen", icon: <Camera className="w-4 h-4" />,  title: "Photo Avatar",         desc: "Turn a single photo into a talking AI character.",      url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-instant",    partner: "heygen", icon: <Sparkles className="w-4 h-4" />,title: "Instant Avatar Clone", desc: "Clone yourself with 2 minutes of webcam video.",        url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-translate",  partner: "heygen", icon: <Globe className="w-4 h-4" />,   title: "Video Translate",      desc: "Translate your video into 175+ languages with lip-sync.", url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-captions",   partner: "heygen", icon: <Subtitles className="w-4 h-4" />,title: "Auto Captions",       desc: "Burn-in subtitles styled for TikTok / Reels / Shorts.", url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-template",   partner: "heygen", icon: <Wand2 className="w-4 h-4" />,   title: "Video Templates",      desc: "100+ pro templates for ads, explainers, social.",       url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-product",    partner: "heygen", icon: <Megaphone className="w-4 h-4" />,title: "Product Marketing",   desc: "Drop a product link → AI generates a full launch video.",url: HEYGEN_AFFILIATE_URL },
-  { id: "hg-social",     partner: "heygen", icon: <Share2 className="w-4 h-4" />,  title: "Social Export",        desc: "9:16, 1:1, 16:9 ready for IG / TikTok / YouTube / X.",  url: HEYGEN_AFFILIATE_URL },
+  // ───── HeyGen-equivalent (routed to our avatar / movie pages) ─────
+  { id: "hg-avatar",     partner: "heygen", icon: <User className="w-4 h-4" />,    title: "Talking Avatar",       desc: "Lifelike AI presenter with perfect lip-sync." },
+  { id: "hg-photo",      partner: "heygen", icon: <Camera className="w-4 h-4" />,  title: "Photo Avatar",         desc: "Turn a single photo into a talking AI character." },
+  { id: "hg-instant",    partner: "heygen", icon: <Sparkles className="w-4 h-4" />,title: "Instant Avatar Clone", desc: "Clone yourself with 2 minutes of webcam video." },
+  { id: "hg-translate",  partner: "heygen", icon: <Globe className="w-4 h-4" />,   title: "Video Translate",      desc: "Translate your video into 175+ languages with lip-sync." },
+  { id: "hg-captions",   partner: "heygen", icon: <Subtitles className="w-4 h-4" />,title: "Auto Captions",       desc: "Burn-in subtitles styled for TikTok / Reels / Shorts." },
+  { id: "hg-template",   partner: "heygen", icon: <Wand2 className="w-4 h-4" />,   title: "Video Templates",      desc: "100+ pro templates for ads, explainers, social." },
+  { id: "hg-product",    partner: "heygen", icon: <Megaphone className="w-4 h-4" />,title: "Product Marketing",   desc: "Drop a product link → AI generates a full launch video." },
+  { id: "hg-social",     partner: "heygen", icon: <Share2 className="w-4 h-4" />,  title: "Social Export",        desc: "9:16, 1:1, 16:9 ready for IG / TikTok / YouTube / X." },
 ];
 
 interface Props {
-  /** Where this suite is rendered — used for click tracking */
+  /** Where this suite is rendered — used for analytics */
   placementPrefix: string;
   /** Show only ElevenLabs, only HeyGen, or both */
   filter?: "all" | "heygen" | "elevenlabs";
@@ -53,20 +46,15 @@ interface Props {
 }
 
 const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: Props) => {
-  const heygenLive = HEYGEN_AFFILIATE_URL !== HEYGEN_PLACEHOLDER;
-
-  const features = ALL_FEATURES.filter((f) => {
-    if (filter !== "all" && f.partner !== filter) return false;
-    if (f.partner === "heygen" && !heygenLive) return false;
-    return true;
-  });
+  const { open } = useFeatureProxy();
+  const features = ALL_FEATURES.filter((f) => filter === "all" || f.partner === filter);
 
   if (features.length === 0) return null;
 
   const handleClick = (f: Feature) => {
-    trackAffiliateClick(f.partner, `${placementPrefix}_${f.id}`);
-    window.open(f.url, "_blank", "noopener,noreferrer,sponsored");
+    open(f.id, `${placementPrefix}_${f.id}`);
   };
+
 
   return (
     <Card className={`p-4 bg-gradient-to-br from-amber-950/30 via-background to-purple-950/20 border-amber-500/20 ${className}`}>
