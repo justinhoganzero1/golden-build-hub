@@ -149,12 +149,14 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: everyone lands on the app home preview first. Logged-out visitors
-// can look around, but any app action/tab sends them to the login screen.
+// Root route: everyone lands on the Oracle Lunar splash (moon/forest portal).
+// Authenticated users go straight to the dashboard. Logged-out visitors see
+// the splash and click through to sign-in / sign-up.
 const RootRoute = () => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  return <DashboardPage />;
+  if (user) return <DashboardPage />;
+  return <PortalLandingPage />;
 };
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
