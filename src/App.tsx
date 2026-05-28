@@ -149,13 +149,12 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: signed-in users land on the Dashboard home screen; visitors get
-// the sign-up screen first.
+// Root route: everyone lands on the app home preview first. Logged-out visitors
+// can look around, but any app action/tab sends them to the login screen.
 const RootRoute = () => {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <Loading />;
-  if (user) return <DashboardPage />;
-  return <PortalLandingPage />;
+  return <DashboardPage />;
 };
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
