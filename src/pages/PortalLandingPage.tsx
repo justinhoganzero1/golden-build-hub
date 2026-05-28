@@ -308,6 +308,57 @@ const PortalLandingPage = () => {
           }}
         />
 
+        {/* ── Orbiting satellite tiles — the actual app previews circling Earth ── */}
+        <style>{`
+          @keyframes orbit-spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+          @keyframes orbit-spin-rev { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(-360deg); } }
+          @keyframes sat-counter { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(-360deg); } }
+          @keyframes sat-counter-rev { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+          .orbit-ring { position:absolute; left:50%; top:50%; transform-origin:center; will-change:transform; pointer-events:none; }
+          .orbit-ring > .sat { position:absolute; left:50%; top:50%; pointer-events:auto; }
+        `}</style>
+        <div className="absolute inset-0 pointer-events-none hidden md:block">
+          {(() => {
+            const ring1 = FEATURES.slice(0, 6);
+            const ring2 = FEATURES.slice(6, 12);
+            const renderSat = (f: typeof FEATURES[number], i: number, total: number, radius: number, counterAnim: string, counterDur: string) => {
+              const angle = (360 / total) * i;
+              const Icon = f.icon;
+              return (
+                <div
+                  key={f.title}
+                  className="sat"
+                  style={{ transform: `translate(-50%,-50%) rotate(${angle}deg) translateX(${radius}px) rotate(-${angle}deg)` }}
+                >
+                  <button
+                    onClick={() => handleTileClick(f.to)}
+                    aria-label={`Preview ${f.title}`}
+                    className="group flex items-center gap-2 rounded-full border border-primary/40 bg-black/60 backdrop-blur-md px-3 py-2 shadow-[0_0_24px_hsl(var(--primary)/0.55)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.95)] hover:scale-110 transition-all"
+                    style={{ animation: `${counterAnim} ${counterDur} linear infinite` }}
+                  >
+                    <span className="h-7 w-7 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </span>
+                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap pr-1">{f.title}</span>
+                  </button>
+                </div>
+              );
+            };
+            return (
+              <>
+                <div className="orbit-ring" style={{ width: 1, height: 1, animation: "orbit-spin 38s linear infinite" }}>
+                  {ring1.map((f, i) => renderSat(f, i, ring1.length, 280, "sat-counter", "38s"))}
+                </div>
+                <div className="orbit-ring" style={{ width: 1, height: 1, animation: "orbit-spin-rev 56s linear infinite" }}>
+                  {ring2.map((f, i) => renderSat(f, i, ring2.length, 400, "sat-counter-rev", "56s"))}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+
+
+
 
         <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
           {/* Animated golden logo — matches app */}
