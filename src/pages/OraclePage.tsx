@@ -115,7 +115,7 @@ function isDirectOracleTask(text: string): boolean {
 
 function extractImagePrompt(text: string): string | null {
   const polish = (value: string) => value
-    .replace(/\b8\s*k\b/gi, "8K")
+    .replace(/\b8\s*k\b/gi, "4K")
     .replace(/\bmonk+ey\b/gi, "monkey")
     .replace(/\b(?:in|on)\s+thi?s\s+screen\b/gi, "")
     .replace(/\b(?:then\s+|and\s+)?(?:save|saved|drop|put|add)\s+(?:it|this|that)?\s*(?:to|in|into)?\s*(?:the|my|your)?\s*(?:media\s*)?library\b[\s\S]*$/i, "")

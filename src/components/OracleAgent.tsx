@@ -130,7 +130,7 @@ export default function OracleAgent() {
       if (kind === "image") {
         const r = await fetch(IMAGE_URL, {
           method: "POST", headers,
-          body: JSON.stringify({ prompt: `${prompt}\n\n8K, ultra-detailed, photorealistic, studio lighting.` }),
+          body: JSON.stringify({ prompt: `${prompt}\n\n4K, ultra-detailed, photorealistic, studio lighting.` }),
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Image failed");
@@ -343,7 +343,7 @@ export default function OracleAgent() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { runJob(input); setInput(""); } }}
-              placeholder="e.g. Scan the app for problems · How do I fix a black screen on iOS? · 8K poster of a rottweiler in Bali"
+              placeholder="e.g. Scan the app for problems · How do I fix a black screen on iOS? · 4K poster of a rottweiler in Bali"
               rows={4}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500"
             />

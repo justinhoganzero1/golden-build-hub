@@ -164,10 +164,10 @@ const VARIANTS: Record<string, SeoVariant> = {
   },
   "/ai-image-generator-free": {
     path: "/ai-image-generator-free",
-    title: "Free AI Image Generator — 8K Photos, No Signup",
-    description: "Generate stunning 8K AI images free with ORACLE LUNAR. Photo, art, anime, logos. No watermark on the free tier.",
+    title: "Free AI Image Generator — 4K Photos, No Signup",
+    description: "Generate stunning 4K AI images free with ORACLE LUNAR. Photo, art, anime, logos. No watermark on the free tier.",
     h1: "Free AI Image Generator",
-    tagline: "Type a prompt, get an 8K image. Free, fast, no watermark.",
+    tagline: "Type a prompt, get an 4K image. Free, fast, no watermark.",
     keywords: ["free ai image generator", "ai photo generator", "ai art free", "8k ai images"],
     faqs: [
       { q: "Is the free tier really free?", a: "Yes — daily free generations, no credit card needed." },
@@ -341,7 +341,7 @@ const VARIANTS: Record<string, SeoVariant> = {
     tagline: "Transform photos with AI. Free background removal, style transfer, and more.",
     keywords: ["ai photo editor", "free photo ai", "ai image editor", "ai background remover"],
     faqs: [
-      { q: "Is editing free?", a: "Yes — daily free edits, premium unlocks 8K and unlimited." },
+      { q: "Is editing free?", a: "Yes — daily free edits, premium unlocks 4K and unlimited." },
     ],
   },
   "/free-seo-tools": {

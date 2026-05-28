@@ -11,7 +11,7 @@ const PRICING_CENTS_PER_MIN: Record<string, number> = {
   sd: 50, hd: 200, "4k": 800, "8k_ultimate": 5000,
 };
 const QUALITY_LABEL: Record<string, string> = {
-  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 8K",
+  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 4K",
 };
 
 interface Props {

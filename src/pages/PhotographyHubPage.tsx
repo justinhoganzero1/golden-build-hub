@@ -33,8 +33,8 @@ const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 const filters = ["None", "Vivid", "Noir", "Vintage", "Dreamy", "Cinematic"];
 
 /**
- * 8K Photo Studio — still-image only.
- * Generate-from-text or Edit-uploaded-photo. Output is upscaled to 8K via Replicate
+ * 4K Photo Studio — still-image only.
+ * Generate-from-text or Edit-uploaded-photo. Output is upscaled to 4K via Replicate
  * and auto-saved to the Media Library. Cinematic clip work moved to Vault.
  */
 const PhotographyHubPage = () => {
@@ -170,7 +170,7 @@ const PhotographyHubPage = () => {
   };
 
 
-  const upscaleTo8K = async (imageUrl: string): Promise<string> => {
+  const upscaleTo4K = async (imageUrl: string): Promise<string> => {
     try {
       setIsUpscaling(true);
       const { data, error } = await supabase.functions.invoke("replicate-upscale", {
@@ -180,7 +180,7 @@ const PhotographyHubPage = () => {
       const upscaled = (data as any)?.url || (data as any)?.imageUrl;
       return upscaled || imageUrl;
     } catch (e) {
-      console.warn("8K upscale failed, returning base image", e);
+      console.warn("4K upscale failed, returning base image", e);
       return imageUrl;
     } finally {
       setIsUpscaling(false);
@@ -199,8 +199,8 @@ const PhotographyHubPage = () => {
     try {
       const body: any = {
         prompt: mode === "edit"
-          ? `Edit this photo: ${prompt.trim()}${filterPrompt}. Keep the person recognizable. Ultra-high resolution, photorealistic, sharp 8K detail.`
-          : `Professional ultra-high-resolution 8K photograph: ${prompt.trim()}${filterPrompt}. DSLR quality, perfect composition, razor-sharp focus, fine detail.`,
+          ? `Edit this photo: ${prompt.trim()}${filterPrompt}. Keep the person recognizable. Ultra-high resolution, photorealistic, sharp 4K detail.`
+          : `Professional ultra-high-resolution 4K photograph: ${prompt.trim()}${filterPrompt}. DSLR quality, perfect composition, razor-sharp focus, fine detail.`,
       };
       if (mode === "edit" && uploadedPhoto) body.inputImage = uploadedPhoto;
 
@@ -227,16 +227,16 @@ const PhotographyHubPage = () => {
       const baseUrl = data.images?.[0]?.image_url?.url;
       if (!baseUrl) { toast.error("No image returned"); return; }
 
-      toast.success("Base photo ready — upscaling to 8K…");
-      const finalUrl = await upscaleTo8K(baseUrl);
+      toast.success("Base photo ready — upscaling to 4K…");
+      const finalUrl = await upscaleTo4K(baseUrl);
       setGeneratedImage(finalUrl);
-      toast.success(mode === "edit" ? "8K photo transformed! ✨" : "8K photo generated!");
+      toast.success(mode === "edit" ? "4K photo transformed! ✨" : "4K photo generated!");
       bumpTrial();
 
       if (user) {
         saveMedia.mutate({
           media_type: "image",
-          title: `${mode === "edit" ? "Edited" : "Generated"} 8K Photo - ${prompt.slice(0, 50)}`,
+          title: `${mode === "edit" ? "Edited" : "Generated"} 4K Photo - ${prompt.slice(0, 50)}`,
           url: finalUrl,
           source_page: "photography-hub",
           metadata: { filter: selectedFilter, mode, prompt, resolution: "8k" },
@@ -286,7 +286,7 @@ const PhotographyHubPage = () => {
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       };
-      const wardrobeLock = `Maintain identical character identity, faces, hair, skin tone, body type, AND identical wardrobe/outfits across this sequence. Photoreal 8K, cinematic lighting.`;
+      const wardrobeLock = `Maintain identical character identity, faces, hair, skin tone, body type, AND identical wardrobe/outfits across this sequence. Photoreal 4K, cinematic lighting.`;
 
       const frames: string[] = [];
       let anchorImage: string | null = null;
@@ -332,7 +332,7 @@ const PhotographyHubPage = () => {
   const busy = isGenerating || isUpscaling;
 
   return (
-    <PaywallGate requiredTier="starter" featureName="8K Photo Studio">
+    <PaywallGate requiredTier="starter" featureName="4K Photo Studio">
       <SEO title="AI Photography Hub — Brand Kit, Logos & Photo Studio | Oracle Lunar" description="Generate AI photos, logos, brand kits and social assets. Pro-grade creative tools, free to start." path="/photography-hub" />
     <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
@@ -340,7 +340,7 @@ const PhotographyHubPage = () => {
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-xl bg-primary/10"><Camera className="w-7 h-7 text-primary" /></div>
           <div>
-            <h1 className="text-xl font-bold text-primary">8K Photo Studio</h1>
+            <h1 className="text-xl font-bold text-primary">4K Photo Studio</h1>
             <p className="text-muted-foreground text-xs">Ultra-high-resolution still images · Generate or Edit</p>
         </div>
 
@@ -457,16 +457,16 @@ const PhotographyHubPage = () => {
         {generatedImage && (
           <div className="mb-4">
             <div className="aspect-square bg-card border border-primary/30 rounded-xl overflow-hidden relative">
-              <img src={generatedImage} alt="Generated 8K photo" className="w-full h-full object-cover" />
+              <img src={generatedImage} alt="Generated 4K photo" className="w-full h-full object-cover" />
               <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-primary text-primary-foreground text-[10px] font-bold tracking-wider">
-                8K
+                4K
               </div>
               <div className="absolute top-2 right-2 flex gap-2">
                 <button onClick={() => setShowShare(true)} className="p-2 bg-primary/80 rounded-lg"><Share2 className="w-4 h-4 text-primary-foreground" /></button>
                 <button onClick={async () => {
                   try {
                     await downloadFileFromUrl(generatedImage, `oracle-lunar-8k-photo-${Date.now()}`);
-                    toast.success("8K image downloaded");
+                    toast.success("4K image downloaded");
                   } catch (error) {
                     console.error(error);
                     toast.error("Failed to download image");
@@ -487,20 +487,20 @@ const PhotographyHubPage = () => {
           <div className="flex items-center gap-2 mb-2">
             <Wand2 className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">
-              {mode === "edit" ? "Describe the transformation" : "8K Photo Generator"}
+              {mode === "edit" ? "Describe the transformation" : "4K Photo Generator"}
             </span>
           </div>
           <input value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === "Enter" && generatePhoto()}
             placeholder={mode === "edit"
               ? "e.g. Make me look like a superhero, put me on a beach…"
-              : "Describe the 8K photo you want (e.g. sunset over mountains)…"
+              : "Describe the 4K photo you want (e.g. sunset over mountains)…"
             }
             className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-primary mb-3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button onClick={generatePhoto} disabled={busy || !prompt.trim() || (mode === "edit" && !uploadedPhoto)}
               className="py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {isUpscaling ? "Upscaling to 8K…" : isGenerating ? "Generating…" : mode === "edit" ? "Transform to 8K" : "Generate 1 Photo"}
+              {isUpscaling ? "Upscaling to 4K…" : isGenerating ? "Generating…" : mode === "edit" ? "Transform to 4K" : "Generate 1 Photo"}
             </button>
             <button
               onClick={() => {
@@ -665,7 +665,7 @@ const PhotographyHubPage = () => {
         <HeyGenAffiliateCTA
           placement="photography_hub_animate"
           title="Bring This Photo to Life"
-          description="Animate your 8K photo into a talking AI character video with HeyGen. Perfect for stories, ads, and social posts."
+          description="Animate your 4K photo into a talking AI character video with HeyGen. Perfect for stories, ads, and social posts."
           ctaLabel="Animate with HeyGen →"
         />
 
@@ -675,10 +675,10 @@ const PhotographyHubPage = () => {
       <ShareDialog
         open={showShare}
         onOpenChange={setShowShare}
-        title="8K AI Photo"
+        title="4K AI Photo"
         url={generatedImage || undefined}
         imageUrl={generatedImage || undefined}
-        description="Check out this 8K AI-generated photo from Oracle Lunar!"
+        description="Check out this 4K AI-generated photo from Oracle Lunar!"
       />
       <MediaPickerDialog
         open={showMediaPicker}
@@ -697,7 +697,7 @@ const PhotographyHubPage = () => {
             if (user) {
               saveMedia.mutate({
                 media_type: "image",
-                title: `Edited 8K Photo - ${prompt.slice(0, 50) || "studio edit"}`,
+                title: `Edited 4K Photo - ${prompt.slice(0, 50) || "studio edit"}`,
                 url: newUrl,
                 source_page: "photography-hub",
                 metadata: { editedInStudio: true, basePrompt: prompt, resolution: "8k" },

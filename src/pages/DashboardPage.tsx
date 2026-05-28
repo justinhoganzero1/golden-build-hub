@@ -239,7 +239,7 @@ const DashboardPage = () => {
                 Become a Member or Sign In
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                One free go on everything for visitors · Members get 8K, exports, wallet & coins.
+                One free go on everything for visitors · Members get 4K, exports, wallet & coins.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
