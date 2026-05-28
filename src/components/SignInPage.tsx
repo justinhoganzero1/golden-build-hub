@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield, Sparkles, Apple } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ const SignInPage = () => {
   const [aiFullControl, setAiFullControlState] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
   const requestedSignUp = searchParams.get("mode") === "signup";
@@ -54,17 +55,6 @@ const SignInPage = () => {
     }
   };
 
-
-  // Lovable preview visitors skip sign-in entirely and view the dashboard.
-  useEffect(() => {
-    const isLovablePreview =
-      typeof window !== "undefined" &&
-      (window.location.hostname.includes("lovable.app") ||
-        searchParams.get("preview") === "1");
-    if (isLovablePreview && !isOwnerAccess) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate, searchParams, isOwnerAccess]);
 
   useEffect(() => {
     if (isOwnerAccess) return;
@@ -355,9 +345,9 @@ const SignInPage = () => {
                 <span className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 transition-colors ${acceptTerms ? "bg-primary border-primary" : "border-primary/40"}`} />
                 <span className="text-[11px] leading-snug text-muted-foreground">
                   I agree to the{" "}
-                  <a href="/terms" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
+                  <a href="/terms-of-service" target="_blank" rel="noopener" className="text-primary underline">Terms of Service</a>
                   {" "}and{" "}
-                  <a href="/privacy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
+                  <a href="/privacy-policy" target="_blank" rel="noopener" className="text-primary underline">Privacy Policy</a>.
                 </span>
               </button>
               <button
@@ -409,7 +399,7 @@ const SignInPage = () => {
           <>
             <p className="text-center text-muted-foreground text-xs mt-5">
               {isSignUp ? "Already have an account?" : "New here?"}{" "}
-              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => setIsSignUp(!isSignUp)}>
+              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => navigate(`${location.pathname}?${isSignUp ? "" : "mode=signup&"}redirect=${encodeURIComponent(redirectPath)}`, { replace: true })}>
                 {isSignUp ? "Sign in" : "Create an account"}
               </span>
             </p>

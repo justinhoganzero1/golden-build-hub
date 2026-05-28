@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -149,10 +149,16 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: signed-in users see the Dashboard (full app); visitors see the public website.
-// Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
-// The public marketing website is still reachable at /website.
-const RootRoute = () => <DashboardPage />;
+// Root route: signed-in users see the Dashboard; visitors get the sign-in/sign-up chooser.
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <Loading />;
+  if (user) return <DashboardPage />;
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode") === "signin" ? "" : "?mode=signup&redirect=%2Fdashboard";
+  return <Navigate to={`/sign-in${mode}`} replace />;
+};
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
 const VaultPage = lazy(loaders["/vault"]);

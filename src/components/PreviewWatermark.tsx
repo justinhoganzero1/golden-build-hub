@@ -17,9 +17,11 @@ const PreviewWatermark = () => {
   const { user, loading } = useAuth();
   const isPreview = usePreviewMode();
   const navigate = useNavigate();
+  const isAuthPage = typeof window !== "undefined" && window.location.pathname.startsWith("/sign-in");
 
   if (loading) return null;
   if (user) return null;
+  if (isAuthPage) return null;
 
   const goSignUp = () => navigate("/sign-in?mode=signup");
   const goSignIn = () => navigate("/sign-in");

@@ -349,7 +349,7 @@ Rules:
                 <Film className="w-4 h-4 mr-1" /> Open in Movie Studio
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/photography">
+                <Link to="/photography-hub">
                   <ImageIcon className="w-4 h-4 mr-1" /> Make a thumbnail
                 </Link>
               </Button>
