@@ -54,7 +54,8 @@ async function readTtsAudio(res: Response) {
     const bodyText = await res.text();
     try {
       const body = JSON.parse(bodyText) as { message?: string; error?: string; status?: number };
-      throw new Error(body.message || body.error || "Voice preview returned no audio");
+      const message = body.message || body.error || "Voice preview returned no audio";
+      throw new Error(message);
     } catch {
       // Non-JSON, non-audio response: throw the raw response below.
     }
@@ -173,10 +174,6 @@ export default function VoiceStudioPage() {
         body: JSON.stringify({ text, voiceId, settings, modelId: settings.model_id }),
       });
       const blob = await readTtsAudio(res);
-      if (!blob) {
-        playDevicePreview(text, voiceName);
-        return;
-      }
       const url = URL.createObjectURL(blob);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -290,10 +287,6 @@ export default function VoiceStudioPage() {
         }),
       });
       const blob = await readTtsAudio(res);
-      if (!blob) {
-        playDevicePreview(text, p.name);
-        return;
-      }
       const url = URL.createObjectURL(blob);
       audioRef.current?.pause();
       const audio = new Audio(url);
