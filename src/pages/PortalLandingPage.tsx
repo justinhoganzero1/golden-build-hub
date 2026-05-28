@@ -75,7 +75,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import oracleLunarBanner from "@/assets/earth-orbit-stardust.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
@@ -295,15 +295,15 @@ const PortalLandingPage = () => {
         {/* Banner image — same as the app's IntroSplash */}
         <img
           src={oracleLunarBanner}
-          alt="ORACLE LUNAR cinematic banner"
-          className="absolute inset-0 w-full h-full object-cover opacity-40"
+          alt="Earth in orbit surrounded by golden stardust"
+          className="absolute inset-0 w-full h-full object-cover opacity-90"
         />
-        {/* Gold radial glow overlay */}
+        {/* Dark vignette + subtle gold halo — keeps contrast high while letting Earth pop */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse at center, hsl(var(--primary) / 0.25) 0%, hsl(var(--background) / 0.85) 70%)",
+              "radial-gradient(ellipse at center, transparent 0%, hsl(var(--background) / 0.55) 75%, hsl(var(--background) / 0.9) 100%), radial-gradient(ellipse at center, hsl(var(--primary) / 0.18) 0%, transparent 55%)",
           }}
         />
 
