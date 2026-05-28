@@ -43,19 +43,7 @@ Deno.serve(async (req) => {
     // Higher quality MP3 by default — 128kbps is a tiny bandwidth cost for
     // a massive quality improvement over 32kbps (which sounds compressed/robotic).
     const selectedFormat = outputFormat || "mp3_44100_128";
-    // Cadence helper: insert natural micro-pauses so long, flat sentences
-    // breathe like a real person. ElevenLabs honours "..." and " — " as pauses.
-    const humanize = (raw: string) => {
-      let t = raw.replace(/\s{3,}/g, "  ").trim();
-      // Soft pause after sentence-ending punctuation when the next char is a capital
-      t = t.replace(/([.!?])\s+(?=[A-Z])/g, "$1 ");
-      // Add a tiny breath before conjunctions inside long clauses
-      t = t.replace(/,\s+(but|and|so|because|though|however)\s/gi, ", $1 ");
-      // Tighten double spaces
-      t = t.replace(/[ \t]{2,}/g, " ");
-      return t;
-    };
-    const normalizedText = humanize(text);
+    // (humanize + voice settings live below)
 
     // Cadence helper: insert natural micro-pauses so long, flat sentences
     // breathe like a real person. ElevenLabs honours "..." and " — " as pauses.
