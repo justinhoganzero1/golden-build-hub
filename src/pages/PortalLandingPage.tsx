@@ -131,13 +131,13 @@ const PortalLandingPage = () => {
   };
 
   const goMemberSignIn = (redirect = "/dashboard") => {
-    const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
+    const target = `/sign-in?fresh=1&redirect=${encodeURIComponent(redirect)}`;
     if (bounceIfNotProduction(target)) return;
     navigate(target);
   };
 
   const goMemberSignUp = (redirect = "/dashboard") => {
-    const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(redirect)}`;
+    const target = `/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent(redirect)}`;
     if (bounceIfNotProduction(target)) return;
     navigate(target);
   };
