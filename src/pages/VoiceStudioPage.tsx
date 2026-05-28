@@ -786,3 +786,26 @@ function Slider({
     </div>
   );
 }
+
+function VoiceStudioUnlockBanner() {
+  const { open } = useFeatureProxy();
+  return (
+    <button
+      onClick={() => open("el-clone", "voice_studio_header")}
+      className="block w-full text-left mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <Crown className="text-amber-400 shrink-0" size={20} />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-sm">Unlock your own voice cloning studio</p>
+          <p className="text-xs text-muted-foreground truncate">
+            Clone your voice, dub in 32 languages, build conversational agents — all inside Oracle Lunar.
+          </p>
+        </div>
+        <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
+          Unlock 🪙 →
+        </span>
+      </div>
+    </button>
+  );
+}

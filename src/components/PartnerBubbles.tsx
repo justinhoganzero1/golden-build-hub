@@ -1,30 +1,27 @@
-// Floating partner-promo bubbles — appear at the bottom of the portal landing page.
-// Drift gently, scale on hover, open the partner's affiliate link in a new tab.
-// HeyGen bubble auto-hides while the affiliate URL is still the placeholder.
+// Floating partner-promo bubbles — clicking ElevenLabs / HeyGen opens our
+// in-app white-label unlock dialog (pay coins, stay inside Oracle Lunar).
+// The Lovable bubble still links out — that's our public attribution.
 import heygenBubble from "@/assets/partner-bubble-heygen.png";
 import elevenLabsBubble from "@/assets/partner-bubble-elevenlabs.png";
 import lovableBubble from "@/assets/partner-bubble-lovable.png";
-import {
-  ELEVENLABS_AFFILIATE_URL,
-  HEYGEN_AFFILIATE_URL,
-  trackAffiliateClick,
-} from "@/lib/affiliateLinks";
-
-const HEYGEN_PLACEHOLDER = "https://www.heygen.com/?sid=oraclelunar";
+import { useFeatureProxy } from "@/lib/featureProxy";
 
 interface Bubble {
   key: string;
   label: string;
   tagline: string;
   img: string;
-  url: string;
+  /** External url — only used for the Lovable attribution bubble. */
+  url?: string;
+  /** Internal proxy feature id — preferred over url. */
+  featureId?: string;
   partner: string;
-  hidden?: boolean;
   featured?: boolean;
   badge?: string;
 }
 
 const PartnerBubbles = () => {
+  const { open } = useFeatureProxy();
   const bubbles: Bubble[] = [
     {
       key: "lovable",
@@ -38,23 +35,21 @@ const PartnerBubbles = () => {
     },
     {
       key: "elevenlabs",
-      label: "ElevenLabs",
+      label: "Voice Studio",
       tagline: "AI Voices",
       img: elevenLabsBubble,
-      url: ELEVENLABS_AFFILIATE_URL,
+      featureId: "el-tts",
       partner: "elevenlabs",
     },
     {
       key: "heygen",
-      label: "HeyGen — coming soon",
+      label: "Avatar Studio",
       tagline: "AI Avatars",
       img: heygenBubble,
-      url: HEYGEN_AFFILIATE_URL,
+      featureId: "hg-avatar",
       partner: "heygen",
-      // Always show — even if affiliate URL is still placeholder, we want
-      // the "coming soon" brag visible next to the Lovable badge.
     },
-  ].filter((b: Bubble) => !b.hidden);
+  ];
 
   if (bubbles.length === 0) return null;
 
