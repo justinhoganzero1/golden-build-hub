@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { LogIn, UserPlus, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 /**
  * Global preview CTA.
@@ -9,7 +8,6 @@ import { usePreviewMode } from "@/hooks/usePreviewMode";
  */
 const PreviewWatermark = () => {
   const { user, loading } = useAuth();
-  const isPreview = usePreviewMode();
   const navigate = useNavigate();
   const isAuthPage = typeof window !== "undefined" && window.location.pathname.startsWith("/sign-in");
 
