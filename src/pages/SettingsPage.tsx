@@ -773,6 +773,7 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Notifications</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border mb-4">
                 <LowPowerToggle />
+                <AIFullControlToggle />
               </div>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[
