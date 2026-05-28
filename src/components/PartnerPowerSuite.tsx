@@ -92,7 +92,7 @@ const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: 
       </div>
 
       <p className="text-[10px] text-muted-foreground/60 mt-3 text-center">
-        Sponsored partners — Oracle Lunar earns a commission on signups
+        Powered by Oracle Lunar — pay once with coins, stay in-app.
       </p>
     </Card>
   );
