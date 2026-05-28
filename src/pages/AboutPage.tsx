@@ -1,4 +1,5 @@
-import { Shield, Heart, Sparkles, Globe, Lock, Users } from "lucide-react";
+import { Shield, Heart, Sparkles, Globe, Lock, Users, Scroll } from "lucide-react";
+import { COMMANDMENTS, SUPREME_COMMANDMENTS } from "@/data/commandments";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useNavigate } from "react-router-dom";
