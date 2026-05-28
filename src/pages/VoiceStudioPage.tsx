@@ -18,7 +18,7 @@ import {
   type PresetName,
 } from "@/data/elevenLabsVoices";
 import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
-import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
+import { useFeatureProxy } from "@/lib/featureProxy";
 
 interface AccountVoice {
   id: string;
@@ -342,27 +342,9 @@ export default function VoiceStudioPage() {
           </p>
         </header>
 
-        {/* ElevenLabs affiliate CTA */}
-        <a
-          href={ELEVENLABS_AFFILIATE_URL}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          onClick={() => trackAffiliateClick("elevenlabs", "voice_studio_header")}
-          className="block mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <Crown className="text-amber-400 shrink-0" size={20} />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm">Want your own ElevenLabs voice studio?</p>
-              <p className="text-xs text-muted-foreground truncate">
-                Clone unlimited voices, dub in 32 languages, build conversational agents — start free.
-              </p>
-            </div>
-            <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
-              Try ElevenLabs →
-            </span>
-          </div>
-        </a>
+        {/* In-app voice cloning unlock — stays inside Oracle Lunar */}
+        <VoiceStudioUnlockBanner />
+
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
@@ -802,5 +784,28 @@ function Slider({
       />
       {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
     </div>
+  );
+}
+
+function VoiceStudioUnlockBanner() {
+  const { open } = useFeatureProxy();
+  return (
+    <button
+      onClick={() => open("el-clone", "voice_studio_header")}
+      className="block w-full text-left mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <Crown className="text-amber-400 shrink-0" size={20} />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-sm">Unlock your own voice cloning studio</p>
+          <p className="text-xs text-muted-foreground truncate">
+            Clone your voice, dub in 32 languages, build conversational agents — all inside Oracle Lunar.
+          </p>
+        </div>
+        <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
+          Unlock 🪙 →
+        </span>
+      </div>
+    </button>
   );
 }

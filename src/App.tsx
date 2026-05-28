@@ -28,6 +28,7 @@ import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
+import { FeatureProxyProvider } from "@/lib/featureProxy";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -245,6 +246,7 @@ const App = () => (
         <MuteProvider>
           <TooltipProvider>
             <BrowserRouter>
+              <FeatureProxyProvider>
               <SpeedAIController />
               <Toaster />
               <Sonner />
@@ -394,6 +396,7 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+              </FeatureProxyProvider>
             </BrowserRouter>
           </TooltipProvider>
         </MuteProvider>
