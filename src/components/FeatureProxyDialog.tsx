@@ -57,9 +57,26 @@ export default function FeatureProxyDialog({ open, spec, placement, onOpenChange
       const { data, error } = await supabase.functions.invoke("feature-unlock", {
         body: { feature_id: spec.id, placement },
       });
-      if (error) throw error;
-      if ((data as any)?.error === "insufficient_coins") {
-        toast.error("Not enough coins. Top up your wallet to unlock.");
+
+      // supabase-js throws on non-2xx — peek into the response body to detect
+      // the friendly insufficient_coins case before treating it as a hard error.
+      let payload: any = data;
+      if (error) {
+        try {
+          const resp = (error as any)?.context?.response;
+          if (resp && typeof resp.json === "function") {
+            payload = await resp.clone().json();
+          }
+        } catch { /* fall through to generic error */ }
+        if (payload?.error !== "insufficient_coins") throw error;
+      }
+
+      if (payload?.error === "insufficient_coins") {
+        const need = Number(payload?.needed_cents ?? 0) / 100;
+        const have = Number(payload?.balance_cents ?? 0) / 100;
+        toast.error(
+          `Not enough coins — need $${need.toFixed(2)}, you have $${have.toFixed(2)}. Top up to unlock.`
+        );
         navigate("/wallet");
         onOpenChange(false);
         return;
@@ -75,6 +92,7 @@ export default function FeatureProxyDialog({ open, spec, placement, onOpenChange
       setBusy(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
