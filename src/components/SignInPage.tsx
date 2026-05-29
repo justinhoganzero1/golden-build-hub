@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield, Sparkles, Heart, Brain, Camera, Eye, Mic, Users, Wand2, Megaphone, Video, Wallet, Calendar, GraduationCap } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, Sparkles, Heart, Brain, Camera, Eye, Mic, Users, Wand2, Megaphone, Video, Wallet, Calendar, GraduationCap, User as UserIcon } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ const ORBIT_TILES = [
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -102,10 +103,14 @@ const SignInPage = () => {
     }).then(() => {}, () => {});
   }, [isSignUp, isOwnerAccess]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const runEmailAuth = async () => {
+    if (loading) return;
     if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
       toast.error("Owner access only accepts the approved admin email.");
+      return;
+    }
+    if (isSignUp && !isOwnerAccess && !displayName.trim()) {
+      toast.error("Please enter your name to create the account.");
       return;
     }
     setLoading(true);
@@ -121,7 +126,12 @@ const SignInPage = () => {
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
-          email, password, options: { emailRedirectTo: emailReturnUrl },
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            emailRedirectTo: emailReturnUrl,
+            data: { full_name: displayName.trim(), name: displayName.trim() },
+          },
         });
         if (error) throw error;
         if (signUpData.session) {
@@ -137,7 +147,7 @@ const SignInPage = () => {
           setPassword("");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (error) throw error;
         if (isOwnerAccess) {
           sessionStorage.setItem("admin-fresh-login", "1");
@@ -161,6 +171,11 @@ const SignInPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runEmailAuth();
   };
 
   // Defeat any inherited pink tab glow on this page by scoping a wrapper.
