@@ -7,7 +7,7 @@ import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles,
   BookOpen, Globe, Star, Lightbulb, Film,
-  Eye, Palette, GraduationCap, Home,
+  Eye, Palette, GraduationCap, Home, Route,
   Bell, CreditCard, BarChart3,
   Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
@@ -188,14 +188,24 @@ const DashboardPage = () => {
           ) : null}
           <SecurityShield />
           {user && (
-            <button
-              onClick={async () => { await signOut(); navigate("/"); }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
-              aria-label="Log out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Log out
-            </button>
+            <>
+              <button
+                onClick={() => navigate("/smoke-test?auto=1")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
+                aria-label="Run full visible app trial"
+              >
+                <Route className="w-3.5 h-3.5" />
+                Full visible trial
+              </button>
+              <button
+                onClick={async () => { await signOut(); navigate("/"); }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
+                aria-label="Log out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Log out
+              </button>
+            </>
           )}
         </div>
       </OracleMoonHeader>
