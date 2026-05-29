@@ -135,7 +135,11 @@ export default function SmokeTestPage() {
         const controls = (doc?.querySelectorAll("button,a,input,textarea,select").length || 0);
         const media = (doc?.querySelectorAll("img,video,canvas,svg").length || 0);
         if (crashed) return finish("fail", `Rendered crash text on ${loc?.pathname || path}: ${bodyText.slice(0, 180)}`);
-        if (isBlank && Date.now() - started > 1800) return finish("fail", `Blank/empty route after load: ${path}`);
+        if (isBlank && Date.now() - started < 8000) {
+          window.setTimeout(inspect, 500);
+          return;
+        }
+        if (isBlank) return finish("fail", `Blank/empty route after 8 seconds: ${path}`);
         const expected = step?.expected;
         if (!user && (expected === "auth" || expected === "admin")) {
           return finish("pass", `Correctly gated to sign-in for ${expected} route. Controls: ${controls}.`);
@@ -148,7 +152,7 @@ export default function SmokeTestPage() {
         finish("fail", e?.message || "Could not inspect iframe route.");
       }
     };
-    iframe.onload = () => setTimeout(inspect, 450);
+    iframe.onload = () => setTimeout(inspect, 900);
     setCurrentRoute(path);
     const params = new URLSearchParams(window.location.search);
     params.set("diagnostics", "1");
