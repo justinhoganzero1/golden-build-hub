@@ -73,13 +73,13 @@ Deno.serve(async (req) => {
     //  - stability 0.38  → looser, more emotional variation (less flat / less robot)
     //  - similarity 0.88 → still locked to the chosen voice identity
     //  - style 0.42      → real inflection, warmer prosody, no monotone read
-    //  - speed 0.96      → slightly slower = warmer, more thoughtful
+    //  - speed 0.88      → slower, warmer, more human cadence
     const voice_settings = {
       stability: settings?.stability ?? 0.38,
       similarity_boost: settings?.similarity_boost ?? 0.88,
       style: settings?.style ?? 0.42,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.96,
+      speed: settings?.speed ?? 0.88,
     };
 
     // optimize_streaming_latency=1 keeps low latency but avoids the
