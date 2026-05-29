@@ -149,7 +149,10 @@ export default function SmokeTestPage() {
     };
     iframe.onload = () => setTimeout(inspect, 450);
     setCurrentRoute(path);
-    iframe.src = `${path}${path.includes("?") ? "&" : "?"}diagnostics=1&ts=${Date.now()}`;
+    const params = new URLSearchParams(window.location.search);
+    params.set("diagnostics", "1");
+    params.set("ts", String(Date.now()));
+    iframe.src = `${path}${path.includes("?") ? "&" : "?"}${params.toString()}`;
     setTimeout(inspect, 2500);
   });
 
