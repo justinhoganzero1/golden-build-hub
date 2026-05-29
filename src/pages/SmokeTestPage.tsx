@@ -115,7 +115,8 @@ export default function SmokeTestPage() {
   const counts = steps.reduce((acc, s) => ({ ...acc, [s.status]: (acc as any)[s.status] + 1 }), { pending: 0, running: 0, pass: 0, fail: 0, warn: 0 } as Record<StepStatus, number>);
   const shownSteps = useMemo(() => filter === "all" ? steps : steps.filter((s) => s.status === filter), [filter, steps]);
 
-  const waitForIframe = (path: string) => new Promise<{ status: StepStatus; detail: string }>((resolve) => {
+  const waitForIframe = (step: Step) => new Promise<{ status: StepStatus; detail: string }>((resolve) => {
+    const path = step.route || "/";
     const iframe = iframeRef.current;
     if (!iframe) return resolve({ status: "fail", detail: "Diagnostics iframe missing." });
     const started = Date.now();
@@ -134,7 +135,6 @@ export default function SmokeTestPage() {
         const media = (doc?.querySelectorAll("img,video,canvas,svg").length || 0);
         if (crashed) return finish("fail", `Rendered crash text on ${loc?.pathname || path}: ${bodyText.slice(0, 180)}`);
         if (isBlank && Date.now() - started > 1800) return finish("fail", `Blank/empty route after load: ${path}`);
-        const step = steps.find((s) => s.route === path && s.id === currentStep);
         const expected = step?.expected;
         if (!user && (expected === "auth" || expected === "admin")) {
           return finish("pass", `Correctly gated to sign-in for ${expected} route. Controls: ${controls}.`);
@@ -148,6 +148,7 @@ export default function SmokeTestPage() {
       }
     };
     iframe.onload = () => setTimeout(inspect, 450);
+    setCurrentRoute(path);
     iframe.src = `${path}${path.includes("?") ? "&" : "?"}diagnostics=1&ts=${Date.now()}`;
     setTimeout(inspect, 2500);
   });
@@ -183,7 +184,7 @@ export default function SmokeTestPage() {
       update(step.id, { status: "running", detail: undefined, durationMs: undefined });
       const start = performance.now();
       try {
-        const result = step.kind === "function" ? await runFunction(step) : await waitForIframe(step.route || "/");
+        const result = step.kind === "function" ? await runFunction(step) : await waitForIframe(step);
         update(step.id, { ...result, durationMs: Math.round(performance.now() - start) });
       } catch (e: any) {
         update(step.id, { status: "fail", detail: e?.message || String(e), durationMs: Math.round(performance.now() - start) });
