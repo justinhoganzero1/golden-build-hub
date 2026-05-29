@@ -131,7 +131,7 @@ export default function SmokeTestPage() {
         const lower = bodyText.toLowerCase();
         const isBlank = bodyText.trim().length < 20;
         const crashed = /something went wrong|error boundary|uncaught|failed to fetch dynamically imported module|cannot read properties/i.test(bodyText);
-        const onSignIn = loc?.pathname?.includes("sign-in") || /sign in|sign up free|welcome back/i.test(lower);
+        const onSignIn = loc?.pathname?.includes("sign-in") || loc?.pathname?.includes("/auth");
         const controls = (doc?.querySelectorAll("button,a,input,textarea,select").length || 0);
         const media = (doc?.querySelectorAll("img,video,canvas,svg").length || 0);
         if (crashed) return finish("fail", `Rendered crash text on ${loc?.pathname || path}: ${bodyText.slice(0, 180)}`);
@@ -145,7 +145,7 @@ export default function SmokeTestPage() {
           return finish("pass", `Correctly gated to sign-in for ${expected} route. Controls: ${controls}.`);
         }
         if ((expected === "public" || expected === "free" || expected === "seo") && onSignIn) {
-          return finish("fail", `Unexpected sign-in wall on ${expected} route.`);
+          return finish("fail", `Unexpected redirect to sign-in wall on ${expected} route.`);
         }
         return finish("pass", `Loaded ${loc?.pathname || path}. Controls: ${controls}. Media elements: ${media}.`);
       } catch (e: any) {
