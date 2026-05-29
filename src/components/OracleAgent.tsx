@@ -88,12 +88,18 @@ export default function OracleAgent() {
     setAskConsent(false);
   };
 
-  // Wake word: "ok oracle"
+  // Wake word: "ok oracle" — DESKTOP ONLY.
+  // On mobile, SpeechRecognition.start()/stop() makes the OS emit a system beep
+  // every cycle, producing the constant ~1s on/off beeping. So we never run the
+  // wake-word listener on mobile devices.
   useEffect(() => {
     if (!user) return;
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if (isMobile) return; // no wake-word loop on mobile — eliminates mic beep loop
     const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     let stopped = false;
+    let restartTimer: number | undefined;
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
@@ -103,10 +109,19 @@ export default function OracleAgent() {
       if (/\b(ok|hey)\s+oracle\b/.test(t)) setOpen(true);
     };
     r.onerror = () => {};
-    r.onend = () => { if (!stopped) try { r.start(); } catch {} };
+    r.onend = () => {
+      if (stopped) return;
+      // Long cooldown between restarts so we never machine-gun the mic.
+      restartTimer = window.setTimeout(() => { try { r.start(); } catch {} }, 4000);
+    };
     try { r.start(); setListening(true); } catch {}
     recogRef.current = r;
-    return () => { stopped = true; try { r.stop(); } catch {} setListening(false); };
+    return () => {
+      stopped = true;
+      if (restartTimer) window.clearTimeout(restartTimer);
+      try { r.stop(); } catch {}
+      setListening(false);
+    };
   }, [user]);
 
   const runJob = useCallback(async (prompt: string) => {
