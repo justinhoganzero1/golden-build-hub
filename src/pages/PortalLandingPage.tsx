@@ -120,31 +120,26 @@ const PortalLandingPage = () => {
   const handleTileClick = (to: string) => {
     // Coin economy: any signed-in user can enter every app. Paid AI calls deduct coins server-side.
     if (user) {
-      if (bounceIfNotProduction(to)) return;
       navigate(to);
     } else {
       // Soft-lock: anonymous visitors trigger auth on any action.
       const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(to)}`;
-      if (bounceIfNotProduction(target)) return;
       navigate(target);
     }
   };
 
   const goMemberSignIn = (redirect = "/dashboard") => {
-    const target = `/sign-in?fresh=1&redirect=${encodeURIComponent(redirect)}`;
-    if (bounceIfNotProduction(target)) return;
+    const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
     navigate(target);
   };
 
   const goMemberSignUp = (redirect = "/dashboard") => {
-    const target = `/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent(redirect)}`;
-    if (bounceIfNotProduction(target)) return;
+    const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(redirect)}`;
     navigate(target);
   };
 
   const goOwnerSignIn = () => {
     const target = `/sign-in?redirect=${encodeURIComponent("/owner-dashboard")}`;
-    if (bounceIfNotProduction(target)) return;
     navigate(target);
   };
 
