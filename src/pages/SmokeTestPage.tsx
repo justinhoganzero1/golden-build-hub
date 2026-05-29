@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -109,6 +109,7 @@ export default function SmokeTestPage() {
   const [currentRoute, setCurrentRoute] = useState("/");
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [filter, setFilter] = useState<StepStatus | "all">("all");
+  const [startedFromAuto, setStartedFromAuto] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const update = (id: string, patch: Partial<Step>) => setSteps((prev) => prev.map((s) => s.id === id ? { ...s, ...patch } : s));
@@ -179,6 +180,7 @@ export default function SmokeTestPage() {
   };
 
   const runAll = useCallback(async () => {
+    if (running) return;
     setRunning(true);
     setSteps(makeSteps());
     const fresh = makeSteps();
@@ -196,7 +198,16 @@ export default function SmokeTestPage() {
     }
     setCurrentStep(null);
     setRunning(false);
-  }, [user]);
+  }, [running, user]);
+
+  useEffect(() => {
+    const autoRun = new URLSearchParams(window.location.search).get("auto") === "1";
+    if (!autoRun || startedFromAuto || running) return;
+    setStartedFromAuto(true);
+    window.setTimeout(() => runAll(), 450);
+  }, [runAll, running, startedFromAuto]);
+
+  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "No signed-in user";
 
   return (
     <div className="min-h-screen bg-background text-foreground p-3 md:p-5">
@@ -204,8 +215,8 @@ export default function SmokeTestPage() {
         <section className="rounded-xl border border-border bg-card/60 overflow-hidden min-h-[72vh]">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="min-w-0">
-              <h1 className="text-lg font-bold flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Live full-app diagnostics</h1>
-              <p className="text-xs text-muted-foreground">The frame below opens each route/tile one by one so the run is visible in preview.</p>
+              <h1 className="text-lg font-bold flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Donald Duck full-app live trial</h1>
+              <p className="text-xs text-muted-foreground">Signed in as {displayName}. The frame below opens each route/tile one by one so the run is visible in preview.</p>
             </div>
             <Badge variant="secondary" className="shrink-0">{currentRoute}</Badge>
           </div>
@@ -217,7 +228,7 @@ export default function SmokeTestPage() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <h2 className="font-bold flex items-center gap-2"><Layers className="h-4 w-4 text-primary" /> Test queue</h2>
-                <p className="text-xs text-muted-foreground">{steps.length} checks across splash, dashboard, routes, nested app tiles and backend gates.</p>
+                <p className="text-xs text-muted-foreground">{steps.length} checks across splash, dashboard, routes, nested app tiles, Stripe entry points and backend gates.</p>
               </div>
               <Button onClick={runAll} disabled={running} size="sm">
                 {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
