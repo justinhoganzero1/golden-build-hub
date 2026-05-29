@@ -291,6 +291,31 @@ const SignInPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
 
+          {isSignUp && !isOwnerAccess && (
+            <div>
+              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Name</label>
+              <div
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors"
+                style={{
+                  background: "hsl(0 0% 4% / 0.7)",
+                  border: "1px solid hsl(45 100% 55% / 0.35)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                <UserIcon className="w-4 h-4 text-primary/80" />
+                <input
+                  type="text"
+                  placeholder="Donald Duck"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
+                  autoComplete="name"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Email</label>
             <div
@@ -308,6 +333,7 @@ const SignInPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm disabled:opacity-70"
+                autoComplete="email"
                 required
                 readOnly={isOwnerAccess}
                 disabled={isOwnerAccess}
@@ -332,6 +358,7 @@ const SignInPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
                 required
               />
             </div>
@@ -383,7 +410,8 @@ const SignInPage = () => {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={runEmailAuth}
             disabled={loading}
             className="w-full py-3.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             style={{
