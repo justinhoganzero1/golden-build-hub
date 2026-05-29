@@ -286,13 +286,13 @@ const App = () => (
                   <Route path="/oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/chat-oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-studio" element={<RequireAuth><ErrorBoundary pageName="AI Studio"><AIStudioPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/video-editor" element={<RequireAuth><ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/video-editor" element={<RequireAuth freeAccess><ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/media-library" element={<RequireAuth freeAccess><ErrorBoundary pageName="Media Library"><MediaLibraryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/library" element={<Navigate to="/media-library" replace />} />
                   <Route path="/my-library" element={<Navigate to="/media-library" replace />} />
                   <Route path="/live-vision" element={<RequireAuth><ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/voice-studio" element={<RequireAuth><ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/photography-hub" element={<RequireAuth><ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/photography-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator-studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
