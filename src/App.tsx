@@ -27,6 +27,7 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // remount, which is the bug we're killing for good.
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
+import GlobalLibrarySaveButton from "@/components/GlobalLibrarySaveButton";
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
 import { FeatureProxyProvider } from "@/lib/featureProxy";
