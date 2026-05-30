@@ -272,6 +272,7 @@ const App = () => (
               <PreviewWatermark />
               <OracleAgent />
               <OracleControlListener />
+              <GlobalLibrarySaveButton />
 
               <Suspense fallback={<Loading />}>
                 <Routes>
