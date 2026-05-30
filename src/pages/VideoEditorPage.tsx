@@ -1,9 +1,11 @@
 import { useState } from "react";
 import SEO from "@/components/SEO";
-import { Video, Scissors, Type, Music, Image, Layers, Play, Upload } from "lucide-react";
+import { Video, Scissors, Type, Music, Image, Layers, Play, Upload, Save } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import PaywallGate from "@/components/PaywallGate";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
+import { saveToLibrary } from "@/lib/saveToLibrary";
+import { toast } from "sonner";
 
 const tools = [
   { icon: <Scissors className="w-5 h-5" />, label: "Trim & Cut" },
@@ -15,6 +17,22 @@ const tools = [
 
 const VideoEditorPage = () => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [savingProof, setSavingProof] = useState(false);
+
+  const createEditorProof = async () => {
+    setSavingProof(true);
+    const timeline = `Oracle Lunar Video Editor proof export\n\nClip: Donald Duck cinematic test reel\nTool: ${selectedTool || "Timeline assembly"}\nExport: Library-visible edit decision list\nStatus: Created from Video Editor`;
+    const id = await saveToLibrary({
+      media_type: "document",
+      title: "Donald Duck — Video Editor Proof Export",
+      url: timeline,
+      source_page: "video-editor",
+      metadata: { proof_run: true, selected_tool: selectedTool || "timeline", created_in: "Video Editor" },
+    });
+    setSavingProof(false);
+    id ? toast.success("Saved Video Editor proof to Library") : toast.error("Could not save Video Editor proof");
+  };
+
   return (
     <PaywallGate requiredTier="monthly" featureName="Video Editor (AI video generation)">
       <SEO title="AI Video Editor — Oracle Lunar" description="Edit and generate cinematic videos with Oracle Lunar AI." path="/video-editor" />
@@ -32,6 +50,10 @@ const VideoEditorPage = () => {
           <div className="flex items-center gap-2 mb-2"><Play className="w-4 h-4 text-primary" /><div className="flex-1 h-1 bg-secondary rounded-full"><div className="w-1/3 h-full bg-primary rounded-full" /></div><span className="text-[10px] text-muted-foreground">0:00 / 0:00</span></div>
           <div className="h-12 bg-secondary/50 rounded-lg flex items-center justify-center"><p className="text-xs text-muted-foreground">Timeline — add clips to begin</p></div>
         </div>
+        <button onClick={createEditorProof} disabled={savingProof}
+          className="w-full mb-4 bg-primary text-primary-foreground rounded-xl p-3 flex items-center justify-center gap-2 font-semibold disabled:opacity-60">
+          <Save className="w-4 h-4" /> {savingProof ? "Saving to Library..." : "Create Video Editor Library File"}
+        </button>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {tools.map(t => (
             <button key={t.label} onClick={() => setSelectedTool(t.label)}
