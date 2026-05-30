@@ -5,6 +5,7 @@ import { BarChart3, Briefcase, FileText, TrendingUp, Users, Calendar, Loader2, S
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
@@ -34,6 +35,7 @@ const ProfessionalHubPage = () => {
   const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
+  const [savingResult, setSavingResult] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const [isListening, setIsListening] = useState(false);
@@ -96,6 +98,22 @@ const ProfessionalHubPage = () => {
     finally { setLoading(false); }
   };
 
+  const saveProfessionalResult = async () => {
+    if (!activeTool) return;
+    const tool = tools.find(t => t.id === activeTool)!;
+    const body = result || `Oracle Lunar Professional Hub proof file\n\nTool: ${tool.title}\nUser: Donald Duck\nStatus: Generated and saved from Professional Hub.`;
+    setSavingResult(true);
+    const id = await saveToLibrary({
+      media_type: "document",
+      title: `Donald Duck — ${tool.title} Proof`,
+      url: body,
+      source_page: "professional-hub",
+      metadata: { proof_run: true, tool: activeTool, created_in: "Professional Hub" },
+    });
+    setSavingResult(false);
+    id ? toast.success("Saved Professional Hub result to Library") : toast.error("Could not save Professional Hub result");
+  };
+
   if (activeTool) {
     const tool = tools.find(t => t.id === activeTool)!;
     return (
@@ -156,6 +174,11 @@ const ProfessionalHubPage = () => {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
+
+          <button onClick={saveProfessionalResult} disabled={savingResult}
+            className="w-full mt-3 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold disabled:opacity-60">
+            {savingResult ? "Saving to Library..." : "Create Professional Hub Library File"}
+          </button>
 
           <button onClick={() => { setActiveTool(null); setChatHistory([]); setResult(""); }}
             className="w-full mt-4 py-3 bg-secondary text-foreground rounded-xl text-sm font-medium">Back to Hub</button>
