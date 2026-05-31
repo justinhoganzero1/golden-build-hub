@@ -305,7 +305,7 @@ const SignInPage = () => {
                 <UserIcon className="w-4 h-4 text-primary/80" />
                 <input
                   type="text"
-                  placeholder="Donald Duck"
+                  placeholder="Your name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"

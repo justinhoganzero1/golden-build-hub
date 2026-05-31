@@ -14,10 +14,10 @@ const InventorPage = () => {
   const [saving, setSaving] = useState(false);
   const createInventionProof = async () => {
     setSaving(true);
-    const blueprint = `Oracle Lunar Inventor proof file\n\nInventor: Donald Duck\nConcept: Self-sorting creative media vault\nProblem solved: every Oracle Lunar program must leave a visible Library artifact\nPrototype notes: generated from the Inventor tile and saved directly to Media Library.`;
+    const blueprint = `Oracle Lunar Inventor blueprint\n\nConcept: Self-sorting creative media vault\nPrototype notes: generated from the Inventor tile and saved directly to Media Library.`;
     const id = await saveToLibrary({
       media_type: "document",
-      title: "Donald Duck — Inventor Blueprint Proof",
+      title: "Inventor Blueprint",
       url: blueprint,
       source_page: "inventor",
       metadata: { proof_run: true, created_in: "Inventor" },

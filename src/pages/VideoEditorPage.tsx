@@ -21,10 +21,10 @@ const VideoEditorPage = () => {
 
   const createEditorProof = async () => {
     setSavingProof(true);
-    const timeline = `Oracle Lunar Video Editor proof export\n\nClip: Donald Duck cinematic test reel\nTool: ${selectedTool || "Timeline assembly"}\nExport: Library-visible edit decision list\nStatus: Created from Video Editor`;
+    const timeline = `Oracle Lunar Video Editor export\n\nTool: ${selectedTool || "Timeline assembly"}\nExport: edit decision list saved to Library`;
     const id = await saveToLibrary({
       media_type: "document",
-      title: "Donald Duck — Video Editor Proof Export",
+      title: "Video Editor Export",
       url: timeline,
       source_page: "video-editor",
       metadata: { proof_run: true, selected_tool: selectedTool || "timeline", created_in: "Video Editor" },
