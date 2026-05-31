@@ -85,7 +85,7 @@ const groups: TileGroup[] = [
       { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub" },
       { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub" },
       { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter" },
-      { label: "Assistant Phone", icon: <Phone className="w-6 h-6" />, path: "/assistant-phone" },
+      { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
       { label: "Claims Helper", icon: <FileText className="w-6 h-6" />, path: "/claims-assistant" },
     ],
   },
