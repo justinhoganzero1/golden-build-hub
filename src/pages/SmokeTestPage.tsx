@@ -219,7 +219,7 @@ export default function SmokeTestPage() {
         <section className="rounded-xl border border-border bg-card/60 overflow-hidden min-h-[72vh]">
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
             <div className="min-w-0">
-              <h1 className="text-lg font-bold flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Donald Duck full-app live trial</h1>
+              <h1 className="text-lg font-bold flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Full-app live trial</h1>
               <p className="text-xs text-muted-foreground">Signed in as {displayName}. The frame below opens each route/tile one by one so the run is visible in preview.</p>
             </div>
             <Badge variant="secondary" className="shrink-0">{currentRoute}</Badge>

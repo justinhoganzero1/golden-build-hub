@@ -101,11 +101,11 @@ const ProfessionalHubPage = () => {
   const saveProfessionalResult = async () => {
     if (!activeTool) return;
     const tool = tools.find(t => t.id === activeTool)!;
-    const body = result || `Oracle Lunar Professional Hub proof file\n\nTool: ${tool.title}\nUser: Donald Duck\nStatus: Generated and saved from Professional Hub.`;
+    const body = result || `Oracle Lunar Professional Hub result\n\nTool: ${tool.title}\nStatus: Generated and saved from Professional Hub.`;
     setSavingResult(true);
     const id = await saveToLibrary({
       media_type: "document",
-      title: `Donald Duck — ${tool.title} Proof`,
+      title: `${tool.title} Result`,
       url: body,
       source_page: "professional-hub",
       metadata: { proof_run: true, tool: activeTool, created_in: "Professional Hub" },
