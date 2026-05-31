@@ -257,8 +257,11 @@ const SignInPage = () => {
             <button
               type="button"
               onClick={async () => {
-                const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}${redirectPath}` });
-                if (r.error) toast.error(r.error.message || "Google sign-in failed");
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: "google",
+                  options: { redirectTo: `${window.location.origin}${redirectPath}` },
+                });
+                if (error) toast.error(error.message || "Google sign-in failed");
               }}
               className="flex items-center justify-center gap-2.5 py-3 rounded-[14px] font-semibold text-sm bg-black text-white border border-white/20 hover:opacity-90 transition-opacity shadow-[0_0_18px_hsl(280_90%_60%/0.3)]"
             >
@@ -270,8 +273,11 @@ const SignInPage = () => {
             <button
               type="button"
               onClick={async () => {
-                const r = await lovable.auth.signInWithOAuth("apple", { redirect_uri: `${window.location.origin}${redirectPath}` });
-                if (r.error) toast.error(r.error.message || "Apple sign-in failed");
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: "apple",
+                  options: { redirectTo: `${window.location.origin}${redirectPath}` },
+                });
+                if (error) toast.error(error.message || "Apple sign-in failed");
               }}
               className="flex items-center justify-center gap-2.5 py-3 rounded-[14px] font-semibold text-sm bg-black text-white border border-white/20 hover:opacity-90 transition-opacity shadow-[0_0_18px_hsl(280_90%_60%/0.3)]"
             >
