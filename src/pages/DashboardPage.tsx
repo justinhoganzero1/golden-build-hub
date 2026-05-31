@@ -8,8 +8,10 @@ import {
   Wallet, Calendar, Clock, Settings, User, Sparkles,
   BookOpen, Globe, Star, Lightbulb, Film,
   Eye, Palette, GraduationCap, Home, Route,
-  Bell, CreditCard, BarChart3,
-  Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
+  Bell, CreditCard, BarChart3, Megaphone, Store, Users,
+  Gift as GiftIcon, Image as ImageIcon, Phone, Stethoscope,
+  Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown,
+  Mic, Wand2, Inbox, Briefcase, FileText, ShoppingBag, Smile
 } from "lucide-react";
 import OracleMoonHeader from "@/components/OracleMoonHeader";
 import SecurityShield from "@/components/SecurityShield";
@@ -62,9 +64,14 @@ const groups: TileGroup[] = [
       { label: "Movie Studio", icon: <Film className="w-6 h-6" />, path: "/movie-studio-pro" },
       { label: "YouTube Studio", icon: <Video className="w-6 h-6" />, path: "/youtube-show-studio" },
       { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
+      { label: "AI Studio", icon: <Wand2 className="w-6 h-6" />, path: "/ai-studio" },
+      { label: "Creator Studio", icon: <Mic className="w-6 h-6" />, path: "/creator-studio" },
       { label: "Avatar Gen", icon: <Palette className="w-6 h-6" />, path: "/avatar-generator" },
+      { label: "Avatar Gallery", icon: <ImageIcon className="w-6 h-6" />, path: "/avatar-gallery" },
+      { label: "Living GIFs", icon: <Smile className="w-6 h-6" />, path: "/living-gif-studio" },
       { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub" },
       { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer" },
+      { label: "Marketing Hub", icon: <Megaphone className="w-6 h-6" />, path: "/marketing-hub" },
     ],
   },
   {
@@ -78,6 +85,8 @@ const groups: TileGroup[] = [
       { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub" },
       { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub" },
       { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter" },
+      { label: "Assistant Phone", icon: <Phone className="w-6 h-6" />, path: "/assistant-phone" },
+      { label: "Claims Helper", icon: <FileText className="w-6 h-6" />, path: "/claims-assistant" },
     ],
   },
   {
@@ -94,8 +103,21 @@ const groups: TileGroup[] = [
       { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
     ],
   },
-  // Wallet & Vault and Settings & Account groups removed from dashboard —
-  // those are now reached via the bottom-nav Vault and Settings tabs.
+  {
+    id: "community",
+    label: "Shop & Community",
+    emoji: "🛍️",
+    tiles: [
+      { label: "Apps Store", icon: <ShoppingBag className="w-6 h-6" />, path: "/apps" },
+      { label: "Public Library", icon: <Globe className="w-6 h-6" />, path: "/public-library" },
+      { label: "Creators", icon: <Users className="w-6 h-6" />, path: "/creators" },
+      { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet" },
+      { label: "Subscribe", icon: <CreditCard className="w-6 h-6" />, path: "/subscribe" },
+      { label: "Refer & Earn", icon: <Share2 className="w-6 h-6" />, path: "/referral" },
+      { label: "Suggestions", icon: <Inbox className="w-6 h-6" />, path: "/suggestion-box" },
+      { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor" },
+    ],
+  },
 ];
 
 const STORAGE_KEY = "oracle-lunar-dash-groups-open-v2";
