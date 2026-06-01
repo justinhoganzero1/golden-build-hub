@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured.", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -104,8 +104,8 @@ Deno.serve(async (req) => {
     } catch (netErr) {
       console.error("ElevenLabs network error:", netErr);
       return new Response(
-        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service. Falling back to browser voice.", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -133,8 +133,8 @@ Deno.serve(async (req) => {
 
     if (!response.body) {
       return new Response(
-        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio. Falling back to browser voice.", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -149,8 +149,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service. Falling back to browser voice.", fallback: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
