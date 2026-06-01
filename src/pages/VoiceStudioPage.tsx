@@ -865,3 +865,146 @@ function VoiceStudioUnlockBanner() {
     </button>
   );
 }
+
+function CloneVoicePanel({ onCloned }: { onCloned: () => void }) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  // Recording
+  const mediaRecRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const [recording, setRecording] = useState(false);
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
+        const f = new File([blob], `recording-${Date.now()}.webm`, { type: blob.type });
+        setFiles((arr) => [...arr, f]);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mediaRecRef.current = rec;
+      rec.start();
+      setRecording(true);
+    } catch (err) {
+      toast.error("Microphone permission denied");
+    }
+  }
+  function stopRecording() {
+    mediaRecRef.current?.stop();
+    setRecording(false);
+  }
+
+  async function submit() {
+    if (!name.trim()) return toast.error("Give your voice a name");
+    if (files.length === 0) return toast.error("Add at least one audio sample (or record one)");
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("name", name.trim());
+      if (description.trim()) fd.append("description", description.trim());
+      for (const f of files) fd.append("files", f, f.name);
+      const { data, error } = await supabase.functions.invoke("elevenlabs-clone-voice", { body: fd });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Voice "${name}" cloned!`, { description: `voice_id: ${data.voice_id}` });
+      setName(""); setDescription(""); setFiles([]);
+      onCloned();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Clone failed";
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4 max-w-2xl">
+      <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/5 to-amber-500/5 p-4">
+        <h2 className="font-bold text-lg mb-1">🧬 Clone Your Voice</h2>
+        <p className="text-sm text-muted-foreground">
+          Upload 30 seconds to 3 minutes of clean audio (one speaker, no music). The cloned voice appears in your Library and works everywhere TTS is used.
+        </p>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium block mb-1">Voice name *</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. My Narrator Voice"
+          className="w-full px-3 py-2 rounded-md bg-background border border-border"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium block mb-1">Description (optional)</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded-md bg-background border border-border"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm font-medium block mb-2">Audio samples</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          <label className="px-3 py-2 rounded-md border border-border cursor-pointer hover:bg-muted text-sm">
+            📁 Upload files
+            <input
+              type="file"
+              accept="audio/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const list = Array.from(e.target.files || []);
+                setFiles((arr) => [...arr, ...list]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {!recording ? (
+            <button onClick={startRecording} className="px-3 py-2 rounded-md border border-border hover:bg-muted text-sm">
+              🎤 Record sample
+            </button>
+          ) : (
+            <button onClick={stopRecording} className="px-3 py-2 rounded-md bg-red-500/20 border border-red-500 text-sm animate-pulse">
+              ⏹ Stop recording
+            </button>
+          )}
+        </div>
+        {files.length > 0 && (
+          <ul className="space-y-1">
+            {files.map((f, i) => (
+              <li key={i} className="text-xs flex items-center justify-between bg-muted/40 rounded px-2 py-1">
+                <span className="truncate">{f.name} · {(f.size / 1024).toFixed(0)} KB</span>
+                <button
+                  onClick={() => setFiles((arr) => arr.filter((_, j) => j !== i))}
+                  className="text-muted-foreground hover:text-destructive ml-2"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <button
+        onClick={submit}
+        disabled={busy}
+        className="px-5 py-2.5 rounded-md bg-primary text-primary-foreground font-semibold disabled:opacity-50"
+      >
+        {busy ? "Cloning…" : "Create cloned voice"}
+      </button>
+    </div>
+  );
+}
