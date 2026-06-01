@@ -98,7 +98,7 @@ export default function VoiceStudioPage() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab") as Tab | null;
-    if (tabParam && ["library", "party", "saved", "studio"].includes(tabParam)) {
+    if (tabParam && ["library", "party", "saved", "studio", "clone"].includes(tabParam)) {
       setTab(tabParam);
     }
   }, [searchParams]);
