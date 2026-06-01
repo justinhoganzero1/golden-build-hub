@@ -112,15 +112,22 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const err = await response.text();
       console.error("ElevenLabs error:", response.status, err);
-      let message = "Voice preview failed. No fake fallback was played.";
+      let message = "Voice preview failed. Using browser voice fallback.";
+      let code: string = "TTS_FAILED";
       try {
         const parsed = JSON.parse(err);
         const detail = parsed?.detail;
         message = detail?.message || parsed?.message || message;
+        if (response.status === 401 || detail?.status === "payment_issue" || detail?.type === "payment_required") {
+          code = "TTS_BILLING";
+          message = "Premium voice is temporarily unavailable (provider billing issue). Falling back to browser voice.";
+        }
       } catch { /* keep generic message */ }
+      // Return 200 so the client SDK can read the body and gracefully fall back
+      // to browser speechSynthesis instead of showing a blank-screen runtime error.
       return new Response(
-        JSON.stringify({ error: "TTS_FAILED", status: response.status, message }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: code, status: response.status, message, fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
