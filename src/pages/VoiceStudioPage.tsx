@@ -32,7 +32,7 @@ interface AccountVoice {
   use_case: string;
 }
 
-type Tab = "library" | "party" | "saved" | "studio";
+type Tab = "library" | "party" | "saved" | "studio" | "clone";
 type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
