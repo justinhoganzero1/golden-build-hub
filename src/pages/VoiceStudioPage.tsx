@@ -400,7 +400,7 @@ export default function VoiceStudioPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-          {(["library", "party", "saved", "studio"] as Tab[]).map((t) => (
+          {(["library", "party", "saved", "studio", "clone"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -408,10 +408,14 @@ export default function VoiceStudioPage() {
                 tab === t ? "border-b-2 border-primary text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : "💾 Saved"}
+              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : t === "clone" ? "🧬 Clone Voice" : "💾 Saved"}
             </button>
           ))}
         </div>
+
+        {tab === "clone" && (
+          <CloneVoicePanel onCloned={() => { void loadAccountVoices(); setTab("library"); }} />
+        )}
 
         {/* PARTY */}
         {tab === "party" && (
