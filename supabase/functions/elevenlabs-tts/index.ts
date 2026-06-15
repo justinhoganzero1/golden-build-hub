@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured.", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -73,13 +73,13 @@ Deno.serve(async (req) => {
     //  - stability 0.38  → looser, more emotional variation (less flat / less robot)
     //  - similarity 0.88 → still locked to the chosen voice identity
     //  - style 0.42      → real inflection, warmer prosody, no monotone read
-    //  - speed 0.88      → slower, warmer, more human cadence
+    //  - speed 0.96      → slightly slower = warmer, more thoughtful
     const voice_settings = {
       stability: settings?.stability ?? 0.38,
       similarity_boost: settings?.similarity_boost ?? 0.88,
       style: settings?.style ?? 0.42,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.88,
+      speed: settings?.speed ?? 0.96,
     };
 
     // optimize_streaming_latency=1 keeps low latency but avoids the
@@ -104,37 +104,30 @@ Deno.serve(async (req) => {
     } catch (netErr) {
       console.error("ElevenLabs network error:", netErr);
       return new Response(
-        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service. Falling back to browser voice.", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.ok) {
       const err = await response.text();
       console.error("ElevenLabs error:", response.status, err);
-      let message = "Voice preview failed. Using browser voice fallback.";
-      let code: string = "TTS_FAILED";
+      let message = "Voice preview failed. No fake fallback was played.";
       try {
         const parsed = JSON.parse(err);
         const detail = parsed?.detail;
         message = detail?.message || parsed?.message || message;
-        if (response.status === 401 || detail?.status === "payment_issue" || detail?.type === "payment_required") {
-          code = "TTS_BILLING";
-          message = "Premium voice is temporarily unavailable (provider billing issue). Falling back to browser voice.";
-        }
       } catch { /* keep generic message */ }
-      // Return 200 so the client SDK can read the body and gracefully fall back
-      // to browser speechSynthesis instead of showing a blank-screen runtime error.
       return new Response(
-        JSON.stringify({ error: code, status: response.status, message, fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_FAILED", status: response.status, message }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.body) {
       return new Response(
-        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio. Falling back to browser voice.", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -149,8 +142,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service. Falling back to browser voice.", fallback: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

@@ -13,7 +13,6 @@ import { moderatePrompt } from "@/lib/contentSafety";
 import { downloadFileFromUrl } from "@/lib/utils";
 import PaywallGate from "@/components/PaywallGate";
 import { supabase } from "@/integrations/supabase/client";
-import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import PhotoBrandKitPanel from "@/components/PhotoBrandKitPanel";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
@@ -205,8 +204,8 @@ const PhotographyHubPage = () => {
       };
       if (mode === "edit" && uploadedPhoto) body.inputImage = uploadedPhoto;
 
-      const token = getEdgeAuthTokenSync();
-      if (!token) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
         toast.error("Please sign in again to generate images.");
         return;
       }
@@ -214,7 +213,8 @@ const PhotographyHubPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify(body),
       });

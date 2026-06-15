@@ -7,11 +7,9 @@ import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles,
   BookOpen, Globe, Star, Lightbulb, Film,
-  Eye, Palette, GraduationCap, Home, Route,
-  Bell, CreditCard, BarChart3, Megaphone, Store, Users,
-  Gift as GiftIcon, Image as ImageIcon, Phone, Stethoscope,
-  Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown,
-  Mic, Wand2, Inbox, Briefcase, FileText, ShoppingBag, Smile
+  Eye, Palette, GraduationCap, Home,
+  Bell, CreditCard, BarChart3,
+  Pill, Gift, Share2, Wrench, TrendingUp, Code, LogOut, ChevronDown
 } from "lucide-react";
 import OracleMoonHeader from "@/components/OracleMoonHeader";
 import SecurityShield from "@/components/SecurityShield";
@@ -48,9 +46,6 @@ const groups: TileGroup[] = [
       { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle" },
       { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
       { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
-      { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
-      { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
-      { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
       { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
       { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
       { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
@@ -61,17 +56,15 @@ const groups: TileGroup[] = [
     label: "Create & Studio",
     emoji: "🎬",
     tiles: [
+      { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
+      { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
       { label: "Movie Studio", icon: <Film className="w-6 h-6" />, path: "/movie-studio-pro" },
       { label: "YouTube Studio", icon: <Video className="w-6 h-6" />, path: "/youtube-show-studio" },
       { label: "Voice Studio", icon: <Music className="w-6 h-6" />, path: "/voice-studio" },
-      { label: "AI Studio", icon: <Wand2 className="w-6 h-6" />, path: "/ai-studio" },
-      { label: "Creator Studio", icon: <Mic className="w-6 h-6" />, path: "/creator-studio" },
       { label: "Avatar Gen", icon: <Palette className="w-6 h-6" />, path: "/avatar-generator" },
-      { label: "Avatar Gallery", icon: <ImageIcon className="w-6 h-6" />, path: "/avatar-gallery" },
-      { label: "Living GIFs", icon: <Smile className="w-6 h-6" />, path: "/living-gif-studio" },
       { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub" },
       { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer" },
-      { label: "Marketing Hub", icon: <Megaphone className="w-6 h-6" />, path: "/marketing-hub" },
+      { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
     ],
   },
   {
@@ -85,8 +78,6 @@ const groups: TileGroup[] = [
       { label: "Mind Hub", icon: <Brain className="w-6 h-6" />, path: "/mind-hub" },
       { label: "Family Hub", icon: <Home className="w-6 h-6" />, path: "/family-hub" },
       { label: "Audio Filter", icon: <Shield className="w-6 h-6" />, path: "/audio-filter" },
-      { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
-      { label: "Claims Helper", icon: <FileText className="w-6 h-6" />, path: "/claims-assistant" },
     ],
   },
   {
@@ -103,21 +94,8 @@ const groups: TileGroup[] = [
       { label: "POS Learn", icon: <BookOpen className="w-6 h-6" />, path: "/pos-learn" },
     ],
   },
-  {
-    id: "community",
-    label: "Shop & Community",
-    emoji: "🛍️",
-    tiles: [
-      { label: "Apps Store", icon: <ShoppingBag className="w-6 h-6" />, path: "/apps" },
-      { label: "Public Library", icon: <Globe className="w-6 h-6" />, path: "/public-library" },
-      { label: "Creators", icon: <Users className="w-6 h-6" />, path: "/creators" },
-      { label: "Wallet", icon: <Wallet className="w-6 h-6" />, path: "/wallet" },
-      { label: "Subscribe", icon: <CreditCard className="w-6 h-6" />, path: "/subscribe" },
-      { label: "Refer & Earn", icon: <Share2 className="w-6 h-6" />, path: "/referral" },
-      { label: "Suggestions", icon: <Inbox className="w-6 h-6" />, path: "/suggestion-box" },
-      { label: "Investor", icon: <TrendingUp className="w-6 h-6" />, path: "/investor" },
-    ],
-  },
+  // Wallet & Vault and Settings & Account groups removed from dashboard —
+  // those are now reached via the bottom-nav Vault and Settings tabs.
 ];
 
 const STORAGE_KEY = "oracle-lunar-dash-groups-open-v2";
@@ -210,24 +188,14 @@ const DashboardPage = () => {
           ) : null}
           <SecurityShield />
           {user && (
-            <>
-              <button
-                onClick={() => navigate("/smoke-test?auto=1")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
-                aria-label="Run full visible app trial"
-              >
-                <Route className="w-3.5 h-3.5" />
-                Full visible trial
-              </button>
-              <button
-                onClick={async () => { await signOut(); navigate("/"); }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
-                aria-label="Log out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                Log out
-              </button>
-            </>
+            <button
+              onClick={async () => { await signOut(); navigate("/"); }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-destructive/15 border border-destructive/40 text-destructive hover:bg-destructive/25 transition"
+              aria-label="Log out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Log out
+            </button>
           )}
         </div>
       </OracleMoonHeader>

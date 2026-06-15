@@ -18,24 +18,8 @@ const PreviewWatermark = () => {
   if (isAuthPage) return null;
   if (hasBuiltInAuthCtas) return null;
 
-  // Return the visitor to wherever they are after auth (Photo Studio, Video
-  // Editor, etc.), not always the dashboard.
-  const redirectTarget = (() => {
-    const path = currentPath || "/";
-    if (!path || path === "/" || path.startsWith("/sign-in")) return "/dashboard";
-    const search = typeof window !== "undefined" ? window.location.search : "";
-    const cleaned = new URLSearchParams(search);
-    cleaned.delete("__lovable_token");
-    cleaned.delete("preview");
-    cleaned.delete("fresh");
-    const qs = cleaned.toString();
-    return qs ? `${path}?${qs}` : path;
-  })();
-  const encoded = encodeURIComponent(redirectTarget);
-  // NOTE: no ?fresh=1 — that forces a sign-out loop on the sign-in page for
-  // anyone who already has a valid session in another tab.
-  const goSignUp = () => navigate(`/sign-in?mode=signup&redirect=${encoded}`);
-  const goSignIn = () => navigate(`/sign-in?redirect=${encoded}`);
+  const goSignUp = () => navigate("/sign-in?fresh=1&mode=signup&redirect=/dashboard");
+  const goSignIn = () => navigate("/sign-in?fresh=1&redirect=/dashboard");
 
   return (
     <>

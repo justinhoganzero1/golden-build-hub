@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield, Sparkles, Heart, Brain, Camera, Eye, Mic, Users, Wand2, Megaphone, Video, Wallet, Calendar, GraduationCap, User as UserIcon } from "lucide-react";
+import { Mail, Lock, ArrowRight, Shield, Sparkles, Heart, Brain, Camera, Eye, Mic, Users, Wand2, Megaphone, Video, Wallet, Calendar, GraduationCap } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,7 +28,6 @@ const ORBIT_TILES = [
 
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
-  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -103,14 +102,10 @@ const SignInPage = () => {
     }).then(() => {}, () => {});
   }, [isSignUp, isOwnerAccess]);
 
-  const runEmailAuth = async () => {
-    if (loading) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
       toast.error("Owner access only accepts the approved admin email.");
-      return;
-    }
-    if (isSignUp && !isOwnerAccess && !displayName.trim()) {
-      toast.error("Please enter your name to create the account.");
       return;
     }
     setLoading(true);
@@ -126,12 +121,7 @@ const SignInPage = () => {
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password,
-          options: {
-            emailRedirectTo: emailReturnUrl,
-            data: { full_name: displayName.trim(), name: displayName.trim() },
-          },
+          email, password, options: { emailRedirectTo: emailReturnUrl },
         });
         if (error) throw error;
         if (signUpData.session) {
@@ -147,7 +137,7 @@ const SignInPage = () => {
           setPassword("");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (isOwnerAccess) {
           sessionStorage.setItem("admin-fresh-login", "1");
@@ -171,11 +161,6 @@ const SignInPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await runEmailAuth();
   };
 
   // Defeat any inherited pink tab glow on this page by scoping a wrapper.
@@ -257,11 +242,8 @@ const SignInPage = () => {
             <button
               type="button"
               onClick={async () => {
-                const { error } = await supabase.auth.signInWithOAuth({
-                  provider: "google",
-                  options: { redirectTo: `${window.location.origin}${redirectPath}` },
-                });
-                if (error) toast.error(error.message || "Google sign-in failed");
+                const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}${redirectPath}` });
+                if (r.error) toast.error(r.error.message || "Google sign-in failed");
               }}
               className="flex items-center justify-center gap-2.5 py-3 rounded-[14px] font-semibold text-sm bg-black text-white border border-white/20 hover:opacity-90 transition-opacity shadow-[0_0_18px_hsl(280_90%_60%/0.3)]"
             >
@@ -273,11 +255,8 @@ const SignInPage = () => {
             <button
               type="button"
               onClick={async () => {
-                const { error } = await supabase.auth.signInWithOAuth({
-                  provider: "apple",
-                  options: { redirectTo: `${window.location.origin}${redirectPath}` },
-                });
-                if (error) toast.error(error.message || "Apple sign-in failed");
+                const r = await lovable.auth.signInWithOAuth("apple", { redirect_uri: `${window.location.origin}${redirectPath}` });
+                if (r.error) toast.error(r.error.message || "Apple sign-in failed");
               }}
               className="flex items-center justify-center gap-2.5 py-3 rounded-[14px] font-semibold text-sm bg-black text-white border border-white/20 hover:opacity-90 transition-opacity shadow-[0_0_18px_hsl(280_90%_60%/0.3)]"
             >
@@ -297,31 +276,6 @@ const SignInPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
 
-          {isSignUp && !isOwnerAccess && (
-            <div>
-              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Name</label>
-              <div
-                className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors"
-                style={{
-                  background: "hsl(0 0% 4% / 0.7)",
-                  border: "1px solid hsl(45 100% 55% / 0.35)",
-                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
-                }}
-              >
-                <UserIcon className="w-4 h-4 text-primary/80" />
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
-                  autoComplete="name"
-                  required
-                />
-              </div>
-            </div>
-          )}
-
           <div>
             <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Email</label>
             <div
@@ -339,7 +293,6 @@ const SignInPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm disabled:opacity-70"
-                autoComplete="email"
                 required
                 readOnly={isOwnerAccess}
                 disabled={isOwnerAccess}
@@ -364,7 +317,6 @@ const SignInPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
-                autoComplete={isSignUp ? "new-password" : "current-password"}
                 required
               />
             </div>
@@ -416,8 +368,7 @@ const SignInPage = () => {
           </div>
 
           <button
-            type="button"
-            onClick={runEmailAuth}
+            type="submit"
             disabled={loading}
             className="w-full py-3.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             style={{

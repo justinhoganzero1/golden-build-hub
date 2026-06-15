@@ -1,278 +1,210 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Loader2, Circle, AlertTriangle, ExternalLink, Camera, Route, Layers, Play } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Circle, AlertTriangle } from "lucide-react";
 
 type StepStatus = "pending" | "running" | "pass" | "fail" | "warn";
-type StepKind = "route" | "tile" | "function" | "media";
 
 interface Step {
   id: string;
-  kind: StepKind;
-  group: string;
   name: string;
-  route?: string;
-  expected: "public" | "free" | "auth" | "admin" | "seo" | "redirect";
+  description: string;
   status: StepStatus;
   detail?: string;
   durationMs?: number;
+  route?: string;
 }
 
-const dashboardTiles = [
-  ["Talk to Oracle", "Oracle AI", "/oracle", "auth"], ["Talk to Oracle", "Companion", "/ai-companion", "auth"],
-  ["Talk to Oracle", "Assistant", "/personal-assistant", "auth"], ["Talk to Oracle", "Photo Studio", "/photography-hub", "free"],
-  ["Talk to Oracle", "Video Editor", "/video-editor", "free"], ["Talk to Oracle", "Media Library", "/media-library", "free"],
-  ["Talk to Oracle", "AI Tutor", "/ai-tutor", "auth"], ["Talk to Oracle", "Interpreter", "/interpreter", "auth"],
-  ["Talk to Oracle", "Live Vision", "/live-vision", "auth"], ["Create & Studio", "Movie Studio", "/movie-studio-pro", "auth"],
-  ["Create & Studio", "YouTube Studio", "/youtube-show-studio", "auth"], ["Create & Studio", "Voice Studio", "/voice-studio", "auth"],
-  ["Create & Studio", "Avatar Gen", "/avatar-generator", "auth"], ["Create & Studio", "Magic Hub", "/magic-hub", "auth"],
-  ["Create & Studio", "Story Writer", "/story-writer", "auth"], ["Care & Safety", "Crisis Hub", "/crisis-hub", "free"],
-  ["Care & Safety", "Safety Center", "/safety-center", "free"], ["Care & Safety", "Elderly Care", "/elderly-care", "auth"],
-  ["Care & Safety", "Mind Hub", "/mind-hub", "auth"], ["Care & Safety", "Family Hub", "/family-hub", "auth"],
-  ["Care & Safety", "Audio Filter", "/audio-filter", "auth"], ["Daily Life", "Calendar", "/calendar", "auth"],
-  ["Daily Life", "Alarm Clock", "/alarm-clock", "auth"], ["Daily Life", "Occasions", "/special-occasions", "auth"],
-  ["Daily Life", "Inventor", "/inventor", "auth"], ["Daily Life", "Pro Hub", "/professional-hub", "auth"],
-  ["Daily Life", "App Builder", "/app-builder", "auth"], ["Daily Life", "POS Learn", "/pos-learn", "auth"],
-] as const;
-
-const splashTiles = [
-  ["Splash", "Crisis Hub", "/crisis-hub", "free"], ["Splash", "Mind Hub", "/mind-hub", "auth"],
-  ["Splash", "Photography Hub", "/photography-hub", "free"], ["Splash", "Live Vision", "/live-vision", "auth"],
-  ["Splash", "Voice Studio", "/voice-studio", "auth"], ["Splash", "AI Companion", "/ai-companion", "auth"],
-  ["Splash", "Magic Hub", "/magic-hub", "auth"], ["Splash", "Marketing Hub", "/marketing-hub", "auth"],
-  ["Splash", "Video Editor", "/video-editor", "free"], ["Splash", "Wallet & Bills", "/wallet", "auth"],
-  ["Splash", "Calendar & Diary", "/calendar", "auth"], ["Splash", "AI Tutor", "/ai-tutor", "auth"],
-  ["Splash", "Interpreter", "/interpreter", "auth"], ["Splash", "Inventor Lab", "/inventor", "auth"],
-  ["Splash", "Professional Hub", "/professional-hub", "auth"], ["Splash", "Family Hub", "/family-hub", "auth"],
-  ["Splash", "Elderly Care", "/elderly-care", "auth"], ["Splash", "Special Occasions", "/special-occasions", "auth"],
-  ["Splash", "POS Learn", "/pos-learn", "auth"], ["Splash", "App Builder", "/app-builder", "auth"],
-  ["Splash", "AI Security Fortress", "/safety-center", "free"],
-] as const;
-
-const appTiles = [
-  "oracle", "tutor", "mind", "crisis", "photography", "marketing", "companion", "wallet", "calendar", "vision", "youtube-show",
-].map((slug) => ["Standalone Apps", `/apps/${slug}`, `/apps/${slug}`, "auth"] as const);
-
-const routeMatrix = [
-  ["Core Routes", "Home splash", "/", "public"], ["Core Routes", "Website alias", "/website", "public"],
-  ["Core Routes", "Welcome", "/welcome", "public"], ["Core Routes", "Dashboard", "/dashboard", "auth"],
-  ["Core Routes", "Oracle Preview", "/oracle-preview", "public"], ["Core Routes", "Sign In", "/sign-in", "public"],
-  ["Core Routes", "Apps storefront", "/apps", "auth"], ["Core Routes", "Public Library", "/library/public", "public"],
-  ["Core Routes", "About", "/about", "public"], ["Core Routes", "Commandments", "/commandments", "public"],
-  ["Core Routes", "Privacy", "/privacy-policy", "public"], ["Core Routes", "Terms", "/terms-of-service", "public"],
-  ["Core Routes", "Advertise", "/advertise", "public"], ["Core Routes", "Consent", "/consent", "public"],
-  ["Account Routes", "Profile", "/profile", "auth"], ["Account Routes", "Settings", "/settings", "auth"],
-  ["Account Routes", "Subscribe", "/subscribe", "auth"], ["Account Routes", "Subscription", "/subscription", "auth"],
-  ["Account Routes", "Wallet", "/wallet", "auth"], ["Account Routes", "Vault", "/vault", "auth"],
-  ["Admin Routes", "Owner Dashboard", "/owner-dashboard", "admin"], ["Admin Routes", "Admin Editor", "/admin/editor", "admin"],
-  ["Extra Modules", "AI Studio", "/ai-studio", "auth"], ["Extra Modules", "Creator Studio", "/creator-studio", "auth"],
-  ["Extra Modules", "Avatar Gallery", "/avatar-gallery", "auth"], ["Extra Modules", "Living GIF Studio", "/living-gif-studio", "auth"],
-  ["Extra Modules", "Claims Assistant", "/claims-assistant", "auth"], ["Extra Modules", "Personal Vault", "/personal-vault", "auth"],
-  ["Extra Modules", "Claims App", "/claims-app", "auth"], ["Extra Modules", "Web Wrapper", "/web-wrapper", "auth"],
-] as const;
-
-const seoRoutes = [
-  "/ai-chat-companion", "/ai-friend", "/free-ai-chat", "/ai-girlfriend", "/ai-boyfriend", "/ai-image-generator-free",
-  "/ai-video-generator", "/ai-music-generator", "/ai-coder", "/ai-photo-editor", "/chatgpt-alternative", "/ai-for-android",
-] as const;
-
-const makeSteps = (): Step[] => {
-  const fromRows = (rows: readonly (readonly [string, string, string, string])[], kind: StepKind) => rows.map(([group, name, route, expected], i) => ({
-    id: `${kind}-${group}-${name}-${route}-${i}`.replace(/[^a-z0-9]+/gi, "-"), kind, group, name, route, expected: expected as Step["expected"], status: "pending" as StepStatus,
-  }));
-  return [
-    { id: "auth-session", kind: "function", group: "Backend", name: "Authentication session restore", expected: "public", status: "pending" },
-    { id: "oracle-function", kind: "function", group: "Backend", name: "Oracle chat function", route: "/oracle", expected: "public", status: "pending" },
-    { id: "voice-function", kind: "function", group: "Backend", name: "Voice provider function", route: "/voice-studio", expected: "public", status: "pending" },
-    { id: "photo-function", kind: "function", group: "Backend", name: "Image generation auth gate", route: "/photography-hub", expected: "free", status: "pending" },
-    ...fromRows(splashTiles, "tile"), ...fromRows(dashboardTiles, "tile"), ...fromRows(routeMatrix, "route"),
-    ...appTiles.map(([group, name, route, expected], i) => ({ id: `app-${name}-${i}`, kind: "tile" as StepKind, group, name, route, expected: expected as Step["expected"], status: "pending" as StepStatus })),
-    ...seoRoutes.map((route, i) => ({ id: `seo-${i}-${route}`, kind: "route" as StepKind, group: "SEO Routes", name: route, route, expected: "seo" as Step["expected"], status: "pending" as StepStatus })),
-  ];
-};
+const INITIAL_STEPS: Step[] = [
+  { id: "auth", name: "Authentication session", description: "Verifies your Lovable Cloud auth session loads.", status: "pending" },
+  { id: "profile", name: "Profile record", description: "Loads your user profile from the database.", status: "pending", route: "/profile" },
+  { id: "wallet", name: "Wallet & credits", description: "Reads credit balance for pay-per-use flows.", status: "pending", route: "/wallet" },
+  { id: "media", name: "Media Library access", description: "Lists your saved media items.", status: "pending", route: "/media-library" },
+  { id: "dashboard", name: "Dashboard route", description: "Confirms the main dashboard chunk loads.", status: "pending", route: "/dashboard" },
+  { id: "oracle", name: "Oracle AI gateway", description: "Pings the Oracle edge function.", status: "pending", route: "/oracle" },
+  { id: "voice", name: "Voice Studio config", description: "Checks voice provider configuration.", status: "pending", route: "/voice-studio" },
+  { id: "storage", name: "Storage buckets", description: "Lists user-visible storage buckets.", status: "pending" },
+];
 
 const StatusIcon = ({ status }: { status: StepStatus }) => {
-  if (status === "pass") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (status === "fail") return <XCircle className="h-4 w-4 text-destructive" />;
-  if (status === "warn") return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  if (status === "running") return <Loader2 className="h-4 w-4 text-primary animate-spin" />;
-  return <Circle className="h-4 w-4 text-muted-foreground" />;
+  switch (status) {
+    case "pass": return <CheckCircle2 className="h-5 w-5 text-emerald-500" />;
+    case "fail": return <XCircle className="h-5 w-5 text-red-500" />;
+    case "warn": return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+    case "running": return <Loader2 className="h-5 w-5 text-primary animate-spin" />;
+    default: return <Circle className="h-5 w-5 text-muted-foreground" />;
+  }
 };
 
 export default function SmokeTestPage() {
   const { user } = useAuth();
-  const [steps, setSteps] = useState<Step[]>(makeSteps);
+  const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
   const [running, setRunning] = useState(false);
-  const [currentRoute, setCurrentRoute] = useState("/");
-  const [currentStep, setCurrentStep] = useState<string | null>(null);
-  const [filter, setFilter] = useState<StepStatus | "all">("all");
-  const [startedFromAuto, setStartedFromAuto] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const update = (id: string, patch: Partial<Step>) => setSteps((prev) => prev.map((s) => s.id === id ? { ...s, ...patch } : s));
-  const counts = steps.reduce((acc, s) => ({ ...acc, [s.status]: (acc as any)[s.status] + 1 }), { pending: 0, running: 0, pass: 0, fail: 0, warn: 0 } as Record<StepStatus, number>);
-  const shownSteps = useMemo(() => filter === "all" ? steps : steps.filter((s) => s.status === filter), [filter, steps]);
+  const update = (id: string, patch: Partial<Step>) =>
+    setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
-  const waitForIframe = (step: Step) => new Promise<{ status: StepStatus; detail: string }>((resolve) => {
-    const path = step.route || "/";
-    const iframe = iframeRef.current;
-    if (!iframe) return resolve({ status: "fail", detail: "Diagnostics iframe missing." });
-    const started = Date.now();
-    let done = false;
-    const finish = (status: StepStatus, detail: string) => { if (!done) { done = true; resolve({ status, detail }); } };
-    const inspect = () => {
-      try {
-        const doc = iframe.contentDocument;
-        const loc = iframe.contentWindow?.location;
-        const bodyText = (doc?.body?.innerText || "").slice(0, 2200);
-        const lower = bodyText.toLowerCase();
-        const isBlank = bodyText.trim().length < 20;
-        const crashed = /something went wrong|error boundary|uncaught|failed to fetch dynamically imported module|cannot read properties/i.test(bodyText);
-        const onSignIn = loc?.pathname?.includes("sign-in") || loc?.pathname?.includes("/auth");
-        const controls = (doc?.querySelectorAll("button,a,input,textarea,select").length || 0);
-        const media = (doc?.querySelectorAll("img,video,canvas,svg").length || 0);
-        if (crashed) return finish("fail", `Rendered crash text on ${loc?.pathname || path}: ${bodyText.slice(0, 180)}`);
-        if (isBlank && Date.now() - started < 8000) {
-          window.setTimeout(inspect, 500);
-          return;
-        }
-        if (isBlank) return finish("fail", `Blank/empty route after 8 seconds: ${path}`);
-        const expected = step?.expected;
-        if (!user && (expected === "auth" || expected === "admin")) {
-          return finish("pass", `Correctly gated to sign-in for ${expected} route. Controls: ${controls}.`);
-        }
-        if ((expected === "public" || expected === "free" || expected === "seo") && onSignIn) {
-          return finish("fail", `Unexpected redirect to sign-in wall on ${expected} route.`);
-        }
-        return finish("pass", `Loaded ${loc?.pathname || path}. Controls: ${controls}. Media elements: ${media}.`);
-      } catch (e: any) {
-        finish("fail", e?.message || "Could not inspect iframe route.");
-      }
-    };
-    iframe.onload = () => setTimeout(inspect, 900);
-    setCurrentRoute(path);
-    const params = new URLSearchParams(window.location.search);
-    params.set("diagnostics", "1");
-    params.set("ts", String(Date.now()));
-    iframe.src = `${path}${path.includes("?") ? "&" : "?"}${params.toString()}`;
-    setTimeout(inspect, 2500);
-  });
-
-  const runFunction = async (step: Step) => {
-    if (step.id === "auth-session") {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) return { status: "fail" as StepStatus, detail: error.message };
-      return data.session ? { status: "pass" as StepStatus, detail: `Signed in as ${data.session.user.email ?? data.session.user.id}` } : { status: "warn" as StepStatus, detail: "No active user session — auth-only routes should gate to sign-in." };
+  const runStep = async (id: string, fn: () => Promise<{ status: StepStatus; detail?: string }>) => {
+    update(id, { status: "running", detail: undefined });
+    const start = performance.now();
+    try {
+      const result = await fn();
+      update(id, { ...result, durationMs: Math.round(performance.now() - start) });
+    } catch (e: any) {
+      update(id, { status: "fail", detail: e?.message ?? String(e), durationMs: Math.round(performance.now() - start) });
     }
-    if (step.id === "oracle-function") {
-      const { error } = await supabase.functions.invoke("oracle-chat", { body: { messages: [{ role: "user", content: "diagnostics ping" }], adContext: { publicSite: true } } });
-      return error ? { status: "fail" as StepStatus, detail: error.message } : { status: "pass" as StepStatus, detail: "oracle-chat function responded." };
-    }
-    if (step.id === "voice-function") {
-      const { error } = await supabase.functions.invoke("elevenlabs-voices", { body: {} });
-      return error ? { status: "fail" as StepStatus, detail: error.message } : { status: "pass" as StepStatus, detail: "Voice provider responded." };
-    }
-    if (step.id === "photo-function") {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return { status: "pass" as StepStatus, detail: "Image generation correctly requires sign-in before spending AI credits." };
-      return { status: "warn" as StepStatus, detail: "Signed in; use the live Photo Studio tile below for a real generation test." };
-    }
-    return { status: "warn" as StepStatus, detail: "No function test handler." };
   };
 
   const runAll = useCallback(async () => {
-    if (running) return;
     setRunning(true);
-    setSteps(makeSteps());
-    const fresh = makeSteps();
-    for (const step of fresh) {
-      setCurrentStep(step.id);
-      update(step.id, { status: "running", detail: undefined, durationMs: undefined });
-      const start = performance.now();
+    setSteps(INITIAL_STEPS.map((s) => ({ ...s, status: "pending", detail: undefined, durationMs: undefined })));
+
+    await runStep("auth", async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) return { status: "fail", detail: error.message };
+      if (!data.session) return { status: "warn", detail: "No active session — sign in to fully test." };
+      return { status: "pass", detail: `Signed in as ${data.session.user.email ?? data.session.user.id}` };
+    });
+
+    await runStep("profile", async () => {
+      if (!user) return { status: "warn", detail: "Skipped — not signed in." };
+      const { data, error } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
+      if (error) return { status: "fail", detail: error.message };
+      if (!data) return { status: "warn", detail: "Profile row missing." };
+      return { status: "pass", detail: "Profile loaded." };
+    });
+
+    await runStep("wallet", async () => {
+      if (!user) return { status: "warn", detail: "Skipped — not signed in." };
+      const { data, error } = await supabase
+        .from("user_credits" as any)
+        .select("balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error && !/relation .* does not exist/i.test(error.message)) return { status: "fail", detail: error.message };
+      const bal = (data as any)?.balance;
+      return { status: "pass", detail: bal != null ? `Balance: ${bal} credits` : "Wallet reachable." };
+    });
+
+    await runStep("media", async () => {
+      if (!user) return { status: "warn", detail: "Skipped — not signed in." };
+      const { error, count } = await supabase
+        .from("media_library" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (error) return { status: "fail", detail: error.message };
+      return { status: "pass", detail: `${count ?? 0} item(s) in library.` };
+    });
+
+    await runStep("dashboard", async () => {
       try {
-        const result = step.kind === "function" ? await runFunction(step) : await waitForIframe(step);
-        update(step.id, { ...result, durationMs: Math.round(performance.now() - start) });
+        await import("./DashboardPage");
+        return { status: "pass", detail: "Dashboard chunk loaded." };
       } catch (e: any) {
-        update(step.id, { status: "fail", detail: e?.message || String(e), durationMs: Math.round(performance.now() - start) });
+        return { status: "fail", detail: e?.message ?? "Failed to load chunk" };
       }
-      await new Promise((r) => setTimeout(r, 140));
-    }
-    setCurrentStep(null);
+    });
+
+    await runStep("oracle", async () => {
+      const { data, error } = await supabase.functions.invoke("ai-chat", {
+        body: { messages: [{ role: "user", content: "ping" }], smokeTest: true },
+      });
+      if (error) {
+        const msg = error.message || "";
+        if (/not found|404/i.test(msg)) return { status: "warn", detail: "ai-chat function not deployed." };
+        return { status: "fail", detail: msg };
+      }
+      return { status: "pass", detail: data ? "Gateway responded." : "Gateway reachable." };
+    });
+
+    await runStep("voice", async () => {
+      const { error } = await supabase.functions.invoke("elevenlabs-voices", { body: {} });
+      if (error) {
+        if (/not found|404/i.test(error.message)) return { status: "warn", detail: "Voice function not deployed." };
+        return { status: "fail", detail: error.message };
+      }
+      return { status: "pass", detail: "Voice provider reachable." };
+    });
+
+    await runStep("storage", async () => {
+      const { data, error } = await supabase.storage.listBuckets();
+      if (error) return { status: "fail", detail: error.message };
+      return { status: "pass", detail: `${data?.length ?? 0} bucket(s) visible.` };
+    });
+
     setRunning(false);
-  }, [running, user]);
+  }, [user]);
 
-  useEffect(() => {
-    const autoRun = new URLSearchParams(window.location.search).get("auto") === "1";
-    if (!autoRun || startedFromAuto || running) return;
-    setStartedFromAuto(true);
-    window.setTimeout(() => runAll(), 450);
-  }, [runAll, running, startedFromAuto]);
-
-  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "No signed-in user";
+  const counts = steps.reduce(
+    (acc, s) => ({ ...acc, [s.status]: (acc as any)[s.status] + 1 }),
+    { pending: 0, running: 0, pass: 0, fail: 0, warn: 0 } as Record<StepStatus, number>,
+  );
+  const done = !running && steps.every((s) => s.status !== "pending" && s.status !== "running");
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-3 md:p-5">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">
-        <section className="rounded-xl border border-border bg-card/60 overflow-hidden min-h-[72vh]">
-          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold flex items-center gap-2"><Route className="h-5 w-5 text-primary" /> Full-app live trial</h1>
-              <p className="text-xs text-muted-foreground">Signed in as {displayName}. The frame below opens each route/tile one by one so the run is visible in preview.</p>
-            </div>
-            <Badge variant="secondary" className="shrink-0">{currentRoute}</Badge>
-          </div>
-          <iframe ref={iframeRef} title="Live route diagnostics preview" className="h-[72vh] w-full bg-background" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" />
-        </section>
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Guided Smoke Test</h1>
+          <p className="text-muted-foreground">
+            Walks the critical flows in order and reports the status of each step. Use this to confirm the app is healthy after changes.
+          </p>
+        </header>
 
-        <aside className="space-y-3">
-          <div className="rounded-xl border border-border bg-card/70 p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h2 className="font-bold flex items-center gap-2"><Layers className="h-4 w-4 text-primary" /> Test queue</h2>
-                <p className="text-xs text-muted-foreground">{steps.length} checks across splash, dashboard, routes, nested app tiles, Stripe entry points and backend gates.</p>
-              </div>
-              <Button onClick={runAll} disabled={running} size="sm">
-                {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
-                {running ? "Running" : "Run all"}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-lg">Run checks</CardTitle>
+            <div className="flex items-center gap-2">
+              {done && (
+                <>
+                  <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600">{counts.pass} pass</Badge>
+                  {counts.warn > 0 && <Badge variant="secondary" className="bg-amber-500/15 text-amber-600">{counts.warn} warn</Badge>}
+                  {counts.fail > 0 && <Badge variant="destructive">{counts.fail} fail</Badge>}
+                </>
+              )}
+              <Button onClick={runAll} disabled={running}>
+                {running ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Running…</> : "Run smoke test"}
               </Button>
             </div>
-            <div className="grid grid-cols-5 gap-1 text-center text-[11px]">
-              {(["pass", "fail", "warn", "running", "pending"] as StepStatus[]).map((s) => (
-                <button key={s} onClick={() => setFilter(filter === s ? "all" : s)} className="rounded-lg border border-border bg-background/60 px-1 py-2">
-                  <span className="block font-bold">{counts[s]}</span><span className="capitalize text-muted-foreground">{s}</span>
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => setFilter("all")}>All</Button>
-              <Link to="/photography-hub" className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted"><Camera className="h-3 w-3" /> Open Photo Studio</Link>
-              <Link to="/media-library" className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted"><ExternalLink className="h-3 w-3" /> Open Library</Link>
-            </div>
-          </div>
-
-          <div className="max-h-[67vh] overflow-auto rounded-xl border border-border bg-card/50">
-            {shownSteps.map((step, index) => (
-              <div key={step.id} className={`border-b border-border p-3 ${currentStep === step.id ? "bg-primary/10" : ""}`}>
-                <div className="flex items-start gap-2">
-                  <StatusIcon status={step.status} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold">{index + 1}. {step.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{step.group}</Badge>
-                      <Badge variant="secondary" className="text-[10px]">{step.expected}</Badge>
-                    </div>
-                    {step.route && <p className="text-[11px] text-primary truncate">{step.route}</p>}
-                    {step.detail && <p className={`mt-1 text-[11px] break-words ${step.status === "fail" ? "text-destructive" : step.status === "warn" ? "text-amber-500" : "text-muted-foreground"}`}>{step.detail}</p>}
-                    {step.durationMs != null && <p className="text-[10px] text-muted-foreground mt-1">{step.durationMs} ms</p>}
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {steps.map((step, i) => (
+              <div key={step.id} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                <div className="pt-0.5"><StatusIcon status={step.status} /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium">{i + 1}. {step.name}</span>
+                    {step.durationMs != null && (
+                      <span className="text-xs text-muted-foreground">{step.durationMs} ms</span>
+                    )}
+                    {step.route && (
+                      <Link to={step.route} className="text-xs text-primary hover:underline">Open {step.route}</Link>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                  {step.detail && (
+                    <p className={`text-xs mt-1 break-words ${step.status === "fail" ? "text-red-500" : step.status === "warn" ? "text-amber-600" : "text-muted-foreground"}`}>
+                      {step.detail}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
-          </div>
-        </aside>
+          </CardContent>
+        </Card>
+
+        {done && counts.fail === 0 && counts.warn === 0 && (
+          <p className="text-sm text-emerald-600">All critical flows passed.</p>
+        )}
+        {done && (counts.fail > 0 || counts.warn > 0) && (
+          <p className="text-sm text-muted-foreground">
+            Review the failed/warning steps above. Click the route link beside each step to open it directly.
+          </p>
+        )}
       </div>
     </div>
   );

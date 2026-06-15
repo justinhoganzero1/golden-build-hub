@@ -65,24 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      if (error) {
-        // Any stale-token error (refresh token revoked, bad_jwt, missing
-        // sub claim, invalid claim, etc.) — purge local storage so the
-        // visitor can sign in cleanly instead of being stuck in a 403 loop.
-        const msg = (error.message || "").toLowerCase();
-        if (
-          msg.includes("refresh token") ||
-          msg.includes("bad_jwt") ||
-          msg.includes("invalid claim") ||
-          msg.includes("sub claim") ||
-          msg.includes("jwt")
-        ) {
-          try { await supabase.auth.signOut({ scope: "local" }); } catch {}
-        }
+      if (error && /refresh token/i.test(error.message)) {
+        await supabase.auth.signOut({ scope: "local" });
       } else if (session) {
         setSession(session);
         setUser(session.user);
       }
+      // No anonymous fallback — visitors must hit /sign-in to either log in
+      // or join. This is intentional: every action should be tied to a
+      // member account so coins, wallet and exports work end-to-end.
       setLoading(false);
     });
 
