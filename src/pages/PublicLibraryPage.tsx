@@ -18,9 +18,6 @@ const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 type SortKey = "newest" | "popular" | "price_low" | "price_high";
 
-const isBrowserSafeUrl = (url?: string | null) =>
-  !!url && /^(https?:\/\/|\/(?!\/)|blob:|data:(?:image|video|audio)\/)/i.test(url.trim());
-
 const PublicLibraryPage = () => {
   const { user } = useAuth();
   const [filter, setFilter] = useState<"all" | "shop" | "media" | "gif" | "movie">("all");
@@ -55,7 +52,7 @@ const PublicLibraryPage = () => {
       toast.error("Sign in to download from the Public Library.");
       return;
     }
-    if (!isBrowserSafeUrl(item.url)) {
+    if (!item.url) {
       toast.error("This item has no downloadable file yet.");
       return;
     }
@@ -185,9 +182,8 @@ const PublicLibraryPage = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {items.map((item) => {
-            const fileUrl = isBrowserSafeUrl(item.url) ? item.url : "";
-            const thumb = [item.thumbnail_url, item.url].find(isBrowserSafeUrl) || "";
-            const isVideo = item.media_type === "video" && !!fileUrl;
+            const thumb = item.thumbnail_url || item.url;
+            const isVideo = item.media_type === "video";
             const isShop = item.shop_enabled && item.shop_price_cents > 0;
             const busy = busyId === item.id;
             return (
@@ -198,7 +194,7 @@ const PublicLibraryPage = () => {
                 <div className="relative aspect-square bg-muted">
                   {isVideo ? (
                     <video
-                      src={fileUrl}
+                      src={item.url}
                       poster={thumb || undefined}
                       muted
                       loop
@@ -208,18 +204,12 @@ const PublicLibraryPage = () => {
                       onMouseLeave={(e) => (e.currentTarget as HTMLVideoElement).pause()}
                     />
                   ) : (
-                    thumb ? (
-                      <img
-                        src={thumb}
-                        alt={item.title || "Public creation"}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs text-center px-3">
-                        Preview unavailable
-                      </div>
-                    )
+                    <img
+                      src={thumb}
+                      alt={item.title || "Public creation"}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
                   )}
                   {isShop && (
                     <Badge className="absolute top-1.5 right-1.5 bg-amber-500 text-amber-950 border-0">

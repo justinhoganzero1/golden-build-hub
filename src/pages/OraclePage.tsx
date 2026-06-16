@@ -115,7 +115,7 @@ function isDirectOracleTask(text: string): boolean {
 
 function extractImagePrompt(text: string): string | null {
   const polish = (value: string) => value
-    .replace(/\b8\s*k\b/gi, "4K")
+    .replace(/\b8\s*k\b/gi, "8K")
     .replace(/\bmonk+ey\b/gi, "monkey")
     .replace(/\b(?:in|on)\s+thi?s\s+screen\b/gi, "")
     .replace(/\b(?:then\s+|and\s+)?(?:save|saved|drop|put|add)\s+(?:it|this|that)?\s*(?:to|in|into)?\s*(?:the|my|your)?\s*(?:media\s*)?library\b[\s\S]*$/i, "")
@@ -1338,28 +1338,21 @@ const OraclePage = () => {
     finalTranscriptRef.current = "";
     latestHeardTextRef.current = "";
 
-    // Android/iOS emit a system "beep" every time SpeechRecognition.start()/stop()
-    // runs. Auto-restarting on every onend produced the rapid on/off beeping loop.
-    // Rule: ONE start beep when the user enables, ONE stop beep when it ends.
-    // Never auto-restart on mobile. Desktop keeps long-lived continuous mode
-    // with a long cooldown so it can't loop.
-    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    let lastStartAt = 0;
-    const MIN_RESTART_GAP_MS = 15000;
-
-    const safeStart = () => {
-      if (!alwaysListenRef.current) { setIsListening(false); return; }
+    const restartWhenSafe = () => {
+      if (!alwaysListenRef.current) {
+        setIsListening(false);
+        return;
+      }
       if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
-        window.setTimeout(safeStart, 500);
+        window.setTimeout(restartWhenSafe, 500);
         return;
       }
       try {
         recognitionRef.current = recognition;
         recognition.start();
-        lastStartAt = Date.now();
         setIsListening(true);
       } catch {
-        if (!isMobile) window.setTimeout(safeStart, 1500);
+        window.setTimeout(restartWhenSafe, 900);
       }
     };
 
@@ -1369,6 +1362,7 @@ const OraclePage = () => {
       if (isSpeakingRef.current || isSpeakingQueueRef.current || Date.now() < echoCooldownUntilRef.current) {
         return;
       }
+
       let interim = "";
       let final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -1377,14 +1371,18 @@ const OraclePage = () => {
         if (e.results[i].isFinal) final += ` ${transcript}`;
         else interim += ` ${transcript}`;
       }
+
       const mergedText = mergeCapturedTranscript(finalTranscriptRef.current, final || interim);
       if (mergedText) latestHeardTextRef.current = mergedText;
+
       const liveText = (interim || latestHeardTextRef.current || finalTranscriptRef.current || "").replace(/\s+/g, " ").trim();
       setInput(liveText);
+
       if (final.trim()) {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
+        // Auto-send 2 seconds after the user finishes speaking.
         scheduleCapturedVoiceFlush(2000);
       } else if (interim.trim()) {
         scheduleCapturedVoiceFlush(2200);
@@ -1394,6 +1392,7 @@ const OraclePage = () => {
     recognition.onspeechend = () => {
       if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
+
     recognition.onsoundend = () => {
       if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
     };
@@ -1409,28 +1408,20 @@ const OraclePage = () => {
         if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(400);
         return;
       }
-      // Never auto-restart on mobile — avoids the system beep loop on Android.
+      if (e?.error === "aborted") return;
+      if (alwaysListenRef.current) window.setTimeout(restartWhenSafe, 700);
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      if (latestHeardTextRef.current) flushCapturedVoiceText();
-      if (!alwaysListenRef.current) return;
-      if (isMobile) {
-        // One on, one off. No auto-restart on mobile.
-        alwaysListenRef.current = false;
-        return;
+      if (latestHeardTextRef.current) {
+        flushCapturedVoiceText();
       }
-      const elapsed = Date.now() - lastStartAt;
-      if (elapsed < MIN_RESTART_GAP_MS) {
-        alwaysListenRef.current = false;
-        return;
-      }
-      safeStart();
+      if (alwaysListenRef.current) restartWhenSafe();
     };
 
     alwaysListenRef.current = true;
-    safeStart();
+    restartWhenSafe();
   }, [flushCapturedVoiceText, mergeCapturedTranscript, scheduleCapturedVoiceFlush]);
 
   useEffect(() => { sendMessageRef.current = sendMessage; });

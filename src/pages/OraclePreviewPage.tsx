@@ -30,15 +30,10 @@ const OraclePreviewPage = () => {
   const navigate = useNavigate();
   const [input, setInput] = useState("");
 
-  const goSignUp = (query = "") => {
-    const destination = `/oracle${query}`;
-    navigate(`/sign-in?mode=signup&redirect=${encodeURIComponent(destination)}`);
-  };
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    goSignUp(text ? `?q=${encodeURIComponent(text)}` : "");
+    navigate(`/oracle${text ? `?q=${encodeURIComponent(text)}` : ""}`);
   };
 
   return (
@@ -126,7 +121,7 @@ const OraclePreviewPage = () => {
                   >
                     <button
                       type="button"
-                      onClick={() => goSignUp("?mic=1")}
+                      onClick={() => navigate("/oracle?mic=1")}
                       className="rounded-full p-2 text-primary bg-primary/10 hover:bg-primary/20 transition"
                       aria-label="Open microphone"
                     >
@@ -134,7 +129,7 @@ const OraclePreviewPage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => goSignUp("?attach=1")}
+                      onClick={() => navigate("/oracle?attach=1")}
                       className="rounded-full p-2 text-primary/80 bg-primary/5 hover:bg-primary/15 transition"
                       aria-label="Add attachment"
                     >

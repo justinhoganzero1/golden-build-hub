@@ -16,11 +16,11 @@ import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 
 const STYLES = [
-  { value: "3d-8k-realistic", label: "3D 4K Realistic", desc: "Ultra-realistic 3D 4K cinematic render" },
-  { value: "3d-8k-portrait", label: "3D 4K Portrait", desc: "Photorealistic 3D 4K headshot" },
-  { value: "3d-8k-fantasy", label: "3D 4K Fantasy", desc: "Ultra-detailed 3D 4K fantasy character" },
-  { value: "3d-8k-cyberpunk", label: "3D 4K Cyberpunk", desc: "Cinematic 3D 4K neon cyberpunk" },
-  { value: "3d-8k-anime", label: "3D 4K Anime", desc: "Hyper-detailed 3D 4K anime render" },
+  { value: "3d-8k-realistic", label: "3D 8K Realistic", desc: "Ultra-realistic 3D 8K cinematic render" },
+  { value: "3d-8k-portrait", label: "3D 8K Portrait", desc: "Photorealistic 3D 8K headshot" },
+  { value: "3d-8k-fantasy", label: "3D 8K Fantasy", desc: "Ultra-detailed 3D 8K fantasy character" },
+  { value: "3d-8k-cyberpunk", label: "3D 8K Cyberpunk", desc: "Cinematic 3D 8K neon cyberpunk" },
+  { value: "3d-8k-anime", label: "3D 8K Anime", desc: "Hyper-detailed 3D 8K anime render" },
   { value: "realistic-portrait", label: "Realistic Portrait", desc: "Lifelike headshot portrait" },
   { value: "realistic-full", label: "Realistic Full Body", desc: "Lifelike full body portrait" },
   { value: "anime", label: "Anime", desc: "Japanese anime style" },
@@ -116,14 +116,14 @@ const AvatarGeneratorPage = () => {
     setIsLoading(true);
     try {
       const stylePrompts: Record<string, string> = {
-        "realistic-portrait": `Ultra-photorealistic 4K UHD portrait headshot of ${desc}. Shot on a Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, skin imperfections, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting with rim light and fill. Shallow depth of field with creamy bokeh. Indistinguishable from a real photograph. Hyperrealistic, award-winning portrait photography.`,
-        "realistic-full": `Ultra-photorealistic 4K UHD full body portrait of ${desc}. Shot on a Hasselblad medium format camera. Real human with natural skin texture, visible pores, realistic fabric materials, accurate body proportions. Professional studio lighting, clean dark background. Hyper-detailed, photojournalistic quality. Looks like a real photograph taken by Annie Leibovitz. Award-winning photography.`,
+        "realistic-portrait": `Ultra-photorealistic 8K UHD portrait headshot of ${desc}. Shot on a Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, skin imperfections, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting with rim light and fill. Shallow depth of field with creamy bokeh. Indistinguishable from a real photograph. Hyperrealistic, award-winning portrait photography.`,
+        "realistic-full": `Ultra-photorealistic 8K UHD full body portrait of ${desc}. Shot on a Hasselblad medium format camera. Real human with natural skin texture, visible pores, realistic fabric materials, accurate body proportions. Professional studio lighting, clean dark background. Hyper-detailed, photojournalistic quality. Looks like a real photograph taken by Annie Leibovitz. Award-winning photography.`,
         "anime": `Anime style character art of ${desc}. Vibrant colors, detailed anime eyes, clean lines, professional anime illustration, 4K quality.`,
         "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, clean background, Disney quality, 4K render.`,
         "comic-book": `Comic book hero illustration of ${desc}. Bold ink lines, dynamic pose, vivid colors, Marvel quality, high detail.`,
         "pixel-art": `Pixel art character of ${desc}. 32-bit style, detailed sprites, retro gaming aesthetic.`,
         "watercolor": `Watercolor portrait painting of ${desc}. Soft washes, artistic brushstrokes, elegant composition, fine art quality.`,
-        "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic augmentations, rain-slicked, blade runner aesthetic, 4K cinematic.`,
+        "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic augmentations, rain-slicked, blade runner aesthetic, 8K cinematic.`,
         "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, detailed armor/robes, dramatic lighting, concept art quality.`,
         "chibi": `Cute chibi character of ${desc}. Big head, small body, adorable expression, kawaii style, high quality.`,
         "oil-painting": `Classical oil painting portrait of ${desc}. Renaissance style, rich colors, masterwork quality, museum piece.`,
@@ -268,7 +268,7 @@ const AvatarGeneratorPage = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
-      <SEO title="4K AI Avatar Generator — Free | Oracle Lunar" description="Create cinematic 4K AI avatars from a selfie or prompt. Free to try in Oracle Lunar." path="/avatar-generator" />
+      <SEO title="8K AI Avatar Generator — Free | Oracle Lunar" description="Create cinematic 8K AI avatars from a selfie or prompt. Free to try in Oracle Lunar." path="/avatar-generator" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="mb-4">
@@ -376,7 +376,7 @@ const AvatarGeneratorPage = () => {
                         ? "border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-md shadow-cyan-500/10"
                         : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
                     }`}>
-                    <div className="font-bold text-sm mb-0.5">✨ Holographic 4K</div>
+                    <div className="font-bold text-sm mb-0.5">✨ Holographic 8K</div>
                     <div className="text-[10px] opacity-70">Premium floating hologram</div>
                   </button>
                   <button onClick={() => setViewMode("normal-3d")}
@@ -487,7 +487,7 @@ const AvatarGeneratorPage = () => {
                           background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,200,255,0.03) 3px, rgba(0,200,255,0.03) 4px)",
                         }} />
                         <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[8px] font-bold uppercase backdrop-blur-sm">
-                          ✨ 4K Holographic
+                          ✨ 8K Holographic
                         </div>
                       </>
                     )}

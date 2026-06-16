@@ -12,7 +12,7 @@ import monthlyWinnerGeneral from "@/assets/monthly-winner-general.jpg";
 
 /**
  * Monthly Awards Showcase — curated AI-themed categories with this
- * month's winners. Uses real photographic Unsplash imagery for an 4K
+ * month's winners. Uses real photographic Unsplash imagery for an 8K
  * photo-realistic look. Clicking a winner opens a rich detail dialog
  * showing bio, stats, and a 4-image sample gallery.
  */
@@ -229,10 +229,10 @@ const CATEGORIES: Category[] = [
     id: "avatar-icons",
     label: "Avatar Icons",
     emoji: "🧑‍🎤",
-    blurb: "Most loved 4K avatar of the month",
+    blurb: "Most loved 8K avatar of the month",
     winners: [
       { rank: 1, name: "Vega Kade", handle: "@vegakade", title: "Solar Empress",
-        bio: "Hyper-real 4K avatar, golden hour, regal pose.",
+        bio: "Hyper-real 8K avatar, golden hour, regal pose.",
         hero: "1488426862026-3ee34a7d66df",
         gallery: ["1517841905240-472988babdf9","1534528741775-53994a69daeb","1531746020798-e6953c6e8e04","1502823403499-6ccfcf4fb453"],
         likes: 21320, views: 410220, downloads: 3140, priceCents: 800 },

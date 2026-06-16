@@ -215,7 +215,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     const light = s.lighting_preset && s.lighting_preset !== "auto" ? LIGHTING_PRESET_PROMPTS[s.lighting_preset] : "";
     const action = s.character_action?.trim() ? `Character action: ${s.character_action.trim()}.` : "";
     const emotion = s.character_emotion?.trim() ? `Character emotion: ${s.character_emotion.trim()}.` : "";
-    return [base, cam, light, action, emotion, "photoreal 4K resolution, ultra-detailed, cinematic lighting, sharp focus, film still"]
+    return [base, cam, light, action, emotion, "photoreal 8K resolution, ultra-detailed, cinematic lighting, sharp focus, film still"]
       .filter(Boolean).join(", ");
   };
 
@@ -468,7 +468,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   };
 
 
-  // ----- Generate 4K photo for a scene -----
+  // ----- Generate 8K photo for a scene -----
   const generateScenePhoto = async (sceneId: string, customPrompt?: string) => {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generating: true } : s));
     const scene = scenes.find(s => s.id === sceneId);
@@ -960,7 +960,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         voice_style: s.voice_style || "narrator-male-warm",
         photo_prompt: s.is_news_segment ? s.photo_prompt :
           (i === 0 || i === prev.length - 1)
-            ? `Professional TV news anchor ${host} at a modern newsroom desk, multiple monitors behind, cinematic studio lighting, "${show}" logo on screen, broadcast quality 4K`
+            ? `Professional TV news anchor ${host} at a modern newsroom desk, multiple monitors behind, cinematic studio lighting, "${show}" logo on screen, broadcast quality 8K`
             : `B-roll cutaway image for news story: ${s.photo_prompt}, photojournalism, broadcast TV news look`,
       })));
       // Auto-create intro fanfare + upbeat theme + credits
@@ -1506,7 +1506,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           <DialogTitle className="flex items-center gap-2 text-primary">
             <Film className="w-5 h-5" /> Cinematic Clip Studio
             <span className="ml-auto text-xs text-muted-foreground font-normal">
-              {scenes.length} scenes · {totalSec}s · 4K · 20s/clip
+              {scenes.length} scenes · {totalSec}s · 8K · 20s/clip
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -1829,7 +1829,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-primary">Scene {idx + 1}</span>
-                        <span className="text-[10px] text-muted-foreground">{s.motion} · 6s · 4K</span>
+                        <span className="text-[10px] text-muted-foreground">{s.motion} · 6s · 8K</span>
                       </div>
                       <Input value={s.caption} onChange={e => updateScene(s.id, { caption: e.target.value })}
                         className="h-7 text-xs" placeholder="Caption" />
@@ -2092,7 +2092,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                           <Textarea value={editPrompt} onChange={e => setEditPrompt(e.target.value)} rows={2}
                             className="text-xs" placeholder="e.g. Make it sunset, add rain, change outfit to red dress..." />
                           <Button onClick={applyClipEdit} size="sm" className="h-7 text-xs w-full">
-                            <Wand2 className="w-3 h-3 mr-1" /> Apply edit (4K re-render)
+                            <Wand2 className="w-3 h-3 mr-1" /> Apply edit (8K re-render)
                           </Button>
                         </div>
                       )}

@@ -8,29 +8,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
 import LowPowerToggle from "@/components/LowPowerToggle";
-import { getAIFullControl, setAIFullControl } from "@/lib/aiControl";
-
-const AIFullControlToggle = () => {
-  const [on, setOn] = useState<boolean>(() => getAIFullControl());
-  return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
-      <div className="flex-1">
-        <p className="text-sm text-foreground">AI Full Control</p>
-        <p className="text-[10px] text-muted-foreground leading-snug">
-          Lets Oracle learn from your messages and act on your behalf. Off = manual confirm for everything.
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={() => { const next = !on; setOn(next); setAIFullControl(next); }}
-        className={`relative w-11 h-6 rounded-full transition-colors ${on ? "bg-primary" : "bg-muted"}`}
-        aria-pressed={on}
-      >
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-background transition-transform ${on ? "translate-x-5" : ""}`} />
-      </button>
-    </div>
-  );
-};
 
 interface PairedDevice {
   id: string;
@@ -796,7 +773,6 @@ const SettingsPage = () => {
               <h1 className="text-lg font-bold text-primary mb-4">Notifications</h1>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border mb-4">
                 <LowPowerToggle />
-                <AIFullControlToggle />
               </div>
               <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
                 {[

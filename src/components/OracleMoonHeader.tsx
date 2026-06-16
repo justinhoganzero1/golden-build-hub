@@ -1,32 +1,31 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import heroBackground from "@/assets/oracle-lunar-banner-dashboard-crop.jpg";
+import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
-  onCapabilityClick?: (path: string) => void;
 }
 
 /**
- * Oracle Lunar Header — 4K cinematic AI hero.
+ * Oracle Lunar Header — 8K cinematic AI hero.
  * Full-bleed AI-generated cosmic video background with engraved gold
  * wordmark, gold flourish, and capability marquee. Designed to look
  * premium on Play Store / App Store hero shots.
  */
-export default function OracleMoonHeader({ children, onCapabilityClick }: OracleMoonHeaderProps) {
+export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
   const navigate = useNavigate();
 
-  const capabilities: { label: string; to: string }[] = [
-    { label: "Cinematic AI Portraits", to: "/photography-hub" },
-    { label: "4K Avatars", to: "/avatar-generator" },
-    { label: "Story Writer", to: "/story-writer" },
-    { label: "Movie Studio", to: "/movie-studio-pro" },
-    { label: "Magic Photo Edit", to: "/photography-hub" },
-    { label: "Voice Cloning", to: "/voice-studio" },
-    { label: "Live Vision", to: "/live-vision" },
-    { label: "Brand & Logo Lab", to: "/photography-hub" },
-    { label: "AI Tutor", to: "/ai-tutor" },
-    { label: "App Builder", to: "/app-builder" },
+  const capabilities = [
+    "Cinematic AI Portraits",
+    "8K Avatars",
+    "Story Writer",
+    "Movie Studio",
+    "Magic Photo Edit",
+    "Voice Cloning",
+    "Live Vision",
+    "Brand & Logo Lab",
+    "AI Tutor",
+    "App Builder",
   ];
 
   return (
@@ -70,7 +69,7 @@ export default function OracleMoonHeader({ children, onCapabilityClick }: Oracle
         {/* Crown badge */}
         <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] bg-black/40 backdrop-blur border border-amber-400/40 text-amber-200">
           <span>✦</span>
-          <span>4K Cinematic AI</span>
+          <span>8K Cinematic AI</span>
           <span>✦</span>
         </div>
 
@@ -83,10 +82,9 @@ export default function OracleMoonHeader({ children, onCapabilityClick }: Oracle
           <div
             role="text"
             aria-label="Oracle Lunar"
-            className="font-black leading-none tracking-[0.12em] sm:tracking-[0.22em] max-w-full"
+            className="text-4xl sm:text-7xl font-black tracking-[0.22em] leading-none"
             style={{
               fontFamily: "'Cinzel','Trajan Pro',Georgia,serif",
-              fontSize: "clamp(1.5rem, 9vw, 4.5rem)",
               backgroundImage:
                 "linear-gradient(180deg, hsl(48 100% 88%) 0%, hsl(45 100% 62%) 45%, hsl(38 100% 38%) 100%)",
               WebkitBackgroundClip: "text",
@@ -121,15 +119,13 @@ export default function OracleMoonHeader({ children, onCapabilityClick }: Oracle
             style={{ animation: "marqueeSlide 28s linear infinite" }}
           >
             {[...capabilities, ...capabilities].map((cap, i) => (
-              <button
+              <span
                 key={i}
-                type="button"
-                onClick={() => onCapabilityClick ? onCapabilityClick(cap.to) : navigate(cap.to)}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/70 backdrop-blur-sm border border-amber-400/60 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 hover:text-amber-50 transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100"
               >
-                <span className="text-amber-300 drop-shadow-[0_0_1px_rgba(0,0,0,0.9)]">✦</span>
-                {cap.label}
-              </button>
+                <span className="text-amber-300">✦</span>
+                {cap}
+              </span>
             ))}
           </div>
         </div>

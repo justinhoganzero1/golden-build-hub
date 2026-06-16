@@ -1,9 +1,12 @@
-// HeyGen upsell card — now routes through our in-app white-label proxy so the
-// user pays coins and stays inside Oracle Lunar. No outbound third-party links.
+// HeyGen affiliate CTA — single source of truth for the upsell card/button.
+// When the real PartnerStack URL is pasted into HEYGEN_AFFILIATE_URL,
+// every instance of this component activates automatically.
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Video } from "lucide-react";
-import { useFeatureProxy } from "@/lib/featureProxy";
+import { HEYGEN_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
+
+const PLACEHOLDER_URL = "https://www.heygen.com/?sid=oraclelunar";
 
 interface HeyGenAffiliateCTAProps {
   placement: string;
@@ -12,21 +15,25 @@ interface HeyGenAffiliateCTAProps {
   description?: string;
   ctaLabel?: string;
   className?: string;
-  /** Which proxied feature to unlock. Defaults to talking avatar. */
-  featureId?: string;
 }
 
 export function HeyGenAffiliateCTA({
   placement,
   variant = "card",
-  title = "Animate Your Story",
-  description = "Turn your storyboard into a lifelike AI character video. 4K talking avatars, perfect lip-sync, and 175+ voices — all inside Oracle Lunar.",
-  ctaLabel = "Unlock with coins →",
+  title = "Animate Your Story with HeyGen",
+  description = "Turn your storyboard into a lifelike AI character video. 8K talking avatars, lip-sync, and 175+ voices.",
+  ctaLabel = "Try HeyGen Free →",
   className = "",
-  featureId = "hg-avatar",
 }: HeyGenAffiliateCTAProps) {
-  const { open } = useFeatureProxy();
-  const handleClick = () => open(featureId, placement);
+  // Hide the CTA entirely until the real referral URL is wired in.
+  // This way, no broken/placeholder links ever ship to users.
+  const isLive = HEYGEN_AFFILIATE_URL && HEYGEN_AFFILIATE_URL !== PLACEHOLDER_URL;
+  if (!isLive) return null;
+
+  const handleClick = () => {
+    trackAffiliateClick("heygen", placement);
+    window.open(HEYGEN_AFFILIATE_URL, "_blank", "noopener,noreferrer,sponsored");
+  };
 
   if (variant === "button") {
     return (
@@ -53,7 +60,9 @@ export function HeyGenAffiliateCTA({
   }
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-amber-950/40 to-background border-amber-500/30 ${className}`}>
+    <Card
+      className={`p-4 bg-gradient-to-br from-amber-950/40 to-background border-amber-500/30 ${className}`}
+    >
       <div className="flex items-start gap-3">
         <div className="rounded-lg bg-amber-500/20 p-2">
           <Sparkles className="h-5 w-5 text-amber-400" />
@@ -69,7 +78,7 @@ export function HeyGenAffiliateCTA({
             {ctaLabel}
           </Button>
           <p className="text-[10px] text-muted-foreground/60 mt-2">
-            Pay once with coins — stay in Oracle Lunar.
+            Sponsored partner — Oracle Lunar earns a commission
           </p>
         </div>
       </div>

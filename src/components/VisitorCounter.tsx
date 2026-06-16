@@ -54,12 +54,10 @@ const VisitorCounter = ({ page = "landing" }: VisitorCounterProps) => {
           });
           sessionStorage.setItem(sessionKey, "1");
         }
-        const { count: total, error } = await supabase
+        const { count: total } = await supabase
           .from("page_views")
-          .select("id", { count: "exact" })
-          .eq("page", page)
-          .limit(1);
-        if (error) throw error;
+          .select("*", { count: "exact", head: true })
+          .eq("page", page);
         if (!cancelled && typeof total === "number") setCount(total);
       } catch {
         // silent — counter is non-critical

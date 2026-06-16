@@ -138,19 +138,7 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
-    if (!user) {
-      navigate(`/sign-in?redirect=${encodeURIComponent(tile.path)}`);
-      return;
-    }
     navigate(tile.path);
-  };
-
-  const handleMemberAction = (path: string) => {
-    if (!user) {
-      navigate(`/sign-in?redirect=${encodeURIComponent(path)}`);
-      return;
-    }
-    navigate(path);
   };
 
   const expandAll = () => setOpenMap(Object.fromEntries(groups.map(g => [g.id, true])));
@@ -161,25 +149,48 @@ const DashboardPage = () => {
       <SEO title="Dashboard — Oracle Lunar AI Super App" description="Your Oracle Lunar dashboard. Access 40+ AI tools: chat, voice, photo, video, tutor, mind & wellness — all free to start." path="/dashboard" />
       <WelcomeModal />
 
-      <OracleMoonHeader onCapabilityClick={handleMemberAction}>
+      {/* HUGE attention-grabbing hero banner — visible at the very top of the dashboard */}
+      <div className="relative mx-3 mt-3 mb-2 overflow-hidden rounded-3xl border-2 border-amber-400/70 bg-gradient-to-br from-amber-600 via-yellow-500 to-amber-700 shadow-[0_0_60px_rgba(245,158,11,0.55)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.35),transparent_60%)] pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-yellow-200/30 blur-3xl animate-pulse pointer-events-none" />
+        <div className="relative px-5 py-5 flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-black tracking-[0.25em] text-black/70 uppercase">★ Limited Time ★</div>
+            <p className="text-2xl sm:text-4xl font-black text-black leading-tight drop-shadow-sm m-0">
+              TRY EVERY FEATURE <span className="underline decoration-black/40">FREE</span>
+            </p>
+            <p className="text-black/80 text-xs sm:text-sm font-semibold mt-1">
+              3 free goes on every tool — no card needed. Tap any tile below to start.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/oracle")}
+            className="shrink-0 px-5 py-3 rounded-full bg-black text-amber-300 font-black text-sm uppercase tracking-wider shadow-xl hover:scale-105 active:scale-95 transition border-2 border-amber-300/60 animate-pulse"
+          >
+            ✨ Start Now
+          </button>
+        </div>
+      </div>
+
+      <OracleMoonHeader>
         {/* Action bar under the moon */}
         <div className="flex items-center justify-center gap-3 flex-wrap mt-2">
           {adminLoading ? null : isAdmin ? (
             <>
               <button
-                onClick={() => handleMemberAction("/owner-dashboard")}
+                onClick={() => navigate("/owner-dashboard")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black uppercase bg-amber-500/20 border border-amber-400/60 text-amber-300 hover:bg-amber-500/30 transition shadow-[0_0_18px_rgba(245,158,11,0.35)]"
               >
                 👑 Admin Dashboard
               </button>
               <button
-                onClick={() => handleMemberAction("/admin/editor")}
+                onClick={() => navigate("/admin/editor")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
               >
                 ✏️ Live Editor
               </button>
               <button
-                onClick={() => handleMemberAction("/admin/usage-audit")}
+                onClick={() => navigate("/admin/usage-audit")}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary hover:bg-primary/25 transition"
               >
                 📊 Usage Audit
@@ -222,21 +233,27 @@ const DashboardPage = () => {
           <div className="rounded-2xl bg-background/95 backdrop-blur p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="flex-1 text-center sm:text-left">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-1">
-                ★ Limited time
+                ✨ Unlock the full Oracle Lunar
               </div>
               <h2 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-primary to-amber-300 bg-clip-text text-transparent">
-                TRY EVERY FEATURE FREE
+                Become a Member or Sign In
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                3 free goes on every tool — no card needed. Tap Start Now to sign in with Google or Apple.
+                One free go on everything for visitors · Members get 8K, exports, wallet & coins.
               </p>
             </div>
-            <div className="flex w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
-                onClick={() => navigate("/sign-in?mode=signup&redirect=/dashboard")}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
+                onClick={() => navigate("/sign-in?mode=signup")}
+                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
               >
-                ✨ Start Now
+                🚀 Become a Member
+              </button>
+              <button
+                onClick={() => navigate("/sign-in")}
+                className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-background border-2 border-primary/60 text-primary hover:bg-primary/10 transition"
+              >
+                Sign In
               </button>
             </div>
           </div>
@@ -324,7 +341,7 @@ const DashboardPage = () => {
         ].map((t) => (
           <button
             key={t.path}
-            onClick={() => handleMemberAction(t.path)}
+            onClick={() => navigate(t.path)}
             className="holo-tile flex-1 flex flex-col items-center gap-1 p-2 rounded-xl"
           >
             <div className="holo-icon text-sky-400">{t.icon}</div>

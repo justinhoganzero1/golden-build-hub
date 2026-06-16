@@ -20,7 +20,7 @@ interface SelfieCaptureDialogProps {
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const AI_PRESETS = [
-  { id: "studio", label: "📸 Pro Headshot", prompt: "Transform into an ultra-realistic 4K professional studio headshot. Sharp focus on face, soft rim lighting, neutral background, magazine quality. Keep the person's identity and features identical." },
+  { id: "studio", label: "📸 Pro Headshot", prompt: "Transform into an ultra-realistic 8K professional studio headshot. Sharp focus on face, soft rim lighting, neutral background, magazine quality. Keep the person's identity and features identical." },
   { id: "cinematic", label: "🎬 Cinematic", prompt: "Cinematic film still, dramatic golden-hour lighting, shallow depth of field, color graded like a Hollywood movie. Preserve the person's exact face and identity." },
   { id: "anime", label: "🎨 Anime Hero", prompt: "Convert into stylized anime art keeping facial features recognizable. Detailed eyes, vibrant colors, clean line art." },
   { id: "fantasy", label: "🧙 Fantasy", prompt: "Reimagine as an epic fantasy character with magical armor and glowing aura. Keep the same face and identity." },

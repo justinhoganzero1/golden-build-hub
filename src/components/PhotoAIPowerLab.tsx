@@ -1,5 +1,5 @@
 // PhotoAIPowerLab — a giant grid of one-tap AI mini-tools that supercharge the
-// 4K Photo Studio. Each preset feeds a polished prompt into the studio, picks
+// 8K Photo Studio. Each preset feeds a polished prompt into the studio, picks
 // a matching style filter, and sets the right mode (generate vs edit). Some
 // tiles hand off to HeyGen / ElevenLabs for video & voice extensions.
 import {
@@ -11,7 +11,13 @@ import {
   Leaf, Rocket, Gem, Tag,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useFeatureProxy } from "@/lib/featureProxy";
+import {
+  ELEVENLABS_AFFILIATE_URL,
+  HEYGEN_AFFILIATE_URL,
+  trackAffiliateClick,
+} from "@/lib/affiliateLinks";
+
+const HEYGEN_PLACEHOLDER = "https://www.heygen.com/?sid=oraclelunar";
 
 type PhotoMode = "generate" | "edit";
 type Filter = "None" | "Vivid" | "Noir" | "Vintage" | "Dreamy" | "Cinematic";
@@ -51,7 +57,7 @@ const PRESETS: Preset[] = [
   { id: "ghost",          group: "creative", icon: <Ghost className="w-4 h-4" />,         title: "Halloween Spooky",      desc: "Creepy gothic horror portrait.",                              prompt: "Halloween gothic horror portrait, candlelit, pale skin, dark shadowy backdrop, victorian dress, slight fog", filter: "Noir", mode: "edit" },
 
   // ───── Products & Brand ─────
-  { id: "product-white",  group: "products", icon: <ShoppingBag className="w-4 h-4" />, title: "Product on White",      desc: "Amazon-grade white-background product.",                       prompt: "Studio product photography on pure white seamless background, soft top light, mild reflection underneath, ultra-sharp 4K e-commerce shot", filter: "Vivid", mode: "edit" },
+  { id: "product-white",  group: "products", icon: <ShoppingBag className="w-4 h-4" />, title: "Product on White",      desc: "Amazon-grade white-background product.",                       prompt: "Studio product photography on pure white seamless background, soft top light, mild reflection underneath, ultra-sharp 8K e-commerce shot", filter: "Vivid", mode: "edit" },
   { id: "product-lifestyle", group: "products", icon: <Tag className="w-4 h-4" />,      title: "Product Lifestyle",     desc: "Hero shot in real environment.",                              prompt: "Lifestyle product hero shot in a beautifully styled real-world environment, shallow depth of field, magazine-grade composition", filter: "Cinematic", mode: "edit" },
   { id: "magazine",       group: "products", icon: <Newspaper className="w-4 h-4" />,    title: "Magazine Cover",        desc: "Vogue-style cover with title space.",                          prompt: "Vogue magazine cover composition, dramatic studio lighting, sharp pose, leave headroom for masthead and headline copy", filter: "Cinematic", mode: "edit" },
   { id: "billboard",      group: "products", icon: <Megaphone className="w-4 h-4" />,    title: "Billboard Hero Ad",     desc: "Wide-aspect outdoor advert composition.",                      prompt: "Hero outdoor billboard advertising composition, ultra-wide framing, bold subject placement, rich saturated colors, leave negative space for tagline", filter: "Vivid", mode: "edit" },
@@ -106,12 +112,18 @@ interface Props {
 }
 
 const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
-  const { open: openProxy } = useFeatureProxy();
-  const visible = PRESETS;
+  const heygenLive = HEYGEN_AFFILIATE_URL !== HEYGEN_PLACEHOLDER;
+
+  const visible = PRESETS.filter(p => {
+    if (p.partner === "heygen" && !heygenLive) return false;
+    return true;
+  });
 
   const handleClick = (p: Preset) => {
     if (p.partner) {
-      openProxy(p.id, `photo_lab_${p.id}`);
+      const url = p.partner === "heygen" ? HEYGEN_AFFILIATE_URL : ELEVENLABS_AFFILIATE_URL;
+      trackAffiliateClick(p.partner, `photo_lab_${p.id}`);
+      window.open(url, "_blank", "noopener,noreferrer,sponsored");
       return;
     }
     if (p.prompt && p.filter && p.mode) {
@@ -131,7 +143,7 @@ const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
         </span>
       </div>
       <p className="text-[11px] text-muted-foreground mb-3">
-        Tap a folder to open it. Each folder groups one-tap presets that auto-fill the 4K Photo Studio.
+        Tap a folder to open it. Each folder groups one-tap presets that auto-fill the 8K Photo Studio.
       </p>
 
       <div className="space-y-2">

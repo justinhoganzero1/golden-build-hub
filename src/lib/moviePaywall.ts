@@ -1,6 +1,6 @@
 // Movie Studio paywall rules — slideshow edition.
 // The renderer is now a Ken Burns slideshow (still images + AI narration).
-// So 4K/4K upscale promises were dropped. Two honest tiers: SD 720p / HD 1080p.
+// So 4K/8K upscale promises were dropped. Two honest tiers: SD 720p / HD 1080p.
 // Free users get exactly ONE 8-second clip, lifetime. Everything after = paywall.
 
 export interface MovieTierLimits {

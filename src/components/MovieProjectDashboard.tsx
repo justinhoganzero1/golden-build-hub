@@ -46,7 +46,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const QUALITY_LABEL: Record<string, string> = {
-  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 4K",
+  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 8K",
 };
 
 export const MovieProjectDashboard = () => {

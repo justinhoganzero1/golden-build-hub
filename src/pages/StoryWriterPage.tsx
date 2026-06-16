@@ -261,12 +261,12 @@ const StoryWriterPage = () => {
     let basePrompt = customPrompt?.trim() || "";
     if (!basePrompt) {
       if (slot === "cover") {
-        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 4K, magazine cover quality, no text, no typography.`;
+        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 8K, magazine cover quality, no text, no typography.`;
       } else if (slot === "back") {
-        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 4K, no text.`;
+        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 8K, no text.`;
       } else if (ch) {
         const snippet = (ch.content || "").slice(0, 1200);
-        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 4K, no text, no captions.`;
+        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 8K, no text, no captions.`;
       }
     }
 

@@ -9,7 +9,7 @@ import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import PaywallGate from "@/components/PaywallGate";
 import LivingAvatar from "@/components/LivingAvatar";
 
-// Realistic 4K avatar imports
+// Realistic 8K avatar imports
 import execMale from "@/assets/avatars/exec-male.jpg";
 import scientistFemale from "@/assets/avatars/scientist-female.jpg";
 import chefMale from "@/assets/avatars/chef-male.jpg";
@@ -31,7 +31,7 @@ import ninjaMale from "@/assets/avatars/ninja-male.jpg";
 import elfFemale from "@/assets/avatars/elf-female.jpg";
 import mermaidFemale from "@/assets/avatars/mermaid-female.jpg";
 
-// Realistic 4K avatar appearance options (replaces emoji choices)
+// Realistic 8K avatar appearance options (replaces emoji choices)
 const APPEARANCE_OPTIONS = [
   { id: "exec-male", label: "Executive", img: execMale },
   { id: "scientist-female", label: "Scientist", img: scientistFemale },
@@ -366,7 +366,7 @@ const AIStudioPage = () => {
             <label className="text-xs font-semibold text-foreground block mb-1">Name</label>
             <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Enter avatar name..." className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm mb-4 outline-none focus:border-primary" />
 
-            <label className="text-xs font-semibold text-foreground block mb-1">Appearance — 4K Realistic</label>
+            <label className="text-xs font-semibold text-foreground block mb-1">Appearance — 8K Realistic</label>
             <div className="grid grid-cols-4 gap-2 mb-4">
               {APPEARANCE_OPTIONS.map(opt => (
                 <button key={opt.id} onClick={() => setNewAppearance(opt.id)} className={`relative aspect-square rounded-xl overflow-hidden transition-all ${newAppearance === opt.id ? "ring-2 ring-primary scale-105" : "opacity-80 hover:opacity-100"}`}>

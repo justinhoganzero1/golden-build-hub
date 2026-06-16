@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 /**
  * Auth lock only — age gate removed.
@@ -10,9 +11,12 @@ interface RequireAuthProps {
   freeAccess?: boolean;
 }
 
-const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
+const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const isPreview = usePreviewMode();
+
+  if (isPreview) return <>{children}</>;
 
   if (loading) {
     return (
@@ -22,12 +26,10 @@ const RequireAuth = ({ children, freeAccess = false }: RequireAuthProps) => {
     );
   }
 
-  if (!user && !freeAccess) {
-    const cleanSearch = new URLSearchParams(location.search);
-    cleanSearch.delete("preview");
-    cleanSearch.delete("__lovable_token");
-    const redirect = `${location.pathname}${cleanSearch.toString() ? `?${cleanSearch.toString()}` : ""}`;
-    return <Navigate to={`/sign-in?redirect=${encodeURIComponent(redirect)}`} state={{ from: location }} replace />;
+  if (!user) {
+    // First click of anything gated → bounce to sign-in so visitors can
+    // either log in or become a member.
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

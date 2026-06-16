@@ -24,20 +24,11 @@ serve(async (req) => {
       throw new Error("coinPackDollars or priceId is required");
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user) {
-      return new Response(JSON.stringify({ error: "User not authenticated" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!user) throw new Error("User not authenticated");
 
     // Anonymous Supabase users have no email — Stripe Checkout will collect it.
     const isAnon = !user.email || (user as any).is_anonymous === true;

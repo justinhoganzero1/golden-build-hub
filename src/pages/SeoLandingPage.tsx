@@ -164,10 +164,10 @@ const VARIANTS: Record<string, SeoVariant> = {
   },
   "/ai-image-generator-free": {
     path: "/ai-image-generator-free",
-    title: "Free AI Image Generator — 4K Photos, No Signup",
-    description: "Generate stunning 4K AI images free with ORACLE LUNAR. Photo, art, anime, logos. No watermark on the free tier.",
+    title: "Free AI Image Generator — 8K Photos, No Signup",
+    description: "Generate stunning 8K AI images free with ORACLE LUNAR. Photo, art, anime, logos. No watermark on the free tier.",
     h1: "Free AI Image Generator",
-    tagline: "Type a prompt, get an 4K image. Free, fast, no watermark.",
+    tagline: "Type a prompt, get an 8K image. Free, fast, no watermark.",
     keywords: ["free ai image generator", "ai photo generator", "ai art free", "8k ai images"],
     faqs: [
       { q: "Is the free tier really free?", a: "Yes — daily free generations, no credit card needed." },
@@ -341,7 +341,7 @@ const VARIANTS: Record<string, SeoVariant> = {
     tagline: "Transform photos with AI. Free background removal, style transfer, and more.",
     keywords: ["ai photo editor", "free photo ai", "ai image editor", "ai background remover"],
     faqs: [
-      { q: "Is editing free?", a: "Yes — daily free edits, premium unlocks 4K and unlimited." },
+      { q: "Is editing free?", a: "Yes — daily free edits, premium unlocks 8K and unlimited." },
     ],
   },
   "/free-seo-tools": {
@@ -572,7 +572,7 @@ export default function SeoLandingPage() {
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{variant.tagline}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-            <Button size="lg" onClick={() => navigate(`/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent("/ai-companion")}`)} className="text-base">
+            <Button size="lg" onClick={() => navigate("/ai-companion")} className="text-base">
               <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/")}>
@@ -640,7 +640,7 @@ export default function SeoLandingPage() {
         <section className="container mx-auto px-4 py-16 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to meet your AI companion?</h2>
           <p className="text-muted-foreground mb-6">Free to install. Free to chat. Always there for you.</p>
-          <Button size="lg" onClick={() => navigate(`/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent("/ai-companion")}`)}>
+          <Button size="lg" onClick={() => navigate("/ai-companion")}>
             <MessageCircle className="w-5 h-5 mr-2" /> Start Chatting Free
           </Button>
         </section>

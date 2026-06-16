@@ -75,7 +75,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
-import oracleLunarBanner from "@/assets/earth-globe-transparent.png";
+import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
 import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
@@ -131,13 +131,13 @@ const PortalLandingPage = () => {
   };
 
   const goMemberSignIn = (redirect = "/dashboard") => {
-    const target = `/sign-in?fresh=1&redirect=${encodeURIComponent(redirect)}`;
+    const target = `/sign-in?redirect=${encodeURIComponent(redirect)}`;
     if (bounceIfNotProduction(target)) return;
     navigate(target);
   };
 
   const goMemberSignUp = (redirect = "/dashboard") => {
-    const target = `/sign-in?fresh=1&mode=signup&redirect=${encodeURIComponent(redirect)}`;
+    const target = `/sign-in?mode=signup&redirect=${encodeURIComponent(redirect)}`;
     if (bounceIfNotProduction(target)) return;
     navigate(target);
   };
@@ -290,81 +290,63 @@ const PortalLandingPage = () => {
         </div>
       </header>
 
-      {/* ── Hero ────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-background">
-        <div className="relative max-w-6xl mx-auto px-4 pt-12 pb-24 text-center">
+      {/* ── Hero (mirrors IntroSplash) ────────── */}
+      <section className="relative overflow-hidden">
+        {/* Banner image — same as the app's IntroSplash */}
+        <img
+          src={oracleLunarBanner}
+          alt="ORACLE LUNAR cinematic banner"
+          className="absolute inset-0 w-full h-full object-cover opacity-40"
+        />
+        {/* Gold radial glow overlay */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, hsl(var(--primary) / 0.25) 0%, hsl(var(--background) / 0.85) 70%)",
+          }}
+        />
 
-          {/* ── Globe + merry-go-round orbiting tabs (sits just above the title) ── */}
-          <style>{`
-            :root {
-              --orbit-rx: clamp(140px, 38vw, 340px);
-              --orbit-ry: clamp(28px, 7vw, 70px);
-            }
-            @keyframes orbit-merry {
-              0%   { transform: translate(calc(-50% + var(--orbit-rx)), -50%); opacity: 1; }
-              25%  { transform: translate(-50%, calc(-50% + var(--orbit-ry))); opacity: 1; }
-              50%  { transform: translate(calc(-50% - var(--orbit-rx)), -50%); opacity: 1; }
-              60%  { opacity: 0; }
-              75%  { transform: translate(-50%, calc(-50% - var(--orbit-ry))); opacity: 0; }
-              90%  { opacity: 0; }
-              100% { transform: translate(calc(-50% + var(--orbit-rx)), -50%); opacity: 1; }
-            }
-            .sat-orbit {
-              position: absolute;
-              left: 50%;
-              top: 50%;
-              pointer-events: auto;
-              will-change: transform, opacity;
-              z-index: 10;
-            }
-          `}</style>
-          <div
-            className="relative mx-auto mb-8 w-full max-w-[760px]"
-            style={{ height: "clamp(260px, 50vw, 460px)" }}
-          >
-            <img
-              src={oracleLunarBanner}
-              alt="Planet Earth floating in deep space"
-              className="absolute inset-0 w-full h-full object-contain object-center"
-              fetchPriority="high"
+        <div className="relative max-w-6xl mx-auto px-4 pt-20 pb-24 text-center">
+          {/* Animated golden logo — matches app */}
+          <div className="relative flex justify-center mb-6">
+            {/* Bright neon-blue base glow (bottom layer) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-44px] h-36 w-[22rem] md:w-[28rem] rounded-full blur-3xl animate-pulse"
+              style={{
+                background:
+                  "radial-gradient(ellipse at center, #00bfff 0%, rgba(0,191,255,0.85) 30%, rgba(30,144,255,0.4) 60%, transparent 80%)",
+                boxShadow:
+                  "0 0 80px 25px #00bfff, 0 0 160px 60px rgba(0,191,255,0.55)",
+              }}
             />
-            <div className="absolute inset-0 pointer-events-none">
-              {(() => {
-                const tabs = FEATURES.slice(0, 10);
-                const dur = 42;
-                return tabs.map((f, i) => {
-                  const Icon = f.icon;
-                  const delay = -(dur * (i / tabs.length));
-                  return (
-                    <div
-                      key={f.title}
-                      className="sat-orbit"
-                      style={{
-                        animation: `orbit-merry ${dur}s linear infinite`,
-                        animationDelay: `${delay}s`,
-                      }}
-                    >
-                      <button
-                        onClick={() => handleTileClick(f.to)}
-                        aria-label={`Preview ${f.title}`}
-                        className="group flex items-center gap-1.5 bg-transparent px-2 py-1 transition-transform hover:scale-110"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-primary drop-shadow-[0_0_4px_hsl(var(--primary))]" />
-                        <span
-                          className="text-[11px] font-semibold whitespace-nowrap text-primary"
-                          style={{ textShadow: "0 0 6px hsl(var(--background)), 0 0 10px hsl(var(--background))" }}
-                        >
-                          {f.title}
-                        </span>
-                      </button>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
+            {/* Rotating rainbow AI glow (middle layer) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-28px] h-24 w-64 md:w-80 rounded-full blur-2xl opacity-90 animate-[spin_6s_linear_infinite]"
+              style={{
+                background:
+                  "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14ff5e, #00d4ff, #6a00ff, #ff00d4, #ff0040)",
+              }}
+            />
+            {/* Soft outer rainbow halo (top layer, counter-pulse) */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-40px] h-32 w-80 md:w-96 rounded-full blur-3xl opacity-70 animate-pulse"
+              style={{
+                background:
+                  "conic-gradient(from 180deg, #ff00d4, #6a00ff, #00d4ff, #14ff5e, #ffe600, #ff8a00, #ff0040, #ff00d4)",
+              }}
+            />
+            <img
+              src={oracleLunarLogo}
+              alt="ORACLE LUNAR shield logo"
+              className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(0,191,255,0.6)]"
+            />
           </div>
 
-          <div className="inline-flex items-center gap-2 bg-transparent px-2 py-1 text-xs text-primary mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 backdrop-blur px-4 py-1.5 text-xs text-muted-foreground mb-6">
             <Zap className="h-3.5 w-3.5 text-primary" />
             40+ AI modules · One cinematic super-app
           </div>
@@ -414,47 +396,11 @@ const PortalLandingPage = () => {
             ⚡ Installs in 5 seconds · No app store needed · Works on iPhone, Android & Desktop
           </p>
 
-          {/* ── Shield logo (moved DOWN to sit below the buttons) ── */}
-          <div className="relative flex justify-center mt-16 mb-6">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-44px] h-36 w-[22rem] md:w-[28rem] rounded-full blur-3xl animate-pulse"
-              style={{
-                background:
-                  "radial-gradient(ellipse at center, #00bfff 0%, rgba(0,191,255,0.85) 30%, rgba(30,144,255,0.4) 60%, transparent 80%)",
-                boxShadow:
-                  "0 0 80px 25px #00bfff, 0 0 160px 60px rgba(0,191,255,0.55)",
-              }}
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-28px] h-24 w-64 md:w-80 rounded-full blur-2xl opacity-90 animate-[spin_6s_linear_infinite]"
-              style={{
-                background:
-                  "conic-gradient(from 0deg, #ff0040, #ff8a00, #ffe600, #14ff5e, #00d4ff, #6a00ff, #ff00d4, #ff0040)",
-              }}
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[-40px] h-32 w-80 md:w-96 rounded-full blur-3xl opacity-70 animate-pulse"
-              style={{
-                background:
-                  "conic-gradient(from 180deg, #ff00d4, #6a00ff, #00d4ff, #14ff5e, #ffe600, #ff8a00, #ff0040, #ff00d4)",
-              }}
-            />
-            <img
-              src={oracleLunarLogo}
-              alt="ORACLE LUNAR shield logo"
-              className="relative z-10 h-32 w-32 md:h-40 md:w-40 drop-shadow-[0_0_25px_rgba(0,191,255,0.6)]"
-            />
-          </div>
-
-          <div className="mt-16 flex justify-center">
+          <div className="mt-10 flex justify-center">
             <SecurityShield />
           </div>
         </div>
       </section>
-
 
 
 

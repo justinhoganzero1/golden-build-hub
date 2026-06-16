@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +9,6 @@ import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import MasterMuteButton from "@/components/MasterMuteButton";
-import PreviewWatermark from "@/components/PreviewWatermark";
 // Vaulted: CallControlBanner (Twilio) — disabled until telephony returns.
 import SpeedAIController from "@/components/SpeedAIController";
 import { registerRoutes } from "@/lib/speedAI";
@@ -29,7 +28,6 @@ import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
 import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
-import { FeatureProxyProvider } from "@/lib/featureProxy";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -80,7 +78,6 @@ const loaders = {
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
   "/about": () => import("./pages/AboutPage"),
-  "/commandments": () => import("./pages/CommandmentsPage"),
   "/investor": () => import("./pages/InvestorPage"),
   "/creators": () => import("./pages/CreatorsPage"),
   "/sign-in": () => import("./components/SignInPage"),
@@ -149,15 +146,10 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: everyone lands on the Oracle Lunar splash (moon/forest portal).
-// Authenticated users go straight to the dashboard. Logged-out visitors see
-// the splash and click through to sign-in / sign-up.
-const RootRoute = () => {
-  const { user, loading } = useAuth();
-  if (loading) return <Loading />;
-  if (user) return <DashboardPage />;
-  return <PortalLandingPage />;
-};
+// Root route: signed-in users see the Dashboard (full app); visitors see the public website.
+// Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
+// The public marketing website is still reachable at /website.
+const RootRoute = () => <DashboardPage />;
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
 const VaultPage = lazy(loaders["/vault"]);
@@ -205,7 +197,6 @@ const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
 const TermsOfServicePage = lazy(loaders["/terms-of-service"]);
 const AboutPage = lazy(loaders["/about"]);
-const CommandmentsPage = lazy(loaders["/commandments"]);
 const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
@@ -230,7 +221,6 @@ const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
-const SmokeTestPage = lazy(() => import("./pages/SmokeTestPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -255,7 +245,6 @@ const App = () => (
         <MuteProvider>
           <TooltipProvider>
             <BrowserRouter>
-              <FeatureProxyProvider>
               <SpeedAIController />
               <Toaster />
               <Sonner />
@@ -269,7 +258,6 @@ const App = () => (
                 <PreviewModeBanner />
               </Suspense>
               <MasterMuteButton />
-              <PreviewWatermark />
               <OracleAgent />
               <OracleControlListener />
 
@@ -277,14 +265,14 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
-                  <Route path="/welcome" element={<ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary>} />
-                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/dashboard" element={<ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/vault" element={<RequireAuth><ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/chat-oracle" element={<RequireAuth><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/oracle" element={<RequireAuth freeAccess><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/chat-oracle" element={<RequireAuth freeAccess><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-studio" element={<RequireAuth><ErrorBoundary pageName="AI Studio"><AIStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/video-editor" element={<RequireAuth><ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/media-library" element={<RequireAuth freeAccess><ErrorBoundary pageName="Media Library"><MediaLibraryPage /></ErrorBoundary></RequireAuth>} />
@@ -306,7 +294,6 @@ const App = () => (
                   <Route path="/safety-center" element={<RequireAuth freeAccess><ErrorBoundary pageName="Safety Center"><SafetyCenterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics" element={<RequireAuth><ErrorBoundary pageName="Diagnostics"><DiagnosticsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/diagnostics/audio" element={<RequireAuth><ErrorBoundary pageName="Audio Diagnostics"><AudioDiagnosticsPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/smoke-test" element={<ErrorBoundary pageName="Smoke Test"><SmokeTestPage /></ErrorBoundary>} />
                   <Route path="/elderly-care" element={<RequireAuth><ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-generator" element={<RequireAuth><ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/professional-hub" element={<RequireAuth><ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary></RequireAuth>} />
@@ -339,13 +326,10 @@ const App = () => (
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
                   <Route path="/terms-of-service" element={<ErrorBoundary pageName="Terms of Service"><TermsOfServicePage /></ErrorBoundary>} />
                   <Route path="/about" element={<ErrorBoundary pageName="About"><AboutPage /></ErrorBoundary>} />
-                  <Route path="/commandments" element={<ErrorBoundary pageName="Commandments"><CommandmentsPage /></ErrorBoundary>} />
                   <Route path="/investor" element={<RequireAuth><ErrorBoundary pageName="Investor"><InvestorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
-                  <Route path="/sign-up" element={<Navigate to="/sign-in?mode=signup" replace />} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
-
                   <Route path="/verify-phone" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<RequireAuth><AppUnlockGate appKey="app_wrapper"><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
@@ -410,7 +394,6 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
-              </FeatureProxyProvider>
             </BrowserRouter>
           </TooltipProvider>
         </MuteProvider>

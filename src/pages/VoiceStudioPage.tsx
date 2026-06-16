@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import SEO from "@/components/SEO";
 import { Mic, Play, Square, Save, Search, Sparkles, Trash2, UserPlus, Settings2, Loader2, RefreshCw, Crown } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -19,7 +18,7 @@ import {
   type PresetName,
 } from "@/data/elevenLabsVoices";
 import { PARTY_VOICES, type PartyVoice } from "@/data/partyVoices";
-import { useFeatureProxy } from "@/lib/featureProxy";
+import { ELEVENLABS_AFFILIATE_URL, trackAffiliateClick } from "@/lib/affiliateLinks";
 
 interface AccountVoice {
   id: string;
@@ -37,40 +36,8 @@ type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
 
-async function readTtsAudio(res: Response) {
-  const contentType = res.headers.get("content-type") || "";
-  if (!res.ok) {
-    const errText = await res.text();
-    let parsed: { message?: string; error?: string; status?: number } | null = null;
-    try {
-      parsed = JSON.parse(errText) as { message?: string; error?: string; status?: number };
-    } catch { /* raw text below */ }
-    throw new Error(parsed?.message || parsed?.error || errText || `Voice preview failed: ${res.status}`);
-  }
-
-  if (!contentType.toLowerCase().startsWith("audio/")) {
-    const bodyText = await res.text();
-    let parsed: { message?: string; error?: string; status?: number } | null = null;
-    try {
-      parsed = JSON.parse(bodyText) as { message?: string; error?: string; status?: number };
-    } catch { /* raw text below */ }
-    throw new Error(parsed?.message || parsed?.error || bodyText || "Voice preview returned no audio");
-  }
-
-  const blob = await res.blob();
-  if (!blob.size) throw new Error("Voice preview returned empty audio");
-  return blob;
-}
-
-function stopCurrentVoicePlayback(audioRef: React.MutableRefObject<HTMLAudioElement | null>) {
-  audioRef.current?.pause();
-  audioRef.current = null;
-  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-}
-
 export default function VoiceStudioPage() {
   const { user, session } = useAuth();
-  const [searchParams] = useSearchParams();
   const { data: savedVoices = [] } = useSavedVoices();
   const saveVoice = useSaveVoice();
   const deleteVoice = useDeleteSavedVoice();
@@ -96,13 +63,6 @@ export default function VoiceStudioPage() {
   // Assign dialog
   const [assignVoice, setAssignVoice] = useState<SavedVoice | null>(null);
 
-  useEffect(() => {
-    const tabParam = searchParams.get("tab") as Tab | null;
-    if (tabParam && ["library", "party", "saved", "studio"].includes(tabParam)) {
-      setTab(tabParam);
-    }
-  }, [searchParams]);
-
   // Load account voices on mount
   useEffect(() => {
     void loadAccountVoices();
@@ -115,8 +75,7 @@ export default function VoiceStudioPage() {
       if (error) throw error;
       setAccountVoices((data?.voices || []) as AccountVoice[]);
     } catch (err) {
-      console.warn("[voice-studio] account voices unavailable:", err);
-      toast.error("Could not refresh account voices");
+      console.error(err);
     } finally {
       setLoadingAccount(false);
     }
@@ -164,7 +123,6 @@ export default function VoiceStudioPage() {
       toast.error("Type some text first");
       return;
     }
-    stopCurrentVoicePlayback(audioRef);
     setGenerating(true);
     try {
       const res = await fetch(TTS_URL, {
@@ -175,7 +133,11 @@ export default function VoiceStudioPage() {
         },
         body: JSON.stringify({ text, voiceId, settings, modelId: settings.model_id }),
       });
-      const blob = await readTtsAudio(res);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || `TTS failed: ${res.status}`);
+      }
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -201,22 +163,16 @@ export default function VoiceStudioPage() {
         reader.readAsDataURL(blob);
       } catch { /* non-blocking */ }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Preview failed";
-      console.warn("[voice-studio] preview failed:", msg);
-      if (/subscription|invoice|payment|quota|credit/i.test(msg)) {
-        toast.error("ElevenLabs billing issue", {
-          description: "The voice provider account has a failed or incomplete payment. Update billing in the ElevenLabs dashboard to resume previews.",
-        });
-      } else {
-        toast.error(msg);
-      }
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Preview failed");
     } finally {
       setGenerating(false);
     }
   }
 
   function stopAudio() {
-    stopCurrentVoicePlayback(audioRef);
+    audioRef.current?.pause();
+    audioRef.current = null;
   }
 
   function pickFromLibrary(v: AccountVoice) {
@@ -278,7 +234,6 @@ export default function VoiceStudioPage() {
       toast.error("Type some text first");
       return;
     }
-    stopCurrentVoicePlayback(audioRef);
     setGenerating(true);
     try {
       const res = await fetch(TTS_URL, {
@@ -294,7 +249,8 @@ export default function VoiceStudioPage() {
           settings: { ...p.partySettings, model_id: "eleven_multilingual_v2" },
         }),
       });
-      const blob = await readTtsAudio(res);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       audioRef.current?.pause();
       const audio = new Audio(url);
@@ -302,15 +258,7 @@ export default function VoiceStudioPage() {
       await audio.play();
       toast.success(`🎉 ${p.name}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Preview failed";
-      console.warn("[voice-studio] party preview failed:", msg);
-      if (/subscription|invoice|payment|quota|credit/i.test(msg)) {
-        toast.error("ElevenLabs billing issue", {
-          description: "The voice provider account has a failed or incomplete payment. Update billing to resume previews.",
-        });
-      } else {
-        toast.error(msg);
-      }
+      toast.error(err instanceof Error ? err.message : "Preview failed");
     } finally {
       setGenerating(false);
     }
@@ -394,9 +342,27 @@ export default function VoiceStudioPage() {
           </p>
         </header>
 
-        {/* In-app voice cloning unlock — stays inside Oracle Lunar */}
-        <VoiceStudioUnlockBanner />
-
+        {/* ElevenLabs affiliate CTA */}
+        <a
+          href={ELEVENLABS_AFFILIATE_URL}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          onClick={() => trackAffiliateClick("elevenlabs", "voice_studio_header")}
+          className="block mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Crown className="text-amber-400 shrink-0" size={20} />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">Want your own ElevenLabs voice studio?</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Clone unlimited voices, dub in 32 languages, build conversational agents — start free.
+              </p>
+            </div>
+            <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
+              Try ElevenLabs →
+            </span>
+          </div>
+        </a>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
@@ -836,28 +802,5 @@ function Slider({
       />
       {hint && <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>}
     </div>
-  );
-}
-
-function VoiceStudioUnlockBanner() {
-  const { open } = useFeatureProxy();
-  return (
-    <button
-      onClick={() => open("el-clone", "voice_studio_header")}
-      className="block w-full text-left mb-6 rounded-lg border border-primary/40 bg-gradient-to-r from-primary/10 via-amber-500/10 to-primary/10 p-4 hover:border-primary transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <Crown className="text-amber-400 shrink-0" size={20} />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm">Unlock your own voice cloning studio</p>
-          <p className="text-xs text-muted-foreground truncate">
-            Clone your voice, dub in 32 languages, build conversational agents — all inside Oracle Lunar.
-          </p>
-        </div>
-        <span className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded font-semibold whitespace-nowrap">
-          Unlock 🪙 →
-        </span>
-      </div>
-    </button>
   );
 }

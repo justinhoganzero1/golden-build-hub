@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Detects whether the current page is being rendered as an unauthenticated
- * in-app Feature Preview.
- * When true, RequireAuth lets visitors trial features without signing in.
+ * Detects whether the current page is being rendered inside a preview iframe
+ * (e.g., from the landing-page Feature Preview, or the Lovable editor preview).
+ * When true, RequireAuth lets the visitor through so they can trial features
+ * without signing in.
  *
  * Triggers when:
  *  - URL has `?preview=1`
- *
- * Important: signed-in users must NEVER be kept in preview/display-only mode,
- * even if the editor or iframe leaves `?preview=1` on the URL.
+ *  - Host is the Lovable editor preview (*.lovableproject.com / *.lovable.app / *.lovable.dev)
  */
 const computePreview = (): boolean => {
   if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("preview") === "1";
+  if (new URLSearchParams(window.location.search).get("preview") === "1") return true;
+  const host = window.location.hostname;
+  return (
+    host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovable.dev")
+  );
 };
 
 export const usePreviewMode = (): boolean => {
-  const { user, loading } = useAuth();
   const [isPreview, setIsPreview] = useState<boolean>(computePreview);
 
   useEffect(() => {
@@ -27,5 +30,5 @@ export const usePreviewMode = (): boolean => {
     return () => window.removeEventListener("popstate", handler);
   }, []);
 
-  return isPreview && !loading && !user;
+  return isPreview;
 };

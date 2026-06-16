@@ -11,9 +11,10 @@ Deno.serve(async (req) => {
   try {
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
+      // Graceful fallback signal — client will use browser TTS instead of crashing
       return new Response(
-        JSON.stringify({ error: "TTS_UNAVAILABLE", message: "Voice preview is unavailable because the voice service is not configured." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_UNAVAILABLE", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -26,68 +27,40 @@ Deno.serve(async (req) => {
     const { text, voiceId, settings, modelId, fast, outputFormat } = body || {};
     if (!text || typeof text !== "string") {
       return new Response(
-        JSON.stringify({ error: "TEXT_REQUIRED", message: "Type some text before previewing a voice." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    if (!voiceId || typeof voiceId !== "string") {
-      return new Response(
-        JSON.stringify({ error: "VOICE_REQUIRED", message: "Select a voice before previewing." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TEXT_REQUIRED", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const selectedVoice = voiceId;
-    // QUALITY-FIRST: multilingual_v2 sounds human; flash sounds robotic.
-    // Only use flash when caller explicitly opts in AND quality isn't critical.
+    // Default to "Sarah" — most popular/downloaded female voice on ElevenLabs
+    const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
+    // SPEED: when `fast: true` is sent (Oracle), use Flash v2.5 (~75ms latency vs
+    // ~400ms for multilingual_v2). Quality is still very natural.
     const selectedModel =
       modelId ||
       settings?.model_id ||
-      (fast ? "eleven_turbo_v2_5" : "eleven_multilingual_v2");
-    // Higher quality MP3 by default — 128kbps is a tiny bandwidth cost for
-    // a massive quality improvement over 32kbps (which sounds compressed/robotic).
-    const selectedFormat = outputFormat || "mp3_44100_128";
-    // (humanize + voice settings live below)
+      (fast ? "eleven_flash_v2_5" : "eleven_multilingual_v2");
+    // SPEED: smaller MP3 = faster first-byte. 22kHz/32kbps is fine for voice.
+    const selectedFormat = outputFormat || (fast ? "mp3_22050_32" : "mp3_44100_128");
+    const normalizedText = text.replace(/\s{3,}/g, "  ").trim();
 
-    // Cadence helper: insert natural micro-pauses so long, flat sentences
-    // breathe like a real person. ElevenLabs honours "..." and " — " as pauses.
-    const humanize = (raw: string) => {
-      let t = raw.replace(/\s{3,}/g, "  ").trim();
-      // Soft pause after sentence-ending punctuation when the next char is a capital
-      t = t.replace(/([.!?])\s+(?=[A-Z])/g, "$1 ");
-      // Add a tiny breath before conjunctions inside long clauses
-      t = t.replace(/,\s+(but|and|so|because|though|however|then)\s/gi, ", $1 ");
-      // Soften list commas — they read flat without a breath
-      t = t.replace(/,\s+/g, ", ");
-      // Slight em-dash pause for parentheticals (real speakers pause here)
-      t = t.replace(/\s-\s/g, " — ");
-      // Lengthen ellipses so the engine actually pauses
-      t = t.replace(/\.{3,}/g, "… ");
-      // Tighten double spaces
-      t = t.replace(/[ \t]{2,}/g, " ");
-      return t;
-    };
-    const normalizedText = humanize(text);
-
-    // Most natural human-cadence settings (tuned again):
-    //  - stability 0.38  → looser, more emotional variation (less flat / less robot)
-    //  - similarity 0.88 → still locked to the chosen voice identity
-    //  - style 0.42      → real inflection, warmer prosody, no monotone read
-    //  - speed 0.96      → slightly slower = warmer, more thoughtful
+    // Tuned for natural breath, rhythm, and intonation rises/falls.
+    //  - Lower stability  → more expressive pitch movement (rises & falls)
+    //  - Higher similarity → keeps voice identity consistent
+    //  - Moderate style    → adds emotional inflection without over-acting
+    //  - Speed ~0.92       → unhurried, lets pauses breathe
     const voice_settings = {
-      stability: settings?.stability ?? 0.38,
-      similarity_boost: settings?.similarity_boost ?? 0.88,
-      style: settings?.style ?? 0.42,
+      stability: settings?.stability ?? 0.45,
+      similarity_boost: settings?.similarity_boost ?? 0.9,
+      style: settings?.style ?? 0.55,
       use_speaker_boost: settings?.use_speaker_boost ?? true,
-      speed: settings?.speed ?? 0.96,
+      speed: settings?.speed ?? 0.92,
     };
 
-    // optimize_streaming_latency=1 keeps low latency but avoids the
-    // quality degradation that 2-4 introduce (that's the "robot" sound).
     let response: Response;
     try {
       response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=1`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=4`,
         {
           method: "POST",
           headers: {
@@ -104,30 +77,25 @@ Deno.serve(async (req) => {
     } catch (netErr) {
       console.error("ElevenLabs network error:", netErr);
       return new Response(
-        JSON.stringify({ error: "NETWORK_ERROR", message: "Voice preview could not reach the voice service." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NETWORK_ERROR", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.ok) {
       const err = await response.text();
       console.error("ElevenLabs error:", response.status, err);
-      let message = "Voice preview failed. No fake fallback was played.";
-      try {
-        const parsed = JSON.parse(err);
-        const detail = parsed?.detail;
-        message = detail?.message || parsed?.message || message;
-      } catch { /* keep generic message */ }
+      // Always return a soft fallback — never crash the client
       return new Response(
-        JSON.stringify({ error: "TTS_FAILED", status: response.status, message }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "TTS_FAILED", status: response.status, fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (!response.body) {
       return new Response(
-        JSON.stringify({ error: "NO_AUDIO", message: "Voice preview returned no audio." }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "NO_AUDIO", fallback: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -142,8 +110,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(
-      JSON.stringify({ error: "INTERNAL_ERROR", message: "Voice preview failed inside the voice service." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "INTERNAL_ERROR", fallback: true }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

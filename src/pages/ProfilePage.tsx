@@ -2,7 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen, LogOut } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ const STYLES = [
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 
 const ProfilePage = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const saveMedia = useSaveMedia();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState({
@@ -51,11 +51,6 @@ const ProfilePage = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => { setEditing(false); toast.success("Profile updated!"); };
-
-  const handleSignOut = async () => {
-    await signOut();
-    toast.success("Signed out");
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,10 +85,10 @@ const ProfilePage = () => {
       } else {
         // Pure generation mode
         const stylePrompts: Record<string, string> = {
-          "realistic-portrait": `Ultra-photorealistic 4K UHD portrait headshot of ${desc}. Shot on Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting. Shallow depth of field. Indistinguishable from a real photograph. Award-winning portrait photography.`,
+          "realistic-portrait": `Ultra-photorealistic 8K UHD portrait headshot of ${desc}. Shot on Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting. Shallow depth of field. Indistinguishable from a real photograph. Award-winning portrait photography.`,
           "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines, 4K quality.`,
           "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality, 4K.`,
-          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic, 4K cinematic.`,
+          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic, 8K cinematic.`,
           "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting, concept art quality.`,
           "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes, fine art quality.`,
           "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern design.`,
@@ -274,14 +269,6 @@ const ProfilePage = () => {
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="mt-4 w-full rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
       </div>
 
       {/* Enlarged avatar dialog */}

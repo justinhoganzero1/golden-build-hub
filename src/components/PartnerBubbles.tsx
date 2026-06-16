@@ -1,27 +1,30 @@
-// Floating partner-promo bubbles — clicking ElevenLabs / HeyGen opens our
-// in-app white-label unlock dialog (pay coins, stay inside Oracle Lunar).
-// The Lovable bubble still links out — that's our public attribution.
+// Floating partner-promo bubbles — appear at the bottom of the portal landing page.
+// Drift gently, scale on hover, open the partner's affiliate link in a new tab.
+// HeyGen bubble auto-hides while the affiliate URL is still the placeholder.
 import heygenBubble from "@/assets/partner-bubble-heygen.png";
 import elevenLabsBubble from "@/assets/partner-bubble-elevenlabs.png";
 import lovableBubble from "@/assets/partner-bubble-lovable.png";
-import { useFeatureProxy } from "@/lib/featureProxy";
+import {
+  ELEVENLABS_AFFILIATE_URL,
+  HEYGEN_AFFILIATE_URL,
+  trackAffiliateClick,
+} from "@/lib/affiliateLinks";
+
+const HEYGEN_PLACEHOLDER = "https://www.heygen.com/?sid=oraclelunar";
 
 interface Bubble {
   key: string;
   label: string;
   tagline: string;
   img: string;
-  /** External url — only used for the Lovable attribution bubble. */
-  url?: string;
-  /** Internal proxy feature id — preferred over url. */
-  featureId?: string;
+  url: string;
   partner: string;
+  hidden?: boolean;
   featured?: boolean;
   badge?: string;
 }
 
 const PartnerBubbles = () => {
-  const { open } = useFeatureProxy();
   const bubbles: Bubble[] = [
     {
       key: "lovable",
@@ -35,21 +38,23 @@ const PartnerBubbles = () => {
     },
     {
       key: "elevenlabs",
-      label: "Voice Studio",
+      label: "ElevenLabs",
       tagline: "AI Voices",
       img: elevenLabsBubble,
-      featureId: "el-tts",
+      url: ELEVENLABS_AFFILIATE_URL,
       partner: "elevenlabs",
     },
     {
       key: "heygen",
-      label: "Avatar Studio",
+      label: "HeyGen — coming soon",
       tagline: "AI Avatars",
       img: heygenBubble,
-      featureId: "hg-avatar",
+      url: HEYGEN_AFFILIATE_URL,
       partner: "heygen",
+      // Always show — even if affiliate URL is still placeholder, we want
+      // the "coming soon" brag visible next to the Lovable badge.
     },
-  ];
+  ].filter((b: Bubble) => !b.hidden);
 
   if (bubbles.length === 0) return null;
 
@@ -69,22 +74,17 @@ const PartnerBubbles = () => {
         </div>
 
         <div className="flex items-end justify-center gap-6 sm:gap-12 flex-wrap">
-          {bubbles.map((b, i) => {
-            const handle = (e: React.MouseEvent) => {
-              if (b.featureId) {
-                e.preventDefault();
-                open(b.featureId, "portal_home_bubble");
-              }
-            };
-            return (
+          {bubbles.map((b, i) => (
             <a
               key={b.key}
-              href={b.url || "#"}
-              target={b.url ? "_blank" : undefined}
-              rel={b.url ? "noopener noreferrer sponsored" : undefined}
-              onClick={handle}
+              href={b.url}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              onClick={() => trackAffiliateClick(b.partner, "portal_home_bubble")}
               className="group flex flex-col items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-full"
-              style={{ animation: `bubbleFloat 6s ease-in-out ${i * 0.8}s infinite` }}
+              style={{
+                animation: `bubbleFloat 6s ease-in-out ${i * 0.8}s infinite`,
+              }}
             >
               {b.badge && (
                 <span className="text-[9px] font-black uppercase tracking-widest text-pink-300 mb-1">
@@ -107,12 +107,11 @@ const PartnerBubbles = () => {
                 <div className="text-[11px] text-muted-foreground">{b.tagline}</div>
               </div>
             </a>
-            );
-          })}
+          ))}
         </div>
 
         <p className="text-[10px] text-muted-foreground/60 text-center mt-4">
-          Tap any tool to unlock with coins — stay inside Oracle Lunar.
+          Sponsored partners — Oracle Lunar may earn a commission
         </p>
       </div>
 
