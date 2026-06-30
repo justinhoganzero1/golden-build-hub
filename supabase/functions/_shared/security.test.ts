@@ -35,7 +35,39 @@ const USER_ENDPOINTS = [
 ];
 
 // Endpoints that must reject any non-owner caller.
-const OWNER_ENDPOINTS = ["growth-broadcast"];
+const OWNER_ENDPOINTS = ["growth-broadcast", "admin-reports"];
+
+// Full auth-matrix expectation table. The runtime test below walks this and
+// asserts the HTTP status for each (endpoint, identity) tuple. Keep this in
+// sync with new edge functions — a missing row is a test gap.
+//
+// Identity values:
+//   "none"      → no Authorization header (anon)
+//   "anon"      → signed in as an anonymous Supabase user (where supported)
+//   "user"      → signed in as TEST_USER_EMAIL (non-owner)
+//   "owner"     → signed in as the locked owner (OWNER_TEST_EMAIL)
+type Identity = "none" | "user" | "owner";
+type Expectation = 401 | 403 | "ok"; // "ok" = NOT 401/403; any 2xx/4xx/5xx other than 401/403 is acceptable
+interface MatrixRow {
+  endpoint: string;
+  identity: Identity;
+  expect: Expectation;
+}
+
+const AUTH_MATRIX: MatrixRow[] = [
+  // 1. Authenticated AI endpoints: none → 401, user → not 401/403, owner → not 401/403.
+  ...USER_ENDPOINTS.flatMap<MatrixRow>((endpoint) => [
+    { endpoint, identity: "none", expect: 401 },
+    { endpoint, identity: "user", expect: "ok" },
+    { endpoint, identity: "owner", expect: "ok" },
+  ]),
+  // 2. Owner-only endpoints: none → 401, user → 403, owner → not 401/403.
+  ...OWNER_ENDPOINTS.flatMap<MatrixRow>((endpoint) => [
+    { endpoint, identity: "none", expect: 401 },
+    { endpoint, identity: "user", expect: 403 },
+    { endpoint, identity: "owner", expect: "ok" },
+  ]),
+];
 
 async function postNoAuth(name: string) {
   const res = await fetch(`${FUNCTIONS_URL}/${name}`, {
@@ -105,6 +137,53 @@ Deno.test({
     await c.auth.signOut();
   },
 });
+
+// ─── Full auth matrix ──────────────────────────────────────────────────────
+// Runs the AUTH_MATRIX defined above. Skipped unless both a non-owner and
+// an owner test account are configured via env. This is the single source
+// of truth for "every secured route returns the expected 401/403 for every
+// identity class".
+const OWNER_TEST_EMAIL = Deno.env.get("OWNER_TEST_EMAIL");
+const OWNER_TEST_PASSWORD = Deno.env.get("OWNER_TEST_PASSWORD");
+
+async function tokenFor(identity: Identity): Promise<string | null> {
+  if (identity === "none") return null;
+  const email = identity === "owner" ? OWNER_TEST_EMAIL : TEST_EMAIL;
+  const password = identity === "owner" ? OWNER_TEST_PASSWORD : TEST_PASSWORD;
+  if (!email || !password) return null;
+  const c = createClient(SUPABASE_URL, ANON_KEY);
+  const { data, error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.session!.access_token;
+}
+
+Deno.test({
+  name: "auth matrix — every (endpoint, identity) returns expected status",
+  ignore: !(TEST_EMAIL && TEST_PASSWORD),
+  fn: async () => {
+    const failures: string[] = [];
+    for (const row of AUTH_MATRIX) {
+      const token = await tokenFor(row.identity).catch(() => null);
+      if (row.identity !== "none" && !token) {
+        // identity not configured — skip rather than fail.
+        if (row.identity === "owner" && !OWNER_TEST_EMAIL) continue;
+        continue;
+      }
+      const { status } = token
+        ? await postWithToken(row.endpoint, token)
+        : await postNoAuth(row.endpoint);
+      const ok =
+        row.expect === "ok" ? status !== 401 && status !== 403 : status === row.expect;
+      if (!ok) {
+        failures.push(
+          `${row.endpoint} as ${row.identity}: expected ${row.expect}, got ${status}`,
+        );
+      }
+    }
+    assertEquals(failures, [], `auth matrix failures:\n  - ${failures.join("\n  - ")}`);
+  },
+});
+
 
 Deno.test({
   name: "non-owner cannot create suggestion with granted_free_access=true",

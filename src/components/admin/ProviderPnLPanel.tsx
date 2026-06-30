@@ -43,16 +43,28 @@ export default function ProviderPnLPanel() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: p }, { data: u }, { data: a }] = await Promise.all([
-      supabase.rpc("provider_pnl_summary", { _days: days }),
-      supabase.rpc("user_usage_breakdown", { _days: days, _limit: 25 }),
-      supabase.from("margin_alerts").select("*").is("acknowledged_at", null).order("created_at", { ascending: false }).limit(10),
+    // Admin reporting RPCs are revoked from `authenticated` at the DB level.
+    // The admin-reports edge function calls them via service_role and gates
+    // by requireOwner — so only the locked owner email can read this data.
+    const [{ data: report, error }, { data: a }] = await Promise.all([
+      supabase.functions.invoke("admin-reports", {
+        body: { report: "all_dashboards", days, threshold_pct: SAFE_MARGIN, limit: 25 },
+      }),
+      supabase
+        .from("margin_alerts")
+        .select("*")
+        .is("acknowledged_at", null)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
-    setPnl((p as PnLRow[]) || []);
-    setUsers((u as UsageRow[]) || []);
+    if (error) {
+      setPnl([]);
+      setUsers([]);
+    } else {
+      setPnl((report?.provider_pnl as PnLRow[]) || []);
+      setUsers((report?.user_usage as UsageRow[]) || []);
+    }
     setAlerts((a as AlertRow[]) || []);
-    // Trigger threshold check on each load
-    await supabase.rpc("check_margin_and_alert", { _threshold_pct: SAFE_MARGIN, _days: days });
     setLoading(false);
   };
 
