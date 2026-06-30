@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePublicLibrary, PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { SignedImage, SignedVideo } from "@/components/SignedMedia";
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
@@ -193,7 +194,7 @@ const PublicLibraryPage = () => {
               >
                 <div className="relative aspect-square bg-muted">
                   {isVideo ? (
-                    <video
+                    <SignedVideo
                       src={item.url}
                       poster={thumb || undefined}
                       muted
@@ -204,7 +205,7 @@ const PublicLibraryPage = () => {
                       onMouseLeave={(e) => (e.currentTarget as HTMLVideoElement).pause()}
                     />
                   ) : (
-                    <img
+                    <SignedImage
                       src={thumb}
                       alt={item.title || "Public creation"}
                       loading="lazy"
