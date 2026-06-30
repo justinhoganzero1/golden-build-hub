@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePublicLibrary, PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { SignedImage, SignedVideo } from "@/components/SignedMedia";
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
