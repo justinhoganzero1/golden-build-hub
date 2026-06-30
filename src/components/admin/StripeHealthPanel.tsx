@@ -16,13 +16,15 @@ export default function StripeHealthPanel() {
   const run = async () => {
     setLoading(true);
     try {
-      const [{ data: hc, error }, { data: sum }] = await Promise.all([
+      // stripe_event_summary is now owner-only via the admin-reports edge
+      // function (the underlying RPC is locked to service_role).
+      const [{ data: hc, error }, { data: rep }] = await Promise.all([
         supabase.functions.invoke("stripe-health-check"),
-        supabase.rpc("stripe_event_summary", { _hours: 24 }),
+        supabase.functions.invoke("admin-reports", { body: { report: "stripe_events", hours: 24 } }),
       ]);
       if (error) throw error;
       setData(hc as HealthResponse);
-      setSummary((sum as SummaryRow[] | null) ?? []);
+      setSummary(((rep?.rows as SummaryRow[]) ?? []) as SummaryRow[]);
     } catch (e) {
       toast.error("Health check failed", { description: e instanceof Error ? e.message : String(e) });
     } finally {
