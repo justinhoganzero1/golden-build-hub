@@ -332,6 +332,7 @@ const App = () => (
                   <Route path="/admin/voice-receptionist" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Voice Receptionist Admin"><VoiceReceptionistAdminPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/oauth/google/callback" element={<ErrorBoundary pageName="Google OAuth Callback"><GoogleOAuthCallback /></ErrorBoundary>} />
                   <Route path="/admin/usage-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/auth-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Auth Audit"><AdminAuthAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
