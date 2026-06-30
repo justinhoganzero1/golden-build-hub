@@ -14,6 +14,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { type, prompt, model: modelOverride, maxTokens } = await req.json();
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
