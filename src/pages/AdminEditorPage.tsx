@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Upload, Megaphone, Plus, Edit3 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Upload, Megaphone, Plus, Edit3, Rocket } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { saveContent, deleteContent, fetchAllContent } from "@/hooks/useSiteContent";
