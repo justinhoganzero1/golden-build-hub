@@ -219,6 +219,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
+    const auth = await requireOwner(req);
+    if (auth.response) return auth.response;
+
     const payload: Payload = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const { title, body } = buildText(payload);
 
