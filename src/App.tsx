@@ -270,10 +270,10 @@ const App = () => (
 
               <Suspense fallback={<Loading />}>
                 <Routes>
-                  <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
+                  <Route path="/" element={<RequireAuth><ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary></RequireAuth>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/dashboard" element={<ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary>} />
+                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
