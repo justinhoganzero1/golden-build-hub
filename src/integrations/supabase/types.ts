@@ -2321,6 +2321,102 @@ export type Database = {
         }
         Relationships: []
       }
+      user_style_profile: {
+        Row: {
+          avg_sentence_length: number | null
+          avg_word_length: number | null
+          common_phrases: string[] | null
+          created_at: string
+          emoji_rate: number | null
+          emotional_register: string | null
+          exclamation_rate: number | null
+          formality_score: number | null
+          id: string
+          last_updated: string
+          preferred_greetings: string[] | null
+          preferred_signoffs: string[] | null
+          question_rate: number | null
+          sample_count: number
+          signature_quirks: string[] | null
+          user_id: string
+          voice_summary: string | null
+          warmth_score: number | null
+        }
+        Insert: {
+          avg_sentence_length?: number | null
+          avg_word_length?: number | null
+          common_phrases?: string[] | null
+          created_at?: string
+          emoji_rate?: number | null
+          emotional_register?: string | null
+          exclamation_rate?: number | null
+          formality_score?: number | null
+          id?: string
+          last_updated?: string
+          preferred_greetings?: string[] | null
+          preferred_signoffs?: string[] | null
+          question_rate?: number | null
+          sample_count?: number
+          signature_quirks?: string[] | null
+          user_id: string
+          voice_summary?: string | null
+          warmth_score?: number | null
+        }
+        Update: {
+          avg_sentence_length?: number | null
+          avg_word_length?: number | null
+          common_phrases?: string[] | null
+          created_at?: string
+          emoji_rate?: number | null
+          emotional_register?: string | null
+          exclamation_rate?: number | null
+          formality_score?: number | null
+          id?: string
+          last_updated?: string
+          preferred_greetings?: string[] | null
+          preferred_signoffs?: string[] | null
+          question_rate?: number | null
+          sample_count?: number
+          signature_quirks?: string[] | null
+          user_id?: string
+          voice_summary?: string | null
+          warmth_score?: number | null
+        }
+        Relationships: []
+      }
+      user_style_samples: {
+        Row: {
+          content: string
+          created_at: string
+          emotion_detected: string | null
+          id: string
+          intent_detected: string | null
+          recipient_hint: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          emotion_detected?: string | null
+          id?: string
+          intent_detected?: string | null
+          recipient_hint?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          emotion_detected?: string | null
+          id?: string
+          intent_detected?: string | null
+          recipient_hint?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_balances: {
         Row: {
           balance_cents: number
