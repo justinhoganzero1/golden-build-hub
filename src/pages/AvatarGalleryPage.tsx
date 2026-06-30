@@ -7,6 +7,7 @@ import { useSetMasterAvatar } from "@/hooks/useMasterAvatar";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import LivingAvatar from "@/components/LivingAvatar";
+import { SignedImage } from "@/components/SignedMedia";
 
 const PURPOSE_LABELS: Record<string, { label: string; icon: string }> = {
   oracle: { label: "Oracle", icon: "🔮" },
