@@ -327,6 +327,74 @@ const AdminEditorPage = () => {
             </p>
           </div>
         )}
+
+        {tab === "broadcast" && (
+          <div className="rounded-xl border border-primary/40 bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold">Push update to all users</h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              One click: publish a site-wide banner and drop free coins into every account's wallet.
+            </p>
+            <input
+              value={bcMessage}
+              onChange={(e) => setBcMessage(e.target.value)}
+              placeholder="Release note / banner message"
+              className="w-full rounded-lg bg-background border border-border p-2 text-sm"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={bcCtaLabel}
+                onChange={(e) => setBcCtaLabel(e.target.value)}
+                placeholder="Button label (optional)"
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              />
+              <input
+                value={bcCtaUrl}
+                onChange={(e) => setBcCtaUrl(e.target.value)}
+                placeholder="Button link e.g. /dashboard"
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={bcStyle}
+                onChange={(e) => setBcStyle(e.target.value)}
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              >
+                <option value="info">Info (blue)</option>
+                <option value="success">Success (green)</option>
+                <option value="warning">Warning (amber)</option>
+                <option value="promo">Promo (gradient)</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Free coins per user:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={bcCoins}
+                  onChange={(e) => setBcCoins(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-20 rounded-lg bg-background border border-border p-2 text-sm"
+                />
+              </label>
+            </div>
+            <button
+              onClick={sendBroadcast}
+              disabled={bcSending}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm disabled:opacity-50"
+            >
+              <Rocket className="w-4 h-4" />
+              {bcSending ? "Broadcasting…" : `Push update + grant ${bcCoins} coins to ALL users`}
+            </button>
+            {bcResult && (
+              <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3">
+                ✅ Granted {bcResult.granted} users · {bcResult.failed} failed
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
