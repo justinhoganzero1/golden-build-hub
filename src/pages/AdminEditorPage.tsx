@@ -140,6 +140,34 @@ const AdminEditorPage = () => {
     setUploadedImages((imgs) => [{ name: fileName, url: data.publicUrl }, ...imgs]);
     toast({ title: "Uploaded", description: "Copy the URL and paste it into any image slot." });
   };
+  const sendBroadcast = async () => {
+    if (!bcMessage.trim()) {
+      toast({ title: "Message required", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`Push this update + ${bcCoins} free coins to EVERY user account?`)) return;
+    setBcSending(true);
+    setBcResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-broadcast-update", {
+        body: {
+          message: bcMessage,
+          cta_label: bcCtaLabel || null,
+          cta_url: bcCtaUrl || null,
+          style: bcStyle,
+          grant_coins: bcCoins,
+        },
+      });
+      if (error) throw error;
+      setBcResult({ granted: data?.granted ?? 0, failed: data?.failed ?? 0 });
+      toast({ title: "Broadcast sent", description: `Granted ${data?.granted ?? 0} users · ${data?.failed ?? 0} failed` });
+    } catch (e: any) {
+      toast({ title: "Broadcast failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBcSending(false);
+    }
+  };
+
 
   const copyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
