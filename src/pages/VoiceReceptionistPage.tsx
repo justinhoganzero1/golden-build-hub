@@ -40,7 +40,7 @@ const CAPABILITIES = [
 const VoiceReceptionistPage = () => {
   const { isAdmin } = useIsAdmin();
   return (
-    <PageShell>
+    <PageShell title="Voice AI Receptionist" subtitle="A real phone number, answered by AI, 24/7.">
       <SEO title="Voice AI Receptionist — Oracle Lunar" description="A real phone number that answers, qualifies, books, follows up, and feeds your CRM — 24/7." />
       <UniversalBackButton />
       <main className="container mx-auto px-4 py-12 max-w-6xl">
