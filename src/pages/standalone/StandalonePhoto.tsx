@@ -1,9 +1,10 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
-import { Upload, Loader2, Sparkles } from "lucide-react";
+import { Upload, Loader2, Sparkles, Box } from "lucide-react";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import StoragePanel from "@/components/StoragePanel";
+import QuantumPhotoViewer from "@/components/QuantumPhotoViewer";
 import { toast } from "sonner";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -17,6 +18,7 @@ const StandalonePhoto = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
+  const [quantumOpen, setQuantumOpen] = useState(false);
 
   const onFile = (f: File | null) => {
     setFile(f);
@@ -96,8 +98,19 @@ const StandalonePhoto = () => {
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Result</div>
           <img src={result} alt="result" className="w-full rounded-2xl" />
-          <a href={result} download className="block text-center mt-2 text-sm text-primary hover:underline">Download</a>
+          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+            <button
+              onClick={() => setQuantumOpen(true)}
+              className="flex-1 py-3 rounded-full bg-primary/15 border border-primary/30 text-primary font-medium flex items-center justify-center gap-2 hover:bg-primary/20"
+            >
+              <Box className="w-4 h-4" /> Enter 3D World (Quantum)
+            </button>
+            <a href={result} download className="flex-1 text-center py-3 text-sm text-primary hover:underline">Download</a>
+          </div>
         </div>
+      )}
+      {quantumOpen && result && (
+        <QuantumPhotoViewer imageUrl={result} onClose={() => setQuantumOpen(false)} />
       )}
     </div>
   );
