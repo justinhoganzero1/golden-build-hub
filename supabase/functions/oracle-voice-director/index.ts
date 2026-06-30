@@ -1,7 +1,7 @@
 // Voice-only Oracle director: TTS asks the 22 questions, STT captures answers, and a "free-ramble"
 // extraction mode pulls the 22 fields from a single user monologue.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { requireUser } from "../_shared/requireAuth.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +15,8 @@ Deno.serve(async (req) => {
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
+    const __rl = await enforceRateLimit(req, auth.user, "oracle-voice-director");
+    if (__rl) return __rl;
 
     const { mode, transcript, partial_brief } = await req.json();
     // mode: "extract_from_ramble" | "next_question"

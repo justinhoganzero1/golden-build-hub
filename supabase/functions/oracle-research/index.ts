@@ -2,7 +2,7 @@
 // Uses Firecrawl search to fetch live results, then Lovable AI to summarize
 // into an actionable answer. Returns { answer, sources[] }.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser } from "../_shared/requireAuth.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +14,8 @@ serve(async (req) => {
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
+    const __rl = await enforceRateLimit(req, auth.user, "oracle-research");
+    if (__rl) return __rl;
 
     const { query, context } = await req.json();
     if (!query || typeof query !== "string") {

@@ -4,7 +4,7 @@
 // Uses Lovable AI Gateway (no extra API key required).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser } from "../_shared/requireAuth.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,6 +126,8 @@ serve(async (req) => {
 
   const auth = await requireUser(req);
   if (auth.response) return auth.response;
+  const __rl = await enforceRateLimit(req, auth.user, "app-builder-autonomous");
+  if (__rl) return __rl;
 
 
 
