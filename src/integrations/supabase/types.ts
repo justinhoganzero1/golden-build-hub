@@ -122,6 +122,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_request_log: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_unlocks: {
         Row: {
           amount_cents: number
@@ -155,6 +176,42 @@ export type Database = {
           stripe_session_id?: string | null
           unlocked_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      auth_audit_log: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_type: string
+          id: string
+          ip: string | null
+          metadata: Json
+          path: string | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_type: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          path?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_type?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          path?: string | null
+          reason?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2932,6 +2989,14 @@ export type Database = {
         Args: { _command: string; _name: string; _schedule: string }
         Returns: undefined
       }
+      check_ai_rate_limit: {
+        Args: { _endpoint: string; _limit?: number; _window_seconds?: number }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          rate_limit: number
+        }[]
+      }
       check_margin_and_alert: {
         Args: { _days?: number; _threshold_pct?: number }
         Returns: string
@@ -2994,6 +3059,18 @@ export type Database = {
       is_owner_email_locked: { Args: never; Returns: boolean }
       library_media_type_from_url: {
         Args: { _field?: string; _url: string }
+        Returns: string
+      }
+      log_auth_event: {
+        Args: {
+          _email: string
+          _event_type: string
+          _ip: string
+          _metadata?: Json
+          _path: string
+          _reason: string
+          _user_id: string
+        }
         Returns: string
       }
       photo_template_quota: {

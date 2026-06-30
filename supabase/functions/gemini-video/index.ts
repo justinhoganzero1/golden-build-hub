@@ -6,7 +6,7 @@
 // Polls the long-running operation until the MP4 is available.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser } from "../_shared/requireAuth.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +61,8 @@ serve(async (req) => {
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
+    const __rl = await enforceRateLimit(req, auth.user, "gemini-video");
+    if (__rl) return __rl;
 
     const { image_url, prompt = "", duration = 5, ratio = "16:9" } =
       await req.json() as { image_url?: string; prompt?: string; duration?: 5 | 10; ratio?: "16:9" | "9:16" };

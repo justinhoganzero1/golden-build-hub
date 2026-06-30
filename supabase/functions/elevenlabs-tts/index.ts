@@ -1,4 +1,4 @@
-import { requireUser } from "../_shared/requireAuth.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
+    const __rl = await enforceRateLimit(req, auth.user, "elevenlabs-tts");
+    if (__rl) return __rl;
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
