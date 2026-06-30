@@ -21,6 +21,7 @@ import HomePublicGallery from "@/components/HomePublicGallery";
 import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 import FreeGoBanner from "@/components/FreeGoBanner";
 import PartnerBubbles from "@/components/PartnerBubbles";
+import DashboardOnboarding from "@/components/DashboardOnboarding";
 
 interface AppTile {
   label: string;
