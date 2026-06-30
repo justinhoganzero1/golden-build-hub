@@ -6,6 +6,7 @@
 // Polls the long-running operation until the MP4 is available.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,15 +16,40 @@ const corsHeaders = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+// Allow-list of hosts the function may fetch from server-side.
+// Blocks SSRF against private/internal/metadata endpoints by only permitting
+// trusted CDN/storage origins. Use data: URIs for arbitrary client uploads.
+const ALLOWED_IMAGE_HOSTS = new Set<string>([
+  "supabase.co", "supabase.in",
+  "googleusercontent.com", "googleapis.com",
+  "lovableproject.com", "lovable.app", "lovable.dev",
+  "cdn.lovable.dev", "assets.lovable.dev",
+  "cloudinary.com", "imgix.net", "cloudfront.net",
+  "amazonaws.com",
+]);
+
+function isHostAllowed(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  for (const suffix of ALLOWED_IMAGE_HOSTS) {
+    if (h === suffix || h.endsWith("." + suffix)) return true;
+  }
+  return false;
+}
+
 async function fetchAsBase64(url: string): Promise<{ data: string; mime: string }> {
   if (url.startsWith("data:")) {
     const m = url.match(/^data:([^;]+);base64,(.*)$/);
     if (!m) throw new Error("Invalid data URL");
     return { mime: m[1], data: m[2] };
   }
-  const r = await fetch(url);
+  let parsed: URL;
+  try { parsed = new URL(url); } catch { throw new Error("Invalid image URL"); }
+  if (parsed.protocol !== "https:") throw new Error("Only https:// URLs are allowed");
+  if (!isHostAllowed(parsed.hostname)) throw new Error("Image host not allowed");
+  const r = await fetch(parsed.toString(), { redirect: "error" });
   if (!r.ok) throw new Error(`Image fetch ${r.status}`);
   const mime = r.headers.get("content-type") || "image/png";
+  if (!mime.startsWith("image/")) throw new Error("Fetched resource is not an image");
   const buf = new Uint8Array(await r.arrayBuffer());
   let bin = "";
   for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
@@ -33,6 +59,9 @@ async function fetchAsBase64(url: string): Promise<{ data: string; mime: string 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { image_url, prompt = "", duration = 5, ratio = "16:9" } =
       await req.json() as { image_url?: string; prompt?: string; duration?: 5 | 10; ratio?: "16:9" | "9:16" };
 

@@ -20,10 +20,10 @@ const OWNER_EMAIL = "justinbretthogan@gmail.com";
 // Buckets the app needs to exist for media storage.
 const REQUIRED_BUCKETS = [
   { id: "site-assets", public: true },
-  { id: "movies", public: true },
-  { id: "living-gifs", public: true },
+  { id: "movies", public: false },
+  { id: "living-gifs", public: false },
   { id: "app-downloads", public: true },
-  { id: "photography-assets", public: true },
+  { id: "photography-assets", public: false },
 ];
 
 // Edge functions to warm up so the next user request is fast.

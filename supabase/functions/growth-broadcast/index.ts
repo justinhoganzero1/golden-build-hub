@@ -8,6 +8,8 @@
 //
 // POST body: { event: "signup"|"referral"|"feature"|"custom", title?, message?, url?, meta? }
 
+import { requireOwner } from "../_shared/requireAuth.ts";
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -217,6 +219,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
+    const auth = await requireOwner(req);
+    if (auth.response) return auth.response;
+
     const payload: Payload = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const { title, body } = buildText(payload);
 

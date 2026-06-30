@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -13,6 +14,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { type, prompt, model: modelOverride, maxTokens } = await req.json();
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
