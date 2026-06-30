@@ -195,6 +195,7 @@ const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
 const AdminEditorPage = lazy(loaders["/admin/editor"]);
 const VoiceReceptionistPage = lazy(loaders["/voice-receptionist"]);
 const VoiceReceptionistAdminPage = lazy(loaders["/admin/voice-receptionist"]);
+const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
@@ -326,6 +327,7 @@ const App = () => (
                   <Route path="/admin/editor" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/voice-receptionist" element={<ErrorBoundary pageName="Voice Receptionist"><VoiceReceptionistPage /></ErrorBoundary>} />
                   <Route path="/admin/voice-receptionist" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Voice Receptionist Admin"><VoiceReceptionistAdminPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/oauth/google/callback" element={<ErrorBoundary pageName="Google OAuth Callback"><GoogleOAuthCallback /></ErrorBoundary>} />
                   <Route path="/admin/usage-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
