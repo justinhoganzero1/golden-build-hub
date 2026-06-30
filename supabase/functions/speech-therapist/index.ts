@@ -23,6 +23,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
