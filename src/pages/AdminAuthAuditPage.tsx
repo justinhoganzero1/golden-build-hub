@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Shield, RefreshCw, Search } from "lucide-react";
+import { Loader2, Shield, RefreshCw, Search, Download } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,6 +81,33 @@ export default function AdminAuthAuditPage() {
     return c;
   }, [filtered]);
 
+  const exportCsv = useCallback(() => {
+    if (filtered.length === 0) {
+      toast.error("No rows to export.");
+      return;
+    }
+    const cols = ["created_at", "event_type", "reason", "path", "email", "user_id", "ip", "metadata"] as const;
+    const esc = (v: unknown) => {
+      const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [cols.join(",")];
+    for (const r of filtered) {
+      lines.push(cols.map((c) => esc((r as unknown as Record<string, unknown>)[c])).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    a.download = `auth-audit-${hours}h-${eventFilter}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} rows.`);
+  }, [filtered, hours, eventFilter]);
+
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
       <UniversalBackButton />
@@ -90,13 +117,24 @@ export default function AdminAuthAuditPage() {
             <Shield className="w-5 h-5 text-amber-400" />
             <h1 className="text-2xl font-bold">Auth Audit Log</h1>
           </div>
-          <button
-            onClick={load}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportCsv}
+              disabled={loading || filtered.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              data-testid="export-csv"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV ({filtered.length})
+            </button>
+            <button
+              onClick={load}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </header>
 
         <p className="text-sm text-muted-foreground">
