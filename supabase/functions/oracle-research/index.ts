@@ -2,6 +2,7 @@
 // Uses Firecrawl search to fetch live results, then Lovable AI to summarize
 // into an actionable answer. Returns { answer, sources[] }.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
