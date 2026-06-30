@@ -117,7 +117,7 @@ const AvatarGalleryPage = () => {
               >
                 <div className="aspect-square bg-[#0f0f0f] flex items-center justify-center overflow-hidden">
                   {avatar.image_url ? (
-                    <img src={avatar.image_url} alt={avatar.name} className="w-full h-full object-cover" />
+                    <SignedImage src={avatar.image_url} alt={avatar.name} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-4xl">{PURPOSE_LABELS[avatar.purpose]?.icon || "🎭"}</span>
                   )}
