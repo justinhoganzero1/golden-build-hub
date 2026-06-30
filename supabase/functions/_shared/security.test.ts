@@ -35,7 +35,39 @@ const USER_ENDPOINTS = [
 ];
 
 // Endpoints that must reject any non-owner caller.
-const OWNER_ENDPOINTS = ["growth-broadcast"];
+const OWNER_ENDPOINTS = ["growth-broadcast", "admin-reports"];
+
+// Full auth-matrix expectation table. The runtime test below walks this and
+// asserts the HTTP status for each (endpoint, identity) tuple. Keep this in
+// sync with new edge functions — a missing row is a test gap.
+//
+// Identity values:
+//   "none"      → no Authorization header (anon)
+//   "anon"      → signed in as an anonymous Supabase user (where supported)
+//   "user"      → signed in as TEST_USER_EMAIL (non-owner)
+//   "owner"     → signed in as the locked owner (OWNER_TEST_EMAIL)
+type Identity = "none" | "user" | "owner";
+type Expectation = 401 | 403 | "ok"; // "ok" = NOT 401/403; any 2xx/4xx/5xx other than 401/403 is acceptable
+interface MatrixRow {
+  endpoint: string;
+  identity: Identity;
+  expect: Expectation;
+}
+
+const AUTH_MATRIX: MatrixRow[] = [
+  // 1. Authenticated AI endpoints: none → 401, user → not 401/403, owner → not 401/403.
+  ...USER_ENDPOINTS.flatMap<MatrixRow>((endpoint) => [
+    { endpoint, identity: "none", expect: 401 },
+    { endpoint, identity: "user", expect: "ok" },
+    { endpoint, identity: "owner", expect: "ok" },
+  ]),
+  // 2. Owner-only endpoints: none → 401, user → 403, owner → not 401/403.
+  ...OWNER_ENDPOINTS.flatMap<MatrixRow>((endpoint) => [
+    { endpoint, identity: "none", expect: 401 },
+    { endpoint, identity: "user", expect: 403 },
+    { endpoint, identity: "owner", expect: "ok" },
+  ]),
+];
 
 async function postNoAuth(name: string) {
   const res = await fetch(`${FUNCTIONS_URL}/${name}`, {
