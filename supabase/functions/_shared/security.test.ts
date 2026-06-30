@@ -138,6 +138,53 @@ Deno.test({
   },
 });
 
+// ─── Full auth matrix ──────────────────────────────────────────────────────
+// Runs the AUTH_MATRIX defined above. Skipped unless both a non-owner and
+// an owner test account are configured via env. This is the single source
+// of truth for "every secured route returns the expected 401/403 for every
+// identity class".
+const OWNER_TEST_EMAIL = Deno.env.get("OWNER_TEST_EMAIL");
+const OWNER_TEST_PASSWORD = Deno.env.get("OWNER_TEST_PASSWORD");
+
+async function tokenFor(identity: Identity): Promise<string | null> {
+  if (identity === "none") return null;
+  const email = identity === "owner" ? OWNER_TEST_EMAIL : TEST_EMAIL;
+  const password = identity === "owner" ? OWNER_TEST_PASSWORD : TEST_PASSWORD;
+  if (!email || !password) return null;
+  const c = createClient(SUPABASE_URL, ANON_KEY);
+  const { data, error } = await c.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data.session!.access_token;
+}
+
+Deno.test({
+  name: "auth matrix — every (endpoint, identity) returns expected status",
+  ignore: !(TEST_EMAIL && TEST_PASSWORD),
+  fn: async () => {
+    const failures: string[] = [];
+    for (const row of AUTH_MATRIX) {
+      const token = await tokenFor(row.identity).catch(() => null);
+      if (row.identity !== "none" && !token) {
+        // identity not configured — skip rather than fail.
+        if (row.identity === "owner" && !OWNER_TEST_EMAIL) continue;
+        continue;
+      }
+      const { status } = token
+        ? await postWithToken(row.endpoint, token)
+        : await postNoAuth(row.endpoint);
+      const ok =
+        row.expect === "ok" ? status !== 401 && status !== 403 : status === row.expect;
+      if (!ok) {
+        failures.push(
+          `${row.endpoint} as ${row.identity}: expected ${row.expect}, got ${status}`,
+        );
+      }
+    }
+    assertEquals(failures, [], `auth matrix failures:\n  - ${failures.join("\n  - ")}`);
+  },
+});
+
+
 Deno.test({
   name: "non-owner cannot create suggestion with granted_free_access=true",
   ignore: !(TEST_EMAIL && TEST_PASSWORD),
