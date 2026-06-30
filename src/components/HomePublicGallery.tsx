@@ -258,7 +258,7 @@ const HomePublicGallery = () => {
                 aria-label={item.title || "Creation"}
               >
                 {thumb ? (
-                  <img
+                  <SignedImage
                     src={thumb}
                     alt={item.title || "Creation"}
                     loading="lazy"
