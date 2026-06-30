@@ -120,7 +120,7 @@ Deno.test({
     const { data, error } = await c
       .from("suggestions")
       .insert({
-        suggestion: "security test 2014 non-owner trying to grant free access",
+        suggestion: "security test - non-owner trying to grant free access",
         
         granted_free_access: true,
       })
@@ -162,7 +162,7 @@ Deno.test({
     // Seed a plain suggestion (no privileged field).
     const { data: seed, error: seedErr } = await c
       .from("suggestions")
-      .insert({ suggestion: "security test 2014 seed for update", category: "Feature" })
+      .insert({ suggestion: "security test - seed for update", category: "Feature" })
       .select("id, granted_free_access")
       .single();
     if (seedErr) throw seedErr;
