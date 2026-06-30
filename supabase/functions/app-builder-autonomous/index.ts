@@ -4,6 +4,7 @@
 // Uses Lovable AI Gateway (no extra API key required).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
