@@ -132,18 +132,17 @@ export async function enforceRateLimit(
 ): Promise<Response | undefined> {
   const limit = opts.limit ?? 60;
   const windowSeconds = opts.windowSeconds ?? 60;
+  // Use service-role admin client + the _for(_user_id) variant so the rate
+  // limiter never depends on the user's auth.uid() and the RPC can be locked
+  // down to service_role only at the database level.
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!SUPABASE_URL || !ANON_KEY) return undefined;
-
-  const authHeader = req.headers.get("Authorization") || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!SUPABASE_URL || !SERVICE_KEY) return undefined;
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   try {
-    const { data, error } = await client.rpc("check_ai_rate_limit", {
+    const { data, error } = await admin.rpc("check_ai_rate_limit_for", {
+      _user_id: user.id,
       _endpoint: endpoint,
       _limit: limit,
       _window_seconds: windowSeconds,
