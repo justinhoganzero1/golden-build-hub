@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Upload, Megaphone, Plus, Edit3 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Upload, Megaphone, Plus, Edit3, Rocket } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { saveContent, deleteContent, fetchAllContent } from "@/hooks/useSiteContent";
@@ -32,7 +32,15 @@ const REGISTERED_SLOTS: { page: string; slot: string; label: string; kind: "text
 const AdminEditorPage = () => {
   const { isAdmin, loading } = useIsAdmin();
   const { toast } = useToast();
-  const [tab, setTab] = useState<"content" | "announcement" | "images">("content");
+  const [tab, setTab] = useState<"content" | "announcement" | "images" | "broadcast">("content");
+  // Broadcast state
+  const [bcMessage, setBcMessage] = useState("✨ New update is live — enjoy a free gift on us!");
+  const [bcCtaLabel, setBcCtaLabel] = useState("See what's new");
+  const [bcCtaUrl, setBcCtaUrl] = useState("/dashboard");
+  const [bcStyle, setBcStyle] = useState("promo");
+  const [bcCoins, setBcCoins] = useState(5);
+  const [bcSending, setBcSending] = useState(false);
+  const [bcResult, setBcResult] = useState<{ granted: number; failed: number } | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
 
@@ -132,6 +140,34 @@ const AdminEditorPage = () => {
     setUploadedImages((imgs) => [{ name: fileName, url: data.publicUrl }, ...imgs]);
     toast({ title: "Uploaded", description: "Copy the URL and paste it into any image slot." });
   };
+  const sendBroadcast = async () => {
+    if (!bcMessage.trim()) {
+      toast({ title: "Message required", variant: "destructive" });
+      return;
+    }
+    if (!confirm(`Push this update + ${bcCoins} free coins to EVERY user account?`)) return;
+    setBcSending(true);
+    setBcResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-broadcast-update", {
+        body: {
+          message: bcMessage,
+          cta_label: bcCtaLabel || null,
+          cta_url: bcCtaUrl || null,
+          style: bcStyle,
+          grant_coins: bcCoins,
+        },
+      });
+      if (error) throw error;
+      setBcResult({ granted: data?.granted ?? 0, failed: data?.failed ?? 0 });
+      toast({ title: "Broadcast sent", description: `Granted ${data?.granted ?? 0} users · ${data?.failed ?? 0} failed` });
+    } catch (e: any) {
+      toast({ title: "Broadcast failed", description: e.message, variant: "destructive" });
+    } finally {
+      setBcSending(false);
+    }
+  };
+
 
   const copyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -152,7 +188,7 @@ const AdminEditorPage = () => {
       </header>
 
       <div className="px-4 py-3 flex gap-2 border-b border-border overflow-x-auto">
-        {(["content", "announcement", "images"] as const).map((t) => (
+        {(["content", "announcement", "images", "broadcast"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -289,6 +325,74 @@ const AdminEditorPage = () => {
             <p className="text-[11px] text-muted-foreground">
               💡 Paste any copied URL into a text/image slot in the Content tab to swap an image live.
             </p>
+          </div>
+        )}
+
+        {tab === "broadcast" && (
+          <div className="rounded-xl border border-primary/40 bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Rocket className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold">Push update to all users</h2>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              One click: publish a site-wide banner and drop free coins into every account's wallet.
+            </p>
+            <input
+              value={bcMessage}
+              onChange={(e) => setBcMessage(e.target.value)}
+              placeholder="Release note / banner message"
+              className="w-full rounded-lg bg-background border border-border p-2 text-sm"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={bcCtaLabel}
+                onChange={(e) => setBcCtaLabel(e.target.value)}
+                placeholder="Button label (optional)"
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              />
+              <input
+                value={bcCtaUrl}
+                onChange={(e) => setBcCtaUrl(e.target.value)}
+                placeholder="Button link e.g. /dashboard"
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={bcStyle}
+                onChange={(e) => setBcStyle(e.target.value)}
+                className="rounded-lg bg-background border border-border p-2 text-sm"
+              >
+                <option value="info">Info (blue)</option>
+                <option value="success">Success (green)</option>
+                <option value="warning">Warning (amber)</option>
+                <option value="promo">Promo (gradient)</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Free coins per user:</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={bcCoins}
+                  onChange={(e) => setBcCoins(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-20 rounded-lg bg-background border border-border p-2 text-sm"
+                />
+              </label>
+            </div>
+            <button
+              onClick={sendBroadcast}
+              disabled={bcSending}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm disabled:opacity-50"
+            >
+              <Rocket className="w-4 h-4" />
+              {bcSending ? "Broadcasting…" : `Push update + grant ${bcCoins} coins to ALL users`}
+            </button>
+            {bcResult && (
+              <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3">
+                ✅ Granted {bcResult.granted} users · {bcResult.failed} failed
+              </div>
+            )}
           </div>
         )}
       </main>
