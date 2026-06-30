@@ -28,6 +28,29 @@ const VoiceReceptionistAdminPage = () => {
   const [calls, setCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [googleAcct, setGoogleAcct] = useState<{ email: string | null } | null>(null);
+
+  const loadGoogle = async () => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return setGoogleAcct(null);
+    const { data } = await supabase.from("user_google_tokens").select("email").eq("user_id", u.user.id).maybeSingle();
+    setGoogleAcct(data ? { email: data.email } : null);
+  };
+
+  const connectGoogle = async () => {
+    const redirect_uri = `${window.location.origin}/oauth/google/callback`;
+    const { data, error } = await supabase.functions.invoke("google-oauth-start", { body: { redirect_uri } });
+    if (error || !(data as any)?.url) { toast.error(error?.message || "Could not start Google sign-in"); return; }
+    window.location.href = (data as any).url;
+  };
+
+  const disconnectGoogle = async () => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    await supabase.from("user_google_tokens").delete().eq("user_id", u.user.id);
+    setGoogleAcct(null);
+    toast.success("Google Calendar disconnected");
+  };
 
   const loadAll = async () => {
     setLoading(true);
