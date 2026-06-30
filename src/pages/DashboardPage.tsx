@@ -242,7 +242,7 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <FreeGoBanner />
+      {/* FreeGoBanner removed — no free passes; trial/full members only. */}
 
       <ShareDialog
         open={shareOpen}
