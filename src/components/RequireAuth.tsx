@@ -18,7 +18,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const _isPreview = usePreviewMode();
   void _isPreview;
 
-  if (isPreview) return <>{children}</>;
+  // No preview/anon bypass — every route requires a real signed-in member.
 
   if (loading) {
     return (
