@@ -32,7 +32,15 @@ const REGISTERED_SLOTS: { page: string; slot: string; label: string; kind: "text
 const AdminEditorPage = () => {
   const { isAdmin, loading } = useIsAdmin();
   const { toast } = useToast();
-  const [tab, setTab] = useState<"content" | "announcement" | "images">("content");
+  const [tab, setTab] = useState<"content" | "announcement" | "images" | "broadcast">("content");
+  // Broadcast state
+  const [bcMessage, setBcMessage] = useState("✨ New update is live — enjoy a free gift on us!");
+  const [bcCtaLabel, setBcCtaLabel] = useState("See what's new");
+  const [bcCtaUrl, setBcCtaUrl] = useState("/dashboard");
+  const [bcStyle, setBcStyle] = useState("promo");
+  const [bcCoins, setBcCoins] = useState(5);
+  const [bcSending, setBcSending] = useState(false);
+  const [bcResult, setBcResult] = useState<{ granted: number; failed: number } | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
 
