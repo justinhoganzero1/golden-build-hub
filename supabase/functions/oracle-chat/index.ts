@@ -43,10 +43,24 @@ serve(async (req) => {
           // Bypass: admin
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
 
-          // Bypass: paid subscription tier (trust client adContext.isSubscribed when present)
-          const clientSaysSubscribed = !!adContext?.isSubscribed;
+          // Bypass: server-verified active reward grant (free_for_life / unlimited_ai
+          // / lifetime / tier3_trial). NEVER trust client-supplied isSubscribed.
+          let serverSubscribed = false;
+          try {
+            const { data: grantRows } = await admin
+              .from("reward_grants")
+              .select("reward_type, reason, expires_at, active")
+              .eq("user_id", userId)
+              .eq("active", true)
+              .gt("expires_at", new Date().toISOString())
+              .limit(5);
+            serverSubscribed = !!(grantRows || []).some((g: any) =>
+              ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
+              g.reason === "free_for_life"
+            );
+          } catch (_) { /* fall through to limit enforcement */ }
 
-          if (!isAdmin && !clientSaysSubscribed) {
+          if (!isAdmin && !serverSubscribed) {
             // Atomically increment + read count
             const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
               _user_id: userId,
