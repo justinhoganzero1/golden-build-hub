@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePublicLibrary, type PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { Sparkles, ShoppingBag, Eye, Download, Search, X } from "lucide-react";
+import { SignedImage } from "@/components/SignedMedia";
 import monthlyWinnerPhoto from "@/assets/monthly-winner-photo.jpg";
 import monthlyWinnerStory from "@/assets/monthly-winner-story.jpg";
 import monthlyWinnerVideo from "@/assets/monthly-winner-video.jpg";
