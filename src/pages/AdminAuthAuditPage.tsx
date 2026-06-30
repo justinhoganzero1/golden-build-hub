@@ -81,32 +81,47 @@ export default function AdminAuthAuditPage() {
     return c;
   }, [filtered]);
 
-  const exportCsv = useCallback(() => {
-    if (filtered.length === 0) {
-      toast.error("No rows to export.");
-      return;
+  const exportCsv = useCallback(async () => {
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        toast.error("Not authenticated.");
+        return;
+      }
+      const res = await supabase.functions.invoke("admin-reports", {
+        body: {
+          report: "audit_export",
+          hours,
+          event_filter: eventFilter,
+          path_q: pathQ.trim(),
+          user_q: userQ.trim(),
+          limit: 5000,
+        },
+      });
+      if (res.error) throw res.error;
+      // supabase.functions.invoke returns text for text/csv responses
+      const csv = typeof res.data === "string" ? res.data : await new Response(res.data as BodyInit).text();
+      const rowCount = Math.max(0, csv.split("\n").length - 1);
+      if (rowCount === 0) {
+        toast.error("No rows to export.");
+        return;
+      }
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      a.download = `auth-audit-${hours}h-${eventFilter}-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${rowCount} rows.`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Export failed.");
     }
-    const cols = ["created_at", "event_type", "reason", "path", "email", "user_id", "ip", "metadata"] as const;
-    const esc = (v: unknown) => {
-      const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const lines = [cols.join(",")];
-    for (const r of filtered) {
-      lines.push(cols.map((c) => esc((r as unknown as Record<string, unknown>)[c])).join(","));
-    }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    a.download = `auth-audit-${hours}h-${eventFilter}-${stamp}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported ${filtered.length} rows.`);
-  }, [filtered, hours, eventFilter]);
+  }, [hours, eventFilter, pathQ, userQ]);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-6">
