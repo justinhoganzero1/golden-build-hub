@@ -1,6 +1,7 @@
 // Voice-only Oracle director: TTS asks the 22 questions, STT captures answers, and a "free-ramble"
 // extraction mode pulls the 22 fields from a single user monologue.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
