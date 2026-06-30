@@ -26,11 +26,10 @@ export function useIsAdmin() {
       }
 
       const email = (user.email || "").trim().toLowerCase();
-      if (email === OWNER_EMAIL) {
-        if (!cancelled) {
-          setIsAdmin(true);
-          setLoading(false);
-        }
+      // STRICT: require BOTH locked owner email AND a DB admin role row.
+      // Email alone is never trusted. If either check fails, no admin UI.
+      if (email !== OWNER_EMAIL) {
+        if (!cancelled) { setIsAdmin(false); setLoading(false); }
         return;
       }
 
