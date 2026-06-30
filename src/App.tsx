@@ -73,6 +73,8 @@ const loaders = {
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
   "/admin/editor": () => import("./pages/AdminEditorPage"),
+  "/voice-receptionist": () => import("./pages/VoiceReceptionistPage"),
+  "/admin/voice-receptionist": () => import("./pages/admin/VoiceReceptionistAdminPage"),
   "/ai-companion": () => import("./pages/AICompanionPage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
@@ -191,6 +193,8 @@ const WalletPage = lazy(loaders["/wallet"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
 const AdminEditorPage = lazy(loaders["/admin/editor"]);
+const VoiceReceptionistPage = lazy(loaders["/voice-receptionist"]);
+const VoiceReceptionistAdminPage = lazy(loaders["/admin/voice-receptionist"]);
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
@@ -320,6 +324,8 @@ const App = () => (
                   <Route path="/owner-dashboard" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/library" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Library"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/editor" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/voice-receptionist" element={<ErrorBoundary pageName="Voice Receptionist"><VoiceReceptionistPage /></ErrorBoundary>} />
+                  <Route path="/admin/voice-receptionist" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Voice Receptionist Admin"><VoiceReceptionistAdminPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/usage-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
