@@ -56,28 +56,58 @@ Deno.serve(async (req) => {
       oracleEventId = ev?.id ?? null;
     }
 
-    // Google Calendar dual-write
+    // Google Calendar dual-write — uses the BUSINESS OWNER's connected Google account
+    // (per-user OAuth tokens stored in user_google_tokens). Auto-refresh on expiry.
     let googleEventId: string | null = null;
     let googleError: string | null = null;
-    if (cfg?.google_calendar_enabled && GOOGLE_CALENDAR_API_KEY) {
+    if (cfg?.google_calendar_enabled && ownerId) {
       try {
-        const calId = encodeURIComponent(cfg.booking_calendar_id || "primary");
-        const r = await fetch(`https://connector-gateway.lovable.dev/google_calendar/calendar/v3/calendars/${calId}/events`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "X-Connection-Api-Key": GOOGLE_CALENDAR_API_KEY,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            summary: apptTitle, description: apptNotes,
-            start: { dateTime: start.toISOString() },
-            end: { dateTime: end.toISOString() },
-          }),
-        });
-        const gj = await r.json();
-        if (!r.ok) googleError = `${r.status}: ${JSON.stringify(gj).slice(0, 200)}`;
-        else googleEventId = gj.id;
+        const { data: tokRow } = await supabase.from("user_google_tokens")
+          .select("*").eq("user_id", ownerId).maybeSingle();
+        if (!tokRow) {
+          googleError = "owner_google_not_connected";
+        } else {
+          let accessToken = tokRow.access_token as string;
+          const expMs = new Date(tokRow.expires_at).getTime();
+          if (expMs - Date.now() < 60_000 && tokRow.refresh_token) {
+            const cid = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
+            const csec = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
+            const rr = await fetch("https://oauth2.googleapis.com/token", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams({
+                client_id: cid, client_secret: csec,
+                refresh_token: tokRow.refresh_token, grant_type: "refresh_token",
+              }),
+            });
+            const tj = await rr.json();
+            if (rr.ok) {
+              accessToken = tj.access_token;
+              await supabase.from("user_google_tokens").update({
+                access_token: tj.access_token,
+                expires_at: new Date(Date.now() + Number(tj.expires_in ?? 3600) * 1000).toISOString(),
+              }).eq("user_id", ownerId);
+            } else {
+              googleError = `refresh_failed: ${JSON.stringify(tj).slice(0, 200)}`;
+            }
+          }
+          if (!googleError) {
+            const calId = encodeURIComponent(tokRow.calendar_id || cfg.booking_calendar_id || "primary");
+            const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                summary: apptTitle, description: apptNotes,
+                start: { dateTime: start.toISOString() },
+                end: { dateTime: end.toISOString() },
+                attendees: contact.email ? [{ email: contact.email }] : undefined,
+              }),
+            });
+            const gj = await r.json();
+            if (!r.ok) googleError = `${r.status}: ${JSON.stringify(gj).slice(0, 200)}`;
+            else googleEventId = gj.id;
+          }
+        }
       } catch (e) { googleError = String(e); }
     }
 
