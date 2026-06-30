@@ -198,6 +198,7 @@ const VoiceReceptionistPage = lazy(loaders["/voice-receptionist"]);
 const VoiceReceptionistAdminPage = lazy(loaders["/admin/voice-receptionist"]);
 const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
+const AdminAuthAuditPage = lazy(() => import("./pages/AdminAuthAuditPage"));
 const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
