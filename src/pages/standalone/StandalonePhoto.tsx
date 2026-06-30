@@ -1,9 +1,10 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
-import { Upload, Loader2, Sparkles } from "lucide-react";
+import { Upload, Loader2, Sparkles, Box } from "lucide-react";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import StoragePanel from "@/components/StoragePanel";
+import QuantumPhotoViewer from "@/components/QuantumPhotoViewer";
 import { toast } from "sonner";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
