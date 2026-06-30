@@ -160,7 +160,7 @@ const AdminEditorPage = () => {
       </header>
 
       <div className="px-4 py-3 flex gap-2 border-b border-border overflow-x-auto">
-        {(["content", "announcement", "images"] as const).map((t) => (
+        {(["content", "announcement", "images", "broadcast"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
