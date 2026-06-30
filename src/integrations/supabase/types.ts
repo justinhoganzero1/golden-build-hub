@@ -365,6 +365,198 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_activities: {
+        Row: {
+          activity_type: string
+          body: string | null
+          channel: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          occurs_at: string
+          payload: Json
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity_type: string
+          body?: string | null
+          channel?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          occurs_at?: string
+          payload?: Json
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: string
+          body?: string | null
+          channel?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          occurs_at?: string
+          payload?: Json
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_contact_at: string | null
+          metadata: Json
+          name: string | null
+          notes: string | null
+          phone: string | null
+          source: string | null
+          stage_id: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          metadata?: Json
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          stage_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact_at?: string | null
+          metadata?: Json
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          stage_id?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_followups: {
+        Row: {
+          attempts: number
+          body: string
+          channel: string
+          contact_id: string
+          created_at: string
+          error: string | null
+          id: string
+          metadata: Json
+          send_at: string
+          sent_at: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          channel: string
+          contact_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          send_at: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          channel?: string
+          contact_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          metadata?: Json
+          send_at?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_followups_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_lost: boolean
+          is_won: boolean
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_lost?: boolean
+          is_won?: boolean
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       diary_entries: {
         Row: {
           category: string | null
@@ -2414,6 +2606,171 @@ export type Database = {
           recipient_hint?: string | null
           source?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      voice_agent_config: {
+        Row: {
+          booking_calendar_id: string | null
+          booking_duration_minutes: number
+          business_hours: Json
+          created_at: string
+          drip_24h_sms: string
+          drip_72h_sms: string
+          enabled: boolean
+          external_webhook_url: string | null
+          fallback_voicemail_url: string | null
+          google_calendar_enabled: boolean
+          greeting: string
+          handoff_number: string | null
+          handoff_rules: Json
+          id: string
+          language: string
+          missed_call_sms: string
+          singleton: boolean
+          system_prompt: string
+          twilio_phone_number: string | null
+          updated_at: string
+          voice_id: string
+        }
+        Insert: {
+          booking_calendar_id?: string | null
+          booking_duration_minutes?: number
+          business_hours?: Json
+          created_at?: string
+          drip_24h_sms?: string
+          drip_72h_sms?: string
+          enabled?: boolean
+          external_webhook_url?: string | null
+          fallback_voicemail_url?: string | null
+          google_calendar_enabled?: boolean
+          greeting?: string
+          handoff_number?: string | null
+          handoff_rules?: Json
+          id?: string
+          language?: string
+          missed_call_sms?: string
+          singleton?: boolean
+          system_prompt?: string
+          twilio_phone_number?: string | null
+          updated_at?: string
+          voice_id?: string
+        }
+        Update: {
+          booking_calendar_id?: string | null
+          booking_duration_minutes?: number
+          business_hours?: Json
+          created_at?: string
+          drip_24h_sms?: string
+          drip_72h_sms?: string
+          enabled?: boolean
+          external_webhook_url?: string | null
+          fallback_voicemail_url?: string | null
+          google_calendar_enabled?: boolean
+          greeting?: string
+          handoff_number?: string | null
+          handoff_rules?: Json
+          id?: string
+          language?: string
+          missed_call_sms?: string
+          singleton?: boolean
+          system_prompt?: string
+          twilio_phone_number?: string | null
+          updated_at?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
+      voice_call_logs: {
+        Row: {
+          call_sid: string | null
+          contact_id: string | null
+          created_at: string
+          direction: string
+          duration_seconds: number | null
+          ended_at: string | null
+          from_number: string | null
+          id: string
+          intent: string | null
+          metadata: Json
+          outcome: string | null
+          recording_url: string | null
+          started_at: string
+          status: string
+          to_number: string | null
+          transcript: Json
+          updated_at: string
+        }
+        Insert: {
+          call_sid?: string | null
+          contact_id?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          intent?: string | null
+          metadata?: Json
+          outcome?: string | null
+          recording_url?: string | null
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          transcript?: Json
+          updated_at?: string
+        }
+        Update: {
+          call_sid?: string | null
+          contact_id?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          from_number?: string | null
+          id?: string
+          intent?: string | null
+          metadata?: Json
+          outcome?: string | null
+          recording_url?: string | null
+          started_at?: string
+          status?: string
+          to_number?: string | null
+          transcript?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_knowledge_items: {
+        Row: {
+          active: boolean
+          answer: string
+          created_at: string
+          id: string
+          priority: number
+          question: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          created_at?: string
+          id?: string
+          priority?: number
+          question: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          created_at?: string
+          id?: string
+          priority?: number
+          question?: string
+          tags?: string[] | null
+          updated_at?: string
         }
         Relationships: []
       }
