@@ -11,6 +11,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       // Graceful fallback signal — client will use browser TTS instead of crashing
