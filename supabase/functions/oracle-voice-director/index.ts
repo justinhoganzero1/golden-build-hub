@@ -13,6 +13,9 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { mode, transcript, partial_brief } = await req.json();
     // mode: "extract_from_ramble" | "next_question"
 
