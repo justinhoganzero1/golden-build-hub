@@ -18,6 +18,7 @@ const StandalonePhoto = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
+  const [quantumOpen, setQuantumOpen] = useState(false);
 
   const onFile = (f: File | null) => {
     setFile(f);
