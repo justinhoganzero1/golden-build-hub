@@ -21,6 +21,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { message, history, partners, debate, agentNames } = await req.json();
     if (!message) {
       return new Response(JSON.stringify({ error: "message is required" }), {
