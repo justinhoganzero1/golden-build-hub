@@ -149,6 +149,7 @@ const DashboardPage = () => {
     <div className="min-h-screen bg-background">
       <SEO title="Dashboard — Oracle Lunar AI Super App" description="Your Oracle Lunar dashboard. Access 40+ AI tools: chat, voice, photo, video, tutor, mind & wellness — all free to start." path="/dashboard" />
       <WelcomeModal />
+      <DashboardOnboarding />
 
       {/* Hero promo banner removed per owner request — keep the dashboard clean. */}
 
