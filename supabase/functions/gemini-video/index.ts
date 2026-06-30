@@ -59,6 +59,9 @@ async function fetchAsBase64(url: string): Promise<{ data: string; mime: string 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+
     const { image_url, prompt = "", duration = 5, ratio = "16:9" } =
       await req.json() as { image_url?: string; prompt?: string; duration?: 5 | 10; ratio?: "16:9" | "9:16" };
 
