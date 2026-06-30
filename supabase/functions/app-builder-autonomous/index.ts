@@ -124,6 +124,11 @@ function extractCode(text: string): string {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const auth = await requireUser(req);
+  if (auth.response) return auth.response;
+
+
+
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {
