@@ -52,5 +52,14 @@ export function useIsAdmin() {
     return () => { cancelled = true; };
   }, [user, authLoading]);
 
+  // Publish admin status to a window flag so non-React modules
+  // (e.g. moderatePrompt) can auto-bypass M-rated guardrails for
+  // the owner without every call site needing the hook.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as any).__oracleAdmin = isAdmin === true;
+    return () => { if (typeof window !== "undefined") (window as any).__oracleAdmin = false; };
+  }, [isAdmin]);
+
   return { isAdmin, loading: loading || authLoading };
 }
