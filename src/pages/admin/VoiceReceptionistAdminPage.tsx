@@ -69,7 +69,7 @@ const VoiceReceptionistAdminPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadAll(); loadGoogle(); }, []);
 
   const saveCfg = async () => {
     if (!cfg) return;
@@ -241,11 +241,26 @@ const VoiceReceptionistAdminPage = () => {
             <Card>
               <CardHeader><CardTitle>Booking & calendar sync</CardTitle></CardHeader>
               <CardContent className="space-y-4">
+                <div className="rounded-lg border p-3 space-y-2">
+                  <div className="font-semibold text-sm">Google Calendar (per-user sign-in)</div>
+                  {googleAcct ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm">Connected as <span className="font-mono text-amber-400">{googleAcct.email || "(unknown email)"}</span></div>
+                      <Button size="sm" variant="outline" onClick={disconnectGoogle}>Disconnect</Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm text-muted-foreground">Not connected. Booked appointments will only land in your Oracle calendar.</div>
+                      <Button size="sm" onClick={connectGoogle}>Connect Google Calendar</Button>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">Each user signs in with their own Google account. Tokens are stored per user and refreshed automatically.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Default duration (min)</Label><Input type="number" value={cfg.booking_duration_minutes} onChange={(e) => setCfg({ ...cfg, booking_duration_minutes: parseInt(e.target.value || "30") })} /></div>
                   <div><Label>Google Calendar ID</Label><Input value={cfg.booking_calendar_id || "primary"} onChange={(e) => setCfg({ ...cfg, booking_calendar_id: e.target.value })} /></div>
                 </div>
-                <div className="flex items-center gap-2"><Switch checked={cfg.google_calendar_enabled} onCheckedChange={(v) => setCfg({ ...cfg, google_calendar_enabled: v })} /><Label>Mirror bookings to Google Calendar (requires Google Calendar connector linked)</Label></div>
+                <div className="flex items-center gap-2"><Switch checked={cfg.google_calendar_enabled} onCheckedChange={(v) => setCfg({ ...cfg, google_calendar_enabled: v })} /><Label>Mirror bookings to Google Calendar</Label></div>
                 <div><Label>External webhook (Zapier / n8n / HighLevel inbound URL)</Label><Input value={cfg.external_webhook_url || ""} onChange={(e) => setCfg({ ...cfg, external_webhook_url: e.target.value })} placeholder="https://hooks.zapier.com/..." /></div>
               </CardContent>
             </Card>
