@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import HomePublicGallery from "@/components/HomePublicGallery";
 import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
-import FreeGoBanner from "@/components/FreeGoBanner";
+// FreeGoBanner removed — no feature is free; visitors must sign in or trial.
 import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
 
@@ -242,7 +242,7 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <FreeGoBanner />
+      {/* FreeGoBanner removed — no free passes; trial/full members only. */}
 
       <ShareDialog
         open={shareOpen}

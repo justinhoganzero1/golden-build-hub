@@ -8,15 +8,17 @@ import { usePreviewMode } from "@/hooks/usePreviewMode";
  */
 interface RequireAuthProps {
   children: ReactNode;
-  freeAccess?: boolean;
+  freeAccess?: boolean; // deprecated — no feature is free anymore
 }
 
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const isPreview = usePreviewMode();
+  // Preview mode bypass disabled — every route now requires a real session.
+  const _isPreview = usePreviewMode();
+  void _isPreview;
 
-  if (isPreview) return <>{children}</>;
+  // No preview/anon bypass — every route requires a real signed-in member.
 
   if (loading) {
     return (
