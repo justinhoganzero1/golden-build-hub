@@ -2997,6 +2997,19 @@ export type Database = {
           rate_limit: number
         }[]
       }
+      check_ai_rate_limit_for: {
+        Args: {
+          _endpoint: string
+          _limit?: number
+          _user_id: string
+          _window_seconds?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          rate_limit: number
+        }[]
+      }
       check_margin_and_alert: {
         Args: { _days?: number; _threshold_pct?: number }
         Returns: string
