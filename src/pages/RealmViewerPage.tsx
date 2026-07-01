@@ -52,6 +52,10 @@ export default function RealmViewerPage() {
   const [owned, setOwned] = useState(false);
   const [walkMode, setWalkMode] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState("");
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
