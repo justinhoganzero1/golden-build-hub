@@ -783,14 +783,23 @@ const ImmersiveMovieStudioPage = () => {
       let idx = 0;
       setActiveSceneId(scenes[0].id);
       currentCaption = scenes[0].caption ?? "";
+      // Kick first scene's dialogue immediately
+      const firstDlg = dialogueEls[0];
+      if (firstDlg) { try { firstDlg.currentTime = 0; firstDlg.play().catch(() => {}); } catch {} }
       const advance = () => {
+        // stop previous scene's dialogue
+        const prev = dialogueEls[idx];
+        if (prev) { try { prev.pause(); } catch {} }
         idx += 1;
         if (idx >= scenes.length) return;
         setActiveSceneId(scenes[idx].id);
         currentCaption = scenes[idx].caption ?? "";
+        const dlg = dialogueEls[idx];
+        if (dlg) { try { dlg.currentTime = 0; dlg.play().catch(() => {}); } catch {} }
         window.setTimeout(advance, scenes[idx].durationSec * 1000);
       };
       window.setTimeout(advance, scenes[0].durationSec * 1000);
+
 
       const progressTimer = window.setInterval(() => {
         setExportProgress(Math.min(99, ((performance.now() - startedAt) / totalMs) * 100));
