@@ -2615,6 +2615,62 @@ export type Database = {
         }
         Relationships: []
       }
+      user_realms: {
+        Row: {
+          avatar_id: string | null
+          avatar_url: string | null
+          created_at: string
+          id: string
+          is_public: boolean
+          metadata: Json
+          prompt: string | null
+          props: Json
+          share_slug: string | null
+          skybox_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_id?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          prompt?: string | null
+          props?: Json
+          share_slug?: string | null
+          skybox_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_id?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          prompt?: string | null
+          props?: Json
+          share_slug?: string | null
+          skybox_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_realms_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "user_avatars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
