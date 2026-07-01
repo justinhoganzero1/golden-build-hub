@@ -865,6 +865,17 @@ const ImmersiveMovieStudioPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1" title="Default ElevenLabs voice used for new scenes">
+              <Mic className="w-3 h-3" />
+              <Select value={defaultVoiceId} onValueChange={setDefaultVoiceId}>
+                <SelectTrigger className="h-9 w-44" aria-label="Default dialogue voice"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {CURATED_ELEVENLABS_VOICES.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.name} · {v.accent}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
             <div
               data-testid="saved-status"
               data-status={savedStatus}
