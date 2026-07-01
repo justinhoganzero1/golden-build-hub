@@ -250,6 +250,8 @@ const ImmersiveMovieStudioPage = () => {
     if (prompt.length < 8) { toast.error("Describe the scene in at least a few words"); return; }
     if (!user) { toast.error("Sign in to generate scenes"); return; }
     setGenBusy(true);
+    setGenErrors([]);
+    setGenProgress({ done: 0, total: 1, label: "Generating scene…" });
     try {
       const url = await generateSceneImage(prompt);
       const scene: Scene = {
@@ -259,20 +261,46 @@ const ImmersiveMovieStudioPage = () => {
         durationSec: 6,
         depth: 0.35,
         movement: "orbit",
+        prompt,
+        caption: prompt.slice(0, 140),
       };
       setScenes((prev) => {
         const next = [...prev, scene];
         if (!activeSceneId) setActiveSceneId(scene.id);
         return next;
       });
+      setGenProgress({ done: 1, total: 1, label: "Done" });
       toast.success("Scene generated");
       setScenePrompt("");
       setAddOpen(false);
       setAddMode("choose");
     } catch (e: any) {
-      toast.error(e?.message ?? "Generation failed");
+      const msg = e?.message ?? "Generation failed";
+      setGenErrors([msg]);
+      toast.error(msg);
     } finally {
       setGenBusy(false);
+      window.setTimeout(() => setGenProgress(null), 800);
+    }
+  };
+
+  const regenerateScene = async (sceneId: string) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    const promptText = (scene.prompt ?? scene.caption ?? scene.name ?? "").trim();
+    if (promptText.length < 8) {
+      toast.error("This scene has no prompt to regenerate from. Edit its prompt below first.");
+      return;
+    }
+    setRegenBusyId(sceneId);
+    try {
+      const url = await generateSceneImage(promptText);
+      patchScene(sceneId, { imageUrl: url, storagePath: undefined });
+      toast.success("Scene regenerated");
+    } catch (e: any) {
+      toast.error(`Regenerate failed: ${e?.message ?? "unknown"}`);
+    } finally {
+      setRegenBusyId(null);
     }
   };
 
@@ -282,9 +310,10 @@ const ImmersiveMovieStudioPage = () => {
     if (!user) { toast.error("Sign in to generate storyboards"); return; }
     const target = Math.max(2, Math.min(20, storyLength));
     setGenBusy(true);
-    setGenProgress({ done: 0, total: target });
+    setGenErrors([]);
+    setGenProgress({ done: 0, total: target, label: "Planning story…" });
+    const failures: string[] = [];
     try {
-      // 1. Break the story down into scene descriptions
       const { data: planData, error: planErr } = await supabase.functions.invoke("script-to-scenes", {
         body: { script: story, intent: "Immersive 3D still-image movie", targetDurationSec: target * 6 },
       });
@@ -293,8 +322,8 @@ const ImmersiveMovieStudioPage = () => {
         (planData as any)?.scenes ?? [];
       if (!planScenes.length) throw new Error("The planner returned no scenes");
       const plan = planScenes.slice(0, target);
+      setGenProgress({ done: 0, total: plan.length, label: `Building scene 1 of ${plan.length}…` });
 
-      // 2. Generate each scene image sequentially and add to timeline as it arrives
       let firstIdSet = !activeSceneId;
       for (let i = 0; i < plan.length; i++) {
         const p = plan[i];
@@ -307,6 +336,8 @@ const ImmersiveMovieStudioPage = () => {
             durationSec: Math.max(1, Math.min(60, Math.round(p.duration_sec ?? 6))),
             depth: 0.35,
             movement: motionToMovement(p.motion),
+            prompt: p.photo_prompt,
+            caption: (p.caption ?? "").slice(0, 200),
           };
           setScenes((prev) => {
             const next = [...prev, scene];
@@ -314,20 +345,30 @@ const ImmersiveMovieStudioPage = () => {
             return next;
           });
         } catch (err: any) {
-          toast.warning(`Scene ${i + 1} failed: ${err?.message ?? "unknown"}`);
+          const msg = `Scene ${i + 1}: ${err?.message ?? "unknown error"}`;
+          failures.push(msg);
+          toast.warning(msg);
         }
-        setGenProgress({ done: i + 1, total: plan.length });
+        setGenProgress({ done: i + 1, total: plan.length, label: `Built ${i + 1} of ${plan.length}` });
       }
-      toast.success(`Storyboard built: ${plan.length} scenes`);
-      setStoryIdea("");
-      setAddOpen(false);
-      setAddMode("choose");
+      if (failures.length) setGenErrors(failures);
+      const built = plan.length - failures.length;
+      if (built > 0) toast.success(`Storyboard built: ${built} scenes${failures.length ? ` · ${failures.length} failed` : ""}`);
+      else toast.error("No scenes could be generated. See error details.");
+      if (!failures.length) {
+        setStoryIdea("");
+        setAddOpen(false);
+        setAddMode("choose");
+      }
     } catch (e: any) {
-      toast.error(e?.message ?? "Storyboard generation failed");
+      const msg = e?.message ?? "Storyboard generation failed";
+      setGenErrors((prev) => [msg, ...prev, ...failures]);
+      toast.error(msg);
     } finally {
       setGenBusy(false);
-      setGenProgress(null);
+      window.setTimeout(() => setGenProgress(null), 1200);
     }
+  };
   };
 
 
