@@ -63,9 +63,7 @@ function buildSkyboxPrompt(userPrompt: string): string {
     `high dynamic range. Indistinguishable from a real-world photograph — ` +
     `NOT CGI, NOT 3D render, NOT illustration, NOT painting, NOT stylized, ` +
     `NOT anime, NOT cartoon. Scene: ${clean}. Camera at human eye-level (~1.65m). ` +
-    `Content must comply with all applicable laws, platform policies, and ` +
-    `Google Play / App Store safety rules — no illegal, sexual, minor-involving, ` +
-    `graphically violent, or otherwise disallowed content. ` +
+    `Family-friendly, safe-for-all-audiences composition suitable for global app stores. ` +
     `Absolutely NO text, letters, numbers, watermarks, logos, captions, ` +
     `signatures, or UI overlays anywhere in the image.`
   );
