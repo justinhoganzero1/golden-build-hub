@@ -503,6 +503,7 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
           <directionalLight position={[3, 4, 5]} intensity={0.55} />
           <directionalLight position={[-3, -2, -5]} intensity={0.3} />
           <Suspense fallback={null}>
+            <Skydome url={imageUrl} mode={mode} wireframe={wireframe} />
             {walls.map((w) => (
               <Wall
                 key={w.key + qualityIdx + mode + wireframe}
