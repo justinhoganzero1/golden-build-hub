@@ -296,6 +296,7 @@ const App = () => (
                   <Route path="/live-vision" element={<RequireAuth><ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/voice-studio" element={<RequireAuth><ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/photography-hub" element={<RequireAuth><ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/teleport" element={<RequireAuth><ErrorBoundary pageName="Teleport"><TeleportPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator-studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
