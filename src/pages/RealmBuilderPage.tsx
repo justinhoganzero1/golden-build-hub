@@ -117,6 +117,10 @@ export default function RealmBuilderPage() {
   const [title, setTitle] = useState("My First Realm");
   const [prompt, setPrompt] = useState("A moonlit oceanside cliff at golden hour, waves crashing on rocks, cinematic 8K");
   const [skyboxUrl, setSkyboxUrl] = useState<string | null>(null);
+  const [orthoViews, setOrthoViews] = useState<Record<OrthoView, string | null>>({
+    top: null, side: null, front: null, structure: null,
+  });
+  const [zoomView, setZoomView] = useState<{ url: string; label: string } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
