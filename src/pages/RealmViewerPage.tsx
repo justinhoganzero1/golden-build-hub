@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
-import { ImmersiveFPSViewer } from "@/components/ImmersiveFPSViewer";
+import ImmersiveFPSViewer from "@/components/ImmersiveFPSViewer";
 import { toast } from "sonner";
 
 interface RealmRow {
