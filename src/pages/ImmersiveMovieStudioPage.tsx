@@ -49,6 +49,9 @@ const DEFAULT_EXPORT: ExportSettings = { format: "mp4", resolution: 1080, fps: 3
 
 type SavedStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
+// Default Aussie voice (Charlie). User can change per-scene.
+const AUSSIE_VOICE_ID = "IKne3meq5aSn9XLyUdCD";
+
 interface Scene {
   id: string;
   imageUrl: string;
@@ -61,6 +64,12 @@ interface Scene {
   prompt?: string;
   /** Scripted dialogue / caption shown as burned-in subtitle during playback + export. */
   caption?: string;
+  /** ElevenLabs voice used for this scene's dialogue (defaults to Aussie Charlie). */
+  dialogueVoiceId?: string;
+  /** Blob URL (or signed URL after reload) of the generated dialogue audio. */
+  dialogueUrl?: string;
+  /** Cloud storage path once persisted. */
+  dialogueStoragePath?: string;
 }
 
 interface AudioLayer {
