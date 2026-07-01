@@ -172,13 +172,17 @@ function Floor({ quality, mode, wireframe }: { quality: QualityPreset; mode: Vie
   );
 }
 
-/** FPS walk rig — WASD + shift + collision against the front-wall heightfield. */
+/** Drag-to-look + click-to-walk-toward + WASD, with collision. */
 function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boolean }) {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const keys = useRef<Record<string, boolean>>({});
+  const yaw = useRef(0);
+  const pitch = useRef(0);
+  const target = useRef<THREE.Vector3 | null>(null);
   const dir = useMemo(() => new THREE.Vector3(), []);
   const fwd = useMemo(() => new THREE.Vector3(), []);
   const right = useMemo(() => new THREE.Vector3(), []);
+  const euler = useMemo(() => new THREE.Euler(0, 0, 0, "YXZ"), []);
 
   useEffect(() => {
     camera.position.set(0, EYE_HEIGHT, ROOM.half - 0.5);
@@ -189,9 +193,78 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
     return () => { window.removeEventListener("keydown", dn); window.removeEventListener("keyup", up); };
   }, [camera]);
 
+  // Drag-to-look + click-to-walk on canvas.
+  useEffect(() => {
+    const el = gl.domElement;
+    el.style.touchAction = "none";
+    el.style.cursor = "grab";
+    let dragging = false;
+    let moved = 0;
+    let lastX = 0, lastY = 0;
+    let downX = 0, downY = 0;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      dragging = true; moved = 0;
+      lastX = e.clientX; lastY = e.clientY;
+      downX = e.clientX; downY = e.clientY;
+      el.setPointerCapture?.(e.pointerId);
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      moved += Math.abs(dx) + Math.abs(dy);
+      yaw.current   -= dx * 0.0035;
+      pitch.current -= dy * 0.0035;
+      const lim = Math.PI / 2 - 0.05;
+      if (pitch.current >  lim) pitch.current =  lim;
+      if (pitch.current < -lim) pitch.current = -lim;
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      el.style.cursor = "grab";
+      try { el.releasePointerCapture?.(e.pointerId); } catch {}
+      // Treat as click if pointer barely moved → set walk target from raycast.
+      const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (dist < 5) {
+        const rect = el.getBoundingClientRect();
+        const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(nx, ny), camera);
+        // Intersect ground plane y = -ROOM.height/2
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), ROOM.height / 2);
+        const hit = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(plane, hit)) {
+          target.current = hit.clone();
+        }
+      }
+    };
+
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+    };
+  }, [gl, camera]);
+
   useFrame((_, delta) => {
+    // Apply look
+    euler.set(pitch.current, yaw.current, 0, "YXZ");
+    camera.quaternion.setFromEuler(euler);
+
     const k = keys.current;
-    const speed = (k["ShiftLeft"] || k["ShiftRight"] ? RUN_MULT : 1) * WALK_SPEED * delta;
+    const running = k["ShiftLeft"] || k["ShiftRight"];
+    const speed = (running ? RUN_MULT : 1) * WALK_SPEED * delta;
 
     camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
     right.crossVectors(fwd, camera.up).normalize();
@@ -201,14 +274,31 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
     if (k["KeyS"] || k["ArrowDown"])  dir.sub(fwd);
     if (k["KeyD"] || k["ArrowRight"]) dir.add(right);
     if (k["KeyA"] || k["ArrowLeft"])  dir.sub(right);
+
+    // Click-to-walk auto-motion toward target on XZ.
+    if (dir.lengthSq() === 0 && target.current) {
+      const dxT = target.current.x - camera.position.x;
+      const dzT = target.current.z - camera.position.z;
+      const dLen = Math.hypot(dxT, dzT);
+      if (dLen < 0.15) {
+        target.current = null;
+      } else {
+        dir.set(dxT / dLen, 0, dzT / dLen);
+      }
+    } else if (dir.lengthSq() > 0) {
+      // Manual movement cancels auto-walk.
+      target.current = null;
+    }
+
     if (dir.lengthSq() === 0) return;
     dir.normalize().multiplyScalar(speed);
 
-    // Axis-separated collision so we slide along walls.
     const nextX = camera.position.x + dir.x;
     const nextZ = camera.position.z + dir.z;
     if (collide(nextX, camera.position.z)) camera.position.x = nextX;
+    else target.current = null;
     if (collide(camera.position.x, nextZ)) camera.position.z = nextZ;
+    else target.current = null;
     camera.position.y = EYE_HEIGHT;
   });
 
