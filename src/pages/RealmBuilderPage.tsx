@@ -427,10 +427,10 @@ export default function RealmBuilderPage() {
             )}
           </Card>
           <div className="text-xs text-white/50 leading-relaxed">
-            <strong className="text-white/80">What's next:</strong>{" "}
-            Phase 2 adds drag-and-drop prop placement (trees, furniture, lights).{" "}
-            Phase 3 adds CAD primitives (box/sphere/cylinder + boolean).{" "}
-            Phase 4 opens the Public Library so other users can walk through yours (Stripe Connect 70/30).
+            <strong className="text-white/80">Phase 4 live:</strong>{" "}
+            Toggle <em>Public</em> then <em>List in Public Library</em> to sell your realm.
+            Buyers unlock walk-in access via Stripe checkout; you keep 70% (paid straight to your Stripe Connect account).
+            Browse the <Link to="/realms" className="text-amber-400 underline">Public Library</Link> to walk through community realms.
           </div>
         </div>
       </main>
