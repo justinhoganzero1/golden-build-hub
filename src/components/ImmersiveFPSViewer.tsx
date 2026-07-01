@@ -150,6 +150,22 @@ function Floor({ quality, mode, wireframe }: { quality: QualityPreset; mode: Vie
   );
 }
 
+/** Full 360° skydome — wraps the entire realm around the viewer (inward-facing sphere). */
+function Skydome({ url, mode, wireframe }: { url: string; mode: ViewMode; wireframe: boolean }) {
+  const tex = useLoader(THREE.TextureLoader, url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const material = useMemo(() => {
+    if (mode === "normals") return new THREE.MeshNormalMaterial({ wireframe, side: THREE.BackSide });
+    return new THREE.MeshBasicMaterial({ map: tex, wireframe, side: THREE.BackSide, toneMapped: true });
+  }, [mode, wireframe, tex]);
+  return (
+    <mesh rotation={[0, Math.PI, 0]} renderOrder={-1}>
+      <sphereGeometry args={[50, 96, 64]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
+}
+
 /** For each wall, compute how far the displaced surface intrudes inward at (x,z), and the inward normal. */
 type WallDir = "front" | "back" | "left" | "right";
 interface Intrusion { dir: WallDir; dist: number; normal: THREE.Vector3 }
