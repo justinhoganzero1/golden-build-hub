@@ -90,6 +90,7 @@ const loaders = {
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
+  "/immersive-movie-studio": () => import("./pages/ImmersiveMovieStudioPage"),
   "/movie-payment-success": () => import("./pages/MoviePaymentSuccessPage"),
   "/living-gif-studio": () => import("./pages/LivingGifStudioPage"),
   "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
