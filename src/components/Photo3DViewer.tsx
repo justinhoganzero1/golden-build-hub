@@ -3,24 +3,22 @@ import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
+export type CameraMovement = "static" | "orbit" | "pan" | "zoom-in" | "zoom-out";
+
 interface Photo3DViewerProps {
   imageUrl: string;
   /** Depth strength (0–1). Higher = more pronounced 3D pop. */
   depth?: number;
-  /** Auto-orbit subtly when user isn't interacting */
+  /** Auto-orbit subtly when user isn't interacting (legacy prop). */
   autoOrbit?: boolean;
+  /** Named camera movement pattern used during playback/export. */
+  movement?: CameraMovement;
 }
 
-/**
- * Lightweight 2.5D parallax: builds a subdivided plane and displaces vertices
- * using a luminance-derived depth approximation of the photo. Real-time, free,
- * works on every photo. ~15–30° believable orbit.
- */
 function PhotoMesh({ url, depth = 0.35 }: { url: string; depth?: number }) {
   const tex = useLoader(THREE.TextureLoader, url);
   const meshRef = useRef<THREE.Mesh>(null);
 
-  // Build a depth map from the texture (luminance → height)
   const displacementMap = useMemo(() => {
     const img = tex.image as HTMLImageElement;
     const size = 256;
@@ -31,7 +29,6 @@ function PhotoMesh({ url, depth = 0.35 }: { url: string; depth?: number }) {
     if (!ctx) return null;
     ctx.drawImage(img, 0, 0, size, size);
     const data = ctx.getImageData(0, 0, size, size);
-    // Smooth + invert so brighter foregrounds pop forward.
     for (let i = 0; i < data.data.length; i += 4) {
       const r = data.data[i], g = data.data[i + 1], b = data.data[i + 2];
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
@@ -44,7 +41,6 @@ function PhotoMesh({ url, depth = 0.35 }: { url: string; depth?: number }) {
     return dt;
   }, [tex]);
 
-  // Match plane aspect to image aspect
   const aspect = useMemo(() => {
     const img = tex.image as HTMLImageElement;
     return img.width / img.height;
@@ -65,22 +61,43 @@ function PhotoMesh({ url, depth = 0.35 }: { url: string; depth?: number }) {
   );
 }
 
-function GentleOrbit({ enabled }: { enabled: boolean }) {
+function CameraDriver({ movement }: { movement: CameraMovement }) {
   useFrame(({ camera, clock }) => {
-    if (!enabled) return;
+    if (movement === "static") return;
     const t = clock.getElapsedTime();
-    camera.position.x = Math.sin(t * 0.3) * 0.4;
-    camera.position.y = Math.cos(t * 0.2) * 0.2;
+    switch (movement) {
+      case "orbit":
+        camera.position.x = Math.sin(t * 0.3) * 0.4;
+        camera.position.y = Math.cos(t * 0.2) * 0.2;
+        camera.position.z = 3;
+        break;
+      case "pan":
+        camera.position.x = Math.sin(t * 0.25) * 0.6;
+        camera.position.y = 0;
+        camera.position.z = 3;
+        break;
+      case "zoom-in":
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.z = Math.max(2.2, 3 - t * 0.08);
+        break;
+      case "zoom-out":
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.z = Math.min(4.5, 2.5 + t * 0.08);
+        break;
+    }
     camera.lookAt(0, 0, 0);
   });
   return null;
 }
 
-const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false }: Photo3DViewerProps) => {
+const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false, movement }: Photo3DViewerProps) => {
   const [hasError, setHasError] = useState(false);
-
-  // Reset error if image changes
   useEffect(() => setHasError(false), [imageUrl]);
+
+  const effectiveMovement: CameraMovement = movement ?? (autoOrbit ? "orbit" : "static");
+  const userControlEnabled = effectiveMovement === "static";
 
   if (hasError) {
     return (
@@ -101,20 +118,23 @@ const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false }: Photo3DVie
       <Suspense fallback={null}>
         <PhotoMesh url={imageUrl} depth={depth} />
       </Suspense>
-      <GentleOrbit enabled={autoOrbit} />
-      <OrbitControls
-        enablePan={false}
-        enableZoom
-        minDistance={2}
-        maxDistance={5}
-        minPolarAngle={Math.PI / 2 - 0.6}
-        maxPolarAngle={Math.PI / 2 + 0.6}
-        minAzimuthAngle={-0.8}
-        maxAzimuthAngle={0.8}
-        rotateSpeed={0.6}
-      />
+      <CameraDriver movement={effectiveMovement} />
+      {userControlEnabled && (
+        <OrbitControls
+          enablePan={false}
+          enableZoom
+          minDistance={2}
+          maxDistance={5}
+          minPolarAngle={Math.PI / 2 - 0.6}
+          maxPolarAngle={Math.PI / 2 + 0.6}
+          minAzimuthAngle={-0.8}
+          maxAzimuthAngle={0.8}
+          rotateSpeed={0.6}
+        />
+      )}
     </Canvas>
   );
 };
 
 export default Photo3DViewer;
+
