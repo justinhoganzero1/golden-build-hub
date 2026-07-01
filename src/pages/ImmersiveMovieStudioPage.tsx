@@ -369,9 +369,6 @@ const ImmersiveMovieStudioPage = () => {
       window.setTimeout(() => setGenProgress(null), 1200);
     }
   };
-  };
-
-
 
   // ------------ Audio layers (validated + capped) ------------
   const onAudioFiles = (files: FileList | null) => {
