@@ -48,6 +48,7 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   if (metadata?.favourite === true || (sourcePage || "").toLowerCase() === "favourite-music") return "favourite-music";
   if (!sourcePage) return "other";
   const s = sourcePage.toLowerCase();
+  if (s === "teleport" || s.includes("teleport")) return "teleport";
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
   if (s.includes("app-builder") || s.includes("app builder")) return "apps";
