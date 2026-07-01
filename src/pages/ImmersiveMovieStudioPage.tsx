@@ -124,6 +124,9 @@ const ImmersiveMovieStudioPage = () => {
   const [genProgress, setGenProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
   const [genErrors, setGenErrors] = useState<string[]>([]);
   const [regenBusyId, setRegenBusyId] = useState<string | null>(null);
+  const [dialogueBusyId, setDialogueBusyId] = useState<string | null>(null);
+  const [defaultVoiceId, setDefaultVoiceId] = useState<string>(AUSSIE_VOICE_ID);
+  const dialogueAudioRef = useRef<HTMLAudioElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
