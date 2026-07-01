@@ -485,7 +485,14 @@ export default function RealmBuilderPage() {
           <Card className="aspect-video bg-black border-white/10 overflow-hidden relative">
             {skyboxUrl ? (
               walkMode ? (
-                <ImmersiveFPSViewer imageUrl={skyboxUrl} onExit={() => setWalkMode(false)} />
+                <ImmersiveFPSViewer
+                  imageUrl={skyboxUrl}
+                  depthUrl={scene3D.depth}
+                  leftUrl={scene3D.left}
+                  rightUrl={scene3D.right}
+                  backUrl={scene3D.back}
+                  onExit={() => setWalkMode(false)}
+                />
               ) : (
                 <div className="relative w-full h-full">
                   <img src={skyboxUrl} alt="Realm preview" className="w-full h-full object-cover" />
