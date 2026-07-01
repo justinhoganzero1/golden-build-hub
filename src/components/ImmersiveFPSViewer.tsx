@@ -312,8 +312,6 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
   const [wireframe, setWireframe] = useState(false);
   const [qualityIdx, setQualityIdx] = useState(1);
   const [showHelp, setShowHelp] = useState(true);
-  const [locked, setLocked] = useState(false);
-  const controlsRef = useRef<any>(null);
 
   const quality = QUALITY[qualityIdx];
 
