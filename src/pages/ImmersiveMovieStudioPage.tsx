@@ -1105,14 +1105,51 @@ const ImmersiveMovieStudioPage = () => {
                       </label>
                       <label className="text-[10px] text-muted-foreground flex items-start gap-1">
                         <Wand2 className="w-3 h-3 mt-1 shrink-0" />
-                        <Textarea
-                          value={s.prompt ?? ""}
-                          onChange={(e) => patchScene(s.id, { prompt: e.target.value.slice(0, 800) })}
-                          placeholder="Visual prompt (edit and click regenerate to remake just this scene)"
-                          className="min-h-[36px] text-[11px] py-1 flex-1"
-                          rows={1}
-                        />
+                        <div className="flex-1 space-y-1">
+                          <Textarea
+                            value={s.prompt ?? ""}
+                            onChange={(e) => patchScene(s.id, { prompt: e.target.value.slice(0, 800) })}
+                            placeholder="Visual prompt (edit and click regenerate to remake just this scene)"
+                            className="min-h-[36px] text-[11px] py-1"
+                            rows={1}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-[10px] px-2"
+                            disabled={!user}
+                            title="Pre-fill this prompt with your Oracle memory continuity notes (you still confirm before regenerating)"
+                            onClick={async () => {
+                              if (!user) { toast.error("Sign in to use the Oracle."); return; }
+                              try {
+                                const { data, error } = await supabase
+                                  .from("oracle_memories")
+                                  .select("content")
+                                  .eq("user_id", user.id)
+                                  .eq("context", "immersive-movie-studio")
+                                  .order("created_at", { ascending: false })
+                                  .limit(6);
+                                if (error) throw error;
+                                const memories = (data ?? []).map((m: { content: string }) => m.content).filter(Boolean).join(" | ");
+                                if (!memories) { toast.message("No Oracle memories yet — describe a scene first."); return; }
+                                const base = (s.prompt ?? "").trim();
+                                const suggested = base
+                                  ? `${base}\n\n[Continuity notes: ${memories}]`.slice(0, 800)
+                                  : `[Continuity notes: ${memories}]`.slice(0, 800);
+                                patchScene(s.id, { prompt: suggested });
+                                toast.success("Oracle suggestion added — review, then Regenerate.");
+                              } catch (e) {
+                                const msg = e instanceof Error ? e.message : "unknown";
+                                toast.error(`Oracle assist failed: ${msg}`);
+                              }
+                            }}
+                          >
+                            <Brain className="w-3 h-3 mr-1" /> Oracle assist
+                          </Button>
+                        </div>
                       </label>
+
                       <div className="flex flex-wrap items-center gap-2">
                         <label className="text-[10px] text-muted-foreground flex items-center gap-1">
                           Duration
