@@ -468,28 +468,21 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
       {/* Help / status */}
       {ready && !error && showHelp && (
         <div className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 text-white/85 text-xs bg-black/70 px-3 py-2 rounded-full backdrop-blur border border-white/10 flex items-center gap-3">
-          {locked ? (
-            <span>WASD to walk · Shift to run · mouse to look · Esc to release</span>
-          ) : (
-            <button
-              onClick={() => controlsRef.current?.lock?.()}
-              className="text-amber-300 font-semibold"
-            >Click to walk in →</button>
-          )}
+          <span>Drag to look · Click a spot to walk there · WASD + Shift to run</span>
           <button onClick={() => setShowHelp(false)} className="text-white/50 hover:text-white">×</button>
         </div>
       )}
 
       <button
         type="button"
-        onClick={() => { controlsRef.current?.unlock?.(); onExit?.(); }}
+        onClick={() => onExit?.()}
         className="absolute top-4 right-4 px-3 py-2 rounded-md bg-black/60 hover:bg-black/80 border border-white/15 text-white text-sm z-10"
       >
         Exit
       </button>
 
       {/* Crosshair */}
-      {ready && !error && locked && (
+      {ready && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="w-1 h-1 rounded-full bg-white/80 shadow-[0_0_6px_rgba(255,255,255,0.6)]" />
         </div>
