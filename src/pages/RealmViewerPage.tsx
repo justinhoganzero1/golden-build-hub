@@ -7,14 +7,27 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, ShoppingBag, Wand2 } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, ShoppingBag, Wand2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import ImmersiveFPSViewer from "@/components/ImmersiveFPSViewer";
 import { toast } from "sonner";
+
+const REPORT_REASONS = [
+  "Illegal content",
+  "Sexual / adult content",
+  "Minor-involving content",
+  "Graphic violence",
+  "Copyright / IP violation",
+  "Spam or scam",
+  "Hate or harassment",
+  "Other",
+];
 
 interface RealmRow {
   id: string;
