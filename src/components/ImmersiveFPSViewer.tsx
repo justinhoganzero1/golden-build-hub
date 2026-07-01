@@ -124,7 +124,7 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
       imageUrl,
       (tex) => {
         if (cancelled) return;
-        tex.mapping = THREE.EquirectangularReflectionMapping;
+        tex.mapping = THREE.UVMapping;
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -141,7 +141,7 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
           imageUrl,
           (tex) => {
             if (cancelled) return;
-            tex.mapping = THREE.EquirectangularReflectionMapping;
+            tex.mapping = THREE.UVMapping;
             tex.colorSpace = THREE.SRGBColorSpace;
             tex.minFilter = THREE.LinearFilter;
             tex.magFilter = THREE.LinearFilter;
