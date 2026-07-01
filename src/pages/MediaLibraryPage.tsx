@@ -21,6 +21,7 @@ const COLLECTIONS = [
   { key: "favourite-music", label: "Favourite Tracks",                        icon: Star },
   { key: "avatar",        label: "Avatars",                                   icon: User },
   { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
+  { key: "teleport",      label: "Teleport ✨",                               icon: Sparkles },
   { key: "apps",          label: "Apps",                                      icon: Globe },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
   { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2 },
@@ -47,6 +48,7 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   if (metadata?.favourite === true || (sourcePage || "").toLowerCase() === "favourite-music") return "favourite-music";
   if (!sourcePage) return "other";
   const s = sourcePage.toLowerCase();
+  if (s === "teleport" || s.includes("teleport")) return "teleport";
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
   if (s.includes("app-builder") || s.includes("app builder")) return "apps";

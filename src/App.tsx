@@ -44,6 +44,7 @@ const loaders = {
   "/live-vision": () => import("./pages/LiveVisionPage"),
   "/voice-studio": () => import("./pages/VoiceStudioPage"),
   "/photography-hub": () => import("./pages/PhotographyHubPage"),
+  "/teleport": () => import("./pages/TeleportPage"),
   "/creator-studio": () => import("./pages/CreatorStudioPage"),
   "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
   "/ai-tutor": () => import("./pages/AITutorPage"),
@@ -165,6 +166,7 @@ const MediaLibraryPage = lazy(loaders["/media-library"]);
 const LiveVisionPage = lazy(loaders["/live-vision"]);
 const VoiceStudioPage = lazy(loaders["/voice-studio"]);
 const PhotographyHubPage = lazy(loaders["/photography-hub"]);
+const TeleportPage = lazy(loaders["/teleport"]);
 const CreatorStudioPage = lazy(loaders["/creator-studio"]);
 const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
 const AITutorPage = lazy(loaders["/ai-tutor"]);
@@ -294,6 +296,7 @@ const App = () => (
                   <Route path="/live-vision" element={<RequireAuth><ErrorBoundary pageName="Live Vision"><LiveVisionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/voice-studio" element={<RequireAuth><ErrorBoundary pageName="Voice Studio"><VoiceStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/photography-hub" element={<RequireAuth><ErrorBoundary pageName="Photography Hub"><PhotographyHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/teleport" element={<RequireAuth><ErrorBoundary pageName="Teleport"><TeleportPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator-studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
