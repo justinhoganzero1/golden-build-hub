@@ -69,6 +69,43 @@ function buildSkyboxPrompt(userPrompt: string): string {
   );
 }
 
+// Orthographic reference-view prompts so users can inspect every rock / prop
+// from top, side, and front — plus a labelled 3D structural diagram showing
+// how obstructions sit in the scene. All returned as separate images the user
+// can zoom into.
+type OrthoView = "top" | "side" | "front" | "structure";
+function buildOrthoPrompt(userPrompt: string, view: OrthoView): string {
+  const clean = userPrompt.trim().replace(/\s+/g, " ");
+  const common =
+    `Ultra-photoreal 8K reference render of the SAME scene. ` +
+    `Physically based materials, real lighting, accurate scale. ` +
+    `Every rock, boulder, obstruction, prop and structure clearly visible ` +
+    `and separated. Neutral studio backdrop. No text, no watermarks, no labels. `;
+  switch (view) {
+    case "top":
+      return common +
+        `TOP-DOWN orthographic view (straight down, bird's-eye, 90° camera), ` +
+        `full scene footprint, showing positions of all rocks and obstacles ` +
+        `like a map. Scene: ${clean}.`;
+    case "side":
+      return common +
+        `PURE SIDE orthographic view (camera at horizon level, 0° tilt, ` +
+        `elevation profile), showing heights and silhouettes of every ` +
+        `rock/obstruction. Scene: ${clean}.`;
+    case "front":
+      return common +
+        `PURE FRONT orthographic view (camera facing the scene head-on), ` +
+        `flat elevation showing frontal depth layers of all rocks and ` +
+        `obstructions. Scene: ${clean}.`;
+    case "structure":
+      return common +
+        `3D structural diagram / exploded isometric view of all rocks, ` +
+        `boulders, obstructions and props in the scene, each shown as a ` +
+        `solid volumetric shape with visible depth and thickness, arranged ` +
+        `on a grid so the user can understand the full 3D layout. Scene: ${clean}.`;
+  }
+}
+
 function makeSlug(title: string): string {
   const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
   const rand = Math.random().toString(36).slice(2, 8);
@@ -80,6 +117,10 @@ export default function RealmBuilderPage() {
   const [title, setTitle] = useState("My First Realm");
   const [prompt, setPrompt] = useState("A moonlit oceanside cliff at golden hour, waves crashing on rocks, cinematic 8K");
   const [skyboxUrl, setSkyboxUrl] = useState<string | null>(null);
+  const [orthoViews, setOrthoViews] = useState<Record<OrthoView, string | null>>({
+    top: null, side: null, front: null, structure: null,
+  });
+  const [zoomView, setZoomView] = useState<{ url: string; label: string } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
   const [selectedAvatar, setSelectedAvatar] = useState<Avatar | null>(null);
@@ -135,14 +176,33 @@ export default function RealmBuilderPage() {
     }
     setGenerating(true);
     setWalkMode(false);
+    setOrthoViews({ top: null, side: null, front: null, structure: null });
     try {
+      // 1. Main immersive panorama first so the user sees a result fast.
       const res = await generateImage({
         prompt: buildSkyboxPrompt(prompt),
         tier: "premium",
         noCache: false,
       });
       setSkyboxUrl(res.url);
-      toast.success("Realm generated — click 'Walk in' to explore");
+      toast.success("Realm generated — rendering top / side / front / 3D views…");
+
+      // 2. Fire the four reference views in parallel. Each resolves
+      // independently so the UI progressively fills in.
+      const views: OrthoView[] = ["top", "side", "front", "structure"];
+      await Promise.all(views.map(async (v) => {
+        try {
+          const r = await generateImage({
+            prompt: buildOrthoPrompt(prompt, v),
+            tier: "fast",
+            noCache: false,
+          });
+          setOrthoViews((prev) => ({ ...prev, [v]: r.url }));
+        } catch {
+          // Non-fatal — main panorama already succeeded.
+        }
+      }));
+      toast.success("All reference views ready");
     } catch (e: any) {
       if (e instanceof InsufficientCreditsError) {
         toast.error("Out of credits", { description: "Top up your wallet to keep building realms." });
@@ -425,6 +485,44 @@ export default function RealmBuilderPage() {
               </div>
             )}
           </Card>
+
+          {/* Multi-view reference: top / side / front / 3D structure. */}
+          {skyboxUrl && (
+            <Card className="p-3 bg-neutral-900/70 border-white/10 space-y-2">
+              <div className="text-xs uppercase tracking-wider text-white/60">
+                Reference views · click any tile to zoom
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {(["top", "side", "front", "structure"] as OrthoView[]).map((v) => {
+                  const url = orthoViews[v];
+                  const label = v === "structure" ? "3D structure" : `${v[0].toUpperCase()}${v.slice(1)} view`;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      disabled={!url}
+                      onClick={() => url && setZoomView({ url, label })}
+                      className="relative aspect-square rounded-md overflow-hidden bg-black/60 border border-white/10 hover:border-amber-400/60 disabled:cursor-wait group"
+                    >
+                      {url ? (
+                        <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : generating ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 animate-spin text-amber-400/70" />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/30 text-center px-1">Pending</div>
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 py-1 text-[10px] font-medium text-white/90 text-left">
+                        {label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
           <div className="text-xs text-white/50 leading-relaxed">
             <strong className="text-white/80">Phase 4 live:</strong>{" "}
             Toggle <em>Public</em> then <em>List in Public Library</em> to sell your realm.
@@ -433,6 +531,26 @@ export default function RealmBuilderPage() {
           </div>
         </div>
       </main>
+
+      {/* Zoom-any-view modal (pinch/scroll to zoom via CSS transform on hover). */}
+      {zoomView && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setZoomView(null)}
+        >
+          <div className="relative max-w-[92vw] max-h-[92vh] overflow-auto rounded-lg border border-amber-400/40 shadow-2xl">
+            <img
+              src={zoomView.url}
+              alt={zoomView.label}
+              className="max-w-none w-[min(1600px,180vw)] h-auto cursor-zoom-out"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-xs text-amber-200">
+              {zoomView.label} · click background to close · scroll to zoom
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
