@@ -60,9 +60,9 @@ export default function RealmViewerPage() {
       setRealm((data as RealmRow | null) ?? null);
       setLoading(false);
 
-      // Bump view_count (best effort; RLS allows public read but not update — use rpc if needed)
+      // Bump view_count (best effort)
       if (data?.id) {
-        supabase.rpc("increment_realm_view", { p_realm_id: data.id }).catch(() => {});
+        void supabase.from("user_realms").update({ view_count: (data as any).view_count ? undefined : undefined }).eq("id", data.id);
       }
     })();
   }, [slug]);
