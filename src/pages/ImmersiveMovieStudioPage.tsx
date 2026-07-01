@@ -808,6 +808,7 @@ const ImmersiveMovieStudioPage = () => {
       await new Promise((r) => window.setTimeout(r, totalMs + 250));
       recorder.stop();
       els.forEach((e) => e.pause());
+      dialogueEls.forEach((e) => { if (e) { try { e.pause(); } catch {} } });
       await done;
       window.clearInterval(progressTimer);
       cancelAnimationFrame(rafId);
