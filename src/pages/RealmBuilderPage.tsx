@@ -176,14 +176,33 @@ export default function RealmBuilderPage() {
     }
     setGenerating(true);
     setWalkMode(false);
+    setOrthoViews({ top: null, side: null, front: null, structure: null });
     try {
+      // 1. Main immersive panorama first so the user sees a result fast.
       const res = await generateImage({
         prompt: buildSkyboxPrompt(prompt),
         tier: "premium",
         noCache: false,
       });
       setSkyboxUrl(res.url);
-      toast.success("Realm generated — click 'Walk in' to explore");
+      toast.success("Realm generated — rendering top / side / front / 3D views…");
+
+      // 2. Fire the four reference views in parallel. Each resolves
+      // independently so the UI progressively fills in.
+      const views: OrthoView[] = ["top", "side", "front", "structure"];
+      await Promise.all(views.map(async (v) => {
+        try {
+          const r = await generateImage({
+            prompt: buildOrthoPrompt(prompt, v),
+            tier: "fast",
+            noCache: false,
+          });
+          setOrthoViews((prev) => ({ ...prev, [v]: r.url }));
+        } catch {
+          // Non-fatal — main panorama already succeeded.
+        }
+      }));
+      toast.success("All reference views ready");
     } catch (e: any) {
       if (e instanceof InsufficientCreditsError) {
         toast.error("Out of credits", { description: "Top up your wallet to keep building realms." });
