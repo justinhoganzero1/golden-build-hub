@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Oracle Lunar</string>
+    <string name="title_activity_main">Oracle Lunar</string>
+    <string name="package_name">app.oraclelunar.ai</string>
+    <string name="custom_url_scheme">app.oraclelunar.ai</string>
+</resources>
