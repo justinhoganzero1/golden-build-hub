@@ -759,12 +759,21 @@ const ImmersiveMovieStudioPage = () => {
                   {scenes.length} scene{scenes.length === 1 ? "" : "s"} · {scenes.reduce((a, s) => a + s.durationSec, 0)}s total
                 </span>
               </h3>
-              <label className="cursor-pointer">
-                <input type="file" accept={ALLOWED_IMAGE.join(",")} multiple className="hidden" onChange={(e) => onImageFiles(e.target.files)} />
-                <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground">
-                  <Upload className="w-3.5 h-3.5" /> Add stills
-                </span>
-              </label>
+              <Button
+                size="sm"
+                onClick={() => { setAddMode("choose"); setAddOpen(true); }}
+                className="h-8"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add scene
+              </Button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept={ALLOWED_IMAGE.join(",")}
+                multiple
+                className="hidden"
+                onChange={(e) => { onImageFiles(e.target.files); if (uploadInputRef.current) uploadInputRef.current.value = ""; }}
+              />
             </div>
             {scenes.length === 0 ? (
               <p className="text-xs text-muted-foreground">No scenes yet. JPG, PNG, WEBP, or GIF up to 15 MB.</p>
