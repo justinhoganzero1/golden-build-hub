@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { PointerLockControls } from "@react-three/drei";
+import { Canvas, useFrame, useLoader, useThree, ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
