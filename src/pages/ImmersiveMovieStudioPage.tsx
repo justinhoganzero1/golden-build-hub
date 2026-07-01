@@ -586,9 +586,72 @@ const ImmersiveMovieStudioPage = () => {
     setExportProgress(0);
     const totalMs = scenes.reduce((a, s) => a + s.durationSec * 1000, 0);
     try {
-      // Video: canvas stream
-      const videoStream = canvas.captureStream(exportSettings.fps);
-      // Audio: WebAudio mix
+      // Composite canvas = live 3D canvas + burned-in caption text so subtitles
+      // land in the exported video (canvas.captureStream would miss HTML overlays).
+      const composite = document.createElement("canvas");
+      composite.width = canvas.width || 1280;
+      composite.height = canvas.height || 720;
+      const cctx = composite.getContext("2d");
+      if (!cctx) throw new Error("Could not create export canvas");
+      let currentCaption = scenes[0]?.caption ?? "";
+      let rafId = 0;
+      const drawCaption = (text: string) => {
+        if (!text) return;
+        const w = composite.width;
+        const h = composite.height;
+        const fontSize = Math.max(18, Math.round(h * 0.038));
+        cctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        cctx.textAlign = "center";
+        cctx.textBaseline = "bottom";
+        // Naive wrap
+        const maxWidth = w * 0.86;
+        const words = text.split(/\s+/);
+        const lines: string[] = [];
+        let line = "";
+        words.forEach((word) => {
+          const test = line ? `${line} ${word}` : word;
+          if (cctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word; }
+          else line = test;
+        });
+        if (line) lines.push(line);
+        const padX = fontSize * 0.7;
+        const padY = fontSize * 0.4;
+        const lineH = fontSize * 1.25;
+        const boxH = lines.length * lineH + padY * 2;
+        const boxY = h - Math.round(h * 0.09) - boxH;
+        // Background pill
+        cctx.fillStyle = "rgba(0,0,0,0.7)";
+        const boxW = Math.min(maxWidth + padX * 2, w * 0.94);
+        const boxX = (w - boxW) / 2;
+        const r = 12;
+        cctx.beginPath();
+        cctx.moveTo(boxX + r, boxY);
+        cctx.lineTo(boxX + boxW - r, boxY);
+        cctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+        cctx.lineTo(boxX + boxW, boxY + boxH - r);
+        cctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+        cctx.lineTo(boxX + r, boxY + boxH);
+        cctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+        cctx.lineTo(boxX, boxY + r);
+        cctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+        cctx.closePath();
+        cctx.fill();
+        // Text
+        cctx.fillStyle = "#ffffff";
+        lines.forEach((ln, i) => {
+          cctx.fillText(ln, w / 2, boxY + padY + (i + 1) * lineH - fontSize * 0.25);
+        });
+      };
+      const renderLoop = () => {
+        try {
+          cctx.drawImage(canvas, 0, 0, composite.width, composite.height);
+          if (currentCaption) drawCaption(currentCaption);
+        } catch { /* frame skip */ }
+        rafId = requestAnimationFrame(renderLoop);
+      };
+      rafId = requestAnimationFrame(renderLoop);
+
+      const videoStream = composite.captureStream(exportSettings.fps);
       const AudioCtx: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ac = new AudioCtx();
       const dest = ac.createMediaStreamDestination();
@@ -607,7 +670,6 @@ const ImmersiveMovieStudioPage = () => {
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
       ]);
-      // Honor requested format when supported; otherwise fall back gracefully.
       const preferMp4 = exportSettings.format === "mp4";
       const candidates = preferMp4
         ? ["video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"]
@@ -625,15 +687,16 @@ const ImmersiveMovieStudioPage = () => {
       const done = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
       recorder.start(200);
 
-      // Drive playback
       layers.forEach((l, i) => window.setTimeout(() => els[i].play().catch(() => {}), l.startSec * 1000));
       const startedAt = performance.now();
       let idx = 0;
       setActiveSceneId(scenes[0].id);
+      currentCaption = scenes[0].caption ?? "";
       const advance = () => {
         idx += 1;
         if (idx >= scenes.length) return;
         setActiveSceneId(scenes[idx].id);
+        currentCaption = scenes[idx].caption ?? "";
         window.setTimeout(advance, scenes[idx].durationSec * 1000);
       };
       window.setTimeout(advance, scenes[0].durationSec * 1000);
@@ -647,6 +710,7 @@ const ImmersiveMovieStudioPage = () => {
       els.forEach((e) => e.pause());
       await done;
       window.clearInterval(progressTimer);
+      cancelAnimationFrame(rafId);
       ac.close();
 
       const ext = mime.includes("mp4") ? "mp4" : "webm";
