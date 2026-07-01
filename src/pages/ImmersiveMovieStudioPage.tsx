@@ -112,6 +112,44 @@ const ImmersiveMovieStudioPage = () => {
   }, [user]);
   useEffect(() => { refreshProjects(); }, [refreshProjects]);
 
+  // ------------ Local draft restore on mount ------------
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft?.projectName) setProjectName(draft.projectName);
+      if (Array.isArray(draft?.scenes)) setScenes(draft.scenes);
+      if (Array.isArray(draft?.layers)) setLayers(draft.layers);
+      if (draft?.exportSettings) setExportSettings({ ...DEFAULT_EXPORT, ...draft.exportSettings });
+      if (draft?.projectId) setProjectId(draft.projectId);
+      if (draft?.activeSceneId) setActiveSceneId(draft.activeSceneId);
+    } catch { /* ignore corrupt draft */ }
+    // allow subsequent state changes to be treated as dirty
+    setTimeout(() => { skipDirtyRef.current = false; }, 0);
+  }, []);
+
+  // ------------ Autosave: local draft + debounced cloud save ------------
+  useEffect(() => {
+    if (skipDirtyRef.current) return;
+    // Local draft snapshot (excludes blob URLs so we only persist metadata we can recreate)
+    try {
+      const draft = {
+        projectName, projectId, activeSceneId, exportSettings,
+        scenes: scenes.map((s) => ({ ...s, imageUrl: s.storagePath ? "" : s.imageUrl })),
+        layers: layers.map((l) => ({ ...l, url: l.storagePath ? "" : l.url, el: undefined })),
+      };
+      localStorage.setItem(AUTOSAVE_DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* quota */ }
+    setSavedStatus("dirty");
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    if (user && projectId) {
+      autosaveTimer.current = window.setTimeout(() => { void handleSave(true); }, AUTOSAVE_DEBOUNCE_MS);
+    }
+    return () => { if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenes, layers, projectName, exportSettings, activeSceneId]);
+
   // ------------ Scene upload (validated) ------------
   const onImageFiles = (files: FileList | null) => {
     if (!files) return;
