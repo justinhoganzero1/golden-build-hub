@@ -69,6 +69,43 @@ function buildSkyboxPrompt(userPrompt: string): string {
   );
 }
 
+// Orthographic reference-view prompts so users can inspect every rock / prop
+// from top, side, and front — plus a labelled 3D structural diagram showing
+// how obstructions sit in the scene. All returned as separate images the user
+// can zoom into.
+type OrthoView = "top" | "side" | "front" | "structure";
+function buildOrthoPrompt(userPrompt: string, view: OrthoView): string {
+  const clean = userPrompt.trim().replace(/\s+/g, " ");
+  const common =
+    `Ultra-photoreal 8K reference render of the SAME scene. ` +
+    `Physically based materials, real lighting, accurate scale. ` +
+    `Every rock, boulder, obstruction, prop and structure clearly visible ` +
+    `and separated. Neutral studio backdrop. No text, no watermarks, no labels. `;
+  switch (view) {
+    case "top":
+      return common +
+        `TOP-DOWN orthographic view (straight down, bird's-eye, 90° camera), ` +
+        `full scene footprint, showing positions of all rocks and obstacles ` +
+        `like a map. Scene: ${clean}.`;
+    case "side":
+      return common +
+        `PURE SIDE orthographic view (camera at horizon level, 0° tilt, ` +
+        `elevation profile), showing heights and silhouettes of every ` +
+        `rock/obstruction. Scene: ${clean}.`;
+    case "front":
+      return common +
+        `PURE FRONT orthographic view (camera facing the scene head-on), ` +
+        `flat elevation showing frontal depth layers of all rocks and ` +
+        `obstructions. Scene: ${clean}.`;
+    case "structure":
+      return common +
+        `3D structural diagram / exploded isometric view of all rocks, ` +
+        `boulders, obstructions and props in the scene, each shown as a ` +
+        `solid volumetric shape with visible depth and thickness, arranged ` +
+        `on a grid so the user can understand the full 3D layout. Scene: ${clean}.`;
+  }
+}
+
 function makeSlug(title: string): string {
   const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
   const rand = Math.random().toString(36).slice(2, 8);
