@@ -312,6 +312,37 @@ export default function RealmBuilderPage() {
               </span>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
+
+            {isPublic && (
+              <div className="rounded-md border border-white/10 bg-black/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wider text-white/60 flex items-center gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    List in Public Library
+                  </span>
+                  <Switch checked={shopEnabled} onCheckedChange={setShopEnabled} />
+                </div>
+                {shopEnabled && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/50">Price (USD)</label>
+                    <div className="mt-1 flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.99"
+                        value={priceUsd}
+                        onChange={(e) => setPriceUsd(e.target.value)}
+                        className="bg-black/40 border-white/10 h-8"
+                      />
+                    </div>
+                    <p className="text-[10px] text-white/40 mt-1">
+                      You keep 70% ({(parseFloat(priceUsd || "0") * 0.7).toFixed(2)} USD). Platform fee 30% via Stripe Connect.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <Button
               onClick={handleSave}
               disabled={saving || !skyboxUrl}
