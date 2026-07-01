@@ -485,6 +485,44 @@ export default function RealmBuilderPage() {
               </div>
             )}
           </Card>
+
+          {/* Multi-view reference: top / side / front / 3D structure. */}
+          {skyboxUrl && (
+            <Card className="p-3 bg-neutral-900/70 border-white/10 space-y-2">
+              <div className="text-xs uppercase tracking-wider text-white/60">
+                Reference views · click any tile to zoom
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {(["top", "side", "front", "structure"] as OrthoView[]).map((v) => {
+                  const url = orthoViews[v];
+                  const label = v === "structure" ? "3D structure" : `${v[0].toUpperCase()}${v.slice(1)} view`;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      disabled={!url}
+                      onClick={() => url && setZoomView({ url, label })}
+                      className="relative aspect-square rounded-md overflow-hidden bg-black/60 border border-white/10 hover:border-amber-400/60 disabled:cursor-wait group"
+                    >
+                      {url ? (
+                        <img src={url} alt={label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : generating ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 animate-spin text-amber-400/70" />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-[10px] text-white/30 text-center px-1">Pending</div>
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 py-1 text-[10px] font-medium text-white/90 text-left">
+                        {label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
+
           <div className="text-xs text-white/50 leading-relaxed">
             <strong className="text-white/80">Phase 4 live:</strong>{" "}
             Toggle <em>Public</em> then <em>List in Public Library</em> to sell your realm.
@@ -493,6 +531,26 @@ export default function RealmBuilderPage() {
           </div>
         </div>
       </main>
+
+      {/* Zoom-any-view modal (pinch/scroll to zoom via CSS transform on hover). */}
+      {zoomView && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6"
+          onClick={() => setZoomView(null)}
+        >
+          <div className="relative max-w-[92vw] max-h-[92vh] overflow-auto rounded-lg border border-amber-400/40 shadow-2xl">
+            <img
+              src={zoomView.url}
+              alt={zoomView.label}
+              className="max-w-none w-[min(1600px,180vw)] h-auto cursor-zoom-out"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/70 text-xs text-amber-200">
+              {zoomView.label} · click background to close · scroll to zoom
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
