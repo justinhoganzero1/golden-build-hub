@@ -77,7 +77,6 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
-import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
