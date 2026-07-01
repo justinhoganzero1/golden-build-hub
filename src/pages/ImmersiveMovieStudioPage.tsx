@@ -300,11 +300,12 @@ const ImmersiveMovieStudioPage = () => {
     return data.signedUrl;
   };
 
-  const handleSave = async () => {
-    if (!user) { toast.error("Sign in to save projects"); return; }
+  const handleSave = async (silent = false) => {
+    if (!user) { if (!silent) toast.error("Sign in to save projects"); return; }
     const parsed = projectNameSchema.safeParse(projectName);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) { if (!silent) toast.error(parsed.error.issues[0].message); return; }
     setSaving(true);
+    setSavedStatus("saving");
     try {
       const scenesToSave = await Promise.all(scenes.map(async (s) => ({
         id: s.id,
@@ -322,7 +323,7 @@ const ImmersiveMovieStudioPage = () => {
         startSec: l.startSec,
         storagePath: await uploadBlobToStorage(l.url, l.storagePath, "audio", l.name),
       })));
-      const payload = { scenes: scenesToSave, layers: layersToSave };
+      const payload = { scenes: scenesToSave, layers: layersToSave, exportSettings };
       if (projectId) {
         const { error } = await supabase
           .from("immersive_movie_projects")
@@ -341,10 +342,13 @@ const ImmersiveMovieStudioPage = () => {
       // Sync storagePaths back onto local state so subsequent saves skip re-upload
       setScenes((prev) => prev.map((s) => { const m = scenesToSave.find(x => x.id === s.id); return m ? { ...s, storagePath: m.storagePath } : s; }));
       setLayers((prev) => prev.map((l) => { const m = layersToSave.find(x => x.id === l.id); return m ? { ...l, storagePath: m.storagePath } : l; }));
-      toast.success("Project saved");
+      setSavedStatus("saved");
+      setLastSavedAt(new Date());
+      if (!silent) toast.success("Project saved");
       refreshProjects();
     } catch (e: any) {
-      toast.error(e?.message ?? "Save failed");
+      setSavedStatus("error");
+      if (!silent) toast.error(e?.message ?? "Save failed");
     } finally {
       setSaving(false);
     }
