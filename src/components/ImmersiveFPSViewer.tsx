@@ -1,33 +1,26 @@
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { PointerLockControls, useTexture } from "@react-three/drei";
+import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
 
 /**
  * ImmersiveFPSViewer — FPS-style walk-around inside a scene.
- * Renders the scene image on the inside of a large sphere and lets the user
- * look around with the mouse (pointer lock) and walk with WASD / arrow keys.
+ * Wraps the photo on the inside of a large sphere so you can look/walk around.
+ * Loads the texture manually with CORS + error handling so it never gets
+ * stuck on a blank canvas.
  */
 
 interface Props {
   imageUrl: string;
-  /** Called when the user presses Escape or exits pointer lock. */
   onExit?: () => void;
 }
 
-const SkySphere = ({ url }: { url: string }) => {
-  const texture = useTexture(url);
-  useEffect(() => {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    texture.colorSpace = THREE.SRGBColorSpace;
-  }, [texture]);
-  return (
-    <mesh scale={[-1, 1, 1]}>
-      <sphereGeometry args={[50, 64, 32]} />
-      <meshBasicMaterial map={texture} side={THREE.BackSide} />
-    </mesh>
-  );
-};
+const SkySphere = ({ texture }: { texture: THREE.Texture }) => (
+  <mesh scale={[-1, 1, 1]}>
+    <sphereGeometry args={[50, 64, 32]} />
+    <meshBasicMaterial map={texture} side={THREE.BackSide} toneMapped={false} />
+  </mesh>
+);
 
 const Floor = () => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
@@ -74,11 +67,8 @@ const WalkController = () => {
     }
     camera.position.add(velocity.current);
 
-    // Clamp inside sphere radius
     const maxR = 40;
-    if (camera.position.length() > maxR) {
-      camera.position.setLength(maxR);
-    }
+    if (camera.position.length() > maxR) camera.position.setLength(maxR);
     camera.position.y = Math.max(-1.5, Math.min(3, camera.position.y));
   });
 
@@ -86,36 +76,94 @@ const WalkController = () => {
 };
 
 const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
-  const canvasWrapRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<any>(null);
+
+  // Manually load the image with CORS so remote URLs (Gemini/Supabase storage)
+  // don't hang the Canvas Suspense forever.
+  useEffect(() => {
+    let cancelled = false;
+    setTexture(null);
+    setError(null);
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(
+      imageUrl,
+      (tex) => {
+        if (cancelled) return;
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        setTexture(tex);
+      },
+      undefined,
+      () => {
+        if (cancelled) return;
+        // Retry without CORS in case the origin doesn't send CORS headers
+        const fallback = new THREE.TextureLoader();
+        fallback.load(
+          imageUrl,
+          (tex) => {
+            if (cancelled) return;
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            tex.colorSpace = THREE.SRGBColorSpace;
+            setTexture(tex);
+          },
+          undefined,
+          () => !cancelled && setError("Couldn't load this realm photo."),
+        );
+      },
+    );
+    return () => { cancelled = true; };
+  }, [imageUrl]);
+
+  const enterWalk = () => {
+    try { controlsRef.current?.lock?.(); } catch { /* no-op */ }
+  };
 
   return (
-    <div ref={canvasWrapRef} className="relative w-full h-full bg-black">
-      <Canvas camera={{ position: [0, 0, 0.1], fov: 75 }}>
-        <Suspense fallback={null}>
-          <SkySphere url={imageUrl} />
-          <Floor />
-          <WalkController />
-          <PointerLockControls
-            onLock={() => setLocked(true)}
-            onUnlock={() => { setLocked(false); onExit?.(); }}
-          />
-        </Suspense>
-      </Canvas>
+    <div className="relative w-full h-full bg-black">
+      {texture && (
+        <Canvas camera={{ position: [0, 0, 0.1], fov: 75 }}>
+          <Suspense fallback={null}>
+            <SkySphere texture={texture} />
+            <Floor />
+            <WalkController />
+            <PointerLockControls
+              ref={controlsRef}
+              onLock={() => setLocked(true)}
+              onUnlock={() => { setLocked(false); onExit?.(); }}
+            />
+          </Suspense>
+        </Canvas>
+      )}
 
-      {!locked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none">
-          <div className="text-center text-white px-4 py-3 rounded-lg bg-black/60 border border-white/10">
-            <p className="font-semibold text-sm mb-1">Click the scene to enter walk mode</p>
-            <p className="text-[11px] text-white/70">WASD / arrows to walk · Shift = run · Mouse to look · Esc to exit</p>
-          </div>
+      {!texture && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-2">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs">Loading realm…</p>
         </div>
       )}
-      <div className="absolute inset-0" onClick={(e) => {
-        if (locked) return;
-        const canvas = (e.currentTarget.parentElement?.querySelector("canvas") as HTMLCanvasElement | null);
-        canvas?.requestPointerLock?.();
-      }} />
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center text-center text-red-300 text-sm p-6">
+          {error}
+        </div>
+      )}
+
+      {texture && !locked && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <button
+            onClick={enterWalk}
+            className="px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold shadow-2xl"
+          >
+            Step inside · WASD to walk, mouse to look
+          </button>
+        </div>
+      )}
     </div>
   );
 };
