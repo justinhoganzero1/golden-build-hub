@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Save, Share2, Copy, User, Wand2, Globe2, Lock, ArrowLeft } from "lucide-react";
+import { Loader2, Sparkles, Save, Share2, Copy, User, Wand2, Globe2, Lock, ArrowLeft, ShoppingBag, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
