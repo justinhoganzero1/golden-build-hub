@@ -5,6 +5,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { moderatePrompt } from "@/lib/contentSafety";
+
+// Client-side rate limit for voice-to-scene: max 8 builds per rolling 60s.
+const RATE_KEY = "oracle_scene_voice_rl_v1";
+const RATE_MAX = 8;
+const RATE_WINDOW_MS = 60_000;
+function checkRateLimit(): { ok: boolean; retryInSec: number } {
+  try {
+    const now = Date.now();
+    const raw = localStorage.getItem(RATE_KEY);
+    const hits: number[] = raw ? (JSON.parse(raw) as number[]).filter((t) => now - t < RATE_WINDOW_MS) : [];
+    if (hits.length >= RATE_MAX) {
+      return { ok: false, retryInSec: Math.ceil((RATE_WINDOW_MS - (now - hits[0])) / 1000) };
+    }
+    hits.push(now);
+    localStorage.setItem(RATE_KEY, JSON.stringify(hits));
+    return { ok: true, retryInSec: 0 };
+  } catch {
+    return { ok: true, retryInSec: 0 };
+  }
+}
+// Strip control chars and suspicious prompt-injection markers from voice input.
+function sanitizeTranscript(s: string): string {
+  return s
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\b(system prompt|ignore (all )?previous|jailbreak|developer mode)\b/gi, "[filtered]")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 /**
  * OracleSceneVoice — speak (or type) to the Oracle to describe a new scene.
@@ -50,9 +80,21 @@ const OracleSceneVoice = ({ onScene, busy }: Props) => {
     r.onresult = (e) => {
       let s = "";
       for (let i = e.resultIndex; i < e.results.length; i++) s += e.results[i][0].transcript;
-      setText((prev) => (prev + " " + s).slice(-2000).trim());
+      setText((prev) => sanitizeTranscript((prev + " " + s).slice(-2000)));
     };
-    r.onerror = () => setListening(false);
+    r.onerror = (evt) => {
+      setListening(false);
+      const code = (evt as { error?: string })?.error;
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        toast.error("Microphone permission denied. Enable it in your browser settings.");
+      } else if (code === "no-speech") {
+        toast.message("Didn't catch that — try again.");
+      } else if (code === "network") {
+        toast.error("Speech recognition network error. Check your connection.");
+      } else if (code) {
+        toast.error(`Voice input error: ${code}`);
+      }
+    };
     r.onend = () => setListening(false);
     recRef.current = r;
     return () => { try { r.stop(); } catch { /* noop */ } };
@@ -83,26 +125,42 @@ const OracleSceneVoice = ({ onScene, busy }: Props) => {
       context: "immersive-movie-studio",
       importance: 6,
     });
-    if (!error) setMemoryCount((c) => c + 1);
+    if (error) {
+      console.warn("oracle_memories insert failed:", error.message);
+    } else {
+      setMemoryCount((c) => c + 1);
+    }
   };
 
   const buildScene = async () => {
-    const prompt = text.trim();
-    if (prompt.length < 8) { toast.error("Say a bit more about the scene"); return; }
+    if (!user) { toast.error("Sign in to use the Oracle."); return; }
+    const prompt = sanitizeTranscript(text).trim();
+    if (prompt.length < 8) { toast.error("Say a bit more about the scene (min 8 chars)."); return; }
+    if (prompt.length > 1500) { toast.error("That's too long — keep it under 1500 characters."); return; }
+
+    const mod = moderatePrompt(prompt);
+    if (!mod.ok) { toast.error(mod.reason ?? "That prompt isn't allowed."); return; }
+
+    const rl = checkRateLimit();
+    if (!rl.ok) { toast.error(`Slow down — try again in ${rl.retryInSec}s.`); return; }
+
     if (listening) { recRef.current?.stop(); setListening(false); }
 
     // Enrich with Oracle memory context so continuity is preserved.
-    let enriched = prompt;
-    if (user) {
-      const { data } = await supabase
+    let enriched = mod.cleaned ?? prompt;
+    try {
+      const { data, error } = await supabase
         .from("oracle_memories")
         .select("content")
         .eq("user_id", user.id)
         .eq("context", "immersive-movie-studio")
         .order("created_at", { ascending: false })
         .limit(6);
+      if (error) throw error;
       const memories = (data ?? []).map((m: { content: string }) => m.content).join(" | ");
-      if (memories) enriched = `${prompt}\n\n[Continuity notes: ${memories}]`;
+      if (memories) enriched = `${enriched}\n\n[Continuity notes: ${memories}]`;
+    } catch (e) {
+      console.warn("Memory lookup failed, continuing without continuity:", e);
     }
 
     await remember(prompt);
@@ -155,3 +213,4 @@ const OracleSceneVoice = ({ onScene, busy }: Props) => {
 };
 
 export default OracleSceneVoice;
+
