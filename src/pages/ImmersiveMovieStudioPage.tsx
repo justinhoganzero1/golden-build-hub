@@ -6,9 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
+  Sparkles, Wand2, BookOpen,
 } from "lucide-react";
 import Photo3DViewer, { type CameraMovement } from "@/components/Photo3DViewer";
 import { toast } from "sonner";
@@ -95,6 +98,16 @@ const ImmersiveMovieStudioPage = () => {
   const skipDirtyRef = useRef(true);
   const playTimer = useRef<number | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
+
+  // Add-scene dialog state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addMode, setAddMode] = useState<"choose" | "prompt" | "story">("choose");
+  const [scenePrompt, setScenePrompt] = useState("");
+  const [storyIdea, setStoryIdea] = useState("");
+  const [storyLength, setStoryLength] = useState(6);
+  const [genBusy, setGenBusy] = useState(false);
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
 
@@ -196,6 +209,121 @@ const ImmersiveMovieStudioPage = () => {
 
   const patchScene = (id: string, patch: Partial<Scene>) =>
     setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+
+  // ------------ AI scene generation ------------
+  const motionToMovement = (m?: string): CameraMovement => {
+    switch (m) {
+      case "pan-left":
+      case "pan-right": return "pan";
+      case "zoom-in":   return "zoom-in";
+      case "zoom-out":  return "zoom-out";
+      case "ken-burns": return "orbit";
+      case "static":    return "static";
+      default:          return "orbit";
+    }
+  };
+
+  const generateSceneImage = async (prompt: string): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke("image-gen", {
+      body: { prompt, tier: "premium" },
+    });
+    if (error) throw new Error(error.message ?? "Image generation failed");
+    if ((data as any)?.error && !(data as any)?.images?.length) {
+      throw new Error((data as any).error);
+    }
+    const url = (data as any)?.images?.[0]?.image_url?.url
+      || (data as any)?.images?.[0]?.url
+      || (typeof (data as any)?.images?.[0] === "string" ? (data as any).images[0] : null);
+    if (!url) throw new Error("No image returned");
+    return url as string;
+  };
+
+  const addGeneratedScene = async () => {
+    const prompt = scenePrompt.trim();
+    if (prompt.length < 8) { toast.error("Describe the scene in at least a few words"); return; }
+    if (!user) { toast.error("Sign in to generate scenes"); return; }
+    setGenBusy(true);
+    try {
+      const url = await generateSceneImage(prompt);
+      const scene: Scene = {
+        id: uid(),
+        imageUrl: url,
+        name: prompt.slice(0, 50),
+        durationSec: 6,
+        depth: 0.35,
+        movement: "orbit",
+      };
+      setScenes((prev) => {
+        const next = [...prev, scene];
+        if (!activeSceneId) setActiveSceneId(scene.id);
+        return next;
+      });
+      toast.success("Scene generated");
+      setScenePrompt("");
+      setAddOpen(false);
+      setAddMode("choose");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Generation failed");
+    } finally {
+      setGenBusy(false);
+    }
+  };
+
+  const generateStoryboard = async () => {
+    const story = storyIdea.trim();
+    if (story.length < 12) { toast.error("Give me a bit more of the story idea"); return; }
+    if (!user) { toast.error("Sign in to generate storyboards"); return; }
+    const target = Math.max(2, Math.min(20, storyLength));
+    setGenBusy(true);
+    setGenProgress({ done: 0, total: target });
+    try {
+      // 1. Break the story down into scene descriptions
+      const { data: planData, error: planErr } = await supabase.functions.invoke("script-to-scenes", {
+        body: { script: story, intent: "Immersive 3D still-image movie", targetDurationSec: target * 6 },
+      });
+      if (planErr) throw new Error(planErr.message ?? "Story planning failed");
+      const planScenes: Array<{ caption?: string; photo_prompt: string; motion?: string; duration_sec?: number }> =
+        (planData as any)?.scenes ?? [];
+      if (!planScenes.length) throw new Error("The planner returned no scenes");
+      const plan = planScenes.slice(0, target);
+
+      // 2. Generate each scene image sequentially and add to timeline as it arrives
+      let firstIdSet = !activeSceneId;
+      for (let i = 0; i < plan.length; i++) {
+        const p = plan[i];
+        try {
+          const url = await generateSceneImage(p.photo_prompt);
+          const scene: Scene = {
+            id: uid(),
+            imageUrl: url,
+            name: (p.caption ?? `Scene ${i + 1}`).slice(0, 60),
+            durationSec: Math.max(1, Math.min(60, Math.round(p.duration_sec ?? 6))),
+            depth: 0.35,
+            movement: motionToMovement(p.motion),
+          };
+          setScenes((prev) => {
+            const next = [...prev, scene];
+            if (!firstIdSet) { setActiveSceneId(scene.id); firstIdSet = true; }
+            return next;
+          });
+        } catch (err: any) {
+          toast.warning(`Scene ${i + 1} failed: ${err?.message ?? "unknown"}`);
+        }
+        setGenProgress({ done: i + 1, total: plan.length });
+      }
+      toast.success(`Storyboard built: ${plan.length} scenes`);
+      setStoryIdea("");
+      setAddOpen(false);
+      setAddMode("choose");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Storyboard generation failed");
+    } finally {
+      setGenBusy(false);
+      setGenProgress(null);
+    }
+  };
+
+
 
   // ------------ Audio layers (validated + capped) ------------
   const onAudioFiles = (files: FileList | null) => {
@@ -631,12 +759,21 @@ const ImmersiveMovieStudioPage = () => {
                   {scenes.length} scene{scenes.length === 1 ? "" : "s"} · {scenes.reduce((a, s) => a + s.durationSec, 0)}s total
                 </span>
               </h3>
-              <label className="cursor-pointer">
-                <input type="file" accept={ALLOWED_IMAGE.join(",")} multiple className="hidden" onChange={(e) => onImageFiles(e.target.files)} />
-                <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground">
-                  <Upload className="w-3.5 h-3.5" /> Add stills
-                </span>
-              </label>
+              <Button
+                size="sm"
+                onClick={() => { setAddMode("choose"); setAddOpen(true); }}
+                className="h-8"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add scene
+              </Button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept={ALLOWED_IMAGE.join(",")}
+                multiple
+                className="hidden"
+                onChange={(e) => { onImageFiles(e.target.files); if (uploadInputRef.current) uploadInputRef.current.value = ""; }}
+              />
             </div>
             {scenes.length === 0 ? (
               <p className="text-xs text-muted-foreground">No scenes yet. JPG, PNG, WEBP, or GIF up to 15 MB.</p>
@@ -761,8 +898,115 @@ const ImmersiveMovieStudioPage = () => {
             Export records the live 3D playback + audio mix from your browser. MP4 in Safari, WEBM elsewhere — both play everywhere.
           </p>
         </div>
+
+        {/* Add-scene dialog: upload · prompt · storyboard */}
+        <Dialog open={addOpen} onOpenChange={(o) => { if (!genBusy) { setAddOpen(o); if (!o) setAddMode("choose"); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {addMode === "choose" && <><Plus className="w-4 h-4" /> Add a scene</>}
+                {addMode === "prompt" && <><Wand2 className="w-4 h-4" /> Generate a scene</>}
+                {addMode === "story"  && <><BookOpen className="w-4 h-4" /> Generate a full storyboard</>}
+              </DialogTitle>
+              <DialogDescription>
+                {addMode === "choose" && "Upload your own stills, describe a single 3D scene, or write a story idea and let the app build the whole movie."}
+                {addMode === "prompt" && "Describe the shot in detail — subject, setting, lighting, camera, mood. It becomes one 3D still in your timeline."}
+                {addMode === "story"  && "Type the story you want. The app will break it into linked scenes and generate each one so the whole movie runs end to end."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {addMode === "choose" && (
+              <div className="grid gap-2 py-2">
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => { setAddOpen(false); uploadInputRef.current?.click(); }}>
+                  <Upload className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Upload stills</div>
+                    <div className="text-[11px] text-muted-foreground">Your own JPG/PNG/WEBP/GIF images.</div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setAddMode("prompt")}>
+                  <Wand2 className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Generate one scene from a prompt</div>
+                    <div className="text-[11px] text-muted-foreground">Describe the 3D immersive scene and the app builds it.</div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setAddMode("story")}>
+                  <BookOpen className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Generate a full storyboard</div>
+                    <div className="text-[11px] text-muted-foreground">Give the app a story idea — it links scenes into a full movie.</div>
+                  </div>
+                </Button>
+              </div>
+            )}
+
+            {addMode === "prompt" && (
+              <div className="space-y-3 py-2">
+                <Textarea
+                  value={scenePrompt}
+                  onChange={(e) => setScenePrompt(e.target.value.slice(0, 800))}
+                  placeholder="e.g. A Rottweiler in a Bintang singlet leans on a Bali beach bar at golden hour, ordering a cold Bintang. Photoreal 8K, warm rim light, shallow depth of field."
+                  rows={5}
+                  disabled={genBusy}
+                />
+                <div className="text-[10px] text-muted-foreground">{scenePrompt.length}/800</div>
+              </div>
+            )}
+
+            {addMode === "story" && (
+              <div className="space-y-3 py-2">
+                <Textarea
+                  value={storyIdea}
+                  onChange={(e) => setStoryIdea(e.target.value.slice(0, 2000))}
+                  placeholder="e.g. A Rottweiler who thinks he's human walks into a Bali beach bar in the late afternoon, orders a Bintang from the surprised bartender, tells everyone about his day, and stays until sunset."
+                  rows={6}
+                  disabled={genBusy}
+                />
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-muted-foreground flex items-center gap-2 flex-1">
+                    Number of scenes
+                    <Slider
+                      min={2} max={20} step={1}
+                      value={[storyLength]}
+                      onValueChange={([v]) => setStoryLength(v)}
+                      disabled={genBusy}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-mono w-6 text-right">{storyLength}</span>
+                  </label>
+                </div>
+                {genProgress && (
+                  <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Building scene {genProgress.done} of {genProgress.total}…
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter>
+              {addMode !== "choose" && (
+                <Button variant="ghost" onClick={() => setAddMode("choose")} disabled={genBusy}>Back</Button>
+              )}
+              {addMode === "prompt" && (
+                <Button onClick={addGeneratedScene} disabled={genBusy || scenePrompt.trim().length < 8}>
+                  {genBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Generate scene
+                </Button>
+              )}
+              {addMode === "story" && (
+                <Button onClick={generateStoryboard} disabled={genBusy || storyIdea.trim().length < 12}>
+                  {genBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Build storyboard
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PageShell>
     </>
+
   );
 };
 
