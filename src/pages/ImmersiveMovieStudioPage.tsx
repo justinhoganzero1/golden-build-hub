@@ -743,6 +743,20 @@ const ImmersiveMovieStudioPage = () => {
         src.connect(gain).connect(dest);
         els.push(el);
       });
+      // Per-scene dialogue mixed into the same destination so it lands in the file.
+      const dialogueEls: (HTMLAudioElement | null)[] = scenes.map((s) => {
+        if (!s.dialogueUrl) return null;
+        const el = new Audio(s.dialogueUrl);
+        el.crossOrigin = "anonymous";
+        el.volume = 1;
+        try {
+          const src = ac.createMediaElementSource(el);
+          const gain = ac.createGain();
+          gain.gain.value = 1;
+          src.connect(gain).connect(dest);
+        } catch { /* re-use guard */ }
+        return el;
+      });
       const combined = new MediaStream([
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
