@@ -482,8 +482,17 @@ const ImmersiveMovieStudioPage = () => {
   const stopAll = useCallback(() => {
     if (playTimer.current) { window.clearTimeout(playTimer.current); playTimer.current = null; }
     layers.forEach((l) => { if (l.el) { l.el.pause(); l.el.currentTime = 0; } });
+    if (dialogueAudioRef.current) { dialogueAudioRef.current.pause(); dialogueAudioRef.current = null; }
     setPlaying(false);
   }, [layers]);
+
+  const playSceneDialogue = (scene: Scene) => {
+    if (dialogueAudioRef.current) { dialogueAudioRef.current.pause(); dialogueAudioRef.current = null; }
+    if (!scene.dialogueUrl) return;
+    const a = new Audio(scene.dialogueUrl);
+    a.play().catch(() => {});
+    dialogueAudioRef.current = a;
+  };
 
   const startPlayback = () => {
     if (!scenes.length) { toast.error("Add at least one scene"); return; }
@@ -499,14 +508,17 @@ const ImmersiveMovieStudioPage = () => {
     let idx = scenes.findIndex((s) => s.id === activeSceneId);
     if (idx < 0) idx = 0;
     setActiveSceneId(scenes[idx].id);
+    playSceneDialogue(scenes[idx]);
     const step = () => {
       idx += 1;
       if (idx >= scenes.length) { stopAll(); return; }
       setActiveSceneId(scenes[idx].id);
+      playSceneDialogue(scenes[idx]);
       playTimer.current = window.setTimeout(step, scenes[idx].durationSec * 1000);
     };
     playTimer.current = window.setTimeout(step, scenes[idx].durationSec * 1000);
   };
+
 
   useEffect(() => () => stopAll(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
