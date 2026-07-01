@@ -121,6 +121,30 @@ export default function RealmViewerPage() {
     }
   }
 
+  async function submitReport() {
+    if (!realm) return;
+    if (!user?.id) { toast.error("Sign in to report a realm"); return; }
+    setReporting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("realm_reports")
+        .insert({
+          realm_id: realm.id,
+          reporter_id: user.id,
+          reason: reportReason,
+          details: reportDetails.trim() || null,
+        });
+      if (error) throw error;
+      toast.success("Report submitted", { description: "Our moderation team will review this realm." });
+      setReportOpen(false);
+      setReportDetails("");
+    } catch (e: any) {
+      toast.error("Report failed", { description: e?.message });
+    } finally {
+      setReporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
