@@ -106,6 +106,31 @@ function buildOrthoPrompt(userPrompt: string, view: OrthoView): string {
   }
 }
 
+// AI prompts to inpaint the sides/back of the SAME scene + a matching depth map,
+// so the walkable viewer can build a 3D room around the user instead of a plane.
+type Scene3DView = "depth" | "left" | "right" | "back";
+function buildScene3DPrompt(userPrompt: string, view: Scene3DView): string {
+  const clean = userPrompt.trim().replace(/\s+/g, " ");
+  const base =
+    `Ultra-photoreal 8K, DSLR capture, same real-world scene, same lighting, ` +
+    `same time of day, same materials and same color palette as: ${clean}. ` +
+    `Indistinguishable from a real photograph. NO text, NO watermarks. `;
+  switch (view) {
+    case "depth":
+      return (
+        `Grayscale DEPTH MAP of the scene: pure black = farthest, pure white = closest. ` +
+        `Smooth gradients, every rock/prop/obstruction clearly represented by its ` +
+        `true depth silhouette. No color, no shading detail — only depth. Scene: ${clean}.`
+      );
+    case "left":
+      return base + `View LOOKING 90° LEFT from the same standing position — what the camera would see if it turned left. Continuous ground plane, matching horizon height.`;
+    case "right":
+      return base + `View LOOKING 90° RIGHT from the same standing position — what the camera would see if it turned right. Continuous ground plane, matching horizon height.`;
+    case "back":
+      return base + `View LOOKING 180° BEHIND from the same standing position — what the camera would see if it turned all the way around. Continuous ground plane, matching horizon height.`;
+  }
+}
+
 function makeSlug(title: string): string {
   const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
   const rand = Math.random().toString(36).slice(2, 8);
@@ -120,6 +145,10 @@ export default function RealmBuilderPage() {
   const [orthoViews, setOrthoViews] = useState<Record<OrthoView, string | null>>({
     top: null, side: null, front: null, structure: null,
   });
+  // AI-inpainted side/back panels + depth map for the walkable 3D room.
+  const [scene3D, setScene3D] = useState<{
+    depth: string | null; left: string | null; right: string | null; back: string | null;
+  }>({ depth: null, left: null, right: null, back: null });
   const [zoomView, setZoomView] = useState<{ url: string; label: string } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
@@ -177,6 +206,7 @@ export default function RealmBuilderPage() {
     setGenerating(true);
     setWalkMode(false);
     setOrthoViews({ top: null, side: null, front: null, structure: null });
+    setScene3D({ depth: null, left: null, right: null, back: null });
     try {
       // 1. Main immersive panorama first so the user sees a result fast.
       const res = await generateImage({
@@ -185,24 +215,23 @@ export default function RealmBuilderPage() {
         noCache: false,
       });
       setSkyboxUrl(res.url);
-      toast.success("Realm generated — rendering top / side / front / 3D views…");
+      toast.success("Realm generated — rendering reference views + walkable 3D…");
 
-      // 2. Fire the four reference views in parallel. Each resolves
-      // independently so the UI progressively fills in.
-      const views: OrthoView[] = ["top", "side", "front", "structure"];
-      await Promise.all(views.map(async (v) => {
+      // 2. Reference views + 3D scene panels in parallel.
+      const orthoJobs: Promise<unknown>[] = (["top","side","front","structure"] as OrthoView[]).map(async (v) => {
         try {
-          const r = await generateImage({
-            prompt: buildOrthoPrompt(prompt, v),
-            tier: "fast",
-            noCache: false,
-          });
+          const r = await generateImage({ prompt: buildOrthoPrompt(prompt, v), tier: "fast", noCache: false });
           setOrthoViews((prev) => ({ ...prev, [v]: r.url }));
-        } catch {
-          // Non-fatal — main panorama already succeeded.
-        }
-      }));
-      toast.success("All reference views ready");
+        } catch { /* non-fatal */ }
+      });
+      const sceneJobs: Promise<unknown>[] = (["depth","left","right","back"] as Scene3DView[]).map(async (v) => {
+        try {
+          const r = await generateImage({ prompt: buildScene3DPrompt(prompt, v), tier: "fast", noCache: false });
+          setScene3D((prev) => ({ ...prev, [v]: r.url }));
+        } catch { /* non-fatal — front wall still works alone */ }
+      });
+      await Promise.all([...orthoJobs, ...sceneJobs]);
+      toast.success("Walkable 3D realm ready");
     } catch (e: any) {
       if (e instanceof InsufficientCreditsError) {
         toast.error("Out of credits", { description: "Top up your wallet to keep building realms." });
@@ -456,7 +485,14 @@ export default function RealmBuilderPage() {
           <Card className="aspect-video bg-black border-white/10 overflow-hidden relative">
             {skyboxUrl ? (
               walkMode ? (
-                <ImmersiveFPSViewer imageUrl={skyboxUrl} onExit={() => setWalkMode(false)} />
+                <ImmersiveFPSViewer
+                  imageUrl={skyboxUrl}
+                  depthUrl={scene3D.depth}
+                  leftUrl={scene3D.left}
+                  rightUrl={scene3D.right}
+                  backUrl={scene3D.back}
+                  onExit={() => setWalkMode(false)}
+                />
               ) : (
                 <div className="relative w-full h-full">
                   <img src={skyboxUrl} alt="Realm preview" className="w-full h-full object-cover" />
