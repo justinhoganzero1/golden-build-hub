@@ -21,6 +21,8 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_AUDIO = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/webm", "audio/aac", "audio/mp4", "audio/x-m4a", "audio/flac"];
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const AUTOSAVE_DRAFT_KEY = "immersive-movie:draft";
+const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 const CAMERA_OPTIONS: { value: CameraMovement; label: string }[] = [
   { value: "static", label: "Static (viewer looks around)" },
@@ -29,6 +31,18 @@ const CAMERA_OPTIONS: { value: CameraMovement; label: string }[] = [
   { value: "zoom-in", label: "Slow zoom in" },
   { value: "zoom-out", label: "Slow zoom out" },
 ];
+
+type ExportFormat = "mp4" | "webm";
+type ExportResolution = 720 | 1080 | 1440 | 2160;
+interface ExportSettings {
+  format: ExportFormat;
+  resolution: ExportResolution;
+  fps: number;
+  bitrateMbps: number;
+}
+const DEFAULT_EXPORT: ExportSettings = { format: "mp4", resolution: 1080, fps: 30, bitrateMbps: 6 };
+
+type SavedStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 interface Scene {
   id: string;
