@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
-  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle, Mic, Compass,
+  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle, Mic, Compass, Brain,
 } from "lucide-react";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { Progress } from "@/components/ui/progress";
