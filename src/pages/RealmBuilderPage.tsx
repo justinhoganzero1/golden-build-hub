@@ -120,6 +120,10 @@ export default function RealmBuilderPage() {
   const [orthoViews, setOrthoViews] = useState<Record<OrthoView, string | null>>({
     top: null, side: null, front: null, structure: null,
   });
+  // AI-inpainted side/back panels + depth map for the walkable 3D room.
+  const [scene3D, setScene3D] = useState<{
+    depth: string | null; left: string | null; right: string | null; back: string | null;
+  }>({ depth: null, left: null, right: null, back: null });
   const [zoomView, setZoomView] = useState<{ url: string; label: string } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [avatars, setAvatars] = useState<Avatar[]>([]);
