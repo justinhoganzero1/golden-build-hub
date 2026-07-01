@@ -189,6 +189,8 @@ Deno.serve(async (req) => {
                 ? "user_media"
                 : existing.item_kind === "gif"
                 ? "living_gifs"
+                : existing.item_kind === "realm"
+                ? "user_realms"
                 : "movie_projects";
             const { data: cur } = await supabase
               .from(table)
