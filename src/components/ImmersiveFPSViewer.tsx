@@ -4,18 +4,7 @@ import * as THREE from "three";
 
 /**
  * ImmersiveFPSViewer — walk-in 3D view of the generated photo.
- *
- * The user's photo + AI-inpainted left/right/back panels + AI depth map are
- * projected onto 4 depth-displaced walls plus a floor, forming a real 3D
- * room. FPS walk controls (WASD + mouse look via pointer-lock) let the user
- * walk through the scene; collision sampling against a shared heightfield
- * (built from the depth map, or from each wall's luminance as fallback)
- * prevents clipping into rocks and walls.
- *
- * Also provides:
- *  - Inspection HUD: photo / depth-map / normals / wireframe overlay.
- *  - Quality slider (1..4) driving plane subdivisions, displacement texture
- *    size, and pixel ratio — top tier is labelled "8K".
+ * Now with wall-sliding collision, click-to-walk marker, and debug overlay.
  */
 
 interface Props {
@@ -36,19 +25,20 @@ interface QualityPreset {
   pixelRatio: number;
 }
 const QUALITY: QualityPreset[] = [
-  { label: "Fast",    segments: 100, texSize: 512,  pixelRatio: 1 },
-  { label: "Balanced",segments: 200, texSize: 1024, pixelRatio: 1.5 },
-  { label: "High",    segments: 400, texSize: 2048, pixelRatio: 2 },
-  { label: "8K",      segments: 700, texSize: 4096, pixelRatio: Math.min(window.devicePixelRatio || 2, 3) },
+  { label: "Fast",     segments: 100, texSize: 512,  pixelRatio: 1 },
+  { label: "Balanced", segments: 200, texSize: 1024, pixelRatio: 1.5 },
+  { label: "High",     segments: 400, texSize: 2048, pixelRatio: 2 },
+  { label: "8K",       segments: 700, texSize: 4096, pixelRatio: Math.min(window.devicePixelRatio || 2, 3) },
 ];
 
-const ROOM = { half: 4, height: 4.5 };            // 8 x 4.5 x 8 room
-const EYE_HEIGHT = -0.6;                          // camera Y inside the room
-const WALK_SPEED = 1.6;                           // m/s
+const ROOM = { half: 4, height: 4.5 };
+const EYE_HEIGHT = -0.6;
+const WALK_SPEED = 1.6;
 const RUN_MULT = 2.2;
-const COLLIDE_RADIUS = 0.35;
+const CAPSULE_RADIUS = 0.32;
+const SKIN = 0.02;
+const DISPLACEMENT_SCALE = 1.4;
 
-/** Build a grayscale CanvasTexture (luminance) from an image. */
 function luminanceTexture(img: HTMLImageElement, size: number): { tex: THREE.CanvasTexture; grid: Uint8Array } | null {
   if (!img) return null;
   const c = document.createElement("canvas");
@@ -69,7 +59,6 @@ function luminanceTexture(img: HTMLImageElement, size: number): { tex: THREE.Can
   return { tex, grid };
 }
 
-/** Shared collision heightfield derived from the depth (or luminance) grid. */
 interface Heightfield { grid: Uint8Array; size: number }
 
 function sampleHeight(hf: Heightfield | null, u: number, v: number): number {
@@ -106,7 +95,6 @@ function Wall({
   tex.colorSpace = THREE.SRGBColorSpace;
 
   const local = useMemo(() => {
-    // Only build a per-wall heightmap when we don't have a shared depth map.
     if (spec.useSharedDepth && sharedDepth) return null;
     return luminanceTexture(tex.image as HTMLImageElement, quality.texSize);
   }, [tex, spec.useSharedDepth, sharedDepth, quality.texSize]);
@@ -120,28 +108,20 @@ function Wall({
   const material = useMemo(() => {
     if (mode === "normals") {
       return new THREE.MeshNormalMaterial({
-        wireframe,
-        side: THREE.DoubleSide,
-        displacementMap: displacement || undefined,
-        displacementScale: -1.4,
+        wireframe, side: THREE.DoubleSide,
+        displacementMap: displacement || undefined, displacementScale: -DISPLACEMENT_SCALE,
       });
     }
     if (mode === "depth") {
       return new THREE.MeshStandardMaterial({
-        map: displacement || tex,
-        wireframe,
-        side: THREE.DoubleSide,
-        displacementMap: displacement || undefined,
-        displacementScale: -1.4,
+        map: displacement || tex, wireframe, side: THREE.DoubleSide,
+        displacementMap: displacement || undefined, displacementScale: -DISPLACEMENT_SCALE,
         roughness: 1, metalness: 0,
       });
     }
     return new THREE.MeshStandardMaterial({
-      map: tex,
-      wireframe,
-      side: THREE.DoubleSide,
-      displacementMap: displacement || undefined,
-      displacementScale: -1.4,
+      map: tex, wireframe, side: THREE.DoubleSide,
+      displacementMap: displacement || undefined, displacementScale: -DISPLACEMENT_SCALE,
       roughness: 0.95, metalness: 0,
     });
   }, [mode, wireframe, tex, displacement]);
@@ -159,9 +139,7 @@ function Floor({ quality, mode, wireframe }: { quality: QualityPreset; mode: Vie
     if (mode === "normals") return new THREE.MeshNormalMaterial({ wireframe, side: THREE.DoubleSide });
     return new THREE.MeshStandardMaterial({
       color: mode === "depth" ? 0x222222 : 0x1a1a1a,
-      wireframe,
-      side: THREE.DoubleSide,
-      roughness: 1,
+      wireframe, side: THREE.DoubleSide, roughness: 1,
     });
   }, [mode, wireframe]);
   return (
@@ -172,9 +150,79 @@ function Floor({ quality, mode, wireframe }: { quality: QualityPreset; mode: Vie
   );
 }
 
-/** Drag-to-look + click-to-walk-toward + WASD, with collision. */
-function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boolean }) {
-  const { camera, gl } = useThree();
+/** For each wall, compute how far the displaced surface intrudes inward at (x,z), and the inward normal. */
+type WallDir = "front" | "back" | "left" | "right";
+interface Intrusion { dir: WallDir; dist: number; normal: THREE.Vector3 }
+
+function wallIntrusions(hf: Heightfield | null, x: number, z: number): Intrusion[] {
+  const v = 0.5; // eye-level slice
+  const list: Intrusion[] = [];
+  // Front wall at z = -half, inward normal (0,0,+1)
+  {
+    const u = (x + ROOM.half) / (ROOM.half * 2);
+    const intr = sampleHeight(hf, u, v) * DISPLACEMENT_SCALE;
+    list.push({ dir: "front", dist: z - (-ROOM.half + intr), normal: new THREE.Vector3(0, 0, 1) });
+  }
+  // Back wall at z = +half, inward normal (0,0,-1)
+  {
+    const u = 1 - (x + ROOM.half) / (ROOM.half * 2);
+    const intr = sampleHeight(hf, u, v) * DISPLACEMENT_SCALE;
+    list.push({ dir: "back", dist: (ROOM.half - intr) - z, normal: new THREE.Vector3(0, 0, -1) });
+  }
+  // Left wall at x = -half, inward normal (+1,0,0)
+  {
+    const u = 1 - (z + ROOM.half) / (ROOM.half * 2);
+    const intr = sampleHeight(hf, u, v) * DISPLACEMENT_SCALE;
+    list.push({ dir: "left", dist: x - (-ROOM.half + intr), normal: new THREE.Vector3(1, 0, 0) });
+  }
+  // Right wall at x = +half, inward normal (-1,0,0)
+  {
+    const u = (z + ROOM.half) / (ROOM.half * 2);
+    const intr = sampleHeight(hf, u, v) * DISPLACEMENT_SCALE;
+    list.push({ dir: "right", dist: (ROOM.half - intr) - x, normal: new THREE.Vector3(-1, 0, 0) });
+  }
+  return list;
+}
+
+/** Resolve capsule position against wall intrusions with sliding + depenetration. */
+function resolveCollision(hf: Heightfield | null, x: number, z: number): { x: number; z: number; hits: Intrusion[] } {
+  let px = x, pz = z;
+  const hits: Intrusion[] = [];
+  for (let i = 0; i < 3; i++) {
+    const list = wallIntrusions(hf, px, pz);
+    let worst: Intrusion | null = null;
+    for (const w of list) {
+      const penetration = CAPSULE_RADIUS + SKIN - w.dist;
+      if (penetration > 0 && (!worst || penetration > (CAPSULE_RADIUS + SKIN - worst.dist))) {
+        worst = w;
+      }
+    }
+    if (!worst) break;
+    const pen = CAPSULE_RADIUS + SKIN - worst.dist;
+    px += worst.normal.x * pen;
+    pz += worst.normal.z * pen;
+    hits.push(worst);
+  }
+  return { x: px, z: pz, hits };
+}
+
+interface DebugStats {
+  fps: number;
+  pos: THREE.Vector3;
+  target: THREE.Vector3 | null;
+  hits: number;
+}
+
+/** Drag-to-look + click-to-walk + WASD with sliding collision. */
+function WalkRig({
+  hfRef, onDebug, onMarker, showDebug,
+}: {
+  hfRef: React.MutableRefObject<Heightfield | null>;
+  onDebug: (s: DebugStats) => void;
+  onMarker: (p: THREE.Vector3) => void;
+  showDebug: boolean;
+}) {
+  const { camera, gl, scene } = useThree();
   const keys = useRef<Record<string, boolean>>({});
   const yaw = useRef(0);
   const pitch = useRef(0);
@@ -183,6 +231,28 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
   const fwd = useMemo(() => new THREE.Vector3(), []);
   const right = useMemo(() => new THREE.Vector3(), []);
   const euler = useMemo(() => new THREE.Euler(0, 0, 0, "YXZ"), []);
+  const fpsAcc = useRef({ t: 0, n: 0, fps: 60 });
+  const rayHelperRef = useRef<THREE.ArrowHelper | null>(null);
+  const capsuleRef = useRef<THREE.Mesh | null>(null);
+
+  // Debug meshes
+  useEffect(() => {
+    if (!showDebug) return;
+    const arrow = new THREE.ArrowHelper(new THREE.Vector3(0,0,-1), camera.position, 1, 0xffcc00, 0.15, 0.08);
+    scene.add(arrow);
+    rayHelperRef.current = arrow;
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(CAPSULE_RADIUS, CAPSULE_RADIUS, 1.6, 20, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x22ffaa, wireframe: true, transparent: true, opacity: 0.55 }),
+    );
+    scene.add(cap);
+    capsuleRef.current = cap;
+    return () => {
+      scene.remove(arrow); arrow.dispose();
+      scene.remove(cap); cap.geometry.dispose(); (cap.material as THREE.Material).dispose();
+      rayHelperRef.current = null; capsuleRef.current = null;
+    };
+  }, [showDebug, scene, camera]);
 
   useEffect(() => {
     camera.position.set(0, EYE_HEIGHT, ROOM.half - 0.5);
@@ -193,19 +263,16 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
     return () => { window.removeEventListener("keydown", dn); window.removeEventListener("keyup", up); };
   }, [camera]);
 
-  // Drag-to-look + click-to-walk on canvas.
   useEffect(() => {
     const el = gl.domElement;
     el.style.touchAction = "none";
     el.style.cursor = "grab";
     let dragging = false;
-    let moved = 0;
-    let lastX = 0, lastY = 0;
-    let downX = 0, downY = 0;
+    let lastX = 0, lastY = 0, downX = 0, downY = 0;
 
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
-      dragging = true; moved = 0;
+      dragging = true;
       lastX = e.clientX; lastY = e.clientY;
       downX = e.clientX; downY = e.clientY;
       el.setPointerCapture?.(e.pointerId);
@@ -216,7 +283,6 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
-      moved += Math.abs(dx) + Math.abs(dy);
       yaw.current   -= dx * 0.0035;
       pitch.current -= dy * 0.0035;
       const lim = Math.PI / 2 - 0.05;
@@ -228,7 +294,6 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
       dragging = false;
       el.style.cursor = "grab";
       try { el.releasePointerCapture?.(e.pointerId); } catch {}
-      // Treat as click if pointer barely moved → set walk target from raycast.
       const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
       if (dist < 5) {
         const rect = el.getBoundingClientRect();
@@ -236,11 +301,11 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
         const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(new THREE.Vector2(nx, ny), camera);
-        // Intersect ground plane y = -ROOM.height/2
         const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), ROOM.height / 2);
         const hit = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(plane, hit)) {
           target.current = hit.clone();
+          onMarker(hit.clone());
         }
       }
     };
@@ -255,10 +320,9 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
       el.removeEventListener("pointerup", onUp);
       el.removeEventListener("pointercancel", onUp);
     };
-  }, [gl, camera]);
+  }, [gl, camera, onMarker]);
 
   useFrame((_, delta) => {
-    // Apply look
     euler.set(pitch.current, yaw.current, 0, "YXZ");
     camera.quaternion.setFromEuler(euler);
 
@@ -275,34 +339,80 @@ function WalkRig({ collide }: { collide: (nextX: number, nextZ: number) => boole
     if (k["KeyD"] || k["ArrowRight"]) dir.add(right);
     if (k["KeyA"] || k["ArrowLeft"])  dir.sub(right);
 
-    // Click-to-walk auto-motion toward target on XZ.
     if (dir.lengthSq() === 0 && target.current) {
       const dxT = target.current.x - camera.position.x;
       const dzT = target.current.z - camera.position.z;
       const dLen = Math.hypot(dxT, dzT);
-      if (dLen < 0.15) {
+      if (dLen < 0.18) {
         target.current = null;
       } else {
         dir.set(dxT / dLen, 0, dzT / dLen);
       }
     } else if (dir.lengthSq() > 0) {
-      // Manual movement cancels auto-walk.
       target.current = null;
     }
 
-    if (dir.lengthSq() === 0) return;
-    dir.normalize().multiplyScalar(speed);
-
-    const nextX = camera.position.x + dir.x;
-    const nextZ = camera.position.z + dir.z;
-    if (collide(nextX, camera.position.z)) camera.position.x = nextX;
-    else target.current = null;
-    if (collide(camera.position.x, nextZ)) camera.position.z = nextZ;
-    else target.current = null;
+    let hitsCount = 0;
+    if (dir.lengthSq() > 0) {
+      dir.normalize().multiplyScalar(speed);
+      // Attempt full movement, then depenetrate against walls (gives sliding).
+      const desiredX = camera.position.x + dir.x;
+      const desiredZ = camera.position.z + dir.z;
+      const clampedX = Math.max(-ROOM.half + 0.1, Math.min(ROOM.half - 0.1, desiredX));
+      const clampedZ = Math.max(-ROOM.half + 0.1, Math.min(ROOM.half - 0.1, desiredZ));
+      const res = resolveCollision(hfRef.current, clampedX, clampedZ);
+      hitsCount = res.hits.length;
+      // If stuck (no progress toward click target), abandon target.
+      if (target.current) {
+        const before = Math.hypot(target.current.x - camera.position.x, target.current.z - camera.position.z);
+        const after  = Math.hypot(target.current.x - res.x, target.current.z - res.z);
+        if (before - after < speed * 0.15) target.current = null;
+      }
+      camera.position.x = res.x;
+      camera.position.z = res.z;
+    }
     camera.position.y = EYE_HEIGHT;
+
+    // FPS
+    const acc = fpsAcc.current;
+    acc.t += delta; acc.n += 1;
+    if (acc.t >= 0.5) { acc.fps = acc.n / acc.t; acc.t = 0; acc.n = 0; }
+
+    // Debug helpers
+    if (rayHelperRef.current) {
+      rayHelperRef.current.position.copy(camera.position);
+      rayHelperRef.current.setDirection(fwd);
+      rayHelperRef.current.setLength(2.5, 0.2, 0.1);
+    }
+    if (capsuleRef.current) {
+      capsuleRef.current.position.set(camera.position.x, camera.position.y - 0.2, camera.position.z);
+    }
+
+    onDebug({ fps: acc.fps, pos: camera.position.clone(), target: target.current ? target.current.clone() : null, hits: hitsCount });
   });
 
   return null;
+}
+
+/** Fading ring at click destination. */
+function DestinationMarker({ marker }: { marker: { pos: THREE.Vector3; born: number } | null }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (!ref.current || !marker) return;
+    const age = (performance.now() - marker.born) / 1000;
+    const life = 1.6;
+    const t = Math.min(1, age / life);
+    const s = 0.4 + t * 0.8;
+    ref.current.scale.set(s, s, s);
+    (ref.current.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 1 - t);
+  });
+  if (!marker) return null;
+  return (
+    <mesh ref={ref} position={[marker.pos.x, -ROOM.height / 2 + 0.01, marker.pos.z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.18, 0.28, 32]} />
+      <meshBasicMaterial color={0xffc857} transparent opacity={1} side={THREE.DoubleSide} />
+    </mesh>
+  );
 }
 
 const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, onExit }: Props) => {
@@ -312,10 +422,12 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
   const [wireframe, setWireframe] = useState(false);
   const [qualityIdx, setQualityIdx] = useState(1);
   const [showHelp, setShowHelp] = useState(true);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debug, setDebug] = useState<DebugStats>({ fps: 0, pos: new THREE.Vector3(), target: null, hits: 0 });
+  const [marker, setMarker] = useState<{ pos: THREE.Vector3; born: number } | null>(null);
 
   const quality = QUALITY[qualityIdx];
 
-  // Preload primary image so we can bail early on 404.
   useEffect(() => {
     setReady(false); setError(null);
     const img = new Image();
@@ -330,11 +442,9 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Shared heightfield for collision. Populated by the front-wall/depth loader.
   const heightfield = useRef<Heightfield | null>(null);
   const [sharedDepthTex, setSharedDepthTex] = useState<THREE.Texture | null>(null);
 
-  // Build shared depth texture from AI depth map (or main photo fallback).
   useEffect(() => {
     const src = depthUrl || imageUrl;
     const img = new Image();
@@ -349,28 +459,10 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
     img.src = src;
   }, [depthUrl, imageUrl, quality.texSize]);
 
-  const collide = useMemo(() => {
-    return (x: number, z: number): boolean => {
-      // Hard room bounds
-      if (Math.abs(x) > ROOM.half - 0.15 || Math.abs(z) > ROOM.half - 0.15) return false;
-      // Front wall (z ≈ -half): map local X across width, height depth from grid.
-      const hf = heightfield.current;
-      if (!hf) return true;
-      const distFront = z - (-ROOM.half);          // >0 inside
-      const u = (x + ROOM.half) / (ROOM.half * 2);
-      const v = 0.5;                                // eye level slice
-      const depthAtFront = sampleHeight(hf, u, v); // 0..1, higher = closer inside
-      // Displacement scale is 1.4 inward; treat white pixels as intruding 1.4m.
-      const intrusion = depthAtFront * 1.4;
-      if (distFront < intrusion + COLLIDE_RADIUS) return false;
-      return true;
-    };
-  }, []);
-
   const sides = leftUrl && rightUrl && backUrl;
   const walls: WallSpec[] = useMemo(() => {
     const list: WallSpec[] = [
-      { key: "front", url: imageUrl, useSharedDepth: true, position: [0, 0, -ROOM.half], rotationY: 0,             width: ROOM.half * 2, height: ROOM.height },
+      { key: "front", url: imageUrl, useSharedDepth: true, position: [0, 0, -ROOM.half], rotationY: 0, width: ROOM.half * 2, height: ROOM.height },
     ];
     if (sides) {
       list.push(
@@ -398,16 +490,19 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
             {walls.map((w) => (
               <Wall
                 key={w.key + qualityIdx + mode + wireframe}
-                spec={w}
-                mode={mode}
-                wireframe={wireframe}
-                quality={quality}
+                spec={w} mode={mode} wireframe={wireframe} quality={quality}
                 sharedDepth={sharedDepthTex}
               />
             ))}
             <Floor quality={quality} mode={mode} wireframe={wireframe} />
+            <DestinationMarker marker={marker} />
           </Suspense>
-          <WalkRig collide={collide} />
+          <WalkRig
+            hfRef={heightfield}
+            onDebug={setDebug}
+            onMarker={(p) => setMarker({ pos: p, born: performance.now() })}
+            showDebug={showDebug}
+          />
         </Canvas>
       )}
 
@@ -424,7 +519,6 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
         </div>
       )}
 
-      {/* Inspection HUD */}
       {ready && !error && (
         <div className="absolute top-4 left-4 z-10 space-y-2 pointer-events-auto">
           <div className="flex gap-1 bg-black/60 backdrop-blur rounded-lg p-1 border border-white/10">
@@ -443,6 +537,12 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
                 wireframe ? "bg-cyan-400 text-black font-semibold" : "text-white/70 hover:bg-white/10"
               }`}
             >Wire</button>
+            <button
+              onClick={() => setShowDebug((v) => !v)}
+              className={`px-2.5 py-1 text-[11px] rounded-md transition ${
+                showDebug ? "bg-emerald-400 text-black font-semibold" : "text-white/70 hover:bg-white/10"
+              }`}
+            >Debug</button>
           </div>
 
           <div className="bg-black/60 backdrop-blur rounded-lg p-2 border border-white/10 w-52">
@@ -460,10 +560,24 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
               <p className="text-[9px] text-amber-200/70 mt-1">8K displacement — may be slow on mobile</p>
             )}
           </div>
+
+          {showDebug && (
+            <div className="bg-black/70 backdrop-blur rounded-lg p-2 border border-emerald-400/40 w-52 font-mono text-[10px] text-emerald-200 space-y-0.5">
+              <div className="flex justify-between"><span>FPS</span><span className={debug.fps < 30 ? "text-red-300" : "text-emerald-200"}>{debug.fps.toFixed(0)}</span></div>
+              <div className="flex justify-between"><span>Quality</span><span>{quality.label}</span></div>
+              <div className="flex justify-between"><span>Segments</span><span>{quality.segments}</span></div>
+              <div className="flex justify-between"><span>Tex</span><span>{quality.texSize}px</span></div>
+              <div className="flex justify-between"><span>DPR</span><span>{quality.pixelRatio}</span></div>
+              <div className="border-t border-white/10 my-1" />
+              <div className="flex justify-between"><span>Pos</span><span>{debug.pos.x.toFixed(2)}, {debug.pos.z.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Capsule r</span><span>{CAPSULE_RADIUS.toFixed(2)}m</span></div>
+              <div className="flex justify-between"><span>Wall hits</span><span className={debug.hits > 0 ? "text-amber-300" : ""}>{debug.hits}</span></div>
+              <div className="flex justify-between"><span>Target</span><span>{debug.target ? `${debug.target.x.toFixed(1)}, ${debug.target.z.toFixed(1)}` : "—"}</span></div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Help / status */}
       {ready && !error && showHelp && (
         <div className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 text-white/85 text-xs bg-black/70 px-3 py-2 rounded-full backdrop-blur border border-white/10 flex items-center gap-3">
           <span>Drag to look · Click a spot to walk there · WASD + Shift to run</span>
@@ -479,7 +593,6 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
         Exit
       </button>
 
-      {/* Crosshair */}
       {ready && !error && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="w-1 h-1 rounded-full bg-white/80 shadow-[0_0_6px_rgba(255,255,255,0.6)]" />
