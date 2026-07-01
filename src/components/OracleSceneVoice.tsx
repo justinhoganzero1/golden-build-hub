@@ -5,6 +5,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { moderatePrompt } from "@/lib/contentSafety";
+
+// Client-side rate limit for voice-to-scene: max 8 builds per rolling 60s.
+const RATE_KEY = "oracle_scene_voice_rl_v1";
+const RATE_MAX = 8;
+const RATE_WINDOW_MS = 60_000;
+function checkRateLimit(): { ok: boolean; retryInSec: number } {
+  try {
+    const now = Date.now();
+    const raw = localStorage.getItem(RATE_KEY);
+    const hits: number[] = raw ? (JSON.parse(raw) as number[]).filter((t) => now - t < RATE_WINDOW_MS) : [];
+    if (hits.length >= RATE_MAX) {
+      return { ok: false, retryInSec: Math.ceil((RATE_WINDOW_MS - (now - hits[0])) / 1000) };
+    }
+    hits.push(now);
+    localStorage.setItem(RATE_KEY, JSON.stringify(hits));
+    return { ok: true, retryInSec: 0 };
+  } catch {
+    return { ok: true, retryInSec: 0 };
+  }
+}
+// Strip control chars and suspicious prompt-injection markers from voice input.
+function sanitizeTranscript(s: string): string {
+  return s
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/\b(system prompt|ignore (all )?previous|jailbreak|developer mode)\b/gi, "[filtered]")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 /**
  * OracleSceneVoice — speak (or type) to the Oracle to describe a new scene.
