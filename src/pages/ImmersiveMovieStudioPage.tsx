@@ -1118,8 +1118,36 @@ const ImmersiveMovieStudioPage = () => {
                             : <RefreshCw className="w-3 h-3 mr-1" />}
                           Regenerate
                         </Button>
+                        <Select
+                          value={s.dialogueVoiceId ?? defaultVoiceId}
+                          onValueChange={(v) => patchScene(s.id, { dialogueVoiceId: v, dialogueUrl: undefined, dialogueStoragePath: undefined })}
+                        >
+                          <SelectTrigger className="h-7 w-44 text-[11px]" aria-label="Dialogue voice"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            {CURATED_ELEVENLABS_VOICES.map((v) => (
+                              <SelectItem key={v.id} value={v.id}>{v.name} · {v.accent}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          disabled={dialogueBusyId === s.id || !user || !(s.caption ?? "").trim()}
+                          onClick={() => generateSceneDialogue(s.id)}
+                          title="Generate ElevenLabs dialogue audio from this scene's caption"
+                        >
+                          {dialogueBusyId === s.id
+                            ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            : <Mic className="w-3 h-3 mr-1" />}
+                          {s.dialogueUrl ? "Redo dialogue" : "Generate dialogue"}
+                        </Button>
+                        {s.dialogueUrl && (
+                          <audio src={s.dialogueUrl} controls className="h-7 max-w-[220px]" />
+                        )}
                       </div>
                     </div>
+
                     <button onClick={() => removeScene(s.id)} className="p-1.5 rounded text-destructive hover:bg-destructive/10">
                       <Trash2 className="w-4 h-4" />
                     </button>
