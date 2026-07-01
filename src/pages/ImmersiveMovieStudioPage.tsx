@@ -21,6 +21,8 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB per file
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_AUDIO = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/webm", "audio/aac", "audio/mp4", "audio/x-m4a", "audio/flac"];
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const AUTOSAVE_DRAFT_KEY = "immersive-movie:draft";
+const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 const CAMERA_OPTIONS: { value: CameraMovement; label: string }[] = [
   { value: "static", label: "Static (viewer looks around)" },
@@ -29,6 +31,18 @@ const CAMERA_OPTIONS: { value: CameraMovement; label: string }[] = [
   { value: "zoom-in", label: "Slow zoom in" },
   { value: "zoom-out", label: "Slow zoom out" },
 ];
+
+type ExportFormat = "mp4" | "webm";
+type ExportResolution = 720 | 1080 | 1440 | 2160;
+interface ExportSettings {
+  format: ExportFormat;
+  resolution: ExportResolution;
+  fps: number;
+  bitrateMbps: number;
+}
+const DEFAULT_EXPORT: ExportSettings = { format: "mp4", resolution: 1080, fps: 30, bitrateMbps: 6 };
+
+type SavedStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
 interface Scene {
   id: string;
@@ -74,6 +88,11 @@ const ImmersiveMovieStudioPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT);
+  const [savedStatus, setSavedStatus] = useState<SavedStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const autosaveTimer = useRef<number | null>(null);
+  const skipDirtyRef = useRef(true);
   const playTimer = useRef<number | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +111,44 @@ const ImmersiveMovieStudioPage = () => {
     setLoadingList(false);
   }, [user]);
   useEffect(() => { refreshProjects(); }, [refreshProjects]);
+
+  // ------------ Local draft restore on mount ------------
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AUTOSAVE_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft?.projectName) setProjectName(draft.projectName);
+      if (Array.isArray(draft?.scenes)) setScenes(draft.scenes);
+      if (Array.isArray(draft?.layers)) setLayers(draft.layers);
+      if (draft?.exportSettings) setExportSettings({ ...DEFAULT_EXPORT, ...draft.exportSettings });
+      if (draft?.projectId) setProjectId(draft.projectId);
+      if (draft?.activeSceneId) setActiveSceneId(draft.activeSceneId);
+    } catch { /* ignore corrupt draft */ }
+    // allow subsequent state changes to be treated as dirty
+    setTimeout(() => { skipDirtyRef.current = false; }, 0);
+  }, []);
+
+  // ------------ Autosave: local draft + debounced cloud save ------------
+  useEffect(() => {
+    if (skipDirtyRef.current) return;
+    // Local draft snapshot (excludes blob URLs so we only persist metadata we can recreate)
+    try {
+      const draft = {
+        projectName, projectId, activeSceneId, exportSettings,
+        scenes: scenes.map((s) => ({ ...s, imageUrl: s.storagePath ? "" : s.imageUrl })),
+        layers: layers.map((l) => ({ ...l, url: l.storagePath ? "" : l.url, el: undefined })),
+      };
+      localStorage.setItem(AUTOSAVE_DRAFT_KEY, JSON.stringify(draft));
+    } catch { /* quota */ }
+    setSavedStatus("dirty");
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    if (user && projectId) {
+      autosaveTimer.current = window.setTimeout(() => { void handleSave(true); }, AUTOSAVE_DEBOUNCE_MS);
+    }
+    return () => { if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenes, layers, projectName, exportSettings, activeSceneId]);
 
   // ------------ Scene upload (validated) ------------
   const onImageFiles = (files: FileList | null) => {
@@ -243,11 +300,12 @@ const ImmersiveMovieStudioPage = () => {
     return data.signedUrl;
   };
 
-  const handleSave = async () => {
-    if (!user) { toast.error("Sign in to save projects"); return; }
+  const handleSave = async (silent = false) => {
+    if (!user) { if (!silent) toast.error("Sign in to save projects"); return; }
     const parsed = projectNameSchema.safeParse(projectName);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) { if (!silent) toast.error(parsed.error.issues[0].message); return; }
     setSaving(true);
+    setSavedStatus("saving");
     try {
       const scenesToSave = await Promise.all(scenes.map(async (s) => ({
         id: s.id,
@@ -265,7 +323,7 @@ const ImmersiveMovieStudioPage = () => {
         startSec: l.startSec,
         storagePath: await uploadBlobToStorage(l.url, l.storagePath, "audio", l.name),
       })));
-      const payload = { scenes: scenesToSave, layers: layersToSave };
+      const payload = { scenes: scenesToSave, layers: layersToSave, exportSettings };
       if (projectId) {
         const { error } = await supabase
           .from("immersive_movie_projects")
@@ -284,10 +342,13 @@ const ImmersiveMovieStudioPage = () => {
       // Sync storagePaths back onto local state so subsequent saves skip re-upload
       setScenes((prev) => prev.map((s) => { const m = scenesToSave.find(x => x.id === s.id); return m ? { ...s, storagePath: m.storagePath } : s; }));
       setLayers((prev) => prev.map((l) => { const m = layersToSave.find(x => x.id === l.id); return m ? { ...l, storagePath: m.storagePath } : l; }));
-      toast.success("Project saved");
+      setSavedStatus("saved");
+      setLastSavedAt(new Date());
+      if (!silent) toast.success("Project saved");
       refreshProjects();
     } catch (e: any) {
-      toast.error(e?.message ?? "Save failed");
+      setSavedStatus("error");
+      if (!silent) toast.error(e?.message ?? "Save failed");
     } finally {
       setSaving(false);
     }
@@ -353,7 +414,7 @@ const ImmersiveMovieStudioPage = () => {
     const totalMs = scenes.reduce((a, s) => a + s.durationSec * 1000, 0);
     try {
       // Video: canvas stream
-      const videoStream = canvas.captureStream(30);
+      const videoStream = canvas.captureStream(exportSettings.fps);
       // Audio: WebAudio mix
       const AudioCtx: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ac = new AudioCtx();
@@ -373,12 +434,19 @@ const ImmersiveMovieStudioPage = () => {
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
       ]);
-      const mime = MediaRecorder.isTypeSupported("video/mp4")
-        ? "video/mp4"
-        : MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-          ? "video/webm;codecs=vp9,opus"
-          : "video/webm";
-      const recorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+      // Honor requested format when supported; otherwise fall back gracefully.
+      const preferMp4 = exportSettings.format === "mp4";
+      const candidates = preferMp4
+        ? ["video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"]
+        : ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+      const mime = candidates.find((c) => MediaRecorder.isTypeSupported(c)) ?? "video/webm";
+      if (preferMp4 && !mime.includes("mp4")) {
+        toast.warning("MP4 not supported in this browser — exporting WEBM instead");
+      }
+      const recorder = new MediaRecorder(combined, {
+        mimeType: mime,
+        videoBitsPerSecond: exportSettings.bitrateMbps * 1_000_000,
+      });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
       const done = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
@@ -444,7 +512,7 @@ const ImmersiveMovieStudioPage = () => {
               className="max-w-xs h-9"
               placeholder="Project name"
             />
-            <Button size="sm" onClick={handleSave} disabled={saving || !user}>
+            <Button size="sm" onClick={() => handleSave(false)} disabled={saving || !user}>
               {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
               {projectId ? "Save" : "Save new"}
             </Button>
@@ -459,10 +527,62 @@ const ImmersiveMovieStudioPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <div
+              data-testid="saved-status"
+              data-status={savedStatus}
+              className={`text-[11px] px-2 py-1 rounded ${
+                savedStatus === "saved" ? "text-emerald-500" :
+                savedStatus === "saving" ? "text-amber-500" :
+                savedStatus === "dirty" ? "text-muted-foreground" :
+                savedStatus === "error" ? "text-destructive" : "text-muted-foreground"
+              }`}
+              aria-live="polite"
+            >
+              {savedStatus === "saving" ? "Saving…" :
+               savedStatus === "saved" ? `Saved${lastSavedAt ? ` · ${lastSavedAt.toLocaleTimeString()}` : ""}` :
+               savedStatus === "dirty" ? (user && projectId ? "Unsaved changes…" : "Draft (local)") :
+               savedStatus === "error" ? "Save failed" : (user ? "Ready" : "Sign in to sync")}
+            </div>
             <div className="flex-1" />
+            {/* Export settings */}
+            <Select value={exportSettings.format} onValueChange={(v: ExportFormat) => setExportSettings((p) => ({ ...p, format: v }))}>
+              <SelectTrigger className="h-9 w-24" aria-label="Export format"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mp4">MP4</SelectItem>
+                <SelectItem value="webm">WEBM</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(exportSettings.resolution)} onValueChange={(v) => setExportSettings((p) => ({ ...p, resolution: Number(v) as ExportResolution }))}>
+              <SelectTrigger className="h-9 w-28" aria-label="Resolution"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="720">720p</SelectItem>
+                <SelectItem value="1080">1080p</SelectItem>
+                <SelectItem value="1440">1440p</SelectItem>
+                <SelectItem value="2160">4K</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(exportSettings.fps)} onValueChange={(v) => setExportSettings((p) => ({ ...p, fps: Number(v) }))}>
+              <SelectTrigger className="h-9 w-20" aria-label="Frame rate"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="60">60</SelectItem>
+              </SelectContent>
+            </Select>
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1">
+              Bitrate
+              <Input
+                type="number" min={1} max={40}
+                value={exportSettings.bitrateMbps}
+                onChange={(e) => setExportSettings((p) => ({ ...p, bitrateMbps: Math.max(1, Math.min(40, Number(e.target.value) || 1)) }))}
+                className="h-8 w-16 text-[11px]"
+                aria-label="Bitrate Mbps"
+              />
+              Mbps
+            </label>
             <Button size="sm" variant="secondary" onClick={handleExport} disabled={exporting || !scenes.length}>
               {exporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
-              {exporting ? `Exporting ${Math.round(exportProgress)}%` : "Export MP4"}
+              {exporting ? `Exporting ${Math.round(exportProgress)}%` : `Export ${exportSettings.format.toUpperCase()}`}
             </Button>
           </Card>
 
