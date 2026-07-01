@@ -56,6 +56,10 @@ interface Scene {
   durationSec: number;
   depth: number;
   movement: CameraMovement;
+  /** Original text prompt used to generate the visuals (enables per-scene regenerate). */
+  prompt?: string;
+  /** Scripted dialogue / caption shown as burned-in subtitle during playback + export. */
+  caption?: string;
 }
 
 interface AudioLayer {
