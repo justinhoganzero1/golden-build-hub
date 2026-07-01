@@ -46,17 +46,28 @@ interface RealmRow {
   created_at: string;
 }
 
-// Wraps user prompt with the panoramic + photoreal directives the FPS viewer
-// needs (equirectangular sphere texture, no text, no watermark).
+// Wraps user prompt with maximum-realism panoramic directives for the FPS
+// viewer (equirectangular sphere texture). Pushes the model toward
+// indistinguishable-from-reality DSLR capture, within legal/safety limits.
 function buildSkyboxPrompt(userPrompt: string): string {
   const clean = userPrompt.trim().replace(/\s+/g, " ");
   return (
-    `8K photorealistic 360° equirectangular panorama, seamless spherical projection, ` +
-    `real-world lighting, hyper-detailed, cinematic, no distortion at horizon line. ` +
-    `Scene: ${clean}. ` +
-    `Camera at eye-level. Realistic materials, physically based rendering, ` +
-    `IMPORTANT: absolutely NO text, letters, watermarks, logos, or signatures anywhere. ` +
-    `Aspect ratio 2:1 for equirectangular wrapping.`
+    `Ultra-photorealistic 8K 360° equirectangular panorama, seamless spherical ` +
+    `projection, aspect ratio 2:1, zero distortion at the horizon line. ` +
+    `Shot on a full-frame DSLR with a 24mm prime lens, natural real-world ` +
+    `lighting, true-to-life color science, accurate white balance, realistic ` +
+    `atmospheric haze, subtle lens characteristics (micro-contrast, natural ` +
+    `depth of field, faint chromatic aberration at the edges), fine surface ` +
+    `micro-detail (skin pores, fabric weave, brick grain, foliage veins), ` +
+    `physically based materials, global illumination, soft realistic shadows, ` +
+    `high dynamic range. Indistinguishable from a real-world photograph — ` +
+    `NOT CGI, NOT 3D render, NOT illustration, NOT painting, NOT stylized, ` +
+    `NOT anime, NOT cartoon. Scene: ${clean}. Camera at human eye-level (~1.65m). ` +
+    `Content must comply with all applicable laws, platform policies, and ` +
+    `Google Play / App Store safety rules — no illegal, sexual, minor-involving, ` +
+    `graphically violent, or otherwise disallowed content. ` +
+    `Absolutely NO text, letters, numbers, watermarks, logos, captions, ` +
+    `signatures, or UI overlays anywhere in the image.`
   );
 }
 
