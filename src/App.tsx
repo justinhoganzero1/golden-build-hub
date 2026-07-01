@@ -215,6 +215,7 @@ const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
+const ImmersiveMovieStudioPage = lazy(loaders["/immersive-movie-studio"]);
 const MoviePaymentSuccessPage = lazy(loaders["/movie-payment-success"]);
 const LivingGifStudioPage = lazy(loaders["/living-gif-studio"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
