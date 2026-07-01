@@ -23,16 +23,10 @@ const SignInPage = () => {
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
 
-  // Lovable preview visitors skip sign-in entirely and view the dashboard.
-  useEffect(() => {
-    const isLovablePreview =
-      typeof window !== "undefined" &&
-      (window.location.hostname.includes("lovable.app") ||
-        searchParams.get("preview") === "1");
-    if (isLovablePreview && !isOwnerAccess) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate, searchParams, isOwnerAccess]);
+  // Preview auto-redirect removed: RequireAuth no longer bypasses on preview
+  // hosts, so navigating unauthenticated users to /dashboard produced an
+  // infinite /sign-in ↔ /dashboard loop. Preview visitors now see sign-in
+  // like everyone else.
 
   useEffect(() => {
     if (isOwnerAccess) return;
