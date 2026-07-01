@@ -898,8 +898,115 @@ const ImmersiveMovieStudioPage = () => {
             Export records the live 3D playback + audio mix from your browser. MP4 in Safari, WEBM elsewhere — both play everywhere.
           </p>
         </div>
+
+        {/* Add-scene dialog: upload · prompt · storyboard */}
+        <Dialog open={addOpen} onOpenChange={(o) => { if (!genBusy) { setAddOpen(o); if (!o) setAddMode("choose"); } }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {addMode === "choose" && <><Plus className="w-4 h-4" /> Add a scene</>}
+                {addMode === "prompt" && <><Wand2 className="w-4 h-4" /> Generate a scene</>}
+                {addMode === "story"  && <><BookOpen className="w-4 h-4" /> Generate a full storyboard</>}
+              </DialogTitle>
+              <DialogDescription>
+                {addMode === "choose" && "Upload your own stills, describe a single 3D scene, or write a story idea and let the app build the whole movie."}
+                {addMode === "prompt" && "Describe the shot in detail — subject, setting, lighting, camera, mood. It becomes one 3D still in your timeline."}
+                {addMode === "story"  && "Type the story you want. The app will break it into linked scenes and generate each one so the whole movie runs end to end."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {addMode === "choose" && (
+              <div className="grid gap-2 py-2">
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => { setAddOpen(false); uploadInputRef.current?.click(); }}>
+                  <Upload className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Upload stills</div>
+                    <div className="text-[11px] text-muted-foreground">Your own JPG/PNG/WEBP/GIF images.</div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setAddMode("prompt")}>
+                  <Wand2 className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Generate one scene from a prompt</div>
+                    <div className="text-[11px] text-muted-foreground">Describe the 3D immersive scene and the app builds it.</div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="justify-start h-auto py-3" onClick={() => setAddMode("story")}>
+                  <BookOpen className="w-4 h-4 mr-3 shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">Generate a full storyboard</div>
+                    <div className="text-[11px] text-muted-foreground">Give the app a story idea — it links scenes into a full movie.</div>
+                  </div>
+                </Button>
+              </div>
+            )}
+
+            {addMode === "prompt" && (
+              <div className="space-y-3 py-2">
+                <Textarea
+                  value={scenePrompt}
+                  onChange={(e) => setScenePrompt(e.target.value.slice(0, 800))}
+                  placeholder="e.g. A Rottweiler in a Bintang singlet leans on a Bali beach bar at golden hour, ordering a cold Bintang. Photoreal 8K, warm rim light, shallow depth of field."
+                  rows={5}
+                  disabled={genBusy}
+                />
+                <div className="text-[10px] text-muted-foreground">{scenePrompt.length}/800</div>
+              </div>
+            )}
+
+            {addMode === "story" && (
+              <div className="space-y-3 py-2">
+                <Textarea
+                  value={storyIdea}
+                  onChange={(e) => setStoryIdea(e.target.value.slice(0, 2000))}
+                  placeholder="e.g. A Rottweiler who thinks he's human walks into a Bali beach bar in the late afternoon, orders a Bintang from the surprised bartender, tells everyone about his day, and stays until sunset."
+                  rows={6}
+                  disabled={genBusy}
+                />
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-muted-foreground flex items-center gap-2 flex-1">
+                    Number of scenes
+                    <Slider
+                      min={2} max={20} step={1}
+                      value={[storyLength]}
+                      onValueChange={([v]) => setStoryLength(v)}
+                      disabled={genBusy}
+                      className="flex-1"
+                    />
+                    <span className="text-xs font-mono w-6 text-right">{storyLength}</span>
+                  </label>
+                </div>
+                {genProgress && (
+                  <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Building scene {genProgress.done} of {genProgress.total}…
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter>
+              {addMode !== "choose" && (
+                <Button variant="ghost" onClick={() => setAddMode("choose")} disabled={genBusy}>Back</Button>
+              )}
+              {addMode === "prompt" && (
+                <Button onClick={addGeneratedScene} disabled={genBusy || scenePrompt.trim().length < 8}>
+                  {genBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Generate scene
+                </Button>
+              )}
+              {addMode === "story" && (
+                <Button onClick={generateStoryboard} disabled={genBusy || storyIdea.trim().length < 12}>
+                  {genBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                  Build storyboard
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </PageShell>
     </>
+
   );
 };
 
