@@ -505,7 +505,7 @@ const ImmersiveMovieStudioPage = () => {
               className="max-w-xs h-9"
               placeholder="Project name"
             />
-            <Button size="sm" onClick={handleSave} disabled={saving || !user}>
+            <Button size="sm" onClick={() => handleSave(false)} disabled={saving || !user}>
               {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
               {projectId ? "Save" : "Save new"}
             </Button>
@@ -520,10 +520,62 @@ const ImmersiveMovieStudioPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <div
+              data-testid="saved-status"
+              data-status={savedStatus}
+              className={`text-[11px] px-2 py-1 rounded ${
+                savedStatus === "saved" ? "text-emerald-500" :
+                savedStatus === "saving" ? "text-amber-500" :
+                savedStatus === "dirty" ? "text-muted-foreground" :
+                savedStatus === "error" ? "text-destructive" : "text-muted-foreground"
+              }`}
+              aria-live="polite"
+            >
+              {savedStatus === "saving" ? "Saving…" :
+               savedStatus === "saved" ? `Saved${lastSavedAt ? ` · ${lastSavedAt.toLocaleTimeString()}` : ""}` :
+               savedStatus === "dirty" ? (user && projectId ? "Unsaved changes…" : "Draft (local)") :
+               savedStatus === "error" ? "Save failed" : (user ? "Ready" : "Sign in to sync")}
+            </div>
             <div className="flex-1" />
+            {/* Export settings */}
+            <Select value={exportSettings.format} onValueChange={(v: ExportFormat) => setExportSettings((p) => ({ ...p, format: v }))}>
+              <SelectTrigger className="h-9 w-24" aria-label="Export format"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mp4">MP4</SelectItem>
+                <SelectItem value="webm">WEBM</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(exportSettings.resolution)} onValueChange={(v) => setExportSettings((p) => ({ ...p, resolution: Number(v) as ExportResolution }))}>
+              <SelectTrigger className="h-9 w-28" aria-label="Resolution"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="720">720p</SelectItem>
+                <SelectItem value="1080">1080p</SelectItem>
+                <SelectItem value="1440">1440p</SelectItem>
+                <SelectItem value="2160">4K</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={String(exportSettings.fps)} onValueChange={(v) => setExportSettings((p) => ({ ...p, fps: Number(v) }))}>
+              <SelectTrigger className="h-9 w-20" aria-label="Frame rate"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="60">60</SelectItem>
+              </SelectContent>
+            </Select>
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1">
+              Bitrate
+              <Input
+                type="number" min={1} max={40}
+                value={exportSettings.bitrateMbps}
+                onChange={(e) => setExportSettings((p) => ({ ...p, bitrateMbps: Math.max(1, Math.min(40, Number(e.target.value) || 1)) }))}
+                className="h-8 w-16 text-[11px]"
+                aria-label="Bitrate Mbps"
+              />
+              Mbps
+            </label>
             <Button size="sm" variant="secondary" onClick={handleExport} disabled={exporting || !scenes.length}>
               {exporting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
-              {exporting ? `Exporting ${Math.round(exportProgress)}%` : "Export MP4"}
+              {exporting ? `Exporting ${Math.round(exportProgress)}%` : `Export ${exportSettings.format.toUpperCase()}`}
             </Button>
           </Card>
 
