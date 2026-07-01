@@ -805,6 +805,41 @@ const ImmersiveMovieStudioPage = () => {
             </div>
           </Card>
 
+          {/* Generation progress + error panel */}
+          {(genProgress || genErrors.length > 0) && (
+            <Card className="p-3 space-y-2 border-primary/40">
+              {genProgress && (
+                <>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      {genProgress.label ?? "Working…"}
+                    </span>
+                    <span className="font-mono text-muted-foreground">
+                      {genProgress.done}/{genProgress.total}
+                    </span>
+                  </div>
+                  <Progress value={genProgress.total ? (genProgress.done / genProgress.total) * 100 : 0} className="h-2" />
+                </>
+              )}
+              {genErrors.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1 text-destructive font-semibold">
+                      <AlertTriangle className="w-3 h-3" /> {genErrors.length} error{genErrors.length === 1 ? "" : "s"}
+                    </span>
+                    <button className="text-[10px] underline text-muted-foreground" onClick={() => setGenErrors([])}>
+                      Dismiss
+                    </button>
+                  </div>
+                  <ul className="text-[11px] text-destructive space-y-0.5 max-h-24 overflow-auto">
+                    {genErrors.map((e, i) => <li key={i}>• {e}</li>)}
+                  </ul>
+                </div>
+              )}
+            </Card>
+          )}
+
           {/* Timeline / Scenes */}
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -837,9 +872,10 @@ const ImmersiveMovieStudioPage = () => {
                 {scenes.map((s, i) => (
                   <div
                     key={s.id}
-                    className={`flex items-center gap-3 p-2 rounded-lg border-2 ${s.id === activeScene?.id ? "border-primary" : "border-border"}`}
+                    data-testid="timeline-scene"
+                    className={`flex items-start gap-3 p-2 rounded-lg border-2 ${s.id === activeScene?.id ? "border-primary" : "border-border"}`}
                   >
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 pt-1">
                       <button onClick={() => moveScene(s.id, -1)} disabled={i === 0} className="p-1 rounded disabled:opacity-30 hover:bg-secondary">
                         <ArrowUp className="w-3 h-3" />
                       </button>
@@ -860,8 +896,29 @@ const ImmersiveMovieStudioPage = () => {
                           value={s.name}
                           onChange={(e) => patchScene(s.id, { name: e.target.value.slice(0, 60) })}
                           className="h-7 text-xs flex-1"
+                          placeholder="Scene label"
                         />
                       </div>
+                      <label className="text-[10px] text-muted-foreground flex items-start gap-1">
+                        <Captions className="w-3 h-3 mt-1 shrink-0" />
+                        <Textarea
+                          value={s.caption ?? ""}
+                          onChange={(e) => patchScene(s.id, { caption: e.target.value.slice(0, 200) })}
+                          placeholder="Scripted dialogue / subtitle shown during this scene (also burned into export)"
+                          className="min-h-[36px] text-[11px] py-1 flex-1"
+                          rows={1}
+                        />
+                      </label>
+                      <label className="text-[10px] text-muted-foreground flex items-start gap-1">
+                        <Wand2 className="w-3 h-3 mt-1 shrink-0" />
+                        <Textarea
+                          value={s.prompt ?? ""}
+                          onChange={(e) => patchScene(s.id, { prompt: e.target.value.slice(0, 800) })}
+                          placeholder="Visual prompt (edit and click regenerate to remake just this scene)"
+                          className="min-h-[36px] text-[11px] py-1 flex-1"
+                          rows={1}
+                        />
+                      </label>
                       <div className="flex flex-wrap items-center gap-2">
                         <label className="text-[10px] text-muted-foreground flex items-center gap-1">
                           Duration
@@ -883,6 +940,19 @@ const ImmersiveMovieStudioPage = () => {
                             {CAMERA_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          disabled={regenBusyId === s.id || !user}
+                          onClick={() => regenerateScene(s.id)}
+                          title="Regenerate visuals from this scene's prompt"
+                        >
+                          {regenBusyId === s.id
+                            ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            : <RefreshCw className="w-3 h-3 mr-1" />}
+                          Regenerate
+                        </Button>
                       </div>
                     </div>
                     <button onClick={() => removeScene(s.id)} className="p-1.5 rounded text-destructive hover:bg-destructive/10">
@@ -893,6 +963,7 @@ const ImmersiveMovieStudioPage = () => {
               </div>
             )}
           </Card>
+
 
           {/* Audio layers */}
           <Card className="p-4">
