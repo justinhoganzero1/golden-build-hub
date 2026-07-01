@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
-  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle, Mic,
+  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle, Mic, Compass,
 } from "lucide-react";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { Progress } from "@/components/ui/progress";
 import Photo3DViewer, { type CameraMovement } from "@/components/Photo3DViewer";
+import ImmersiveFPSViewer from "@/components/ImmersiveFPSViewer";
+import OracleSceneVoice from "@/components/OracleSceneVoice";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,6 +130,7 @@ const ImmersiveMovieStudioPage = () => {
   const [defaultVoiceId, setDefaultVoiceId] = useState<string>(AUSSIE_VOICE_ID);
   const dialogueAudioRef = useRef<HTMLAudioElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [walkMode, setWalkMode] = useState(false);
 
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
 
@@ -939,16 +942,31 @@ const ImmersiveMovieStudioPage = () => {
           <Card className="p-0 overflow-hidden border-primary/30">
             <div ref={viewerRef} className="relative aspect-video bg-black">
               {activeScene ? (
-                <Photo3DViewer
-                  imageUrl={activeScene.imageUrl}
-                  depth={activeScene.depth}
-                  movement={playing || exporting ? activeScene.movement : "static"}
-                />
+                walkMode && !exporting ? (
+                  <ImmersiveFPSViewer imageUrl={activeScene.imageUrl} onExit={() => setWalkMode(false)} />
+                ) : (
+                  <Photo3DViewer
+                    imageUrl={activeScene.imageUrl}
+                    depth={activeScene.depth}
+                    movement={playing || exporting ? activeScene.movement : "static"}
+                  />
+                )
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
                   <ImageIcon className="w-10 h-10" />
                   <p className="text-sm">Upload stills below to enter your first scene</p>
                 </div>
+              )}
+              {activeScene && !exporting && (
+                <Button
+                  size="sm"
+                  variant={walkMode ? "default" : "secondary"}
+                  onClick={() => setWalkMode((v) => !v)}
+                  className="absolute top-2 right-2 z-10 h-8"
+                >
+                  <Compass className="w-3.5 h-3.5 mr-1" />
+                  {walkMode ? "Exit walk" : "Walk mode"}
+                </Button>
               )}
               {activeScene?.caption && (
                 <div
@@ -1273,6 +1291,11 @@ const ImmersiveMovieStudioPage = () => {
 
             {addMode === "prompt" && (
               <div className="space-y-3 py-2">
+                <OracleSceneVoice
+                  busy={genBusy}
+                  onScene={(prompt) => { setScenePrompt(prompt.slice(0, 800)); void addGeneratedScene(); }}
+                />
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">or type it yourself</div>
                 <Textarea
                   value={scenePrompt}
                   onChange={(e) => setScenePrompt(e.target.value.slice(0, 800))}
