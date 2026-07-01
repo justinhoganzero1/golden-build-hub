@@ -1,14 +1,18 @@
 import { AlertTriangle } from "lucide-react";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 /**
- * Persistent flashing red banner shown on every page when running inside the
- * Feature Preview iframe (?preview=1). Purely informational — pages still
- * render normally; individual features should call usePreviewMode() to skip
- * real network/AI/persistence calls.
+ * Persistent flashing red banner shown when running inside the Feature Preview
+ * iframe (?preview=1) or the Lovable editor preview. Suppressed for the admin
+ * owner — the owner is always working on the real app, never in a demo shell.
  */
 const PreviewModeBanner = () => {
   const isPreview = usePreviewMode();
+  const { isAdmin, loading } = useIsAdmin();
+  // Wait for role resolution to avoid a flash of the banner for admin.
+  if (loading) return null;
+  if (isAdmin) return null;
   if (!isPreview) return null;
   return (
     <div
@@ -22,3 +26,4 @@ const PreviewModeBanner = () => {
 };
 
 export default PreviewModeBanner;
+
