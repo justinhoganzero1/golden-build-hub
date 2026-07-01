@@ -774,6 +774,16 @@ const ImmersiveMovieStudioPage = () => {
                   <p className="text-sm">Upload stills below to enter your first scene</p>
                 </div>
               )}
+              {activeScene?.caption && (
+                <div
+                  data-testid="scene-caption"
+                  className="absolute inset-x-0 bottom-16 flex justify-center px-4 pointer-events-none"
+                >
+                  <div className="max-w-[90%] px-4 py-2 rounded-md bg-black/70 text-white text-sm text-center leading-snug shadow-lg backdrop-blur-sm">
+                    {activeScene.caption}
+                  </div>
+                </div>
+              )}
               {activeScene && (
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-3 bg-gradient-to-t from-black/80 to-transparent">
                   <div className="flex items-center gap-2">
