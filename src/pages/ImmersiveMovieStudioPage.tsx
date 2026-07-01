@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
-  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle,
+  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle, Mic,
 } from "lucide-react";
+import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { Progress } from "@/components/ui/progress";
 import Photo3DViewer, { type CameraMovement } from "@/components/Photo3DViewer";
 import { toast } from "sonner";
@@ -48,6 +49,9 @@ const DEFAULT_EXPORT: ExportSettings = { format: "mp4", resolution: 1080, fps: 3
 
 type SavedStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
+// Default Aussie voice (Charlie). User can change per-scene.
+const AUSSIE_VOICE_ID = "IKne3meq5aSn9XLyUdCD";
+
 interface Scene {
   id: string;
   imageUrl: string;
@@ -60,6 +64,12 @@ interface Scene {
   prompt?: string;
   /** Scripted dialogue / caption shown as burned-in subtitle during playback + export. */
   caption?: string;
+  /** ElevenLabs voice used for this scene's dialogue (defaults to Aussie Charlie). */
+  dialogueVoiceId?: string;
+  /** Blob URL (or signed URL after reload) of the generated dialogue audio. */
+  dialogueUrl?: string;
+  /** Cloud storage path once persisted. */
+  dialogueStoragePath?: string;
 }
 
 interface AudioLayer {
@@ -114,6 +124,9 @@ const ImmersiveMovieStudioPage = () => {
   const [genProgress, setGenProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
   const [genErrors, setGenErrors] = useState<string[]>([]);
   const [regenBusyId, setRegenBusyId] = useState<string | null>(null);
+  const [dialogueBusyId, setDialogueBusyId] = useState<string | null>(null);
+  const [defaultVoiceId, setDefaultVoiceId] = useState<string>(AUSSIE_VOICE_ID);
+  const dialogueAudioRef = useRef<HTMLAudioElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
@@ -304,6 +317,58 @@ const ImmersiveMovieStudioPage = () => {
     }
   };
 
+  // ------------ ElevenLabs per-scene dialogue ------------
+  const generateSceneDialogue = async (sceneId: string) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    const text = (scene.caption ?? "").trim();
+    if (text.length < 2) { toast.error("Add scripted dialogue in the caption field first"); return; }
+    if (!user) { toast.error("Sign in to generate voice audio"); return; }
+    const voiceId = scene.dialogueVoiceId || defaultVoiceId || AUSSIE_VOICE_ID;
+    setDialogueBusyId(sceneId);
+    try {
+      const { data, error } = await supabase.functions.invoke("elevenlabs-tts", {
+        body: { text, voiceId },
+      });
+      if (error) throw new Error(error.message ?? "TTS failed");
+      // Edge function returns either a Blob (audio/mpeg) or a JSON fallback {error, fallback:true}
+      let blob: Blob;
+      if (data instanceof Blob) {
+        blob = data;
+      } else if (data && typeof data === "object" && (data as any).fallback) {
+        throw new Error("ElevenLabs unavailable — connect the ElevenLabs account or add ELEVENLABS_API_KEY");
+      } else {
+        // supabase-js may auto-parse; fall back to raw fetch
+        const resp = await fetch(
+          `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token ?? ""}`,
+            },
+            body: JSON.stringify({ text, voiceId }),
+          }
+        );
+        if (!resp.ok) throw new Error(`TTS HTTP ${resp.status}`);
+        const ct = resp.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const j = await resp.json();
+          throw new Error(j?.error || "TTS unavailable");
+        }
+        blob = await resp.blob();
+      }
+      const url = URL.createObjectURL(blob);
+      patchScene(sceneId, { dialogueUrl: url, dialogueVoiceId: voiceId, dialogueStoragePath: undefined });
+      toast.success("Dialogue generated");
+    } catch (e: any) {
+      toast.error(`Dialogue failed: ${e?.message ?? "unknown"}`);
+    } finally {
+      setDialogueBusyId(null);
+    }
+  };
+
   const generateStoryboard = async () => {
     const story = storyIdea.trim();
     if (story.length < 12) { toast.error("Give me a bit more of the story idea"); return; }
@@ -417,8 +482,17 @@ const ImmersiveMovieStudioPage = () => {
   const stopAll = useCallback(() => {
     if (playTimer.current) { window.clearTimeout(playTimer.current); playTimer.current = null; }
     layers.forEach((l) => { if (l.el) { l.el.pause(); l.el.currentTime = 0; } });
+    if (dialogueAudioRef.current) { dialogueAudioRef.current.pause(); dialogueAudioRef.current = null; }
     setPlaying(false);
   }, [layers]);
+
+  const playSceneDialogue = (scene: Scene) => {
+    if (dialogueAudioRef.current) { dialogueAudioRef.current.pause(); dialogueAudioRef.current = null; }
+    if (!scene.dialogueUrl) return;
+    const a = new Audio(scene.dialogueUrl);
+    a.play().catch(() => {});
+    dialogueAudioRef.current = a;
+  };
 
   const startPlayback = () => {
     if (!scenes.length) { toast.error("Add at least one scene"); return; }
@@ -434,14 +508,17 @@ const ImmersiveMovieStudioPage = () => {
     let idx = scenes.findIndex((s) => s.id === activeSceneId);
     if (idx < 0) idx = 0;
     setActiveSceneId(scenes[idx].id);
+    playSceneDialogue(scenes[idx]);
     const step = () => {
       idx += 1;
       if (idx >= scenes.length) { stopAll(); return; }
       setActiveSceneId(scenes[idx].id);
+      playSceneDialogue(scenes[idx]);
       playTimer.current = window.setTimeout(step, scenes[idx].durationSec * 1000);
     };
     playTimer.current = window.setTimeout(step, scenes[idx].durationSec * 1000);
   };
+
 
   useEffect(() => () => stopAll(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -666,6 +743,20 @@ const ImmersiveMovieStudioPage = () => {
         src.connect(gain).connect(dest);
         els.push(el);
       });
+      // Per-scene dialogue mixed into the same destination so it lands in the file.
+      const dialogueEls: (HTMLAudioElement | null)[] = scenes.map((s) => {
+        if (!s.dialogueUrl) return null;
+        const el = new Audio(s.dialogueUrl);
+        el.crossOrigin = "anonymous";
+        el.volume = 1;
+        try {
+          const src = ac.createMediaElementSource(el);
+          const gain = ac.createGain();
+          gain.gain.value = 1;
+          src.connect(gain).connect(dest);
+        } catch { /* re-use guard */ }
+        return el;
+      });
       const combined = new MediaStream([
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
@@ -692,14 +783,23 @@ const ImmersiveMovieStudioPage = () => {
       let idx = 0;
       setActiveSceneId(scenes[0].id);
       currentCaption = scenes[0].caption ?? "";
+      // Kick first scene's dialogue immediately
+      const firstDlg = dialogueEls[0];
+      if (firstDlg) { try { firstDlg.currentTime = 0; firstDlg.play().catch(() => {}); } catch {} }
       const advance = () => {
+        // stop previous scene's dialogue
+        const prev = dialogueEls[idx];
+        if (prev) { try { prev.pause(); } catch {} }
         idx += 1;
         if (idx >= scenes.length) return;
         setActiveSceneId(scenes[idx].id);
         currentCaption = scenes[idx].caption ?? "";
+        const dlg = dialogueEls[idx];
+        if (dlg) { try { dlg.currentTime = 0; dlg.play().catch(() => {}); } catch {} }
         window.setTimeout(advance, scenes[idx].durationSec * 1000);
       };
       window.setTimeout(advance, scenes[0].durationSec * 1000);
+
 
       const progressTimer = window.setInterval(() => {
         setExportProgress(Math.min(99, ((performance.now() - startedAt) / totalMs) * 100));
@@ -708,6 +808,7 @@ const ImmersiveMovieStudioPage = () => {
       await new Promise((r) => window.setTimeout(r, totalMs + 250));
       recorder.stop();
       els.forEach((e) => e.pause());
+      dialogueEls.forEach((e) => { if (e) { try { e.pause(); } catch {} } });
       await done;
       window.clearInterval(progressTimer);
       cancelAnimationFrame(rafId);
@@ -764,6 +865,17 @@ const ImmersiveMovieStudioPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <label className="text-[10px] text-muted-foreground flex items-center gap-1" title="Default ElevenLabs voice used for new scenes">
+              <Mic className="w-3 h-3" />
+              <Select value={defaultVoiceId} onValueChange={setDefaultVoiceId}>
+                <SelectTrigger className="h-9 w-44" aria-label="Default dialogue voice"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {CURATED_ELEVENLABS_VOICES.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.name} · {v.accent}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
             <div
               data-testid="saved-status"
               data-status={savedStatus}
@@ -1017,8 +1129,36 @@ const ImmersiveMovieStudioPage = () => {
                             : <RefreshCw className="w-3 h-3 mr-1" />}
                           Regenerate
                         </Button>
+                        <Select
+                          value={s.dialogueVoiceId ?? defaultVoiceId}
+                          onValueChange={(v) => patchScene(s.id, { dialogueVoiceId: v, dialogueUrl: undefined, dialogueStoragePath: undefined })}
+                        >
+                          <SelectTrigger className="h-7 w-44 text-[11px]" aria-label="Dialogue voice"><SelectValue /></SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            {CURATED_ELEVENLABS_VOICES.map((v) => (
+                              <SelectItem key={v.id} value={v.id}>{v.name} · {v.accent}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          disabled={dialogueBusyId === s.id || !user || !(s.caption ?? "").trim()}
+                          onClick={() => generateSceneDialogue(s.id)}
+                          title="Generate ElevenLabs dialogue audio from this scene's caption"
+                        >
+                          {dialogueBusyId === s.id
+                            ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            : <Mic className="w-3 h-3 mr-1" />}
+                          {s.dialogueUrl ? "Redo dialogue" : "Generate dialogue"}
+                        </Button>
+                        {s.dialogueUrl && (
+                          <audio src={s.dialogueUrl} controls className="h-7 max-w-[220px]" />
+                        )}
                       </div>
                     </div>
+
                     <button onClick={() => removeScene(s.id)} className="p-1.5 rounded text-destructive hover:bg-destructive/10">
                       <Trash2 className="w-4 h-4" />
                     </button>
