@@ -7,14 +7,27 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, ShoppingBag, Wand2 } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, ShoppingBag, Wand2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import ImmersiveFPSViewer from "@/components/ImmersiveFPSViewer";
 import { toast } from "sonner";
+
+const REPORT_REASONS = [
+  "Illegal content",
+  "Sexual / adult content",
+  "Minor-involving content",
+  "Graphic violence",
+  "Copyright / IP violation",
+  "Spam or scam",
+  "Hate or harassment",
+  "Other",
+];
 
 interface RealmRow {
   id: string;
@@ -39,6 +52,10 @@ export default function RealmViewerPage() {
   const [owned, setOwned] = useState(false);
   const [walkMode, setWalkMode] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState("");
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -104,6 +121,30 @@ export default function RealmViewerPage() {
     }
   }
 
+  async function submitReport() {
+    if (!realm) return;
+    if (!user?.id) { toast.error("Sign in to report a realm"); return; }
+    setReporting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("realm_reports")
+        .insert({
+          realm_id: realm.id,
+          reporter_id: user.id,
+          reason: reportReason,
+          details: reportDetails.trim() || null,
+        });
+      if (error) throw error;
+      toast.success("Report submitted", { description: "Our moderation team will review this realm." });
+      setReportOpen(false);
+      setReportDetails("");
+    } catch (e: any) {
+      toast.error("Report failed", { description: e?.message });
+    } finally {
+      setReporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -137,6 +178,9 @@ export default function RealmViewerPage() {
           </div>
           <Button asChild size="sm" variant="ghost" className="text-amber-400">
             <Link to="/realm-builder"><Wand2 className="w-4 h-4 mr-1" /> Build your own</Link>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setReportOpen(true)} className="text-white/60 hover:text-red-400" title="Report this realm">
+            <Flag className="w-4 h-4" />
           </Button>
         </div>
       </header>
@@ -172,6 +216,33 @@ export default function RealmViewerPage() {
           )}
         </Card>
       </main>
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="bg-neutral-950 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Flag className="w-4 h-4 text-red-400" /> Report this realm</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs uppercase tracking-wider text-white/60">Reason</label>
+              <select value={reportReason} onChange={(e) => setReportReason(e.target.value)} className="mt-1 w-full bg-black/40 border border-white/10 rounded-md p-2 text-sm">
+                {REPORT_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-white/60">Details (optional)</label>
+              <Textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} rows={4} placeholder="What's wrong with this realm?" className="mt-1 bg-black/40 border-white/10" maxLength={1000} />
+            </div>
+            <p className="text-[11px] text-white/40">Reports are reviewed by our moderation team. False reports may lead to action on your account.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setReportOpen(false)} disabled={reporting}>Cancel</Button>
+            <Button onClick={submitReport} disabled={reporting} className="bg-red-500 hover:bg-red-400 text-white">
+              {reporting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

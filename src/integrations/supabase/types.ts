@@ -1709,6 +1709,53 @@ export type Database = {
         }
         Relationships: []
       }
+      realm_reports: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          details: string | null
+          id: string
+          realm_id: string
+          reason: string
+          reporter_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          realm_id: string
+          reason: string
+          reporter_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          realm_id?: string
+          reason?: string
+          reporter_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "realm_reports_realm_id_fkey"
+            columns: ["realm_id"]
+            isOneToOne: false
+            referencedRelation: "user_realms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrals: {
         Row: {
           created_at: string
@@ -2624,12 +2671,15 @@ export type Database = {
           id: string
           is_public: boolean
           metadata: Json
+          moderation_notes: string | null
+          moderation_status: string
           prompt: string | null
           props: Json
           share_slug: string | null
           shop_enabled: boolean
           shop_price_cents: number
           skybox_url: string | null
+          tags: string[]
           title: string
           updated_at: string
           user_id: string
@@ -2643,12 +2693,15 @@ export type Database = {
           id?: string
           is_public?: boolean
           metadata?: Json
+          moderation_notes?: string | null
+          moderation_status?: string
           prompt?: string | null
           props?: Json
           share_slug?: string | null
           shop_enabled?: boolean
           shop_price_cents?: number
           skybox_url?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
           user_id: string
@@ -2662,12 +2715,15 @@ export type Database = {
           id?: string
           is_public?: boolean
           metadata?: Json
+          moderation_notes?: string | null
+          moderation_status?: string
           prompt?: string | null
           props?: Json
           share_slug?: string | null
           shop_enabled?: boolean
           shop_price_cents?: number
           skybox_url?: string | null
+          tags?: string[]
           title?: string
           updated_at?: string
           user_id?: string
