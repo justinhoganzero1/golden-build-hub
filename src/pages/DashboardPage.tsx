@@ -58,6 +58,7 @@ const groups: TileGroup[] = [
     emoji: "🎬",
     tiles: [
       { label: "Photo Studio", icon: <Camera className="w-6 h-6" />, path: "/photography-hub" },
+      { label: "Teleport ✨", icon: <Sparkles className="w-6 h-6" />, path: "/teleport" },
       { label: "Video Editor", icon: <Video className="w-6 h-6" />, path: "/video-editor" },
       { label: "Movie Studio", icon: <Film className="w-6 h-6" />, path: "/movie-studio-pro" },
       { label: "YouTube Studio", icon: <Video className="w-6 h-6" />, path: "/youtube-show-studio" },
