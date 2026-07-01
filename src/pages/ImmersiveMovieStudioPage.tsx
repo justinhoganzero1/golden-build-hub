@@ -414,7 +414,7 @@ const ImmersiveMovieStudioPage = () => {
     const totalMs = scenes.reduce((a, s) => a + s.durationSec * 1000, 0);
     try {
       // Video: canvas stream
-      const videoStream = canvas.captureStream(30);
+      const videoStream = canvas.captureStream(exportSettings.fps);
       // Audio: WebAudio mix
       const AudioCtx: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ac = new AudioCtx();
@@ -434,12 +434,19 @@ const ImmersiveMovieStudioPage = () => {
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
       ]);
-      const mime = MediaRecorder.isTypeSupported("video/mp4")
-        ? "video/mp4"
-        : MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-          ? "video/webm;codecs=vp9,opus"
-          : "video/webm";
-      const recorder = new MediaRecorder(combined, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+      // Honor requested format when supported; otherwise fall back gracefully.
+      const preferMp4 = exportSettings.format === "mp4";
+      const candidates = preferMp4
+        ? ["video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"]
+        : ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+      const mime = candidates.find((c) => MediaRecorder.isTypeSupported(c)) ?? "video/webm";
+      if (preferMp4 && !mime.includes("mp4")) {
+        toast.warning("MP4 not supported in this browser — exporting WEBM instead");
+      }
+      const recorder = new MediaRecorder(combined, {
+        mimeType: mime,
+        videoBitsPerSecond: exportSettings.bitrateMbps * 1_000_000,
+      });
       const chunks: Blob[] = [];
       recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
       const done = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
