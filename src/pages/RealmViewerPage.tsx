@@ -60,10 +60,7 @@ export default function RealmViewerPage() {
       setRealm((data as RealmRow | null) ?? null);
       setLoading(false);
 
-      // Bump view_count (best effort)
-      if (data?.id) {
-        void supabase.from("user_realms").update({ view_count: (data as any).view_count ? undefined : undefined }).eq("id", data.id);
-      }
+      // view_count is bumped server-side on purchase; skip client-side updates (RLS-restricted).
     })();
   }, [slug]);
 
