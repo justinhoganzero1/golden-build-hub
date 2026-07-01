@@ -99,6 +99,16 @@ const ImmersiveMovieStudioPage = () => {
   const playTimer = useRef<number | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
+  // Add-scene dialog state
+  const [addOpen, setAddOpen] = useState(false);
+  const [addMode, setAddMode] = useState<"choose" | "prompt" | "story">("choose");
+  const [scenePrompt, setScenePrompt] = useState("");
+  const [storyIdea, setStoryIdea] = useState("");
+  const [storyLength, setStoryLength] = useState(6);
+  const [genBusy, setGenBusy] = useState(false);
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
 
   // ------------ Load saved project list ------------
