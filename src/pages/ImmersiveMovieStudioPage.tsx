@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
-  Sparkles, Wand2, BookOpen,
+  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import Photo3DViewer, { type CameraMovement } from "@/components/Photo3DViewer";
 import { toast } from "sonner";
 import { z } from "zod";
