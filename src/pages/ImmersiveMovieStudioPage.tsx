@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Upload, Play, Pause, Plus, Trash2, Volume2, VolumeX, Film, Layers, Image as ImageIcon,
   ChevronLeft, ChevronRight, ArrowUp, ArrowDown, Save, FolderOpen, Download, Loader2,
-  Sparkles, Wand2, BookOpen,
+  Sparkles, Wand2, BookOpen, RefreshCw, Captions, AlertTriangle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import Photo3DViewer, { type CameraMovement } from "@/components/Photo3DViewer";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -55,6 +56,10 @@ interface Scene {
   durationSec: number;
   depth: number;
   movement: CameraMovement;
+  /** Original text prompt used to generate the visuals (enables per-scene regenerate). */
+  prompt?: string;
+  /** Scripted dialogue / caption shown as burned-in subtitle during playback + export. */
+  caption?: string;
 }
 
 interface AudioLayer {
@@ -106,7 +111,9 @@ const ImmersiveMovieStudioPage = () => {
   const [storyIdea, setStoryIdea] = useState("");
   const [storyLength, setStoryLength] = useState(6);
   const [genBusy, setGenBusy] = useState(false);
-  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number; label?: string } | null>(null);
+  const [genErrors, setGenErrors] = useState<string[]>([]);
+  const [regenBusyId, setRegenBusyId] = useState<string | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
@@ -243,6 +250,8 @@ const ImmersiveMovieStudioPage = () => {
     if (prompt.length < 8) { toast.error("Describe the scene in at least a few words"); return; }
     if (!user) { toast.error("Sign in to generate scenes"); return; }
     setGenBusy(true);
+    setGenErrors([]);
+    setGenProgress({ done: 0, total: 1, label: "Generating scene…" });
     try {
       const url = await generateSceneImage(prompt);
       const scene: Scene = {
@@ -252,20 +261,46 @@ const ImmersiveMovieStudioPage = () => {
         durationSec: 6,
         depth: 0.35,
         movement: "orbit",
+        prompt,
+        caption: prompt.slice(0, 140),
       };
       setScenes((prev) => {
         const next = [...prev, scene];
         if (!activeSceneId) setActiveSceneId(scene.id);
         return next;
       });
+      setGenProgress({ done: 1, total: 1, label: "Done" });
       toast.success("Scene generated");
       setScenePrompt("");
       setAddOpen(false);
       setAddMode("choose");
     } catch (e: any) {
-      toast.error(e?.message ?? "Generation failed");
+      const msg = e?.message ?? "Generation failed";
+      setGenErrors([msg]);
+      toast.error(msg);
     } finally {
       setGenBusy(false);
+      window.setTimeout(() => setGenProgress(null), 800);
+    }
+  };
+
+  const regenerateScene = async (sceneId: string) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    const promptText = (scene.prompt ?? scene.caption ?? scene.name ?? "").trim();
+    if (promptText.length < 8) {
+      toast.error("This scene has no prompt to regenerate from. Edit its prompt below first.");
+      return;
+    }
+    setRegenBusyId(sceneId);
+    try {
+      const url = await generateSceneImage(promptText);
+      patchScene(sceneId, { imageUrl: url, storagePath: undefined });
+      toast.success("Scene regenerated");
+    } catch (e: any) {
+      toast.error(`Regenerate failed: ${e?.message ?? "unknown"}`);
+    } finally {
+      setRegenBusyId(null);
     }
   };
 
@@ -275,9 +310,10 @@ const ImmersiveMovieStudioPage = () => {
     if (!user) { toast.error("Sign in to generate storyboards"); return; }
     const target = Math.max(2, Math.min(20, storyLength));
     setGenBusy(true);
-    setGenProgress({ done: 0, total: target });
+    setGenErrors([]);
+    setGenProgress({ done: 0, total: target, label: "Planning story…" });
+    const failures: string[] = [];
     try {
-      // 1. Break the story down into scene descriptions
       const { data: planData, error: planErr } = await supabase.functions.invoke("script-to-scenes", {
         body: { script: story, intent: "Immersive 3D still-image movie", targetDurationSec: target * 6 },
       });
@@ -286,8 +322,8 @@ const ImmersiveMovieStudioPage = () => {
         (planData as any)?.scenes ?? [];
       if (!planScenes.length) throw new Error("The planner returned no scenes");
       const plan = planScenes.slice(0, target);
+      setGenProgress({ done: 0, total: plan.length, label: `Building scene 1 of ${plan.length}…` });
 
-      // 2. Generate each scene image sequentially and add to timeline as it arrives
       let firstIdSet = !activeSceneId;
       for (let i = 0; i < plan.length; i++) {
         const p = plan[i];
@@ -300,6 +336,8 @@ const ImmersiveMovieStudioPage = () => {
             durationSec: Math.max(1, Math.min(60, Math.round(p.duration_sec ?? 6))),
             depth: 0.35,
             movement: motionToMovement(p.motion),
+            prompt: p.photo_prompt,
+            caption: (p.caption ?? "").slice(0, 200),
           };
           setScenes((prev) => {
             const next = [...prev, scene];
@@ -307,23 +345,30 @@ const ImmersiveMovieStudioPage = () => {
             return next;
           });
         } catch (err: any) {
-          toast.warning(`Scene ${i + 1} failed: ${err?.message ?? "unknown"}`);
+          const msg = `Scene ${i + 1}: ${err?.message ?? "unknown error"}`;
+          failures.push(msg);
+          toast.warning(msg);
         }
-        setGenProgress({ done: i + 1, total: plan.length });
+        setGenProgress({ done: i + 1, total: plan.length, label: `Built ${i + 1} of ${plan.length}` });
       }
-      toast.success(`Storyboard built: ${plan.length} scenes`);
-      setStoryIdea("");
-      setAddOpen(false);
-      setAddMode("choose");
+      if (failures.length) setGenErrors(failures);
+      const built = plan.length - failures.length;
+      if (built > 0) toast.success(`Storyboard built: ${built} scenes${failures.length ? ` · ${failures.length} failed` : ""}`);
+      else toast.error("No scenes could be generated. See error details.");
+      if (!failures.length) {
+        setStoryIdea("");
+        setAddOpen(false);
+        setAddMode("choose");
+      }
     } catch (e: any) {
-      toast.error(e?.message ?? "Storyboard generation failed");
+      const msg = e?.message ?? "Storyboard generation failed";
+      setGenErrors((prev) => [msg, ...prev, ...failures]);
+      toast.error(msg);
     } finally {
       setGenBusy(false);
-      setGenProgress(null);
+      window.setTimeout(() => setGenProgress(null), 1200);
     }
   };
-
-
 
   // ------------ Audio layers (validated + capped) ------------
   const onAudioFiles = (files: FileList | null) => {
@@ -541,9 +586,72 @@ const ImmersiveMovieStudioPage = () => {
     setExportProgress(0);
     const totalMs = scenes.reduce((a, s) => a + s.durationSec * 1000, 0);
     try {
-      // Video: canvas stream
-      const videoStream = canvas.captureStream(exportSettings.fps);
-      // Audio: WebAudio mix
+      // Composite canvas = live 3D canvas + burned-in caption text so subtitles
+      // land in the exported video (canvas.captureStream would miss HTML overlays).
+      const composite = document.createElement("canvas");
+      composite.width = canvas.width || 1280;
+      composite.height = canvas.height || 720;
+      const cctx = composite.getContext("2d");
+      if (!cctx) throw new Error("Could not create export canvas");
+      let currentCaption = scenes[0]?.caption ?? "";
+      let rafId = 0;
+      const drawCaption = (text: string) => {
+        if (!text) return;
+        const w = composite.width;
+        const h = composite.height;
+        const fontSize = Math.max(18, Math.round(h * 0.038));
+        cctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        cctx.textAlign = "center";
+        cctx.textBaseline = "bottom";
+        // Naive wrap
+        const maxWidth = w * 0.86;
+        const words = text.split(/\s+/);
+        const lines: string[] = [];
+        let line = "";
+        words.forEach((word) => {
+          const test = line ? `${line} ${word}` : word;
+          if (cctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word; }
+          else line = test;
+        });
+        if (line) lines.push(line);
+        const padX = fontSize * 0.7;
+        const padY = fontSize * 0.4;
+        const lineH = fontSize * 1.25;
+        const boxH = lines.length * lineH + padY * 2;
+        const boxY = h - Math.round(h * 0.09) - boxH;
+        // Background pill
+        cctx.fillStyle = "rgba(0,0,0,0.7)";
+        const boxW = Math.min(maxWidth + padX * 2, w * 0.94);
+        const boxX = (w - boxW) / 2;
+        const r = 12;
+        cctx.beginPath();
+        cctx.moveTo(boxX + r, boxY);
+        cctx.lineTo(boxX + boxW - r, boxY);
+        cctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+        cctx.lineTo(boxX + boxW, boxY + boxH - r);
+        cctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+        cctx.lineTo(boxX + r, boxY + boxH);
+        cctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+        cctx.lineTo(boxX, boxY + r);
+        cctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+        cctx.closePath();
+        cctx.fill();
+        // Text
+        cctx.fillStyle = "#ffffff";
+        lines.forEach((ln, i) => {
+          cctx.fillText(ln, w / 2, boxY + padY + (i + 1) * lineH - fontSize * 0.25);
+        });
+      };
+      const renderLoop = () => {
+        try {
+          cctx.drawImage(canvas, 0, 0, composite.width, composite.height);
+          if (currentCaption) drawCaption(currentCaption);
+        } catch { /* frame skip */ }
+        rafId = requestAnimationFrame(renderLoop);
+      };
+      rafId = requestAnimationFrame(renderLoop);
+
+      const videoStream = composite.captureStream(exportSettings.fps);
       const AudioCtx: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
       const ac = new AudioCtx();
       const dest = ac.createMediaStreamDestination();
@@ -562,7 +670,6 @@ const ImmersiveMovieStudioPage = () => {
         ...videoStream.getVideoTracks(),
         ...dest.stream.getAudioTracks(),
       ]);
-      // Honor requested format when supported; otherwise fall back gracefully.
       const preferMp4 = exportSettings.format === "mp4";
       const candidates = preferMp4
         ? ["video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"]
@@ -580,15 +687,16 @@ const ImmersiveMovieStudioPage = () => {
       const done = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
       recorder.start(200);
 
-      // Drive playback
       layers.forEach((l, i) => window.setTimeout(() => els[i].play().catch(() => {}), l.startSec * 1000));
       const startedAt = performance.now();
       let idx = 0;
       setActiveSceneId(scenes[0].id);
+      currentCaption = scenes[0].caption ?? "";
       const advance = () => {
         idx += 1;
         if (idx >= scenes.length) return;
         setActiveSceneId(scenes[idx].id);
+        currentCaption = scenes[idx].caption ?? "";
         window.setTimeout(advance, scenes[idx].durationSec * 1000);
       };
       window.setTimeout(advance, scenes[0].durationSec * 1000);
@@ -602,6 +710,7 @@ const ImmersiveMovieStudioPage = () => {
       els.forEach((e) => e.pause());
       await done;
       window.clearInterval(progressTimer);
+      cancelAnimationFrame(rafId);
       ac.close();
 
       const ext = mime.includes("mp4") ? "mp4" : "webm";
@@ -729,6 +838,16 @@ const ImmersiveMovieStudioPage = () => {
                   <p className="text-sm">Upload stills below to enter your first scene</p>
                 </div>
               )}
+              {activeScene?.caption && (
+                <div
+                  data-testid="scene-caption"
+                  className="absolute inset-x-0 bottom-16 flex justify-center px-4 pointer-events-none"
+                >
+                  <div className="max-w-[90%] px-4 py-2 rounded-md bg-black/70 text-white text-sm text-center leading-snug shadow-lg backdrop-blur-sm">
+                    {activeScene.caption}
+                  </div>
+                </div>
+              )}
               {activeScene && (
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-3 bg-gradient-to-t from-black/80 to-transparent">
                   <div className="flex items-center gap-2">
@@ -749,6 +868,41 @@ const ImmersiveMovieStudioPage = () => {
               )}
             </div>
           </Card>
+
+          {/* Generation progress + error panel */}
+          {(genProgress || genErrors.length > 0) && (
+            <Card className="p-3 space-y-2 border-primary/40">
+              {genProgress && (
+                <>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      {genProgress.label ?? "Working…"}
+                    </span>
+                    <span className="font-mono text-muted-foreground">
+                      {genProgress.done}/{genProgress.total}
+                    </span>
+                  </div>
+                  <Progress value={genProgress.total ? (genProgress.done / genProgress.total) * 100 : 0} className="h-2" />
+                </>
+              )}
+              {genErrors.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1 text-destructive font-semibold">
+                      <AlertTriangle className="w-3 h-3" /> {genErrors.length} error{genErrors.length === 1 ? "" : "s"}
+                    </span>
+                    <button className="text-[10px] underline text-muted-foreground" onClick={() => setGenErrors([])}>
+                      Dismiss
+                    </button>
+                  </div>
+                  <ul className="text-[11px] text-destructive space-y-0.5 max-h-24 overflow-auto">
+                    {genErrors.map((e, i) => <li key={i}>• {e}</li>)}
+                  </ul>
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Timeline / Scenes */}
           <Card className="p-4">
@@ -782,9 +936,10 @@ const ImmersiveMovieStudioPage = () => {
                 {scenes.map((s, i) => (
                   <div
                     key={s.id}
-                    className={`flex items-center gap-3 p-2 rounded-lg border-2 ${s.id === activeScene?.id ? "border-primary" : "border-border"}`}
+                    data-testid="timeline-scene"
+                    className={`flex items-start gap-3 p-2 rounded-lg border-2 ${s.id === activeScene?.id ? "border-primary" : "border-border"}`}
                   >
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1 pt-1">
                       <button onClick={() => moveScene(s.id, -1)} disabled={i === 0} className="p-1 rounded disabled:opacity-30 hover:bg-secondary">
                         <ArrowUp className="w-3 h-3" />
                       </button>
@@ -805,8 +960,29 @@ const ImmersiveMovieStudioPage = () => {
                           value={s.name}
                           onChange={(e) => patchScene(s.id, { name: e.target.value.slice(0, 60) })}
                           className="h-7 text-xs flex-1"
+                          placeholder="Scene label"
                         />
                       </div>
+                      <label className="text-[10px] text-muted-foreground flex items-start gap-1">
+                        <Captions className="w-3 h-3 mt-1 shrink-0" />
+                        <Textarea
+                          value={s.caption ?? ""}
+                          onChange={(e) => patchScene(s.id, { caption: e.target.value.slice(0, 200) })}
+                          placeholder="Scripted dialogue / subtitle shown during this scene (also burned into export)"
+                          className="min-h-[36px] text-[11px] py-1 flex-1"
+                          rows={1}
+                        />
+                      </label>
+                      <label className="text-[10px] text-muted-foreground flex items-start gap-1">
+                        <Wand2 className="w-3 h-3 mt-1 shrink-0" />
+                        <Textarea
+                          value={s.prompt ?? ""}
+                          onChange={(e) => patchScene(s.id, { prompt: e.target.value.slice(0, 800) })}
+                          placeholder="Visual prompt (edit and click regenerate to remake just this scene)"
+                          className="min-h-[36px] text-[11px] py-1 flex-1"
+                          rows={1}
+                        />
+                      </label>
                       <div className="flex flex-wrap items-center gap-2">
                         <label className="text-[10px] text-muted-foreground flex items-center gap-1">
                           Duration
@@ -828,6 +1004,19 @@ const ImmersiveMovieStudioPage = () => {
                             {CAMERA_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          disabled={regenBusyId === s.id || !user}
+                          onClick={() => regenerateScene(s.id)}
+                          title="Regenerate visuals from this scene's prompt"
+                        >
+                          {regenBusyId === s.id
+                            ? <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            : <RefreshCw className="w-3 h-3 mr-1" />}
+                          Regenerate
+                        </Button>
                       </div>
                     </div>
                     <button onClick={() => removeScene(s.id)} className="p-1.5 rounded text-destructive hover:bg-destructive/10">
@@ -838,6 +1027,7 @@ const ImmersiveMovieStudioPage = () => {
               </div>
             )}
           </Card>
+
 
           {/* Audio layers */}
           <Card className="p-4">
