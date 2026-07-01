@@ -206,6 +206,7 @@ export default function RealmBuilderPage() {
     setGenerating(true);
     setWalkMode(false);
     setOrthoViews({ top: null, side: null, front: null, structure: null });
+    setScene3D({ depth: null, left: null, right: null, back: null });
     try {
       // 1. Main immersive panorama first so the user sees a result fast.
       const res = await generateImage({
@@ -214,24 +215,23 @@ export default function RealmBuilderPage() {
         noCache: false,
       });
       setSkyboxUrl(res.url);
-      toast.success("Realm generated — rendering top / side / front / 3D views…");
+      toast.success("Realm generated — rendering reference views + walkable 3D…");
 
-      // 2. Fire the four reference views in parallel. Each resolves
-      // independently so the UI progressively fills in.
-      const views: OrthoView[] = ["top", "side", "front", "structure"];
-      await Promise.all(views.map(async (v) => {
+      // 2. Reference views + 3D scene panels in parallel.
+      const orthoJobs: Promise<unknown>[] = (["top","side","front","structure"] as OrthoView[]).map(async (v) => {
         try {
-          const r = await generateImage({
-            prompt: buildOrthoPrompt(prompt, v),
-            tier: "fast",
-            noCache: false,
-          });
+          const r = await generateImage({ prompt: buildOrthoPrompt(prompt, v), tier: "fast", noCache: false });
           setOrthoViews((prev) => ({ ...prev, [v]: r.url }));
-        } catch {
-          // Non-fatal — main panorama already succeeded.
-        }
-      }));
-      toast.success("All reference views ready");
+        } catch { /* non-fatal */ }
+      });
+      const sceneJobs: Promise<unknown>[] = (["depth","left","right","back"] as Scene3DView[]).map(async (v) => {
+        try {
+          const r = await generateImage({ prompt: buildScene3DPrompt(prompt, v), tier: "fast", noCache: false });
+          setScene3D((prev) => ({ ...prev, [v]: r.url }));
+        } catch { /* non-fatal — front wall still works alone */ }
+      });
+      await Promise.all([...orthoJobs, ...sceneJobs]);
+      toast.success("Walkable 3D realm ready");
     } catch (e: any) {
       if (e instanceof InsufficientCreditsError) {
         toast.error("Out of credits", { description: "Top up your wallet to keep building realms." });
