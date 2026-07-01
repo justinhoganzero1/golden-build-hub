@@ -88,6 +88,11 @@ const ImmersiveMovieStudioPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportSettings, setExportSettings] = useState<ExportSettings>(DEFAULT_EXPORT);
+  const [savedStatus, setSavedStatus] = useState<SavedStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const autosaveTimer = useRef<number | null>(null);
+  const skipDirtyRef = useRef(true);
   const playTimer = useRef<number | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
