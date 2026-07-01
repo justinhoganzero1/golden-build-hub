@@ -167,6 +167,9 @@ export default function RealmBuilderPage() {
     setSaving(true);
     try {
       const slug = isPublic ? makeSlug(title) : null;
+      const priceCents = shopEnabled && isPublic
+        ? Math.max(0, Math.round(parseFloat(priceUsd || "0") * 100))
+        : 0;
       const { data, error } = await supabase
         .from("user_realms")
         .insert({
@@ -178,14 +181,20 @@ export default function RealmBuilderPage() {
           avatar_url: selectedAvatar?.image_url ?? null,
           is_public: isPublic,
           share_slug: slug,
+          shop_enabled: shopEnabled && isPublic && priceCents > 0,
+          shop_price_cents: priceCents,
           props: [],
-          metadata: { phase: 1, source: "realm-builder" },
+          metadata: { phase: 4, source: "realm-builder" },
         })
         .select("*")
         .single();
       if (error) throw error;
       setSavedRealm(data as RealmRow);
-      toast.success(isPublic ? "Realm saved + published" : "Realm saved to your library");
+      toast.success(
+        shopEnabled && isPublic && priceCents > 0
+          ? "Realm listed in the Public Library"
+          : isPublic ? "Realm saved + published" : "Realm saved to your library"
+      );
     } catch (e: any) {
       toast.error("Save failed", { description: e?.message });
     } finally {
