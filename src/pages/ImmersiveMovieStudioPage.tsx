@@ -317,7 +317,58 @@ const ImmersiveMovieStudioPage = () => {
     }
   };
 
-  const generateStoryboard = async () => {
+  // ------------ ElevenLabs per-scene dialogue ------------
+  const generateSceneDialogue = async (sceneId: string) => {
+    const scene = scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    const text = (scene.caption ?? "").trim();
+    if (text.length < 2) { toast.error("Add scripted dialogue in the caption field first"); return; }
+    if (!user) { toast.error("Sign in to generate voice audio"); return; }
+    const voiceId = scene.dialogueVoiceId || defaultVoiceId || AUSSIE_VOICE_ID;
+    setDialogueBusyId(sceneId);
+    try {
+      const { data, error } = await supabase.functions.invoke("elevenlabs-tts", {
+        body: { text, voiceId },
+      });
+      if (error) throw new Error(error.message ?? "TTS failed");
+      // Edge function returns either a Blob (audio/mpeg) or a JSON fallback {error, fallback:true}
+      let blob: Blob;
+      if (data instanceof Blob) {
+        blob = data;
+      } else if (data && typeof data === "object" && (data as any).fallback) {
+        throw new Error("ElevenLabs unavailable — connect the ElevenLabs account or add ELEVENLABS_API_KEY");
+      } else {
+        // supabase-js may auto-parse; fall back to raw fetch
+        const resp = await fetch(
+          `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+              Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token ?? ""}`,
+            },
+            body: JSON.stringify({ text, voiceId }),
+          }
+        );
+        if (!resp.ok) throw new Error(`TTS HTTP ${resp.status}`);
+        const ct = resp.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const j = await resp.json();
+          throw new Error(j?.error || "TTS unavailable");
+        }
+        blob = await resp.blob();
+      }
+      const url = URL.createObjectURL(blob);
+      patchScene(sceneId, { dialogueUrl: url, dialogueVoiceId: voiceId, dialogueStoragePath: undefined });
+      toast.success("Dialogue generated");
+    } catch (e: any) {
+      toast.error(`Dialogue failed: ${e?.message ?? "unknown"}`);
+    } finally {
+      setDialogueBusyId(null);
+    }
+  };
+
     const story = storyIdea.trim();
     if (story.length < 12) { toast.error("Give me a bit more of the story idea"); return; }
     if (!user) { toast.error("Sign in to generate storyboards"); return; }
