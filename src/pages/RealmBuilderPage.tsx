@@ -106,6 +106,31 @@ function buildOrthoPrompt(userPrompt: string, view: OrthoView): string {
   }
 }
 
+// AI prompts to inpaint the sides/back of the SAME scene + a matching depth map,
+// so the walkable viewer can build a 3D room around the user instead of a plane.
+type Scene3DView = "depth" | "left" | "right" | "back";
+function buildScene3DPrompt(userPrompt: string, view: Scene3DView): string {
+  const clean = userPrompt.trim().replace(/\s+/g, " ");
+  const base =
+    `Ultra-photoreal 8K, DSLR capture, same real-world scene, same lighting, ` +
+    `same time of day, same materials and same color palette as: ${clean}. ` +
+    `Indistinguishable from a real photograph. NO text, NO watermarks. `;
+  switch (view) {
+    case "depth":
+      return (
+        `Grayscale DEPTH MAP of the scene: pure black = farthest, pure white = closest. ` +
+        `Smooth gradients, every rock/prop/obstruction clearly represented by its ` +
+        `true depth silhouette. No color, no shading detail — only depth. Scene: ${clean}.`
+      );
+    case "left":
+      return base + `View LOOKING 90° LEFT from the same standing position — what the camera would see if it turned left. Continuous ground plane, matching horizon height.`;
+    case "right":
+      return base + `View LOOKING 90° RIGHT from the same standing position — what the camera would see if it turned right. Continuous ground plane, matching horizon height.`;
+    case "back":
+      return base + `View LOOKING 180° BEHIND from the same standing position — what the camera would see if it turned all the way around. Continuous ground plane, matching horizon height.`;
+  }
+}
+
 function makeSlug(title: string): string {
   const base = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
   const rand = Math.random().toString(36).slice(2, 8);
