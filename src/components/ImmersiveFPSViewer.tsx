@@ -409,11 +409,6 @@ const ImmersiveFPSViewer = ({ imageUrl, depthUrl, leftUrl, rightUrl, backUrl, on
             ))}
             <Floor quality={quality} mode={mode} wireframe={wireframe} />
           </Suspense>
-          <PointerLockControls
-            ref={controlsRef}
-            onLock={() => setLocked(true)}
-            onUnlock={() => setLocked(false)}
-          />
           <WalkRig collide={collide} />
         </Canvas>
       )}
