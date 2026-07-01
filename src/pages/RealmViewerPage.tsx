@@ -179,6 +179,9 @@ export default function RealmViewerPage() {
           <Button asChild size="sm" variant="ghost" className="text-amber-400">
             <Link to="/realm-builder"><Wand2 className="w-4 h-4 mr-1" /> Build your own</Link>
           </Button>
+          <Button size="sm" variant="ghost" onClick={() => setReportOpen(true)} className="text-white/60 hover:text-red-400" title="Report this realm">
+            <Flag className="w-4 h-4" />
+          </Button>
         </div>
       </header>
 
