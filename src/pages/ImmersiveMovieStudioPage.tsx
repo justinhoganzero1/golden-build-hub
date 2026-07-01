@@ -369,6 +369,7 @@ const ImmersiveMovieStudioPage = () => {
     }
   };
 
+  const generateStoryboard = async () => {
     const story = storyIdea.trim();
     if (story.length < 12) { toast.error("Give me a bit more of the story idea"); return; }
     if (!user) { toast.error("Sign in to generate storyboards"); return; }
