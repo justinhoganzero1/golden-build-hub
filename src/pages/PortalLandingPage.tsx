@@ -77,7 +77,6 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 import SecurityShield from "@/components/SecurityShield";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import oracleLunarLogo from "@/assets/oracle-lunar-logo.png";
-import webWrapperLogo from "@/assets/web-wrapper-logo.png";
 import VisitorCounter from "@/components/VisitorCounter";
 import MlscLogo from "@/components/MlscLogo";
 import { trackInstallEvent, detectInstallPlatform, type InstallPlatform } from "@/lib/installAnalytics";
@@ -468,7 +467,7 @@ const PortalLandingPage = () => {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
                 Describe an app in plain English and our AI builds a full single-file web app —
-                Stripe paywalls, AI chat, PWA install and sharing baked in. Then send it to App Wrapper to publish.
+                Stripe paywalls, AI chat, PWA install and sharing baked in for web-first publishing.
               </p>
               <Button
                 size="lg"

@@ -1,7 +1,7 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, Smartphone, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
+import { Wrench, Code, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -539,14 +539,6 @@ const AppBuilderPage = () => {
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => launchApp(previewProject)} className="col-span-2 flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold hover:opacity-90">
                 <Play className="w-4 h-4" /> Launch App in New Tab
-              </button>
-              <button onClick={() => {
-                  const slug = previewProject.name.replace(/\s+/g, "-").toLowerCase();
-                  const placeholderUrl = `https://${slug}.lovable.app`;
-                  navigate(`/web-wrapper?url=${encodeURIComponent(placeholderUrl)}&name=${encodeURIComponent(previewProject.name)}`);
-                }}
-                className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/20 border border-primary/40 text-primary text-xs font-semibold hover:bg-primary/30">
-                <Smartphone className="w-3.5 h-3.5" /> Wrap for Play Store
               </button>
               <button onClick={() => navigate("/subscribe")} className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-card border border-border text-foreground text-xs font-semibold hover:border-primary">
                 <CreditCard className="w-3.5 h-3.5" /> Stripe Setup
