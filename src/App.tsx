@@ -92,6 +92,8 @@ const loaders = {
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
   "/immersive-movie-studio": () => import("./pages/ImmersiveMovieStudioPage"),
   "/realm-builder": () => import("./pages/RealmBuilderPage"),
+  "/realms": () => import("./pages/PublicRealmsPage"),
+  "/realm/:slug": () => import("./pages/RealmViewerPage"),
   "/movie-payment-success": () => import("./pages/MoviePaymentSuccessPage"),
   "/living-gif-studio": () => import("./pages/LivingGifStudioPage"),
   "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
@@ -218,6 +220,8 @@ const ClaimsAppPage = lazy(loaders["/claims-app"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
 const ImmersiveMovieStudioPage = lazy(loaders["/immersive-movie-studio"]);
 const RealmBuilderPage = lazy(loaders["/realm-builder"]);
+const PublicRealmsPage = lazy(loaders["/realms"]);
+const RealmViewerPage = lazy(loaders["/realm/:slug"]);
 const MoviePaymentSuccessPage = lazy(loaders["/movie-payment-success"]);
 const LivingGifStudioPage = lazy(loaders["/living-gif-studio"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
@@ -356,7 +360,8 @@ const App = () => (
                   <Route path="/movie-studio-pro" element={<RequireAuth><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/immersive-movie-studio" element={<RequireAuth><ErrorBoundary pageName="Immersive Movie Studio"><ImmersiveMovieStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/realm-builder" element={<RequireAuth><ErrorBoundary pageName="Realm Builder"><RealmBuilderPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/realm/:slug" element={<ErrorBoundary pageName="Realm Builder"><RealmBuilderPage /></ErrorBoundary>} />
+                  <Route path="/realms" element={<ErrorBoundary pageName="Public Realms"><PublicRealmsPage /></ErrorBoundary>} />
+                  <Route path="/realm/:slug" element={<ErrorBoundary pageName="Realm Viewer"><RealmViewerPage /></ErrorBoundary>} />
                   <Route path="/movie-payment-success" element={<RequireAuth><ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/living-gif-studio" element={<RequireAuth><ErrorBoundary pageName="Living GIF Studio"><LivingGifStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />

@@ -19,7 +19,7 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY missing");
 
     const { item_id, item_kind } = await req.json();
-    if (!item_id || !["media", "gif", "movie"].includes(item_kind))
+    if (!item_id || !["media", "gif", "movie", "realm"].includes(item_kind))
       throw new Error("Invalid item");
 
     const supabase = createClient(
@@ -35,7 +35,11 @@ serve(async (req) => {
     if (!buyer?.email) throw new Error("Not authenticated");
 
     // Fetch item (uses service role — bypasses RLS for shop logic)
-    const table = item_kind === "media" ? "user_media" : item_kind === "gif" ? "living_gifs" : "movie_projects";
+    const table =
+      item_kind === "media" ? "user_media"
+      : item_kind === "gif" ? "living_gifs"
+      : item_kind === "realm" ? "user_realms"
+      : "movie_projects";
     const { data: item, error: itemErr } = await supabase
       .from(table)
       .select("id,user_id,title,shop_enabled,shop_price_cents,is_public")

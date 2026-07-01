@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Save, Share2, Copy, User, Wand2, Globe2, Lock, ArrowLeft } from "lucide-react";
+import { Loader2, Sparkles, Save, Share2, Copy, User, Wand2, Globe2, Lock, ArrowLeft, ShoppingBag, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -88,6 +88,8 @@ export default function RealmBuilderPage() {
   const [walkMode, setWalkMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
+  const [shopEnabled, setShopEnabled] = useState(false);
+  const [priceUsd, setPriceUsd] = useState<string>("2.99");
   const [savedRealm, setSavedRealm] = useState<RealmRow | null>(null);
   const [myRealms, setMyRealms] = useState<RealmRow[]>([]);
 
@@ -165,6 +167,9 @@ export default function RealmBuilderPage() {
     setSaving(true);
     try {
       const slug = isPublic ? makeSlug(title) : null;
+      const priceCents = shopEnabled && isPublic
+        ? Math.max(0, Math.round(parseFloat(priceUsd || "0") * 100))
+        : 0;
       const { data, error } = await supabase
         .from("user_realms")
         .insert({
@@ -176,14 +181,20 @@ export default function RealmBuilderPage() {
           avatar_url: selectedAvatar?.image_url ?? null,
           is_public: isPublic,
           share_slug: slug,
+          shop_enabled: shopEnabled && isPublic && priceCents > 0,
+          shop_price_cents: priceCents,
           props: [],
-          metadata: { phase: 1, source: "realm-builder" },
+          metadata: { phase: 4, source: "realm-builder" },
         })
         .select("*")
         .single();
       if (error) throw error;
       setSavedRealm(data as RealmRow);
-      toast.success(isPublic ? "Realm saved + published" : "Realm saved to your library");
+      toast.success(
+        shopEnabled && isPublic && priceCents > 0
+          ? "Realm listed in the Public Library"
+          : isPublic ? "Realm saved + published" : "Realm saved to your library"
+      );
     } catch (e: any) {
       toast.error("Save failed", { description: e?.message });
     } finally {
@@ -213,10 +224,13 @@ export default function RealmBuilderPage() {
             <h1 className="text-lg font-semibold flex items-center gap-2">
               <Wand2 className="w-5 h-5 text-amber-400" />
               Realm Builder
-              <span className="text-[10px] uppercase tracking-wider text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded-full">Phase 1</span>
+              <span className="text-[10px] uppercase tracking-wider text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded-full">Phase 4</span>
             </h1>
-            <p className="text-xs text-white/50">Describe → 8K photoreal realm → walk inside → save & share</p>
+            <p className="text-xs text-white/50">Describe → 8K photoreal realm → walk inside → publish & earn</p>
           </div>
+          <Button asChild size="sm" variant="ghost" className="text-amber-400 hover:text-amber-300">
+            <Link to="/realms"><Globe2 className="w-4 h-4 mr-1" /> Public Library</Link>
+          </Button>
         </div>
       </header>
 
@@ -298,6 +312,37 @@ export default function RealmBuilderPage() {
               </span>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
+
+            {isPublic && (
+              <div className="rounded-md border border-white/10 bg-black/30 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wider text-white/60 flex items-center gap-2">
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    List in Public Library
+                  </span>
+                  <Switch checked={shopEnabled} onCheckedChange={setShopEnabled} />
+                </div>
+                {shopEnabled && (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-white/50">Price (USD)</label>
+                    <div className="mt-1 flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.99"
+                        value={priceUsd}
+                        onChange={(e) => setPriceUsd(e.target.value)}
+                        className="bg-black/40 border-white/10 h-8"
+                      />
+                    </div>
+                    <p className="text-[10px] text-white/40 mt-1">
+                      You keep 70% ({(parseFloat(priceUsd || "0") * 0.7).toFixed(2)} USD). Platform fee 30% via Stripe Connect.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <Button
               onClick={handleSave}
               disabled={saving || !skyboxUrl}
@@ -382,10 +427,10 @@ export default function RealmBuilderPage() {
             )}
           </Card>
           <div className="text-xs text-white/50 leading-relaxed">
-            <strong className="text-white/80">What's next:</strong>{" "}
-            Phase 2 adds drag-and-drop prop placement (trees, furniture, lights).{" "}
-            Phase 3 adds CAD primitives (box/sphere/cylinder + boolean).{" "}
-            Phase 4 opens the Public Library so other users can walk through yours (Stripe Connect 70/30).
+            <strong className="text-white/80">Phase 4 live:</strong>{" "}
+            Toggle <em>Public</em> then <em>List in Public Library</em> to sell your realm.
+            Buyers unlock walk-in access via Stripe checkout; you keep 70% (paid straight to your Stripe Connect account).
+            Browse the <Link to="/realms" className="text-amber-400 underline">Public Library</Link> to walk through community realms.
           </div>
         </div>
       </main>
