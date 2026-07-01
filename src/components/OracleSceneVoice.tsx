@@ -167,6 +167,40 @@ const OracleSceneVoice = ({ onScene, busy }: Props) => {
     onScene(enriched);
     setText("");
   };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1.5 font-semibold text-primary">
+          <Sparkles className="w-3.5 h-3.5" /> Speak to the Oracle
+        </span>
+        <span className="flex items-center gap-1 text-muted-foreground">
+          <Brain className="w-3 h-3" /> {memoryCount} memories
+        </span>
+      </div>
+
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, 2000))}
+        placeholder="Describe the next scene, or press the mic and speak…"
+        rows={3}
+        className="text-sm"
+      />
+
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={listening ? "destructive" : "secondary"}
+          onClick={toggleMic}
+          disabled={!supported}
+          title={supported ? "Toggle mic" : "Speech recognition not supported in this browser"}
+        >
+          {listening ? <><MicOff className="w-4 h-4 mr-1" /> Stop</> : <><Mic className="w-4 h-4 mr-1" /> Speak</>}
+        </Button>
+        <Button type="button" size="sm" onClick={buildScene} disabled={busy || text.trim().length < 8} className="flex-1">
+          {busy ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Building…</> : <><Sparkles className="w-4 h-4 mr-1" /> Build scene with Oracle</>}
+        </Button>
       </div>
 
       {!supported && (
@@ -179,3 +213,4 @@ const OracleSceneVoice = ({ onScene, busy }: Props) => {
 };
 
 export default OracleSceneVoice;
+
