@@ -153,13 +153,13 @@ const VARIANTS: Record<string, SeoVariant> = {
   "/ai-app-builder": {
     path: "/ai-app-builder",
     title: "AI App Builder — Build Apps By Chatting With AI",
-    description: "ORACLE LUNAR App Builder lets you describe an app and AI builds it. Wrap for Play Store, add Stripe, monetize. Free to start.",
+    description: "ORACLE LUNAR App Builder lets you describe an app and AI builds it. Add Stripe, launch on the web, and monetize. Free to start.",
     h1: "Build Apps Just By Chatting",
-    tagline: "Describe it. AI codes it. Wrap it for Play Store. Sell it.",
+    tagline: "Describe it. AI codes it. Launch it on the web. Sell it.",
     keywords: ["ai app builder", "no-code ai app maker", "build app with ai", "ai website builder"],
     faqs: [
       { q: "Do I need to code?", a: "No — describe the app in plain English and AI generates production-ready code." },
-      { q: "Can I sell my app?", a: "Yes — built-in Stripe paywall and Play Store wrapper get you live in minutes." },
+      { q: "Can I sell my app?", a: "Yes — built-in Stripe paywall support helps you launch and monetize on the web." },
     ],
   },
   "/ai-image-generator-free": {

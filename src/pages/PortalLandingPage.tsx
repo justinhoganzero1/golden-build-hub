@@ -468,7 +468,7 @@ const PortalLandingPage = () => {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">
                 Describe an app in plain English and our AI builds a full single-file web app —
-                Stripe paywalls, AI chat, PWA install and sharing baked in. Then send it to App Wrapper to publish.
+                Stripe paywalls, AI chat, PWA install and sharing baked in for web-first publishing.
               </p>
               <Button
                 size="lg"

@@ -26,7 +26,6 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // remount, which is the bug we're killing for good.
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
-import AppUnlockGate from "@/components/AppUnlockGate";
 import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 
@@ -84,7 +83,6 @@ const loaders = {
   "/investor": () => import("./pages/InvestorPage"),
   "/creators": () => import("./pages/CreatorsPage"),
   "/sign-in": () => import("./components/SignInPage"),
-  "/web-wrapper": () => import("./pages/WebWrapperPage"),
   
   "/claims-assistant": () => import("./pages/ClaimsAssistantPage"),
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
@@ -213,8 +211,6 @@ const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
-const WebWrapperPage = lazy(loaders["/web-wrapper"]);
-
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
@@ -354,7 +350,7 @@ const App = () => (
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/verify-phone" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
-                  <Route path="/web-wrapper" element={<RequireAuth><AppUnlockGate appKey="app_wrapper"><ErrorBoundary pageName="Web Wrapper"><WebWrapperPage /></ErrorBoundary></AppUnlockGate></RequireAuth>} />
+                  <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
