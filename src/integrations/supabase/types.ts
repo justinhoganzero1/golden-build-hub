@@ -2620,46 +2620,58 @@ export type Database = {
           avatar_id: string | null
           avatar_url: string | null
           created_at: string
+          download_count: number
           id: string
           is_public: boolean
           metadata: Json
           prompt: string | null
           props: Json
           share_slug: string | null
+          shop_enabled: boolean
+          shop_price_cents: number
           skybox_url: string | null
           title: string
           updated_at: string
           user_id: string
+          view_count: number
         }
         Insert: {
           avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          download_count?: number
           id?: string
           is_public?: boolean
           metadata?: Json
           prompt?: string | null
           props?: Json
           share_slug?: string | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           skybox_url?: string | null
           title?: string
           updated_at?: string
           user_id: string
+          view_count?: number
         }
         Update: {
           avatar_id?: string | null
           avatar_url?: string | null
           created_at?: string
+          download_count?: number
           id?: string
           is_public?: boolean
           metadata?: Json
           prompt?: string | null
           props?: Json
           share_slug?: string | null
+          shop_enabled?: boolean
+          shop_price_cents?: number
           skybox_url?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          view_count?: number
         }
         Relationships: [
           {
