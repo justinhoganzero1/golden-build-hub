@@ -88,6 +88,8 @@ export default function RealmBuilderPage() {
   const [walkMode, setWalkMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
+  const [shopEnabled, setShopEnabled] = useState(false);
+  const [priceUsd, setPriceUsd] = useState<string>("2.99");
   const [savedRealm, setSavedRealm] = useState<RealmRow | null>(null);
   const [myRealms, setMyRealms] = useState<RealmRow[]>([]);
 
