@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Suspense, useMemo } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PointerLockControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -16,16 +16,16 @@ interface Props {
 }
 
 const SkySphere = ({ texture }: { texture: THREE.Texture }) => (
-  <mesh scale={[-1, 1, 1]}>
-    <sphereGeometry args={[50, 64, 32]} />
+  <mesh>
+    <sphereGeometry args={[80, 96, 48]} />
     <meshBasicMaterial map={texture} side={THREE.BackSide} toneMapped={false} />
   </mesh>
 );
 
 const Floor = () => (
-  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
-    <circleGeometry args={[40, 48]} />
-    <meshBasicMaterial color="#050505" transparent opacity={0.35} />
+  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.35, 0]}>
+    <circleGeometry args={[10, 64]} />
+    <meshBasicMaterial color="#050505" transparent opacity={0.18} />
   </mesh>
 );
 
@@ -46,7 +46,7 @@ const WalkController = () => {
   }, []);
 
   useFrame((_, delta) => {
-    const speed = (keys.current["ShiftLeft"] ? 12 : 5) * delta;
+    const speed = (keys.current["ShiftLeft"] ? 2.8 : 1.35) * delta;
     const dir = new THREE.Vector3();
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
@@ -67,9 +67,9 @@ const WalkController = () => {
     }
     camera.position.add(velocity.current);
 
-    const maxR = 40;
+    const maxR = 6;
     if (camera.position.length() > maxR) camera.position.setLength(maxR);
-    camera.position.y = Math.max(-1.5, Math.min(3, camera.position.y));
+    camera.position.y = Math.max(-0.45, Math.min(1.8, camera.position.y));
   });
 
   return null;
@@ -97,6 +97,8 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
         setTexture(tex);
       },
       undefined,
@@ -110,6 +112,8 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
             if (cancelled) return;
             tex.mapping = THREE.EquirectangularReflectionMapping;
             tex.colorSpace = THREE.SRGBColorSpace;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
             setTexture(tex);
           },
           undefined,
@@ -125,9 +129,9 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
   };
 
   return (
-    <div className="relative w-full h-full bg-black">
+    <div className="fixed inset-0 z-[100] bg-black">
       {texture && (
-        <Canvas camera={{ position: [0, 0, 0.1], fov: 75 }}>
+        <Canvas camera={{ position: [0, 0, 0.1], fov: 66 }}>
           <Suspense fallback={null}>
             <SkySphere texture={texture} />
             <Floor />
@@ -135,7 +139,7 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
             <PointerLockControls
               ref={controlsRef}
               onLock={() => setLocked(true)}
-              onUnlock={() => { setLocked(false); onExit?.(); }}
+              onUnlock={() => setLocked(false)}
             />
           </Suspense>
         </Canvas>
@@ -155,15 +159,23 @@ const ImmersiveFPSViewer = ({ imageUrl, onExit }: Props) => {
       )}
 
       {texture && !locked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
           <button
             onClick={enterWalk}
-            className="px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold shadow-2xl"
+            className="px-6 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold shadow-2xl"
           >
-            Step inside · WASD to walk, mouse to look
+            Enter realm
           </button>
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={onExit}
+        className="absolute top-4 right-4 px-3 py-2 rounded-md bg-black/55 hover:bg-black/75 border border-white/15 text-white text-sm"
+      >
+        Exit
+      </button>
     </div>
   );
 };
