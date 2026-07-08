@@ -780,12 +780,28 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* Link another device */}
-              <button onClick={scanBluetooth} className="w-full mt-3 py-3 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
-                + Link Another Device
+              {/* Scan buttons row */}
+              <div className="grid grid-cols-2 gap-2 mt-4 mb-3">
+                <button onClick={connectAudioDevice} disabled={isScanning}
+                  className="py-3 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-semibold hover:bg-primary/20 disabled:opacity-50">
+                  🎧 Connect Earbuds / Headphones
+                </button>
+                <button onClick={scanBluetooth} disabled={isScanning}
+                  className="py-3 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-semibold hover:bg-primary/20 disabled:opacity-50">
+                  ⌚ Connect Smartwatch
+                </button>
+              </div>
+              <button onClick={testOracleVoice}
+                className="w-full py-3 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
+                🔊 Test Oracle Voice on Current Output
+              </button>
+              <button onClick={scanBluetooth}
+                className="w-full mt-2 py-2.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
+                + Link another device
               </button>
             </>
           )}
+
 
           {tab === "privacy" && (
             <>
