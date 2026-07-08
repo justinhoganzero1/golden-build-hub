@@ -863,7 +863,7 @@ const SettingsPage = () => {
               </div>
 
               {/* USB / wired audio output picker */}
-              <div className="bg-card border border-border rounded-xl p-4 mb-3">
+              <div id="oracle-audio-output-picker" className="bg-card border border-border rounded-xl p-4 mb-3">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
                     🎧 Audio Output (USB / Wired / Bluetooth)
