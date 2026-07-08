@@ -573,20 +573,65 @@ const SettingsPage = () => {
     } finally { setIsScanning(false); }
   }, []);
 
-  const testOracleVoice = useCallback(() => {
+  const refreshAudioOutputs = useCallback(async () => {
     try {
-      const u = new SpeechSynthesisUtterance("Hello, this is the Oracle. If you can hear me clearly through your earbuds, you are all set.");
+      // Ask for mic permission so device labels become readable
+      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch { /* ok */ }
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const outs = devs.filter(d => d.kind === "audiooutput").map(d => ({ deviceId: d.deviceId, label: d.label || "Output device" }));
+      setAudioOutputs(outs);
+      if (outs.length === 0) toast.message("No audio outputs listed. Chrome/Edge on desktop supports this best.");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not enumerate audio outputs");
+    }
+  }, []);
+
+  const chooseSink = useCallback((deviceId: string, label?: string) => {
+    setSelectedSinkId(deviceId);
+    localStorage.setItem("oracle-audio-sink-id", deviceId);
+    window.dispatchEvent(new CustomEvent("oracle-audio-sink-change", { detail: { deviceId, label } }));
+    toast.success(`Oracle audio → ${label || deviceId}`);
+  }, []);
+
+  const testOracleVoice = useCallback(async () => {
+    try {
+      // Prefer routing through the selected sink using an <audio> element with a
+      // MediaStream from a short WebAudio tone + speechSynthesis fallback.
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx: AudioContext = new AC();
+      const dest = (ctx as any).createMediaStreamDestination();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = 660;
+      gain.gain.value = 0.15;
+      osc.connect(gain).connect(dest);
+      const audio = new Audio();
+      audio.srcObject = dest.stream as any;
+      if ((audio as any).setSinkId && selectedSinkId) {
+        try { await (audio as any).setSinkId(selectedSinkId); } catch (e: any) {
+          toast.error(`Couldn't route to selected output: ${e?.message || e}`);
+        }
+      }
+      await audio.play().catch(() => {});
+      osc.start();
+      setTimeout(() => { try { osc.stop(); ctx.close(); audio.pause(); } catch {} }, 700);
+
+      // Then speak via speechSynthesis (follows OS default output — set your USB
+      // earpiece as the system default for the spoken voice to follow).
+      const u = new SpeechSynthesisUtterance("Hello, this is the Oracle. If you can hear me clearly, your earpiece is connected.");
       u.rate = 0.95; u.pitch = 1.05; u.volume = 1;
       const voices = window.speechSynthesis.getVoices();
       const preferred = voices.find(v => /female|samantha|zira|karen|aria/i.test(v.name)) || voices[0];
       if (preferred) u.voice = preferred;
       window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-      toast.success("Speaking through your current audio output…");
+      setTimeout(() => window.speechSynthesis.speak(u), 750);
+      toast.success("Testing tone on selected output, then Oracle voice on system default…");
     } catch {
       toast.error("Voice test failed. Try again after granting audio permission.");
     }
-  }, []);
+  }, [selectedSinkId]);
+
+
 
 
 
