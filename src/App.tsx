@@ -237,6 +237,8 @@ const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
 const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
 const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
+const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
