@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { KeyRound, ExternalLink, Loader2, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { KeyRound, Loader2, Check, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ const CFG = {
 
 const AgentKeyPanel = ({ agentId, onSaved }: Props) => {
   const cfg = CFG[agentId];
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasKey, setHasKey] = useState(false);
@@ -115,14 +117,12 @@ const AgentKeyPanel = ({ agentId, onSaved }: Props) => {
           <p className="text-[11px] text-muted-foreground mt-1">
             {cfg.label} will call {cfg.provider} directly from <span className="text-foreground">your own account</span> — you pay {cfg.provider} directly, nothing to us. Your key is stored privately and only used for your chats.
           </p>
-          <a
-            href={cfg.getKeyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-1"
+          <button
+            onClick={() => navigate(`/get-api-key/${agentId === "nova" ? "openai" : "gemini"}`)}
+            className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-black text-xs font-extrabold italic hover:bg-amber-400 active:scale-95 transition"
           >
-            Get a {cfg.provider} key <ExternalLink className="w-3 h-3" />
-          </a>
+            <Sparkles className="w-3 h-3" /> GET MY OWN {cfg.provider.toUpperCase()} KEY (2 MIN)
+          </button>
         </div>
       </div>
       <div className="flex gap-2">

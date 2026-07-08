@@ -237,8 +237,10 @@ const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
 const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
 const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
+const GetApiKeyWizardPage = lazy(() => import("./pages/GetApiKeyWizardPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
+const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -280,6 +282,7 @@ const App = () => (
               <OracleControlListener />
               <AdminFlagBootstrap />
               <Suspense fallback={null}><WalletPaywallModal /></Suspense>
+              <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 
               <Suspense fallback={<Loading />}>
                 <Routes>
@@ -424,6 +427,8 @@ const App = () => (
                   <Route path="/purchase-success" element={<RequireAuth><ErrorBoundary pageName="Purchase Success"><ShopPurchaseSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/agents" element={<RequireAuth><ErrorBoundary pageName="Agents Hub"><AgentsHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/agents/:agentId" element={<RequireAuth><ErrorBoundary pageName="Agent Chat"><AgentChatPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/get-api-key/:provider" element={<RequireAuth><ErrorBoundary pageName="Get API Key"><GetApiKeyWizardPage /></ErrorBoundary></RequireAuth>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
