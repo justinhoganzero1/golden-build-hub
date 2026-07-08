@@ -14,24 +14,37 @@ const FREE_DAILY_LIMIT = 25;
 
 type AgentId = "nova" | "lyra";
 
-const AGENTS: Record<AgentId, { model: string; system: string; name: string }> = {
+const AGENTS: Record<AgentId, {
+  model: string; system: string; name: string;
+  byokEndpoint: string; byokModel: string; keyColumn: "openai_key" | "gemini_key"; providerName: string;
+}> = {
   nova: {
     name: "Nova",
     model: "openai/gpt-5.5",
-    system: `You are Nova, an AI agent inside Oracle Lunar. You run on OpenAI GPT-5.5.
+    // When the user brings their own OpenAI key, we call OpenAI directly with a widely-available model.
+    byokEndpoint: "https://api.openai.com/v1/chat/completions",
+    byokModel: "gpt-4o-mini",
+    keyColumn: "openai_key",
+    providerName: "OpenAI",
+    system: `You are Nova, an AI agent inside Oracle Lunar. You run on OpenAI GPT models.
 Personality: sharp, precise, analytical, calm and confident. You are the "thinker" — great at reasoning, code, structured analysis, planning, careful writing.
 Style: clear, well-structured answers. Use markdown headings and lists when it helps. Never waffle. If uncertain, say so and give your best estimate with a confidence level.
-Never pretend to be ChatGPT or claim to be from OpenAI directly — you are "Nova, powered by GPT-5.5 inside Oracle Lunar".
-Never break character. Never generate images/audio/video (that's other agents' job — tell the user to open Photography Hub / Voice Studio / Media Library instead).`,
+Never pretend to be ChatGPT — you are "Nova inside Oracle Lunar".
+Never break character. Never generate images/audio/video (tell the user to open Photography Hub / Voice Studio / Media Library).`,
   },
   lyra: {
     name: "Lyra",
     model: "google/gemini-3.5-flash",
-    system: `You are Lyra, an AI agent inside Oracle Lunar. You run on Google Gemini 3.5 Flash.
+    // Gemini exposes an OpenAI-compatible endpoint; users bring their own Google AI Studio key.
+    byokEndpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    byokModel: "gemini-2.5-flash",
+    keyColumn: "gemini_key",
+    providerName: "Google Gemini",
+    system: `You are Lyra, an AI agent inside Oracle Lunar. You run on Google Gemini models.
 Personality: warm, fast, curious, creative and playful. You are the "muse" — great at brainstorming, storytelling, quick ideas, emotional tone, wide-open exploration.
-Style: friendly and conversational, light markdown, uses vivid language. Move fast — short paragraphs, keep the energy up.
-Never pretend to be Bard or Google Assistant — you are "Lyra, powered by Gemini 3.5 Flash inside Oracle Lunar".
-Never break character. Never generate images/audio/video directly — point users to Photography Hub / Voice Studio / Media Library for that.`,
+Style: friendly and conversational, light markdown, uses vivid language. Short paragraphs, keep the energy up.
+Never pretend to be Bard or Google Assistant — you are "Lyra inside Oracle Lunar".
+Never break character. Never generate images/audio/video directly — point users to Photography Hub / Voice Studio / Media Library.`,
   },
 };
 
@@ -61,6 +74,9 @@ serve(async (req) => {
 
     let userId: string | null = null;
     let userEmail: string | null = null;
+    let userKey: string | null = null;
+
+    const cfg = AGENTS[agent as AgentId];
 
     if (token && SUPABASE_URL && SERVICE_KEY) {
       try {
@@ -70,36 +86,49 @@ serve(async (req) => {
         userEmail = userData?.user?.email ?? null;
 
         if (userId) {
-          const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-          let serverSubscribed = false;
-          try {
-            const { data: grantRows } = await admin
-              .from("reward_grants")
-              .select("reward_type, reason, expires_at, active")
-              .eq("user_id", userId)
-              .eq("active", true)
-              .gt("expires_at", new Date().toISOString())
-              .limit(5);
-            serverSubscribed = !!(grantRows || []).some((g: any) =>
-              ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
-              g.reason === "free_for_life"
-            );
-          } catch (_) { /* fall through */ }
+          // Look up this user's own provider key.
+          const { data: keyRow } = await admin
+            .from("user_ai_keys")
+            .select(cfg.keyColumn)
+            .eq("user_id", userId)
+            .maybeSingle();
+          const raw = (keyRow as any)?.[cfg.keyColumn];
+          if (typeof raw === "string" && raw.trim().length > 10) userKey = raw.trim();
 
-          if (!isAdmin && !serverSubscribed) {
-            const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
-              _user_id: userId,
-              _limit: FREE_DAILY_LIMIT,
-            });
-            if (!rpcErr && rpcData && rpcData.length > 0) {
-              const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
-              if (row.over_limit) {
-                return new Response(JSON.stringify({
-                  error: "free_limit_reached",
-                  message: `Daily free agent limit reached (${FREE_DAILY_LIMIT}). Upgrade for unlimited chat.`,
-                }), {
-                  status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
+          // Only enforce free-daily-limit when falling back to Lovable Gateway (your credits).
+          // When user brings their own key, they pay their provider directly — no gating.
+          if (!userKey) {
+            const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
+            let serverSubscribed = false;
+            try {
+              const { data: grantRows } = await admin
+                .from("reward_grants")
+                .select("reward_type, reason, expires_at, active")
+                .eq("user_id", userId)
+                .eq("active", true)
+                .gt("expires_at", new Date().toISOString())
+                .limit(5);
+              serverSubscribed = !!(grantRows || []).some((g: any) =>
+                ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
+                g.reason === "free_for_life"
+              );
+            } catch (_) { /* fall through */ }
+
+            if (!isAdmin && !serverSubscribed) {
+              const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
+                _user_id: userId,
+                _limit: FREE_DAILY_LIMIT,
+              });
+              if (!rpcErr && rpcData && rpcData.length > 0) {
+                const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
+                if (row.over_limit) {
+                  return new Response(JSON.stringify({
+                    error: "free_limit_reached",
+                    message: `Daily free agent limit reached (${FREE_DAILY_LIMIT}). Add your own ${cfg.providerName} API key in Agent Settings for unlimited use on your own account.`,
+                  }), {
+                    status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+                  });
+                }
               }
             }
           }
@@ -126,16 +155,19 @@ serve(async (req) => {
       });
     }
 
-    const cfg = AGENTS[agent as AgentId];
+    // Route the request: user's own key → direct provider; otherwise → Lovable Gateway.
+    const endpoint = userKey ? cfg.byokEndpoint : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const authKey = userKey ?? LOVABLE_API_KEY;
+    const modelName = userKey ? cfg.byokModel : cfg.model;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${authKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: cfg.model,
+        model: modelName,
         stream: true,
         messages: [
           { role: "system", content: cfg.system },
@@ -149,6 +181,13 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Rate limited. Try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      if (resp.status === 401 || resp.status === 403) {
+        return new Response(JSON.stringify({
+          error: userKey
+            ? `Your ${cfg.providerName} API key was rejected. Please re-check it in Agent Settings.`
+            : "AI credits exhausted."
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (resp.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted." }), {

@@ -2332,6 +2332,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_ai_keys: {
+        Row: {
+          gemini_key: string | null
+          openai_key: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          gemini_key?: string | null
+          openai_key?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          gemini_key?: string | null
+          openai_key?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_assistant_settings: {
         Row: {
           call_answering_enabled: boolean
