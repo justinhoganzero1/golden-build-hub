@@ -235,6 +235,8 @@ const AudioFilterPage = lazy(loaders["/audio-filter"]);
 const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
+const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
+const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -416,6 +418,8 @@ const App = () => (
                   <Route path="/library/public" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="/public-library" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="/purchase-success" element={<RequireAuth><ErrorBoundary pageName="Purchase Success"><ShopPurchaseSuccessPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/agents" element={<RequireAuth><ErrorBoundary pageName="Agents Hub"><AgentsHubPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/agents/:agentId" element={<RequireAuth><ErrorBoundary pageName="Agent Chat"><AgentChatPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
