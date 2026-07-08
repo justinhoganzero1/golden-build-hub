@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { KeyRound, ExternalLink, Loader2, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { KeyRound, Loader2, Check, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
