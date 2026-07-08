@@ -22,6 +22,7 @@ import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 // FreeGoBanner removed — no feature is free; visitors must sign in or trial.
 import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
+import UserConnectorsPanel from "@/components/UserConnectorsPanel";
 
 interface AppTile {
   label: string;
@@ -317,6 +318,9 @@ const DashboardPage = () => {
 
       {/* Affiliate / partner brag bar — Lovable featured, ElevenLabs + HeyGen alongside. */}
       <PartnerBubbles />
+
+      {/* Per-user connectors: each signed-in user brings their own API keys. Admin uses shared/system keys, so hidden. */}
+      {!adminLoading && !isAdmin && <UserConnectorsPanel />}
 
       <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around gap-2 px-2 py-2">
         {[
