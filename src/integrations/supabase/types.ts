@@ -3140,6 +3140,31 @@ export type Database = {
         Args: { _command: string; _name: string; _schedule: string }
         Returns: undefined
       }
+      admin_list_users: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: {
+          balance_cents: number
+          created_at: string
+          display_name: string
+          email: string
+          free_for_life: boolean
+          last_charge_at: string
+          total_spent_cents: number
+          user_id: string
+        }[]
+      }
+      admin_set_free_for_life: {
+        Args: { _enabled: boolean; _user_id: string }
+        Returns: boolean
+      }
+      admin_set_wallet_balance: {
+        Args: { _cents: number; _user_id: string }
+        Returns: number
+      }
+      admin_topup_user: {
+        Args: { _amount_cents: number; _note?: string; _user_id: string }
+        Returns: number
+      }
       check_ai_rate_limit: {
         Args: { _endpoint: string; _limit?: number; _window_seconds?: number }
         Returns: {
