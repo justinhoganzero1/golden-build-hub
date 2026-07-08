@@ -838,10 +838,43 @@ const SettingsPage = () => {
                   ⌚ Connect Smartwatch
                 </button>
               </div>
+
+              {/* USB / wired audio output picker */}
+              <div className="bg-card border border-border rounded-xl p-4 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    🎧 Audio Output (USB / Wired / Bluetooth)
+                  </h3>
+                  <button onClick={refreshAudioOutputs} className="text-[11px] text-primary hover:underline">Detect devices</button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  Pick the earpiece plugged into your computer. Oracle will route her voice to this output.
+                </p>
+                {audioOutputs.length === 0 ? (
+                  <button onClick={refreshAudioOutputs} className="w-full py-2 text-xs text-primary bg-primary/5 border border-primary/20 rounded-lg">
+                    Tap to detect your USB earpiece
+                  </button>
+                ) : (
+                  <div className="space-y-1.5">
+                    {audioOutputs.map(o => (
+                      <button key={o.deviceId} onClick={() => chooseSink(o.deviceId, o.label)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-left transition-colors ${selectedSinkId === o.deviceId ? "bg-primary/15 border border-primary text-primary" : "bg-secondary/40 border border-border text-foreground hover:bg-secondary"}`}>
+                        <span className="truncate">{o.label}</span>
+                        {selectedSinkId === o.deviceId && <Check className="w-3.5 h-3.5 flex-shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[9px] text-muted-foreground mt-2 leading-snug">
+                  Tip: for the spoken Oracle voice to follow this choice on all pages, also set the same device as your system default output (Windows Sound settings / macOS System Sound).
+                </p>
+              </div>
+
               <button onClick={testOracleVoice}
                 className="w-full py-3 text-sm font-medium text-primary bg-primary/5 border border-primary/20 rounded-xl hover:bg-primary/10 transition-colors">
-                🔊 Test Oracle Voice on Current Output
+                🔊 Test Oracle Voice on Selected Output
               </button>
+
               <button onClick={scanBluetooth}
                 className="w-full mt-2 py-2.5 text-xs font-medium text-muted-foreground hover:text-primary transition-colors">
                 + Link another device
