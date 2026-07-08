@@ -526,6 +526,68 @@ const SettingsPage = () => {
     toast.success(`${device.name} disconnected`);
   }, []);
 
+  const connectAudioDevice = useCallback(async () => {
+    // Web Bluetooth cannot route A2DP audio — that's done by the OS. On native
+    // (Capacitor Android), open the system Bluetooth settings so the user can
+    // pair earbuds/headphones there. On web, still trigger the BT picker so
+    // BLE-capable earbuds (e.g. LE Audio) get listed, and show guidance.
+    const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+    if (isNative) {
+      try {
+        const { App } = await import("@capacitor/app");
+        // Android intent to open Bluetooth settings
+        await (App as any).openUrl?.({ url: "app-settings:bluetooth" }).catch(() => {});
+        window.location.href = "intent://settings#Intent;action=android.settings.BLUETOOTH_SETTINGS;end";
+        toast.success("Opening Bluetooth settings — pair your earbuds there, then return to the app.");
+        return;
+      } catch {
+        toast.message("Open your phone's Bluetooth settings to pair earbuds, then return here.");
+        return;
+      }
+    }
+    if (!(navigator as any).bluetooth) {
+      toast.error("For audio: pair earbuds in your phone/OS Bluetooth settings, then play any sound in the app.");
+      return;
+    }
+    setIsScanning(true);
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["battery_service", "device_information", 0x1843 /* Audio Input Control */, 0x1844 /* Volume Control */, 0x184E /* Audio Stream Control */],
+      });
+      if (!device) { setIsScanning(false); return; }
+      const newDevice: PairedDevice = {
+        id: device.id || Date.now().toString(),
+        name: device.name || "Bluetooth Audio",
+        type: "earbuds",
+        icon: "🎧",
+        connected: false,
+        lastSeen: new Date().toLocaleTimeString(),
+      };
+      setPairedDevices(prev => prev.find(d => d.id === newDevice.id) ? prev : [...prev, newDevice]);
+      toast.success(`${newDevice.name} registered. To actually hear audio through it, make sure it's paired in your OS Bluetooth settings.`);
+    } catch (e: any) {
+      if (e.name !== "NotFoundError") toast.error(e.message || "Bluetooth scan failed");
+    } finally { setIsScanning(false); }
+  }, []);
+
+  const testOracleVoice = useCallback(() => {
+    try {
+      const u = new SpeechSynthesisUtterance("Hello, this is the Oracle. If you can hear me clearly through your earbuds, you are all set.");
+      u.rate = 0.95; u.pitch = 1.05; u.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => /female|samantha|zira|karen|aria/i.test(v.name)) || voices[0];
+      if (preferred) u.voice = preferred;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+      toast.success("Speaking through your current audio output…");
+    } catch {
+      toast.error("Voice test failed. Try again after granting audio permission.");
+    }
+  }, []);
+
+
+
   const applyTheme = (theme: ThemeScheme) => {
     const root = document.documentElement;
     root.style.setProperty("--primary", theme.primary);
