@@ -373,6 +373,8 @@ const SettingsPage = () => {
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [connectedDevices, setConnectedDevices] = useState<string[]>([]);
+  const [audioOutputs, setAudioOutputs] = useState<{ deviceId: string; label: string }[]>([]);
+  const [selectedSinkId, setSelectedSinkId] = useState<string>(() => localStorage.getItem("oracle-audio-sink-id") || "default");
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem("oracle-lunar-theme-name") || "Gold & Black");
   const [neonGlow, setNeonGlow] = useState(() => localStorage.getItem("oracle-lunar-neon-glow") || "Electric Marine");
   const [language, setLanguage] = useState(() => localStorage.getItem("oracle-lunar-language") || "English");
