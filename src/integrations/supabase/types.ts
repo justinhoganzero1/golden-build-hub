@@ -2587,6 +2587,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_connectors: {
+        Row: {
+          api_key: string | null
+          connected_at: string | null
+          enabled: boolean
+          id: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          connected_at?: string | null
+          enabled?: boolean
+          id?: string
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          connected_at?: string | null
+          enabled?: boolean
+          id?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_google_tokens: {
         Row: {
           access_token: string
