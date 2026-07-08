@@ -606,18 +606,8 @@ const SettingsPage = () => {
     } finally { setIsScanning(false); }
   }, [refreshAudioOutputs]);
 
-  const refreshAudioOutputs = useCallback(async () => {
-    try {
-      // Ask for mic permission so device labels become readable
-      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch { /* ok */ }
-      const devs = await navigator.mediaDevices.enumerateDevices();
-      const outs = devs.filter(d => d.kind === "audiooutput").map(d => ({ deviceId: d.deviceId, label: d.label || "Output device" }));
-      setAudioOutputs(outs);
-      if (outs.length === 0) toast.message("No audio outputs listed. Chrome/Edge on desktop supports this best.");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not enumerate audio outputs");
-    }
-  }, []);
+
+
 
   const chooseSink = useCallback((deviceId: string, label?: string) => {
     setSelectedSinkId(deviceId);
