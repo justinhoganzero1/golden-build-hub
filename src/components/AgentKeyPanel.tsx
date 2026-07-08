@@ -30,6 +30,7 @@ const CFG = {
 
 const AgentKeyPanel = ({ agentId, onSaved }: Props) => {
   const cfg = CFG[agentId];
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasKey, setHasKey] = useState(false);
