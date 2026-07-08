@@ -22,6 +22,7 @@ import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 // FreeGoBanner removed — no feature is free; visitors must sign in or trial.
 import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
+import UserConnectorsPanel from "@/components/UserConnectorsPanel";
 
 interface AppTile {
   label: string;
