@@ -547,15 +547,27 @@ const SettingsPage = () => {
         return;
       }
     }
-    if (!(navigator as any).bluetooth) {
-      toast.error("For audio: pair earbuds in your phone/OS Bluetooth settings, then play any sound in the app.");
+    // Detect if we're inside an iframe with Bluetooth blocked by Permissions-Policy
+    // (e.g. Lovable preview). In that case, jump straight to enumerating OS-level
+    // audio outputs — that's what the user actually needs to hear Oracle through earbuds.
+    const inBlockedIframe = window.self !== window.top;
+    const btAvailable = !!(navigator as any).bluetooth && !inBlockedIframe;
+
+    if (!btAvailable) {
+      toast.message("Scanning your computer's audio outputs — pick your earbuds from the list below.", { duration: 4000 });
+      await refreshAudioOutputs();
+      // Scroll to the audio output picker
+      setTimeout(() => {
+        document.getElementById("oracle-audio-output-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
       return;
     }
+
     setIsScanning(true);
     try {
       const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
-        optionalServices: ["battery_service", "device_information", 0x1843 /* Audio Input Control */, 0x1844 /* Volume Control */, 0x184E /* Audio Stream Control */],
+        optionalServices: ["battery_service", "device_information", 0x1843, 0x1844, 0x184E],
       });
       if (!device) { setIsScanning(false); return; }
       const newDevice: PairedDevice = {
@@ -567,11 +579,20 @@ const SettingsPage = () => {
         lastSeen: new Date().toLocaleTimeString(),
       };
       setPairedDevices(prev => prev.find(d => d.id === newDevice.id) ? prev : [...prev, newDevice]);
-      toast.success(`${newDevice.name} registered. To actually hear audio through it, make sure it's paired in your OS Bluetooth settings.`);
+      toast.success(`${newDevice.name} registered. Make sure it's paired in your OS Bluetooth settings to hear audio.`);
+      await refreshAudioOutputs();
     } catch (e: any) {
-      if (e.name !== "NotFoundError") toast.error(e.message || "Bluetooth scan failed");
+      const msg = String(e?.message || "");
+      if (e?.name === "NotFoundError") { /* user cancelled */ }
+      else if (msg.includes("permissions policy") || msg.includes("disallowed")) {
+        toast.message("Bluetooth pairing isn't allowed in this preview. Scanning your USB/wired audio outputs instead.", { duration: 5000 });
+        await refreshAudioOutputs();
+        setTimeout(() => document.getElementById("oracle-audio-output-picker")?.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+      } else {
+        toast.error(msg || "Bluetooth scan failed — try pairing in your OS Bluetooth settings.");
+      }
     } finally { setIsScanning(false); }
-  }, []);
+  }, [refreshAudioOutputs]);
 
   const refreshAudioOutputs = useCallback(async () => {
     try {
