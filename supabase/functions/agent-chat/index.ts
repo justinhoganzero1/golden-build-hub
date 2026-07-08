@@ -74,6 +74,9 @@ serve(async (req) => {
 
     let userId: string | null = null;
     let userEmail: string | null = null;
+    let userKey: string | null = null;
+
+    const cfg = AGENTS[agent as AgentId];
 
     if (token && SUPABASE_URL && SERVICE_KEY) {
       try {
@@ -83,36 +86,49 @@ serve(async (req) => {
         userEmail = userData?.user?.email ?? null;
 
         if (userId) {
-          const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-          let serverSubscribed = false;
-          try {
-            const { data: grantRows } = await admin
-              .from("reward_grants")
-              .select("reward_type, reason, expires_at, active")
-              .eq("user_id", userId)
-              .eq("active", true)
-              .gt("expires_at", new Date().toISOString())
-              .limit(5);
-            serverSubscribed = !!(grantRows || []).some((g: any) =>
-              ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
-              g.reason === "free_for_life"
-            );
-          } catch (_) { /* fall through */ }
+          // Look up this user's own provider key.
+          const { data: keyRow } = await admin
+            .from("user_ai_keys")
+            .select(cfg.keyColumn)
+            .eq("user_id", userId)
+            .maybeSingle();
+          const raw = (keyRow as any)?.[cfg.keyColumn];
+          if (typeof raw === "string" && raw.trim().length > 10) userKey = raw.trim();
 
-          if (!isAdmin && !serverSubscribed) {
-            const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
-              _user_id: userId,
-              _limit: FREE_DAILY_LIMIT,
-            });
-            if (!rpcErr && rpcData && rpcData.length > 0) {
-              const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
-              if (row.over_limit) {
-                return new Response(JSON.stringify({
-                  error: "free_limit_reached",
-                  message: `Daily free agent limit reached (${FREE_DAILY_LIMIT}). Upgrade for unlimited chat.`,
-                }), {
-                  status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
+          // Only enforce free-daily-limit when falling back to Lovable Gateway (your credits).
+          // When user brings their own key, they pay their provider directly — no gating.
+          if (!userKey) {
+            const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
+            let serverSubscribed = false;
+            try {
+              const { data: grantRows } = await admin
+                .from("reward_grants")
+                .select("reward_type, reason, expires_at, active")
+                .eq("user_id", userId)
+                .eq("active", true)
+                .gt("expires_at", new Date().toISOString())
+                .limit(5);
+              serverSubscribed = !!(grantRows || []).some((g: any) =>
+                ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
+                g.reason === "free_for_life"
+              );
+            } catch (_) { /* fall through */ }
+
+            if (!isAdmin && !serverSubscribed) {
+              const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
+                _user_id: userId,
+                _limit: FREE_DAILY_LIMIT,
+              });
+              if (!rpcErr && rpcData && rpcData.length > 0) {
+                const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
+                if (row.over_limit) {
+                  return new Response(JSON.stringify({
+                    error: "free_limit_reached",
+                    message: `Daily free agent limit reached (${FREE_DAILY_LIMIT}). Add your own ${cfg.providerName} API key in Agent Settings for unlimited use on your own account.`,
+                  }), {
+                    status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+                  });
+                }
               }
             }
           }
@@ -139,16 +155,19 @@ serve(async (req) => {
       });
     }
 
-    const cfg = AGENTS[agent as AgentId];
+    // Route the request: user's own key → direct provider; otherwise → Lovable Gateway.
+    const endpoint = userKey ? cfg.byokEndpoint : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const authKey = userKey ?? LOVABLE_API_KEY;
+    const modelName = userKey ? cfg.byokModel : cfg.model;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${authKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: cfg.model,
+        model: modelName,
         stream: true,
         messages: [
           { role: "system", content: cfg.system },
@@ -162,6 +181,13 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "Rate limited. Try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      if (resp.status === 401 || resp.status === 403) {
+        return new Response(JSON.stringify({
+          error: userKey
+            ? `Your ${cfg.providerName} API key was rejected. Please re-check it in Agent Settings.`
+            : "AI credits exhausted."
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (resp.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
