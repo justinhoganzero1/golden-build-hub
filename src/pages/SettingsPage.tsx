@@ -28,6 +28,9 @@ const WEARABLE_SERVICES: Record<string, { name: string; icon: string; services: 
 };
 
 const KNOWN_WEARABLES = [
+  { name: "AirPods", icon: "🎧", type: "earbuds" },
+  { name: "Bluetooth Earbuds", icon: "🎧", type: "earbuds" },
+  { name: "Bluetooth Headphones", icon: "🎧", type: "earbuds" },
   { name: "Apple Watch", icon: "⌚", type: "watch" },
   { name: "Fitbit", icon: "📟", type: "fitness" },
   { name: "Samsung Galaxy Watch", icon: "⌚", type: "watch" },
