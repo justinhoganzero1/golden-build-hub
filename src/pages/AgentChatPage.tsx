@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
+import AgentKeyPanel from "@/components/AgentKeyPanel";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
