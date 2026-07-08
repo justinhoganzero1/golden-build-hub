@@ -426,6 +426,8 @@ const App = () => (
                   <Route path="/purchase-success" element={<RequireAuth><ErrorBoundary pageName="Purchase Success"><ShopPurchaseSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/agents" element={<RequireAuth><ErrorBoundary pageName="Agents Hub"><AgentsHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/agents/:agentId" element={<RequireAuth><ErrorBoundary pageName="Agent Chat"><AgentChatPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/get-api-key/:provider" element={<RequireAuth><ErrorBoundary pageName="Get API Key"><GetApiKeyWizardPage /></ErrorBoundary></RequireAuth>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
