@@ -528,6 +528,18 @@ const SettingsPage = () => {
     toast.success(`${device.name} disconnected`);
   }, []);
 
+  const refreshAudioOutputs = useCallback(async () => {
+    try {
+      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch { /* ok */ }
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const outs = devs.filter(d => d.kind === "audiooutput").map(d => ({ deviceId: d.deviceId, label: d.label || "Output device" }));
+      setAudioOutputs(outs);
+      if (outs.length === 0) toast.message("No audio outputs listed. Chrome/Edge on desktop supports this best.");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not enumerate audio outputs");
+    }
+  }, []);
+
   const connectAudioDevice = useCallback(async () => {
     // Web Bluetooth cannot route A2DP audio — that's done by the OS. On native
     // (Capacitor Android), open the system Bluetooth settings so the user can
@@ -547,15 +559,27 @@ const SettingsPage = () => {
         return;
       }
     }
-    if (!(navigator as any).bluetooth) {
-      toast.error("For audio: pair earbuds in your phone/OS Bluetooth settings, then play any sound in the app.");
+    // Detect if we're inside an iframe with Bluetooth blocked by Permissions-Policy
+    // (e.g. Lovable preview). In that case, jump straight to enumerating OS-level
+    // audio outputs — that's what the user actually needs to hear Oracle through earbuds.
+    const inBlockedIframe = window.self !== window.top;
+    const btAvailable = !!(navigator as any).bluetooth && !inBlockedIframe;
+
+    if (!btAvailable) {
+      toast.message("Scanning your computer's audio outputs — pick your earbuds from the list below.", { duration: 4000 });
+      await refreshAudioOutputs();
+      // Scroll to the audio output picker
+      setTimeout(() => {
+        document.getElementById("oracle-audio-output-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
       return;
     }
+
     setIsScanning(true);
     try {
       const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
-        optionalServices: ["battery_service", "device_information", 0x1843 /* Audio Input Control */, 0x1844 /* Volume Control */, 0x184E /* Audio Stream Control */],
+        optionalServices: ["battery_service", "device_information", 0x1843, 0x1844, 0x184E],
       });
       if (!device) { setIsScanning(false); return; }
       const newDevice: PairedDevice = {
@@ -567,24 +591,23 @@ const SettingsPage = () => {
         lastSeen: new Date().toLocaleTimeString(),
       };
       setPairedDevices(prev => prev.find(d => d.id === newDevice.id) ? prev : [...prev, newDevice]);
-      toast.success(`${newDevice.name} registered. To actually hear audio through it, make sure it's paired in your OS Bluetooth settings.`);
+      toast.success(`${newDevice.name} registered. Make sure it's paired in your OS Bluetooth settings to hear audio.`);
+      await refreshAudioOutputs();
     } catch (e: any) {
-      if (e.name !== "NotFoundError") toast.error(e.message || "Bluetooth scan failed");
+      const msg = String(e?.message || "");
+      if (e?.name === "NotFoundError") { /* user cancelled */ }
+      else if (msg.includes("permissions policy") || msg.includes("disallowed")) {
+        toast.message("Bluetooth pairing isn't allowed in this preview. Scanning your USB/wired audio outputs instead.", { duration: 5000 });
+        await refreshAudioOutputs();
+        setTimeout(() => document.getElementById("oracle-audio-output-picker")?.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+      } else {
+        toast.error(msg || "Bluetooth scan failed — try pairing in your OS Bluetooth settings.");
+      }
     } finally { setIsScanning(false); }
-  }, []);
+  }, [refreshAudioOutputs]);
 
-  const refreshAudioOutputs = useCallback(async () => {
-    try {
-      // Ask for mic permission so device labels become readable
-      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch { /* ok */ }
-      const devs = await navigator.mediaDevices.enumerateDevices();
-      const outs = devs.filter(d => d.kind === "audiooutput").map(d => ({ deviceId: d.deviceId, label: d.label || "Output device" }));
-      setAudioOutputs(outs);
-      if (outs.length === 0) toast.message("No audio outputs listed. Chrome/Edge on desktop supports this best.");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not enumerate audio outputs");
-    }
-  }, []);
+
+
 
   const chooseSink = useCallback((deviceId: string, label?: string) => {
     setSelectedSinkId(deviceId);
@@ -840,7 +863,7 @@ const SettingsPage = () => {
               </div>
 
               {/* USB / wired audio output picker */}
-              <div className="bg-card border border-border rounded-xl p-4 mb-3">
+              <div id="oracle-audio-output-picker" className="bg-card border border-border rounded-xl p-4 mb-3">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-semibold text-foreground flex items-center gap-2">
                     🎧 Audio Output (USB / Wired / Bluetooth)
