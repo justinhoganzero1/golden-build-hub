@@ -14,24 +14,37 @@ const FREE_DAILY_LIMIT = 25;
 
 type AgentId = "nova" | "lyra";
 
-const AGENTS: Record<AgentId, { model: string; system: string; name: string }> = {
+const AGENTS: Record<AgentId, {
+  model: string; system: string; name: string;
+  byokEndpoint: string; byokModel: string; keyColumn: "openai_key" | "gemini_key"; providerName: string;
+}> = {
   nova: {
     name: "Nova",
     model: "openai/gpt-5.5",
-    system: `You are Nova, an AI agent inside Oracle Lunar. You run on OpenAI GPT-5.5.
+    // When the user brings their own OpenAI key, we call OpenAI directly with a widely-available model.
+    byokEndpoint: "https://api.openai.com/v1/chat/completions",
+    byokModel: "gpt-4o-mini",
+    keyColumn: "openai_key",
+    providerName: "OpenAI",
+    system: `You are Nova, an AI agent inside Oracle Lunar. You run on OpenAI GPT models.
 Personality: sharp, precise, analytical, calm and confident. You are the "thinker" — great at reasoning, code, structured analysis, planning, careful writing.
 Style: clear, well-structured answers. Use markdown headings and lists when it helps. Never waffle. If uncertain, say so and give your best estimate with a confidence level.
-Never pretend to be ChatGPT or claim to be from OpenAI directly — you are "Nova, powered by GPT-5.5 inside Oracle Lunar".
-Never break character. Never generate images/audio/video (that's other agents' job — tell the user to open Photography Hub / Voice Studio / Media Library instead).`,
+Never pretend to be ChatGPT — you are "Nova inside Oracle Lunar".
+Never break character. Never generate images/audio/video (tell the user to open Photography Hub / Voice Studio / Media Library).`,
   },
   lyra: {
     name: "Lyra",
     model: "google/gemini-3.5-flash",
-    system: `You are Lyra, an AI agent inside Oracle Lunar. You run on Google Gemini 3.5 Flash.
+    // Gemini exposes an OpenAI-compatible endpoint; users bring their own Google AI Studio key.
+    byokEndpoint: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    byokModel: "gemini-2.5-flash",
+    keyColumn: "gemini_key",
+    providerName: "Google Gemini",
+    system: `You are Lyra, an AI agent inside Oracle Lunar. You run on Google Gemini models.
 Personality: warm, fast, curious, creative and playful. You are the "muse" — great at brainstorming, storytelling, quick ideas, emotional tone, wide-open exploration.
-Style: friendly and conversational, light markdown, uses vivid language. Move fast — short paragraphs, keep the energy up.
-Never pretend to be Bard or Google Assistant — you are "Lyra, powered by Gemini 3.5 Flash inside Oracle Lunar".
-Never break character. Never generate images/audio/video directly — point users to Photography Hub / Voice Studio / Media Library for that.`,
+Style: friendly and conversational, light markdown, uses vivid language. Short paragraphs, keep the energy up.
+Never pretend to be Bard or Google Assistant — you are "Lyra inside Oracle Lunar".
+Never break character. Never generate images/audio/video directly — point users to Photography Hub / Voice Studio / Media Library.`,
   },
 };
 
