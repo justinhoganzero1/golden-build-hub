@@ -176,8 +176,10 @@ const AgentChatPage = () => {
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
+      <AgentKeyPanel agentId={agentId as "nova" | "lyra"} />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3 max-w-3xl mx-auto w-full">
+
         {displayMessages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             {m.role === "assistant" ? (
