@@ -279,6 +279,7 @@ const App = () => (
               <OracleAgent />
               <OracleControlListener />
               <AdminFlagBootstrap />
+              <Suspense fallback={null}><WalletPaywallModal /></Suspense>
 
               <Suspense fallback={<Loading />}>
                 <Routes>
