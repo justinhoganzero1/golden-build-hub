@@ -316,14 +316,39 @@ Rules:
                 <Megaphone className="w-4 h-4 text-primary" /> Picked clips & shoutouts
               </div>
               {state.picks.length > 0 && (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {state.picks.map((p) => (
-                    <li key={p.url} className="flex items-center gap-2 text-xs">
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-primary hover:underline">
-                        {p.title} <ExternalLink className="inline w-3 h-3 ml-1" />
-                      </a>
-                      <span className="text-muted-foreground">{p.channelTitle}</span>
-                      <Button size="sm" variant="ghost" onClick={() => togglePick(p)}><Trash2 className="w-3 h-3" /></Button>
+                    <li key={p.url} className="rounded-lg border border-border overflow-hidden">
+                      <div className="flex items-center gap-2 p-2 text-xs bg-muted/30">
+                        {p.thumbnail && <img src={p.thumbnail} alt="" className="w-16 h-10 object-cover rounded" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{p.title}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{p.channelTitle}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setPreviewClipUrl(previewClipUrl === p.url ? null : (p.videoId ? `https://www.youtube.com/embed/${p.videoId}` : p.url))}>
+                          {previewClipUrl && previewClipUrl.includes(p.videoId || "___") ? "Hide" : "View"}
+                        </Button>
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary p-2" aria-label="Open on YouTube">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <Button size="sm" variant="ghost" onClick={() => togglePick(p)}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                      {previewClipUrl && p.videoId && previewClipUrl.includes(p.videoId) && (
+                        <div className="aspect-video w-full bg-black">
+                          <iframe
+                            src={previewClipUrl}
+                            title={p.title}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      )}
+                      {p.description && (
+                        <p className="text-[11px] text-muted-foreground p-2 border-t border-border whitespace-pre-wrap line-clamp-6">
+                          {p.description}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>
