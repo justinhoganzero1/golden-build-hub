@@ -39,6 +39,7 @@ interface ShowState {
   picks: YTItem[];
   voiceId: string | null;
   voiceName: string | null;
+  thumbnailUrl: string | null;
 }
 
 const DEFAULT_STATE: ShowState = {
@@ -51,7 +52,19 @@ const DEFAULT_STATE: ShowState = {
   picks: [],
   voiceId: null,
   voiceName: null,
+  thumbnailUrl: null,
 };
+
+const YouTubeShowStudioPage = () => {
+  const [state, setState] = useState<ShowState>(DEFAULT_STATE);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<YTItem[]>([]);
+  const [generatingScript, setGeneratingScript] = useState(false);
+  const [generatingThumb, setGeneratingThumb] = useState(false);
+  const [previewClipUrl, setPreviewClipUrl] = useState<string | null>(null);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const { data: savedVoices = [] } = useSavedVoices();
 
 const YouTubeShowStudioPage = () => {
   const [state, setState] = useState<ShowState>(DEFAULT_STATE);
