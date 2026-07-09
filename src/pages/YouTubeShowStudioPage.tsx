@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import MovieStudio from "@/components/MovieStudio";
+import { generateImage } from "@/lib/imageGen";
+import { getEdgeAuthToken } from "@/lib/edgeAuth";
 
 interface YTItem {
   videoId: string | null;
@@ -37,6 +39,7 @@ interface ShowState {
   picks: YTItem[];
   voiceId: string | null;
   voiceName: string | null;
+  thumbnailUrl: string | null;
 }
 
 const DEFAULT_STATE: ShowState = {
@@ -49,6 +52,7 @@ const DEFAULT_STATE: ShowState = {
   picks: [],
   voiceId: null,
   voiceName: null,
+  thumbnailUrl: null,
 };
 
 const YouTubeShowStudioPage = () => {
@@ -57,8 +61,12 @@ const YouTubeShowStudioPage = () => {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<YTItem[]>([]);
   const [generatingScript, setGeneratingScript] = useState(false);
+  const [generatingThumb, setGeneratingThumb] = useState(false);
+  const [previewClipUrl, setPreviewClipUrl] = useState<string | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
   const { data: savedVoices = [] } = useSavedVoices();
+
+
 
   // hydrate
   useEffect(() => {
@@ -139,11 +147,42 @@ Rules:
 - Output PLAIN TEXT only — no markdown, no stage directions in brackets, ready to be read aloud by AI narration.
 - Target length: ~350-500 words.`;
 
-      const { data, error } = await supabase.functions.invoke("oracle-chat", {
-        body: { messages: [{ role: "user", content: prompt }] },
+      // oracle-chat streams via SSE — supabase.functions.invoke can't parse it,
+      // so we call the endpoint directly and accumulate the delta chunks.
+      const token = await getEdgeAuthToken();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
       });
-      if (error) throw error;
-      const text = (data as any)?.reply || (data as any)?.message || (data as any)?.content || "";
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text().catch(() => "");
+        throw new Error(t || `Script service returned ${resp.status}`);
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let text = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const j = JSON.parse(payload);
+            const delta = j?.choices?.[0]?.delta?.content ?? j?.choices?.[0]?.message?.content ?? "";
+            if (delta) text += delta;
+          } catch { /* ignore partial */ }
+        }
+      }
+      // Strip control markers Oracle sometimes emits.
+      text = text.replace(/\[\[[A-Z]+:[^\]]*\]\]/g, "").trim();
       if (!text) throw new Error("No script returned");
       update({ script: text });
       toast.success("Script generated");
@@ -163,6 +202,23 @@ Rules:
     } catch { /* ignore */ }
     setStudioOpen(true);
   };
+
+  const generateThumbnail = async () => {
+    const subject = state.showTitle.trim() || state.topic.trim();
+    if (!subject) { toast.error("Enter an episode title or topic first"); return; }
+    setGeneratingThumb(true);
+    try {
+      const prompt = `Ultra-realistic 8K YouTube thumbnail for a show titled "${subject}". Cinematic lighting, bold high-contrast composition, one clear focal subject, expressive face if any, dramatic background, punchy readable large title text overlay "${(state.showTitle || state.topic).slice(0, 40)}", vibrant colors, 16:9.`;
+      const res = await generateImage({ prompt, tier: "premium" });
+      update({ thumbnailUrl: res.url });
+      toast.success("Thumbnail generated & saved to your Library");
+    } catch (e: any) {
+      toast.error(e?.message || "Thumbnail generation failed");
+    } finally {
+      setGeneratingThumb(false);
+    }
+  };
+
 
   return (
     <PaywallGate requiredTier="monthly" featureName="YouTube Show Studio">
@@ -260,14 +316,39 @@ Rules:
                 <Megaphone className="w-4 h-4 text-primary" /> Picked clips & shoutouts
               </div>
               {state.picks.length > 0 && (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {state.picks.map((p) => (
-                    <li key={p.url} className="flex items-center gap-2 text-xs">
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="flex-1 truncate text-primary hover:underline">
-                        {p.title} <ExternalLink className="inline w-3 h-3 ml-1" />
-                      </a>
-                      <span className="text-muted-foreground">{p.channelTitle}</span>
-                      <Button size="sm" variant="ghost" onClick={() => togglePick(p)}><Trash2 className="w-3 h-3" /></Button>
+                    <li key={p.url} className="rounded-lg border border-border overflow-hidden">
+                      <div className="flex items-center gap-2 p-2 text-xs bg-muted/30">
+                        {p.thumbnail && <img src={p.thumbnail} alt="" className="w-16 h-10 object-cover rounded" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{p.title}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{p.channelTitle}</p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setPreviewClipUrl(previewClipUrl === p.url ? null : (p.videoId ? `https://www.youtube.com/embed/${p.videoId}` : p.url))}>
+                          {previewClipUrl && previewClipUrl.includes(p.videoId || "___") ? "Hide" : "View"}
+                        </Button>
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary p-2" aria-label="Open on YouTube">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <Button size="sm" variant="ghost" onClick={() => togglePick(p)}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                      {previewClipUrl && p.videoId && previewClipUrl.includes(p.videoId) && (
+                        <div className="aspect-video w-full bg-black">
+                          <iframe
+                            src={previewClipUrl}
+                            title={p.title}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      )}
+                      {p.description && (
+                        <p className="text-[11px] text-muted-foreground p-2 border-t border-border whitespace-pre-wrap line-clamp-6">
+                          {p.description}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -348,10 +429,9 @@ Rules:
               <Button onClick={sendToMovieStudio} disabled={!state.script.trim()}>
                 <Film className="w-4 h-4 mr-1" /> Open in Movie Studio
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/photography">
-                  <ImageIcon className="w-4 h-4 mr-1" /> Make a thumbnail
-                </Link>
+              <Button variant="outline" onClick={generateThumbnail} disabled={generatingThumb}>
+                {generatingThumb ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <ImageIcon className="w-4 h-4 mr-1" />}
+                Generate thumbnail
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/voice-studio">
@@ -359,6 +439,12 @@ Rules:
                 </Link>
               </Button>
             </div>
+            {state.thumbnailUrl && (
+              <div className="mt-3">
+                <img src={state.thumbnailUrl} alt="Episode thumbnail" className="w-full max-w-md rounded-lg border border-border" />
+                <p className="text-[10px] text-muted-foreground mt-1">Saved to your Library. Right-click to download.</p>
+              </div>
+            )}
           </Card>
         </div>
 
