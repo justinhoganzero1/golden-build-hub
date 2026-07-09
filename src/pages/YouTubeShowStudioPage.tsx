@@ -147,11 +147,42 @@ Rules:
 - Output PLAIN TEXT only — no markdown, no stage directions in brackets, ready to be read aloud by AI narration.
 - Target length: ~350-500 words.`;
 
-      const { data, error } = await supabase.functions.invoke("oracle-chat", {
-        body: { messages: [{ role: "user", content: prompt }] },
+      // oracle-chat streams via SSE — supabase.functions.invoke can't parse it,
+      // so we call the endpoint directly and accumulate the delta chunks.
+      const token = await getEdgeAuthToken();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
       });
-      if (error) throw error;
-      const text = (data as any)?.reply || (data as any)?.message || (data as any)?.content || "";
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text().catch(() => "");
+        throw new Error(t || `Script service returned ${resp.status}`);
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let text = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const j = JSON.parse(payload);
+            const delta = j?.choices?.[0]?.delta?.content ?? j?.choices?.[0]?.message?.content ?? "";
+            if (delta) text += delta;
+          } catch { /* ignore partial */ }
+        }
+      }
+      // Strip control markers Oracle sometimes emits.
+      text = text.replace(/\[\[[A-Z]+:[^\]]*\]\]/g, "").trim();
       if (!text) throw new Error("No script returned");
       update({ script: text });
       toast.success("Script generated");
