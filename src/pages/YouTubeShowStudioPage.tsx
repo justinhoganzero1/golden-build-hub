@@ -203,6 +203,23 @@ Rules:
     setStudioOpen(true);
   };
 
+  const generateThumbnail = async () => {
+    const subject = state.showTitle.trim() || state.topic.trim();
+    if (!subject) { toast.error("Enter an episode title or topic first"); return; }
+    setGeneratingThumb(true);
+    try {
+      const prompt = `Ultra-realistic 8K YouTube thumbnail for a show titled "${subject}". Cinematic lighting, bold high-contrast composition, one clear focal subject, expressive face if any, dramatic background, punchy readable large title text overlay "${(state.showTitle || state.topic).slice(0, 40)}", vibrant colors, 16:9.`;
+      const res = await generateImage({ prompt, tier: "premium" });
+      update({ thumbnailUrl: res.url });
+      toast.success("Thumbnail generated & saved to your Library");
+    } catch (e: any) {
+      toast.error(e?.message || "Thumbnail generation failed");
+    } finally {
+      setGeneratingThumb(false);
+    }
+  };
+
+
   return (
     <PaywallGate requiredTier="monthly" featureName="YouTube Show Studio">
       <SEO
