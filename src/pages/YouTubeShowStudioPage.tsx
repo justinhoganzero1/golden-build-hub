@@ -429,10 +429,9 @@ Rules:
               <Button onClick={sendToMovieStudio} disabled={!state.script.trim()}>
                 <Film className="w-4 h-4 mr-1" /> Open in Movie Studio
               </Button>
-              <Button variant="outline" asChild>
-                <Link to="/photography">
-                  <ImageIcon className="w-4 h-4 mr-1" /> Make a thumbnail
-                </Link>
+              <Button variant="outline" onClick={generateThumbnail} disabled={generatingThumb}>
+                {generatingThumb ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <ImageIcon className="w-4 h-4 mr-1" />}
+                Generate thumbnail
               </Button>
               <Button variant="outline" asChild>
                 <Link to="/voice-studio">
@@ -440,6 +439,12 @@ Rules:
                 </Link>
               </Button>
             </div>
+            {state.thumbnailUrl && (
+              <div className="mt-3">
+                <img src={state.thumbnailUrl} alt="Episode thumbnail" className="w-full max-w-md rounded-lg border border-border" />
+                <p className="text-[10px] text-muted-foreground mt-1">Saved to your Library. Right-click to download.</p>
+              </div>
+            )}
           </Card>
         </div>
 
