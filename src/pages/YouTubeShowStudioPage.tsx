@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import MovieStudio from "@/components/MovieStudio";
+import { generateImage } from "@/lib/imageGen";
+import { getEdgeAuthToken } from "@/lib/edgeAuth";
 
 interface YTItem {
   videoId: string | null;
