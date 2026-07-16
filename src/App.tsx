@@ -212,6 +212,7 @@ const AboutPage = lazy(loaders["/about"]);
 const InvestorPage = lazy(loaders["/investor"]);
 const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
+const OAuthConsentPage = lazy(() => import("./pages/OAuthConsentPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
@@ -360,6 +361,7 @@ const App = () => (
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
+                  <Route path="/.lovable/oauth/consent" element={<ErrorBoundary pageName="OAuth Consent"><OAuthConsentPage /></ErrorBoundary>} />
                   <Route path="/verify-phone" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
