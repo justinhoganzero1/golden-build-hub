@@ -24,7 +24,7 @@ describe("decideApiKeyReminder", () => {
       createdAtIso: daysAgoIso(30),
     });
     expect(r.show).toBe(false);
-    if (!r.show) expect(r.reason).toBe("not_trial_user");
+    if (r.show === false) expect(r.reason).toBe("not_trial_user");
   });
 
   it("does not show for users with unlimited AI", () => {
@@ -53,13 +53,13 @@ describe("decideApiKeyReminder", () => {
       createdAtIso: daysAgoIso(6),
     });
     expect(r.show).toBe(false);
-    if (!r.show) expect(r.reason).toBe("keys_present");
+    if (r.show === false) expect(r.reason).toBe("keys_present");
   });
 
   it("does not show earlier than the final 3 trial days", () => {
     const r = decideApiKeyReminder({ ...base, createdAtIso: daysAgoIso(1) });
     expect(r.show).toBe(false);
-    if (!r.show) expect(r.reason).toBe("still_early");
+    if (r.show === false) expect(r.reason).toBe("still_early");
   });
 
   it("shows non-urgent reminder at day 5 (2 days left)", () => {
