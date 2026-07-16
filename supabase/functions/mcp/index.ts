@@ -7,6 +7,55 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.22.2";
 
 // src/lib/mcp/tools/whoami.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.22.2";
+
+// src/lib/mcp/lib/errors.ts
+function mcpError(code, message, details) {
+  const payload = { code, message, ...details ? { details } : {} };
+  return {
+    content: [{ type: "text", text: JSON.stringify({ error: payload }) }],
+    structuredContent: { error: payload },
+    isError: true
+  };
+}
+function mcpOk(structured, humanText) {
+  return {
+    content: [{ type: "text", text: humanText ?? JSON.stringify(structured) }],
+    structuredContent: structured
+  };
+}
+var notAuthenticated = () => mcpError(
+  "unauthenticated",
+  "Not signed in. Reconnect the Oracle Lunar MCP server and complete the sign-in and consent flow."
+);
+function fromPostgrestError(err) {
+  const code = err.code ?? "";
+  if (code === "42501" || /row-level security|permission denied/i.test(err.message)) {
+    return mcpError(
+      "forbidden",
+      "Access denied by row-level security. This tool can only read or modify data that belongs to the signed-in user.",
+      { pgCode: code }
+    );
+  }
+  if (code === "PGRST116") {
+    return mcpError("not_found", "No matching record found for the signed-in user.", { pgCode: code });
+  }
+  if (code === "23505") {
+    return mcpError("conflict", "That record already exists.", { pgCode: code });
+  }
+  if (code === "23503" || code === "23514" || code === "23502") {
+    return mcpError("invalid_input", err.message, { pgCode: code });
+  }
+  if (/rate.?limit|too many/i.test(err.message)) {
+    return mcpError("rate_limited", "The backend is rate-limiting requests. Try again shortly.");
+  }
+  return mcpError("internal", err.message || "Unexpected database error.", { pgCode: code });
+}
+function fromUnknown(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return mcpError("internal", message);
+}
+
+// src/lib/mcp/tools/whoami.ts
 var whoami_default = defineTool({
   name: "whoami",
   title: "Who am I",
@@ -14,14 +63,8 @@ var whoami_default = defineTool({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: (_input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    }
-    const payload = { user_id: ctx.getUserId(), email: ctx.getUserEmail() };
-    return {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-      structuredContent: payload
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    return mcpOk({ user_id: ctx.getUserId(), email: ctx.getUserEmail() });
   }
 });
 
@@ -44,13 +87,14 @@ var list_diary_entries_default = defineTool2({
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ limit }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const { data, error } = await userClient(ctx).from("diary_entries").select("id, entry_date, title, content, mood, tags, category, created_at").order("entry_date", { ascending: false }).limit(limit);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { entries: data ?? [] }
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const { data, error } = await userClient(ctx).from("diary_entries").select("id, entry_date, title, content, mood, tags, category, created_at").order("entry_date", { ascending: false }).limit(limit);
+      if (error) return fromPostgrestError(error);
+      return mcpOk({ entries: data ?? [] });
+    } catch (err) {
+      return fromUnknown(err);
+    }
   }
 });
 
@@ -64,6 +108,7 @@ function userClient2(ctx) {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 }
+var DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 var create_diary_entry_default = defineTool3({
   name: "create_diary_entry",
   title: "Create diary entry",
@@ -78,22 +123,26 @@ var create_diary_entry_default = defineTool3({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const row = {
-      user_id: ctx.getUserId(),
-      title: input.title,
-      content: input.content,
-      mood: input.mood ?? null,
-      entry_date: input.entry_date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-      tags: input.tags ?? null,
-      category: input.category ?? null
-    };
-    const { data, error } = await userClient2(ctx).from("diary_entries").insert(row).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Created diary entry ${data.id}` }],
-      structuredContent: { entry: data }
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    if (input.entry_date && !DATE_RE.test(input.entry_date)) {
+      return mcpError("invalid_input", "entry_date must be an ISO date in YYYY-MM-DD format.");
+    }
+    try {
+      const row = {
+        user_id: ctx.getUserId(),
+        title: input.title,
+        content: input.content,
+        mood: input.mood ?? null,
+        entry_date: input.entry_date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+        tags: input.tags ?? null,
+        category: input.category ?? null
+      };
+      const { data, error } = await userClient2(ctx).from("diary_entries").insert(row).select().single();
+      if (error) return fromPostgrestError(error);
+      return mcpOk({ entry: data }, `Created diary entry ${data.id}`);
+    } catch (err) {
+      return fromUnknown(err);
+    }
   }
 });
 
@@ -113,14 +162,15 @@ var get_wallet_balance_default = defineTool4({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const { data, error } = await userClient3(ctx).from("wallet_balances").select("balance_cents, currency, updated_at").maybeSingle();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    const payload = data ?? { balance_cents: 0, currency: "USD", updated_at: null };
-    return {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-      structuredContent: payload
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const { data, error } = await userClient3(ctx).from("wallet_balances").select("balance_cents, currency, updated_at").maybeSingle();
+      if (error) return fromPostgrestError(error);
+      const payload = data ?? { balance_cents: 0, currency: "USD", updated_at: null };
+      return mcpOk(payload);
+    } catch (err) {
+      return fromUnknown(err);
+    }
   }
 });
 
@@ -134,6 +184,7 @@ function userClient4(ctx) {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 }
+var DATE_RE2 = /^\d{4}-\d{2}-\d{2}$/;
 var list_calendar_events_default = defineTool5({
   name: "list_calendar_events",
   title: "List calendar events",
@@ -144,14 +195,18 @@ var list_calendar_events_default = defineTool5({
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ from_date, limit }, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const start = from_date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    const { data, error } = await userClient4(ctx).from("calendar_events").select("id, title, description, event_date, start_time, end_time, category").gte("event_date", start).order("event_date", { ascending: true }).limit(limit);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { events: data ?? [] }
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    if (from_date && !DATE_RE2.test(from_date)) {
+      return mcpError("invalid_input", "from_date must be an ISO date in YYYY-MM-DD format.");
+    }
+    try {
+      const start = from_date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const { data, error } = await userClient4(ctx).from("calendar_events").select("id, title, description, event_date, start_time, end_time, category").gte("event_date", start).order("event_date", { ascending: true }).limit(limit);
+      if (error) return fromPostgrestError(error);
+      return mcpOk({ events: data ?? [] });
+    } catch (err) {
+      return fromUnknown(err);
+    }
   }
 });
 
