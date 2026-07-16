@@ -325,8 +325,12 @@ Rules:
                           <p className="font-medium truncate">{p.title}</p>
                           <p className="text-[10px] text-muted-foreground truncate">{p.channelTitle}</p>
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => setPreviewClipUrl(previewClipUrl === p.url ? null : (p.videoId ? `https://www.youtube.com/embed/${p.videoId}` : p.url))}>
-                          {previewClipUrl && previewClipUrl.includes(p.videoId || "___") ? "Hide" : "View"}
+                        <Button size="sm" variant="outline" onClick={() => {
+                          const embedUrl = p.videoId ? `https://www.youtube.com/embed/${p.videoId}` : p.url;
+                          const isOpen = !!previewClipUrl && !!p.videoId && previewClipUrl.includes(p.videoId);
+                          setPreviewClipUrl(isOpen ? null : embedUrl);
+                        }}>
+                          {previewClipUrl && p.videoId && previewClipUrl.includes(p.videoId) ? "Hide" : "View"}
                         </Button>
                         <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary p-2" aria-label="Open on YouTube">
                           <ExternalLink className="w-3 h-3" />

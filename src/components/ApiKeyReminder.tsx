@@ -38,17 +38,15 @@ const ApiKeyReminder = () => {
       // unlimited_ai / any custom grant), or users with unlimited AI. These
       // users are NOT on a trial and would be alarmed by a "membership about
       // to be terminated" popup.
-      const [ownerRes, unlimitedRes, freeLifeRes, unlimitedAiRes, lifetimeRes] = await Promise.all([
+      const [ownerRes, unlimitedRes, rewardRes] = await Promise.all([
         supabase.rpc("is_owner"),
         supabase.rpc("has_unlimited_ai"),
-        supabase.rpc("has_active_reward", { _reward_type: "free_for_life" }),
-        supabase.rpc("has_active_reward", { _reward_type: "unlimited_ai" }),
-        supabase.rpc("has_active_reward", { _reward_type: "lifetime" }),
+        supabase.rpc("has_active_reward", { _user_id: user.id }),
       ]);
       if (cancelled) return;
       if (ownerRes.data === true) return;
       if (unlimitedRes.data === true) return;
-      if (freeLifeRes.data === true || unlimitedAiRes.data === true || lifetimeRes.data === true) return;
+      if (rewardRes.data === true) return;
 
       const { data } = await supabase
         .from("user_ai_keys")
