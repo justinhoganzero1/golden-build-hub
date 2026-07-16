@@ -15,6 +15,8 @@ import { useSavedVoices } from "@/hooks/useSavedVoices";
 import MovieStudio from "@/components/MovieStudio";
 import { generateImage } from "@/lib/imageGen";
 import { getEdgeAuthToken } from "@/lib/edgeAuth";
+import { isClipPreviewOpen, toggleClipPreview } from "@/lib/youtubeClipPreview";
+import { trackEvent } from "@/lib/analytics";
 
 interface YTItem {
   videoId: string | null;
@@ -326,18 +328,21 @@ Rules:
                           <p className="text-[10px] text-muted-foreground truncate">{p.channelTitle}</p>
                         </div>
                         <Button size="sm" variant="outline" onClick={() => {
-                          const embedUrl = p.videoId ? `https://www.youtube.com/embed/${p.videoId}` : p.url;
-                          const isOpen = !!previewClipUrl && !!p.videoId && previewClipUrl.includes(p.videoId);
-                          setPreviewClipUrl(isOpen ? null : embedUrl);
+                          const { next, opened } = toggleClipPreview(previewClipUrl, p.videoId, p.url);
+                          setPreviewClipUrl(next);
+                          void trackEvent(
+                            opened ? "youtube_clip_preview_opened" : "youtube_clip_preview_closed",
+                            { detail: p.videoId ?? "no_video_id" },
+                          );
                         }}>
-                          {previewClipUrl && p.videoId && previewClipUrl.includes(p.videoId) ? "Hide" : "View"}
+                          {isClipPreviewOpen(previewClipUrl, p.videoId) ? "Hide" : "View"}
                         </Button>
                         <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-primary p-2" aria-label="Open on YouTube">
                           <ExternalLink className="w-3 h-3" />
                         </a>
                         <Button size="sm" variant="ghost" onClick={() => togglePick(p)}><Trash2 className="w-3 h-3" /></Button>
                       </div>
-                      {previewClipUrl && p.videoId && previewClipUrl.includes(p.videoId) && (
+                      {isClipPreviewOpen(previewClipUrl, p.videoId) && (
                         <div className="aspect-video w-full bg-black">
                           <iframe
                             src={previewClipUrl}

@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { X, Sparkles, Clock, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { decideApiKeyReminder } from "@/lib/apiKeyReminderLogic";
+import { trackEvent } from "@/lib/analytics";
 
 const SESSION_FLAG = "oracle_byok_reminder_shown_v2";
-const TRIAL_DAYS = 7;
 
-// Shows a big positive-then-urgent countdown modal after login when the user
-// is inside the final 3 days of their trial AND has not yet added their own
-// OpenAI or Gemini key. One appearance per browser session so it never nags.
+// Shows a positive-then-urgent countdown modal when the user is inside the
+// final 3 days of their trial AND has not yet added their own OpenAI/Gemini
+// key. Skipped entirely for owner / unlimited-AI / reward-holder accounts.
+// See src/lib/apiKeyReminderLogic.ts for the (unit-tested) decision function.
 const ApiKeyReminder = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -24,46 +26,34 @@ const ApiKeyReminder = () => {
 
     let cancelled = false;
     (async () => {
-      // How far into the trial is this user?
-      const createdIso = (user as any).created_at as string | undefined;
-      if (!createdIso) return;
-      const createdMs = new Date(createdIso).getTime();
-      const elapsedDays = Math.floor((Date.now() - createdMs) / 86_400_000);
-      const remaining = Math.max(0, TRIAL_DAYS - elapsedDays);
-
-      // Only bother them in the final 3 days of the trial.
-      if (remaining > 3) return;
-
-      // Never show to admins, active-reward holders (free_for_life / lifetime /
-      // unlimited_ai / any custom grant), or users with unlimited AI. These
-      // users are NOT on a trial and would be alarmed by a "membership about
-      // to be terminated" popup.
-      const [ownerRes, unlimitedRes, rewardRes] = await Promise.all([
+      const [ownerRes, unlimitedRes, rewardRes, keysRes] = await Promise.all([
         supabase.rpc("is_owner"),
         supabase.rpc("has_unlimited_ai"),
         supabase.rpc("has_active_reward", { _user_id: user.id }),
+        supabase.from("user_ai_keys").select("openai_key, gemini_key").eq("user_id", user.id).maybeSingle(),
       ]);
       if (cancelled) return;
-      if (ownerRes.data === true) return;
-      if (unlimitedRes.data === true) return;
-      if (rewardRes.data === true) return;
 
-      const { data } = await supabase
-        .from("user_ai_keys")
-        .select("openai_key, gemini_key")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const decision = decideApiKeyReminder({
+        createdAtIso: (user as { created_at?: string }).created_at,
+        isOwner: ownerRes.data === true,
+        hasUnlimitedAi: unlimitedRes.data === true,
+        hasActiveReward: rewardRes.data === true,
+        hasOpenAI: !!(keysRes.data?.openai_key && keysRes.data.openai_key.length > 10),
+        hasGemini: !!(keysRes.data?.gemini_key && keysRes.data.gemini_key.length > 10),
+      });
 
-      if (cancelled) return;
-
-      const hasOpenAI = !!(data?.openai_key && data.openai_key.length > 10);
-      const hasGemini = !!(data?.gemini_key && data.gemini_key.length > 10);
-      if (hasOpenAI && hasGemini) return; // fully set up — silence
+      if (!decision.show) return;
 
       sessionStorage.setItem(SESSION_FLAG, "1");
-      setDaysLeft(remaining);
-      setMissingProvider(!hasOpenAI && !hasGemini ? "both" : !hasOpenAI ? "openai" : "gemini");
+      setDaysLeft(decision.daysLeft);
+      setMissingProvider(decision.missingProvider);
       setOpen(true);
+      void trackEvent("api_key_reminder_shown", {
+        detail: `days_left=${decision.daysLeft}`,
+        source: decision.urgent ? "urgent" : "friendly",
+        medium: decision.missingProvider,
+      });
     })();
 
     return () => { cancelled = true; };
@@ -75,8 +65,15 @@ const ApiKeyReminder = () => {
   const targetProvider: "openai" | "gemini" = missingProvider === "gemini" ? "gemini" : "openai";
   const targetLabel = targetProvider === "openai" ? "OpenAI (for Nova)" : "Google Gemini (for Lyra)";
 
-  const goWizard = () => { setOpen(false); navigate(`/get-api-key/${targetProvider}`); };
-  const later = () => setOpen(false);
+  const goWizard = () => {
+    void trackEvent("api_key_reminder_cta_clicked", { medium: targetProvider });
+    setOpen(false);
+    navigate(`/get-api-key/${targetProvider}`);
+  };
+  const later = () => {
+    void trackEvent("api_key_reminder_dismissed", { source: urgent ? "urgent" : "friendly" });
+    setOpen(false);
+  };
 
   return (
     <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
 import { z } from "zod";
+import { fromPostgrestError, fromUnknown, mcpError, mcpOk, notAuthenticated } from "../lib/errors";
 
 function userClient(ctx: ToolContext) {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -8,6 +9,8 @@ function userClient(ctx: ToolContext) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default defineTool({
   name: "create_diary_entry",
@@ -23,21 +26,25 @@ export default defineTool({
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async (input, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const row = {
-      user_id: ctx.getUserId(),
-      title: input.title,
-      content: input.content,
-      mood: input.mood ?? null,
-      entry_date: input.entry_date ?? new Date().toISOString().slice(0, 10),
-      tags: input.tags ?? null,
-      category: input.category ?? null,
-    };
-    const { data, error } = await userClient(ctx).from("diary_entries").insert(row).select().single();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    return {
-      content: [{ type: "text", text: `Created diary entry ${data.id}` }],
-      structuredContent: { entry: data },
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    if (input.entry_date && !DATE_RE.test(input.entry_date)) {
+      return mcpError("invalid_input", "entry_date must be an ISO date in YYYY-MM-DD format.");
+    }
+    try {
+      const row = {
+        user_id: ctx.getUserId(),
+        title: input.title,
+        content: input.content,
+        mood: input.mood ?? null,
+        entry_date: input.entry_date ?? new Date().toISOString().slice(0, 10),
+        tags: input.tags ?? null,
+        category: input.category ?? null,
+      };
+      const { data, error } = await userClient(ctx).from("diary_entries").insert(row).select().single();
+      if (error) return fromPostgrestError(error);
+      return mcpOk({ entry: data }, `Created diary entry ${data.id}`);
+    } catch (err) {
+      return fromUnknown(err);
+    }
   },
 });

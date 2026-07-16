@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
+import { fromPostgrestError, fromUnknown, mcpOk, notAuthenticated } from "../lib/errors";
 
 function userClient(ctx: ToolContext) {
   return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -15,16 +16,17 @@ export default defineTool({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    const { data, error } = await userClient(ctx)
-      .from("wallet_balances")
-      .select("balance_cents, currency, updated_at")
-      .maybeSingle();
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    const payload = data ?? { balance_cents: 0, currency: "USD", updated_at: null };
-    return {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-      structuredContent: payload,
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const { data, error } = await userClient(ctx)
+        .from("wallet_balances")
+        .select("balance_cents, currency, updated_at")
+        .maybeSingle();
+      if (error) return fromPostgrestError(error);
+      const payload = data ?? { balance_cents: 0, currency: "USD", updated_at: null };
+      return mcpOk(payload);
+    } catch (err) {
+      return fromUnknown(err);
+    }
   },
 });

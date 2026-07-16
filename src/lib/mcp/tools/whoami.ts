@@ -1,4 +1,5 @@
 import { defineTool } from "@lovable.dev/mcp-js";
+import { mcpOk, notAuthenticated } from "../lib/errors";
 
 export default defineTool({
   name: "whoami",
@@ -7,13 +8,7 @@ export default defineTool({
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: (_input, ctx) => {
-    if (!ctx.isAuthenticated()) {
-      return { content: [{ type: "text", text: "Not authenticated." }], isError: true };
-    }
-    const payload = { user_id: ctx.getUserId(), email: ctx.getUserEmail() };
-    return {
-      content: [{ type: "text", text: JSON.stringify(payload) }],
-      structuredContent: payload,
-    };
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    return mcpOk({ user_id: ctx.getUserId(), email: ctx.getUserEmail() });
   },
 });
