@@ -34,6 +34,20 @@ const ApiKeyReminder = () => {
       // Only bother them in the final 3 days of the trial.
       if (remaining > 3) return;
 
+      // Never show to admins, active-reward holders (free_for_life / lifetime /
+      // unlimited_ai / any custom grant), or users with unlimited AI. These
+      // users are NOT on a trial and would be alarmed by a "membership about
+      // to be terminated" popup.
+      const [ownerRes, unlimitedRes, rewardRes] = await Promise.all([
+        supabase.rpc("is_owner"),
+        supabase.rpc("has_unlimited_ai"),
+        supabase.rpc("has_active_reward", { _user_id: user.id }),
+      ]);
+      if (cancelled) return;
+      if (ownerRes.data === true) return;
+      if (unlimitedRes.data === true) return;
+      if (rewardRes.data === true) return;
+
       const { data } = await supabase
         .from("user_ai_keys")
         .select("openai_key, gemini_key")
@@ -89,13 +103,13 @@ const ApiKeyReminder = () => {
           {urgent ? (
             <>
               <h2 className="text-2xl sm:text-3xl font-extrabold italic text-foreground leading-tight">
-                Your membership is about to be terminated.
+                Your free trial is almost up.
               </h2>
               <p className="mt-3 text-base italic font-semibold text-muted-foreground">
-                You must load an API key to keep Nova and Lyra alive.
+                Add your own {targetLabel} key to keep using Nova and Lyra for free forever — or top up your wallet to keep going with pay‑per‑use.
               </p>
               <p className="mt-2 text-sm italic text-muted-foreground">
-                Follow the simple instructions — it takes 2 minutes and it's free.
+                Takes about 2 minutes. Your account stays active either way.
               </p>
             </>
           ) : (
