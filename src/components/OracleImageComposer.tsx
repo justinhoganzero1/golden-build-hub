@@ -42,6 +42,7 @@ const STYLES: { id: StyleId; label: string; hint: string; suffix: string; tier?:
 const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState("");
+  const [styleId, setStyleId] = useState<StyleId>("realistic-4k");
   const [refs, setRefs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
