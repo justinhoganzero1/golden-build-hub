@@ -434,4 +434,43 @@ const EbookCoverStudioPage = () => {
   );
 };
 
+// SVG overlay: KDP bleed 0.125" (~38px @ 300dpi), safe-zone ~0.25" inset (~75px),
+// barcode area ~2"×1.2" (600×360px) bottom-right on the back cover.
+const CoverOverlay = ({ part, w, h }: { part: Part; w: number; h: number }) => {
+  const BLEED = 38;
+  const SAFE = 75;
+  const BARCODE_W = 600;
+  const BARCODE_H = 360;
+  const BARCODE_MARGIN = 100;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      className="absolute inset-0 w-full h-full pointer-events-none"
+    >
+      {/* Bleed edge (outermost) */}
+      <rect x={BLEED} y={BLEED} width={w - BLEED * 2} height={h - BLEED * 2}
+        fill="none" stroke="rgb(251 191 36)" strokeWidth={6} strokeDasharray="18 12" />
+      {/* Trim edge */}
+      <rect x={BLEED * 2} y={BLEED * 2} width={w - BLEED * 4} height={h - BLEED * 4}
+        fill="none" stroke="rgb(239 68 68)" strokeWidth={6} />
+      {/* Safe zone */}
+      <rect x={SAFE + BLEED} y={SAFE + BLEED} width={w - (SAFE + BLEED) * 2} height={h - (SAFE + BLEED) * 2}
+        fill="none" stroke="rgb(52 211 153)" strokeWidth={4} strokeDasharray="10 10" />
+      {/* Barcode zone on back cover only */}
+      {part === "back" && (
+        <rect
+          x={w - BARCODE_W - BARCODE_MARGIN}
+          y={h - BARCODE_H - BARCODE_MARGIN}
+          width={BARCODE_W}
+          height={BARCODE_H}
+          fill="rgba(56,189,248,0.18)"
+          stroke="rgb(56 189 248)"
+          strokeWidth={5}
+        />
+      )}
+    </svg>
+  );
+};
+
 export default EbookCoverStudioPage;
