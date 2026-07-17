@@ -348,7 +348,27 @@ const EbookCoverStudioPage = () => {
             </div>
           </section>
 
-          <section className="mt-6 space-y-4">
+          <section className="mt-6 flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowOverlay((v) => !v)}
+              className="text-[11px] px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted flex items-center gap-1.5"
+            >
+              {showOverlay ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showOverlay ? "Hide" : "Show"} print guides
+            </button>
+            <button
+              type="button"
+              onClick={downloadZip}
+              disabled={zipping || results.length === 0}
+              className="text-[11px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 disabled:opacity-40"
+            >
+              {zipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+              Download KDP ZIP ({results.length}/3)
+            </button>
+          </section>
+
+          <section className="mt-4 space-y-4">
             {(["front", "back", "spine"] as Part[]).map((part) => {
               const spec = SPECS[part];
               const result = findResult(part);
@@ -364,7 +384,7 @@ const EbookCoverStudioPage = () => {
                       {result?.url && (
                         <a
                           href={result.url}
-                          download={`${(title || "cover").replace(/\s+/g, "-").toLowerCase()}-${part}.png`}
+                          download={`${slugTitle}_${spec.label.replace(/\s+/g, "_")}.png`}
                           className="text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/70 text-foreground flex items-center gap-1"
                         >
                           <Download className="w-3 h-3" /> Download
@@ -381,21 +401,33 @@ const EbookCoverStudioPage = () => {
                     </div>
                   </div>
                   <div
-                    className="w-full bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{ aspectRatio: `${spec.w} / ${spec.h}`, maxHeight: 480 }}
+                    className="relative w-full bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center mx-auto"
+                    style={{ aspectRatio: `${spec.w} / ${spec.h}`, maxHeight: 480, maxWidth: part === "spine" ? 60 : "100%" }}
                   >
                     {isBusy ? (
                       <Loader2 className="w-6 h-6 text-primary animate-spin" />
                     ) : result?.url ? (
                       <img src={result.url} alt={`${part} cover`} className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-[11px] text-muted-foreground">Not generated yet</span>
+                      <span className="text-[11px] text-muted-foreground text-center px-2">Not generated yet</span>
                     )}
+                    {showOverlay && <CoverOverlay part={part} w={spec.w} h={spec.h} />}
                   </div>
+                  {showOverlay && (
+                    <div className="mt-2 flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-red-500" /> Trim edge</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400" /> Bleed (0.125")</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-emerald-400" /> Safe zone</span>
+                      {part === "back" && (
+                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 border border-sky-400 bg-sky-400/20" /> Barcode area</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </section>
+
         </div>
       </div>
     </PaywallGate>
