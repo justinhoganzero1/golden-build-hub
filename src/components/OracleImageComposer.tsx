@@ -10,6 +10,29 @@ interface OracleImageComposerProps {
 
 const MAX_REFS = 4;
 
+type StyleId =
+  | "realistic-4k"
+  | "photo-normal"
+  | "cartoon"
+  | "2_5d-photoreal"
+  | "anime"
+  | "cinematic"
+  | "oil-painting"
+  | "watercolor"
+  | "3d-render";
+
+const STYLES: { id: StyleId; label: string; hint: string; suffix: string; tier?: "premium" | "fast" }[] = [
+  { id: "realistic-4k",   label: "4K Realistic",       hint: "Ultra-detailed, magazine quality", suffix: "ultra-realistic 4K photography, razor-sharp focus, natural lighting, DSLR quality, highly detailed textures, professional colour grading", tier: "premium" },
+  { id: "photo-normal",   label: "Normal Photo",       hint: "Like a phone snapshot",           suffix: "natural everyday photograph, casual composition, realistic lighting, taken on a modern phone camera" },
+  { id: "cartoon",        label: "Cartoon",            hint: "Bold lines, flat colours",         suffix: "cartoon illustration, bold clean outlines, flat vibrant colours, playful expressive style" },
+  { id: "2_5d-photoreal", label: "2.5D Photoreal",     hint: "Stylised depth, realistic feel",   suffix: "2.5D photorealistic illustration, subtle depth and parallax, painterly realism with cinematic lighting, stylised yet lifelike" },
+  { id: "anime",          label: "Anime",              hint: "Japanese anime style",             suffix: "modern anime illustration, clean line art, cel-shaded colours, expressive eyes, detailed background" },
+  { id: "cinematic",      label: "Cinematic",          hint: "Movie poster look",                suffix: "cinematic film still, dramatic lighting, shallow depth of field, moody colour grade, 35mm film grain", tier: "premium" },
+  { id: "oil-painting",   label: "Oil Painting",       hint: "Classic painted look",             suffix: "classical oil painting, visible brushstrokes, rich pigments, gallery-quality composition" },
+  { id: "watercolor",     label: "Watercolour",        hint: "Soft washed colours",              suffix: "delicate watercolour painting, soft washes of colour, paper texture, gentle bleeding edges" },
+  { id: "3d-render",      label: "3D Render",          hint: "Pixar-style 3D",                   suffix: "high-quality 3D render, soft global illumination, subsurface scattering, Pixar-style character design, octane render" },
+];
+
 /**
  * Compose an image with written details + optional reference photos.
  * Opens as a modal from a floating button so users have an explicit place
@@ -19,6 +42,7 @@ const MAX_REFS = 4;
 const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState("");
+  const [styleId, setStyleId] = useState<StyleId>("realistic-4k");
   const [refs, setRefs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -65,17 +89,20 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
   };
 
   const generate = async () => {
-    const prompt = details.trim();
-    if (!prompt) {
+    const base = details.trim();
+    if (!base) {
       toast.error("Add some details for the photo.");
       return;
     }
+    const style = STYLES.find((s) => s.id === styleId) ?? STYLES[0];
+    const prompt = `${base} — style: ${style.suffix}`;
     setBusy(true);
     setResultUrl(null);
     try {
       const gen = await generateImage({
         prompt,
-        inputImage: refs[0], // primary reference (edit-style) — extras kept as context in prompt
+        inputImage: refs[0],
+        tier: style.tier,
       });
       const url = gen.url;
       setResultUrl(url);
@@ -89,6 +116,7 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
           metadata: {
             kind: "image",
             prompt,
+            style: styleId,
             references: refs.length,
             composer: "oracle-image-composer",
             fallback: gen.fallback,
@@ -141,6 +169,34 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">
+                Style / genre
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {STYLES.map((s) => {
+                  const active = s.id === styleId;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStyleId(s.id)}
+                      disabled={busy}
+                      title={s.hint}
+                      className={`px-2 py-2 rounded-lg text-[11px] leading-tight border transition-colors text-left ${
+                        active
+                          ? "border-[#FFAA00] bg-[#FFAA00]/15 text-[#FFAA00]"
+                          : "border-white/10 bg-black/40 text-gray-300 hover:border-[#FFAA00]/40 hover:text-white"
+                      }`}
+                    >
+                      <div className="font-semibold">{s.label}</div>
+                      <div className="text-[9px] opacity-70">{s.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
