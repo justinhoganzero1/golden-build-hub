@@ -10,6 +10,29 @@ interface OracleImageComposerProps {
 
 const MAX_REFS = 4;
 
+type StyleId =
+  | "realistic-4k"
+  | "photo-normal"
+  | "cartoon"
+  | "2_5d-photoreal"
+  | "anime"
+  | "cinematic"
+  | "oil-painting"
+  | "watercolor"
+  | "3d-render";
+
+const STYLES: { id: StyleId; label: string; hint: string; suffix: string; tier?: "premium" | "fast" }[] = [
+  { id: "realistic-4k",   label: "4K Realistic",       hint: "Ultra-detailed, magazine quality", suffix: "ultra-realistic 4K photography, razor-sharp focus, natural lighting, DSLR quality, highly detailed textures, professional colour grading", tier: "premium" },
+  { id: "photo-normal",   label: "Normal Photo",       hint: "Like a phone snapshot",           suffix: "natural everyday photograph, casual composition, realistic lighting, taken on a modern phone camera" },
+  { id: "cartoon",        label: "Cartoon",            hint: "Bold lines, flat colours",         suffix: "cartoon illustration, bold clean outlines, flat vibrant colours, playful expressive style" },
+  { id: "2_5d-photoreal", label: "2.5D Photoreal",     hint: "Stylised depth, realistic feel",   suffix: "2.5D photorealistic illustration, subtle depth and parallax, painterly realism with cinematic lighting, stylised yet lifelike" },
+  { id: "anime",          label: "Anime",              hint: "Japanese anime style",             suffix: "modern anime illustration, clean line art, cel-shaded colours, expressive eyes, detailed background" },
+  { id: "cinematic",      label: "Cinematic",          hint: "Movie poster look",                suffix: "cinematic film still, dramatic lighting, shallow depth of field, moody colour grade, 35mm film grain", tier: "premium" },
+  { id: "oil-painting",   label: "Oil Painting",       hint: "Classic painted look",             suffix: "classical oil painting, visible brushstrokes, rich pigments, gallery-quality composition" },
+  { id: "watercolor",     label: "Watercolour",        hint: "Soft washed colours",              suffix: "delicate watercolour painting, soft washes of colour, paper texture, gentle bleeding edges" },
+  { id: "3d-render",      label: "3D Render",          hint: "Pixar-style 3D",                   suffix: "high-quality 3D render, soft global illumination, subsurface scattering, Pixar-style character design, octane render" },
+];
+
 /**
  * Compose an image with written details + optional reference photos.
  * Opens as a modal from a floating button so users have an explicit place
