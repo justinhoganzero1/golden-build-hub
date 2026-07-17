@@ -55,8 +55,67 @@ const EbookCoverStudioPage = () => {
   const [styleId, setStyleId] = useState(STYLES[0].id);
   const [busy, setBusy] = useState<Part | "all" | null>(null);
   const [results, setResults] = useState<GeneratedPart[]>([]);
+  const [showOverlay, setShowOverlay] = useState(true);
+  const [zipping, setZipping] = useState(false);
 
   const style = STYLES.find((s) => s.id === styleId) ?? STYLES[0];
+
+  const slugTitle = (title || "cover").trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "_") || "cover";
+
+  const downloadZip = async () => {
+    if (results.length === 0) {
+      toast.error("Generate covers first.");
+      return;
+    }
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(`${slugTitle}_KDP_Covers`)!;
+      const nameMap: Record<Part, string> = {
+        front: `${slugTitle}_Front_Cover.png`,
+        back: `${slugTitle}_Back_Cover.png`,
+        spine: `${slugTitle}_Spine.png`,
+      };
+      for (const r of results) {
+        const resp = await fetch(r.url);
+        const blob = await resp.blob();
+        folder.file(nameMap[r.part], blob);
+      }
+      const readme = [
+        `KDP / Kindle / EPUB Cover Set`,
+        `Book: ${title}${subtitle ? ` — ${subtitle}` : ""}`,
+        author ? `Author: ${author}` : "",
+        genre ? `Genre: ${genre}` : "",
+        `Style: ${style.label}`,
+        ``,
+        `Files:`,
+        `- ${nameMap.front}  (1600×2560, Kindle & EPUB front cover)`,
+        `- ${nameMap.back}   (1600×2560, KDP paperback back cover)`,
+        `- ${nameMap.spine}  (260×2560,  KDP paperback spine — ~200pp)`,
+        ``,
+        `KDP paperback bleed: 0.125" (~38px @ 300dpi).`,
+        `Keep type & key art inside the safe zone (~0.25" / 75px inset).`,
+        `Barcode zone: ~2"×1.2" (600×360px) bottom-right of back cover — leave white/light background.`,
+      ].filter(Boolean).join("\n");
+      folder.file("README.txt", readme);
+
+      const out = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slugTitle}_KDP_Covers.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("ZIP ready — check your downloads.");
+    } catch (e) {
+      toast.error(`ZIP failed: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally {
+      setZipping(false);
+    }
+  };
+
 
   const promptFor = (part: Part): string => {
     const spec = SPECS[part];
