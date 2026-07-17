@@ -173,6 +173,34 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
 
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">
+                Style / genre
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {STYLES.map((s) => {
+                  const active = s.id === styleId;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStyleId(s.id)}
+                      disabled={busy}
+                      title={s.hint}
+                      className={`px-2 py-2 rounded-lg text-[11px] leading-tight border transition-colors text-left ${
+                        active
+                          ? "border-[#FFAA00] bg-[#FFAA00]/15 text-[#FFAA00]"
+                          : "border-white/10 bg-black/40 text-gray-300 hover:border-[#FFAA00]/40 hover:text-white"
+                      }`}
+                    >
+                      <div className="font-semibold">{s.label}</div>
+                      <div className="text-[9px] opacity-70">{s.hint}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">
                 Details / comments
               </label>
               <textarea
