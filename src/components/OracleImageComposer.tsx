@@ -116,6 +116,7 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
           metadata: {
             kind: "image",
             prompt,
+            style: styleId,
             references: refs.length,
             composer: "oracle-image-composer",
             fallback: gen.fallback,
