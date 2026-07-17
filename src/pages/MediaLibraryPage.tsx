@@ -539,6 +539,30 @@ const MediaLibraryPage = () => {
                 </span>
               </div>
 
+              {/* Prompt / style details (from generation composer) */}
+              {(selected.metadata?.prompt || selected.metadata?.style) && (
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Details</p>
+                  {selected.metadata?.style && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">
+                        Style: {String(selected.metadata.style).replace(/[-_]/g, " ")}
+                      </span>
+                      {typeof selected.metadata?.references === "number" && selected.metadata.references > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                          {selected.metadata.references} reference photo{selected.metadata.references === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {selected.metadata?.prompt && (
+                    <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
+                      {String(selected.metadata.prompt)}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* ── Public Library + Creators Shop controls ── */}
               <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-amber-500/5 p-3 space-y-3">
                 <div className="flex items-center justify-between gap-2">

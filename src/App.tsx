@@ -214,6 +214,7 @@ const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const OAuthConsentPage = lazy(() => import("./pages/OAuthConsentPage"));
 const OAuthAuthorizationsPage = lazy(() => import("./pages/OAuthAuthorizationsPage"));
+const EbookCoverStudioPage = lazy(() => import("./pages/EbookCoverStudioPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
@@ -322,6 +323,7 @@ const App = () => (
                   <Route path="/diagnostics/audio" element={<RequireAuth><ErrorBoundary pageName="Audio Diagnostics"><AudioDiagnosticsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/elderly-care" element={<RequireAuth><ErrorBoundary pageName="Elderly Care"><ElderlyCarePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-generator" element={<RequireAuth><ErrorBoundary pageName="Avatar Generator"><AvatarGeneratorPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/ebook-cover-studio" element={<RequireAuth><ErrorBoundary pageName="eBook Cover Studio"><EbookCoverStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/professional-hub" element={<RequireAuth><ErrorBoundary pageName="Professional Hub"><ProfessionalHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/family-hub" element={<RequireAuth><ErrorBoundary pageName="Family Hub"><FamilyHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/magic-hub" element={<RequireAuth><ErrorBoundary pageName="Magic Hub"><MagicHubPage /></ErrorBoundary></RequireAuth>} />
