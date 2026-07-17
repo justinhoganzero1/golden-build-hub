@@ -214,6 +214,7 @@ const CreatorsPage = lazy(loaders["/creators"]);
 const SignInPage = lazy(loaders["/sign-in"]);
 const OAuthConsentPage = lazy(() => import("./pages/OAuthConsentPage"));
 const OAuthAuthorizationsPage = lazy(() => import("./pages/OAuthAuthorizationsPage"));
+const EbookCoverStudioPage = lazy(() => import("./pages/EbookCoverStudioPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
