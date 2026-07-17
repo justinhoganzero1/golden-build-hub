@@ -89,17 +89,20 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
   };
 
   const generate = async () => {
-    const prompt = details.trim();
-    if (!prompt) {
+    const base = details.trim();
+    if (!base) {
       toast.error("Add some details for the photo.");
       return;
     }
+    const style = STYLES.find((s) => s.id === styleId) ?? STYLES[0];
+    const prompt = `${base} — style: ${style.suffix}`;
     setBusy(true);
     setResultUrl(null);
     try {
       const gen = await generateImage({
         prompt,
-        inputImage: refs[0], // primary reference (edit-style) — extras kept as context in prompt
+        inputImage: refs[0],
+        tier: style.tier,
       });
       const url = gen.url;
       setResultUrl(url);
