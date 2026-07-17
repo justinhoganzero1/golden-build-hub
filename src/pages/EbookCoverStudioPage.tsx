@@ -1,8 +1,9 @@
 import { useState } from "react";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import { BookOpen, Loader2, Sparkles, Download, Info } from "lucide-react";
+import { BookOpen, Loader2, Sparkles, Download, Info, Eye, EyeOff, Package } from "lucide-react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import PaywallGate from "@/components/PaywallGate";
