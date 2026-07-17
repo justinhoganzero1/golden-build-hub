@@ -246,8 +246,21 @@ const StoryWriterPage = () => {
   );
 
   // ====== AI ILLUSTRATION GENERATOR ======
-  // Cover, back cover, and up to 2 illustrations per chapter.
+  // Cover, back cover, and up to 6 illustrations per chapter.
   const [imgBusy, setImgBusy] = useState<string | null>(null);
+  const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
+  const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+
+  const ART_STYLES: { id: string; label: string; suffix: string }[] = [
+    { id: "realistic-4k", label: "4K Realistic", suffix: "ultra-realistic 4K photography, razor-sharp, cinematic lighting" },
+    { id: "photo-normal", label: "Normal Photo", suffix: "natural realistic photograph" },
+    { id: "cartoon",      label: "Cartoon",      suffix: "cartoon illustration, bold outlines, vibrant flat colours" },
+    { id: "2_5d",         label: "2.5D Photoreal", suffix: "2.5D photorealistic illustration, painterly depth, cinematic lighting" },
+    { id: "anime",        label: "Anime",        suffix: "modern anime cover art, cel-shaded, clean line art" },
+    { id: "cinematic",    label: "Cinematic",    suffix: "cinematic movie-poster style, dramatic lighting, moody colour grade" },
+    { id: "fantasy",      label: "Fantasy",      suffix: "epic fantasy illustration, painterly, rich detail" },
+    { id: "watercolour",  label: "Watercolour",  suffix: "soft watercolour illustration, textured paper, gentle washes" },
+  ];
 
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
@@ -258,17 +271,20 @@ const StoryWriterPage = () => {
     if (!requireMeta()) return;
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
-    let basePrompt = customPrompt?.trim() || "";
-    if (!basePrompt) {
-      if (slot === "cover") {
-        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 8K, magazine cover quality, no text, no typography.`;
-      } else if (slot === "back") {
-        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 8K, no text.`;
-      } else if (ch) {
-        const snippet = (ch.content || "").slice(0, 1200);
-        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 8K, no text, no captions.`;
-      }
+    const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
+    const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
+
+    let basePrompt = "";
+    if (slot === "cover") {
+      basePrompt = `Stunning ${style.label} ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, magazine cover quality, no text, no typography.`;
+    } else if (slot === "back") {
+      basePrompt = `Atmospheric ${style.label} back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, no text.`;
+    } else if (ch) {
+      const snippet = (ch.content || "").slice(0, 1200);
+      basePrompt = `${style.label} illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, no text, no captions.`;
     }
+    if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
+    basePrompt += ` Style: ${style.suffix}.`;
 
     setImgBusy(slotKey);
     try {
@@ -315,7 +331,7 @@ const StoryWriterPage = () => {
           title: label,
           url,
           source_page: "story-writer",
-          metadata: { story_id: savingId, slot: slotKey, story_title: story.title },
+          metadata: { story_id: savingId, slot: slotKey, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
         });
       } catch { /* non-fatal */ }
       toast.success("Illustration ready!");
@@ -762,6 +778,42 @@ Write the full chapter now (5000+ words):`;
             rows={2}
             className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
           />
+
+          {/* Image style + custom prompt — applies to Cover, Back, and Chapter illustrations */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Image style &amp; direction
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {ART_STYLES.map(s => {
+                const active = s.id === imgStyleId;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setImgStyleId(s.id)}
+                    className={`px-2 py-1.5 rounded-lg text-[11px] border transition-colors ${
+                      active
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+            <textarea
+              value={imgCustomPrompt}
+              onChange={e => setImgCustomPrompt(e.target.value)}
+              placeholder="Describe what the AI should draw — characters, setting, mood, colours, key objects… (applies to every image you generate below)"
+              rows={3}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              This style and description are combined with your story details for the front cover, back cover, and every chapter illustration. Change it any time before hitting Generate.
+            </p>
+          </div>
 
           {/* Front + Back Cover Illustrations */}
           <div className="grid grid-cols-2 gap-2">
