@@ -3007,6 +3007,7 @@ const OraclePage = () => {
           >
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
+          <OracleImageComposer />
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
