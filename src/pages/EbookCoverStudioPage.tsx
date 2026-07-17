@@ -1,8 +1,9 @@
 import { useState } from "react";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import { BookOpen, Loader2, Sparkles, Download, Info } from "lucide-react";
+import { BookOpen, Loader2, Sparkles, Download, Info, Eye, EyeOff, Package } from "lucide-react";
 import { toast } from "sonner";
+import JSZip from "jszip";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import PaywallGate from "@/components/PaywallGate";
@@ -54,8 +55,67 @@ const EbookCoverStudioPage = () => {
   const [styleId, setStyleId] = useState(STYLES[0].id);
   const [busy, setBusy] = useState<Part | "all" | null>(null);
   const [results, setResults] = useState<GeneratedPart[]>([]);
+  const [showOverlay, setShowOverlay] = useState(true);
+  const [zipping, setZipping] = useState(false);
 
   const style = STYLES.find((s) => s.id === styleId) ?? STYLES[0];
+
+  const slugTitle = (title || "cover").trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "_") || "cover";
+
+  const downloadZip = async () => {
+    if (results.length === 0) {
+      toast.error("Generate covers first.");
+      return;
+    }
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(`${slugTitle}_KDP_Covers`)!;
+      const nameMap: Record<Part, string> = {
+        front: `${slugTitle}_Front_Cover.png`,
+        back: `${slugTitle}_Back_Cover.png`,
+        spine: `${slugTitle}_Spine.png`,
+      };
+      for (const r of results) {
+        const resp = await fetch(r.url);
+        const blob = await resp.blob();
+        folder.file(nameMap[r.part], blob);
+      }
+      const readme = [
+        `KDP / Kindle / EPUB Cover Set`,
+        `Book: ${title}${subtitle ? ` — ${subtitle}` : ""}`,
+        author ? `Author: ${author}` : "",
+        genre ? `Genre: ${genre}` : "",
+        `Style: ${style.label}`,
+        ``,
+        `Files:`,
+        `- ${nameMap.front}  (1600×2560, Kindle & EPUB front cover)`,
+        `- ${nameMap.back}   (1600×2560, KDP paperback back cover)`,
+        `- ${nameMap.spine}  (260×2560,  KDP paperback spine — ~200pp)`,
+        ``,
+        `KDP paperback bleed: 0.125" (~38px @ 300dpi).`,
+        `Keep type & key art inside the safe zone (~0.25" / 75px inset).`,
+        `Barcode zone: ~2"×1.2" (600×360px) bottom-right of back cover — leave white/light background.`,
+      ].filter(Boolean).join("\n");
+      folder.file("README.txt", readme);
+
+      const out = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slugTitle}_KDP_Covers.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("ZIP ready — check your downloads.");
+    } catch (e) {
+      toast.error(`ZIP failed: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally {
+      setZipping(false);
+    }
+  };
+
 
   const promptFor = (part: Part): string => {
     const spec = SPECS[part];
@@ -288,7 +348,27 @@ const EbookCoverStudioPage = () => {
             </div>
           </section>
 
-          <section className="mt-6 space-y-4">
+          <section className="mt-6 flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowOverlay((v) => !v)}
+              className="text-[11px] px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted flex items-center gap-1.5"
+            >
+              {showOverlay ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showOverlay ? "Hide" : "Show"} print guides
+            </button>
+            <button
+              type="button"
+              onClick={downloadZip}
+              disabled={zipping || results.length === 0}
+              className="text-[11px] px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-1.5 disabled:opacity-40"
+            >
+              {zipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+              Download KDP ZIP ({results.length}/3)
+            </button>
+          </section>
+
+          <section className="mt-4 space-y-4">
             {(["front", "back", "spine"] as Part[]).map((part) => {
               const spec = SPECS[part];
               const result = findResult(part);
@@ -304,7 +384,7 @@ const EbookCoverStudioPage = () => {
                       {result?.url && (
                         <a
                           href={result.url}
-                          download={`${(title || "cover").replace(/\s+/g, "-").toLowerCase()}-${part}.png`}
+                          download={`${slugTitle}_${spec.label.replace(/\s+/g, "_")}.png`}
                           className="text-[11px] px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/70 text-foreground flex items-center gap-1"
                         >
                           <Download className="w-3 h-3" /> Download
@@ -321,24 +401,75 @@ const EbookCoverStudioPage = () => {
                     </div>
                   </div>
                   <div
-                    className="w-full bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{ aspectRatio: `${spec.w} / ${spec.h}`, maxHeight: 480 }}
+                    className="relative w-full bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center mx-auto"
+                    style={{ aspectRatio: `${spec.w} / ${spec.h}`, maxHeight: 480, maxWidth: part === "spine" ? 60 : "100%" }}
                   >
                     {isBusy ? (
                       <Loader2 className="w-6 h-6 text-primary animate-spin" />
                     ) : result?.url ? (
                       <img src={result.url} alt={`${part} cover`} className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-[11px] text-muted-foreground">Not generated yet</span>
+                      <span className="text-[11px] text-muted-foreground text-center px-2">Not generated yet</span>
                     )}
+                    {showOverlay && <CoverOverlay part={part} w={spec.w} h={spec.h} />}
                   </div>
+                  {showOverlay && (
+                    <div className="mt-2 flex items-center gap-3 flex-wrap text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-red-500" /> Trim edge</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-amber-400" /> Bleed (0.125")</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-emerald-400" /> Safe zone</span>
+                      {part === "back" && (
+                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 border border-sky-400 bg-sky-400/20" /> Barcode area</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </section>
+
         </div>
       </div>
     </PaywallGate>
+  );
+};
+
+// SVG overlay: KDP bleed 0.125" (~38px @ 300dpi), safe-zone ~0.25" inset (~75px),
+// barcode area ~2"×1.2" (600×360px) bottom-right on the back cover.
+const CoverOverlay = ({ part, w, h }: { part: Part; w: number; h: number }) => {
+  const BLEED = 38;
+  const SAFE = 75;
+  const BARCODE_W = 600;
+  const BARCODE_H = 360;
+  const BARCODE_MARGIN = 100;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      className="absolute inset-0 w-full h-full pointer-events-none"
+    >
+      {/* Bleed edge (outermost) */}
+      <rect x={BLEED} y={BLEED} width={w - BLEED * 2} height={h - BLEED * 2}
+        fill="none" stroke="rgb(251 191 36)" strokeWidth={6} strokeDasharray="18 12" />
+      {/* Trim edge */}
+      <rect x={BLEED * 2} y={BLEED * 2} width={w - BLEED * 4} height={h - BLEED * 4}
+        fill="none" stroke="rgb(239 68 68)" strokeWidth={6} />
+      {/* Safe zone */}
+      <rect x={SAFE + BLEED} y={SAFE + BLEED} width={w - (SAFE + BLEED) * 2} height={h - (SAFE + BLEED) * 2}
+        fill="none" stroke="rgb(52 211 153)" strokeWidth={4} strokeDasharray="10 10" />
+      {/* Barcode zone on back cover only */}
+      {part === "back" && (
+        <rect
+          x={w - BARCODE_W - BARCODE_MARGIN}
+          y={h - BARCODE_H - BARCODE_MARGIN}
+          width={BARCODE_W}
+          height={BARCODE_H}
+          fill="rgba(56,189,248,0.18)"
+          stroke="rgb(56 189 248)"
+          strokeWidth={5}
+        />
+      )}
+    </svg>
   );
 };
 
