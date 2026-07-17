@@ -246,8 +246,21 @@ const StoryWriterPage = () => {
   );
 
   // ====== AI ILLUSTRATION GENERATOR ======
-  // Cover, back cover, and up to 2 illustrations per chapter.
+  // Cover, back cover, and up to 6 illustrations per chapter.
   const [imgBusy, setImgBusy] = useState<string | null>(null);
+  const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
+  const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+
+  const ART_STYLES: { id: string; label: string; suffix: string }[] = [
+    { id: "realistic-4k", label: "4K Realistic", suffix: "ultra-realistic 4K photography, razor-sharp, cinematic lighting" },
+    { id: "photo-normal", label: "Normal Photo", suffix: "natural realistic photograph" },
+    { id: "cartoon",      label: "Cartoon",      suffix: "cartoon illustration, bold outlines, vibrant flat colours" },
+    { id: "2_5d",         label: "2.5D Photoreal", suffix: "2.5D photorealistic illustration, painterly depth, cinematic lighting" },
+    { id: "anime",        label: "Anime",        suffix: "modern anime cover art, cel-shaded, clean line art" },
+    { id: "cinematic",    label: "Cinematic",    suffix: "cinematic movie-poster style, dramatic lighting, moody colour grade" },
+    { id: "fantasy",      label: "Fantasy",      suffix: "epic fantasy illustration, painterly, rich detail" },
+    { id: "watercolour",  label: "Watercolour",  suffix: "soft watercolour illustration, textured paper, gentle washes" },
+  ];
 
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
@@ -258,17 +271,20 @@ const StoryWriterPage = () => {
     if (!requireMeta()) return;
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
-    let basePrompt = customPrompt?.trim() || "";
-    if (!basePrompt) {
-      if (slot === "cover") {
-        basePrompt = `Stunning 3D rendered ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, 8K, magazine cover quality, no text, no typography.`;
-      } else if (slot === "back") {
-        basePrompt = `Atmospheric 3D rendered back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, cinematic, 8K, no text.`;
-      } else if (ch) {
-        const snippet = (ch.content || "").slice(0, 1200);
-        basePrompt = `Cinematic 3D illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, 8K, no text, no captions.`;
-      }
+    const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
+    const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
+
+    let basePrompt = "";
+    if (slot === "cover") {
+      basePrompt = `Stunning ${style.label} ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, magazine cover quality, no text, no typography.`;
+    } else if (slot === "back") {
+      basePrompt = `Atmospheric ${style.label} back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, no text.`;
+    } else if (ch) {
+      const snippet = (ch.content || "").slice(0, 1200);
+      basePrompt = `${style.label} illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, no text, no captions.`;
     }
+    if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
+    basePrompt += ` Style: ${style.suffix}.`;
 
     setImgBusy(slotKey);
     try {
