@@ -331,7 +331,7 @@ const StoryWriterPage = () => {
           title: label,
           url,
           source_page: "story-writer",
-          metadata: { story_id: savingId, slot: slotKey, story_title: story.title },
+          metadata: { story_id: savingId, slot: slotKey, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
         });
       } catch { /* non-fatal */ }
       toast.success("Illustration ready!");
