@@ -22,6 +22,7 @@ import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { resolveOracleCommand, dispatchOracleCommand, stripOracleMarkers } from "@/lib/oracleControl";
+import OracleImageComposer from "@/components/OracleImageComposer";
 
 interface Message {
   id: string;
@@ -3006,6 +3007,7 @@ const OraclePage = () => {
           >
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
+          <OracleImageComposer />
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
