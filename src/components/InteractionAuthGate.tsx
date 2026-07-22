@@ -66,21 +66,20 @@ export const InteractionAuthGate = () => {
     if (loading || user) return;
     if (isPublicPath(location.pathname)) return;
 
-    const trigger = (reason: "type" | "submit" | "action") => {
+    const trigger = (reason: "type" | "submit" | "action" | "download") => {
       if (firing.current) return;
       firing.current = true;
-      toast.info("Join or sign in to use this feature", {
-        description:
-          reason === "type"
-            ? "You can look around free — signing in unlocks typing & generating."
-            : "Create your free account to continue.",
-        duration: 3500,
-      });
-      navigate("/sign-in", { state: { from: location } });
-      // reset after nav settles
-      setTimeout(() => {
-        firing.current = false;
-      }, 800);
+      const messages: Record<typeof reason, { title: string; desc: string }> = {
+        type:     { title: "Join or sign in to use this feature", desc: "You can look around free — signing in unlocks typing & generating." },
+        submit:   { title: "Sign in to continue",                 desc: "Create your free account to submit." },
+        action:   { title: "Sign in to use this",                 desc: "This action needs a free account." },
+        download: { title: "Sign in to download or export",       desc: "Downloads, exports and PDFs are for members only." },
+      };
+      const m = messages[reason];
+      toast.info(m.title, { description: m.desc, duration: 3500 });
+      const redirect = encodeURIComponent(location.pathname + location.search);
+      navigate(`/sign-in?redirect=${redirect}`);
+      setTimeout(() => { firing.current = false; }, 800);
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -93,7 +92,6 @@ export const InteractionAuthGate = () => {
         (t as HTMLElement).isContentEditable === true;
       if (!editable) return;
       if (isExempt(t)) return;
-      // Allow pure navigation keys (Tab, arrows, Escape) so they can still explore
       if (["Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
       e.preventDefault();
       e.stopPropagation();
@@ -118,14 +116,50 @@ export const InteractionAuthGate = () => {
       trigger("submit");
     };
 
+    // Block downloads / exports / PDF / CSV / ZIP clicks for guests.
+    const DOWNLOAD_TEXT = /\b(download|export|save as|save file|save pdf|save csv|export csv|export pdf|export zip|get zip|print|copy link)\b/i;
+    const onClick = (e: MouseEvent) => {
+      let node = e.target as HTMLElement | null;
+      while (node) {
+        if (node.hasAttribute?.("data-auth-allow")) return;
+        // Native download anchor
+        if (node.tagName === "A") {
+          const a = node as HTMLAnchorElement;
+          const href = a.getAttribute("href") || "";
+          if (a.hasAttribute("download") || href.startsWith("blob:") || href.startsWith("data:")) {
+            e.preventDefault();
+            e.stopPropagation();
+            trigger("download");
+            return;
+          }
+        }
+        // Buttons / links marked or labelled as download/export actions
+        if (node.tagName === "BUTTON" || node.tagName === "A") {
+          const flag =
+            node.hasAttribute?.("data-requires-auth") ||
+            node.hasAttribute?.("data-download");
+          const label = (node.getAttribute("aria-label") || node.textContent || "").trim();
+          if (flag || (label && DOWNLOAD_TEXT.test(label))) {
+            e.preventDefault();
+            e.stopPropagation();
+            trigger("download");
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+    };
+
     document.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("paste", onPaste, true);
     document.addEventListener("submit", onSubmit, true);
+    document.addEventListener("click", onClick, true);
 
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("paste", onPaste, true);
       document.removeEventListener("submit", onSubmit, true);
+      document.removeEventListener("click", onClick, true);
     };
   }, [user, loading, location, navigate]);
 

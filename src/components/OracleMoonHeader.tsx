@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
@@ -14,19 +15,32 @@ interface OracleMoonHeaderProps {
  */
 export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const capabilities = [
-    "Cinematic AI Portraits",
-    "8K Avatars",
-    "Story Writer",
-    "Movie Studio",
-    "Magic Photo Edit",
-    "Voice Cloning",
-    "Live Vision",
-    "Brand & Logo Lab",
-    "AI Tutor",
-    "App Builder",
+  // Each marquee chip links to the actual feature. Guests are routed to
+  // /sign-in?redirect=<route> so they land inside that exact app right after
+  // signing up / logging in. Signed-in users navigate straight there.
+  const capabilities: { label: string; route: string }[] = [
+    { label: "Cinematic AI Portraits", route: "/photography-hub" },
+    { label: "8K Avatars",             route: "/avatar-generator" },
+    { label: "Story Writer",           route: "/story-writer" },
+    { label: "Movie Studio",           route: "/movie-studio-pro" },
+    { label: "Magic Photo Edit",       route: "/teleport" },
+    { label: "Voice Cloning",          route: "/voice-studio" },
+    { label: "Live Vision",            route: "/live-vision" },
+    { label: "Brand & Logo Lab",       route: "/photography-hub" },
+    { label: "AI Tutor",               route: "/ai-tutor" },
+    { label: "App Builder",            route: "/app-builder" },
   ];
+
+  const goToApp = (route: string) => {
+    if (user) {
+      navigate(route);
+    } else {
+      navigate(`/sign-in?redirect=${encodeURIComponent(route)}`);
+    }
+  };
+
 
   return (
     <div className="relative overflow-hidden border-b border-amber-500/30">
@@ -119,13 +133,17 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             style={{ animation: "marqueeSlide 28s linear infinite" }}
           >
             {[...capabilities, ...capabilities].map((cap, i) => (
-              <span
+              <button
                 key={i}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100"
+                type="button"
+                onClick={() => goToApp(cap.route)}
+                data-auth-allow
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 transition cursor-pointer"
+                aria-label={user ? `Open ${cap.label}` : `Sign in to open ${cap.label}`}
               >
                 <span className="text-amber-300">✦</span>
-                {cap}
-              </span>
+                {cap.label}
+              </button>
             ))}
           </div>
         </div>
