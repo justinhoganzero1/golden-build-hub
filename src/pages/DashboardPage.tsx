@@ -3,6 +3,7 @@ import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles,
