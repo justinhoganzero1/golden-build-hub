@@ -112,7 +112,11 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
-  const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { isAdmin: isAdminRaw, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
+  // On Lovable preview domains, force non-admin view so admin controls are
+  // never exposed even if the current session belongs to the owner account.
+  const isAdmin = isAdminRaw && !isPreview;
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     try {
