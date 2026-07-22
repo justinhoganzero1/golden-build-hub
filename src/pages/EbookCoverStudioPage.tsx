@@ -135,7 +135,9 @@ const EbookCoverStudioPage = () => {
   const generateOne = async (part: Part): Promise<GeneratedPart | null> => {
     const prompt = promptFor(part);
     try {
-      const gen = await generateImage({ prompt, tier: style.tier });
+      // Always bypass cache — each click should produce a fresh variation.
+      const gen = await generateImage({ prompt, tier: style.tier, noCache: true });
+
       const spec = SPECS[part];
       const saved: any = await saveMedia.mutateAsync({
         media_type: "image",
