@@ -15,6 +15,7 @@ import { registerRoutes } from "@/lib/speedAI";
 import { OracleControlListener } from "@/lib/oracleControl";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "@/components/RequireAuth";
+import InteractionAuthGate from "@/components/InteractionAuthGate";
 import RequireAdmin from "@/components/RequireAdmin";
 // Lazy: non-critical chrome — keep these out of the initial bundle so Android
 // startup parses less JS before first paint.
