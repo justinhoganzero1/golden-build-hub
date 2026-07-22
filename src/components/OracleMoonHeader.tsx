@@ -133,13 +133,17 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             style={{ animation: "marqueeSlide 28s linear infinite" }}
           >
             {[...capabilities, ...capabilities].map((cap, i) => (
-              <span
+              <button
                 key={i}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100"
+                type="button"
+                onClick={() => goToApp(cap.route)}
+                data-auth-allow
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 transition cursor-pointer"
+                aria-label={user ? `Open ${cap.label}` : `Sign in to open ${cap.label}`}
               >
                 <span className="text-amber-300">✦</span>
-                {cap}
-              </span>
+                {cap.label}
+              </button>
             ))}
           </div>
         </div>
