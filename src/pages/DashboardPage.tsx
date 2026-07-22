@@ -3,6 +3,7 @@ import SEO from "@/components/SEO";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { usePreviewMode } from "@/hooks/usePreviewMode";
 import {
   Brain, Shield, Heart, MessageCircle, Video, Camera, Music,
   Wallet, Calendar, Clock, Settings, User, Sparkles,
@@ -111,7 +112,11 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
-  const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { isAdmin: isAdminRaw, loading: adminLoading } = useIsAdmin();
+  const isPreview = usePreviewMode();
+  // On Lovable preview domains, force non-admin view so admin controls are
+  // never exposed even if the current session belongs to the owner account.
+  const isAdmin = isAdminRaw && !isPreview;
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     try {
@@ -204,7 +209,11 @@ const DashboardPage = () => {
         <div>
           <h1 className="text-xl font-bold text-primary">Welcome to Oracle Lunar</h1>
           <p className="text-muted-foreground text-sm">Your AI companion to do everything</p>
-          {adminLoading ? null : isAdmin ? (
+          {adminLoading ? null : isPreview ? (
+            <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-sm">
+              ✨ Lovable Trial — Member Preview
+            </span>
+          ) : isAdmin ? (
             <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black shadow-sm">
               👑 Lifetime Owner — Full Access
             </span>
