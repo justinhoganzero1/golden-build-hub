@@ -285,6 +285,7 @@ const App = () => (
               <OracleAgent />
               <OracleControlListener />
               <AdminFlagBootstrap />
+              <InteractionAuthGate />
               <Suspense fallback={null}><WalletPaywallModal /></Suspense>
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 
