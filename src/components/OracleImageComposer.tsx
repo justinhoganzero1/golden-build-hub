@@ -103,7 +103,10 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
         prompt,
         inputImage: refs[0],
         tier: style.tier,
+        // If we already have a result, this click is "Generate again" — force fresh.
+        noCache: !!resultUrl,
       });
+
       const url = gen.url;
       setResultUrl(url);
       onGenerated?.(url, prompt);
