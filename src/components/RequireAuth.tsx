@@ -14,11 +14,14 @@ interface RequireAuthProps {
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  // Preview mode bypass disabled — every route now requires a real session.
-  const _isPreview = usePreviewMode();
-  void _isPreview;
+  const isPreview = usePreviewMode();
 
-  // No preview/anon bypass — every route requires a real signed-in member.
+  // Lovable preview hosts (*.lovable.app / *.lovableproject.com / *.lovable.dev
+  // or ?preview=1) bypass the auth wall so reviewers can see the entire project
+  // without signing in. Real end users on oracle-lunar.online still get gated.
+  if (isPreview) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
@@ -29,8 +32,6 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   }
 
   if (!user) {
-    // First click of anything gated → bounce to sign-in so visitors can
-    // either log in or become a member.
     return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
