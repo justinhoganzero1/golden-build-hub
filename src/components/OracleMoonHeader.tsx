@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OracleMoonHeaderProps {
   children?: ReactNode;
@@ -14,19 +15,32 @@ interface OracleMoonHeaderProps {
  */
 export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const capabilities = [
-    "Cinematic AI Portraits",
-    "8K Avatars",
-    "Story Writer",
-    "Movie Studio",
-    "Magic Photo Edit",
-    "Voice Cloning",
-    "Live Vision",
-    "Brand & Logo Lab",
-    "AI Tutor",
-    "App Builder",
+  // Each marquee chip links to the actual feature. Guests are routed to
+  // /sign-in?redirect=<route> so they land inside that exact app right after
+  // signing up / logging in. Signed-in users navigate straight there.
+  const capabilities: { label: string; route: string }[] = [
+    { label: "Cinematic AI Portraits", route: "/photography-hub" },
+    { label: "8K Avatars",             route: "/avatar-generator" },
+    { label: "Story Writer",           route: "/story-writer" },
+    { label: "Movie Studio",           route: "/movie-studio-pro" },
+    { label: "Magic Photo Edit",       route: "/teleport" },
+    { label: "Voice Cloning",          route: "/voice-studio" },
+    { label: "Live Vision",            route: "/live-vision" },
+    { label: "Brand & Logo Lab",       route: "/photography-hub" },
+    { label: "AI Tutor",               route: "/ai-tutor" },
+    { label: "App Builder",            route: "/app-builder" },
   ];
+
+  const goToApp = (route: string) => {
+    if (user) {
+      navigate(route);
+    } else {
+      navigate(`/sign-in?redirect=${encodeURIComponent(route)}`);
+    }
+  };
+
 
   return (
     <div className="relative overflow-hidden border-b border-amber-500/30">
