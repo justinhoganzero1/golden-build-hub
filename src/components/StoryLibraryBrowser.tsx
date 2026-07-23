@@ -40,7 +40,11 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
     queryFn: async () => {
       let q = supabase
         .from("user_media")
-        .select("id,title,updated_at,metadata", { count: "exact" })
+        // Keep the browser lightweight. Story metadata can contain huge base64
+        // cover/chapter images, which was making the whole library sit on the
+        // spinner before any titles appeared. Fetch full metadata only when a
+        // story is opened.
+        .select("id,title,updated_at,thumbnail_url", { count: "exact" })
         .eq("user_id", user!.id)
         .eq("source_page", "story-writer")
         .eq("media_type", "story");
@@ -60,11 +64,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
   const sortedItems = useMemo(() => {
     const items = data?.items || [];
     if (sortKey !== "chapters") return items;
-    return [...items].sort((a: any, b: any) => {
-      const ac = Array.isArray(a.metadata?.chapters) ? a.metadata.chapters.length : 0;
-      const bc = Array.isArray(b.metadata?.chapters) ? b.metadata.chapters.length : 0;
-      return bc - ac;
-    });
+    return items;
   }, [data, sortKey]);
 
   const total = data?.total || 0;
@@ -174,9 +174,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
           ) : (
             <div className="max-h-96 overflow-y-auto space-y-1.5 pr-1">
               {sortedItems.map((it: any) => {
-                const meta = (it.metadata || {}) as any;
-                const chapters = Array.isArray(meta.chapters) ? meta.chapters : [];
-                const cover = meta.coverImage as string | undefined;
+                const cover = it.thumbnail_url as string | undefined;
                 const isCurrent = it.id === currentId;
                 const busy = busyId === it.id;
                 return (
@@ -206,9 +204,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
                       <div className={`text-xs font-medium truncate ${isCurrent ? "text-primary" : "text-foreground"}`}>
                         {it.title || "Untitled Story"}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {chapters.length} ch · {fmtDate(it.updated_at)}
-                      </div>
+                      <div className="text-[10px] text-muted-foreground">Saved · {fmtDate(it.updated_at)}</div>
                     </button>
                     <div className="flex flex-col">
                       <button
