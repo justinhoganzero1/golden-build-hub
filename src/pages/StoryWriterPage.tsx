@@ -1437,13 +1437,36 @@ Write the full chapter now (5000+ words):`;
           </div>
         </div>
 
+        {/* Retailer-ready exports */}
+        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={exportEpub}
+            disabled={epubBusy}
+            className="py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {epubBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookMarked className="w-4 h-4" />}
+            EPUB — Kindle, Kobo, Apple, Google, B&amp;N
+          </button>
+          <button
+            onClick={exportAudiobook}
+            disabled={audioBusy}
+            className="py-3 rounded-xl bg-gradient-to-r from-amber-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {audioBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
+            {audioBusy ? `Narrating ${audioProgress}%` : "Audiobook — Audible / ACX ready"}
+          </button>
+        </div>
+        <p className="px-4 pt-1 text-[10px] text-muted-foreground">
+          EPUB works on every major store. Audiobook ZIP includes 44.1 kHz 128 kbps MP3s, opening &amp; closing credits, retail sample and ACX metadata — upload directly to Audible/ACX, Findaway Voices, Google Play Books, Kobo, Spotify or Author's Republic.
+        </p>
+
         {/* Bottom actions */}
         <div className="px-4 pt-4 grid grid-cols-3 gap-2">
           <button
             onClick={exportTxt}
             className="py-2 rounded-lg bg-card border border-border text-foreground text-xs flex items-center justify-center gap-1"
           >
-            <Download className="w-3 h-3" /> Export
+            <Download className="w-3 h-3" /> TXT
           </button>
           <button
             onClick={() => navigate("/media-library")}
@@ -1463,6 +1486,7 @@ Write the full chapter now (5000+ words):`;
             {story.published ? "Published" : "Publish"}
           </button>
         </div>
+
 
         {story.published && story.publishedUrl && (
           <div className="mx-4 mt-3 p-3 rounded-lg bg-primary/10 border border-primary/30 text-xs text-foreground">
