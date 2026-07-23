@@ -3271,6 +3271,7 @@ export type Database = {
         Returns: number
       }
       delete_user_account: { Args: { _user_id: string }; Returns: boolean }
+      get_story_writer_document: { Args: { _story_id: string }; Returns: Json }
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
       grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
       has_active_reward: { Args: { _user_id: string }; Returns: boolean }

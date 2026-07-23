@@ -1,6 +1,6 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,6 +68,8 @@ const StoryWriterPage = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [openingStoryId, setOpeningStoryId] = useState<string | null>(null);
+  const skipAutosaveForLoadedStoryRef = useRef<string | null>(null);
   const [chapterGuidance, setChapterGuidance] = useState("");
   // Workflow stage after a chapter is generated:
   // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
@@ -120,31 +122,38 @@ const StoryWriterPage = () => {
   useEffect(() => {
     const id = params.get("id");
     if (!id || !user) return;
+    let alive = true;
     (async () => {
-      const { data } = await supabase
-        .from("user_media")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-      if (data) {
-        try {
-          const meta = (data.metadata || {}) as any;
+      setOpeningStoryId(id);
+      try {
+        const { data, error } = await supabase.rpc("get_story_writer_document" as any, { _story_id: id } as any);
+        if (error) throw error;
+        if (data && alive) {
+          const doc = data as any;
+          skipAutosaveForLoadedStoryRef.current = id;
           setStory({
-            id: data.id,
-            title: data.title || "",
-            author: meta.author || "",
-            genre: meta.genre || "Fantasy",
-            premise: meta.premise || "",
-            chapters: meta.chapters || [{ title: "Chapter 1", content: "" }],
-            coverImage: meta.coverImage,
-            backImage: meta.backImage,
-            published: meta.published,
-            publishedUrl: meta.publishedUrl,
+            id: doc.id,
+            title: doc.title || "",
+            author: doc.author || "",
+            genre: doc.genre || "Fantasy",
+            premise: doc.premise || "",
+            chapters: Array.isArray(doc.chapters) && doc.chapters.length ? doc.chapters : [{ title: "Chapter 1", content: "" }],
+            coverImage: doc.coverImage || undefined,
+            backImage: doc.backImage || undefined,
+            published: !!doc.published,
+            publishedUrl: doc.publishedUrl || undefined,
           });
-          setSavingId(data.id);
-        } catch {}
+          setSavingId(doc.id);
+          setActiveChapter(0);
+          toast.success("Story opened");
+        }
+      } catch (e: any) {
+        if (alive) toast.error(e?.message || "Story could not be opened");
+      } finally {
+        if (alive) setOpeningStoryId(null);
       }
     })();
+    return () => { alive = false; };
   }, [params, user]);
 
   // Default the author to the signed-in user's name/email once known.
@@ -176,6 +185,10 @@ const StoryWriterPage = () => {
   useEffect(() => {
     if (!user) return;
     if (!hasMeta) return;
+    if (skipAutosaveForLoadedStoryRef.current && skipAutosaveForLoadedStoryRef.current === savingId) {
+      skipAutosaveForLoadedStoryRef.current = null;
+      return;
+    }
     const handle = setTimeout(async () => {
       try {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
@@ -682,8 +695,8 @@ Write the full chapter now (5000+ words):`;
   };
 
   const loadSaved = (id: string) => {
+    if (openingStoryId) return;
     navigate(`/story-writer?id=${id}`);
-    window.location.reload();
   };
 
   return (
@@ -717,6 +730,12 @@ Write the full chapter now (5000+ words):`;
         {/* Browse ALL my stories — searchable + paginated */}
         <div className="px-4 py-3 border-b border-border">
           <StoryLibraryBrowser onOpen={loadSaved} currentId={savingId} />
+          {openingStoryId && (
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+              Opening story without the heavy embedded artwork…
+            </div>
+          )}
         </div>
 
         {/* Title + Author (REQUIRED) + Genre + Premise */}
