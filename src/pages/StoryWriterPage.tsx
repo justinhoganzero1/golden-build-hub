@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
@@ -115,23 +115,6 @@ const StoryWriterPage = () => {
     }, 400);
     return () => clearTimeout(t);
   }, [draftKey, chapterGuidance, editInstructions, nextGuidance]);
-
-  // Load saved stories from library
-  const { data: savedStories = [] } = useQuery({
-    queryKey: ["story-writer-library", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_media")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("source_page", "story-writer")
-        .eq("media_type", "story")
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   // Auto-load story by id from URL
   useEffect(() => {
