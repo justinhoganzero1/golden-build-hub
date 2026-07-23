@@ -797,7 +797,20 @@ Write the full chapter now (5000+ words):`;
             <p className="text-[10px] text-muted-foreground">
               This style and description are combined with your story details for the front cover, back cover, and every chapter illustration. Change it any time before hitting Generate.
             </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await generateStoryImage("cover");
+                await generateStoryImage("back");
+              }}
+              disabled={!!imgBusy}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/20"
+            >
+              {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {imgBusy ? "Generating photorealistic 8K photo…" : "▶ Generate Front + Back Cover Now (8K photorealistic)"}
+            </button>
           </div>
+
 
           {/* Front + Back Cover Illustrations */}
           <div className="grid grid-cols-2 gap-2">
