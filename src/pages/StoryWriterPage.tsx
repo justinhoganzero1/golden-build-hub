@@ -257,17 +257,18 @@ const StoryWriterPage = () => {
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
     const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
 
+    const REALISM = "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO cartoon, NO CGI plastic look, NO text, NO typography, NO watermarks.";
     let basePrompt = "";
     if (slot === "cover") {
-      basePrompt = `Stunning ${style.label} ${story.genre} book cover illustration for "${story.title}". ${story.premise}. Cinematic composition, dramatic lighting, hyper-detailed, magazine cover quality, no text, no typography.`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER photograph for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Magazine-cover framing. ${REALISM}`;
     } else if (slot === "back") {
-      basePrompt = `Atmospheric ${style.label} back-cover illustration for the ${story.genre} novel "${story.title}". ${story.premise}. Moody, evocative scenery hinting at the story's world, no text.`;
+      basePrompt = `${story.genre} book BACK COVER photograph for "${story.title}". ${story.premise}. Atmospheric, evocative real-world scene hinting at the story's world and stakes. ${REALISM}`;
     } else if (ch) {
       const snippet = (ch.content || "").slice(0, 1200);
-      basePrompt = `${style.label} illustration for "${ch.title}" in the ${story.genre} novel "${story.title}". Scene to depict: ${snippet || story.premise}. Hyper-detailed, dramatic lighting, no text, no captions.`;
+      basePrompt = `Photorealistic scene from "${ch.title}" in the ${story.genre} novel "${story.title}". Depict: ${snippet || story.premise}. ${REALISM}`;
     }
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
-    basePrompt += ` Style: ${style.suffix}.`;
+    basePrompt += ` Style reference: ${style.suffix}.`;
 
     setImgBusy(slotKey);
     try {
