@@ -34,12 +34,30 @@ const PUBLIC_PATH_PREFIXES = [
   "/portal",
   "/advertise",
   "/investor",
-  "/story/",
-  "/realm/",
+  "/story",
+  "/stories",
+  "/realm",
+  "/realms",
 ];
 
+// SEO landing pages ("try it, no signup" acquisition funnels) must allow typing.
+const PUBLIC_EXACT_PATHS = new Set<string>([
+  "/ai-chat-companion", "/ai-friend", "/free-ai-chat", "/ai-girlfriend", "/ai-boyfriend",
+  "/character-ai-alternative", "/replika-alternative", "/ai-therapist-free", "/ai-tutor-free",
+  "/free-ai-voice-chat", "/ai-app-builder", "/ai-image-generator-free", "/ai-video-generator",
+  "/ai-music-generator", "/ai-coder", "/ai-3d-app-builder", "/ai-name-generator",
+  "/ai-tagline-generator", "/ai-business-idea-generator", "/ai-horoscope-free", "/ai-logo-ideas",
+  "/ai-companion-app", "/replika-vs-oracle-lunar", "/ai-life-coach-free", "/ai-elderly-care",
+  "/ai-crisis-support", "/ai-photo-editor", "/free-seo-tools", "/ai-email-writer",
+  "/chatgpt-alternative", "/gemini-alternative", "/claude-alternative", "/free-ai-app-2026",
+  "/ai-for-android", "/ai-for-iphone", "/free-ai-meditation", "/ai-relationship-advice",
+  "/ai-resume-builder-free", "/ai-interview-coach", "/ai-cooking-assistant",
+  "/ai-travel-planner", "/ai-fitness-coach-free", "/ai-investor-pitch",
+]);
+
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p));
+  if (PUBLIC_EXACT_PATHS.has(pathname)) return true;
+  return PUBLIC_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
 function isExempt(el: EventTarget | null): boolean {
