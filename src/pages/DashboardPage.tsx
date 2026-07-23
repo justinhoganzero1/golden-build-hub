@@ -106,7 +106,7 @@ const groups: TileGroup[] = [
   // those are now reached via the bottom-nav Vault and Settings tabs.
 ];
 
-const STORAGE_KEY = "oracle-lunar-dash-groups-open-v2";
+const STORAGE_KEY = "oracle-lunar-dash-groups-open-v3";
 
 const DashboardPage = () => {
   const { user, signOut } = useAuth();
@@ -123,7 +123,8 @@ const DashboardPage = () => {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch {}
-    return Object.fromEntries(groups.map(g => [g.id, !!g.defaultOpen]));
+    // Default: expand ALL groups so users see every app upfront.
+    return Object.fromEntries(groups.map(g => [g.id, true]));
   });
 
   useEffect(() => {
