@@ -363,13 +363,13 @@ export default function MonthlyAwardsShowcase() {
         return item;
       };
       const winners = c.winners.map((w) => {
-        const heroItem = take();
+        const heroItem: any = take();
         const gallery = [take(), take(), take(), take()].map(
-          (g, i) => (g?.thumbnail_url || g?.url || w.gallery[i])
+          (g: any, i) => (g?.thumbnail_url || g?.url || w.gallery[i])
         );
         return {
           ...w,
-          hero: heroItem?.url || w.hero,
+          hero: heroItem?.thumbnail_url || heroItem?.url || w.hero,
           gallery,
         };
       }) as [Winner, Winner, Winner];
