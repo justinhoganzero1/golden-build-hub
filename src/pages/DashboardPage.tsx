@@ -114,9 +114,11 @@ const DashboardPage = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const { isAdmin: isAdminRaw, loading: adminLoading } = useIsAdmin();
   const isPreview = usePreviewMode();
-  // On Lovable preview domains, force non-admin view so admin controls are
-  // never exposed even if the current session belongs to the owner account.
-  const isAdmin = isAdminRaw && !isPreview;
+  // Admin flag is already locked server-side to the owner email
+  // (has_role + is_owner_email_locked), so honoring it on preview hosts is
+  // safe — otherwise the owner can't reach admin controls while testing here.
+  void isPreview;
+  const isAdmin = isAdminRaw;
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() => {
     try {
