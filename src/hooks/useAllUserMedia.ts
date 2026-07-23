@@ -3,7 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const PAGE_SIZE = 60;
-const COLS = "id,user_id,media_type,title,url,thumbnail_url,source_page,metadata,created_at";
+// NOTE: metadata is intentionally excluded — story rows embed base64 covers/illustrations
+// that blow up payload size and trigger PostgREST statement timeouts on the admin list.
+// Fetch metadata per-item only when a card is opened.
+const COLS = "id,user_id,media_type,title,url,thumbnail_url,source_page,created_at";
 
 // Backward-compatible flat hook (now capped + indexed for speed)
 export const useAllUserMedia = () => {
