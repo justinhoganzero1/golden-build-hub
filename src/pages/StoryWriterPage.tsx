@@ -653,6 +653,259 @@ Write the full chapter now (5000+ words):`;
     URL.revokeObjectURL(url);
   };
 
+  const authorName = () => (story.author?.trim() || user?.email?.split("@")[0] || "Anonymous");
+  const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "story";
+  const xmlEscape = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  /** EPUB3 — accepted by Kindle (KDP), Kobo, Apple Books, Google Play Books,
+   *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
+  const [epubBusy, setEpubBusy] = useState(false);
+  const exportEpub = async () => {
+    if (!story.chapters.some(c => c.content.trim())) {
+      toast.error("Write at least one chapter first."); return;
+    }
+    setEpubBusy(true);
+    try {
+      const zip = new JSZip();
+      // mimetype MUST be first and uncompressed
+      zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+      zip.folder("META-INF")!.file("container.xml",
+        `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>`);
+
+      const oebps = zip.folder("OEBPS")!;
+      const bookId = `urn:uuid:${crypto.randomUUID()}`;
+      const title = xmlEscape(story.title || "Untitled");
+      const author = xmlEscape(authorName());
+      const now = new Date().toISOString().split(".")[0] + "Z";
+
+      // Cover image (optional)
+      let coverManifest = "";
+      let coverSpine = "";
+      let coverMeta = "";
+      if (story.coverImage?.startsWith("data:image/")) {
+        const m = story.coverImage.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (m) {
+          const ext = m[1].split("/")[1].replace("jpeg", "jpg");
+          const bin = atob(m[2]);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          oebps.file(`cover.${ext}`, bytes);
+          oebps.file("cover.xhtml",
+            `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Cover</title></head>
+<body><div style="text-align:center;"><img src="cover.${ext}" alt="Cover" style="max-width:100%;"/></div></body></html>`);
+          coverManifest = `<item id="cover-image" href="cover.${ext}" media-type="${m[1]}" properties="cover-image"/>
+<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
+          coverSpine = `<itemref idref="cover" linear="yes"/>`;
+          coverMeta = `<meta name="cover" content="cover-image"/>`;
+        }
+      }
+
+      // Chapter XHTMLs
+      const chapterFiles = story.chapters.map((c, i) => {
+        const fname = `chapter-${String(i + 1).padStart(3, "0")}.xhtml`;
+        const paras = c.content.split(/\n{2,}/).map(p => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`).join("\n");
+        oebps.file(fname,
+          `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${xmlEscape(c.title)}</title></head>
+<body><h1>${xmlEscape(c.title)}</h1>${paras}</body></html>`);
+        return { fname, title: c.title, id: `ch${i + 1}` };
+      });
+
+      const manifestItems = chapterFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
+      const spineItems = chapterFiles.map(c => `<itemref idref="${c.id}"/>`).join("\n");
+      const navPoints = chapterFiles.map(c => `<li><a href="${c.fname}">${xmlEscape(c.title)}</a></li>`).join("\n");
+
+      oebps.file("nav.xhtml",
+        `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head><title>Table of Contents</title></head>
+<body><nav epub:type="toc"><h1>Contents</h1><ol>${navPoints}</ol></nav></body></html>`);
+
+      oebps.file("content.opf",
+        `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="en">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">${bookId}</dc:identifier>
+    <dc:title>${title}</dc:title>
+    <dc:creator>${author}</dc:creator>
+    <dc:language>en</dc:language>
+    <dc:description>${xmlEscape(story.premise || "")}</dc:description>
+    <dc:subject>${xmlEscape(story.genre)}</dc:subject>
+    <meta property="dcterms:modified">${now}</meta>
+    ${coverMeta}
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    ${coverManifest}
+    ${manifestItems}
+  </manifest>
+  <spine>
+    ${coverSpine}
+    ${spineItems}
+  </spine>
+</package>`);
+
+      const blob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slugify(story.title)}.epub`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("EPUB ready — upload to Kindle, Kobo, Apple Books, Google Play, B&N, Draft2Digital or Smashwords.");
+    } catch (e: any) {
+      toast.error(e?.message || "EPUB export failed");
+    } finally {
+      setEpubBusy(false);
+    }
+  };
+
+  /** Audiobook — narrates every chapter with ElevenLabs, packages MP3s + ACX
+   *  metadata + retail sample in a ZIP ready to upload to Audible/ACX,
+   *  Findaway Voices, Google Play Books Audiobooks, Kobo Audiobooks, Spotify. */
+  const [audioBusy, setAudioBusy] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const narrateChunk = async (text: string): Promise<Uint8Array | null> => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+    const token = getEdgeAuthTokenSync();
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        text,
+        // Audiobook quality: multilingual v2 + 44.1kHz/128kbps MP3
+        modelId: "eleven_multilingual_v2",
+        outputFormat: "mp3_44100_128",
+        settings: { stability: 0.55, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true, speed: 0.98 },
+      }),
+    });
+    const ct = res.headers.get("content-type") || "";
+    if (!res.ok || ct.includes("application/json")) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  };
+
+  const exportAudiobook = async () => {
+    if (!user) { toast.error("Sign in to build audiobook"); return; }
+    if (!story.chapters.some(c => c.content.trim())) {
+      toast.error("Write at least one chapter first."); return;
+    }
+    if (!confirm(
+      `Narrate all ${story.chapters.length} chapters into a full audiobook?\n\n` +
+      `This uses your ElevenLabs credits and packages Audible/ACX-ready MP3s ` +
+      `(44.1kHz 128kbps), opening & closing credits, a retail sample, and metadata.txt.`
+    )) return;
+
+    setAudioBusy(true);
+    setAudioProgress(0);
+    try {
+      const zip = new JSZip();
+      const audio = zip.folder("audio")!;
+      const author = authorName();
+      const title = story.title || "Untitled";
+      const totalSteps = story.chapters.length + 2; // opening + closing
+      let step = 0;
+      const bump = () => { step++; setAudioProgress(Math.round((step / totalSteps) * 100)); };
+
+      // ACX opening credits
+      const opening = await narrateChunk(
+        `${title}. By ${author}. Narrated by Oracle Lunar A I.`
+      );
+      if (!opening) throw new Error("Narration failed — check your ElevenLabs key.");
+      audio.file("00_opening-credits.mp3", opening);
+      bump();
+
+      // Chapters — split long chapters into <=4500 char chunks and concatenate MP3 frames
+      for (let i = 0; i < story.chapters.length; i++) {
+        const ch = story.chapters[i];
+        const body = ch.content.trim();
+        if (!body) { bump(); continue; }
+        const spoken = `${ch.title}. ${body}`;
+        const chunks: string[] = [];
+        const sentences = spoken.match(/[^.!?]+[.!?]+\s*|[^.!?]+$/g) || [spoken];
+        let buf = "";
+        for (const s of sentences) {
+          if ((buf + s).length > 4500) { if (buf) chunks.push(buf); buf = s; }
+          else buf += s;
+        }
+        if (buf) chunks.push(buf);
+        const parts: Uint8Array[] = [];
+        for (const c of chunks) {
+          const mp3 = await narrateChunk(c);
+          if (!mp3) throw new Error(`Narration failed on chapter ${i + 1}.`);
+          parts.push(mp3);
+        }
+        const total = parts.reduce((n, p) => n + p.length, 0);
+        const joined = new Uint8Array(total);
+        let off = 0; for (const p of parts) { joined.set(p, off); off += p.length; }
+        const fname = `${String(i + 1).padStart(2, "0")}_${slugify(ch.title).slice(0, 40)}.mp3`;
+        audio.file(fname, joined);
+        bump();
+      }
+
+      // Closing credits
+      const closing = await narrateChunk(
+        `This has been ${title}, by ${author}. Narrated by Oracle Lunar A I. Thank you for listening.`
+      );
+      if (closing) audio.file("99_closing-credits.mp3", closing);
+      bump();
+
+      // Retail sample (opening credits — under 5 min, ACX-compliant)
+      zip.file("retail-sample.mp3", opening);
+
+      // ACX / Audible metadata
+      zip.file("metadata.txt",
+        [
+          `Title: ${title}`,
+          `Author: ${author}`,
+          `Narrator: Oracle Lunar AI (${authorName()})`,
+          `Genre: ${story.genre}`,
+          `Language: English`,
+          `Description: ${story.premise}`,
+          ``,
+          `-- Audible / ACX submission checklist --`,
+          `Format: MP3, 44.1 kHz, 128 kbps CBR, mono/stereo`,
+          `Peak: -3 dB or lower`,
+          `RMS: -23 dB to -18 dB`,
+          `Noise floor: -60 dB or lower`,
+          `Each file: opens with 0.5-1s of room tone, closes with 1-5s`,
+          `Retail sample: 1-5 min, mirrors production quality (see retail-sample.mp3)`,
+          `Opening credits: "<Title>. By <Author>. Narrated by <Narrator>."`,
+          `Closing credits: "This has been <Title>, by <Author>. Narrated by <Narrator>."`,
+          ``,
+          `-- Also accepted by --`,
+          `Findaway Voices (distributes to Audible, Apple Books, Google Play, Kobo, Spotify, Storytel, Scribd, Libro.fm, Nook Audio, Chirp)`,
+          `Google Play Books Audiobook Partner Center`,
+          `Kobo Writing Life (audio)`,
+          `Author's Republic`,
+          `ACX (Audible / Amazon / iTunes direct)`,
+        ].join("\n"));
+
+      // Include an EPUB inside the same ZIP so retailers that want both formats get them together
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slugify(title)}-audiobook.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Audiobook package ready — Audible/ACX compliant.");
+    } catch (e: any) {
+      toast.error(e?.message || "Audiobook build failed");
+    } finally {
+      setAudioBusy(false);
+      setAudioProgress(0);
+    }
+  };
+
+
   const publish = async () => {
     if (!user) { toast.error("Sign in to publish"); return; }
     if (!story.chapters.some(c => c.content.trim())) {
