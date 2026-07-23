@@ -3,7 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const PAGE_SIZE = 60;
-const COLS = "id,user_id,media_type,title,url,thumbnail_url,source_page,metadata,created_at";
+// NOTE: `url` and `metadata` are intentionally excluded from list queries.
+// Some rows store base64 data URIs directly in `url` (avatars, stories) that
+// balloon the payload past PostgREST's statement timeout. The list only needs
+// `thumbnail_url` for the grid; the detail modal re-fetches `url`/`metadata`
+// by id when a card is opened.
+const COLS = "id,user_id,media_type,title,thumbnail_url,source_page,created_at";
 
 // Backward-compatible flat hook (now capped + indexed for speed)
 export const useAllUserMedia = () => {
