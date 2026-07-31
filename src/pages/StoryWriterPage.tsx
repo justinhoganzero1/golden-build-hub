@@ -372,11 +372,90 @@ const StoryWriterPage = () => {
       });
       const url = await persistImageToStorage(dataUrl, "story-cast");
       addCastMember(url, file.name);
+      // Every picture already in the book is re-rendered with this person in it,
+      // and every future picture uses them too.
+      void recastAllImages(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not read that photo");
     } finally {
       if (castFileRef.current) castFileRef.current.value = "";
     }
+  };
+
+  // ====== AUTO-RECAST: put the uploaded person into every image in the book ======
+  const [recastBusy, setRecastBusy] = useState<{ done: number; total: number } | null>(null);
+
+  /** Re-render one existing illustration so the uploaded person is the character in it. */
+  const recastOneImage = async (sceneUrl: string, faceUrl: string): Promise<string | null> => {
+    try {
+      const [scene, face] = await Promise.all([
+        resolveStorageUrl(sceneUrl, 3600).catch(() => sceneUrl),
+        resolveStorageUrl(faceUrl, 3600).catch(() => faceUrl),
+      ]);
+      const prompt =
+        `Recreate the FIRST reference image exactly — identical scene, composition, camera angle, lighting, colour grade, wardrobe, background and art style — but the main character's face, head, hair and overall likeness must be the person shown in the SECOND reference photo, rendered as an original fictional character inspired by that photo. Keep the person's age, build and features believable and consistent. Do not change anything else about the picture. ${QUALITY_FLOOR}`;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+        body: JSON.stringify({
+          prompt,
+          tier: "premium",
+          modelChain: ["google/gemini-3-pro-image-preview"],
+          useCache: false,
+          libraryFallback: false,
+          inputImages: [scene, face],
+        }),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data?.fallback) return null;
+      const candidate: string | undefined =
+        data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+      if (!candidate) return null;
+      return await persistImageToStorage(candidate);
+    } catch {
+      return null;
+    }
+  };
+
+  /** Walk every image already in the story and swap the character to the uploaded person. */
+  const recastAllImages = async (faceUrl: string) => {
+    if (recastBusy) return;
+    const targets: { slot: "cover" | "back" | { ch: number; i: number }; url: string }[] = [];
+    if (story.coverImage) targets.push({ slot: "cover", url: story.coverImage });
+    if (story.backImage) targets.push({ slot: "back", url: story.backImage });
+    story.chapters.forEach((c, ci) =>
+      (c.images || []).forEach((u, ii) => { if (u) targets.push({ slot: { ch: ci, i: ii }, url: u }); }),
+    );
+    if (!targets.length) {
+      toast.success("Photo added — every new illustration will star this person.");
+      return;
+    }
+    setRecastBusy({ done: 0, total: targets.length });
+    toast.info(`Recasting ${targets.length} existing image${targets.length === 1 ? "" : "s"} with your uploaded person…`);
+    let ok = 0;
+    for (let t = 0; t < targets.length; t++) {
+      const target = targets[t];
+      const next = await recastOneImage(target.url, faceUrl);
+      if (next) {
+        ok++;
+        setStory(s => {
+          if (target.slot === "cover") return { ...s, coverImage: next };
+          if (target.slot === "back") return { ...s, backImage: next };
+          const chapters = [...s.chapters];
+          const ch = chapters[target.slot.ch];
+          if (ch) {
+            const imgs = [...(ch.images || [])];
+            imgs[target.slot.i] = next;
+            chapters[target.slot.ch] = { ...ch, images: imgs };
+          }
+          return { ...s, chapters };
+        });
+      }
+      setRecastBusy({ done: t + 1, total: targets.length });
+    }
+    setRecastBusy(null);
+    toast.success(`Recast complete — ${ok}/${targets.length} images now star your uploaded person.`);
   };
 
   /** Character sheet injected into every prompt so the cast stays consistent. */
@@ -385,7 +464,7 @@ const StoryWriterPage = () => {
     const lines = cast.map((c, i) =>
       `${i + 1}. ${c.name || `Character ${i + 1}`}${c.role ? ` — ${c.role}` : ""}${c.notes ? `. ${c.notes}` : ""}`,
     );
-    return ` FICTIONAL CAST (recurring characters — keep their look, age, build, hair and wardrobe identical in every image and consistent in the prose): ${lines.join(" ")} These are fictional characters inspired by the author's own reference photos; render them as original fictional people, never as a real identifiable public figure, and never in any degrading, sexual or defamatory context.`;
+    return ` FICTIONAL CAST (recurring characters — keep their look, age, build, hair and wardrobe identical in every image and consistent in the prose): ${lines.join(" ")} The attached reference photos define exactly how these characters look — every illustration must show these same people. These are fictional characters inspired by the author's own reference photos; render them as original fictional people, never as a real identifiable public figure, and never in any degrading, sexual or defamatory context.`;
   };
 
   const applyPickedImage = async (picked: string) => {
@@ -394,7 +473,7 @@ const StoryWriterPage = () => {
     if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
 
     else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
-    else if (pickerTarget === "cast") { addCastMember(url); setPickerTarget(null); return; }
+    else if (pickerTarget === "cast") { addCastMember(url); setPickerTarget(null); void recastAllImages(url); return; }
     else if (pickerTarget === "chapter") {
       setStory(s => {
         const next = [...s.chapters];
@@ -498,11 +577,13 @@ const StoryWriterPage = () => {
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
     basePrompt += castDirective();
 
-    // If the author uploaded cast photos, hand the first one to the model as a
-    // likeness reference so the same fictional character appears book-wide.
-    let castReference: string | undefined;
+    // Every uploaded cast photo is handed to the model as a likeness reference so
+    // the same people star in every illustration in the book.
+    let castReferences: string[] = [];
     if (cast.length) {
-      try { castReference = await resolveStorageUrl(cast[0].url, 3600); } catch { castReference = cast[0].url; }
+      castReferences = await Promise.all(
+        cast.slice(0, 3).map(c => resolveStorageUrl(c.url, 3600).catch(() => c.url)),
+      );
     }
 
     setImgBusy(slotKey);
@@ -526,7 +607,7 @@ const StoryWriterPage = () => {
             modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
-            ...(castReference ? { inputImage: castReference } : {}),
+            ...(castReferences.length ? { inputImages: castReferences } : {}),
           }),
         });
         if (!resp.ok) {
@@ -1668,6 +1749,92 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               {imgBusy ? "Generating photorealistic 8K photo…" : "▶ Generate Front + Back Cover Now (8K photorealistic)"}
             </button>
           </div>
+
+          {/* ====== PHOTO CAST — upload a face, the AI recasts every image ====== */}
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Photo cast — put a real person in the story
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Upload a photo and the AI instantly re-renders <b>every image already in this book</b> with that person as the character, and stars them in every new illustration too. Fictional characters only — inspired by your photo, never a real identifiable public figure.
+            </p>
+
+            {cast.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {cast.map(c => (
+                  <div key={c.id} className="rounded-lg border border-border bg-background p-2 space-y-1.5">
+                    <div className="relative aspect-square rounded-md overflow-hidden bg-muted">
+                      <SignedImage src={c.url} alt={c.name} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeCast(c.id)}
+                        className="absolute top-1 right-1 p-1 rounded-md bg-background/80 border border-border"
+                        aria-label="Remove cast photo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <input
+                      value={c.name}
+                      onChange={e => updateCast(c.id, { name: e.target.value })}
+                      placeholder="Character name"
+                      className="w-full bg-card border border-border rounded px-2 py-1 text-[11px] text-foreground"
+                    />
+                    <input
+                      value={c.role || ""}
+                      onChange={e => updateCast(c.id, { role: e.target.value })}
+                      placeholder="Role (hero, villain…)"
+                      className="w-full bg-card border border-border rounded px-2 py-1 text-[11px] text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => recastAllImages(c.url)}
+                      disabled={!!recastBusy || !!imgBusy}
+                      className="w-full py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-500 text-[10px] font-semibold disabled:opacity-50"
+                    >
+                      Recast all images with this person
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={castFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => handleCastFile(e.target.files?.[0] || null)}
+            />
+            <label className="flex items-start gap-2 text-[10px] text-muted-foreground">
+              <input type="checkbox" checked={castConsent} onChange={e => setCastConsent(e.target.checked)} className="mt-0.5" />
+              <span>I confirm I have the right to use this photo, and understand the characters are fictional.</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => castFileRef.current?.click()}
+                disabled={!castConsent || !!recastBusy || cast.length >= 6}
+                className="py-2 rounded-lg bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-bold text-xs disabled:opacity-50"
+              >
+                {recastBusy ? `Recasting ${recastBusy.done}/${recastBusy.total}…` : "＋ Upload a photo"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setPickerTarget("cast"); setPickerOpen(true); }}
+                disabled={!castConsent || !!recastBusy || cast.length >= 6}
+                className="py-2 rounded-lg border border-border bg-background text-foreground font-semibold text-xs disabled:opacity-50"
+              >
+                Pick from Library
+              </button>
+            </div>
+            {recastBusy && (
+              <p className="text-[10px] text-amber-500 flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" /> Re-rendering image {recastBusy.done + 1} of {recastBusy.total} with your uploaded person…
+              </p>
+            )}
+          </div>
+
 
 
           {/* Front + Back Cover Illustrations */}
