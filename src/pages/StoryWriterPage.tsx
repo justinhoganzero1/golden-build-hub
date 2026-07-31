@@ -297,16 +297,19 @@ const StoryWriterPage = () => {
 
     const REALISM = "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO cartoon, NO CGI plastic look, NO text, NO typography, NO watermarks.";
     let basePrompt = "";
+    // One shared "art bible" so the front cover, back cover and every chapter
+    // illustration come out of the same visual world instead of clashing.
+    const ART_BIBLE = `ART DIRECTION (must be identical across the whole book): ${style.suffix}; consistent colour palette, consistent lighting setup, consistent lens and film grade, consistent character likeness, wardrobe and age for every recurring person; same real-world locations and props. Full-bleed edge-to-edge composition, nothing important near the edges, no borders, no mock-up of a printed book, no book object, no hands holding a book, no shelves. Print-ready front-facing artwork only.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER photograph for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Magazine-cover framing. ${REALISM}`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. ${ART_BIBLE} ${REALISM}`;
     } else if (slot === "back") {
-      basePrompt = `${story.genre} book BACK COVER photograph for "${story.title}". ${story.premise}. Atmospheric, evocative real-world scene hinting at the story's world and stakes. ${REALISM}`;
+      basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
     } else if (ch) {
       const snippet = (ch.content || "").slice(0, 1200);
-      basePrompt = `Photorealistic scene from "${ch.title}" in the ${story.genre} novel "${story.title}". Depict: ${snippet || story.premise}. ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
     }
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
-    basePrompt += ` Style reference: ${style.suffix}.`;
+
 
     setImgBusy(slotKey);
     try {
