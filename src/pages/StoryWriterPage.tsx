@@ -1717,6 +1717,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           </div>
           <textarea
             value={story.chapters[activeChapter]?.content || ""}
+            onFocus={() => { humanEditBaselineRef.current = story.chapters[activeChapter]?.content || ""; }}
+            onBlur={e => {
+              const before = humanEditBaselineRef.current;
+              const after = e.target.value;
+              if (before !== after) trackEdit("human", activeChapter, before, after, "Typed by the author");
+              humanEditBaselineRef.current = after;
+            }}
             onChange={e =>
               setStory(s => {
                 const next = [...s.chapters];
