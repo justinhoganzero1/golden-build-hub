@@ -21,6 +21,7 @@ import { saveToLibrary } from "@/lib/saveToLibrary";
 import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { SignedImage } from "@/components/SignedMedia";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
 
@@ -1218,7 +1219,7 @@ Write the full chapter now (5000+ words):`;
                   <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
                     {url ? (
                       <>
-                        <img src={url} alt={label} className="w-full h-full object-cover" />
+                        <SignedImage src={url} alt={label} className="absolute inset-0 w-full h-full object-cover" />
                         <button
                           onClick={() => setStory(s => ({
                             ...s,
@@ -1414,7 +1415,7 @@ Write the full chapter now (5000+ words):`;
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {imgs.map((src, i) => (
                       <div key={i} className="relative rounded-lg overflow-hidden border border-border">
-                        <img src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
+                        <SignedImage src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
                         <button
                           onClick={() => removeChapterImage(activeChapter, i)}
                           className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"

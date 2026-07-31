@@ -4,6 +4,7 @@ import { Search, Image, Film, Music, X, FolderOpen, Upload, Loader2 } from "luci
 import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SignedImage } from "@/components/SignedMedia";
 
 
 interface MediaPickerDialogProps {
@@ -72,7 +73,7 @@ const MediaTile = ({
       className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary transition-colors bg-card"
     >
       {preview && isImage ? (
-        <img src={preview} alt={item.title || "Media"} loading="lazy" className="w-full h-full object-cover" />
+        <SignedImage src={preview} alt={item.title || "Media"} loading="lazy" className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
           {icon}
