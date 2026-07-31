@@ -306,7 +306,7 @@ const AppBuilderPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
-          prompt: trimmed,
+          prompt: `${trimmed}\n\nVISUAL STYLE (apply across the whole app — layout, colour, imagery, typography): ${activeStyle.label} — ${activeStyle.suffix}.`,
           images: sentAttachments.filter(a => a.type.startsWith("image/")).map(a => a.dataUrl),
           currentCode: currentCode || undefined,
         }),
