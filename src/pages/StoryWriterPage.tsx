@@ -335,7 +335,8 @@ const StoryWriterPage = () => {
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
     if (imgBusy) return false;
 
-    if (!requireMeta()) return;
+    if (!requireMeta()) return false;
+
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
