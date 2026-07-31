@@ -350,9 +350,13 @@ const StoryWriterPage = () => {
     } else if (slot === "back") {
       basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
     } else if (ch) {
-      const snippet = (ch.content || "").slice(0, 1200);
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
+      const snippet = beat?.text || (ch.content || "").slice(0, 1200);
+      const beatLine = beat
+        ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat), a distinctly different scene from the other illustrations in this chapter. `
+        : "";
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
     }
+
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
 
 
