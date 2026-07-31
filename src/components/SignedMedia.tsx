@@ -3,6 +3,7 @@
 // If the network request 400s/403s, we transparently re-sign and retry once.
 import { useEffect, useRef, useState, type ImgHTMLAttributes, type VideoHTMLAttributes } from "react";
 import { resolveStorageUrl, parseStorageUrl, isPrivateStorageBucket } from "@/lib/signedStorageUrl";
+import { supabase } from "@/integrations/supabase/client";
 
 function useSignedSrc(src: string | undefined, ttl = 3600) {
   const [resolved, setResolved] = useState<string>("");
