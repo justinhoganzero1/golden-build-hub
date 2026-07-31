@@ -54,6 +54,8 @@ interface StoryDoc {
   author: string;
   genre: string;
   premise: string;
+  /** Full back-cover blurb — the cover AI draws its imagery from this. */
+  blurb?: string;
   chapters: StoryChapter[];
   /** AI-generated front cover image (data URL). */
   coverImage?: string;
@@ -191,6 +193,7 @@ const StoryWriterPage = () => {
             author: doc.author || "",
             genre: doc.genre || "Fantasy",
             premise: doc.premise || "",
+            blurb: doc.blurb || "",
             chapters: Array.isArray(doc.chapters) && doc.chapters.length ? doc.chapters : [{ title: "Chapter 1", content: "" }],
             coverImage: doc.coverImage || undefined,
             backImage: doc.backImage || undefined,
@@ -271,6 +274,7 @@ const StoryWriterPage = () => {
           author: story.author,
           genre: story.genre,
           premise: story.premise,
+          blurb: story.blurb || "",
           chapters: story.chapters,
           coverImage: story.coverImage,
           backImage: story.backImage,
@@ -566,7 +570,8 @@ const StoryWriterPage = () => {
     // why both covers looked identical in their previews.
     const SINGLE_PANEL = `CRITICAL OUTPUT RULE: return ONE single standalone image showing ONE scene only. Absolutely NO wrap-around book jacket, NO front-and-back spread, NO two-page layout, NO diptych, triptych, split screen, side-by-side panels, collage, grid, storyboard, contact sheet, thumbnails, insets or picture-in-picture. Exactly one continuous photographic frame filling the whole canvas.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}.${BLURB_BRIEF} Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
     } else if (slot === "back") {
       basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}. Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
