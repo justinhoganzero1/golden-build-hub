@@ -14,6 +14,88 @@ interface MediaPickerDialogProps {
   title?: string;
 }
 
+/**
+ * A single library tile. The library list query never fetches the (often huge)
+ * `url` column, so the tile lazily loads its own preview and only fetches the
+ * full-size source when the user actually picks it.
+ */
+const MediaTile = ({
+  item,
+  icon,
+  onPick,
+}: {
+  item: any;
+  icon: React.ReactNode;
+  onPick: (url: string, title?: string) => void;
+}) => {
+  const [preview, setPreview] = useState<string | null>(item.thumbnail_url || null);
+  const [picking, setPicking] = useState(false);
+  const isImage = item.media_type === "image" || item.media_type === "gif";
+
+  useEffect(() => {
+    if (preview || !isImage) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("user_media")
+        .select("url")
+        .eq("id", item.id)
+        .maybeSingle();
+      if (alive && data?.url) setPreview(data.url as string);
+    })();
+    return () => { alive = false; };
+  }, [item.id, isImage, preview]);
+
+  const handlePick = async () => {
+    if (picking) return;
+    setPicking(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_media")
+        .select("url")
+        .eq("id", item.id)
+        .maybeSingle();
+      if (error) throw error;
+      const url = (data?.url as string) || preview;
+      if (!url) throw new Error("This item has no file attached");
+      onPick(url, item.title);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not load that item");
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handlePick}
+      className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary transition-colors bg-card"
+    >
+      {preview && isImage ? (
+        <img src={preview} alt={item.title || "Media"} loading="lazy" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
+          {icon}
+          <span className="text-[9px] text-muted-foreground truncate w-full text-center">{item.title || item.media_type}</span>
+        </div>
+      )}
+      {preview && isImage && (
+        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] px-1 py-0.5 truncate text-left">
+          {item.title || "Untitled"}
+        </span>
+      )}
+      {picking && (
+        <span className="absolute inset-0 flex items-center justify-center bg-background/70">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+        </span>
+      )}
+      <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors" />
+    </button>
+  );
+};
+
+
+
 const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, title = "Select from Library" }: MediaPickerDialogProps) => {
   const { data: media = [], isLoading } = useUserMedia();
   const saveMedia = useSaveMedia();
