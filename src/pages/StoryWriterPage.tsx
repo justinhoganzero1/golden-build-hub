@@ -40,6 +40,13 @@ interface StoryChapter {
   /** Up to 2 AI-generated illustrations per chapter (data URLs). */
   images?: string[];
 }
+interface StoryCharacter {
+  id: string;
+  name: string;
+  role: string;
+  notes: string;
+  url: string;
+}
 interface StoryDoc {
   id?: string;
   title: string;
@@ -51,6 +58,8 @@ interface StoryDoc {
   coverImage?: string;
   /** AI-generated back cover image (data URL). */
   backImage?: string;
+  /** Photo-based fictional cast members the AI draws from. */
+  cast?: StoryCharacter[];
   published?: boolean;
   publishedUrl?: string;
 }
