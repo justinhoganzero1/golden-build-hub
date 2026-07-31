@@ -865,6 +865,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `You are a master editor. Rewrite the following chapter for stronger prose, sharper imagery, and better pacing while preserving plot, names, and meaning. Return only the revised chapter.`,
         ch.content
       );
+      trackEdit("ai", activeChapter, ch.content, text, "AI rewrite");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
@@ -882,6 +883,78 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       toast.error("Rewrite failed: " + (e?.message || "unknown"));
     }
   };
+
+  // === Humanising rewrite pass — rewrites in the author's own voice ===
+  const [humanBusy, setHumanBusy] = useState<"chapter" | "book" | null>(null);
+
+  const humaniseText = async (title: string, content: string): Promise<string> => {
+    const chunks: string[] = [];
+    const paras = content.split(/\n\n+/);
+    let buf = "";
+    for (const p of paras) {
+      if ((buf + p).length > 9000) { chunks.push(buf); buf = p; } else { buf += (buf ? "\n\n" : "") + p; }
+    }
+    if (buf.trim()) chunks.push(buf);
+
+    const out: string[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      if (chunks.length > 1) toast.info(`Humanising ${title} — part ${i + 1}/${chunks.length}…`, { id: "humanise" });
+      const res = await callAI(
+        `${HUMANISE_SYSTEM}${styleRule()}`,
+        `STORY: ${story.title} (${story.genre})\nSECTION: ${title}\n\nRewrite this passage in the author's own voice. Keep every plot point, name and roughly the same length. Return only the rewritten prose.\n\n${chunks[i]}`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 },
+      );
+      out.push(res.trim());
+    }
+    return out.join("\n\n");
+  };
+
+  const humaniseChapter = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content.trim()) { toast.error("Nothing to humanise yet"); return; }
+    if (humanBusy) return;
+    setHumanBusy("chapter");
+    try {
+      const text = await humaniseText(ch.title || `Chapter ${activeChapter + 1}`, ch.content);
+      trackEdit("ai", activeChapter, ch.content, text, "Humanising pass (author voice)");
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...next[activeChapter], content: text };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter rewritten in your voice", { id: "humanise" });
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Humanising failed: " + (e?.message || "unknown"));
+    } finally {
+      setHumanBusy(null);
+    }
+  };
+
+  const humaniseBook = async () => {
+    if (humanBusy) return;
+    if (!confirm(`Rewrite all ${story.chapters.length} chapters in your own voice? This takes a while.`)) return;
+    setHumanBusy("book");
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        const ch = story.chapters[i];
+        if (!ch.content.trim()) continue;
+        const text = await humaniseText(ch.title || `Chapter ${i + 1}`, ch.content);
+        trackEdit("ai", i, ch.content, text, "Humanising pass (author voice)");
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: text };
+          return { ...s, chapters: next };
+        });
+      }
+      toast.success("Whole book rewritten in your voice", { id: "humanise" });
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Humanising failed: " + (e?.message || "unknown"));
+    } finally {
+      setHumanBusy(null);
+    }
+  };
+
+
 
   // Build context summary from previous chapters (truncated)
   const buildPrevContext = (uptoIdx: number): string => {
