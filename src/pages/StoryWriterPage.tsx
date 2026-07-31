@@ -1491,6 +1491,26 @@ Write the full chapter now (5000+ words):`;
           EPUB works on every major store. Audiobook ZIP includes 44.1 kHz 128 kbps MP3s, opening &amp; closing credits, retail sample and ACX metadata — upload directly to Audible/ACX, Findaway Voices, Google Play Books, Kobo, Spotify or Author's Republic.
         </p>
 
+        {/* Story → Movie Maker handoff */}
+        <div className="px-4 pt-4 space-y-2">
+          <button
+            onClick={() => sendStoryToMovieMaker(story, navigate)}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+          >
+            🎬 Send this Story to the Movie Maker
+          </button>
+          <button
+            onClick={() => { setPickerTarget("chapter"); setPickerOpen(true); }}
+            className="w-full py-2 rounded-xl bg-card border border-primary/40 text-primary text-xs font-semibold flex items-center justify-center gap-2"
+          >
+            <ImageIcon className="w-3.5 h-3.5" /> Add an image to this chapter — from my Library or my device
+          </button>
+          <p className="text-[10px] text-muted-foreground text-center">
+            Your script, cover art and chapter illustrations are loaded straight into Movie Studio as ready scenes.
+          </p>
+        </div>
+
+
         {/* Bottom actions */}
         <div className="px-4 pt-4 grid grid-cols-3 gap-2">
           <button
