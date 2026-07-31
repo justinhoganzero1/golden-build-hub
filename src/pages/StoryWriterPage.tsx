@@ -25,6 +25,11 @@ import { SignedImage } from "@/components/SignedMedia";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
 import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
+import StyleDnaPanel from "@/components/story/StyleDnaPanel";
+import { styleDirective, HUMANISE_SYSTEM } from "@/lib/styleDna";
+import { recordEdit, buildReport, authorshipLogText } from "@/lib/humanEdits";
+import { allDisclosures, combinedDisclosure, type DisclosureFacts } from "@/lib/aiDisclosure";
+import { provenanceBlock, scrubIdentifiers, stripImageMetadata, safeFileName } from "@/lib/metadataHygiene";
 
 
 
