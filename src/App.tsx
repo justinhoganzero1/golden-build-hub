@@ -245,6 +245,7 @@ const GetApiKeyWizardPage = lazy(() => import("./pages/GetApiKeyWizardPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
+const SiteFooter = lazy(() => import("./components/SiteFooter"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
