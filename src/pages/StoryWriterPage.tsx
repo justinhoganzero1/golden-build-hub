@@ -2393,13 +2393,19 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           </p>
         </div>
 
-        <ShareDialog
+        <StoryShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
-          title={story.title}
-          url={story.publishedUrl || "https://oracle-lunar.online"}
-          description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
+          story={{
+            title: story.title,
+            author: story.author,
+            genre: story.genre,
+            premise: story.premise,
+            chapters: story.chapters,
+            publishedUrl: story.publishedUrl,
+          }}
         />
+
 
         <MediaPickerDialog
           open={pickerOpen}
