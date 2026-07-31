@@ -405,6 +405,28 @@ const AppBuilderPage = () => {
     }
   };
 
+  // ===== Regenerate entire app (3 warnings + 50 questions or bypass + style) =====
+  const runRegenerate = (plan: AppRegenPlan) => {
+    setRegenOpen(false);
+    setAppStyleId(plan.styleId);
+    const base = previewProject?.description || messages.filter(m => m.role === "user").slice(-1)[0]?.content || "";
+    const prompt = [
+      `REGENERATE THIS ENTIRE APP FROM SCRATCH — ship-ready, nothing left as a TODO.`,
+      base ? `Original brief: ${base}` : "",
+      previewProject?.name ? `App name: ${previewProject.name}` : "",
+      `Visual style to apply everywhere: ${plan.styleLabel}.`,
+      plan.bypassedQuestions
+        ? `The user skipped the questionnaire and is trusting you completely: make every design, feature and copy decision yourself and deliver the best possible version of this app.`
+        : plan.changes.length
+          ? `Changes the user asked for:\n- ${plan.changes.join("\n- ")}`
+          : `No specific changes ticked — rebuild it better while keeping the idea intact.`,
+      plan.notes ? `Extra instructions from the user: ${plan.notes}` : "",
+    ].filter(Boolean).join("\n\n");
+    sendMessage(prompt);
+  };
+
+
+
   useEffect(() => {
     if (prefillConsumedRef.current) return;
     const params = new URLSearchParams(window.location.search);
