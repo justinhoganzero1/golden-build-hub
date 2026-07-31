@@ -277,7 +277,8 @@ const AppBuilderPage = () => {
   }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
-  const sendMessage = async (overridePrompt?: string) => {
+  const sendMessage = async (overridePrompt?: string, styleOverrideId?: string) => {
+    const styleForBuild = APP_STYLES.find(s => s.id === (styleOverrideId || appStyleId)) || APP_STYLES[0];
     const trimmed = (overridePrompt ?? input).trim();
     if ((!trimmed && attachments.length === 0) || isBuilding) return;
     if (trimmed) {
