@@ -461,6 +461,63 @@ const StoryWriterPage = () => {
     }
   };
 
+  // === Spell check / proofread ===
+  const [proofBusy, setProofBusy] = useState<"chapter" | "book" | null>(null);
+
+  const proofreadText = async (text: string): Promise<string> => {
+    const cleaned = await callAI(
+      `You are a professional book proofreader preparing a manuscript for publication.
+Correct spelling, grammar, punctuation, capitalisation and obvious typos.
+Keep the author's voice, wording, dialogue, slang and formatting EXACTLY as written — do not rewrite, shorten, expand, censor or restructure anything.
+Return ONLY the corrected text, with no commentary, no preamble and no markdown fences.`,
+      text,
+      { maxTokens: 8000 },
+    );
+    return (cleaned || "").replace(/^```[a-z]*\n?|```$/g, "").trim();
+  };
+
+  const spellCheckChapter = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content?.trim()) { toast.error("This chapter is empty."); return; }
+    setProofBusy("chapter");
+    try {
+      const fixed = await proofreadText(ch.content);
+      if (!fixed) throw new Error("Proofreader returned nothing");
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...next[activeChapter], content: fixed };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter proofread and corrected");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Spell check failed");
+    } finally {
+      setProofBusy(null);
+    }
+  };
+
+  const spellCheckBook = async () => {
+    const filled = story.chapters.filter(c => (c.content || "").trim());
+    if (!filled.length) { toast.error("Write a chapter first."); return; }
+    setProofBusy("book");
+    try {
+      const corrected: string[] = [];
+      for (let i = 0; i < story.chapters.length; i++) {
+        const c = story.chapters[i];
+        corrected[i] = (c.content || "").trim() ? await proofreadText(c.content) : c.content;
+        toast.info(`Proofread ${i + 1} of ${story.chapters.length}…`);
+      }
+      setStory(s => ({ ...s, chapters: s.chapters.map((c, i) => ({ ...c, content: corrected[i] || c.content })) }));
+      toast.success("Whole book proofread — ready for publishing");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Spell check failed");
+    } finally {
+      setProofBusy(null);
+    }
+  };
+
+
+
   // Long-chapter generator: targets 5000+ words, with multi-pass continuation if model returns short.
   const MIN_WORDS = 5000;
   const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
