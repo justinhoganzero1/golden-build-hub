@@ -577,11 +577,13 @@ const StoryWriterPage = () => {
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
     basePrompt += castDirective();
 
-    // If the author uploaded cast photos, hand the first one to the model as a
-    // likeness reference so the same fictional character appears book-wide.
-    let castReference: string | undefined;
+    // Every uploaded cast photo is handed to the model as a likeness reference so
+    // the same people star in every illustration in the book.
+    let castReferences: string[] = [];
     if (cast.length) {
-      try { castReference = await resolveStorageUrl(cast[0].url, 3600); } catch { castReference = cast[0].url; }
+      castReferences = await Promise.all(
+        cast.slice(0, 3).map(c => resolveStorageUrl(c.url, 3600).catch(() => c.url)),
+      );
     }
 
     setImgBusy(slotKey);
