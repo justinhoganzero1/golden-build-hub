@@ -1573,9 +1573,18 @@ Write the full chapter now (5000+ words):`;
           url={story.publishedUrl || "https://oracle-lunar.online"}
           description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
         />
+
+        <MediaPickerDialog
+          open={pickerOpen}
+          onOpenChange={(o) => { setPickerOpen(o); if (!o) setPickerTarget(null); }}
+          filterType="image"
+          title="Pick an image — your Library or your device"
+          onSelect={(url) => applyPickedImage(url)}
+        />
       </div>
     </PaywallGate>
   );
 };
+
 
 export default StoryWriterPage;
