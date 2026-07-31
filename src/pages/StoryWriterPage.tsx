@@ -1152,7 +1152,14 @@ Write the full chapter now (5000+ words):`;
                     {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {url ? `Re-generate ${label}` : `Generate ${label}`}
                   </button>
+                  <button
+                    onClick={() => { setPickerTarget(slot); setPickerOpen(true); }}
+                    className="w-full py-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 border-t border-border flex items-center justify-center gap-1.5"
+                  >
+                    <ImageIcon className="w-3 h-3" /> Library / device
+                  </button>
                 </div>
+
               );
             })}
           </div>
