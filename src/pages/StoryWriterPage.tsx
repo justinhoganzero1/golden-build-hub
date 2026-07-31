@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
   Share2, FileText, Loader2, ChevronLeft, Crown, Lock, Image as ImageIcon, X,
-  Headphones, BookMarked,
+  Headphones, BookMarked, RefreshCw,
 } from "lucide-react";
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -24,6 +24,8 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
+import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
+
 
 
 
@@ -529,6 +531,69 @@ const StoryWriterPage = () => {
     }
 
   };
+
+  // === Regenerate the ENTIRE story (guided wizard: 50 questions + triple warnings) ===
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
+
+  const totalImageCount = () =>
+    (story.coverImage ? 1 : 0) +
+    (story.backImage ? 1 : 0) +
+    story.chapters.reduce((n, c) => n + (c.images?.length || 0), 0);
+
+  const regenerateEntireStory = async (plan: RegenPlan) => {
+    if (regenBusy) return;
+    setRegenBusy(true);
+    const changeBrief = [
+      plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
+      plan.notes ? `EXTRA INSTRUCTIONS FROM THE AUTHOR:\n${plan.notes}` : "",
+    ].filter(Boolean).join("\n\n");
+
+    try {
+      toast.info(`Rewriting all ${story.chapters.length} chapters — this takes a while. Keep this tab open.`);
+      const rewritten: string[] = [];
+      for (let i = 0; i < story.chapters.length; i++) {
+        const ch = story.chapters[i];
+        const target = targetWordsFor(i);
+        const prevContext = rewritten
+          .map((t, j) => `${story.chapters[j].title}:\n${t.slice(0, 800)}`)
+          .join("\n\n");
+        toast.info(`Rewriting ${ch.title || `Chapter ${i + 1}`} (${i + 1}/${story.chapters.length})…`, { id: "regen-progress" });
+        const text = await generateLongChapter(
+          ch.title || `Chapter ${i + 1}`,
+          `${changeBrief}\n\nORIGINAL CHAPTER (rewrite it, applying the changes above):\n${(ch.content || "").slice(0, 12000)}`,
+          prevContext,
+          target,
+          (w) => toast.info(`Chapter ${i + 1}: ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "regen-progress" }),
+        );
+        rewritten[i] = text;
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: text, ...(plan.regenerateImages ? { images: [] } : {}) };
+          return { ...s, chapters: next };
+        });
+      }
+
+      if (plan.regenerateImages) {
+        setStory(s => ({ ...s, coverImage: undefined, backImage: undefined }));
+        toast.info("Now regenerating all artwork…", { id: "regen-progress" });
+        await generateStoryImage("cover");
+        await generateStoryImage("back");
+        for (let i = 0; i < story.chapters.length; i++) {
+          await illustrateChapterSet(i);
+        }
+      }
+
+      toast.success("Your entire story has been regenerated.", { id: "regen-progress" });
+      setRegenOpen(false);
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Rewrite failed: " + (e?.message || "unknown"));
+    } finally {
+      setRegenBusy(false);
+    }
+  };
+
+
 
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
     setStory((s) => {
@@ -1445,20 +1510,31 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         {/* Chapter quick-list — jump to any chapter, see illustration status, bulk illustrate */}
         <div className="px-4 pt-3">
           <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-primary" />
                 Chapters ({story.chapters.length})
               </p>
-              <button
-                onClick={reIllustrateAllChapters}
-                disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
-                className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
-              >
-                {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                Illustrate ALL chapters
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setRegenOpen(true)}
+                  disabled={regenBusy || bulkBusy || !!imgBusy || chapterSetBusy !== null}
+                  className="text-[11px] px-2.5 py-1 rounded-full border border-amber-500/60 bg-amber-500/15 text-amber-300 font-semibold flex items-center gap-1 disabled:opacity-60"
+                >
+                  {regenBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Regenerate ENTIRE story
+                </button>
+                <button
+                  onClick={reIllustrateAllChapters}
+                  disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                >
+                  {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  Illustrate ALL chapters
+                </button>
+              </div>
             </div>
+
             <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
               {story.chapters.map((c, i) => {
                 const imgs = c.images?.length || 0;
@@ -1859,7 +1935,17 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           title="Pick an image — your Library or your device"
           onSelect={(url) => applyPickedImage(url)}
         />
+
+        <RegenerateStoryWizard
+          open={regenOpen}
+          chapterCount={story.chapters.length}
+          imageCount={totalImageCount()}
+          busy={regenBusy}
+          onCancel={() => { if (!regenBusy) setRegenOpen(false); }}
+          onConfirm={(plan) => { void regenerateEntireStory(plan); }}
+        />
       </div>
+
     </PaywallGate>
   );
 };
