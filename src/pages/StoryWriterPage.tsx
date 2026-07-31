@@ -313,6 +313,19 @@ const StoryWriterPage = () => {
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 4;
 
+  /** Shot recipes so every illustration is visually distinct even on short chapters. */
+  const SHOT_VARIETY = [
+    "wide establishing shot, low camera angle, full environment visible",
+    "medium two-shot at eye level, shallow depth of field",
+    "tight emotional close-up, over-the-shoulder framing",
+    "high-angle action shot with motion blur and dynamic diagonal composition",
+    "dutch-angle dramatic shot at a different time of day",
+    "extreme close-up detail of a key object with the scene blurred behind",
+  ];
+
+  /** Every URL this session has already placed in the book — used to reject duplicates. */
+  const usedImageUrlsRef = useRef<Set<string>>(new Set());
+
   /** Split a chapter into N narrative beats so illustrations land in the right places. */
   const chapterBeats = (text: string, count: number): string[] => {
     const paras = (text || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
@@ -331,6 +344,7 @@ const StoryWriterPage = () => {
     customPrompt?: string,
     beat?: { index: number; total: number; text: string },
   ): Promise<boolean> => {
+
 
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
     if (imgBusy) return false;
