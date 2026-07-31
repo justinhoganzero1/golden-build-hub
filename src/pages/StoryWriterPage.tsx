@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
   Share2, FileText, Loader2, ChevronLeft, Crown, Lock, Image as ImageIcon, X,
-  Headphones, BookMarked,
+  Headphones, BookMarked, RefreshCw,
 } from "lucide-react";
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
