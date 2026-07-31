@@ -804,7 +804,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
     try {
       const text = await callAI(
-        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 5000+ words). Return only the revised chapter prose.`,
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 20,000+ words — never shorten). Return only the revised chapter prose.`,
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
