@@ -1103,6 +1103,48 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
   /** EPUB3 — accepted by Kindle (KDP), Kobo, Apple Books, Google Play Books,
    *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
   const [epubBusy, setEpubBusy] = useState(false);
+  // === Compliance kit: provenance + disclosures + authorship log (privacy-scrubbed) ===
+  const disclosureFacts = (opts: { voice?: boolean } = {}): DisclosureFacts => ({
+    title: scrubIdentifiers(story.title || "Untitled"),
+    author: scrubIdentifiers(authorName()),
+    aiTextUsed: true,
+    aiImagesUsed: totalImageCount() > 0,
+    aiVoiceUsed: !!opts.voice,
+    humanEditedPercent: authorship.humanPercent,
+    tools: ["Oracle Lunar", "Google Gemini", "ElevenLabs"],
+  });
+
+  const complianceFiles = (opts: { voice?: boolean } = {}): Record<string, string> => {
+    const facts = disclosureFacts(opts);
+    return {
+      "PROVENANCE.txt": provenanceBlock({
+        title: facts.title,
+        author: facts.author,
+        tool: "Oracle Lunar",
+        aiAssisted: true,
+        humanEditedPercent: authorship.humanPercent,
+      }),
+      "HUMAN-AUTHORSHIP-LOG.txt": scrubIdentifiers(
+        authorshipLogText(authorship, { title: facts.title, author: facts.author }),
+      ),
+      ...allDisclosures(facts),
+    };
+  };
+
+  const downloadComplianceKit = async (opts: { voice?: boolean } = {}) => {
+    const zip = new JSZip();
+    for (const [name, body] of Object.entries(complianceFiles(opts))) zip.file(name, body);
+    zip.file("READ-ME-FIRST.txt", combinedDisclosure(disclosureFacts(opts)));
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${safeFileName(story.title, "story")}-compliance-kit.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Compliance kit downloaded — disclosures, provenance and authorship log.");
+  };
+
   const exportEpub = async () => {
     if (!story.chapters.some(c => c.content.trim())) {
       toast.error("Write at least one chapter first."); return;
