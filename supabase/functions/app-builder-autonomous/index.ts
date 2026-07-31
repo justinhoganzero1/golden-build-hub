@@ -465,8 +465,51 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
           if (researchSources.length) send("research_sources", { sources: researchSources });
         }
 
+        // === STAGE 6: SHIP-READY HARDENING ===
+        // Last pass: everything that stands between "demo" and "you can put this
+        // in front of paying users / submit it to a store today".
+        send("stage", { stage: "ship", message: "Ship-ready pass — onboarding, legal, SEO, PWA, analytics, payments…" });
+        const shipped = await callAI({
+          apiKey, model: MODEL_PRIMARY, reasoning: "high",
+          system: `You are a launch engineer. Take the HTML and make it SHIP-READY — a real product a stranger could use and pay for today. Add anything missing:
+- First-run onboarding / guided empty state, and a persistent "how it works" entry point
+- Working settings, data export, and delete-my-data control (localStorage backed)
+- Privacy Policy, Terms, and Contact sections (real readable copy, in-page routes/modals)
+- Cookie/consent notice if any tracking exists
+- Full SEO head (title, description, canonical, OG, Twitter, JSON-LD), sitemap-friendly semantic markup
+- Installable PWA (manifest data URL, icons, offline-safe service worker), apple-touch-icon
+- Accessibility: keyboard nav, focus rings, aria labels, colour contrast, prefers-reduced-motion
+- Monetization actually wired: pricing section, paywall gate, checkout stub, restore/manage
+- Error boundary, offline banner, loading skeletons, toast system
+- Analytics event calls on every primary action
+- A version string and build date in the footer
+Preserve all existing working logic, IDs, and the oracle-lunar-app-config meta (bump its "version" and add "ship_ready":true).
+Output ONLY the complete HTML document. No fences. No commentary.`,
+          user: `HTML:\n${code}`,
+        });
+        const shippedCode = extractCode(shipped) || shipped.trim();
+        if (/<!doctype/i.test(shippedCode)) code = shippedCode;
+        send("partial", { code });
+
+        // Launch checklist the user can actually act on.
+        let shipChecklist = "";
+        try {
+          shipChecklist = await callAI({
+            apiKey, model: MODEL_FAST, reasoning: "low",
+            system: `You are a launch manager. Output a SHIP CHECKLIST for this app in markdown: what is already DONE inside the build (tick list) and the SHORT list of things only a human can do (domain, store account, real Stripe keys, screenshots). Max 250 words. No preamble.`,
+            user: `HTML HEAD + CONFIG:\n${code.slice(0, 12000)}`,
+          });
+        } catch { /* optional */ }
+        send("stage", { stage: "ship", message: "Ship-ready ✓ — launch checklist generated", detail: shipChecklist.slice(0, 800) });
+
         // === DONE ===
-        send("done", { code, architecture: architecture.slice(0, 1200) });
+        send("done", {
+          code,
+          architecture: architecture.slice(0, 1200),
+          marketBrief: marketBrief.slice(0, 1500),
+          shipChecklist: shipChecklist.slice(0, 2000),
+          sources: marketSources,
+        });
         controller.close();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
