@@ -253,6 +253,24 @@ const StoryWriterPage = () => {
   const [imgBusy, setImgBusy] = useState<string | null>(null);
   const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
   const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+  // Pull artwork from the in-app Library or the user's device
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | null>(null);
+  const applyPickedImage = (url: string) => {
+    if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
+    else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
+    else if (pickerTarget === "chapter") {
+      setStory(s => {
+        const next = [...s.chapters];
+        const ch = next[activeChapter];
+        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 2) };
+        return { ...s, chapters: next };
+      });
+    }
+    setPickerTarget(null);
+    toast.success("Image added to your story");
+  };
+
 
   const ART_STYLES: { id: string; label: string; suffix: string }[] = [
     { id: "realistic-4k", label: "4K Realistic", suffix: "ultra-realistic 4K photography, razor-sharp, cinematic lighting" },
