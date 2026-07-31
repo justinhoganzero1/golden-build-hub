@@ -290,7 +290,7 @@ const StoryWriterPage = () => {
       setStory(s => {
         const next = [...s.chapters];
         const ch = next[activeChapter];
-        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 2) };
+        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 6) };
         return { ...s, chapters: next };
       });
     }
@@ -1354,7 +1354,7 @@ Write the full chapter now (5000+ words):`;
               </p>
               <button
                 onClick={reIllustrateAllChapters}
-                disabled={bulkBusy || !!imgBusy}
+                disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
                 className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
               >
                 {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
@@ -1495,7 +1495,7 @@ Write the full chapter now (5000+ words):`;
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Auto-illustrated from this chapter's content. Up to 6 per chapter — tap to add a new one for every scene.
+                    Every chapter gets at least 4 illustrations, spread across its opening, middle and closing beats — so they land in the right places and hand off as scenes to Movie Maker. Up to 6 per chapter.
                   </p>
                 )}
               </div>
