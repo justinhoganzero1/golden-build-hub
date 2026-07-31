@@ -363,7 +363,11 @@ const StoryWriterPage = () => {
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
     const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
 
-    const REALISM = "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO cartoon, NO CGI plastic look, NO text, NO typography, NO watermarks.";
+    const isPhotoreal = style.id === "realistic-4k" || style.id === "photo-normal" || style.id === "2_5d" || style.id === "cinematic";
+    const PHOTOREAL = isPhotoreal
+      ? "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO plastic CGI look."
+      : "";
+    const REALISM = [PHOTOREAL, style.id === "realistic-4k" ? CINEMATIC_4K : "", QUALITY_FLOOR].filter(Boolean).join(" ");
     let basePrompt = "";
     // One shared "art bible" so the front cover, back cover and every chapter
     // illustration come out of the same visual world instead of clashing.
