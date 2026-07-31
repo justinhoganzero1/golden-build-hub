@@ -323,9 +323,13 @@ const StoryWriterPage = () => {
         throw new Error(err.error || "Image generation failed");
       }
       const data = await resp.json();
-      const url: string | undefined =
+      const raw: string | undefined =
         data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
-      if (!url) throw new Error("No image returned");
+      if (!raw) throw new Error("No image returned");
+      // Park the artwork in storage so the saved story stays small and the
+      // picture never disappears on refresh.
+      const url = await persistImageToStorage(raw);
+
 
       setStory((s) => {
         if (slot === "cover") return { ...s, coverImage: url };
