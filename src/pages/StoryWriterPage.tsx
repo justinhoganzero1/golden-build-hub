@@ -24,6 +24,8 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
+import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
+
 
 
 
