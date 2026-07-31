@@ -56,6 +56,16 @@ const AppBuilderPage = () => {
   const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
 
+  // App visual style (same family of styles as Story Writer) + regenerate wizard
+  const [appStyleId, setAppStyleId] = useState<string>(() => {
+    try { return localStorage.getItem("oracle-lunar:app-builder-style") || "realistic-4k"; } catch { return "realistic-4k"; }
+  });
+  const [regenOpen, setRegenOpen] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem("oracle-lunar:app-builder-style", appStyleId); } catch { /* ignore */ }
+  }, [appStyleId]);
+  const activeStyle = APP_STYLES.find(s => s.id === appStyleId) || APP_STYLES[0];
+
   // Voice I/O state
   const [voiceOutEnabled, setVoiceOutEnabled] = useState(true);
   const [isListening, setIsListening] = useState(false);
