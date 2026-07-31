@@ -54,6 +54,8 @@ interface StoryDoc {
   author: string;
   genre: string;
   premise: string;
+  /** Full back-cover blurb — the cover AI draws its imagery from this. */
+  blurb?: string;
   chapters: StoryChapter[];
   /** AI-generated front cover image (data URL). */
   coverImage?: string;
@@ -191,6 +193,7 @@ const StoryWriterPage = () => {
             author: doc.author || "",
             genre: doc.genre || "Fantasy",
             premise: doc.premise || "",
+            blurb: doc.blurb || "",
             chapters: Array.isArray(doc.chapters) && doc.chapters.length ? doc.chapters : [{ title: "Chapter 1", content: "" }],
             coverImage: doc.coverImage || undefined,
             backImage: doc.backImage || undefined,
@@ -271,6 +274,7 @@ const StoryWriterPage = () => {
           author: story.author,
           genre: story.genre,
           premise: story.premise,
+          blurb: story.blurb || "",
           chapters: story.chapters,
           coverImage: story.coverImage,
           backImage: story.backImage,
@@ -565,10 +569,17 @@ const StoryWriterPage = () => {
     // returning a full wrap-around jacket (front AND back in one image), which is
     // why both covers looked identical in their previews.
     const SINGLE_PANEL = `CRITICAL OUTPUT RULE: return ONE single standalone image showing ONE scene only. Absolutely NO wrap-around book jacket, NO front-and-back spread, NO two-page layout, NO diptych, triptych, split screen, side-by-side panels, collage, grid, storyboard, contact sheet, thumbnails, insets or picture-in-picture. Exactly one continuous photographic frame filling the whole canvas.`;
+    // The full back-cover blurb is the richest description of the book, so the
+    // cover artist AI reads it as its primary source material.
+    const BLURB_BRIEF = story.blurb?.trim()
+      ? ` STORY BLURB (your primary source material — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
+      : "";
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}.${BLURB_BRIEF} Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
     } else if (slot === "back") {
-      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}. Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}.${BLURB_BRIEF} Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
 
     } else if (ch) {
       const snippet = beat?.text || (ch.content || "").slice(0, 1200);
@@ -993,6 +1004,28 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     }
   };
 
+  /** Write (or rewrite) the full back-cover blurb — the cover AI's source material. */
+  const aiWriteBlurb = async () => {
+    if (!requireMeta()) return;
+    const sample = story.chapters
+      .map(c => `${c.title}\n${c.content.slice(0, 1200)}`)
+      .join("\n\n")
+      .slice(0, 8000);
+    try {
+      setAiBusy(true);
+      const text = await callAI(
+        `You are a bestselling publisher's copywriter. Write a compelling back-cover blurb for a ${story.genre} book: 150-220 words, present tense, hook first, name the protagonist, the world, the stakes and the central conflict, end on an irresistible question or promise. Vivid, concrete, cinematic imagery — no spoilers, no headings, no quotes, prose only.`,
+        `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\n\nSTORY TEXT SO FAR:\n${sample || "(no chapters written yet — work from the premise)"}\n\nWrite the blurb:`
+      );
+      setStory(s => ({ ...s, blurb: text.trim() }));
+      toast.success("Blurb written — the cover AI will use it");
+    } catch (e: any) {
+      toast.error("Blurb failed: " + (e?.message || "unknown"));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const aiOutline = async () => {
     if (!requireMeta()) return;
     if (!story.premise.trim()) {
@@ -1391,7 +1424,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     <dc:title>${title}</dc:title>
     <dc:creator>${author}</dc:creator>
     <dc:language>en</dc:language>
-    <dc:description>${xmlEscape(story.premise || "")}</dc:description>
+    <dc:description>${xmlEscape(story.blurb || story.premise || "")}</dc:description>
     <dc:subject>${xmlEscape(story.genre)}</dc:subject>
     <meta property="dcterms:modified">${now}</meta>
     ${coverMeta}
@@ -1682,7 +1715,42 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               onChange={e => setStory(s => ({ ...s, author: e.target.value }))}
               placeholder="Author name... (required)"
               className={`w-full bg-card border rounded-lg px-3 py-2 text-sm text-foreground ${!story.author.trim() ? "border-amber-500/60" : "border-border"}`}
+          />
+
+          {/* ====== STORY BLURB — the source material the cover AI reads ====== */}
+          <div className="rounded-xl border border-primary/30 bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <BookMarked className="w-3.5 h-3.5" /> Story blurb (feeds the cover art)
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {story.blurb?.trim() ? `${story.blurb.trim().split(/\s+/).length} words` : "empty"}
+                </span>
+                <button
+                  type="button"
+                  onClick={aiWriteBlurb}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.blurb?.trim() ? "Rewrite blurb" : "Write blurb with AI"}
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={story.blurb || ""}
+              onChange={e => setStory(s => ({ ...s, blurb: e.target.value }))}
+              placeholder="The full back-cover blurb — characters, world, era, stakes, mood. The front and back cover AI draws its imagery directly from this."
+              rows={7}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
             />
+            <p className="text-[10px] text-muted-foreground">
+              This blurb is the primary source the cover artist AI reads for the front and back covers — the richer it is, the more accurate your artwork. It also saves with the story and is used in your EPUB description and share posts.
+            </p>
+          </div>
+
+
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {GENRES.map(g => (
