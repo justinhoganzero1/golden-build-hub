@@ -209,6 +209,11 @@ const MovieStudioProPage = () => {
           {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small ORACLE LUNAR watermark."}
         </p>
 
+        <YouTubeDisclosureCard
+          title="Movie Studio Pro export"
+          author={user?.email?.split("@")[0] || "Creator"}
+        />
+
         {/* "Choose Your Studio" pricing tiers removed — coin-only economy, no tiers. */}
 
         <MovieProjectDashboard />
