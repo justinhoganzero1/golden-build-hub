@@ -1654,6 +1654,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
               <Button onClick={() => triggerUpload("__new__")} variant="outline" size="sm">
                 <Upload className="w-3 h-3 mr-1" /> Upload photo
               </Button>
+              <Button onClick={() => { setLibraryTargetId("__new__"); setShowLibrary(true); }} variant="outline" size="sm">
+                <ImagePlus className="w-3 h-3 mr-1" /> From my Library
+              </Button>
+
               <Button
                 onClick={purchaseAndGenerateNextBlock}
                 disabled={planning || payingBlock}
