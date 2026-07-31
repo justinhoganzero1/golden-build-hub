@@ -1352,6 +1352,9 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       zip.file("retail-sample.mp3", opening);
 
       // ACX / Audible metadata
+      // Compliance kit inside the ACX bundle (privacy-scrubbed, provenance kept)
+      for (const [name, body] of Object.entries(complianceFiles({ voice: true }))) zip.file(name, body);
+
       zip.file("metadata.txt",
         [
           `Title: ${title}`,
