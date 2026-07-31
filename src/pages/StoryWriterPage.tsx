@@ -495,7 +495,14 @@ const StoryWriterPage = () => {
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
+    basePrompt += castDirective();
 
+    // If the author uploaded cast photos, hand the first one to the model as a
+    // likeness reference so the same fictional character appears book-wide.
+    let castReference: string | undefined;
+    if (cast.length) {
+      try { castReference = await resolveStorageUrl(cast[0].url, 3600); } catch { castReference = cast[0].url; }
+    }
 
     setImgBusy(slotKey);
     try {
@@ -518,6 +525,7 @@ const StoryWriterPage = () => {
             modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
+            ...(castReference ? { inputImage: castReference } : {}),
           }),
         });
         if (!resp.ok) {
