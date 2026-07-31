@@ -372,11 +372,90 @@ const StoryWriterPage = () => {
       });
       const url = await persistImageToStorage(dataUrl, "story-cast");
       addCastMember(url, file.name);
+      // Every picture already in the book is re-rendered with this person in it,
+      // and every future picture uses them too.
+      void recastAllImages(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not read that photo");
     } finally {
       if (castFileRef.current) castFileRef.current.value = "";
     }
+  };
+
+  // ====== AUTO-RECAST: put the uploaded person into every image in the book ======
+  const [recastBusy, setRecastBusy] = useState<{ done: number; total: number } | null>(null);
+
+  /** Re-render one existing illustration so the uploaded person is the character in it. */
+  const recastOneImage = async (sceneUrl: string, faceUrl: string): Promise<string | null> => {
+    try {
+      const [scene, face] = await Promise.all([
+        resolveStorageUrl(sceneUrl, 3600).catch(() => sceneUrl),
+        resolveStorageUrl(faceUrl, 3600).catch(() => faceUrl),
+      ]);
+      const prompt =
+        `Recreate the FIRST reference image exactly — identical scene, composition, camera angle, lighting, colour grade, wardrobe, background and art style — but the main character's face, head, hair and overall likeness must be the person shown in the SECOND reference photo, rendered as an original fictional character inspired by that photo. Keep the person's age, build and features believable and consistent. Do not change anything else about the picture. ${QUALITY_FLOOR}`;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+        body: JSON.stringify({
+          prompt,
+          tier: "premium",
+          modelChain: ["google/gemini-3-pro-image-preview"],
+          useCache: false,
+          libraryFallback: false,
+          inputImages: [scene, face],
+        }),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data?.fallback) return null;
+      const candidate: string | undefined =
+        data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+      if (!candidate) return null;
+      return await persistImageToStorage(candidate);
+    } catch {
+      return null;
+    }
+  };
+
+  /** Walk every image already in the story and swap the character to the uploaded person. */
+  const recastAllImages = async (faceUrl: string) => {
+    if (recastBusy) return;
+    const targets: { slot: "cover" | "back" | { ch: number; i: number }; url: string }[] = [];
+    if (story.coverImage) targets.push({ slot: "cover", url: story.coverImage });
+    if (story.backImage) targets.push({ slot: "back", url: story.backImage });
+    story.chapters.forEach((c, ci) =>
+      (c.images || []).forEach((u, ii) => { if (u) targets.push({ slot: { ch: ci, i: ii }, url: u }); }),
+    );
+    if (!targets.length) {
+      toast.success("Photo added — every new illustration will star this person.");
+      return;
+    }
+    setRecastBusy({ done: 0, total: targets.length });
+    toast.info(`Recasting ${targets.length} existing image${targets.length === 1 ? "" : "s"} with your uploaded person…`);
+    let ok = 0;
+    for (let t = 0; t < targets.length; t++) {
+      const target = targets[t];
+      const next = await recastOneImage(target.url, faceUrl);
+      if (next) {
+        ok++;
+        setStory(s => {
+          if (target.slot === "cover") return { ...s, coverImage: next };
+          if (target.slot === "back") return { ...s, backImage: next };
+          const chapters = [...s.chapters];
+          const ch = chapters[target.slot.ch];
+          if (ch) {
+            const imgs = [...(ch.images || [])];
+            imgs[target.slot.i] = next;
+            chapters[target.slot.ch] = { ...ch, images: imgs };
+          }
+          return { ...s, chapters };
+        });
+      }
+      setRecastBusy({ done: t + 1, total: targets.length });
+    }
+    setRecastBusy(null);
+    toast.success(`Recast complete — ${ok}/${targets.length} images now star your uploaded person.`);
   };
 
   /** Character sheet injected into every prompt so the cast stays consistent. */
@@ -385,7 +464,7 @@ const StoryWriterPage = () => {
     const lines = cast.map((c, i) =>
       `${i + 1}. ${c.name || `Character ${i + 1}`}${c.role ? ` — ${c.role}` : ""}${c.notes ? `. ${c.notes}` : ""}`,
     );
-    return ` FICTIONAL CAST (recurring characters — keep their look, age, build, hair and wardrobe identical in every image and consistent in the prose): ${lines.join(" ")} These are fictional characters inspired by the author's own reference photos; render them as original fictional people, never as a real identifiable public figure, and never in any degrading, sexual or defamatory context.`;
+    return ` FICTIONAL CAST (recurring characters — keep their look, age, build, hair and wardrobe identical in every image and consistent in the prose): ${lines.join(" ")} The attached reference photos define exactly how these characters look — every illustration must show these same people. These are fictional characters inspired by the author's own reference photos; render them as original fictional people, never as a real identifiable public figure, and never in any degrading, sexual or defamatory context.`;
   };
 
   const applyPickedImage = async (picked: string) => {
