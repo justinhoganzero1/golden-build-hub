@@ -709,11 +709,53 @@ const AppBuilderPage = () => {
         </div>
       )}
 
+      {/* Regenerate wizard */}
+      <RegenerateAppWizard
+        open={regenOpen}
+        appName={previewProject?.name || "your app"}
+        defaultStyleId={appStyleId}
+        busy={isBuilding}
+        onCancel={() => setRegenOpen(false)}
+        onConfirm={runRegenerate}
+      />
+
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-card">
+        {/* App style picker — same style family as Story Writer */}
+        <div className="mb-2 rounded-xl border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+            <Palette className="w-3.5 h-3.5" /> App style — {activeStyle.label}
+          </p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {APP_STYLES.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setAppStyleId(s.id)}
+                title={s.suffix}
+                className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] border transition-colors ${
+                  s.id === appStyleId
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenOpen(true)}
+            disabled={isBuilding}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200 text-xs font-bold disabled:opacity-40"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Regenerate ENTIRE app
+          </button>
+        </div>
         <div className="mb-2">
           <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
         </div>
+
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}
