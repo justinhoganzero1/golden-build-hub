@@ -327,6 +327,8 @@ const AppBuilderPage = () => {
             } else if (evt.event === "done") {
               code = evt.code || "";
               architecture = evt.architecture || "";
+              marketBrief = evt.marketBrief || "";
+              shipChecklist = evt.shipChecklist || "";
             } else if (evt.event === "error") {
               errorMsg = evt.message || "Build error";
             }
