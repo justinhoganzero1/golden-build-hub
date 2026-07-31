@@ -330,10 +330,11 @@ const StoryWriterPage = () => {
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
     beat?: { index: number; total: number; text: string },
-  ): Promise<void> => {
+  ): Promise<boolean> => {
 
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
-    if (imgBusy) return;
+    if (imgBusy) return false;
+
     if (!requireMeta()) return;
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
