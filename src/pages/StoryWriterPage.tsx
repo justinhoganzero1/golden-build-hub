@@ -279,8 +279,11 @@ const StoryWriterPage = () => {
   // Pull artwork from the in-app Library or the user's device
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | null>(null);
-  const applyPickedImage = (url: string) => {
+  const applyPickedImage = async (picked: string) => {
+    // Anything pasted in as raw base64 gets parked in storage so it survives a refresh.
+    const url = await persistImageToStorage(picked);
     if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
+
     else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
     else if (pickerTarget === "chapter") {
       setStory(s => {
