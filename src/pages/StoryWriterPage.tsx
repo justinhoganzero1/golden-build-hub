@@ -1976,6 +1976,60 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           </div>
         </div>
 
+        {/* Style DNA — train the AI on the author's own writing */}
+        <div className="px-4 pt-4">
+          <StyleDnaPanel onProfileChange={setStyleProfile} />
+        </div>
+
+        {/* Humanising rewrite pass */}
+        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={humaniseChapter}
+            disabled={!!humanBusy || aiBusy}
+            className="py-2.5 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {humanBusy === "chapter" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Humanise this chapter
+          </button>
+          <button
+            onClick={humaniseBook}
+            disabled={!!humanBusy || aiBusy}
+            className="py-2.5 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {humanBusy === "book" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Humanise whole book
+          </button>
+        </div>
+        <p className="px-4 pt-1 text-[10px] text-muted-foreground">
+          Rewrites in your voice with varied rhythm, natural imperfection and first-person asides. Train Style DNA above for the closest match.
+        </p>
+
+        {/* Authorship tracking + compliance kit */}
+        <div className="px-4 pt-4">
+          <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+            <p className="text-xs font-semibold text-foreground">Human authorship record</p>
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span>{authorship.humanPercent.toFixed(1)}% human-written</span>
+              <span>{authorship.humanEvents} human edits</span>
+              <span>{authorship.aiEvents} AI passes</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary" style={{ width: `${Math.min(100, authorship.humanPercent)}%` }} />
+            </div>
+            <button
+              onClick={() => void downloadComplianceKit({ voice: false })}
+              className="w-full py-2 rounded-lg bg-primary/10 border border-primary/40 text-primary text-xs font-semibold"
+            >
+              Download compliance kit — KDP / ACX / YouTube declarations
+            </button>
+            <p className="text-[10px] text-muted-foreground">
+              Exports are privacy-scrubbed (GPS, device and account identifiers removed) while provenance and AI disclosure stay attached.
+            </p>
+          </div>
+        </div>
+
+
+
         {/* Retailer-ready exports */}
         <div className="px-4 pt-4 grid grid-cols-2 gap-2">
           <button
