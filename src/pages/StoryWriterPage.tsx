@@ -367,10 +367,11 @@ const StoryWriterPage = () => {
       basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
     } else if (ch) {
       const snippet = beat?.text || (ch.content || "").slice(0, 1200);
+      const shot = SHOT_VARIETY[(beat?.index ?? 0) % SHOT_VARIETY.length];
       const beatLine = beat
-        ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat), a distinctly different scene from the other illustrations in this chapter. `
+        ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat). It MUST be a completely different scene, camera angle and composition from every other illustration in this book — never repeat a previous image. `
         : "";
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
@@ -378,25 +379,49 @@ const StoryWriterPage = () => {
 
     setImgBusy(slotKey);
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
-        },
-        body: JSON.stringify({ prompt: basePrompt, tier: "premium" }),
-      });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || "Image generation failed");
+      // Each call gets its own variation seed and cache is bypassed, so the
+      // server can never hand back a previously generated (identical) image.
+      let raw: string | undefined;
+      let lastErr = "";
+      for (let tryNo = 0; tryNo < 3; tryNo++) {
+        const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        const variedPrompt = `${basePrompt} Unique variation seed ${seed}${tryNo > 0 ? ` — the previous attempt was too similar to an existing image; invent a clearly different scene, angle, lighting and moment.` : ""}`;
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
+          },
+          body: JSON.stringify({
+            prompt: variedPrompt,
+            tier: "premium",
+            useCache: false,
+            libraryFallback: false,
+          }),
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          lastErr = err.error || "Image generation failed";
+          continue;
+        }
+        const data = await resp.json();
+        if (data?.fallback) { lastErr = "Generator returned a recycled image"; continue; }
+        const candidate: string | undefined =
+          data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+        if (!candidate) { lastErr = data?.error || "No image returned"; continue; }
+        // Duplicate guard — compare actual image payloads, not storage URLs.
+        const fingerprint = `${candidate.length}:${candidate.slice(-160)}`;
+        if (usedImageUrlsRef.current.has(fingerprint)) { lastErr = "Duplicate image"; continue; }
+        usedImageUrlsRef.current.add(fingerprint);
+        raw = candidate;
+        break;
       }
-      const data = await resp.json();
-      const raw: string | undefined =
-        data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
-      if (!raw) throw new Error("No image returned");
+      if (!raw) throw new Error(lastErr || "No image returned");
       // Park the artwork in storage so the saved story stays small and the
       // picture never disappears on refresh.
       const url = await persistImageToStorage(raw);
+
+
 
 
       setStory((s) => {
