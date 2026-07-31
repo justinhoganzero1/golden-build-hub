@@ -300,15 +300,22 @@ const StoryWriterPage = () => {
 
 
   const ART_STYLES: { id: string; label: string; suffix: string }[] = [
-    { id: "realistic-4k", label: "4K Realistic", suffix: "ultra-realistic 4K photography, razor-sharp, cinematic lighting" },
-    { id: "photo-normal", label: "Normal Photo", suffix: "natural realistic photograph" },
-    { id: "cartoon",      label: "Cartoon",      suffix: "cartoon illustration, bold outlines, vibrant flat colours" },
-    { id: "2_5d",         label: "2.5D Photoreal", suffix: "2.5D photorealistic illustration, painterly depth, cinematic lighting" },
-    { id: "anime",        label: "Anime",        suffix: "modern anime cover art, cel-shaded, clean line art" },
-    { id: "cinematic",    label: "Cinematic",    suffix: "cinematic movie-poster style, dramatic lighting, moody colour grade" },
-    { id: "fantasy",      label: "Fantasy",      suffix: "epic fantasy illustration, painterly, rich detail" },
-    { id: "watercolour",  label: "Watercolour",  suffix: "soft watercolour illustration, textured paper, gentle washes" },
+    { id: "realistic-4k", label: "4K Realistic", suffix: "true 4K cinematic 3D render-grade realism, feature-film keyframe quality, volumetric lighting, global illumination, ray-traced reflections, physically-based materials, microdetail in skin/fabric/metal, atmospheric haze and depth layers, anamorphic cinematic lens, professional colour grade" },
+    { id: "photo-normal", label: "Normal Photo", suffix: "natural realistic photograph, professional editorial photography, flawless exposure and colour accuracy" },
+    { id: "cartoon",      label: "Cartoon",      suffix: "premium studio-quality cartoon illustration, bold clean outlines, vibrant flat colours, professional animation-studio finish" },
+    { id: "2_5d",         label: "2.5D Photoreal", suffix: "2.5D photorealistic illustration, painterly depth, cinematic volumetric lighting, high-end concept-art finish" },
+    { id: "anime",        label: "Anime",        suffix: "top-tier modern anime key visual, cel-shaded, immaculate line art, studio-grade production quality" },
+    { id: "cinematic",    label: "Cinematic",    suffix: "cinematic movie-poster style, dramatic lighting, moody professional colour grade, blockbuster-grade composition" },
+    { id: "fantasy",      label: "Fantasy",      suffix: "epic fantasy illustration, master painterly rendering, rich detail, gallery-grade finish" },
+    { id: "watercolour",  label: "Watercolour",  suffix: "master watercolour illustration, textured paper, gentle washes, fine-art gallery quality" },
   ];
+
+  /** Applied to EVERY image regardless of style — non-negotiable quality floor. */
+  const QUALITY_FLOOR = "Absolute top-tier professional quality: award-winning composition, perfect anatomy and proportions, flawless hands and eyes, immaculate focus, high dynamic range, rich micro-detail, clean edges, no artefacts, no distortion, no extra limbs, no blur, no noise, no watermark, no text, no typography, no logos, no borders, no collage, no low-resolution or amateur output.";
+
+  /** Extra push when the user picks 4K Realistic. */
+  const CINEMATIC_4K = "Render as an extreme-quality 4K cinematic 3D frame: film-grade depth, layered lighting, realistic subsurface scattering, tangible textures, believable physics, shot as if it were a still from a big-budget motion picture directly depicting this story's scene.";
+
 
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 4;
@@ -356,7 +363,11 @@ const StoryWriterPage = () => {
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
     const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
 
-    const REALISM = "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO cartoon, NO CGI plastic look, NO text, NO typography, NO watermarks.";
+    const isPhotoreal = style.id === "realistic-4k" || style.id === "photo-normal" || style.id === "2_5d" || style.id === "cinematic";
+    const PHOTOREAL = isPhotoreal
+      ? "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO plastic CGI look."
+      : "";
+    const REALISM = [PHOTOREAL, style.id === "realistic-4k" ? CINEMATIC_4K : "", QUALITY_FLOOR].filter(Boolean).join(" ");
     let basePrompt = "";
     // One shared "art bible" so the front cover, back cover and every chapter
     // illustration come out of the same visual world instead of clashing.
@@ -395,6 +406,7 @@ const StoryWriterPage = () => {
           body: JSON.stringify({
             prompt: variedPrompt,
             tier: "premium",
+            modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
           }),
