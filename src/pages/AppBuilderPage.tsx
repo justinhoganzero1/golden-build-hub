@@ -338,7 +338,12 @@ const AppBuilderPage = () => {
       if (errorMsg) throw new Error(errorMsg);
       if (!code) throw new Error("Pipeline finished without code");
 
-      const chatText = `Done! Built end-to-end across architect → backend → frontend → flesh-out → smoke test. ${architecture ? "\n\nArchitecture summary:\n" + architecture.slice(0, 400) : ""}`;
+      const chatText = [
+        "Done — shipped end-to-end from one command: market recon → architect → backend → frontend → flesh-out → copy → assets → marketing → smoke test → ship-ready pass.",
+        marketBrief ? "\n\n🔎 Competitive brief (live web research):\n" + marketBrief.slice(0, 900) : "",
+        architecture ? "\n\n🏗 Architecture summary:\n" + architecture.slice(0, 500) : "",
+        shipChecklist ? "\n\n🚀 Ship checklist:\n" + shipChecklist.slice(0, 900) : "",
+      ].join("");
       const assistantMsg: ChatMessage = { role: "assistant", content: chatText, code };
       setMessages(prev => [...prev, assistantMsg]);
       speak("Your app is ready. Launch it to take a look.");
