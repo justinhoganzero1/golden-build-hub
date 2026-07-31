@@ -117,6 +117,7 @@ const StoryWriterPage = () => {
     setAuthorshipTick(t => t + 1);
   };
   const [authorshipTick, setAuthorshipTick] = useState(0);
+  const humanEditBaselineRef = useRef<string>("");
   const authorship = useMemo(() => buildReport(savingId || "new"), [savingId, authorshipTick]);
 
 
