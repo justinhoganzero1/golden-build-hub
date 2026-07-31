@@ -576,7 +576,7 @@ const StoryWriterPage = () => {
       const beatLine = beat
         ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat). It MUST be a completely different scene, camera angle and composition from every other illustration in this book — never repeat a previous image. `
         : "";
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
