@@ -20,6 +20,9 @@ import ReactMarkdown from "react-markdown";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
+import MediaPickerDialog from "@/components/MediaPickerDialog";
+import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
+
 
 interface StoryChapter {
   title: string;
@@ -250,6 +253,24 @@ const StoryWriterPage = () => {
   const [imgBusy, setImgBusy] = useState<string | null>(null);
   const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
   const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+  // Pull artwork from the in-app Library or the user's device
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | null>(null);
+  const applyPickedImage = (url: string) => {
+    if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
+    else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
+    else if (pickerTarget === "chapter") {
+      setStory(s => {
+        const next = [...s.chapters];
+        const ch = next[activeChapter];
+        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 2) };
+        return { ...s, chapters: next };
+      });
+    }
+    setPickerTarget(null);
+    toast.success("Image added to your story");
+  };
+
 
   const ART_STYLES: { id: string; label: string; suffix: string }[] = [
     { id: "realistic-4k", label: "4K Realistic", suffix: "ultra-realistic 4K photography, razor-sharp, cinematic lighting" },
@@ -1131,7 +1152,14 @@ Write the full chapter now (5000+ words):`;
                     {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {url ? `Re-generate ${label}` : `Generate ${label}`}
                   </button>
+                  <button
+                    onClick={() => { setPickerTarget(slot); setPickerOpen(true); }}
+                    className="w-full py-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 border-t border-border flex items-center justify-center gap-1.5"
+                  >
+                    <ImageIcon className="w-3 h-3" /> Library / device
+                  </button>
                 </div>
+
               );
             })}
           </div>
@@ -1470,6 +1498,26 @@ Write the full chapter now (5000+ words):`;
           EPUB works on every major store. Audiobook ZIP includes 44.1 kHz 128 kbps MP3s, opening &amp; closing credits, retail sample and ACX metadata — upload directly to Audible/ACX, Findaway Voices, Google Play Books, Kobo, Spotify or Author's Republic.
         </p>
 
+        {/* Story → Movie Maker handoff */}
+        <div className="px-4 pt-4 space-y-2">
+          <button
+            onClick={() => sendStoryToMovieMaker(story, navigate)}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+          >
+            🎬 Send this Story to the Movie Maker
+          </button>
+          <button
+            onClick={() => { setPickerTarget("chapter"); setPickerOpen(true); }}
+            className="w-full py-2 rounded-xl bg-card border border-primary/40 text-primary text-xs font-semibold flex items-center justify-center gap-2"
+          >
+            <ImageIcon className="w-3.5 h-3.5" /> Add an image to this chapter — from my Library or my device
+          </button>
+          <p className="text-[10px] text-muted-foreground text-center">
+            Your script, cover art and chapter illustrations are loaded straight into Movie Studio as ready scenes.
+          </p>
+        </div>
+
+
         {/* Bottom actions */}
         <div className="px-4 pt-4 grid grid-cols-3 gap-2">
           <button
@@ -1525,9 +1573,18 @@ Write the full chapter now (5000+ words):`;
           url={story.publishedUrl || "https://oracle-lunar.online"}
           description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
         />
+
+        <MediaPickerDialog
+          open={pickerOpen}
+          onOpenChange={(o) => { setPickerOpen(o); if (!o) setPickerTarget(null); }}
+          filterType="image"
+          title="Pick an image — your Library or your device"
+          onSelect={(url) => applyPickedImage(url)}
+        />
       </div>
     </PaywallGate>
   );
 };
+
 
 export default StoryWriterPage;

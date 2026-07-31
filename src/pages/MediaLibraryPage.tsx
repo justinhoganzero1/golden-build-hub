@@ -1,6 +1,8 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
 import SEO from "@/components/SEO";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { sendLibraryItemToMovieMaker } from "@/lib/movieHandoff";
+
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -72,6 +74,8 @@ const MediaLibraryPage = () => {
   const isLoading = ownLoading;
 
   const qc = useQueryClient();
+  const navigate = useNavigate();
+
   const [view, setView] = useState<"grid" | "list">("grid");
   const [activeCollection, setActiveCollection] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -657,7 +661,15 @@ const MediaLibraryPage = () => {
                 )}
               </div>
 
+              <button
+                onClick={() => sendLibraryItemToMovieMaker(selected, navigate)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-fuchsia-500 via-primary to-amber-500 text-primary-foreground text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+              >
+                <Film className="w-4 h-4" /> Send to Movie Maker
+              </button>
+
               <div className="flex gap-2">
+
                 <button onClick={handleDownloadSelected}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
