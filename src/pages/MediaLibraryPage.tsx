@@ -74,6 +74,8 @@ const MediaLibraryPage = () => {
   const isLoading = ownLoading;
 
   const qc = useQueryClient();
+  const navigate = useNavigate();
+
   const [view, setView] = useState<"grid" | "list">("grid");
   const [activeCollection, setActiveCollection] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
