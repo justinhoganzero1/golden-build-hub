@@ -103,6 +103,7 @@ serve(async (req) => {
       prompt,
       ownerBypass,
       inputImage,
+      inputImages,
       tier,
       maxAttempts: rawMaxAttempts,
       modelChain: rawModelChain,
