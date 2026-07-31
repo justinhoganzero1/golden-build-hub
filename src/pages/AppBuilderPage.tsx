@@ -286,6 +286,8 @@ const AppBuilderPage = () => {
 
     let code = "";
     let architecture = "";
+    let marketBrief = "";
+    let shipChecklist = "";
     let errorMsg = "";
 
     try {
