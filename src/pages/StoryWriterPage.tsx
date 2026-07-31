@@ -93,6 +93,34 @@ const StoryWriterPage = () => {
   const [editInstructions, setEditInstructions] = useState("");
   const [nextGuidance, setNextGuidance] = useState("");
 
+  // === Style DNA (author's own voice) ===
+  const [styleProfile, setStyleProfile] = useState("");
+  const styleRule = () => styleDirective(styleProfile);
+
+  // === Human-in-the-loop authorship tracking ===
+  const trackKey = () => savingId || "new";
+  const trackEdit = (
+    source: "human" | "ai",
+    chapter: number,
+    before: string,
+    after: string,
+    note?: string,
+  ) => {
+    recordEdit(trackKey(), {
+      chapter,
+      chapterTitle: story.chapters[chapter]?.title || `Chapter ${chapter + 1}`,
+      source,
+      before,
+      after,
+      note,
+    });
+    setAuthorshipTick(t => t + 1);
+  };
+  const [authorshipTick, setAuthorshipTick] = useState(0);
+  const authorship = useMemo(() => buildReport(savingId || "new"), [savingId, authorshipTick]);
+
+
+
   // === Autosave AI inputs to localStorage (per story + chapter) ===
   const draftKey = useMemo(
     () => `story-writer-drafts:${savingId || "new"}:${activeChapter}`,
