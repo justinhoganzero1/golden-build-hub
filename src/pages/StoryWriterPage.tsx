@@ -1032,6 +1032,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
+      trackEdit("ai", activeChapter, ch.content, text, `AI edit: ${editInstructions.slice(0, 120)}`);
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
