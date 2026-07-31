@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import ShareDialog from "@/components/ShareDialog";
+import StoryShareDialog from "@/components/story/StoryShareDialog";
 import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
@@ -2385,20 +2385,27 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:scale-[1.01] transition"
           >
             <Share2 className="w-5 h-5" />
-            Share to Social Media (WhatsApp, Facebook, X, Instagram, TikTok & more)
+            Share Story (Email, Facebook, Messenger, WhatsApp, X & more)
+
           </button>
           <p className="text-[10px] text-muted-foreground text-center mt-2">
             Publish first to share a public link, or share the Oracle Lunar link to invite friends.
           </p>
         </div>
 
-        <ShareDialog
+        <StoryShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
-          title={story.title}
-          url={story.publishedUrl || "https://oracle-lunar.online"}
-          description={`Read "${story.title}" — a ${story.genre} story written in Oracle Lunar.`}
+          story={{
+            title: story.title,
+            author: story.author,
+            genre: story.genre,
+            premise: story.premise,
+            chapters: story.chapters,
+            publishedUrl: story.publishedUrl,
+          }}
         />
+
 
         <MediaPickerDialog
           open={pickerOpen}
