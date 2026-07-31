@@ -1554,7 +1554,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             {flowStage === "idle" && (
               <>
                 <p className="text-xs font-semibold text-primary">
-                  ✨ Generate Full Chapter (5,000+ words)
+                  ✨ Generate Full Chapter (20,000+ words)
                 </p>
                 <textarea
                   value={chapterGuidance}
