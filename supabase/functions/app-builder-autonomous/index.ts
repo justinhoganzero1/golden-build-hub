@@ -167,23 +167,68 @@ serve(async (req) => {
       };
 
       try {
+        // === STAGE 0: MARKET RECON ===
+        // Scours the live web for the competing apps in this category and, most
+        // importantly, what real users COMPLAIN about in their reviews — so the
+        // build can beat them on the exact points the market is unhappy about.
+        let marketBrief = "";
+        let marketSources: { url: string; title?: string }[] = [];
+        try {
+          send("stage", { stage: "market", message: "Market recon — scanning competing apps & real user reviews…" });
+          const queriesRaw = await callAI({
+            apiKey, model: MODEL_FAST, reasoning: "minimal",
+            system: `Turn the user's app idea into EXACTLY 3 web-search queries, one per line, no numbering, no quotes:
+1) best existing apps in this category (competitors)
+2) user reviews / complaints / 1-star feedback about those apps
+3) missing features users are asking for in this category
+Each query max 12 words.`,
+            user: userPrompt || "a general purpose app",
+          });
+          const queries = queriesRaw.split("\n").map((q) => q.replace(/^[\d.\-*\s]+/, "").trim()).filter(Boolean).slice(0, 3);
+          const results = await Promise.all(queries.map((q) => webResearch(q)));
+          marketSources = results.flatMap((r) => r.sources).slice(0, 10);
+          const raw = results.map((r, i) => `### ${queries[i]}\n${r.summary}`).join("\n\n").slice(0, 24000);
+          if (marketSources.length) {
+            marketBrief = await callAI({
+              apiKey, model: MODEL_PRIMARY, reasoning: "medium",
+              system: `You are a competitive product strategist. From the raw web research, output a tight COMPETITIVE BRIEF (< 450 words, markdown bullets, no preamble):
+- Top competitors (name + what they do well)
+- TOP 8 recurring user complaints / 1-star themes (quote the pain, be specific)
+- Features users repeatedly beg for and don't get
+- Pricing norms in this category
+- THE WEDGE: 5 concrete decisions this new app must make to beat every competitor listed
+Only use what is supported by the research. No invented product names.`,
+              user: raw,
+            });
+            send("stage", { stage: "market", message: `Competitive brief ready — ${marketSources.length} live sources analysed`, detail: marketBrief.slice(0, 600), sources: marketSources });
+            send("research_sources", { sources: marketSources });
+          } else {
+            send("stage", { stage: "market", message: "No live sources — building from category best-practice knowledge" });
+          }
+        } catch (e) {
+          send("stage", { stage: "market", message: `Market recon skipped (${e instanceof Error ? e.message : "error"})` });
+        }
+
         // === STAGE 1: ARCHITECT ===
         send("stage", { stage: "architect", message: "Designing app architecture & framework…" });
         const architecture = await callAI({
           apiKey,
           model: MODEL_PRIMARY,
           reasoning: "high",
-          system: `You are a principal software architect. Output ONLY a concise, dense spec (no preamble, no closing) covering:
+          system: `You are a principal software architect. The user gives ONE command; you design the WHOLE ship-ready product from it — do not ask questions, do not leave TODOs, assume and decide everything.
+Output ONLY a concise, dense spec (no preamble, no closing) covering:
 - App name & tagline
+- Positioning: how this beats each competitor named in the competitive brief (one line each)
 - Core user flows (numbered, max 8)
 - Page sections / routes
 - Data model (fields per entity)
 - Backend endpoints / mock APIs (since output must be single-file HTML, design as in-page JS modules + localStorage persistence)
 - Third-party APIs needed (Stripe, Web Speech, etc.)
 - Visual style (colors, typography, motion)
-- Monetization model
-Keep under 500 words. Markdown bullet form.`,
-          user: `USER REQUEST:\n${userPrompt}\n\n${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
+- Monetization model + price point
+- Onboarding, empty states, and the "first 60 seconds" experience
+Keep under 600 words. Markdown bullet form.`,
+          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
           images,
         });
         send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
@@ -420,8 +465,51 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
           if (researchSources.length) send("research_sources", { sources: researchSources });
         }
 
+        // === STAGE 6: SHIP-READY HARDENING ===
+        // Last pass: everything that stands between "demo" and "you can put this
+        // in front of paying users / submit it to a store today".
+        send("stage", { stage: "ship", message: "Ship-ready pass — onboarding, legal, SEO, PWA, analytics, payments…" });
+        const shipped = await callAI({
+          apiKey, model: MODEL_PRIMARY, reasoning: "high",
+          system: `You are a launch engineer. Take the HTML and make it SHIP-READY — a real product a stranger could use and pay for today. Add anything missing:
+- First-run onboarding / guided empty state, and a persistent "how it works" entry point
+- Working settings, data export, and delete-my-data control (localStorage backed)
+- Privacy Policy, Terms, and Contact sections (real readable copy, in-page routes/modals)
+- Cookie/consent notice if any tracking exists
+- Full SEO head (title, description, canonical, OG, Twitter, JSON-LD), sitemap-friendly semantic markup
+- Installable PWA (manifest data URL, icons, offline-safe service worker), apple-touch-icon
+- Accessibility: keyboard nav, focus rings, aria labels, colour contrast, prefers-reduced-motion
+- Monetization actually wired: pricing section, paywall gate, checkout stub, restore/manage
+- Error boundary, offline banner, loading skeletons, toast system
+- Analytics event calls on every primary action
+- A version string and build date in the footer
+Preserve all existing working logic, IDs, and the oracle-lunar-app-config meta (bump its "version" and add "ship_ready":true).
+Output ONLY the complete HTML document. No fences. No commentary.`,
+          user: `HTML:\n${code}`,
+        });
+        const shippedCode = extractCode(shipped) || shipped.trim();
+        if (/<!doctype/i.test(shippedCode)) code = shippedCode;
+        send("partial", { code });
+
+        // Launch checklist the user can actually act on.
+        let shipChecklist = "";
+        try {
+          shipChecklist = await callAI({
+            apiKey, model: MODEL_FAST, reasoning: "low",
+            system: `You are a launch manager. Output a SHIP CHECKLIST for this app in markdown: what is already DONE inside the build (tick list) and the SHORT list of things only a human can do (domain, store account, real Stripe keys, screenshots). Max 250 words. No preamble.`,
+            user: `HTML HEAD + CONFIG:\n${code.slice(0, 12000)}`,
+          });
+        } catch { /* optional */ }
+        send("stage", { stage: "ship", message: "Ship-ready ✓ — launch checklist generated", detail: shipChecklist.slice(0, 800) });
+
         // === DONE ===
-        send("done", { code, architecture: architecture.slice(0, 1200) });
+        send("done", {
+          code,
+          architecture: architecture.slice(0, 1200),
+          marketBrief: marketBrief.slice(0, 1500),
+          shipChecklist: shipChecklist.slice(0, 2000),
+          sources: marketSources,
+        });
         controller.close();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
