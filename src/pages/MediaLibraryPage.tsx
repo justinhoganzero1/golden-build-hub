@@ -657,7 +657,15 @@ const MediaLibraryPage = () => {
                 )}
               </div>
 
+              <button
+                onClick={() => sendLibraryItemToMovieMaker(selected, navigate)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-fuchsia-500 via-primary to-amber-500 text-primary-foreground text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+              >
+                <Film className="w-4 h-4" /> Send to Movie Maker
+              </button>
+
               <div className="flex gap-2">
+
                 <button onClick={handleDownloadSelected}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
