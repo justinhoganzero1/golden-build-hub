@@ -1247,6 +1247,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("EPUB ready — upload to Kindle, Kobo, Apple Books, Google Play, B&N, Draft2Digital or Smashwords.");
+      // Auto-attach the compliance kit (KDP declaration, provenance, authorship log)
+      await downloadComplianceKit({ voice: false });
     } catch (e: any) {
       toast.error(e?.message || "EPUB export failed");
     } finally {
