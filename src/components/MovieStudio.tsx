@@ -2126,12 +2126,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           open={showLibrary}
           onOpenChange={setShowLibrary}
           filterType="image"
-          title="Pick scene photo"
-          onSelect={(url) => {
-            if (libraryTargetId) updateScene(libraryTargetId, { image_url: url });
+          title="Pick a photo — your Library or your device"
+          onSelect={(url, pickedTitle) => {
+            if (libraryTargetId === "__new__") {
+              setScenes(prev => [...prev, {
+                id: uid(),
+                caption: pickedTitle || `Scene ${prev.length + 1}`,
+                photo_prompt: pickedTitle || "Imported photo",
+                motion: "ken-burns",
+                duration_sec: CLIP_SECONDS,
+                image_url: url,
+              }]);
+              toast.success("Photo added as a new scene");
+            } else if (libraryTargetId) {
+              updateScene(libraryTargetId, { image_url: url });
+            }
             setLibraryTargetId(null);
           }}
         />
+
       </DialogContent>
     </Dialog>
   );
