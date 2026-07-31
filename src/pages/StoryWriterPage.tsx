@@ -1872,6 +1872,12 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
                       <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
                     )}
                   </div>
+                  <button
+                    onClick={() => generateStoryImage(slot)}
+                    disabled={!!imgBusy}
+                    className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
+                  >
+                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                     {url ? `Re-generate ${label}` : `Generate ${label}`}
                   </button>
                   <button
