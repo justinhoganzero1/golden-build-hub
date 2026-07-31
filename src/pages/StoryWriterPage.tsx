@@ -569,11 +569,17 @@ const StoryWriterPage = () => {
     // returning a full wrap-around jacket (front AND back in one image), which is
     // why both covers looked identical in their previews.
     const SINGLE_PANEL = `CRITICAL OUTPUT RULE: return ONE single standalone image showing ONE scene only. Absolutely NO wrap-around book jacket, NO front-and-back spread, NO two-page layout, NO diptych, triptych, split screen, side-by-side panels, collage, grid, storyboard, contact sheet, thumbnails, insets or picture-in-picture. Exactly one continuous photographic frame filling the whole canvas.`;
+    // The full back-cover blurb is the richest description of the book, so the
+    // cover artist AI reads it as its primary source material.
+    const BLURB_BRIEF = story.blurb?.trim()
+      ? ` STORY BLURB (your primary source material — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
+      : "";
     if (slot === "cover") {
       basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}.${BLURB_BRIEF} Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
-      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}. Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}.${BLURB_BRIEF} Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
 
     } else if (ch) {
       const snippet = beat?.text || (ch.content || "").slice(0, 1200);
