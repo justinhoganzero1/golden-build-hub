@@ -153,7 +153,28 @@ const StoryWriterPage = () => {
           setSavingId(doc.id);
           setActiveChapter(0);
           toast.success("Story opened");
+
+          // The document loader strips heavy embedded artwork so the story
+          // opens instantly. Pull the pictures in straight after so nothing
+          // looks like it vanished.
+          try {
+            const { data: art } = await supabase.rpc("get_story_writer_images" as any, { _story_id: id } as any);
+            const a = art as any;
+            if (alive && a) {
+              skipAutosaveForLoadedStoryRef.current = id;
+              setStory(s => ({
+                ...s,
+                coverImage: s.coverImage || a.coverImage || undefined,
+                backImage: s.backImage || a.backImage || undefined,
+                chapters: s.chapters.map((c, i) => {
+                  const imgs = Array.isArray(a.chapterImages?.[i]) ? a.chapterImages[i] : [];
+                  return (c.images && c.images.length) || !imgs.length ? c : { ...c, images: imgs };
+                }),
+              }));
+            }
+          } catch { /* artwork is best-effort */ }
         }
+
       } catch (e: any) {
         if (alive) toast.error(e?.message || "Story could not be opened");
       } finally {
