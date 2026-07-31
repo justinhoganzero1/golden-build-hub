@@ -405,47 +405,78 @@ const StoryWriterPage = () => {
         const label =
           slot === "cover" ? `${story.title} — Cover`
           : slot === "back" ? `${story.title} — Back Cover`
-          : `${story.title} — ${ch?.title || "Chapter"} illustration`;
+          : `${story.title} — ${ch?.title || "Chapter"} illustration${beat ? ` ${beat.index + 1}/${beat.total}` : ""}`;
         await saveToLibrary({
           media_type: "image",
           title: label,
           url,
           source_page: "story-writer",
-          metadata: { story_id: savingId, slot: slotKey, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
+          metadata: { story_id: savingId, slot: slotKey, beat: beat ? beat.index + 1 : undefined, beat_total: beat?.total, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
         });
       } catch { /* non-fatal */ }
-      toast.success("Illustration ready!");
+      if (!beat) toast.success("Illustration ready!");
+      return true;
     } catch (e: any) {
       toast.error(e?.message || "Could not generate image");
+      return false;
     } finally {
       setImgBusy(null);
     }
   };
 
-  // Re-illustrate one chapter (adds a new image, replacing oldest if at cap).
-  const reIllustrateChapter = async (idx: number) => {
-    if (imgBusy) return;
-    await generateStoryImage({ kind: "chapter", index: idx });
+  /**
+   * Illustrate a chapter properly: always produce at least MIN_IMAGES_PER_CHAPTER
+   * images, one per narrative beat, in reading order so they sit in the right
+   * places in the chapter (and hand off cleanly as scenes to Movie Maker).
+   */
+  const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
+  const illustrateChapterSet = async (
+    idx: number,
+    count = MIN_IMAGES_PER_CHAPTER,
+  ): Promise<number> => {
+    const ch = story.chapters[idx];
+    if (!ch) return 0;
+    const beats = chapterBeats(ch.content, count);
+    let ok = 0;
+    for (let b = 0; b < count; b++) {
+      const done = await generateStoryImage(
+        { kind: "chapter", index: idx },
+        undefined,
+        { index: b, total: count, text: beats[b] },
+      );
+      if (done) ok++;
+    }
+    return ok;
   };
 
-  // Bulk: re-illustrate every chapter, sequentially.
+  // Illustrate one chapter — minimum 4 images placed across the chapter's beats.
+  const reIllustrateChapter = async (idx: number) => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    setChapterSetBusy(idx);
+    try {
+      const ok = await illustrateChapterSet(idx);
+      if (ok > 0) toast.success(`Chapter illustrated — ${ok} image${ok === 1 ? "" : "s"} added.`);
+    } finally {
+      setChapterSetBusy(null);
+    }
+  };
+
+  // Bulk: illustrate every chapter (min 4 images each), sequentially.
   const [bulkBusy, setBulkBusy] = useState(false);
   const reIllustrateAllChapters = async () => {
-    if (bulkBusy || imgBusy) return;
-    if (!confirm(`Generate a new illustration for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
+    if (bulkBusy || imgBusy || chapterSetBusy !== null) return;
+    if (!confirm(`Generate at least ${MIN_IMAGES_PER_CHAPTER} illustrations for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
     setBulkBusy(true);
-    let ok = 0, fail = 0;
+    let ok = 0;
     try {
       for (let i = 0; i < story.chapters.length; i++) {
-        try {
-          await generateStoryImage({ kind: "chapter", index: i });
-          ok++;
-        } catch { fail++; }
+        ok += await illustrateChapterSet(i);
       }
-      toast.success(`Bulk illustration done — ${ok} ok${fail ? `, ${fail} failed` : ""}`);
+      toast.success(`Bulk illustration done — ${ok} images added across ${story.chapters.length} chapters.`);
     } finally {
       setBulkBusy(false);
     }
+
   };
 
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
