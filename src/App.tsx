@@ -359,6 +359,7 @@ const App = () => (
                   <Route path="/admin/auth-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Auth Audit"><AdminAuthAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/build-aab" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Build AAB"><AdminBuildAABPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/users" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Users"><AdminUsersPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/inbox" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Inbox"><AdminInboxPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
