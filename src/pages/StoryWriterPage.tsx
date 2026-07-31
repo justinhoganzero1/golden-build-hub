@@ -473,7 +473,7 @@ const StoryWriterPage = () => {
     if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
 
     else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
-    else if (pickerTarget === "cast") { addCastMember(url); setPickerTarget(null); return; }
+    else if (pickerTarget === "cast") { addCastMember(url); setPickerTarget(null); void recastAllImages(url); return; }
     else if (pickerTarget === "chapter") {
       setStory(s => {
         const next = [...s.chapters];
