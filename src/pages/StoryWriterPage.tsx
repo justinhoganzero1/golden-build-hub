@@ -406,6 +406,7 @@ const StoryWriterPage = () => {
           body: JSON.stringify({
             prompt: variedPrompt,
             tier: "premium",
+            modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
           }),
