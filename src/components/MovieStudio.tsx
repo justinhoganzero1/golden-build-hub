@@ -287,7 +287,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       if (brief?.script) setScript(brief.script);
       if (brief?.intent) setIntent(brief.intent);
       if (brief?.youtube?.title) setTitle(brief.youtube.title);
+      // Story Writer handoff can carry its cover / chapter artwork as ready frames
+      if (Array.isArray(brief?.frames) && brief.frames.length) {
+        setScenes(prev => prev.length ? prev : brief.frames.slice(0, 20).map((url: string, i: number) => ({
+          id: uid(),
+          caption: `Scene ${i + 1}`,
+          photo_prompt: brief.intent || `Scene ${i + 1}`,
+          motion: "ken-burns" as Motion,
+          duration_sec: CLIP_SECONDS,
+          image_url: url,
+        })));
+      }
       sessionStorage.removeItem("oracle_movie_brief");
+
       // Stash YouTube package for later publish step
       if (brief?.youtube) sessionStorage.setItem("oracle_youtube_pkg", JSON.stringify(brief.youtube));
       toast.success("Oracle pre-filled your script — review and tap Generate Scenes");
