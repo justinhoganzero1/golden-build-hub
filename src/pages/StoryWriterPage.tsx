@@ -577,17 +577,36 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
 
 
 
-  // Long-chapter generator: targets 5000+ words, with multi-pass continuation if model returns short.
-  const MIN_WORDS = 5000;
+  // Long-chapter generator: every AI chapter must be AT LEAST 20,000 words,
+  // and no two chapters may end up with the same word count (each chapter gets
+  // its own unique target, spaced 200+ words apart).
+  const MIN_WORDS = 20000;
+  const WORD_STEP = 200;
   const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+  /** Unique length target for a chapter: 20,000+ and > 200 words apart from every other chapter. */
+  const targetWordsFor = (idx: number): number => {
+    const taken = story.chapters
+      .map((c, i) => (i === idx ? 0 : wordCount(c.content)))
+      .filter(n => n >= MIN_WORDS);
+    let target = MIN_WORDS + WORD_STEP * (idx + 1);
+    // Push past any existing chapter length that is within WORD_STEP of the target.
+    let guard = 0;
+    while (taken.some(n => Math.abs(n - target) <= WORD_STEP) && guard++ < 200) {
+      target += WORD_STEP + 50;
+    }
+    return target;
+  };
 
   const generateLongChapter = async (
     chapterTitle: string,
     guidance: string,
-    previousContext: string
+    previousContext: string,
+    targetWords: number = MIN_WORDS + WORD_STEP,
+    onProgress?: (words: number) => void
   ): Promise<string> => {
     const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
-Write a COMPLETE chapter of AT LEAST 5000 words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines. Write only the chapter prose. You may include the chapter title as the first line.`;
+Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.`;
 
     const userPrompt = `STORY TITLE: ${story.title}
 GENRE: ${story.genre}
@@ -600,27 +619,32 @@ CHAPTER TO WRITE: ${chapterTitle}
 USER GUIDANCE FOR THIS CHAPTER:
 ${guidance || "(no extra guidance — follow the natural arc)"}
 
-Write the full chapter now (5000+ words):`;
+Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
     let text = await callAI(baseSystem, userPrompt, {
       model: "google/gemini-2.5-pro",
       maxTokens: 16000,
     });
+    onProgress?.(wordCount(text));
 
-    // If short, request continuations until we hit MIN_WORDS or 3 attempts.
+    // Continuation passes until we reach the unique target (long chapters need many).
     let attempts = 0;
-    while (wordCount(text) < MIN_WORDS && attempts < 3) {
+    while (wordCount(text) < targetWords && attempts < 30) {
       attempts++;
-      const tail = text.slice(-2000);
+      const tail = text.slice(-3000);
+      const remaining = targetWords - wordCount(text);
       const more = await callAI(
-        `You are continuing the same ${story.genre} chapter seamlessly. Do not repeat. Add several more rich scenes/paragraphs to extend the chapter. Continue the prose only.`,
-        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter (target total ${MIN_WORDS}+ words):`,
+        `You are continuing the same ${story.genre} chapter seamlessly, in the same voice and tense. Do not repeat anything. Do not wrap up unless told. Add several more rich, fully-dramatised scenes. Continue the prose only.`,
+        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter — write at least ${Math.min(remaining, 3000).toLocaleString()} more words (chapter total target ${targetWords.toLocaleString()}+ words):`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
+      if (!more?.trim()) break;
       text = (text + "\n\n" + more).trim();
+      onProgress?.(wordCount(text));
     }
     return text;
   };
+
 
   const aiContinue = async () => {
     if (!requireMeta()) return;
@@ -722,20 +746,42 @@ Write the full chapter now (5000+ words):`;
     if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch) return;
+    const target = targetWordsFor(activeChapter);
     try {
-      toast.info("Generating full chapter (5000+ words). This may take a minute...");
-      const text = await generateLongChapter(
+      toast.info(`Generating full chapter — target ${target.toLocaleString()}+ words. This takes several minutes...`);
+      let text = await generateLongChapter(
         ch.title,
         guidance ?? chapterGuidance,
-        buildPrevContext(activeChapter)
+        buildPrevContext(activeChapter),
+        target,
+        (w) => {
+          if (w < target) toast.info(`Writing… ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "chapter-progress" });
+        }
       );
+
+      // Guarantee no two chapters share the same word count (200+ words apart).
+      const others = story.chapters
+        .map((c, i) => (i === activeChapter ? -1 : wordCount(c.content)))
+        .filter(n => n > 0);
+      let guard = 0;
+      while (others.some(n => Math.abs(n - wordCount(text)) <= WORD_STEP) && guard++ < 4) {
+        const more = await callAI(
+          `You are continuing the same ${story.genre} chapter seamlessly. Do not repeat. Continue the prose only.`,
+          `STORY: ${story.title}\nCHAPTER: ${ch.title}\n\nLAST PORTION:\n${text.slice(-3000)}\n\nAdd at least 400 more words of new scene:`,
+          { model: "google/gemini-2.5-pro", maxTokens: 8000 }
+        );
+        if (!more?.trim()) break;
+        text = (text + "\n\n" + more).trim();
+      }
+
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
         return { ...s, chapters: next };
       });
-      const wc = text.split(/\s+/).filter(Boolean).length;
-      toast.success(`Chapter generated — ${wc.toLocaleString()} words`);
+      const wc = wordCount(text);
+      toast.success(`Chapter generated — ${wc.toLocaleString()} words`, { id: "chapter-progress" });
+      if (wc < MIN_WORDS) toast.warning(`Chapter came in under ${MIN_WORDS.toLocaleString()} words — use "Continue" to extend it.`);
       setChapterGuidance("");
       setFlowStage("askEdit");
       void saveToLibrary({
@@ -743,12 +789,13 @@ Write the full chapter now (5000+ words):`;
         title: `Story Chapter: ${ch.title}`,
         url: text,
         source_page: "story-writer",
-        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc },
+        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc, targetWords: target },
       });
     } catch (e: any) {
       toast.error("Chapter generation failed: " + (e?.message || "unknown"));
     }
   };
+
 
   const aiEditChapterWithInstructions = async () => {
     if (!requireMeta()) return;
@@ -757,7 +804,7 @@ Write the full chapter now (5000+ words):`;
     if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
     try {
       const text = await callAI(
-        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 5000+ words). Return only the revised chapter prose.`,
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 20,000+ words — never shorten). Return only the revised chapter prose.`,
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
@@ -1507,7 +1554,7 @@ Write the full chapter now (5000+ words):`;
             {flowStage === "idle" && (
               <>
                 <p className="text-xs font-semibold text-primary">
-                  ✨ Generate Full Chapter (5,000+ words)
+                  ✨ Generate Full Chapter (20,000+ words)
                 </p>
                 <textarea
                   value={chapterGuidance}
