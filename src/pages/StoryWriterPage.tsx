@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
-import ShareDialog from "@/components/ShareDialog";
+import StoryShareDialog from "@/components/story/StoryShareDialog";
 import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
