@@ -997,6 +997,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         text = (text + "\n\n" + more).trim();
       }
 
+      trackEdit("ai", activeChapter, ch.content, text, "AI full chapter");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
