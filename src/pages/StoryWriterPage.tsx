@@ -1588,7 +1588,29 @@ Write the full chapter now (5000+ words):`;
           EPUB works on every major store. Audiobook ZIP includes 44.1 kHz 128 kbps MP3s, opening &amp; closing credits, retail sample and ACX metadata — upload directly to Audible/ACX, Findaway Voices, Google Play Books, Kobo, Spotify or Author's Republic.
         </p>
 
+        {/* Spell check / proofread */}
+        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={spellCheckChapter}
+            disabled={!!proofBusy || aiBusy}
+            className="py-3 rounded-xl bg-card border border-primary/40 text-primary text-xs font-bold disabled:opacity-50"
+          >
+            {proofBusy === "chapter" ? "Proofreading…" : "✔ Spell check this chapter"}
+          </button>
+          <button
+            onClick={spellCheckBook}
+            disabled={!!proofBusy || aiBusy}
+            className="py-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold disabled:opacity-50"
+          >
+            {proofBusy === "book" ? "Proofreading…" : "✔ Spell check whole book"}
+          </button>
+        </div>
+        <p className="px-4 pt-1 text-[10px] text-muted-foreground">
+          Fixes spelling, grammar and punctuation only — your wording, voice and dialogue stay exactly as you wrote them.
+        </p>
+
         {/* Story → Movie Maker handoff */}
+
         <div className="px-4 pt-4 space-y-2">
           <button
             onClick={() => sendStoryToMovieMaker(story, navigate)}
