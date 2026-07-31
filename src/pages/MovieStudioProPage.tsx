@@ -15,6 +15,7 @@ import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import JustKeepTalkingButton from "@/components/JustKeepTalkingButton";
+import YouTubeDisclosureCard from "@/components/compliance/YouTubeDisclosureCard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
