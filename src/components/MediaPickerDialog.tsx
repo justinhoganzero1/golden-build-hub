@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, Image, Film, Music, X, FolderOpen, Upload, Loader2 } from "lucide-react";
 import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
