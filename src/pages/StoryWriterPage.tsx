@@ -805,6 +805,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `You are a master ${story.genre} novelist. Continue the story naturally in the established voice. Add 2-3 vivid paragraphs. Do not summarize, do not repeat what's already there. Just continue.`,
         `STORY TITLE: ${story.title}\nPREMISE: ${story.premise}\nCURRENT CHAPTER: ${ch.title}\n\nLATEST TEXT:\n${last}\n\nContinue:`
       );
+      trackEdit("ai", activeChapter, ch.content, (ch.content + "\n\n" + text).trim(), "AI continue");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: (ch.content + "\n\n" + text).trim() };
