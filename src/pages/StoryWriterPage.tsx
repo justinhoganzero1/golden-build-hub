@@ -22,6 +22,7 @@ import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
 import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
@@ -40,6 +41,13 @@ interface StoryChapter {
   /** Up to 2 AI-generated illustrations per chapter (data URLs). */
   images?: string[];
 }
+interface StoryCharacter {
+  id: string;
+  name: string;
+  role: string;
+  notes: string;
+  url: string;
+}
 interface StoryDoc {
   id?: string;
   title: string;
@@ -51,6 +59,8 @@ interface StoryDoc {
   coverImage?: string;
   /** AI-generated back cover image (data URL). */
   backImage?: string;
+  /** Photo-based fictional cast members the AI draws from. */
+  cast?: StoryCharacter[];
   published?: boolean;
   publishedUrl?: string;
 }
@@ -315,13 +325,76 @@ const StoryWriterPage = () => {
   const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
   // Pull artwork from the in-app Library or the user's device
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | "cast" | null>(null);
+
+  // ====== PHOTO CAST — upload a photo, the AI writes/draws them as a fictional character ======
+  const cast = story.cast || [];
+  const castFileRef = useRef<HTMLInputElement>(null);
+  const [castConsent, setCastConsent] = useState(false);
+  const addCastMember = (url: string, name?: string) => {
+    setStory(s => {
+      const existing = s.cast || [];
+      if (existing.length >= 6) {
+        toast.info("Up to 6 cast photos per story — remove one first.");
+        return s;
+      }
+      return {
+        ...s,
+        cast: [
+          ...existing,
+          {
+            id: crypto.randomUUID(),
+            name: (name || "").replace(/\.[a-z0-9]+$/i, "").slice(0, 40) || `Character ${existing.length + 1}`,
+            role: "",
+            notes: "",
+            url,
+          },
+        ],
+      };
+    });
+    toast.success("Photo added to your fictional cast");
+  };
+  const updateCast = (id: string, patch: Partial<StoryCharacter>) =>
+    setStory(s => ({ ...s, cast: (s.cast || []).map(c => (c.id === id ? { ...c, ...patch } : c)) }));
+  const removeCast = (id: string) =>
+    setStory(s => ({ ...s, cast: (s.cast || []).filter(c => c.id !== id) }));
+
+  const handleCastFile = async (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error("Photo too large (max 15MB)"); return; }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const url = await persistImageToStorage(dataUrl, "story-cast");
+      addCastMember(url, file.name);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read that photo");
+    } finally {
+      if (castFileRef.current) castFileRef.current.value = "";
+    }
+  };
+
+  /** Character sheet injected into every prompt so the cast stays consistent. */
+  const castDirective = () => {
+    if (!cast.length) return "";
+    const lines = cast.map((c, i) =>
+      `${i + 1}. ${c.name || `Character ${i + 1}`}${c.role ? ` — ${c.role}` : ""}${c.notes ? `. ${c.notes}` : ""}`,
+    );
+    return ` FICTIONAL CAST (recurring characters — keep their look, age, build, hair and wardrobe identical in every image and consistent in the prose): ${lines.join(" ")} These are fictional characters inspired by the author's own reference photos; render them as original fictional people, never as a real identifiable public figure, and never in any degrading, sexual or defamatory context.`;
+  };
+
   const applyPickedImage = async (picked: string) => {
     // Anything pasted in as raw base64 gets parked in storage so it survives a refresh.
     const url = await persistImageToStorage(picked);
     if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
 
     else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
+    else if (pickerTarget === "cast") { addCastMember(url); setPickerTarget(null); return; }
     else if (pickerTarget === "chapter") {
       setStory(s => {
         const next = [...s.chapters];
@@ -333,6 +406,7 @@ const StoryWriterPage = () => {
     setPickerTarget(null);
     toast.success("Image added to your story");
   };
+
 
 
   const ART_STYLES: { id: string; label: string; suffix: string }[] = [
@@ -422,7 +496,14 @@ const StoryWriterPage = () => {
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
+    basePrompt += castDirective();
 
+    // If the author uploaded cast photos, hand the first one to the model as a
+    // likeness reference so the same fictional character appears book-wide.
+    let castReference: string | undefined;
+    if (cast.length) {
+      try { castReference = await resolveStorageUrl(cast[0].url, 3600); } catch { castReference = cast[0].url; }
+    }
 
     setImgBusy(slotKey);
     try {
@@ -445,6 +526,7 @@ const StoryWriterPage = () => {
             modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
+            ...(castReference ? { inputImage: castReference } : {}),
           }),
         });
         if (!resp.ok) {
