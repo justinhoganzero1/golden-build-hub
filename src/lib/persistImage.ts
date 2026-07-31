@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Turn a base64 data URL into a permanent public storage URL.
+ * Turn a base64 data URL into a permanent storage URL.
  *
  * Story documents used to embed multi-megabyte base64 images directly in the
  * saved metadata, which made stories slow to open and forced the loader to
@@ -39,6 +39,8 @@ export async function persistImageToStorage(
       });
     if (error) throw error;
 
+    // Store the stable canonical object URL. The bucket is private, so display
+    // components resolve this canonical URL to a short-lived signed URL.
     const { data } = supabase.storage.from("photography-assets").getPublicUrl(path);
     return data?.publicUrl || dataUrl;
   } catch (e) {
