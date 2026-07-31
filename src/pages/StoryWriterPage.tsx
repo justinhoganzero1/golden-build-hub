@@ -1458,14 +1458,25 @@ Write the full chapter now (5000+ words):`;
                   <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/6)
                   </p>
-                  <button
-                    onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
-                    disabled={!!imgBusy}
-                    className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
-                  >
-                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {imgs.length === 0 ? "Illustrate Chapter" : imgs.length >= 6 ? "Replace Oldest" : "Add Illustration"}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => reIllustrateChapter(activeChapter)}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                    >
+                      {isBusy || chapterSetBusy === activeChapter ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Illustrate Chapter ({MIN_IMAGES_PER_CHAPTER} images)
+                    </button>
+                    <button
+                      onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full border border-border text-foreground font-semibold disabled:opacity-60"
+                      title="Add a single extra illustration"
+                    >
+                      + 1
+                    </button>
+                  </div>
+
                 </div>
                 {imgs.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
