@@ -607,7 +607,7 @@ const StoryWriterPage = () => {
             modelChain: ["google/gemini-3-pro-image-preview"],
             useCache: false,
             libraryFallback: false,
-            ...(castReference ? { inputImage: castReference } : {}),
+            ...(castReferences.length ? { inputImages: castReferences } : {}),
           }),
         });
         if (!resp.ok) {
