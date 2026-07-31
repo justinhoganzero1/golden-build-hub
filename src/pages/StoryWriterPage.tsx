@@ -1978,7 +1978,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
         {/* Style DNA — train the AI on the author's own writing */}
         <div className="px-4 pt-4">
-          <StyleDnaPanel onProfileChange={setStyleProfile} />
+          <StyleDnaPanel userId={user?.id} callAI={callAI} onProfileChange={setStyleProfile} />
         </div>
 
         {/* Humanising rewrite pass */}
