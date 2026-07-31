@@ -310,10 +310,28 @@ const StoryWriterPage = () => {
     { id: "watercolour",  label: "Watercolour",  suffix: "soft watercolour illustration, textured paper, gentle washes" },
   ];
 
+  /** Minimum illustrations produced whenever a chapter is illustrated. */
+  const MIN_IMAGES_PER_CHAPTER = 4;
+
+  /** Split a chapter into N narrative beats so illustrations land in the right places. */
+  const chapterBeats = (text: string, count: number): string[] => {
+    const paras = (text || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    if (paras.length === 0) return Array.from({ length: count }, () => "");
+    const per = Math.ceil(paras.length / count);
+    const beats: string[] = [];
+    for (let i = 0; i < count; i++) {
+      beats.push(paras.slice(i * per, (i + 1) * per).join("\n\n").slice(0, 1200));
+    }
+    // Never hand back an empty beat — reuse the nearest non-empty one.
+    return beats.map((b, i) => b || beats.slice(0, i).reverse().find(Boolean) || paras[0].slice(0, 1200));
+  };
+
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
+    beat?: { index: number; total: number; text: string },
   ): Promise<void> => {
+
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
     if (imgBusy) return;
     if (!requireMeta()) return;
