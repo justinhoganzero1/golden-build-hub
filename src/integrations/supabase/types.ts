@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          kind: string
+          message: string
+          owner_reply: string | null
+          replied_at: string | null
+          reply_to_email: string | null
+          sender_name: string | null
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          message: string
+          owner_reply?: string | null
+          replied_at?: string | null
+          reply_to_email?: string | null
+          sender_name?: string | null
+          subject?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          kind?: string
+          message?: string
+          owner_reply?: string | null
+          replied_at?: string | null
+          reply_to_email?: string | null
+          sender_name?: string | null
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       advertiser_inquiries: {
         Row: {
           ad_type: string | null
