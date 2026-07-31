@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
@@ -247,16 +248,15 @@ const AppBuilderPage = () => {
       } else {
         const wantsShop = publishSell.shop_enabled && publishSell.shop_price_cents > 0;
         const isPublic = publishSell.is_public || wantsShop;
-        const { data, error } = await supabase.from("user_media").insert([{
-          user_id: user.id, media_type: "app", title: project.name, url: project.code,
+        savedId = (await saveToLibrary({
+          media_type: "app", title: project.name, url: project.code,
           source_page: "app-builder",
-          metadata: { description: project.description, type: project.type } as any,
+          metadata: { description: project.description, type: project.type },
           is_public: isPublic,
           shop_enabled: wantsShop,
           shop_price_cents: wantsShop ? publishSell.shop_price_cents : 0,
-        }]).select("id").single();
-        if (error) throw error;
-        savedId = data?.id;
+        })) || undefined;
+        if (!savedId) throw new Error("App save was queued for retry");
       }
       // Notify Library to refresh instantly
       try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: savedId } })); } catch { /* noop */ }

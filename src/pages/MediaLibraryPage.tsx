@@ -1,4 +1,4 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
 import SEO from "@/components/SEO";
 import { Link } from "react-router-dom";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -23,6 +23,8 @@ const COLLECTIONS = [
   { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
   { key: "teleport",      label: "Teleport ✨",                               icon: Sparkles },
   { key: "apps",          label: "Apps",                                      icon: Globe },
+  { key: "stories",       label: "Stories & Books",                           icon: BookOpen },
+  { key: "ai-tutor",      label: "AI Tutor",                                  icon: FileText },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
   { key: "magic-hub",     label: "Magic Hub",                                icon: Wand2 },
   { key: "marketing-hub", label: "Marketing Hub",                            icon: Sparkles },
@@ -52,6 +54,8 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
   if (s.includes("app-builder") || s.includes("app builder")) return "apps";
+  if (s.includes("story-writer")) return "stories";
+  if (s.includes("ai-tutor")) return "ai-tutor";
   if (s.includes("movie")) return "movies"; // catch-all for movie-studio assets
   if (s.includes("studio") && !s.includes("voice")) return "ai-studio";
   if (s.includes("magic")) return "magic-hub";

@@ -4,6 +4,7 @@ import SEO from "@/components/SEO";
 import { GraduationCap, BookOpen, Play, Trophy, Star, Clock, ChevronRight, Loader2, FileText, Send } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
@@ -71,6 +72,15 @@ const AITutorPage = () => {
       }
       setResult(content || "Failed to generate content.");
       setChatHistory([{ role: "assistant", content }]);
+      if (content.trim()) {
+        await saveToLibrary({
+          media_type: "text",
+          title: `${topic} — ${levelLabel}`,
+          url: content,
+          source_page: "ai-tutor",
+          metadata: { kind: "lesson", topic, education_level: levelLabel },
+        });
+      }
     } catch {
       setResult("Failed to generate. Please try again.");
     } finally { setGenerating(false); }
@@ -105,6 +115,15 @@ const AITutorPage = () => {
       }
       setChatHistory([...newHistory, { role: "assistant", content }]);
       setResult(prev => prev + "\n\n---\n\n" + content);
+      if (content.trim()) {
+        await saveToLibrary({
+          media_type: "text",
+          title: `Tutor follow-up — ${selectedSubtopic || customTopic || "Lesson"}`,
+          url: content,
+          source_page: "ai-tutor",
+          metadata: { kind: "lesson_follow_up", topic: selectedSubtopic || customTopic },
+        });
+      }
     } catch {
       toast.error("Failed to get response");
     } finally { setGenerating(false); }
