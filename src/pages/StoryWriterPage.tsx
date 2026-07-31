@@ -2385,7 +2385,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             className="w-full py-4 rounded-2xl bg-gradient-to-r from-primary via-amber-400 to-primary text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:scale-[1.01] transition"
           >
             <Share2 className="w-5 h-5" />
-            Share to Social Media (WhatsApp, Facebook, X, Instagram, TikTok & more)
+            Share Story (Email, Facebook, Messenger, WhatsApp, X & more)
+
           </button>
           <p className="text-[10px] text-muted-foreground text-center mt-2">
             Publish first to share a public link, or share the Oracle Lunar link to invite friends.
