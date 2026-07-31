@@ -561,17 +561,22 @@ const StoryWriterPage = () => {
     // One shared "art bible" so the front cover, back cover and every chapter
     // illustration come out of the same visual world instead of clashing.
     const ART_BIBLE = `ART DIRECTION (must be identical across the whole book): ${style.suffix}; consistent colour palette, consistent lighting setup, consistent lens and film grade, consistent character likeness, wardrobe and age for every recurring person; same real-world locations and props. Full-bleed edge-to-edge composition, nothing important near the edges, no borders, no mock-up of a printed book, no book object, no hands holding a book, no shelves. Print-ready front-facing artwork only.`;
+    // Hard rule: one single flat artwork per request. Without this the model keeps
+    // returning a full wrap-around jacket (front AND back in one image), which is
+    // why both covers looked identical in their previews.
+    const SINGLE_PANEL = `CRITICAL OUTPUT RULE: return ONE single standalone image showing ONE scene only. Absolutely NO wrap-around book jacket, NO front-and-back spread, NO two-page layout, NO diptych, triptych, split screen, side-by-side panels, collage, grid, storyboard, contact sheet, thumbnails, insets or picture-in-picture. Exactly one continuous photographic frame filling the whole canvas.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
     } else if (slot === "back") {
-      basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}. Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
     } else if (ch) {
       const snippet = beat?.text || (ch.content || "").slice(0, 1200);
       const shot = SHOT_VARIETY[(beat?.index ?? 0) % SHOT_VARIETY.length];
       const beatLine = beat
         ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat). It MUST be a completely different scene, camera angle and composition from every other illustration in this book — never repeat a previous image. `
         : "";
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
@@ -1845,10 +1850,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               const label = slot === "cover" ? "Front Cover" : "Back Cover";
               return (
                 <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
+                  <p className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${slot === "cover" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
+                    {label} preview
+                  </p>
                   <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
                     {url ? (
                       <>
-                        <SignedImage src={url} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+                        <SignedImage src={url} alt={label} className="absolute inset-0 w-full h-full object-contain" />
                         <button
                           onClick={() => setStory(s => ({
                             ...s,
