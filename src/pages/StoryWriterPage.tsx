@@ -1392,12 +1392,13 @@ Write the full chapter now (5000+ words):`;
                     </button>
                     <button
                       onClick={() => reIllustrateChapter(i)}
-                      disabled={!!imgBusy || bulkBusy}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
                       className="shrink-0 p-1.5 rounded text-primary hover:bg-primary/10 disabled:opacity-40"
-                      aria-label="Re-illustrate this chapter"
-                      title="Add a new illustration"
+                      aria-label="Illustrate this chapter"
+                      title={`Illustrate this chapter (${MIN_IMAGES_PER_CHAPTER} images)`}
                     >
-                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {busy || chapterSetBusy === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+
                     </button>
                   </div>
                 );
