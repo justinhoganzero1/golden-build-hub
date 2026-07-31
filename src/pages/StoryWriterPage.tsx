@@ -1424,7 +1424,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     <dc:title>${title}</dc:title>
     <dc:creator>${author}</dc:creator>
     <dc:language>en</dc:language>
-    <dc:description>${xmlEscape(story.premise || "")}</dc:description>
+    <dc:description>${xmlEscape(story.blurb || story.premise || "")}</dc:description>
     <dc:subject>${xmlEscape(story.genre)}</dc:subject>
     <meta property="dcterms:modified">${now}</meta>
     ${coverMeta}
