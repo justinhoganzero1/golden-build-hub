@@ -1004,6 +1004,28 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     }
   };
 
+  /** Write (or rewrite) the full back-cover blurb — the cover AI's source material. */
+  const aiWriteBlurb = async () => {
+    if (!requireMeta()) return;
+    const sample = story.chapters
+      .map(c => `${c.title}\n${c.content.slice(0, 1200)}`)
+      .join("\n\n")
+      .slice(0, 8000);
+    try {
+      setAiBusy(true);
+      const text = await callAI(
+        `You are a bestselling publisher's copywriter. Write a compelling back-cover blurb for a ${story.genre} book: 150-220 words, present tense, hook first, name the protagonist, the world, the stakes and the central conflict, end on an irresistible question or promise. Vivid, concrete, cinematic imagery — no spoilers, no headings, no quotes, prose only.`,
+        `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\n\nSTORY TEXT SO FAR:\n${sample || "(no chapters written yet — work from the premise)"}\n\nWrite the blurb:`
+      );
+      setStory(s => ({ ...s, blurb: text.trim() }));
+      toast.success("Blurb written — the cover AI will use it");
+    } catch (e: any) {
+      toast.error("Blurb failed: " + (e?.message || "unknown"));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const aiOutline = async () => {
     if (!requireMeta()) return;
     if (!story.premise.trim()) {
