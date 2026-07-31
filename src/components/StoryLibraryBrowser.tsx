@@ -13,7 +13,7 @@ interface Props {
   currentId?: string | null;
 }
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 type SortKey = "updated" | "title" | "chapters";
 
@@ -37,14 +37,16 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["story-library-browser", user?.id, debounced, page, sortKey],
     enabled: !!user,
+    staleTime: 30_000,
+    retry: 1,
     queryFn: async () => {
       let q = supabase
         .from("user_media")
-        // Keep the browser lightweight. Story metadata can contain huge base64
-        // cover/chapter images, which was making the whole library sit on the
-        // spinner before any titles appeared. Fetch full metadata only when a
-        // story is opened.
-        .select("id,title,updated_at,thumbnail_url", { count: "exact" })
+        // Keep the browser lightweight: no `count: exact` (a full COUNT over
+        // user_media was taking minutes) and no thumbnail column, since story
+        // thumbnails can be multi-megabyte base64 data URIs. Fetch one extra
+        // row to know whether a next page exists.
+        .select("id,title,updated_at")
         .eq("user_id", user!.id)
         .eq("source_page", "story-writer")
         .eq("media_type", "story");
@@ -53,22 +55,19 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
       if (sortKey === "title") q = q.order("title", { ascending: true });
       else q = q.order("updated_at", { ascending: false });
 
-      q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+      q = q.range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
       if (debounced) q = q.ilike("title", `%${debounced}%`);
-      const { data, error, count } = await q;
+      const { data, error } = await q;
       if (error) throw error;
-      return { items: data || [], total: count || 0 };
+      const rows = data || [];
+      return { items: rows.slice(0, PAGE_SIZE), hasMore: rows.length > PAGE_SIZE };
     },
   });
 
-  const sortedItems = useMemo(() => {
-    const items = data?.items || [];
-    if (sortKey !== "chapters") return items;
-    return items;
-  }, [data, sortKey]);
+  const sortedItems = useMemo(() => data?.items || [], [data]);
 
-  const total = data?.total || 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const hasMore = !!data?.hasMore;
+
 
   const fmtDate = (s: string) => new Date(s).toLocaleDateString();
 
@@ -131,7 +130,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="text-xs font-semibold text-foreground">My Story Library</span>
-          <span className="text-[10px] text-muted-foreground">{total} saved</span>
+          <span className="text-[10px] text-muted-foreground">{sortedItems.length}{hasMore ? "+" : ""} saved</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -232,7 +231,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
             </div>
           )}
 
-          {totalPages > 1 && (
+          {(page > 0 || hasMore) && (
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
@@ -242,11 +241,11 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
                 ← Prev
               </button>
               <span className="text-[10px] text-muted-foreground">
-                Page {page + 1} of {totalPages}
+                Page {page + 1}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1 || isFetching}
+                onClick={() => setPage(p => p + 1)}
+                disabled={!hasMore || isFetching}
                 className="px-2 py-1 rounded text-[11px] bg-card border border-border text-foreground disabled:opacity-40"
               >
                 Next →

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_user_media_story_browser ON public.user_media (user_id, source_page, media_type, updated_at DESC);
