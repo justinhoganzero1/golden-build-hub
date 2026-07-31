@@ -243,6 +243,7 @@ const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
 const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
 const GetApiKeyWizardPage = lazy(() => import("./pages/GetApiKeyWizardPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const AdminInboxPage = lazy(() => import("./pages/AdminInboxPage"));
 const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
 const SiteFooter = lazy(() => import("./components/SiteFooter"));
