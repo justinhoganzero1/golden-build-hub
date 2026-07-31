@@ -22,6 +22,7 @@ import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
 import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
