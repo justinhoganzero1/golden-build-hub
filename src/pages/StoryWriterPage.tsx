@@ -1750,6 +1750,92 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             </button>
           </div>
 
+          {/* ====== PHOTO CAST — upload a face, the AI recasts every image ====== */}
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <p className="text-[11px] font-semibold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Photo cast — put a real person in the story
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              Upload a photo and the AI instantly re-renders <b>every image already in this book</b> with that person as the character, and stars them in every new illustration too. Fictional characters only — inspired by your photo, never a real identifiable public figure.
+            </p>
+
+            {cast.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {cast.map(c => (
+                  <div key={c.id} className="rounded-lg border border-border bg-background p-2 space-y-1.5">
+                    <div className="relative aspect-square rounded-md overflow-hidden bg-muted">
+                      <SignedImage src={c.url} alt={c.name} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeCast(c.id)}
+                        className="absolute top-1 right-1 p-1 rounded-md bg-background/80 border border-border"
+                        aria-label="Remove cast photo"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <input
+                      value={c.name}
+                      onChange={e => updateCast(c.id, { name: e.target.value })}
+                      placeholder="Character name"
+                      className="w-full bg-card border border-border rounded px-2 py-1 text-[11px] text-foreground"
+                    />
+                    <input
+                      value={c.role || ""}
+                      onChange={e => updateCast(c.id, { role: e.target.value })}
+                      placeholder="Role (hero, villain…)"
+                      className="w-full bg-card border border-border rounded px-2 py-1 text-[11px] text-foreground"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => recastAllImages(c.url)}
+                      disabled={!!recastBusy || !!imgBusy}
+                      className="w-full py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-500 text-[10px] font-semibold disabled:opacity-50"
+                    >
+                      Recast all images with this person
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={castFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => handleCastFile(e.target.files?.[0] || null)}
+            />
+            <label className="flex items-start gap-2 text-[10px] text-muted-foreground">
+              <input type="checkbox" checked={castConsent} onChange={e => setCastConsent(e.target.checked)} className="mt-0.5" />
+              <span>I confirm I have the right to use this photo, and understand the characters are fictional.</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => castFileRef.current?.click()}
+                disabled={!castConsent || !!recastBusy || cast.length >= 6}
+                className="py-2 rounded-lg bg-gradient-to-r from-amber-500 to-primary text-primary-foreground font-bold text-xs disabled:opacity-50"
+              >
+                {recastBusy ? `Recasting ${recastBusy.done}/${recastBusy.total}…` : "＋ Upload a photo"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setPickerTarget("cast"); setPickerOpen(true); }}
+                disabled={!castConsent || !!recastBusy || cast.length >= 6}
+                className="py-2 rounded-lg border border-border bg-background text-foreground font-semibold text-xs disabled:opacity-50"
+              >
+                Pick from Library
+              </button>
+            </div>
+            {recastBusy && (
+              <p className="text-[10px] text-amber-500 flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" /> Re-rendering image {recastBusy.done + 1} of {recastBusy.total} with your uploaded person…
+              </p>
+            )}
+          </div>
+
+
 
           {/* Front + Back Cover Illustrations */}
           <div className="grid grid-cols-2 gap-2">
