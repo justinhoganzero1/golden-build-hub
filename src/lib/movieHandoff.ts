@@ -27,7 +27,7 @@ interface StoryLike {
   premise?: string;
   coverImage?: string;
   backImage?: string;
-  chapters?: Array<{ title?: string; content?: string; image?: string; imageUrl?: string }>;
+  chapters?: Array<{ title?: string; content?: string; images?: string[] }>;
 }
 
 /** Build a Movie Studio brief from a Story Writer document. */
@@ -42,9 +42,10 @@ export const buildBriefFromStory = (story: StoryLike): MovieHandoffBrief => {
 
   const frames = [
     story.coverImage,
-    ...chapters.map(c => c.image || c.imageUrl),
+    ...chapters.flatMap(c => c.images || []),
     story.backImage,
   ].filter((u): u is string => typeof u === "string" && u.length > 0);
+
 
   return {
     script,
