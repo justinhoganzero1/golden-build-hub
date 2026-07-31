@@ -919,14 +919,7 @@ Write the full chapter now (5000+ words):`;
     const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
     try {
       const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
-      const payload: any = {
-        user_id: user.id,
-        media_type: "story",
-        title: story.title || "Untitled Story",
-        url: publishedUrl,
-        source_page: "story-writer",
-        is_public: true,
-        metadata: {
+      const metadata = {
           slug,
           genre: story.genre,
           premise: story.premise,
@@ -935,13 +928,28 @@ Write the full chapter now (5000+ words):`;
           published: true,
           publishedUrl,
           authorName: user.email?.split("@")[0],
-        },
       };
       if (savingId) {
-        await supabase.from("user_media").update(payload).eq("id", savingId);
+        const { error } = await supabase.from("user_media").update({
+          media_type: "document",
+          title: story.title || "Untitled Story",
+          url: publishedUrl,
+          source_page: "story-writer",
+          is_public: true,
+          metadata,
+        } as any).eq("id", savingId);
+        if (error) throw error;
       } else {
-        const { data } = await supabase.from("user_media").insert([payload]).select("id").single();
-        if (data) setSavingId(data.id);
+        const id = await saveToLibrary({
+          media_type: "document",
+          title: story.title || "Untitled Story",
+          url: publishedUrl,
+          source_page: "story-writer",
+          is_public: true,
+          metadata,
+        });
+        if (!id) throw new Error("Story save was queued for retry");
+        setSavingId(id);
       }
       setStory(s => ({ ...s, published: true, publishedUrl }));
       toast.success("Story published — share it anywhere!", { description: publishedUrl });

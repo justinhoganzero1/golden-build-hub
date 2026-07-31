@@ -2,6 +2,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { saveToLibrary } from "@/lib/saveToLibrary";
 
 const URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 
@@ -47,6 +48,15 @@ const StandaloneTutor = () => {
             if (c) { acc += c; setAnswer(acc); }
           } catch { buf = line + "\n" + buf; break; }
         }
+      }
+      if (acc.trim()) {
+        await saveToLibrary({
+          media_type: "text",
+          title: `AI Tutor — ${text.slice(0, 70)}`,
+          url: acc,
+          source_page: "ai-tutor",
+          metadata: { kind: "lesson", question: text },
+        });
       }
     } catch {
       setAnswer("Connection issue — please try again.");
