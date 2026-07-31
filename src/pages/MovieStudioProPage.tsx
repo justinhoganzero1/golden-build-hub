@@ -44,7 +44,15 @@ const MovieStudioProPage = () => {
     if (authLoading) return;
     if (!user) { navigate("/sign-in?redirect=/movie-studio-pro"); return; }
     refreshBalance();
+    // Arriving from Story Writer / Library handoff — open the studio straight away
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("fromStory") && sessionStorage.getItem("oracle_movie_brief")) {
+        setStudioOpen(true);
+      }
+    } catch { /* ignore */ }
   }, [user, authLoading]);
+
 
   const refreshBalance = async () => {
     if (!user) return;
