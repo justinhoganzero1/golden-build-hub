@@ -530,6 +530,69 @@ const StoryWriterPage = () => {
 
   };
 
+  // === Regenerate the ENTIRE story (guided wizard: 50 questions + triple warnings) ===
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
+
+  const totalImageCount = () =>
+    (story.coverImage ? 1 : 0) +
+    (story.backImage ? 1 : 0) +
+    story.chapters.reduce((n, c) => n + (c.images?.length || 0), 0);
+
+  const regenerateEntireStory = async (plan: RegenPlan) => {
+    if (regenBusy) return;
+    setRegenBusy(true);
+    const changeBrief = [
+      plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
+      plan.notes ? `EXTRA INSTRUCTIONS FROM THE AUTHOR:\n${plan.notes}` : "",
+    ].filter(Boolean).join("\n\n");
+
+    try {
+      toast.info(`Rewriting all ${story.chapters.length} chapters — this takes a while. Keep this tab open.`);
+      const rewritten: string[] = [];
+      for (let i = 0; i < story.chapters.length; i++) {
+        const ch = story.chapters[i];
+        const target = targetWordsFor(i);
+        const prevContext = rewritten
+          .map((t, j) => `${story.chapters[j].title}:\n${t.slice(0, 800)}`)
+          .join("\n\n");
+        toast.info(`Rewriting ${ch.title || `Chapter ${i + 1}`} (${i + 1}/${story.chapters.length})…`, { id: "regen-progress" });
+        const text = await generateLongChapter(
+          ch.title || `Chapter ${i + 1}`,
+          `${changeBrief}\n\nORIGINAL CHAPTER (rewrite it, applying the changes above):\n${(ch.content || "").slice(0, 12000)}`,
+          prevContext,
+          target,
+          (w) => toast.info(`Chapter ${i + 1}: ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "regen-progress" }),
+        );
+        rewritten[i] = text;
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: text, ...(plan.regenerateImages ? { images: [] } : {}) };
+          return { ...s, chapters: next };
+        });
+      }
+
+      if (plan.regenerateImages) {
+        setStory(s => ({ ...s, coverImage: undefined, backImage: undefined }));
+        toast.info("Now regenerating all artwork…", { id: "regen-progress" });
+        await generateStoryImage("cover");
+        await generateStoryImage("back");
+        for (let i = 0; i < story.chapters.length; i++) {
+          await illustrateChapterSet(i);
+        }
+      }
+
+      toast.success("Your entire story has been regenerated.", { id: "regen-progress" });
+      setRegenOpen(false);
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Rewrite failed: " + (e?.message || "unknown"));
+    } finally {
+      setRegenBusy(false);
+    }
+  };
+
+
+
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
     setStory((s) => {
       const next = [...s.chapters];
