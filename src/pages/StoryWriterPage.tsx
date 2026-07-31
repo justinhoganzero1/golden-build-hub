@@ -1174,9 +1174,14 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         const m = story.coverImage.match(/^data:(image\/\w+);base64,(.+)$/);
         if (m) {
           const ext = m[1].split("/")[1].replace("jpeg", "jpg");
-          const bin = atob(m[2]);
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          // Privacy-only metadata hygiene: re-encode the cover so EXIF/GPS/device
+          // identifiers are dropped. Provenance stays in PROVENANCE.txt.
+          let bytes = await stripImageMetadata(story.coverImage, m[1] === "image/jpeg" ? "image/jpeg" : "image/png");
+          if (!bytes) {
+            const bin = atob(m[2]);
+            bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          }
           oebps.file(`cover.${ext}`, bytes);
           oebps.file("cover.xhtml",
             `<?xml version="1.0" encoding="UTF-8"?>
