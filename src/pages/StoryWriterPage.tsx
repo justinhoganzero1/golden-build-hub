@@ -22,6 +22,8 @@ import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
+import { persistImageToStorage } from "@/lib/persistImage";
+
 
 
 interface StoryChapter {
@@ -151,7 +153,28 @@ const StoryWriterPage = () => {
           setSavingId(doc.id);
           setActiveChapter(0);
           toast.success("Story opened");
+
+          // The document loader strips heavy embedded artwork so the story
+          // opens instantly. Pull the pictures in straight after so nothing
+          // looks like it vanished.
+          try {
+            const { data: art } = await supabase.rpc("get_story_writer_images" as any, { _story_id: id } as any);
+            const a = art as any;
+            if (alive && a) {
+              skipAutosaveForLoadedStoryRef.current = id;
+              setStory(s => ({
+                ...s,
+                coverImage: s.coverImage || a.coverImage || undefined,
+                backImage: s.backImage || a.backImage || undefined,
+                chapters: s.chapters.map((c, i) => {
+                  const imgs = Array.isArray(a.chapterImages?.[i]) ? a.chapterImages[i] : [];
+                  return (c.images && c.images.length) || !imgs.length ? c : { ...c, images: imgs };
+                }),
+              }));
+            }
+          } catch { /* artwork is best-effort */ }
         }
+
       } catch (e: any) {
         if (alive) toast.error(e?.message || "Story could not be opened");
       } finally {
@@ -256,8 +279,11 @@ const StoryWriterPage = () => {
   // Pull artwork from the in-app Library or the user's device
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | null>(null);
-  const applyPickedImage = (url: string) => {
+  const applyPickedImage = async (picked: string) => {
+    // Anything pasted in as raw base64 gets parked in storage so it survives a refresh.
+    const url = await persistImageToStorage(picked);
     if (pickerTarget === "cover") setStory(s => ({ ...s, coverImage: url }));
+
     else if (pickerTarget === "back") setStory(s => ({ ...s, backImage: url }));
     else if (pickerTarget === "chapter") {
       setStory(s => {
@@ -297,16 +323,19 @@ const StoryWriterPage = () => {
 
     const REALISM = "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO cartoon, NO CGI plastic look, NO text, NO typography, NO watermarks.";
     let basePrompt = "";
+    // One shared "art bible" so the front cover, back cover and every chapter
+    // illustration come out of the same visual world instead of clashing.
+    const ART_BIBLE = `ART DIRECTION (must be identical across the whole book): ${style.suffix}; consistent colour palette, consistent lighting setup, consistent lens and film grade, consistent character likeness, wardrobe and age for every recurring person; same real-world locations and props. Full-bleed edge-to-edge composition, nothing important near the edges, no borders, no mock-up of a printed book, no book object, no hands holding a book, no shelves. Print-ready front-facing artwork only.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER photograph for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Magazine-cover framing. ${REALISM}`;
+      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork for "${story.title}". ${story.premise}. Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. ${ART_BIBLE} ${REALISM}`;
     } else if (slot === "back") {
-      basePrompt = `${story.genre} book BACK COVER photograph for "${story.title}". ${story.premise}. Atmospheric, evocative real-world scene hinting at the story's world and stakes. ${REALISM}`;
+      basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
     } else if (ch) {
       const snippet = (ch.content || "").slice(0, 1200);
-      basePrompt = `Photorealistic scene from "${ch.title}" in the ${story.genre} novel "${story.title}". Depict: ${snippet || story.premise}. ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
     }
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
-    basePrompt += ` Style reference: ${style.suffix}.`;
+
 
     setImgBusy(slotKey);
     try {
@@ -323,9 +352,13 @@ const StoryWriterPage = () => {
         throw new Error(err.error || "Image generation failed");
       }
       const data = await resp.json();
-      const url: string | undefined =
+      const raw: string | undefined =
         data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
-      if (!url) throw new Error("No image returned");
+      if (!raw) throw new Error("No image returned");
+      // Park the artwork in storage so the saved story stays small and the
+      // picture never disappears on refresh.
+      const url = await persistImageToStorage(raw);
+
 
       setStory((s) => {
         if (slot === "cover") return { ...s, coverImage: url };
@@ -430,6 +463,63 @@ const StoryWriterPage = () => {
       setAiBusy(false);
     }
   };
+
+  // === Spell check / proofread ===
+  const [proofBusy, setProofBusy] = useState<"chapter" | "book" | null>(null);
+
+  const proofreadText = async (text: string): Promise<string> => {
+    const cleaned = await callAI(
+      `You are a professional book proofreader preparing a manuscript for publication.
+Correct spelling, grammar, punctuation, capitalisation and obvious typos.
+Keep the author's voice, wording, dialogue, slang and formatting EXACTLY as written — do not rewrite, shorten, expand, censor or restructure anything.
+Return ONLY the corrected text, with no commentary, no preamble and no markdown fences.`,
+      text,
+      { maxTokens: 8000 },
+    );
+    return (cleaned || "").replace(/^```[a-z]*\n?|```$/g, "").trim();
+  };
+
+  const spellCheckChapter = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content?.trim()) { toast.error("This chapter is empty."); return; }
+    setProofBusy("chapter");
+    try {
+      const fixed = await proofreadText(ch.content);
+      if (!fixed) throw new Error("Proofreader returned nothing");
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...next[activeChapter], content: fixed };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter proofread and corrected");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Spell check failed");
+    } finally {
+      setProofBusy(null);
+    }
+  };
+
+  const spellCheckBook = async () => {
+    const filled = story.chapters.filter(c => (c.content || "").trim());
+    if (!filled.length) { toast.error("Write a chapter first."); return; }
+    setProofBusy("book");
+    try {
+      const corrected: string[] = [];
+      for (let i = 0; i < story.chapters.length; i++) {
+        const c = story.chapters[i];
+        corrected[i] = (c.content || "").trim() ? await proofreadText(c.content) : c.content;
+        toast.info(`Proofread ${i + 1} of ${story.chapters.length}…`);
+      }
+      setStory(s => ({ ...s, chapters: s.chapters.map((c, i) => ({ ...c, content: corrected[i] || c.content })) }));
+      toast.success("Whole book proofread — ready for publishing");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Spell check failed");
+    } finally {
+      setProofBusy(null);
+    }
+  };
+
+
 
   // Long-chapter generator: targets 5000+ words, with multi-pass continuation if model returns short.
   const MIN_WORDS = 5000;
@@ -1498,7 +1588,29 @@ Write the full chapter now (5000+ words):`;
           EPUB works on every major store. Audiobook ZIP includes 44.1 kHz 128 kbps MP3s, opening &amp; closing credits, retail sample and ACX metadata — upload directly to Audible/ACX, Findaway Voices, Google Play Books, Kobo, Spotify or Author's Republic.
         </p>
 
+        {/* Spell check / proofread */}
+        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={spellCheckChapter}
+            disabled={!!proofBusy || aiBusy}
+            className="py-3 rounded-xl bg-card border border-primary/40 text-primary text-xs font-bold disabled:opacity-50"
+          >
+            {proofBusy === "chapter" ? "Proofreading…" : "✔ Spell check this chapter"}
+          </button>
+          <button
+            onClick={spellCheckBook}
+            disabled={!!proofBusy || aiBusy}
+            className="py-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold disabled:opacity-50"
+          >
+            {proofBusy === "book" ? "Proofreading…" : "✔ Spell check whole book"}
+          </button>
+        </div>
+        <p className="px-4 pt-1 text-[10px] text-muted-foreground">
+          Fixes spelling, grammar and punctuation only — your wording, voice and dialogue stay exactly as you wrote them.
+        </p>
+
         {/* Story → Movie Maker handoff */}
+
         <div className="px-4 pt-4 space-y-2">
           <button
             onClick={() => sendStoryToMovieMaker(story, navigate)}
