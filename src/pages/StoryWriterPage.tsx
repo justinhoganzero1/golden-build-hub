@@ -290,7 +290,7 @@ const StoryWriterPage = () => {
       setStory(s => {
         const next = [...s.chapters];
         const ch = next[activeChapter];
-        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 2) };
+        if (ch) next[activeChapter] = { ...ch, images: [...(ch.images || []), url].slice(0, 6) };
         return { ...s, chapters: next };
       });
     }
@@ -310,13 +310,33 @@ const StoryWriterPage = () => {
     { id: "watercolour",  label: "Watercolour",  suffix: "soft watercolour illustration, textured paper, gentle washes" },
   ];
 
+  /** Minimum illustrations produced whenever a chapter is illustrated. */
+  const MIN_IMAGES_PER_CHAPTER = 4;
+
+  /** Split a chapter into N narrative beats so illustrations land in the right places. */
+  const chapterBeats = (text: string, count: number): string[] => {
+    const paras = (text || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    if (paras.length === 0) return Array.from({ length: count }, () => "");
+    const per = Math.ceil(paras.length / count);
+    const beats: string[] = [];
+    for (let i = 0; i < count; i++) {
+      beats.push(paras.slice(i * per, (i + 1) * per).join("\n\n").slice(0, 1200));
+    }
+    // Never hand back an empty beat — reuse the nearest non-empty one.
+    return beats.map((b, i) => b || beats.slice(0, i).reverse().find(Boolean) || paras[0].slice(0, 1200));
+  };
+
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
-  ): Promise<void> => {
+    beat?: { index: number; total: number; text: string },
+  ): Promise<boolean> => {
+
     const slotKey = typeof slot === "string" ? slot : `chapter-${slot.index}`;
-    if (imgBusy) return;
-    if (!requireMeta()) return;
+    if (imgBusy) return false;
+
+    if (!requireMeta()) return false;
+
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
 
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
@@ -332,9 +352,13 @@ const StoryWriterPage = () => {
     } else if (slot === "back") {
       basePrompt = `Matching BACK COVER artwork for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade. ${story.premise}. Quieter, atmospheric companion scene with generous clean space in the lower two-thirds for blurb text. Vertical 2:3 portrait framing. ${ART_BIBLE} ${REALISM}`;
     } else if (ch) {
-      const snippet = (ch.content || "").slice(0, 1200);
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
+      const snippet = beat?.text || (ch.content || "").slice(0, 1200);
+      const beatLine = beat
+        ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat), a distinctly different scene from the other illustrations in this chapter. `
+        : "";
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Depict: ${snippet || story.premise}. ${ART_BIBLE} ${REALISM}`;
     }
+
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
 
 
@@ -381,47 +405,78 @@ const StoryWriterPage = () => {
         const label =
           slot === "cover" ? `${story.title} — Cover`
           : slot === "back" ? `${story.title} — Back Cover`
-          : `${story.title} — ${ch?.title || "Chapter"} illustration`;
+          : `${story.title} — ${ch?.title || "Chapter"} illustration${beat ? ` ${beat.index + 1}/${beat.total}` : ""}`;
         await saveToLibrary({
           media_type: "image",
           title: label,
           url,
           source_page: "story-writer",
-          metadata: { story_id: savingId, slot: slotKey, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
+          metadata: { story_id: savingId, slot: slotKey, beat: beat ? beat.index + 1 : undefined, beat_total: beat?.total, story_title: story.title, style: imgStyleId, user_prompt: (customPrompt?.trim() || imgCustomPrompt.trim()) || undefined, prompt: basePrompt },
         });
       } catch { /* non-fatal */ }
-      toast.success("Illustration ready!");
+      if (!beat) toast.success("Illustration ready!");
+      return true;
     } catch (e: any) {
       toast.error(e?.message || "Could not generate image");
+      return false;
     } finally {
       setImgBusy(null);
     }
   };
 
-  // Re-illustrate one chapter (adds a new image, replacing oldest if at cap).
-  const reIllustrateChapter = async (idx: number) => {
-    if (imgBusy) return;
-    await generateStoryImage({ kind: "chapter", index: idx });
+  /**
+   * Illustrate a chapter properly: always produce at least MIN_IMAGES_PER_CHAPTER
+   * images, one per narrative beat, in reading order so they sit in the right
+   * places in the chapter (and hand off cleanly as scenes to Movie Maker).
+   */
+  const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
+  const illustrateChapterSet = async (
+    idx: number,
+    count = MIN_IMAGES_PER_CHAPTER,
+  ): Promise<number> => {
+    const ch = story.chapters[idx];
+    if (!ch) return 0;
+    const beats = chapterBeats(ch.content, count);
+    let ok = 0;
+    for (let b = 0; b < count; b++) {
+      const done = await generateStoryImage(
+        { kind: "chapter", index: idx },
+        undefined,
+        { index: b, total: count, text: beats[b] },
+      );
+      if (done) ok++;
+    }
+    return ok;
   };
 
-  // Bulk: re-illustrate every chapter, sequentially.
+  // Illustrate one chapter — minimum 4 images placed across the chapter's beats.
+  const reIllustrateChapter = async (idx: number) => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    setChapterSetBusy(idx);
+    try {
+      const ok = await illustrateChapterSet(idx);
+      if (ok > 0) toast.success(`Chapter illustrated — ${ok} image${ok === 1 ? "" : "s"} added.`);
+    } finally {
+      setChapterSetBusy(null);
+    }
+  };
+
+  // Bulk: illustrate every chapter (min 4 images each), sequentially.
   const [bulkBusy, setBulkBusy] = useState(false);
   const reIllustrateAllChapters = async () => {
-    if (bulkBusy || imgBusy) return;
-    if (!confirm(`Generate a new illustration for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
+    if (bulkBusy || imgBusy || chapterSetBusy !== null) return;
+    if (!confirm(`Generate at least ${MIN_IMAGES_PER_CHAPTER} illustrations for all ${story.chapters.length} chapters? This may take several minutes.`)) return;
     setBulkBusy(true);
-    let ok = 0, fail = 0;
+    let ok = 0;
     try {
       for (let i = 0; i < story.chapters.length; i++) {
-        try {
-          await generateStoryImage({ kind: "chapter", index: i });
-          ok++;
-        } catch { fail++; }
+        ok += await illustrateChapterSet(i);
       }
-      toast.success(`Bulk illustration done — ${ok} ok${fail ? `, ${fail} failed` : ""}`);
+      toast.success(`Bulk illustration done — ${ok} images added across ${story.chapters.length} chapters.`);
     } finally {
       setBulkBusy(false);
     }
+
   };
 
   const removeChapterImage = (chapterIdx: number, imageIdx: number) => {
@@ -1299,7 +1354,7 @@ Write the full chapter now (5000+ words):`;
               </p>
               <button
                 onClick={reIllustrateAllChapters}
-                disabled={bulkBusy || !!imgBusy}
+                disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
                 className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
               >
                 {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
@@ -1337,12 +1392,13 @@ Write the full chapter now (5000+ words):`;
                     </button>
                     <button
                       onClick={() => reIllustrateChapter(i)}
-                      disabled={!!imgBusy || bulkBusy}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
                       className="shrink-0 p-1.5 rounded text-primary hover:bg-primary/10 disabled:opacity-40"
-                      aria-label="Re-illustrate this chapter"
-                      title="Add a new illustration"
+                      aria-label="Illustrate this chapter"
+                      title={`Illustrate this chapter (${MIN_IMAGES_PER_CHAPTER} images)`}
                     >
-                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {busy || chapterSetBusy === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+
                     </button>
                   </div>
                 );
@@ -1402,14 +1458,25 @@ Write the full chapter now (5000+ words):`;
                   <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/6)
                   </p>
-                  <button
-                    onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
-                    disabled={!!imgBusy}
-                    className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
-                  >
-                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {imgs.length === 0 ? "Illustrate Chapter" : imgs.length >= 6 ? "Replace Oldest" : "Add Illustration"}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => reIllustrateChapter(activeChapter)}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                    >
+                      {isBusy || chapterSetBusy === activeChapter ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Illustrate Chapter ({MIN_IMAGES_PER_CHAPTER} images)
+                    </button>
+                    <button
+                      onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full border border-border text-foreground font-semibold disabled:opacity-60"
+                      title="Add a single extra illustration"
+                    >
+                      + 1
+                    </button>
+                  </div>
+
                 </div>
                 {imgs.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1428,7 +1495,7 @@ Write the full chapter now (5000+ words):`;
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Auto-illustrated from this chapter's content. Up to 6 per chapter — tap to add a new one for every scene.
+                    Every chapter gets at least 4 illustrations, spread across its opening, middle and closing beats — so they land in the right places and hand off as scenes to Movie Maker. Up to 6 per chapter.
                   </p>
                 )}
               </div>
