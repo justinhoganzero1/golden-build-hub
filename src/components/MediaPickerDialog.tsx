@@ -128,22 +128,17 @@ const MediaPickerDialog = ({ open, onOpenChange, onSelect, filterType = null, ti
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 p-1">
-              {filtered.map((item: any) => (
-                <button key={item.id} onClick={() => { onSelect(item.url, item.title); onOpenChange(false); }}
-                  className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary transition-colors bg-card">
-                  {item.media_type === "image" ? (
-                    <img src={item.url} alt={item.title || "Media"} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-                      {getIcon(item.media_type)}
-                      <span className="text-[9px] text-muted-foreground truncate w-full text-center">{item.title || item.media_type}</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors" />
-                </button>
+              {filtered.slice(0, 120).map((item: any) => (
+                <MediaTile
+                  key={item.id}
+                  item={item}
+                  icon={getIcon(item.media_type)}
+                  onPick={(url, pickedTitle) => { onSelect(url, pickedTitle); onOpenChange(false); }}
+                />
               ))}
             </div>
           )}
+
         </div>
       </DialogContent>
     </Dialog>
