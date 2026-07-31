@@ -73,6 +73,7 @@ const MediaLibraryPage = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<any>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
   const [savingShare, setSavingShare] = useState(false);
@@ -104,6 +105,24 @@ const MediaLibraryPage = () => {
       toast.error(e?.message || "Could not update sharing settings.");
     } finally {
       setSavingShare(false);
+    }
+  };
+
+  const openItem = async (item: any) => {
+    if (openingId) return;
+    setOpeningId(item.id);
+    try {
+      const { data, error } = await supabase
+        .from("user_media")
+        .select("*")
+        .eq("id", item.id)
+        .single();
+      if (error) throw error;
+      setSelected(data);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not open this creation.");
+    } finally {
+      setOpeningId(null);
     }
   };
 
@@ -338,7 +357,7 @@ const MediaLibraryPage = () => {
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {recentItems.map((m: any) => (
-              <button key={m.id} onClick={() => setSelected(m)}
+              <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                 className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
                 {isImageLike(m) ? (
                   <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
@@ -393,7 +412,7 @@ const MediaLibraryPage = () => {
               const isText = m.media_type === "text" || m.media_type === "story" || m.media_type === "document";
               const isApp = m.media_type === "app";
               return (
-              <button key={m.id} onClick={() => setSelected(m)}
+              <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                 className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
                 {isImageLike(m) ? (
                   <>
@@ -467,7 +486,7 @@ const MediaLibraryPage = () => {
               const colKey = getCollectionKey(m.source_page, m.media_type, m.metadata);
               const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
               return (
-                <button key={m.id} onClick={() => setSelected(m)}
+                <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                   className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
                   {isImageLike(m) ? (
                     <img src={m.url} alt={m.title} className="w-14 h-14 rounded-xl object-cover border border-border" />
