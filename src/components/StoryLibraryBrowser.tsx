@@ -130,7 +130,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
         <div className="flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="text-xs font-semibold text-foreground">My Story Library</span>
-          <span className="text-[10px] text-muted-foreground">{total} saved</span>
+          <span className="text-[10px] text-muted-foreground">{sortedItems.length}{hasMore ? "+" : ""} saved</span>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
       </button>
@@ -231,7 +231,7 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
             </div>
           )}
 
-          {totalPages > 1 && (
+          {(page > 0 || hasMore) && (
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
@@ -241,11 +241,11 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
                 ← Prev
               </button>
               <span className="text-[10px] text-muted-foreground">
-                Page {page + 1} of {totalPages}
+                Page {page + 1}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1 || isFetching}
+                onClick={() => setPage(p => p + 1)}
+                disabled={!hasMore || isFetching}
                 className="px-2 py-1 rounded text-[11px] bg-card border border-border text-foreground disabled:opacity-40"
               >
                 Next →
