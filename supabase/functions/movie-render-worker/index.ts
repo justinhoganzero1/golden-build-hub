@@ -112,11 +112,10 @@ async function runJob(job: any): Promise<any> {
   }
 }
 
-// ============= STILL IMAGE (slideshow mode) =============
-// User decision (2026-04-19): no real video generation. We just generate one
-// cinematic still per scene with Gemini, store it as `video_1080p_url`, and
-// let Shotstack stitch them together with Ken Burns + AI narration in the
-// stitch step. Cheap, fast, reliable.
+// ============= REAL MOTION VIDEO =============
+// Produce an actual moving clip. Runway is preferred when configured, then
+// Replicate, then Lovable Video/Veo. A still is used only as an explicit final
+// fallback so a provider outage cannot destroy the whole project.
 async function renderVideo(job: any) {
   const { data: scene } = await supabase.from("movie_scenes")
     .select("*").eq("id", job.scene_id).maybeSingle();
@@ -126,30 +125,57 @@ async function renderVideo(job: any) {
     status: "rendering_video", started_at: new Date().toISOString(),
   }).eq("id", scene.id);
 
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing — cannot generate scene still");
-
   const prompt = scene.visual_prompt ?? scene.script_text ?? "Cinematic establishing shot";
-  const dataUrl = await generateSceneKeyframe(prompt);
-  if (!dataUrl) throw new Error("Gemini failed to generate scene still");
+  const durationSec = Math.min(10, Math.max(5, Number(scene.duration_seconds ?? 5)));
+  let generatedUrl = "";
+  let provider = "";
+  let providerCost = 0;
 
-  // Convert data URL → bytes and upload as PNG/JPEG to our bucket.
-  const m = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-  if (!m) throw new Error("Invalid image data url from Gemini");
-  const mime = m[1];
-  const ext = mime.includes("png") ? "png" : "jpg";
-  const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
-  const path = `${scene.user_id}/${scene.project_id}/${scene.id}-still.${ext}`;
-  const up = await supabase.storage.from("movies").upload(path, bytes, {
-    contentType: mime, upsert: true,
-  });
-  if (up.error) throw new Error(`Still upload failed: ${up.error.message}`);
-  const { data: pub } = supabase.storage.from("movies").getPublicUrl(path);
-  const ownedUrl = pub.publicUrl;
+  if (RUNWAY_API_KEY) {
+    generatedUrl = await runwayGenerateAndPoll(prompt, durationSec);
+    if (generatedUrl) {
+      provider = "runway";
+      providerCost = PROVIDER_RATES.runway_image_to_video_per_second * durationSec;
+    }
+  }
+  if (!generatedUrl && REPLICATE_API_TOKEN) {
+    generatedUrl = await replicateVideoFallback(prompt);
+    if (generatedUrl) {
+      provider = "replicate";
+      providerCost = 25;
+    }
+  }
+  if (!generatedUrl && LOVABLE_API_KEY) {
+    generatedUrl = await lovableVideoFallback(prompt, durationSec);
+    if (generatedUrl) {
+      provider = "lovable-video";
+      providerCost = PROVIDER_RATES.lovable_ai_gemini_pro_per_call;
+    }
+  }
 
-  // Tiny markup — image gen is essentially free for us
-  const cost = markupCents(2);
+  let ownedUrl = "";
+  if (generatedUrl) {
+    ownedUrl = await mirrorToBucket(generatedUrl, `${scene.user_id}/${scene.project_id}/${scene.id}-video.mp4`, "video/mp4");
+  } else {
+    if (!LOVABLE_API_KEY) throw new Error("No video provider is configured");
+    const dataUrl = await generateSceneKeyframe(prompt);
+    const m = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!m) throw new Error("All video providers failed and no fallback frame was returned");
+    const mime = m[1];
+    const ext = mime.includes("png") ? "png" : "jpg";
+    const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+    const path = `${scene.user_id}/${scene.project_id}/${scene.id}-fallback.${ext}`;
+    const up = await supabase.storage.from("movies").upload(path, bytes, { contentType: mime, upsert: true });
+    if (up.error) throw new Error(`Fallback upload failed: ${up.error.message}`);
+    const { data: pub } = supabase.storage.from("movies").getPublicUrl(path);
+    ownedUrl = pub.publicUrl;
+    provider = "still-fallback";
+    providerCost = 2;
+  }
 
-  // Queue audio next; skip upscale jobs (slideshow doesn't need them).
+  const cost = markupCents(providerCost);
+
+  // Queue narration after the clip is safely mirrored into owned storage.
   await supabase.from("movie_render_jobs").insert([{
     project_id: job.project_id, scene_id: scene.id, user_id: scene.user_id,
     job_type: "audio", priority: job.priority ?? 100,
@@ -161,7 +187,7 @@ async function renderVideo(job: any) {
   }).eq("id", scene.id);
 
   await bumpSpend(job.project_id, cost.total_cents);
-  return { stillUrl: ownedUrl, mode: "slideshow", cost_cents: cost.total_cents };
+  return { videoUrl: ownedUrl, mode: provider === "still-fallback" ? "still-fallback" : "motion-video", provider, cost_cents: cost.total_cents };
 }
 
 async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promise<string> {

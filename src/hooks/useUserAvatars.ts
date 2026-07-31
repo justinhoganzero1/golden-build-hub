@@ -123,16 +123,25 @@ export function useUserMedia() {
     queryKey: ["user-media", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      // `user_media` is the single source of truth for My Library. Dedicated
-      // creation tables auto-copy finished assets into this table via database
-      // triggers, so library controls always update/delete a real library row.
-      const { data, error } = await supabase
-        .from("user_media")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      // Never fetch embedded data URLs or full metadata for the grid. This
+      // library currently contains over 1 GB of generated media; selecting `*`
+      // makes the entire library time out. Page through lightweight rows and
+      // fetch the full record only when an item is opened.
+      const pageSize = 500;
+      const rows: any[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("user_media")
+          .select("id,user_id,media_type,title,thumbnail_url,source_page,is_public,shop_enabled,shop_price_cents,created_at,updated_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const page = data || [];
+        rows.push(...page);
+        if (page.length < pageSize) break;
+      }
+      return rows;
     },
     enabled: !!user,
   });

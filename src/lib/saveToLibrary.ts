@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
  * Anything any app/user creates is funnelled through here so it lands in
  * `user_media` and shows up in My Library automatically.
  *
- * RESILIENCY: tries up to 50 times across three strategies (RPC →
- * direct insert → edge function) with exponential backoff before giving up.
+ * RESILIENCY: uses the authenticated database RPC first, then one direct
+ * insert and one edge fallback before queueing. Never hammer a failed backend
+ * for several minutes from the browser.
  * Failed attempts are queued in localStorage and retried in the background.
  */
 export type LibraryMediaType = "text" | "image" | "video" | "audio" | "app" | "document" | "gif";
@@ -24,7 +25,7 @@ export interface SaveToLibraryInput {
   shop_price_cents?: number;
 }
 
-const MAX_ATTEMPTS = 50;
+const MAX_ATTEMPTS = 3;
 const QUEUE_KEY = "oracle-lunar-library-save-queue-v1";
 
 function loadQueue(): SaveToLibraryInput[] {
@@ -112,7 +113,8 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
     let savedId: string | null = null;
     let lastErr: any = null;
 
-    // Rotate strategies across up to MAX_ATTEMPTS retries.
+    // Try every independent persistence boundary once. Repeated retries of the
+    // same permission/schema failure only overload the backend and block UI.
     const strategies: Array<"rpc" | "insert" | "edge"> = ["rpc", "insert", "edge"];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const strategy = strategies[(attempt - 1) % strategies.length];
@@ -127,12 +129,11 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
           return null;
         }
       }
-      // Exponential backoff capped at 4s.
-      await sleep(Math.min(150 * Math.pow(1.4, attempt), 4000));
+      await sleep(250 * attempt);
     }
 
     if (!savedId) {
-      console.warn("[saveToLibrary] all 50 attempts failed — queued for background retry", lastErr?.message);
+      console.warn("[saveToLibrary] all persistence paths failed — queued for background retry", lastErr?.message);
       enqueue(input);
       return null;
     }

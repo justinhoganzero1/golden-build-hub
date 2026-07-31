@@ -3363,6 +3363,10 @@ export type Database = {
         }
         Returns: string
       }
+      save_story_writer_document: {
+        Args: { _metadata: Json; _story_id: string; _title: string }
+        Returns: string
+      }
       stripe_event_summary: {
         Args: { _hours?: number }
         Returns: {

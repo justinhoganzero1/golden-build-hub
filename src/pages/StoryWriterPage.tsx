@@ -208,30 +208,32 @@ const StoryWriterPage = () => {
           kind: "story_doc",
         };
         if (savingId) {
-          await supabase.from("user_media").update({
-            title: story.title,
-            metadata,
-          } as any).eq("id", savingId);
+          const { error } = await supabase.rpc("save_story_writer_document" as any, {
+            _story_id: savingId,
+            _title: story.title,
+            _metadata: metadata,
+          } as any);
+          if (error) throw error;
         } else {
-          const { data, error } = await supabase
-            .from("user_media")
-            .insert([{
-              user_id: user.id,
-              media_type: "story",
-              title: story.title,
-              url: `oracle-lunar://story/${crypto.randomUUID()}`,
-              source_page: "story-writer",
-              metadata,
-            } as any])
-            .select("id")
-            .single();
-          if (!error && data) setSavingId(data.id);
+          const id = await saveToLibrary({
+            media_type: "document",
+            title: story.title,
+            url: `oracle-lunar://story/${crypto.randomUUID()}`,
+            source_page: "story-writer",
+            metadata: { ...metadata, library_kind: "story" },
+          });
+          if (id) {
+            const { error } = await supabase.from("user_media").update({ media_type: "story" } as any).eq("id", id);
+            if (error) throw error;
+            setSavingId(id);
+          }
         }
         qc.invalidateQueries({ queryKey: ["story-writer-library"] });
         qc.invalidateQueries({ queryKey: ["user-media"] });
         qc.invalidateQueries({ queryKey: ["all-user-media"] });
       } catch (e) {
         console.error("auto-save error", e);
+        toast.error("Story auto-save paused — your draft remains on this device.");
       }
     }, 1200);
     return () => clearTimeout(handle);
