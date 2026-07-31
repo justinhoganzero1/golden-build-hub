@@ -224,8 +224,12 @@ serve(async (req) => {
     const cleanPrompt = /no text|no words|no letters|no watermark/i.test(prompt)
       ? prompt
       : prompt + NO_TEXT_SUFFIX;
-    const userContent: any = inputImage
-      ? [{ type: "text", text: cleanPrompt }, { type: "image_url", image_url: { url: inputImage } }]
+    // Accept one image (inputImage) or several (inputImages) as visual references.
+    const refImages: string[] = Array.isArray(inputImages)
+      ? inputImages.filter((u: unknown) => typeof u === "string" && u).slice(0, 4)
+      : (inputImage ? [inputImage] : []);
+    const userContent: any = refImages.length
+      ? [{ type: "text", text: cleanPrompt }, ...refImages.map((u) => ({ type: "image_url", image_url: { url: u } }))]
       : cleanPrompt;
 
     let lastStatus = 0;
