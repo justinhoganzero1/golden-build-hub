@@ -1935,7 +1935,17 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           title="Pick an image — your Library or your device"
           onSelect={(url) => applyPickedImage(url)}
         />
+
+        <RegenerateStoryWizard
+          open={regenOpen}
+          chapterCount={story.chapters.length}
+          imageCount={totalImageCount()}
+          busy={regenBusy}
+          onCancel={() => { if (!regenBusy) setRegenOpen(false); }}
+          onConfirm={(plan) => { void regenerateEntireStory(plan); }}
+        />
       </div>
+
     </PaywallGate>
   );
 };
