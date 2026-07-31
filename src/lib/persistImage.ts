@@ -16,24 +16,37 @@ export async function persistImageToStorage(
   folder = "stories",
 ): Promise<string> {
   try {
-    if (!dataUrl || !dataUrl.startsWith("data:image/")) return dataUrl;
+    if (!dataUrl) return dataUrl;
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth?.user?.id;
     if (!uid) return dataUrl;
 
+    let mime = "image/png";
+    let blob: Blob;
     const match = dataUrl.match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
-    if (!match) return dataUrl;
-    const [, mime, b64] = match;
+    if (match) {
+      mime = match[1];
+      const bin = atob(match[2]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      blob = new Blob([bytes], { type: mime });
+    } else if (/^https?:\/\//i.test(dataUrl)) {
+      // Model providers can return short-lived remote URLs. Copy the bytes into
+      // our private storage immediately so covers still work after refresh.
+      const response = await fetch(dataUrl);
+      if (!response.ok) throw new Error(`Could not copy generated image (${response.status})`);
+      blob = await response.blob();
+      if (!blob.type.startsWith("image/")) throw new Error("Generated file is not an image");
+      mime = blob.type;
+    } else {
+      return dataUrl;
+    }
     const ext = mime.split("/")[1]?.replace("jpeg", "jpg") || "png";
-
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
     const path = `${uid}/${folder}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage
       .from("photography-assets")
-      .upload(path, new Blob([bytes], { type: mime }), {
+      .upload(path, blob, {
         contentType: mime,
         upsert: true,
       });
