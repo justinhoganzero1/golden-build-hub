@@ -1,7 +1,7 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink } from "lucide-react";
+import { Wrench, Code, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink, RefreshCw, Palette } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import RegenerateAppWizard, { APP_STYLES, type AppRegenPlan } from "@/components/appbuilder/RegenerateAppWizard";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
@@ -54,6 +55,16 @@ const AppBuilderPage = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [publishSell, setPublishSell] = useState<PublishSellState>(defaultPublishSellState);
   const [loadedFromLibrary, setLoadedFromLibrary] = useState(false);
+
+  // App visual style (same family of styles as Story Writer) + regenerate wizard
+  const [appStyleId, setAppStyleId] = useState<string>(() => {
+    try { return localStorage.getItem("oracle-lunar:app-builder-style") || "realistic-4k"; } catch { return "realistic-4k"; }
+  });
+  const [regenOpen, setRegenOpen] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem("oracle-lunar:app-builder-style", appStyleId); } catch { /* ignore */ }
+  }, [appStyleId]);
+  const activeStyle = APP_STYLES.find(s => s.id === appStyleId) || APP_STYLES[0];
 
   // Voice I/O state
   const [voiceOutEnabled, setVoiceOutEnabled] = useState(true);
@@ -266,7 +277,8 @@ const AppBuilderPage = () => {
   }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
-  const sendMessage = async (overridePrompt?: string) => {
+  const sendMessage = async (overridePrompt?: string, styleOverrideId?: string) => {
+    const styleForBuild = APP_STYLES.find(s => s.id === (styleOverrideId || appStyleId)) || APP_STYLES[0];
     const trimmed = (overridePrompt ?? input).trim();
     if ((!trimmed && attachments.length === 0) || isBuilding) return;
     if (trimmed) {
@@ -295,7 +307,7 @@ const AppBuilderPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
         body: JSON.stringify({
-          prompt: trimmed,
+          prompt: `${trimmed}\n\nVISUAL STYLE (apply across the whole app — layout, colour, imagery, typography): ${styleForBuild.label} — ${styleForBuild.suffix}.`,
           images: sentAttachments.filter(a => a.type.startsWith("image/")).map(a => a.dataUrl),
           currentCode: currentCode || undefined,
         }),
@@ -393,6 +405,28 @@ const AppBuilderPage = () => {
       setTimeout(() => setBuildStages([]), 4000);
     }
   };
+
+  // ===== Regenerate entire app (3 warnings + 50 questions or bypass + style) =====
+  const runRegenerate = (plan: AppRegenPlan) => {
+    setRegenOpen(false);
+    setAppStyleId(plan.styleId);
+    const base = previewProject?.description || messages.filter(m => m.role === "user").slice(-1)[0]?.content || "";
+    const prompt = [
+      `REGENERATE THIS ENTIRE APP FROM SCRATCH — ship-ready, nothing left as a TODO.`,
+      base ? `Original brief: ${base}` : "",
+      previewProject?.name ? `App name: ${previewProject.name}` : "",
+      `Visual style to apply everywhere: ${plan.styleLabel}.`,
+      plan.bypassedQuestions
+        ? `The user skipped the questionnaire and is trusting you completely: make every design, feature and copy decision yourself and deliver the best possible version of this app.`
+        : plan.changes.length
+          ? `Changes the user asked for:\n- ${plan.changes.join("\n- ")}`
+          : `No specific changes ticked — rebuild it better while keeping the idea intact.`,
+      plan.notes ? `Extra instructions from the user: ${plan.notes}` : "",
+    ].filter(Boolean).join("\n\n");
+    sendMessage(prompt, plan.styleId);
+  };
+
+
 
   useEffect(() => {
     if (prefillConsumedRef.current) return;
@@ -675,11 +709,53 @@ const AppBuilderPage = () => {
         </div>
       )}
 
+      {/* Regenerate wizard */}
+      <RegenerateAppWizard
+        open={regenOpen}
+        appName={previewProject?.name || "your app"}
+        defaultStyleId={appStyleId}
+        busy={isBuilding}
+        onCancel={() => setRegenOpen(false)}
+        onConfirm={runRegenerate}
+      />
+
       {/* Input */}
       <div className="px-4 py-3 border-t border-border bg-card">
+        {/* App style picker — same style family as Story Writer */}
+        <div className="mb-2 rounded-xl border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+          <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+            <Palette className="w-3.5 h-3.5" /> App style — {activeStyle.label}
+          </p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {APP_STYLES.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setAppStyleId(s.id)}
+                title={s.suffix}
+                className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] border transition-colors ${
+                  s.id === appStyleId
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setRegenOpen(true)}
+            disabled={isBuilding}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-200 text-xs font-bold disabled:opacity-40"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Regenerate ENTIRE app
+          </button>
+        </div>
         <div className="mb-2">
           <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
         </div>
+
         <div className="flex items-end gap-2">
           <input
             ref={fileInputRef}

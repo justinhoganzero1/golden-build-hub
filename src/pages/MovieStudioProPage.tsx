@@ -15,6 +15,7 @@ import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
 import JustKeepTalkingButton from "@/components/JustKeepTalkingButton";
+import YouTubeDisclosureCard from "@/components/compliance/YouTubeDisclosureCard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useAppUnlock } from "@/hooks/useAppUnlock";
@@ -208,6 +209,11 @@ const MovieStudioProPage = () => {
           Pricing is transparent. You see the exact charge before every export — no surprise fees.
           {!ownsMovieStudio && !isAdmin && " Free-tier exports include a small ORACLE LUNAR watermark."}
         </p>
+
+        <YouTubeDisclosureCard
+          title="Movie Studio Pro export"
+          author={user?.email?.split("@")[0] || "Creator"}
+        />
 
         {/* "Choose Your Studio" pricing tiers removed — coin-only economy, no tiers. */}
 

@@ -25,6 +25,11 @@ import { SignedImage } from "@/components/SignedMedia";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
 import RegenerateStoryWizard, { type RegenPlan } from "@/components/story/RegenerateStoryWizard";
+import StyleDnaPanel from "@/components/story/StyleDnaPanel";
+import { styleDirective, HUMANISE_SYSTEM } from "@/lib/styleDna";
+import { recordEdit, buildReport, authorshipLogText } from "@/lib/humanEdits";
+import { allDisclosures, combinedDisclosure, type DisclosureFacts } from "@/lib/aiDisclosure";
+import { provenanceBlock, scrubIdentifiers, stripImageMetadata, safeFileName } from "@/lib/metadataHygiene";
 
 
 
@@ -87,6 +92,35 @@ const StoryWriterPage = () => {
   const [flowStage, setFlowStage] = useState<"idle" | "askEdit" | "editing" | "askNext">("idle");
   const [editInstructions, setEditInstructions] = useState("");
   const [nextGuidance, setNextGuidance] = useState("");
+
+  // === Style DNA (author's own voice) ===
+  const [styleProfile, setStyleProfile] = useState("");
+  const styleRule = () => styleDirective(styleProfile);
+
+  // === Human-in-the-loop authorship tracking ===
+  const trackKey = () => savingId || "new";
+  const trackEdit = (
+    source: "human" | "ai",
+    chapter: number,
+    before: string,
+    after: string,
+    note?: string,
+  ) => {
+    recordEdit(trackKey(), {
+      chapter,
+      chapterTitle: story.chapters[chapter]?.title || `Chapter ${chapter + 1}`,
+      source,
+      before,
+      after,
+      note,
+    });
+    setAuthorshipTick(t => t + 1);
+  };
+  const [authorshipTick, setAuthorshipTick] = useState(0);
+  const humanEditBaselineRef = useRef<string>("");
+  const authorship = useMemo(() => buildReport(savingId || "new"), [savingId, authorshipTick]);
+
+
 
   // === Autosave AI inputs to localStorage (per story + chapter) ===
   const draftKey = useMemo(
@@ -722,7 +756,7 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
     onProgress?: (words: number) => void
   ): Promise<string> => {
     const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
-Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.`;
+Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}`;
 
     const userPrompt = `STORY TITLE: ${story.title}
 GENRE: ${story.genre}
@@ -772,6 +806,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `You are a master ${story.genre} novelist. Continue the story naturally in the established voice. Add 2-3 vivid paragraphs. Do not summarize, do not repeat what's already there. Just continue.`,
         `STORY TITLE: ${story.title}\nPREMISE: ${story.premise}\nCURRENT CHAPTER: ${ch.title}\n\nLATEST TEXT:\n${last}\n\nContinue:`
       );
+      trackEdit("ai", activeChapter, ch.content, (ch.content + "\n\n" + text).trim(), "AI continue");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: (ch.content + "\n\n" + text).trim() };
@@ -832,6 +867,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `You are a master editor. Rewrite the following chapter for stronger prose, sharper imagery, and better pacing while preserving plot, names, and meaning. Return only the revised chapter.`,
         ch.content
       );
+      trackEdit("ai", activeChapter, ch.content, text, "AI rewrite");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
@@ -849,6 +885,78 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       toast.error("Rewrite failed: " + (e?.message || "unknown"));
     }
   };
+
+  // === Humanising rewrite pass — rewrites in the author's own voice ===
+  const [humanBusy, setHumanBusy] = useState<"chapter" | "book" | null>(null);
+
+  const humaniseText = async (title: string, content: string): Promise<string> => {
+    const chunks: string[] = [];
+    const paras = content.split(/\n\n+/);
+    let buf = "";
+    for (const p of paras) {
+      if ((buf + p).length > 9000) { chunks.push(buf); buf = p; } else { buf += (buf ? "\n\n" : "") + p; }
+    }
+    if (buf.trim()) chunks.push(buf);
+
+    const out: string[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      if (chunks.length > 1) toast.info(`Humanising ${title} — part ${i + 1}/${chunks.length}…`, { id: "humanise" });
+      const res = await callAI(
+        `${HUMANISE_SYSTEM}${styleRule()}`,
+        `STORY: ${story.title} (${story.genre})\nSECTION: ${title}\n\nRewrite this passage in the author's own voice. Keep every plot point, name and roughly the same length. Return only the rewritten prose.\n\n${chunks[i]}`,
+        { model: "google/gemini-2.5-pro", maxTokens: 16000 },
+      );
+      out.push(res.trim());
+    }
+    return out.join("\n\n");
+  };
+
+  const humaniseChapter = async () => {
+    const ch = story.chapters[activeChapter];
+    if (!ch?.content.trim()) { toast.error("Nothing to humanise yet"); return; }
+    if (humanBusy) return;
+    setHumanBusy("chapter");
+    try {
+      const text = await humaniseText(ch.title || `Chapter ${activeChapter + 1}`, ch.content);
+      trackEdit("ai", activeChapter, ch.content, text, "Humanising pass (author voice)");
+      setStory(s => {
+        const next = [...s.chapters];
+        next[activeChapter] = { ...next[activeChapter], content: text };
+        return { ...s, chapters: next };
+      });
+      toast.success("Chapter rewritten in your voice", { id: "humanise" });
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Humanising failed: " + (e?.message || "unknown"));
+    } finally {
+      setHumanBusy(null);
+    }
+  };
+
+  const humaniseBook = async () => {
+    if (humanBusy) return;
+    if (!confirm(`Rewrite all ${story.chapters.length} chapters in your own voice? This takes a while.`)) return;
+    setHumanBusy("book");
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        const ch = story.chapters[i];
+        if (!ch.content.trim()) continue;
+        const text = await humaniseText(ch.title || `Chapter ${i + 1}`, ch.content);
+        trackEdit("ai", i, ch.content, text, "Humanising pass (author voice)");
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: text };
+          return { ...s, chapters: next };
+        });
+      }
+      toast.success("Whole book rewritten in your voice", { id: "humanise" });
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error("Humanising failed: " + (e?.message || "unknown"));
+    } finally {
+      setHumanBusy(null);
+    }
+  };
+
+
 
   // Build context summary from previous chapters (truncated)
   const buildPrevContext = (uptoIdx: number): string => {
@@ -890,6 +998,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         text = (text + "\n\n" + more).trim();
       }
 
+      trackEdit("ai", activeChapter, ch.content, text, "AI full chapter");
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
@@ -924,6 +1033,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
+      trackEdit("ai", activeChapter, ch.content, text, `AI edit: ${editInstructions.slice(0, 120)}`);
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
@@ -993,6 +1103,48 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
   /** EPUB3 — accepted by Kindle (KDP), Kobo, Apple Books, Google Play Books,
    *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
   const [epubBusy, setEpubBusy] = useState(false);
+  // === Compliance kit: provenance + disclosures + authorship log (privacy-scrubbed) ===
+  const disclosureFacts = (opts: { voice?: boolean } = {}): DisclosureFacts => ({
+    title: scrubIdentifiers(story.title || "Untitled"),
+    author: scrubIdentifiers(authorName()),
+    aiTextUsed: true,
+    aiImagesUsed: totalImageCount() > 0,
+    aiVoiceUsed: !!opts.voice,
+    humanEditedPercent: authorship.humanPercent,
+    tools: ["Oracle Lunar", "Google Gemini", "ElevenLabs"],
+  });
+
+  const complianceFiles = (opts: { voice?: boolean } = {}): Record<string, string> => {
+    const facts = disclosureFacts(opts);
+    return {
+      "PROVENANCE.txt": provenanceBlock({
+        title: facts.title,
+        author: facts.author,
+        tool: "Oracle Lunar",
+        aiAssisted: true,
+        humanEditedPercent: authorship.humanPercent,
+      }),
+      "HUMAN-AUTHORSHIP-LOG.txt": scrubIdentifiers(
+        authorshipLogText(authorship, { title: facts.title, author: facts.author }),
+      ),
+      ...allDisclosures(facts),
+    };
+  };
+
+  const downloadComplianceKit = async (opts: { voice?: boolean } = {}) => {
+    const zip = new JSZip();
+    for (const [name, body] of Object.entries(complianceFiles(opts))) zip.file(name, body);
+    zip.file("READ-ME-FIRST.txt", combinedDisclosure(disclosureFacts(opts)));
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${safeFileName(story.title, "story")}-compliance-kit.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Compliance kit downloaded — disclosures, provenance and authorship log.");
+  };
+
   const exportEpub = async () => {
     if (!story.chapters.some(c => c.content.trim())) {
       toast.error("Write at least one chapter first."); return;
@@ -1022,9 +1174,14 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         const m = story.coverImage.match(/^data:(image\/\w+);base64,(.+)$/);
         if (m) {
           const ext = m[1].split("/")[1].replace("jpeg", "jpg");
-          const bin = atob(m[2]);
-          const bytes = new Uint8Array(bin.length);
-          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          // Privacy-only metadata hygiene: re-encode the cover so EXIF/GPS/device
+          // identifiers are dropped. Provenance stays in PROVENANCE.txt.
+          let bytes = await stripImageMetadata(story.coverImage, m[1] === "image/jpeg" ? "image/jpeg" : "image/png");
+          if (!bytes) {
+            const bin = atob(m[2]);
+            bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          }
           oebps.file(`cover.${ext}`, bytes);
           oebps.file("cover.xhtml",
             `<?xml version="1.0" encoding="UTF-8"?>
@@ -1090,6 +1247,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("EPUB ready — upload to Kindle, Kobo, Apple Books, Google Play, B&N, Draft2Digital or Smashwords.");
+      // Auto-attach the compliance kit (KDP declaration, provenance, authorship log)
+      await downloadComplianceKit({ voice: false });
     } catch (e: any) {
       toast.error(e?.message || "EPUB export failed");
     } finally {
@@ -1193,6 +1352,9 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       zip.file("retail-sample.mp3", opening);
 
       // ACX / Audible metadata
+      // Compliance kit inside the ACX bundle (privacy-scrubbed, provenance kept)
+      for (const [name, body] of Object.entries(complianceFiles({ voice: true }))) zip.file(name, body);
+
       zip.file("metadata.txt",
         [
           `Title: ${title}`,
@@ -1608,6 +1770,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           </div>
           <textarea
             value={story.chapters[activeChapter]?.content || ""}
+            onFocus={() => { humanEditBaselineRef.current = story.chapters[activeChapter]?.content || ""; }}
+            onBlur={e => {
+              const before = humanEditBaselineRef.current;
+              const after = e.target.value;
+              if (before !== after) trackEdit("human", activeChapter, before, after, "Typed by the author");
+              humanEditBaselineRef.current = after;
+            }}
             onChange={e =>
               setStory(s => {
                 const next = [...s.chapters];
@@ -1806,6 +1975,60 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             </button>
           </div>
         </div>
+
+        {/* Style DNA — train the AI on the author's own writing */}
+        <div className="px-4 pt-4">
+          <StyleDnaPanel userId={user?.id} callAI={callAI} onProfileChange={setStyleProfile} />
+        </div>
+
+        {/* Humanising rewrite pass */}
+        <div className="px-4 pt-4 grid grid-cols-2 gap-2">
+          <button
+            onClick={humaniseChapter}
+            disabled={!!humanBusy || aiBusy}
+            className="py-2.5 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {humanBusy === "chapter" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Humanise this chapter
+          </button>
+          <button
+            onClick={humaniseBook}
+            disabled={!!humanBusy || aiBusy}
+            className="py-2.5 rounded-xl bg-card border border-primary/40 text-primary text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {humanBusy === "book" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            Humanise whole book
+          </button>
+        </div>
+        <p className="px-4 pt-1 text-[10px] text-muted-foreground">
+          Rewrites in your voice with varied rhythm, natural imperfection and first-person asides. Train Style DNA above for the closest match.
+        </p>
+
+        {/* Authorship tracking + compliance kit */}
+        <div className="px-4 pt-4">
+          <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+            <p className="text-xs font-semibold text-foreground">Human authorship record</p>
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span>{authorship.humanPercent.toFixed(1)}% human-written</span>
+              <span>{authorship.humanEvents} human edits</span>
+              <span>{authorship.aiEvents} AI passes</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary" style={{ width: `${Math.min(100, authorship.humanPercent)}%` }} />
+            </div>
+            <button
+              onClick={() => void downloadComplianceKit({ voice: false })}
+              className="w-full py-2 rounded-lg bg-primary/10 border border-primary/40 text-primary text-xs font-semibold"
+            >
+              Download compliance kit — KDP / ACX / YouTube declarations
+            </button>
+            <p className="text-[10px] text-muted-foreground">
+              Exports are privacy-scrubbed (GPS, device and account identifiers removed) while provenance and AI disclosure stay attached.
+            </p>
+          </div>
+        </div>
+
+
 
         {/* Retailer-ready exports */}
         <div className="px-4 pt-4 grid grid-cols-2 gap-2">
