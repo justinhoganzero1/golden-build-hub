@@ -423,7 +423,7 @@ const AppBuilderPage = () => {
           : `No specific changes ticked — rebuild it better while keeping the idea intact.`,
       plan.notes ? `Extra instructions from the user: ${plan.notes}` : "",
     ].filter(Boolean).join("\n\n");
-    sendMessage(prompt);
+    sendMessage(prompt, plan.styleId);
   };
 
 
