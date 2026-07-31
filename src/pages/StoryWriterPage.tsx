@@ -1715,7 +1715,42 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               onChange={e => setStory(s => ({ ...s, author: e.target.value }))}
               placeholder="Author name... (required)"
               className={`w-full bg-card border rounded-lg px-3 py-2 text-sm text-foreground ${!story.author.trim() ? "border-amber-500/60" : "border-border"}`}
+          />
+
+          {/* ====== STORY BLURB — the source material the cover AI reads ====== */}
+          <div className="rounded-xl border border-primary/30 bg-card p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <BookMarked className="w-3.5 h-3.5" /> Story blurb (feeds the cover art)
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {story.blurb?.trim() ? `${story.blurb.trim().split(/\s+/).length} words` : "empty"}
+                </span>
+                <button
+                  type="button"
+                  onClick={aiWriteBlurb}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.blurb?.trim() ? "Rewrite blurb" : "Write blurb with AI"}
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={story.blurb || ""}
+              onChange={e => setStory(s => ({ ...s, blurb: e.target.value }))}
+              placeholder="The full back-cover blurb — characters, world, era, stakes, mood. The front and back cover AI draws its imagery directly from this."
+              rows={7}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
             />
+            <p className="text-[10px] text-muted-foreground">
+              This blurb is the primary source the cover artist AI reads for the front and back covers — the richer it is, the more accurate your artwork. It also saves with the story and is used in your EPUB description and share posts.
+            </p>
+          </div>
+
+
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {GENRES.map(g => (
