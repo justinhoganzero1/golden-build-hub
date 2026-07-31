@@ -746,20 +746,42 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     if (!requireMeta()) return;
     const ch = story.chapters[activeChapter];
     if (!ch) return;
+    const target = targetWordsFor(activeChapter);
     try {
-      toast.info("Generating full chapter (5000+ words). This may take a minute...");
-      const text = await generateLongChapter(
+      toast.info(`Generating full chapter — target ${target.toLocaleString()}+ words. This takes several minutes...`);
+      let text = await generateLongChapter(
         ch.title,
         guidance ?? chapterGuidance,
-        buildPrevContext(activeChapter)
+        buildPrevContext(activeChapter),
+        target,
+        (w) => {
+          if (w < target) toast.info(`Writing… ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "chapter-progress" });
+        }
       );
+
+      // Guarantee no two chapters share the same word count (200+ words apart).
+      const others = story.chapters
+        .map((c, i) => (i === activeChapter ? -1 : wordCount(c.content)))
+        .filter(n => n > 0);
+      let guard = 0;
+      while (others.some(n => Math.abs(n - wordCount(text)) <= WORD_STEP) && guard++ < 4) {
+        const more = await callAI(
+          `You are continuing the same ${story.genre} chapter seamlessly. Do not repeat. Continue the prose only.`,
+          `STORY: ${story.title}\nCHAPTER: ${ch.title}\n\nLAST PORTION:\n${text.slice(-3000)}\n\nAdd at least 400 more words of new scene:`,
+          { model: "google/gemini-2.5-pro", maxTokens: 8000 }
+        );
+        if (!more?.trim()) break;
+        text = (text + "\n\n" + more).trim();
+      }
+
       setStory(s => {
         const next = [...s.chapters];
         next[activeChapter] = { ...ch, content: text };
         return { ...s, chapters: next };
       });
-      const wc = text.split(/\s+/).filter(Boolean).length;
-      toast.success(`Chapter generated — ${wc.toLocaleString()} words`);
+      const wc = wordCount(text);
+      toast.success(`Chapter generated — ${wc.toLocaleString()} words`, { id: "chapter-progress" });
+      if (wc < MIN_WORDS) toast.warning(`Chapter came in under ${MIN_WORDS.toLocaleString()} words — use "Continue" to extend it.`);
       setChapterGuidance("");
       setFlowStage("askEdit");
       void saveToLibrary({
@@ -767,12 +789,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         title: `Story Chapter: ${ch.title}`,
         url: text,
         source_page: "story-writer",
-        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc },
+        metadata: { genre: story.genre, action: "full-chapter", wordCount: wc, targetWords: target },
       });
     } catch (e: any) {
       toast.error("Chapter generation failed: " + (e?.message || "unknown"));
     }
   };
+
 
   const aiEditChapterWithInstructions = async () => {
     if (!requireMeta()) return;
