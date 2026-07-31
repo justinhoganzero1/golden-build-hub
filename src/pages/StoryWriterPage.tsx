@@ -1510,20 +1510,31 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         {/* Chapter quick-list — jump to any chapter, see illustration status, bulk illustrate */}
         <div className="px-4 pt-3">
           <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-primary" />
                 Chapters ({story.chapters.length})
               </p>
-              <button
-                onClick={reIllustrateAllChapters}
-                disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
-                className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
-              >
-                {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                Illustrate ALL chapters
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setRegenOpen(true)}
+                  disabled={regenBusy || bulkBusy || !!imgBusy || chapterSetBusy !== null}
+                  className="text-[11px] px-2.5 py-1 rounded-full border border-amber-500/60 bg-amber-500/15 text-amber-300 font-semibold flex items-center gap-1 disabled:opacity-60"
+                >
+                  {regenBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Regenerate ENTIRE story
+                </button>
+                <button
+                  onClick={reIllustrateAllChapters}
+                  disabled={bulkBusy || !!imgBusy || chapterSetBusy !== null}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold flex items-center gap-1 disabled:opacity-60"
+                >
+                  {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  Illustrate ALL chapters
+                </button>
+              </div>
             </div>
+
             <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
               {story.chapters.map((c, i) => {
                 const imgs = c.images?.length || 0;
