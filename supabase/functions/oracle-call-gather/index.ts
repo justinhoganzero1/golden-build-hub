@@ -3,6 +3,7 @@
 // The Oracle UI (subscribed to Realtime) will see the change and prompt the user
 // for a reply. The user's reply triggers /oracle-call-reply which redirects this call.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const form = await req.formData();
+    // Reject forged webhooks: verify Twilio's HMAC signature before doing anything.
+    const twilio = await verifyTwilioRequest(req);
+    if (twilio.response) return twilio.response;
+    const form = new Map(Object.entries(twilio.params));
     const callSid = String(form.get("CallSid") || "");
     const speech = String(form.get("SpeechResult") || "").trim();
 
