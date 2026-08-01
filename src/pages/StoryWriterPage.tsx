@@ -572,13 +572,21 @@ const StoryWriterPage = () => {
     // The full back-cover blurb is the richest description of the book, so the
     // cover artist AI reads it as its primary source material.
     const BLURB_BRIEF = story.blurb?.trim()
-      ? ` STORY BLURB (your primary source material — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
+      ? ` STORY BLURB (primary source — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
       : "";
+    // Covers are baked LAST, from the whole finished manuscript.
+    const STORY_DIGEST = (slot === "cover" || slot === "back") ? storyDigest() : "";
+    // The model must never paint lettering — title, author and blurb are laid
+    // over the artwork as real HTML/CSS text in the Cover Studio preview.
+    const NO_TYPE = `ABSOLUTE RULE: this is PURE BACKGROUND ARTWORK. Render ZERO text of any kind — no title, no author name, no blurb, no paragraph, no caption, no label, no signage, no lettering, no numbers, no barcode, no ISBN, no logo, no watermark, no publisher mark, no spine, no book object or mock-up. Any surface that would carry writing must be blank.`;
+    const COVER_LOOK = `Style: 3D 4K ultra-realistic, true-to-life human beings, cinematic key lighting, deep atmospheric depth, film-grade colour, indistinguishable from a real photograph of a real moment.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}.${BLURB_BRIEF} Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `FRONT COVER background artwork for the ${story.genre} book "${story.title}" by ${story.author}. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the protagonist mid-action, real emotion and tension. Vertical 2:3 portrait framing, subject centred low, with calm uncluttered space across the top third and the bottom fifth so overlaid type stays legible. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
-      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}.${BLURB_BRIEF} Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book "${story.title}" — same protagonist, wardrobe, world, palette, lighting and grade as the front cover, but a COMPLETELY DIFFERENT quieter moment, angle and composition. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Atmospheric companion scene with a calm, low-detail centre area so an overlaid blurb card reads clearly. Vertical 2:3 portrait framing. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
+
 
 
     } else if (ch) {
