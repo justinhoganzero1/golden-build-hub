@@ -106,8 +106,11 @@ Deno.serve(async (req) => {
     const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
     if (!TWILIO_FROM) return json({ error: "TWILIO_PHONE_NUMBER not set" }, 500);
 
-    // TwiML: dial the destination, then connect to user
-    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial callerId="${TWILIO_FROM}"><Number>${destination}</Number></Dial></Response>`;
+    // TwiML: dial the destination, then connect to user.
+    // Every interpolated value is E.164-validated above AND XML-escaped here so
+    // no user input can break out of the markup and inject extra TwiML verbs.
+    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial callerId="${xmlEscape(TWILIO_FROM)}"><Number>${xmlEscape(destination)}</Number></Dial></Response>`;
+
 
     const callRes = await fetch(`${GATEWAY_URL}/Calls.json`, {
       method: "POST",
