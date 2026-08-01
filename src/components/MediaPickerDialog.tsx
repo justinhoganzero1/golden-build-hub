@@ -4,7 +4,7 @@ import { Search, Image, Film, Music, X, FolderOpen, Upload, Loader2 } from "luci
 import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SignedImage } from "@/components/SignedMedia";
+import { getThumbnailUrl } from "@/lib/thumbnail";
 
 
 interface MediaPickerDialogProps {
