@@ -1926,55 +1926,30 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
 
 
-          {/* Front + Back Cover Illustrations */}
-          <div className="grid grid-cols-2 gap-2">
-            {(["cover", "back"] as const).map((slot) => {
-              const url = slot === "cover" ? story.coverImage : story.backImage;
-              const isBusy = imgBusy === slot;
-              const label = slot === "cover" ? "Front Cover" : "Back Cover";
-              return (
-                <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
-                  <p className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${slot === "cover" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
-                    {label} preview
-                  </p>
-                  <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
-                    {url ? (
-                      <>
-                        <SignedImage src={url} alt={label} className="absolute inset-0 w-full h-full object-contain" />
-                        <button
-                          onClick={() => setStory(s => ({
-                            ...s,
-                            ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
-                          }))}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
-                          aria-label={`Remove ${label}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <button
-                    onClick={() => generateStoryImage(slot)}
-                    disabled={!!imgBusy}
-                    className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
-                  >
-                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {url ? `Re-generate ${label}` : `Generate ${label}`}
-                  </button>
-                  <button
-                    onClick={() => { setPickerTarget(slot); setPickerOpen(true); }}
-                    className="w-full py-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 border-t border-border flex items-center justify-center gap-1.5"
-                  >
-                    <ImageIcon className="w-3 h-3" /> Library / device
-                  </button>
-                </div>
+          {/* ====== COVER STUDIO — the last illustration step ====== */}
+          <CoverStudio
+            title={story.title}
+            author={story.author}
+            blurb={story.blurb || ""}
+            genre={story.genre}
+            coverImage={story.coverImage}
+            backImage={story.backImage}
+            busy={imgBusy}
+            prompt={coverPrompt}
+            onPromptChange={setCoverPrompt}
+            storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
+            onGenerateBoth={async () => {
+              await generateStoryImage("cover", coverPrompt);
+              await generateStoryImage("back", coverPrompt);
+            }}
+            onGenerateSlot={(slot) => { void generateStoryImage(slot, coverPrompt); }}
+            onClearSlot={(slot) => setStory(s => ({
+              ...s,
+              ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
+            }))}
+            onPickSlot={(slot) => { setPickerTarget(slot); setPickerOpen(true); }}
+          />
 
-              );
-            })}
-          </div>
 
           <button
             onClick={aiOutline}
