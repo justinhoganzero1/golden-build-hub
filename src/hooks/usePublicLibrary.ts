@@ -64,7 +64,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
         items.push({
           id: m.id,
           kind: "media",
-          user_id: m.user_id,
+          user_id: undefined,
           title: m.title,
           url: m.url,
           thumbnail_url: m.thumbnail_url,
@@ -83,7 +83,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
         items.push({
           id: g.id,
           kind: "gif",
-          user_id: g.user_id,
+          user_id: undefined,
           title: g.title,
           url: g.gif_url || g.preview_mp4_url || "",
           thumbnail_url: g.thumbnail_url,
@@ -101,7 +101,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
         items.push({
           id: mv.id,
           kind: "movie",
-          user_id: mv.user_id,
+          user_id: undefined,
           title: mv.title,
           url: mv.final_video_url || "",
           thumbnail_url: mv.thumbnail_url,
