@@ -4,7 +4,7 @@ import { Search, Image, Film, Music, X, FolderOpen, Upload, Loader2 } from "luci
 import { useUserMedia, useSaveMedia } from "@/hooks/useUserAvatars";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SignedImage } from "@/components/SignedMedia";
+import { getThumbnailUrl } from "@/lib/thumbnail";
 
 
 interface MediaPickerDialogProps {
@@ -16,9 +16,12 @@ interface MediaPickerDialogProps {
 }
 
 /**
- * A single library tile. The library list query never fetches the (often huge)
- * `url` column, so the tile lazily loads its own preview and only fetches the
- * full-size source when the user actually picks it.
+ * A single library tile.
+ *
+ * Tiles only fetch anything once they scroll into view, and what they show is a
+ * *very* low-res thumbnail (storage-side resize where possible, canvas
+ * downscale otherwise) so a grid of 8K artwork still loads instantly. The
+ * full-size original is only fetched at the moment the user actually picks it.
  */
 const MediaTile = ({
   item,
@@ -29,23 +32,46 @@ const MediaTile = ({
   icon: React.ReactNode;
   onPick: (url: string, title?: string) => void;
 }) => {
-  const [preview, setPreview] = useState<string | null>(item.thumbnail_url || null);
+  const ref = useRef<HTMLButtonElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [picking, setPicking] = useState(false);
   const isImage = item.media_type === "image" || item.media_type === "gif";
 
+  // Only start work when the tile is near the viewport.
   useEffect(() => {
-    if (preview || !isImage) return;
+    const el = ref.current;
+    if (!el || visible) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) {
+        setVisible(true);
+        io.disconnect();
+      }
+    }, { root: null, rootMargin: "300px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !isImage || preview) return;
     let alive = true;
     (async () => {
-      const { data } = await supabase
-        .from("user_media")
-        .select("url")
-        .eq("id", item.id)
-        .maybeSingle();
-      if (alive && data?.url) setPreview(data.url as string);
+      let source: string | null = item.thumbnail_url || null;
+      if (!source) {
+        const { data } = await supabase
+          .from("user_media")
+          .select("url")
+          .eq("id", item.id)
+          .maybeSingle();
+        source = (data?.url as string) || null;
+      }
+      if (!alive || !source) return;
+      const thumb = await getThumbnailUrl(source, 160);
+      if (alive) setPreview(thumb || source);
     })();
     return () => { alive = false; };
-  }, [item.id, isImage, preview]);
+  }, [visible, item.id, item.thumbnail_url, isImage, preview]);
 
   const handlePick = async () => {
     if (picking) return;
@@ -57,7 +83,7 @@ const MediaTile = ({
         .eq("id", item.id)
         .maybeSingle();
       if (error) throw error;
-      const url = (data?.url as string) || preview;
+      const url = (data?.url as string) || null;
       if (!url) throw new Error("This item has no file attached");
       onPick(url, item.title);
     } catch (e: any) {
@@ -69,14 +95,24 @@ const MediaTile = ({
 
   return (
     <button
+      ref={ref}
       onClick={handlePick}
       className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary transition-colors bg-card"
     >
       {preview && isImage ? (
-        <SignedImage src={preview} alt={item.title || "Media"} loading="lazy" className="w-full h-full object-cover" />
+        <img
+          src={preview}
+          alt={item.title || "Media"}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2">
-          {icon}
+          {isImage && visible
+            ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground/60" />
+            : icon}
           <span className="text-[9px] text-muted-foreground truncate w-full text-center">{item.title || item.media_type}</span>
         </div>
       )}
@@ -94,6 +130,7 @@ const MediaTile = ({
     </button>
   );
 };
+
 
 
 
