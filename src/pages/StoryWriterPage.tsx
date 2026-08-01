@@ -329,6 +329,9 @@ const StoryWriterPage = () => {
   const [imgBusy, setImgBusy] = useState<string | null>(null);
   const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
   const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+  /** Single AI direction box used only by the Cover Studio. */
+  const [coverPrompt, setCoverPrompt] = useState<string>("");
+
   // Pull artwork from the in-app Library or the user's device
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | "cast" | null>(null);
