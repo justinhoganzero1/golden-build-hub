@@ -28,6 +28,20 @@ function classifyAU(num: string): keyof typeof RATE_TABLE_CPM {
   return "AU_DEFAULT";
 }
 
+/** Strict E.164: leading +, no leading zero, 7-15 digits total. */
+const E164 = /^\+[1-9]\d{6,14}$/;
+
+/** Escape a value before it is interpolated into TwiML/XML markup. */
+function xmlEscape(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+
 interface PlaceCallBody {
   destination: string;       // e.g. +611300467875
   user_phone: string;        // e.g. +614xxxxxxxx
