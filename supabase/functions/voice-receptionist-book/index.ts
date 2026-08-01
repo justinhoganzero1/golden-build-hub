@@ -1,6 +1,7 @@
 // Books an appointment into Oracle calendar_events AND Google Calendar.
 // POST { contact_id, start_iso, duration_minutes?, title?, notes? }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { requireOwner } from "../_shared/requireAuth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
