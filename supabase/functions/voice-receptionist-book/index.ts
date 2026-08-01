@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
 
     const { data: cfg } = await supabase.from("voice_agent_config").select("*").limit(1).maybeSingle();
-    const dur = duration_minutes || cfg?.booking_duration_minutes || 30;
+    const dur = Math.min(Math.max(Number(duration_minutes) || Number(cfg?.booking_duration_minutes) || 30, 5), 480);
     const start = new Date(start_iso);
     const end = new Date(start.getTime() + dur * 60_000);
 
