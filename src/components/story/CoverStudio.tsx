@@ -166,8 +166,8 @@ export default function CoverStudio({
 
                     {/* Back: blurb card */}
                     <div className="absolute inset-x-0 top-[22%] bottom-[16%] flex items-center justify-center px-3">
-                      <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/72 backdrop-blur-[4px] border border-amber-300/30 px-3.5 py-3.5 shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
-                        <p className="text-white/95 text-[clamp(0.5rem,1.6vw,0.8rem)] leading-relaxed whitespace-pre-wrap first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
+                      <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/[0.92] backdrop-blur-[10px] border border-amber-300/60 px-3.5 py-3.5 shadow-[0_18px_60px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(0,0,0,0.6)]">
+                        <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
                           {blurb?.trim() || "Write your blurb above — it appears here in full, perfectly readable, on the back cover."}
                         </p>
                       </div>
