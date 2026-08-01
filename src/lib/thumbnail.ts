@@ -35,6 +35,40 @@ function writeCache(key: string, value: string) {
   try { sessionStorage.setItem(key, value); } catch { /* quota — memory cache still helps */ }
 }
 
+/** Limit how many heavy thumbnail jobs run at once — 60 tiles at once stalls the tab. */
+let active = 0;
+const queue: (() => void)[] = [];
+const MAX_PARALLEL = 6;
+
+function acquire(): Promise<void> {
+  if (active < MAX_PARALLEL) { active++; return Promise.resolve(); }
+  return new Promise(resolve => queue.push(() => { active++; resolve(); }));
+}
+function release() {
+  active--;
+  const next = queue.shift();
+  if (next) next();
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("thumb timeout")), ms);
+    p.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+  });
+}
+
+/** True when the URL actually renders (transform endpoints can 400 silently). */
+function probe(url: string, ms = 6000): Promise<boolean> {
+  return new Promise(resolve => {
+    const img = new window.Image();
+    const done = (ok: boolean) => { clearTimeout(t); img.onload = img.onerror = null; resolve(ok); };
+    const t = setTimeout(() => done(false), ms);
+    img.onload = () => done(true);
+    img.onerror = () => done(false);
+    img.src = url;
+  });
+}
+
 /** Downscale any loadable image URL to a small JPEG data URL via canvas. */
 async function canvasThumb(url: string, size: number): Promise<string> {
   const img = new window.Image();
@@ -75,25 +109,37 @@ export async function getThumbnailUrl(
 
   const parsed = parseStorageUrl(url);
   if (parsed) {
-    // Storage can resize server-side — no big bytes ever hit the browser.
+    let plain = "";
     try {
-      const { data } = await supabase.storage
-        .from(parsed.bucket)
-        .createSignedUrl(parsed.path, 60 * 60, {
+      // Try the server-side resize first (no big bytes hit the browser).
+      const [{ data: tr }, { data: raw }] = await Promise.all([
+        supabase.storage.from(parsed.bucket).createSignedUrl(parsed.path, 60 * 60, {
           transform: { width: size, height: size, resize: "cover", quality: DEFAULT_QUALITY },
-        });
-      if (data?.signedUrl) {
-        writeCache(key, data.signedUrl);
-        return data.signedUrl;
+        }),
+        supabase.storage.from(parsed.bucket).createSignedUrl(parsed.path, 60 * 60),
+      ]);
+      plain = raw?.signedUrl || "";
+      if (tr?.signedUrl && await probe(tr.signedUrl)) {
+        writeCache(key, tr.signedUrl);
+        return tr.signedUrl;
       }
-    } catch { /* fall through to canvas */ }
+    } catch { /* fall through */ }
+    // Image transformations unavailable → use the plain signed URL directly.
+    if (plain) {
+      writeCache(key, plain);
+      return plain;
+    }
   }
 
+  await acquire();
   try {
-    const thumb = await canvasThumb(url, size);
+    const thumb = await withTimeout(canvasThumb(url, size), 12_000);
     writeCache(key, thumb);
     return thumb;
   } catch {
     return url;
+  } finally {
+    release();
   }
 }
+
