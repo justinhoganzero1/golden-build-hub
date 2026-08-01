@@ -56,6 +56,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as PlaceCallBody;
     const { destination, user_phone, action = "estimate" } = body;
     if (!destination || !user_phone) return json({ error: "destination and user_phone required" }, 400);
+    // Strict E.164 validation — both numbers end up in Twilio API params and
+    // TwiML markup, so anything outside this charset is rejected outright.
+    if (!E164.test(destination) || !E164.test(user_phone)) {
+      return json({ error: "destination and user_phone must be valid E.164 numbers (e.g. +61400000000)" }, 400);
+    }
+
 
     const tier = classifyAU(destination);
     const twilioCpm = RATE_TABLE_CPM[tier];
