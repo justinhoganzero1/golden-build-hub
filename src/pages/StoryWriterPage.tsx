@@ -22,6 +22,8 @@ import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
+import CoverStudio from "@/components/story/CoverStudio";
+
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
 import { persistImageToStorage } from "@/lib/persistImage";
@@ -327,6 +329,9 @@ const StoryWriterPage = () => {
   const [imgBusy, setImgBusy] = useState<string | null>(null);
   const [imgStyleId, setImgStyleId] = useState<string>("realistic-4k");
   const [imgCustomPrompt, setImgCustomPrompt] = useState<string>("");
+  /** Single AI direction box used only by the Cover Studio. */
+  const [coverPrompt, setCoverPrompt] = useState<string>("");
+
   // Pull artwork from the in-app Library or the user's device
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<"cover" | "back" | "chapter" | "cast" | null>(null);
@@ -539,6 +544,25 @@ const StoryWriterPage = () => {
     return beats.map((b, i) => b || beats.slice(0, i).reverse().find(Boolean) || paras[0].slice(0, 1200));
   };
 
+  /**
+   * A compressed read of the ENTIRE finished manuscript — this is what the
+   * Cover Studio hands the artist AI so the covers are baked from the whole
+   * book rather than just the premise.
+   */
+  const storyDigest = (): string => {
+    const chapters = story.chapters.filter(c => (c.content || "").trim().length > 0);
+    if (!chapters.length) return "";
+    const perChapter = Math.max(300, Math.floor(7000 / chapters.length));
+    const parts = chapters.map((c, i) => {
+      const body = (c.content || "").replace(/\s+/g, " ").trim();
+      const head = body.slice(0, Math.floor(perChapter * 0.7));
+      const tail = body.length > perChapter ? ` … ${body.slice(-Math.floor(perChapter * 0.3))}` : "";
+      return `Ch${i + 1} "${c.title || `Chapter ${i + 1}`}": ${head}${tail}`;
+    });
+    return ` FULL STORY SOURCE (the complete book, condensed — build the imagery, characters, wardrobe, locations and mood strictly from this): ${parts.join(" || ").slice(0, 9000)}.`;
+  };
+
+
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
@@ -572,13 +596,21 @@ const StoryWriterPage = () => {
     // The full back-cover blurb is the richest description of the book, so the
     // cover artist AI reads it as its primary source material.
     const BLURB_BRIEF = story.blurb?.trim()
-      ? ` STORY BLURB (your primary source material — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
+      ? ` STORY BLURB (primary source — draw the characters, setting, era, wardrobe, weather and mood directly from this): "${story.blurb.trim().slice(0, 1500)}".`
       : "";
+    // Covers are baked LAST, from the whole finished manuscript.
+    const STORY_DIGEST = (slot === "cover" || slot === "back") ? storyDigest() : "";
+    // The model must never paint lettering — title, author and blurb are laid
+    // over the artwork as real HTML/CSS text in the Cover Studio preview.
+    const NO_TYPE = `ABSOLUTE RULE: this is PURE BACKGROUND ARTWORK. Render ZERO text of any kind — no title, no author name, no blurb, no paragraph, no caption, no label, no signage, no lettering, no numbers, no barcode, no ISBN, no logo, no watermark, no publisher mark, no spine, no book object or mock-up. Any surface that would carry writing must be blank.`;
+    const COVER_LOOK = `Style: 3D 4K ultra-realistic, true-to-life human beings, cinematic key lighting, deep atmospheric depth, film-grade colour, indistinguishable from a real photograph of a real moment.`;
     if (slot === "cover") {
-      basePrompt = `Full-action ${story.genre} book FRONT COVER artwork ONLY (the front panel — never the back panel, never both together) for "${story.title}". ${story.premise}.${BLURB_BRIEF} Show the protagonist mid-action in a dynamic real-world moment that captures the heart of the story — motion, tension, emotion. Vertical 2:3 portrait framing with clear empty space at the top for the title. Do NOT render any blurb, paragraph text, barcode, ISBN or spine. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `FRONT COVER background artwork for the ${story.genre} book "${story.title}" by ${story.author}. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the protagonist mid-action, real emotion and tension. Vertical 2:3 portrait framing, subject centred low, with calm uncluttered space across the top third and the bottom fifth so overlaid type stays legible. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
-      basePrompt = `BACK COVER artwork ONLY (the back panel on its own — never the front panel, never a wrap-around spread, never both covers in one image) for the very same ${story.genre} book "${story.title}" — it must look like it was shot in the same session as the front cover: same protagonist, same wardrobe, same location world, same palette, same lighting, same grade, but a COMPLETELY DIFFERENT moment, angle and composition from the front cover. ${story.premise}.${BLURB_BRIEF} Quieter, atmospheric companion scene with generous clean empty space in the lower two-thirds for blurb text. Do NOT render the book title, the author name, any blurb paragraph, barcode or ISBN — leave that area clean and empty. Vertical 2:3 portrait framing. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book "${story.title}" — same protagonist, wardrobe, world, palette, lighting and grade as the front cover, but a COMPLETELY DIFFERENT quieter moment, angle and composition. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Atmospheric companion scene with a calm, low-detail centre area so an overlaid blurb card reads clearly. Vertical 2:3 portrait framing. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
+
 
 
     } else if (ch) {
@@ -1807,21 +1839,10 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
             />
             <p className="text-[10px] text-muted-foreground">
-              This style and description are combined with your story details for the front cover, back cover, and every chapter illustration. Change it any time before hitting Generate.
+              This style and description apply to every chapter illustration. Front and back covers are baked last, in the Cover Studio below.
             </p>
-            <button
-              type="button"
-              onClick={async () => {
-                await generateStoryImage("cover");
-                await generateStoryImage("back");
-              }}
-              disabled={!!imgBusy}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/20"
-            >
-              {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {imgBusy ? "Generating photorealistic 8K photo…" : "▶ Generate Front + Back Cover Now (8K photorealistic)"}
-            </button>
           </div>
+
 
           {/* ====== PHOTO CAST — upload a face, the AI recasts every image ====== */}
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
@@ -1910,55 +1931,30 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
 
 
-          {/* Front + Back Cover Illustrations */}
-          <div className="grid grid-cols-2 gap-2">
-            {(["cover", "back"] as const).map((slot) => {
-              const url = slot === "cover" ? story.coverImage : story.backImage;
-              const isBusy = imgBusy === slot;
-              const label = slot === "cover" ? "Front Cover" : "Back Cover";
-              return (
-                <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
-                  <p className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${slot === "cover" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
-                    {label} preview
-                  </p>
-                  <div className="aspect-[2/3] bg-muted/30 flex items-center justify-center relative">
-                    {url ? (
-                      <>
-                        <SignedImage src={url} alt={label} className="absolute inset-0 w-full h-full object-contain" />
-                        <button
-                          onClick={() => setStory(s => ({
-                            ...s,
-                            ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
-                          }))}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
-                          aria-label={`Remove ${label}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
-                    )}
-                  </div>
-                  <button
-                    onClick={() => generateStoryImage(slot)}
-                    disabled={!!imgBusy}
-                    className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
-                  >
-                    {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {url ? `Re-generate ${label}` : `Generate ${label}`}
-                  </button>
-                  <button
-                    onClick={() => { setPickerTarget(slot); setPickerOpen(true); }}
-                    className="w-full py-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 border-t border-border flex items-center justify-center gap-1.5"
-                  >
-                    <ImageIcon className="w-3 h-3" /> Library / device
-                  </button>
-                </div>
+          {/* ====== COVER STUDIO — the last illustration step ====== */}
+          <CoverStudio
+            title={story.title}
+            author={story.author}
+            blurb={story.blurb || ""}
+            genre={story.genre}
+            coverImage={story.coverImage}
+            backImage={story.backImage}
+            busy={imgBusy}
+            prompt={coverPrompt}
+            onPromptChange={setCoverPrompt}
+            storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
+            onGenerateBoth={async () => {
+              await generateStoryImage("cover", coverPrompt);
+              await generateStoryImage("back", coverPrompt);
+            }}
+            onGenerateSlot={(slot) => { void generateStoryImage(slot, coverPrompt); }}
+            onClearSlot={(slot) => setStory(s => ({
+              ...s,
+              ...(slot === "cover" ? { coverImage: undefined } : { backImage: undefined }),
+            }))}
+            onPickSlot={(slot) => { setPickerTarget(slot); setPickerOpen(true); }}
+          />
 
-              );
-            })}
-          </div>
 
           <button
             onClick={aiOutline}
