@@ -98,10 +98,13 @@ serve(async (req) => {
       });
     }
 
+    // The M-rated bypass is derived server-side from the authenticated user's
+    // identity. A client-supplied `ownerBypass` flag is ignored entirely.
+    const ownerBypass = (user.email || "").toLowerCase().trim() === OWNER_EMAIL;
+
     const body = await req.json();
     const {
       prompt,
-      ownerBypass,
       inputImage,
       inputImages,
       tier,
@@ -129,6 +132,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // Auto-pick tier
     const chosenTier: "fast" | "premium" =
