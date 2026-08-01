@@ -6,6 +6,8 @@
 //     in the Owner Dashboard alongside concierge leads.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireOwner } from "../_shared/requireAuth.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
