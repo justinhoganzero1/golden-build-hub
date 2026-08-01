@@ -603,12 +603,16 @@ const StoryWriterPage = () => {
     // The model must never paint lettering — title, author and blurb are laid
     // over the artwork as real HTML/CSS text in the Cover Studio preview.
     const NO_TYPE = `ABSOLUTE RULE: this is PURE BACKGROUND ARTWORK. Render ZERO text of any kind — no title, no author name, no blurb, no paragraph, no caption, no label, no signage, no lettering, no numbers, no barcode, no ISBN, no logo, no watermark, no publisher mark, no spine, no book object or mock-up. Any surface that would carry writing must be blank.`;
-    const COVER_LOOK = `Style: 3D 4K ultra-realistic, true-to-life human beings, cinematic key lighting, deep atmospheric depth, film-grade colour, indistinguishable from a real photograph of a real moment.`;
+    const COVER_LOOK = `Style: 3D 4K ultra-realistic, true-to-life human beings, cinematic key lighting, deep atmospheric depth, film-grade colour, indistinguishable from a real photograph of a real moment. Quality bar: AAA blockbuster theatrical poster / bestselling hardback jacket — dramatic rim light, rich contrast, premium colour grade, zero flatness, zero amateur snapshot look.`;
+    // Front and back must share the exact same cast — same faces, ages, builds,
+    // hair and wardrobe — so the jacket reads as one book.
+    const CAST_LOCK = `CAST LOCK: the exact same principal characters appear on BOTH the front and back cover — identical faces, ages, builds, hair, skin tone and wardrobe on each. Do not invent new people, do not swap the protagonist, do not change anyone's appearance between covers.`;
     if (slot === "cover") {
-      basePrompt = `FRONT COVER background artwork for the ${story.genre} book "${story.title}" by ${story.author}. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the protagonist mid-action, real emotion and tension. Vertical 2:3 portrait framing, subject centred low, with calm uncluttered space across the top third and the bottom fifth so overlaid type stays legible. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `FRONT COVER background artwork for the ${story.genre} book "${story.title}" by ${story.author}. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the principal cast mid-action, real emotion and tension. Vertical 2:3 portrait framing, subjects centred in the middle band, with calm uncluttered darker space across the top third and the bottom fifth so overlaid title and author type stays legible. ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
-      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book "${story.title}" — same protagonist, wardrobe, world, palette, lighting and grade as the front cover, but a COMPLETELY DIFFERENT quieter moment, angle and composition. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Atmospheric companion scene with a calm, low-detail centre area so an overlaid blurb card reads clearly. Vertical 2:3 portrait framing. ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book "${story.title}" — the SAME principal cast, wardrobe, world, palette, lighting and grade as the front cover, but a COMPLETELY DIFFERENT quieter moment, angle and composition. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Atmospheric companion scene; keep the cast to the outer thirds and leave a calm, low-detail darker centre area so an overlaid blurb card reads clearly, plus quiet space at the very top and bottom for the title and author line. Vertical 2:3 portrait framing. ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+
 
 
 
