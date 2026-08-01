@@ -6,7 +6,8 @@ export type PublicItemKind = "media" | "gif" | "movie";
 export interface PublicLibraryItem {
   id: string;
   kind: PublicItemKind;
-  user_id: string;
+  /** Not exposed publicly any more — kept optional for internal callers. */
+  user_id?: string;
   title: string | null;
   url: string;
   thumbnail_url: string | null;
@@ -26,34 +27,32 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
   return useQuery({
     queryKey: ["public-library", filter],
     queryFn: async (): Promise<PublicLibraryItem[]> => {
+      // Public listings read from display-safe views only — payment ids,
+      // costs and raw metadata never leave the server.
       const [mediaRes, gifsRes, moviesRes] = await Promise.all([
         supabase
-          .from("user_media")
+          .from("public_user_media")
           .select(
-            "id,user_id,title,url,thumbnail_url,media_type,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count,source_page"
+            "id,title,url,thumbnail_url,media_type,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count,source_page"
           )
-          .eq("is_public", true)
           .order("created_at", { ascending: false })
           .limit(PAGE_SIZE),
         supabase
-          .from("living_gifs")
+          .from("public_living_gifs")
           .select(
-            "id,user_id,title,gif_url,preview_mp4_url,thumbnail_url,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count"
+            "id,title,gif_url,preview_mp4_url,thumbnail_url,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count"
           )
-          .eq("is_public", true)
-          .eq("status", "completed")
           .order("created_at", { ascending: false })
           .limit(PAGE_SIZE),
         supabase
-          .from("movie_projects")
+          .from("public_movie_projects")
           .select(
-            "id,user_id,title,final_video_url,thumbnail_url,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count"
+            "id,title,final_video_url,thumbnail_url,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count"
           )
-          .eq("is_public", true)
-          .eq("status", "completed")
           .order("created_at", { ascending: false })
           .limit(PAGE_SIZE),
       ]);
+
 
       if (mediaRes.error) throw mediaRes.error;
       if (gifsRes.error) throw gifsRes.error;
