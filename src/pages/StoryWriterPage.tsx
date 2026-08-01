@@ -1834,21 +1834,10 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
             />
             <p className="text-[10px] text-muted-foreground">
-              This style and description are combined with your story details for the front cover, back cover, and every chapter illustration. Change it any time before hitting Generate.
+              This style and description apply to every chapter illustration. Front and back covers are baked last, in the Cover Studio below.
             </p>
-            <button
-              type="button"
-              onClick={async () => {
-                await generateStoryImage("cover");
-                await generateStoryImage("back");
-              }}
-              disabled={!!imgBusy}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/20"
-            >
-              {imgBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {imgBusy ? "Generating photorealistic 8K photo…" : "▶ Generate Front + Back Cover Now (8K photorealistic)"}
-            </button>
           </div>
+
 
           {/* ====== PHOTO CAST — upload a face, the AI recasts every image ====== */}
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
