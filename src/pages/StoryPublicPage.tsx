@@ -26,25 +26,23 @@ const StoryPublicPage = () => {
     (async () => {
       if (!slug) return;
       const { data } = await supabase
-        .from("user_media")
-        .select("title, metadata")
-        .eq("media_type", "story")
-        .eq("is_public", true)
-        .filter("metadata->>slug", "eq", slug)
+        .from("public_stories")
+        .select("title, genre, premise, chapters, author_name")
+        .eq("slug", slug)
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (cancelled) return;
-      if (data?.metadata) {
-        const m: any = data.metadata;
+      if (data) {
         setStory({
           title: data.title,
-          genre: m.genre || "",
-          premise: m.premise || "",
-          chapters: Array.isArray(m.chapters) ? m.chapters : [],
-          authorName: m.authorName,
+          genre: data.genre || "",
+          premise: data.premise || "",
+          chapters: Array.isArray(data.chapters) ? (data.chapters as any[]) : [],
+          authorName: data.author_name || undefined,
         });
       }
+
       setLoading(false);
     })();
     return () => { cancelled = true; };
