@@ -539,6 +539,25 @@ const StoryWriterPage = () => {
     return beats.map((b, i) => b || beats.slice(0, i).reverse().find(Boolean) || paras[0].slice(0, 1200));
   };
 
+  /**
+   * A compressed read of the ENTIRE finished manuscript — this is what the
+   * Cover Studio hands the artist AI so the covers are baked from the whole
+   * book rather than just the premise.
+   */
+  const storyDigest = (): string => {
+    const chapters = story.chapters.filter(c => (c.content || "").trim().length > 0);
+    if (!chapters.length) return "";
+    const perChapter = Math.max(300, Math.floor(7000 / chapters.length));
+    const parts = chapters.map((c, i) => {
+      const body = (c.content || "").replace(/\s+/g, " ").trim();
+      const head = body.slice(0, Math.floor(perChapter * 0.7));
+      const tail = body.length > perChapter ? ` … ${body.slice(-Math.floor(perChapter * 0.3))}` : "";
+      return `Ch${i + 1} "${c.title || `Chapter ${i + 1}`}": ${head}${tail}`;
+    });
+    return ` FULL STORY SOURCE (the complete book, condensed — build the imagery, characters, wardrobe, locations and mood strictly from this): ${parts.join(" || ").slice(0, 9000)}.`;
+  };
+
+
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
