@@ -112,29 +112,76 @@ export default function CoverStudio({
                 {/* ── Real HTML/CSS type, never painted by the model ── */}
                 {slot === "cover" ? (
                   <>
-                    <div className="absolute inset-x-0 top-0 p-3 bg-gradient-to-b from-black/75 via-black/40 to-transparent">
-                      <h3 className="text-white font-black uppercase leading-tight tracking-tight text-center text-[clamp(0.85rem,3.4vw,1.6rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                    {/* Top: series/genre rule + big title */}
+                    <div className="absolute inset-x-0 top-0 px-4 pt-4 pb-10 bg-gradient-to-b from-black/90 via-black/60 to-transparent">
+                      {genre && (
+                        <p className="text-center text-amber-300/90 text-[clamp(0.4rem,1.1vw,0.6rem)] font-semibold uppercase tracking-[0.42em] mb-1.5">
+                          {genre}
+                        </p>
+                      )}
+                      <div className="mx-auto mb-2 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" />
+                      <h3
+                        className="text-center font-black uppercase leading-[0.92] tracking-[-0.01em] text-[clamp(1rem,4.6vw,2.3rem)]"
+                        style={{
+                          backgroundImage: "linear-gradient(180deg,#fff7e0 0%,#ffd77a 48%,#c9962f 100%)",
+                          WebkitBackgroundClip: "text",
+                          backgroundClip: "text",
+                          color: "transparent",
+                          filter: "drop-shadow(0 3px 10px rgba(0,0,0,0.95)) drop-shadow(0 0 1px rgba(0,0,0,0.9))",
+                        }}
+                      >
                         {title || "Your Title Here"}
                       </h3>
+                      <div className="mx-auto mt-2 h-px w-1/3 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
                     </div>
-                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                      <p className="text-white/95 text-center font-semibold tracking-[0.18em] uppercase text-[clamp(0.55rem,1.9vw,0.9rem)] drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
+
+                    {/* Bottom: author footer */}
+                    <div className="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
+                      <p className="text-center text-white/60 text-[clamp(0.38rem,1vw,0.55rem)] uppercase tracking-[0.4em] mb-1">
+                        A novel by
+                      </p>
+                      <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.6rem,2.2vw,1.05rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
                         {author || "Author Name"}
                       </p>
                     </div>
                   </>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center p-3">
-                    <div className="w-full max-h-[88%] overflow-y-auto rounded-lg bg-black/62 backdrop-blur-[3px] border border-white/20 px-3 py-3 shadow-2xl">
-                      <p className="text-white text-[clamp(0.55rem,1.55vw,0.78rem)] leading-relaxed whitespace-pre-wrap">
-                        {blurb?.trim() || "Write your blurb above — it appears here in full, perfectly readable, on the back cover."}
-                      </p>
-                      <p className="mt-2 pt-2 border-t border-white/20 text-white/80 text-[10px] uppercase tracking-[0.16em] text-center">
+                  <>
+                    {/* Back: title band at top */}
+                    <div className="absolute inset-x-0 top-0 px-4 pt-3 pb-8 bg-gradient-to-b from-black/90 via-black/55 to-transparent">
+                      <h3
+                        className="text-center font-black uppercase leading-[0.95] tracking-tight text-[clamp(0.7rem,3vw,1.4rem)]"
+                        style={{
+                          backgroundImage: "linear-gradient(180deg,#fff7e0 0%,#ffd77a 50%,#c9962f 100%)",
+                          WebkitBackgroundClip: "text",
+                          backgroundClip: "text",
+                          color: "transparent",
+                          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.95))",
+                        }}
+                      >
+                        {title || "Your Title Here"}
+                      </h3>
+                      <div className="mx-auto mt-1.5 h-px w-1/2 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+                    </div>
+
+                    {/* Back: blurb card */}
+                    <div className="absolute inset-x-0 top-[22%] bottom-[16%] flex items-center justify-center px-3">
+                      <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/72 backdrop-blur-[4px] border border-amber-300/30 px-3.5 py-3.5 shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
+                        <p className="text-white/95 text-[clamp(0.5rem,1.6vw,0.8rem)] leading-relaxed whitespace-pre-wrap first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
+                          {blurb?.trim() || "Write your blurb above — it appears here in full, perfectly readable, on the back cover."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Back: author footer */}
+                    <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
+                      <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.55rem,2vw,0.95rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
                         {author || "Author Name"}
                       </p>
                     </div>
-                  </div>
+                  </>
                 )}
+
 
                 {url && (
                   <button
