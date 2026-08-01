@@ -1273,6 +1273,13 @@ export type Database = {
             referencedRelation: "movie_projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "movie_character_bible_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "public_movie_projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       movie_projects: {
@@ -1483,6 +1490,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "movie_render_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "public_movie_projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "movie_render_jobs_scene_id_fkey"
             columns: ["scene_id"]
             isOneToOne: false
@@ -1588,6 +1602,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "movie_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movie_scenes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "public_movie_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -3227,6 +3248,196 @@ export type Database = {
           id?: string | null
           message?: string | null
           moderation_status?: string | null
+        }
+        Relationships: []
+      }
+      public_living_gifs: {
+        Row: {
+          created_at: string | null
+          creator_display_name: string | null
+          download_count: number | null
+          duration_seconds: number | null
+          gif_url: string | null
+          id: string | null
+          preview_mp4_url: string | null
+          resolution: string | null
+          shop_enabled: boolean | null
+          shop_price_cents: number | null
+          thumbnail_url: string | null
+          title: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string | null
+          preview_mp4_url?: string | null
+          resolution?: string | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          duration_seconds?: number | null
+          gif_url?: string | null
+          id?: string | null
+          preview_mp4_url?: string | null
+          resolution?: string | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      public_movie_projects: {
+        Row: {
+          created_at: string | null
+          creator_display_name: string | null
+          download_count: number | null
+          final_video_url: string | null
+          genre: string | null
+          id: string | null
+          logline: string | null
+          quality_tier: Database["public"]["Enums"]["movie_quality_tier"] | null
+          shop_enabled: boolean | null
+          shop_price_cents: number | null
+          target_duration_minutes: number | null
+          thumbnail_url: string | null
+          title: string | null
+          trailer_url: string | null
+          view_count: number | null
+          youtube_video_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          final_video_url?: string | null
+          genre?: string | null
+          id?: string | null
+          logline?: string | null
+          quality_tier?:
+            | Database["public"]["Enums"]["movie_quality_tier"]
+            | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          target_duration_minutes?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          trailer_url?: string | null
+          view_count?: number | null
+          youtube_video_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          final_video_url?: string | null
+          genre?: string | null
+          id?: string | null
+          logline?: string | null
+          quality_tier?:
+            | Database["public"]["Enums"]["movie_quality_tier"]
+            | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          target_duration_minutes?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+          trailer_url?: string | null
+          view_count?: number | null
+          youtube_video_id?: string | null
+        }
+        Relationships: []
+      }
+      public_stories: {
+        Row: {
+          author_name: string | null
+          chapters: Json | null
+          created_at: string | null
+          genre: string | null
+          id: string | null
+          premise: string | null
+          slug: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_name?: never
+          chapters?: never
+          created_at?: string | null
+          genre?: never
+          id?: string | null
+          premise?: never
+          slug?: never
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_name?: never
+          chapters?: never
+          created_at?: string | null
+          genre?: never
+          id?: string | null
+          premise?: never
+          slug?: never
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      public_user_media: {
+        Row: {
+          created_at: string | null
+          creator_display_name: string | null
+          download_count: number | null
+          id: string | null
+          media_type: string | null
+          shop_enabled: boolean | null
+          shop_price_cents: number | null
+          source_page: string | null
+          thumbnail_url: string | null
+          title: string | null
+          url: string | null
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          id?: string | null
+          media_type?: string | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          source_page?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_display_name?: string | null
+          download_count?: number | null
+          id?: string | null
+          media_type?: string | null
+          shop_enabled?: boolean | null
+          shop_price_cents?: number | null
+          source_page?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          url?: string | null
+          view_count?: number | null
         }
         Relationships: []
       }
