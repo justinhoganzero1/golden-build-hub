@@ -1,6 +1,7 @@
 // Twilio inbound SMS webhook — records the reply, cancels pending drips,
 // and (optionally) lets the AI agent auto-reply.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -17,7 +18,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const form = await req.formData();
+    // Reject forged webhooks: verify Twilio's HMAC signature before doing anything.
+    const twilio = await verifyTwilioRequest(req);
+    if (twilio.response) return twilio.response;
+    const form = new Map(Object.entries(twilio.params));
     const from = String(form.get("From") || "");
     const body = String(form.get("Body") || "").trim();
 

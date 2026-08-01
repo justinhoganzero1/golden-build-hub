@@ -6,6 +6,8 @@
 //     in the Owner Dashboard alongside concierge leads.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireOwner } from "../_shared/requireAuth.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -97,7 +99,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
+    // Admin-only: every action spends third-party API credit and writes leads.
+    const auth = await requireOwner(req);
+    if (auth.response) return auth.response;
+
     const body = await req.json();
+
     const action: string = body.action || "discover";
     const campaign: string = body.campaign || "press"; // press | partnership | directory | investor | backlink
     const niche: string = body.niche || "AI mental health super app";

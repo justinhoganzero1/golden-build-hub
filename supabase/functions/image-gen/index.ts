@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { OWNER_EMAIL } from "../_shared/requireAuth.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,10 +100,13 @@ serve(async (req) => {
       });
     }
 
+    // The M-rated bypass is derived server-side from the authenticated user's
+    // identity. A client-supplied `ownerBypass` flag is ignored entirely.
+    const ownerBypass = (user.email || "").toLowerCase().trim() === OWNER_EMAIL;
+
     const body = await req.json();
     const {
       prompt,
-      ownerBypass,
       inputImage,
       inputImages,
       tier,
@@ -129,6 +134,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // Auto-pick tier
     const chosenTier: "fast" | "premium" =

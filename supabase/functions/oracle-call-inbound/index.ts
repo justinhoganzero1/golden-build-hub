@@ -2,6 +2,7 @@
 // Greets the caller in Oracle's voice, then sends them to /gather to capture intent.
 // Public endpoint (Twilio calls it, no JWT). Looks up the user by the dialed number.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const form = await req.formData();
+    // Reject forged webhooks: verify Twilio's HMAC signature before doing anything.
+    const twilio = await verifyTwilioRequest(req);
+    if (twilio.response) return twilio.response;
+    const form = new Map(Object.entries(twilio.params));
     const callSid = String(form.get("CallSid") || "");
     const from = String(form.get("From") || "");
     const to = String(form.get("To") || "");

@@ -28,6 +28,20 @@ function classifyAU(num: string): keyof typeof RATE_TABLE_CPM {
   return "AU_DEFAULT";
 }
 
+/** Strict E.164: leading +, no leading zero, 7-15 digits total. */
+const E164 = /^\+[1-9]\d{6,14}$/;
+
+/** Escape a value before it is interpolated into TwiML/XML markup. */
+function xmlEscape(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+
 interface PlaceCallBody {
   destination: string;       // e.g. +611300467875
   user_phone: string;        // e.g. +614xxxxxxxx
@@ -56,6 +70,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as PlaceCallBody;
     const { destination, user_phone, action = "estimate" } = body;
     if (!destination || !user_phone) return json({ error: "destination and user_phone required" }, 400);
+    // Strict E.164 validation — both numbers end up in Twilio API params and
+    // TwiML markup, so anything outside this charset is rejected outright.
+    if (!E164.test(destination) || !E164.test(user_phone)) {
+      return json({ error: "destination and user_phone must be valid E.164 numbers (e.g. +61400000000)" }, 400);
+    }
+
 
     const tier = classifyAU(destination);
     const twilioCpm = RATE_TABLE_CPM[tier];
@@ -100,8 +120,11 @@ Deno.serve(async (req) => {
     const TWILIO_FROM = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
     if (!TWILIO_FROM) return json({ error: "TWILIO_PHONE_NUMBER not set" }, 500);
 
-    // TwiML: dial the destination, then connect to user
-    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial callerId="${TWILIO_FROM}"><Number>${destination}</Number></Dial></Response>`;
+    // TwiML: dial the destination, then connect to user.
+    // Every interpolated value is E.164-validated above AND XML-escaped here so
+    // no user input can break out of the markup and inject extra TwiML verbs.
+    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial callerId="${xmlEscape(TWILIO_FROM)}"><Number>${xmlEscape(destination)}</Number></Dial></Response>`;
+
 
     const callRes = await fetch(`${GATEWAY_URL}/Calls.json`, {
       method: "POST",

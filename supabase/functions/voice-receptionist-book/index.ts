@@ -1,6 +1,7 @@
 // Books an appointment into Oracle calendar_events AND Google Calendar.
 // POST { contact_id, start_iso, duration_minutes?, title?, notes? }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { requireOwner } from "../_shared/requireAuth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -13,18 +14,46 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Constant-shape internal-secret check for calls from the voice pipeline. */
+function hasInternalSecret(req: Request): boolean {
+  const expected = Deno.env.get("VOICE_INTERNAL_SECRET") || "";
+  if (!expected) return false;
+  const got = req.headers.get("x-internal-secret") || "";
+  return got.length === expected.length && got === expected;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
+    // Booking writes to the owner's real calendar, CRM and outbound webhook —
+    // it must never be callable anonymously. Allow the owner (admin console)
+    // or an internal caller presenting the shared secret.
+    if (!hasInternalSecret(req)) {
+      const auth = await requireOwner(req);
+      if (auth.response) return auth.response;
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body = await req.json();
     const { contact_id, start_iso, duration_minutes, title, notes } = body;
     if (!contact_id || !start_iso) {
       return new Response(JSON.stringify({ error: "contact_id and start_iso required" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
     }
+    if (typeof contact_id !== "string" || !UUID_RE.test(contact_id)) {
+      return new Response(JSON.stringify({ error: "contact_id must be a uuid" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+    if (typeof start_iso !== "string" || Number.isNaN(Date.parse(start_iso))) {
+      return new Response(JSON.stringify({ error: "start_iso must be an ISO timestamp" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+    if ((title != null && typeof title !== "string") || (notes != null && typeof notes !== "string")) {
+      return new Response(JSON.stringify({ error: "title and notes must be strings" }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    }
+
 
     const { data: cfg } = await supabase.from("voice_agent_config").select("*").limit(1).maybeSingle();
-    const dur = duration_minutes || cfg?.booking_duration_minutes || 30;
+    const dur = Math.min(Math.max(Number(duration_minutes) || Number(cfg?.booking_duration_minutes) || 30, 5), 480);
     const start = new Date(start_iso);
     const end = new Date(start.getTime() + dur * 60_000);
 
