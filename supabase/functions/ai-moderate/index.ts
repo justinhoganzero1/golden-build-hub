@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,23 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Paid AI call — require a signed-in user and throttle per user.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const limited = await enforceRateLimit(req, auth.user, "ai-moderate", { limit: 20, windowSeconds: 60 });
+    if (limited) return limited;
+
     const { type, content } = await req.json();
+    if (typeof content !== "string" || content.trim().length === 0 || content.length > 5000) {
+      return new Response(JSON.stringify({ error: "invalid_content" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (type !== "investment" && type !== "comment") {
+      return new Response(JSON.stringify({ error: "invalid_type" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
