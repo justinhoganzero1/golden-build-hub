@@ -61,8 +61,10 @@ serve(async (req) => {
       if (email === OWNER_EMAIL) isOwner = true;
     } catch {/* ignore */}
   }
-  if (mode === "reboot" && !isOwner) {
-    return new Response(JSON.stringify({ error: "Only the owner can trigger Phoenix reboot." }), {
+  // Both the health check and the reboot expose internal architecture detail
+  // (bucket ids, edge function names, infra state) — owner only.
+  if (!isOwner) {
+    return new Response(JSON.stringify({ error: "forbidden" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
