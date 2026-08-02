@@ -48,7 +48,13 @@ async function sign(url: string, params: Record<string, string>, token: string):
 export async function verifyTwilioRequest(
   req: Request,
 ): Promise<{ params: Record<string, string>; response?: undefined } | { params?: undefined; response: Response }> {
-  const token = Deno.env.get("TWILIO_AUTH_TOKEN") || "";
+  // Twilio signs with the Account Auth Token. Some accounts only surface an
+  // API Key Secret, so accept any configured Twilio secret and try each one.
+  const tokens = [
+    Deno.env.get("TWILIO_AUTH_TOKEN"),
+    Deno.env.get("TWILIO_API_SECRET"),
+    Deno.env.get("TWILIO_API_KEY_SECRET"),
+  ].filter((t): t is string => !!t && t.length > 8);
 
   let params: Record<string, string> = {};
   try {
@@ -58,8 +64,8 @@ export async function verifyTwilioRequest(
     params = {};
   }
 
-  if (!token) {
-    console.error("[twilio] TWILIO_AUTH_TOKEN not configured — rejecting webhook");
+  if (tokens.length === 0) {
+    console.error("[twilio] no Twilio signing secret configured — rejecting webhook");
     return { response: forbidden() };
   }
 
@@ -76,13 +82,16 @@ export async function verifyTwilioRequest(
     req.url,
   ];
 
-  for (const candidate of candidates) {
-    if (equals(await sign(candidate, params, token), signature)) return { params };
+  for (const token of tokens) {
+    for (const candidate of candidates) {
+      if (equals(await sign(candidate, params, token), signature)) return { params };
+    }
   }
 
   console.warn("[twilio] signature mismatch — rejecting webhook");
   return { response: forbidden() };
 }
+
 
 function forbidden(): Response {
   return new Response(
