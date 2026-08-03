@@ -81,10 +81,29 @@ const isInIframe = (): boolean => {
   try { return window.self !== window.top; } catch { return true; }
 };
 
+/** Installed PWA / standalone window — navigating the top frame away kills the app. */
+const isStandalone = (): boolean => {
+  try {
+    return (
+      window.matchMedia?.("(display-mode: standalone)").matches === true ||
+      (navigator as any).standalone === true
+    );
+  } catch {
+    return false;
+  }
+};
+
+/** Deep links (mailto:, sms:, fb-messenger:) must use the same tab handoff. */
+const isAppScheme = (href: string) => /^(mailto:|sms:|tel:|fb-messenger:)/i.test(href);
+
 const robustOpen = async (href: string): Promise<boolean> => {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
+      if (isAppScheme(href)) {
+        window.location.href = href;
+        return true;
+      }
       const { Browser } = await import("@capacitor/browser");
       await Browser.open({ url: href });
       return true;
@@ -94,8 +113,18 @@ const robustOpen = async (href: string): Promise<boolean> => {
     const w = window.open(href, "_blank", "noopener,noreferrer");
     if (w && !w.closed) return true;
   } catch {}
+  if (isAppScheme(href)) {
+    try { window.location.href = href; return true; } catch {}
+    return false;
+  }
   if (isInIframe()) {
     try { (window.top as Window).location.href = href; return true; } catch {}
+  }
+  // In an installed PWA, never replace the app's own document with an
+  // external page — the user can't get back and the app "fails to reload".
+  if (isStandalone()) {
+    toast.error("Couldn't open that app. The text is copied — paste it manually.");
+    return false;
   }
   try { window.location.href = href; return true; } catch {}
   return false;
@@ -245,11 +274,20 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
 
   const active = CHANNELS.find(c => c.id === channel)!;
 
-  // Re-format automatically whenever the channel (or story) changes.
+  // Re-format when the channel changes or the dialog opens.
+  // NOTE: `story` is passed as a fresh object literal on every parent render,
+  // so depending on it directly wiped the textarea on each keystroke elsewhere
+  // and made the tab appear frozen / never reload. Depend on its content only.
+  const storyKey = useMemo(
+    () => JSON.stringify([story.title, story.author, story.genre, story.premise, story.chapters?.length, story.publishedUrl]),
+    [story.title, story.author, story.genre, story.premise, story.chapters?.length, story.publishedUrl],
+  );
+
   useEffect(() => {
     if (!open) return;
     setBody(formatForChannel(channel, story, url));
-  }, [channel, open, story, url]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, open, url, storyKey]);
 
   const copyBody = async () => {
     const ok = await robustCopy(body);
