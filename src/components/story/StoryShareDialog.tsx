@@ -81,10 +81,29 @@ const isInIframe = (): boolean => {
   try { return window.self !== window.top; } catch { return true; }
 };
 
+/** Installed PWA / standalone window — navigating the top frame away kills the app. */
+const isStandalone = (): boolean => {
+  try {
+    return (
+      window.matchMedia?.("(display-mode: standalone)").matches === true ||
+      (navigator as any).standalone === true
+    );
+  } catch {
+    return false;
+  }
+};
+
+/** Deep links (mailto:, sms:, fb-messenger:) must use the same tab handoff. */
+const isAppScheme = (href: string) => /^(mailto:|sms:|tel:|fb-messenger:)/i.test(href);
+
 const robustOpen = async (href: string): Promise<boolean> => {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
+      if (isAppScheme(href)) {
+        window.location.href = href;
+        return true;
+      }
       const { Browser } = await import("@capacitor/browser");
       await Browser.open({ url: href });
       return true;
@@ -94,8 +113,18 @@ const robustOpen = async (href: string): Promise<boolean> => {
     const w = window.open(href, "_blank", "noopener,noreferrer");
     if (w && !w.closed) return true;
   } catch {}
+  if (isAppScheme(href)) {
+    try { window.location.href = href; return true; } catch {}
+    return false;
+  }
   if (isInIframe()) {
     try { (window.top as Window).location.href = href; return true; } catch {}
+  }
+  // In an installed PWA, never replace the app's own document with an
+  // external page — the user can't get back and the app "fails to reload".
+  if (isStandalone()) {
+    toast.error("Couldn't open that app. The text is copied — paste it manually.");
+    return false;
   }
   try { window.location.href = href; return true; } catch {}
   return false;
