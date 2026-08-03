@@ -274,11 +274,20 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
 
   const active = CHANNELS.find(c => c.id === channel)!;
 
-  // Re-format automatically whenever the channel (or story) changes.
+  // Re-format when the channel changes or the dialog opens.
+  // NOTE: `story` is passed as a fresh object literal on every parent render,
+  // so depending on it directly wiped the textarea on each keystroke elsewhere
+  // and made the tab appear frozen / never reload. Depend on its content only.
+  const storyKey = useMemo(
+    () => JSON.stringify([story.title, story.author, story.genre, story.premise, story.chapters?.length, story.publishedUrl]),
+    [story.title, story.author, story.genre, story.premise, story.chapters?.length, story.publishedUrl],
+  );
+
   useEffect(() => {
     if (!open) return;
     setBody(formatForChannel(channel, story, url));
-  }, [channel, open, story, url]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channel, open, url, storyKey]);
 
   const copyBody = async () => {
     const ok = await robustCopy(body);
