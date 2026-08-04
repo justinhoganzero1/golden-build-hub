@@ -342,7 +342,7 @@ export default function MonthlyAwardsShowcase() {
   const { data: media } = useAllUserMedia();
   const liveCategories = useMemo<Category[]>(() => {
     const imgs = (media || []).filter(
-      (m: any) => (m.media_type === "image" || m.media_type === "photo") && !!m.url
+      (m: any) => (m.media_type === "image" || m.media_type === "photo") && !!(m.thumbnail_url || m.url)
     );
     if (imgs.length === 0) return CATEGORIES;
 
