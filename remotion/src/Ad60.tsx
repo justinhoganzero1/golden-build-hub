@@ -856,6 +856,9 @@ export const Ad60: React.FC = () => {
           {b.el}
         </Sequence>
       ))}
+      <Sequence from={S(13.2)} durationInFrames={S(4.0)}>
+        <MadeInBanner />
+      </Sequence>
       <CutFlash />
       <BrandMark />
       <MadeWithBadge />
