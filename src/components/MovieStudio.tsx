@@ -159,7 +159,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   // Music suite
   const [musicPrompt, setMusicPrompt] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
-  const [musicVolume, setMusicVolume] = useState(0.25); // ducked under VO
+  const [musicVolume, setMusicVolume] = useState(0.15); // ducked well under VO
+  const [musicSpeed, setMusicSpeed] = useState(1); // 0.5x – 2x playback rate
   const [generatingMusic, setGeneratingMusic] = useState(false);
   // Intro / Theme / Credits / Outro
   const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
@@ -1333,6 +1334,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         musicSource = audioCtx.createBufferSource();
         musicSource.buffer = musicBuffer;
         musicSource.loop = true;
+        musicSource.playbackRate.value = Math.max(0.5, Math.min(2, musicSpeed));
         const musicGain = audioCtx.createGain();
         musicGain.gain.value = Math.max(0, Math.min(1, musicVolume));
         musicSource.connect(musicGain).connect(audioDest);
