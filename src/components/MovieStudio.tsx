@@ -282,6 +282,71 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     }
   }, [open]);
 
+  // Turn a Story Writer story into a COMPLETE storyboard automatically —
+  // scene breakdown, captions, per-scene narration + voices, motion, ambience
+  // and a matching score prompt. Existing story artwork is reused as frames.
+  const autoStoryboardFromStory = async (
+    storyScript: string,
+    storyIntent: string,
+    frames: string[],
+    storyTitle?: string,
+  ) => {
+    setPlanning(true);
+    const toastId = toast.loading("Oracle is building your entire storyboard from the story…");
+    try {
+      const targetScenes = Math.max(8, Math.min(20, frames.length ? frames.length * 2 : 12));
+      const resp = await fetch(SCENE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({
+          script: storyScript.slice(0, 24000),
+          intent:
+            `${storyIntent}\n\n[STORY WRITER HANDOFF] Adapt this story into a cinematic film. Keep character, wardrobe and lighting continuity across every scene. Write spoken narration for every scene so the film plays start-to-finish with no gaps.`,
+          targetDurationSec: targetScenes * 6,
+        }),
+      });
+      if (!resp.ok) {
+        toast.error("Auto-storyboard failed — tap Generate Scenes to retry", { id: toastId });
+        return;
+      }
+      const data = await resp.json();
+      const incoming: Scene[] = (data.scenes || []).slice(0, targetScenes).map((s: any, i: number) => ({
+        id: uid(),
+        caption: s.caption,
+        photo_prompt: s.photo_prompt,
+        motion: (s.motion || "ken-burns") as Motion,
+        duration_sec: CLIP_SECONDS,
+        narration: s.narration || s.caption,
+        speaker: s.speaker || "narrator",
+        voice_style: s.voice_style || "narrator-male-warm",
+        sfx_prompt: s.sfx_hint || s.sfx_prompt || "",
+        music_prompt: s.music_prompt || `Cinematic underscore for: ${s.caption}`,
+        music_volume: 0.25,
+        // Re-use the story's own cover / chapter artwork where we have it
+        image_url: frames[i],
+      }));
+      if (!incoming.length) {
+        toast.error("Auto-storyboard returned nothing — tap Generate Scenes", { id: toastId });
+        return;
+      }
+      setTitle(prev => prev || storyTitle || data.title || "Untitled Movie");
+      setMusicPrompt(
+        data.music_prompt || `Cinematic score matching: ${(storyIntent || storyTitle || "").slice(0, 200)}`,
+      );
+      setScenes(incoming);
+      setBlocksProduced(1);
+      toast.success(
+        `Storyboard ready — ${incoming.length} scenes, narration and score prompt all written.`,
+        { id: toastId },
+      );
+    } catch (e) {
+      console.error("[autoStoryboardFromStory]", e);
+      toast.error("Auto-storyboard failed — tap Generate Scenes to retry", { id: toastId });
+    } finally {
+      setPlanning(false);
+    }
+  };
+
   // Hydrate from Oracle Movie Director (sessionStorage handoff)
   useEffect(() => {
     if (!open) return;
@@ -309,16 +374,20 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           lower_third_title: s.lower_third_title,
         })));
       }
-      // Story Writer handoff can carry its cover / chapter artwork as ready frames
-      else if (Array.isArray(brief?.frames) && brief.frames.length) {
-        setScenes(prev => prev.length ? prev : brief.frames.slice(0, 20).map((url: string, i: number) => ({
-          id: uid(),
-          caption: `Scene ${i + 1}`,
-          photo_prompt: brief.intent || `Scene ${i + 1}`,
-          motion: "ken-burns" as Motion,
-          duration_sec: CLIP_SECONDS,
-          image_url: url,
-        })));
+      // Story Writer handoff — auto-build the ENTIRE storyboard from the story
+      else if (brief?.script) {
+        const frames: string[] = Array.isArray(brief?.frames) ? brief.frames : [];
+        if (frames.length) {
+          setScenes(prev => prev.length ? prev : frames.slice(0, 20).map((url: string, i: number) => ({
+            id: uid(),
+            caption: `Scene ${i + 1}`,
+            photo_prompt: brief.intent || `Scene ${i + 1}`,
+            motion: "ken-burns" as Motion,
+            duration_sec: CLIP_SECONDS,
+            image_url: url,
+          })));
+        }
+        void autoStoryboardFromStory(brief.script, brief.intent || "", frames, brief.title);
       }
       sessionStorage.removeItem("oracle_movie_brief");
 
