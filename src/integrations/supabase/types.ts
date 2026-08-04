@@ -3364,6 +3364,7 @@ export type Database = {
         Row: {
           author_name: string | null
           chapters: Json | null
+          cover_image: string | null
           created_at: string | null
           genre: string | null
           id: string | null
@@ -3375,6 +3376,7 @@ export type Database = {
         Insert: {
           author_name?: never
           chapters?: never
+          cover_image?: never
           created_at?: string | null
           genre?: never
           id?: string | null
@@ -3386,6 +3388,7 @@ export type Database = {
         Update: {
           author_name?: never
           chapters?: never
+          cover_image?: never
           created_at?: string | null
           genre?: never
           id?: string | null
