@@ -7,8 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Mail, Facebook, MessageCircle, Send, Twitter, Linkedin, Link2, Copy, Check,
-  Instagram, Smartphone, Share2, Music2,
+  Instagram, Smartphone, Share2, Music2, Download, Loader2, FileDown, Headphones,
 } from "lucide-react";
+import {
+  buildStoryFile, downloadFile, shareFiles, STORY_FILE_META,
+  type StoryFileFormat, type StoryFileSource,
+} from "@/lib/storyFiles";
+import { narrateStoryToMp3 } from "@/lib/storyNarration";
 
 const PUBLIC_ORIGIN = "https://oracle-lunar.online";
 
@@ -17,9 +22,12 @@ export interface ShareStory {
   author?: string;
   genre?: string;
   premise?: string;
-  chapters?: { title: string; content: string }[];
+  blurb?: string;
+  coverImage?: string;
+  chapters?: { title: string; content: string; images?: string[] }[];
   publishedUrl?: string;
 }
+
 
 type ChannelId =
   | "email" | "facebook" | "messenger" | "whatsapp" | "sms"
@@ -289,6 +297,75 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel, open, url, storyKey]);
 
+  // ===== Complete-file sharing (the actual story, not just a link) =====
+  const [fileFormat, setFileFormat] = useState<StoryFileFormat | "mp3">("epub");
+  const [fileBusy, setFileBusy] = useState(false);
+  const [audioPct, setAudioPct] = useState(0);
+
+  const fileSource: StoryFileSource = useMemo(() => ({
+    title: story.title || "Untitled Story",
+    author: story.author,
+    genre: story.genre,
+    premise: story.premise,
+    blurb: story.blurb,
+    coverImage: story.coverImage,
+    chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [storyKey, story.blurb, story.coverImage]);
+
+  const hasText = (story.chapters || []).some(c => (c.content || "").trim().length > 0);
+
+  const makeFile = async (): Promise<File | null> => {
+    if (!hasText) {
+      toast.error("Write at least one chapter before sharing the file.");
+      return null;
+    }
+    if (fileFormat === "mp3") {
+      setAudioPct(1);
+      const f = await narrateStoryToMp3(fileSource, setAudioPct);
+      setAudioPct(0);
+      return f;
+    }
+    return buildStoryFile(fileSource, fileFormat);
+  };
+
+  const shareCompleteFile = async () => {
+    if (fileBusy) return;
+    setFileBusy(true);
+    try {
+      const file = await makeFile();
+      if (!file) return;
+      const result = await shareFiles([file], {
+        title: story.title || "Untitled Story",
+        text: `${story.title || "Untitled Story"}${story.author ? ` by ${story.author}` : ""}`,
+      });
+      if (result === "shared") toast.success("Sent — the complete file went with it.");
+      else if (result === "downloaded") toast.success(`Saved “${file.name}” — attach it to your message.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't build the file.");
+    } finally {
+      setFileBusy(false);
+      setAudioPct(0);
+    }
+  };
+
+  const downloadCompleteFile = async () => {
+    if (fileBusy) return;
+    setFileBusy(true);
+    try {
+      const file = await makeFile();
+      if (!file) return;
+      downloadFile(file);
+      toast.success(`Downloaded “${file.name}”.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't build the file.");
+    } finally {
+      setFileBusy(false);
+      setAudioPct(0);
+    }
+  };
+
+
   const copyBody = async () => {
     const ok = await robustCopy(body);
     if (ok) {
@@ -481,6 +558,64 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           </p>
         )}
 
+        <div className="rounded-xl border border-border p-3 space-y-3">
+          <div>
+            <p className="text-sm font-medium flex items-center gap-2">
+              <FileDown className="w-4 h-4 text-primary" />
+              Send the complete story as a file
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              The whole book — cover, chapters and illustrations — packaged in a real file the
+              recipient can open, read or listen to without an account.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {(Object.keys(STORY_FILE_META) as StoryFileFormat[]).map((f) => {
+              const meta = STORY_FILE_META[f];
+              const on = fileFormat === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFileFormat(f)}
+                  className={`rounded-lg border p-2 text-left transition-colors ${on ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+                >
+                  <div className="text-xs font-medium">{meta.label}</div>
+                  <div className="text-[10px] text-muted-foreground leading-tight">{meta.hint}</div>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setFileFormat("mp3")}
+              className={`rounded-lg border p-2 text-left transition-colors ${fileFormat === "mp3" ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+            >
+              <div className="text-xs font-medium flex items-center gap-1">
+                <Headphones className="w-3 h-3 text-primary" /> Audio (MP3)
+              </div>
+              <div className="text-[10px] text-muted-foreground leading-tight">Narrated audiobook</div>
+            </button>
+          </div>
+
+          {fileFormat === "mp3" && audioPct > 0 && (
+            <div className="h-1.5 rounded bg-muted overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${audioPct}%` }} />
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button className="flex-1" onClick={shareCompleteFile} disabled={fileBusy}>
+              {fileBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
+              {fileBusy && fileFormat === "mp3" ? `Narrating… ${audioPct}%` : "Share the file"}
+            </Button>
+            <Button variant="outline" onClick={downloadCompleteFile} disabled={fileBusy}>
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Button className="flex-1" onClick={send}>
             <Share2 className="w-4 h-4 mr-2" />
@@ -490,6 +625,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
             More apps…
           </Button>
         </div>
+
       </DialogContent>
     </Dialog>
   );

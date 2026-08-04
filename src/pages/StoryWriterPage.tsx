@@ -33,6 +33,8 @@ import { styleDirective, HUMANISE_SYSTEM } from "@/lib/styleDna";
 import { recordEdit, buildReport, authorshipLogText } from "@/lib/humanEdits";
 import { allDisclosures, combinedDisclosure, type DisclosureFacts } from "@/lib/aiDisclosure";
 import { provenanceBlock, scrubIdentifiers, stripImageMetadata, safeFileName } from "@/lib/metadataHygiene";
+import { narrateChunk as narrateOneChunk } from "@/lib/storyNarration";
+
 
 
 
@@ -274,7 +276,10 @@ const StoryWriterPage = () => {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
         const metadata = {
           author: story.author,
+          authorName: story.author,
+          slug: story.publishedUrl?.split("/").filter(Boolean).pop(),
           genre: story.genre,
+
           premise: story.premise,
           blurb: story.blurb || "",
           chapters: story.chapters,
@@ -1499,26 +1504,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const narrateChunk = async (text: string): Promise<Uint8Array | null> => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
-    const token = getEdgeAuthTokenSync();
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        text,
-        // Audiobook quality: multilingual v2 + 44.1kHz/128kbps MP3
-        modelId: "eleven_multilingual_v2",
-        outputFormat: "mp3_44100_128",
-        settings: { stability: 0.55, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true, speed: 0.98 },
-      }),
-    });
-    const ct = res.headers.get("content-type") || "";
-    if (!res.ok || ct.includes("application/json")) return null;
-    return new Uint8Array(await res.arrayBuffer());
+    try {
+      return await narrateOneChunk(text);
+    } catch (e: any) {
+      throw new Error(e?.message || "Narration failed");
+    }
   };
+
 
   const exportAudiobook = async () => {
     if (!user) { toast.error("Sign in to build audiobook"); return; }
@@ -1648,21 +1640,30 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
     try {
       const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
+      // Keep EVERYTHING the draft already had (cover art, blurb, chapter images)
+      // and stay on media_type 'story' — the public /stories/:slug page reads
+      // from that view, so flipping the type used to 404 every shared link.
       const metadata = {
           slug,
+          author: story.author,
+          authorName: story.author || user.email?.split("@")[0],
           genre: story.genre,
           premise: story.premise,
+          blurb: story.blurb || "",
+          coverImage: story.coverImage,
+          backImage: story.backImage,
           chapters: story.chapters,
           wordCount,
           published: true,
           publishedUrl,
-          authorName: user.email?.split("@")[0],
+          admin_library_visible: true,
+          kind: "story_doc",
+          library_kind: "story",
       };
       if (savingId) {
         const { error } = await supabase.from("user_media").update({
-          media_type: "document",
+          media_type: "story",
           title: story.title || "Untitled Story",
-          url: publishedUrl,
           source_page: "story-writer",
           is_public: true,
           metadata,
@@ -1672,14 +1673,18 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         const id = await saveToLibrary({
           media_type: "document",
           title: story.title || "Untitled Story",
-          url: publishedUrl,
+          url: `oracle-lunar://story/${crypto.randomUUID()}`,
           source_page: "story-writer",
           is_public: true,
           metadata,
         });
         if (!id) throw new Error("Story save was queued for retry");
+        const { error } = await supabase.from("user_media")
+          .update({ media_type: "story", is_public: true } as any).eq("id", id);
+        if (error) throw error;
         setSavingId(id);
       }
+
       setStory(s => ({ ...s, published: true, publishedUrl }));
       toast.success("Story published — share it anywhere!", { description: publishedUrl });
       setShareOpen(true);
@@ -2477,9 +2482,12 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             author: story.author,
             genre: story.genre,
             premise: story.premise,
+            blurb: story.blurb,
+            coverImage: story.coverImage,
             chapters: story.chapters,
             publishedUrl: story.publishedUrl,
           }}
+
         />
 
 
