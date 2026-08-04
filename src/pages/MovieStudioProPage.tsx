@@ -173,11 +173,21 @@ const MovieStudioProPage = () => {
           </Card>
         )}
 
+        {/* ONE button → pick a story from Story Writer → pick the movie style */}
+        <Button
+          onClick={() => setWizardOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+        >
+          <BookOpen className="w-6 h-6 mr-3" /> Make a movie from a Story Writer story
+        </Button>
+
         {/* Stories sent over from Story Writer — stored permanently */}
         <StoryHandoffInbox
           refreshKey={inboxKey}
           onOpenStudio={() => setStudioOpen(true)}
         />
+
 
         <MovieCostEstimator
           walletBalanceCents={balance ?? 0}
