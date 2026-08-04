@@ -1854,12 +1854,26 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                     ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing...</>
                     : musicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose</> : <><Sparkles className="w-3 h-3 mr-1" /> Compose music</>}
                 </Button>
-                {musicUrl && <audio src={musicUrl} controls className="h-7 flex-1 min-w-[200px]" />}
+                {musicUrl && (
+                  <audio
+                    src={musicUrl}
+                    controls
+                    className="h-7 flex-1 min-w-[200px]"
+                    ref={el => { if (el) el.playbackRate = Math.max(0.5, Math.min(2, musicSpeed)); }}
+                  />
+                )}
                 <label className="text-[11px] text-muted-foreground flex items-center gap-1">
                   Music vol
                   <input type="range" min={0} max={1} step={0.05} value={musicVolume}
                     onChange={e => setMusicVolume(parseFloat(e.target.value))} className="w-24" />
                   <span className="w-8 text-right">{Math.round(musicVolume * 100)}%</span>
+                </label>
+                <label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  Music speed
+                  <input type="range" min={0.5} max={2} step={0.05} value={musicSpeed}
+                    onChange={e => setMusicSpeed(parseFloat(e.target.value))} className="w-24" />
+                  <span className="w-10 text-right">{musicSpeed.toFixed(2)}x</span>
+                  <button type="button" className="underline hover:text-primary" onClick={() => setMusicSpeed(1)}>reset</button>
                 </label>
               </div>
             </div>
