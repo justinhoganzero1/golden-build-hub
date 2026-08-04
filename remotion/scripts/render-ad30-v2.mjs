@@ -34,6 +34,8 @@ const composition = await selectComposition({
   puppeteerInstance: browser,
 });
 
+const SKIP = process.env.SKIP_RENDER === "1";
+if (!SKIP) {
 console.log("Rendering picture...");
 await renderMedia({
   composition,
@@ -45,6 +47,7 @@ await renderMedia({
   concurrency: 1,
   onProgress: ({ progress }) => process.stdout.write(`\rVideo: ${(progress * 100).toFixed(0)}%`),
 });
+}
 await browser.close({ silent: false });
 
 console.log("\nMixing soundtrack (narration + music bed + SFX)...");
@@ -61,10 +64,10 @@ const inputs = [
 
 const filters = [
   // Narration: starts just after the opening hit, ducked-forward and loud.
-  `[1:a]adelay=900|900,volume=1.75,acompressor=threshold=0.15:ratio=3:attack=8:release=180[vo]`,
+  `[1:a]adelay=900|900,volume=1.75,acompressor=threshold=0.15:ratio=3:attack=8:release=180,asplit=2[vo][vokey]`,
   // Music bed: full-length under everything, ducked by the narration.
   `[2:a]volume=0.30,afade=t=in:st=0:d=1.2,afade=t=out:st=27.8:d=2.2[musraw]`,
-  `[musraw][vo]sidechaincompress=threshold=0.05:ratio=7:attack=6:release=320[mus]`,
+  `[musraw][vokey]sidechaincompress=threshold=0.05:ratio=7:attack=6:release=320[mus]`,
   // Opening braam + outro braam.
   `[3:a]volume=0.55,afade=t=out:st=1.6:d=0.9[hit1]`,
   `[4:a]adelay=25900|25900,volume=0.6[hit2]`,
