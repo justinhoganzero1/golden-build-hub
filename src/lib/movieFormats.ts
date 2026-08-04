@@ -12,9 +12,38 @@ export interface MovieFormat {
   destination: "youtube" | "shorts" | "social" | "cinema" | "audiobook";
   /** File type the finished movie is shared as */
   fileExtension: "webm" | "mp4";
+  /** Optional call-to-action link burned into the bottom of every frame */
+  ctaUrl?: string;
+  ctaLabel?: string;
 }
 
 export const MOVIE_FORMATS: MovieFormat[] = [
+  {
+    id: "promo_ad_30",
+    label: "30-Second Ad (16:9)",
+    blurb: "High-energy promo cut with a burned-in clickable link bar — built for YouTube pre-roll and paid ads.",
+    emoji: "📣",
+    width: 1920,
+    height: 1080,
+    targetSeconds: 30,
+    destination: "youtube",
+    fileExtension: "webm",
+    ctaUrl: "https://oracle-lunar.online",
+    ctaLabel: "oracle-lunar.online",
+  },
+  {
+    id: "promo_ad_vertical",
+    label: "30-Second Ad (9:16)",
+    blurb: "Vertical paid-ad cut for Shorts, Reels and TikTok with the link bar locked to the bottom.",
+    emoji: "🚀",
+    width: 1080,
+    height: 1920,
+    targetSeconds: 30,
+    destination: "social",
+    fileExtension: "webm",
+    ctaUrl: "https://oracle-lunar.online",
+    ctaLabel: "oracle-lunar.online",
+  },
   {
     id: "youtube_standard",
     label: "YouTube Movie (16:9)",
