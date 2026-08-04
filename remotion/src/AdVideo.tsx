@@ -2,7 +2,6 @@ import React from "react";
 import {
   AbsoluteFill,
   Sequence,
-  OffthreadVideo,
   Img,
   staticFile,
   useCurrentFrame,
@@ -49,11 +48,7 @@ const Backdrop: React.FC<{ src: string; kind: "video" | "image"; zoom?: number }
   };
   return (
     <AbsoluteFill>
-      {kind === "video" ? (
-        <OffthreadVideo src={staticFile(src)} muted style={style} />
-      ) : (
-        <Img src={staticFile(src)} style={style} />
-      )}
+      <Img src={staticFile(src)} style={style} />
       <Vignette />
     </AbsoluteFill>
   );
@@ -227,7 +222,7 @@ const SceneHero: React.FC = () => {
   const s = spring({ frame: frame - 4, fps, config: { damping: 20, stiffness: 120 } });
   return (
     <AbsoluteFill style={{ backgroundColor: DEEP }}>
-      <Backdrop src="video/v4-clip1-workshop.mp4" kind="video" zoom={1.14} />
+      <Backdrop src="images/v4-scene1-workshop.jpg" kind="image" zoom={1.14} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
         <div
           style={{
@@ -269,7 +264,7 @@ const SceneHero: React.FC = () => {
 
 const SceneTalk: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: DEEP }}>
-    <Backdrop src="video/v4-clip2-leanover.mp4" kind="video" />
+    <Backdrop src="images/v4-scene2-leanover.jpg" kind="image" />
     <Headline kicker="Talk. Learn. Grow." title={"Voice Oracle\n& AI Tutor"} />
     <Chips items={["Oracle Voice", "AI Companion", "AI Tutor", "Agents Hub", "Interpreter"]} startDelay={12} />
   </AbsoluteFill>
@@ -277,7 +272,7 @@ const SceneTalk: React.FC = () => (
 
 const SceneCare: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: DEEP }}>
-    <Backdrop src="video/v4-clip3-twoOracles.mp4" kind="video" />
+    <Backdrop src="images/v4-scene3-twoOracles.jpg" kind="image" />
     <Headline kicker="Always here for you" title={"Mind Hub &\nCrisis Support"} />
     <Chips
       items={["Mind Hub", "Crisis Hub", "Life Diary", "Calendar", "Family Hub", "Elderly Care"]}
@@ -299,7 +294,7 @@ const SceneCreate: React.FC = () => (
 
 const SceneStudio: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: DEEP }}>
-    <Backdrop src="video/clip3-screen.mp4" kind="video" />
+    <Backdrop src="images/scene3-screen.jpg" kind="image" />
     <Headline kicker="Write it. Film it." title={"Story Writer &\nMovie Studio Pro"} />
     <Chips
       items={["Novels & eBooks", "Audiobooks", "AI Host Shows", "YouTube & Shorts", "Video Editor"]}
@@ -310,7 +305,7 @@ const SceneStudio: React.FC = () => (
 
 const SceneBusiness: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: DEEP }}>
-    <Backdrop src="video/clip2-developer.mp4" kind="video" />
+    <Backdrop src="images/scene2-developer.jpg" kind="image" />
     <Headline kicker="Build it. Sell it." title={"App Builder\n& Creator Shop"} />
     <Chips
       items={["App Builder", "Marketing Hub", "Voice Receptionist", "Creator Shop", "Wallet & Payouts"]}
@@ -326,7 +321,7 @@ const SceneOutro: React.FC = () => {
   const glow = 0.4 + Math.sin(frame / 8) * 0.15;
   return (
     <AbsoluteFill style={{ backgroundColor: DEEP }}>
-      <Backdrop src="video/v4-clip4-laugh.mp4" kind="video" zoom={1.12} />
+      <Backdrop src="images/v4-scene4-laugh.jpg" kind="image" zoom={1.12} />
       <AbsoluteFill
         style={{ justifyContent: "center", alignItems: "center", paddingBottom: 120 }}
       >
