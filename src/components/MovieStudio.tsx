@@ -2133,6 +2133,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <MovieShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          blob={publishedBlob}
+          title={title || "Oracle Lunar Movie"}
+          format={publishedFormat}
+        />
         <input ref={uploadInputRef} type="file" accept="image/*" onChange={handleUploadFile} className="hidden" />
         <MediaPickerDialog
           open={showLibrary}
