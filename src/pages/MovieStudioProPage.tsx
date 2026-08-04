@@ -242,11 +242,18 @@ const MovieStudioProPage = () => {
         <MovieProjectDashboard />
       </div>
 
+      <StoryToMovieWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onReady={() => { setInboxKey(k => k + 1); setStudioOpen(true); }}
+      />
+
       <OracleMovieDirector
         open={directorOpen}
         onOpenChange={setDirectorOpen}
         onComplete={handleDirectorComplete}
       />
+
 
       <MovieStudio
         open={studioOpen}
