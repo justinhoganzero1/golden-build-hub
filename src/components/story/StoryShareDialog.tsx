@@ -7,8 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Mail, Facebook, MessageCircle, Send, Twitter, Linkedin, Link2, Copy, Check,
-  Instagram, Smartphone, Share2, Music2,
+  Instagram, Smartphone, Share2, Music2, Download, Loader2, FileDown, Headphones,
 } from "lucide-react";
+import {
+  buildStoryFile, downloadFile, shareFiles, STORY_FILE_META,
+  type StoryFileFormat, type StoryFileSource,
+} from "@/lib/storyFiles";
+import { narrateStoryToMp3 } from "@/lib/storyNarration";
 
 const PUBLIC_ORIGIN = "https://oracle-lunar.online";
 
@@ -17,9 +22,12 @@ export interface ShareStory {
   author?: string;
   genre?: string;
   premise?: string;
-  chapters?: { title: string; content: string }[];
+  blurb?: string;
+  coverImage?: string;
+  chapters?: { title: string; content: string; images?: string[] }[];
   publishedUrl?: string;
 }
+
 
 type ChannelId =
   | "email" | "facebook" | "messenger" | "whatsapp" | "sms"
