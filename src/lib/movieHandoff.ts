@@ -49,7 +49,7 @@ export const saveMovieHandoff = async (
         user_id: auth.user.id,
         title: brief.youtube?.title || "Untitled story",
         source,
-        brief: brief as unknown as Record<string, unknown>,
+        brief: JSON.parse(JSON.stringify(brief)),
       })
       .select("id")
       .single();
