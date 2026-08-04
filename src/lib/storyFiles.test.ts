@@ -16,18 +16,20 @@ const story = {
   ],
 };
 
-const bytes = async (b: Blob) => new Uint8Array(await b.arrayBuffer());
+const buf = async (b: Blob) => await new Response(b as any).arrayBuffer();
+const bytes = async (b: Blob) => new Uint8Array(await buf(b));
+const asText = async (b: Blob) => new TextDecoder().decode(await bytes(b));
 
 describe("story file exports", () => {
   it("txt contains the whole story and skips empty chapters", async () => {
-    const text = await buildTxtBlob(story).text();
+    const text = await asText(buildTxtBlob(story));
     expect(text).toContain("Scam The Scammer");
     expect(text).toContain("Second paragraph is here.");
     expect(text).not.toContain("Empty");
   });
 
   it("html is a complete document", async () => {
-    const html = await buildHtmlBlob(story).text();
+    const html = await asText(buildHtmlBlob(story));
     expect(html.startsWith("<!doctype html>")).toBe(true);
     expect(html).toContain("<h2>Chapter 2</h2>");
   });
@@ -36,7 +38,7 @@ describe("story file exports", () => {
     const file = await buildStoryFile(story, "epub");
     expect(file.name.endsWith(".epub")).toBe(true);
     expect(file.type).toBe(STORY_FILE_META.epub.mime);
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await buf(file));
     expect(await zip.file("mimetype")!.async("string")).toBe("application/epub+zip");
     expect(zip.file("META-INF/container.xml")).toBeTruthy();
     const opf = await zip.file("OEBPS/content.opf")!.async("string");
