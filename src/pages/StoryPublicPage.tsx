@@ -4,15 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import SEO from "@/components/SEO";
 import ShareDialog from "@/components/ShareDialog";
-import { Share2, BookOpen } from "lucide-react";
+import { Share2, BookOpen, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { buildStoryFile, downloadFile, STORY_FILE_META, type StoryFileFormat } from "@/lib/storyFiles";
 
-interface Chapter { title: string; content: string }
+interface Chapter { title: string; content: string; images?: string[] }
 interface StoryMeta {
   title: string;
   genre: string;
   premise: string;
   chapters: Chapter[];
   authorName?: string;
+  coverImage?: string;
 }
 
 const StoryPublicPage = () => {
@@ -20,14 +23,15 @@ const StoryPublicPage = () => {
   const [story, setStory] = useState<StoryMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const [dlBusy, setDlBusy] = useState<StoryFileFormat | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!slug) return;
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("public_stories")
-        .select("title, genre, premise, chapters, author_name")
+        .select("title, genre, premise, chapters, author_name, cover_image")
         .eq("slug", slug)
         .order("updated_at", { ascending: false })
         .limit(1)
@@ -40,6 +44,7 @@ const StoryPublicPage = () => {
           premise: data.premise || "",
           chapters: Array.isArray(data.chapters) ? (data.chapters as any[]) : [],
           authorName: data.author_name || undefined,
+          coverImage: data.cover_image || undefined,
         });
       }
 
@@ -47,6 +52,30 @@ const StoryPublicPage = () => {
     })();
     return () => { cancelled = true; };
   }, [slug]);
+
+  const download = async (format: StoryFileFormat) => {
+    if (!story || dlBusy) return;
+    setDlBusy(format);
+    try {
+      const file = await buildStoryFile(
+        {
+          title: story.title,
+          author: story.authorName,
+          genre: story.genre,
+          premise: story.premise,
+          coverImage: story.coverImage,
+          chapters: story.chapters,
+        },
+        format,
+      );
+      downloadFile(file);
+    } catch (e: any) {
+      toast.error(e?.message || "Download failed");
+    } finally {
+      setDlBusy(null);
+    }
+  };
+
 
   if (loading) {
     return (
