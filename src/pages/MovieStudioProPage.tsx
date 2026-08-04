@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import StoryHandoffInbox from "@/components/StoryHandoffInbox";
+import StoryToMovieWizard from "@/components/movie/StoryToMovieWizard";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
@@ -37,6 +38,8 @@ const MovieStudioProPage = () => {
   const [studioOpen, setStudioOpen] = useState(false);
   const [directorOpen, setDirectorOpen] = useState(false);
   const [inboxKey, setInboxKey] = useState(0);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
 
   const handleDirectorComplete = (result: MovieDirectorResult) => {
     sessionStorage.setItem("oracle_movie_brief", JSON.stringify(result));
@@ -170,11 +173,21 @@ const MovieStudioProPage = () => {
           </Card>
         )}
 
+        {/* ONE button → pick a story from Story Writer → pick the movie style */}
+        <Button
+          onClick={() => setWizardOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-primary via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+        >
+          <BookOpen className="w-6 h-6 mr-3" /> Make a movie from a Story Writer story
+        </Button>
+
         {/* Stories sent over from Story Writer — stored permanently */}
         <StoryHandoffInbox
           refreshKey={inboxKey}
           onOpenStudio={() => setStudioOpen(true)}
         />
+
 
         <MovieCostEstimator
           walletBalanceCents={balance ?? 0}
@@ -229,11 +242,18 @@ const MovieStudioProPage = () => {
         <MovieProjectDashboard />
       </div>
 
+      <StoryToMovieWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onReady={() => { setInboxKey(k => k + 1); setStudioOpen(true); }}
+      />
+
       <OracleMovieDirector
         open={directorOpen}
         onOpenChange={setDirectorOpen}
         onComplete={handleDirectorComplete}
       />
+
 
       <MovieStudio
         open={studioOpen}

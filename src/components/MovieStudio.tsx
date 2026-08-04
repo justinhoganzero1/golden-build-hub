@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { moderatePrompt } from "@/lib/contentSafety";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
+import MovieShareDialog from "@/components/movie/MovieShareDialog";
+import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -145,6 +147,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [publishedBlob, setPublishedBlob] = useState<Blob | null>(null);
+  const [publishedFormat, setPublishedFormat] = useState<MovieFormat | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryTargetId, setLibraryTargetId] = useState<string | null>(null);
   const [creditsLow, setCreditsLow] = useState(false);
@@ -1189,7 +1194,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     setExporting(true); setExportProgress(0);
     try {
       const canvas = exportCanvasRef.current!;
-      canvas.width = 1920; canvas.height = 1080;
+      const chosenFormat = readMovieFormat();
+      canvas.width = chosenFormat?.width || 1920; canvas.height = chosenFormat?.height || 1080;
       const ctx = canvas.getContext("2d")!;
 
       // Video stream from canvas
@@ -1484,10 +1490,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       try { musicSource?.stop(); } catch {}
       try { audioCtx.close(); } catch {}
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `${title || "oracle-lunar-movie"}-${Date.now()}.webm`;
-      a.click();
+      // Hand the finished file straight to the share sheet (no auto-download spam)
+      setPublishedBlob(blob);
+      setPublishedFormat(chosenFormat);
+      setShareOpen(true);
 
       // Save to library
       if (user) {
@@ -1498,12 +1504,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             title: title || "Oracle Lunar Movie",
             url: reader.result as string,
             source_page: "movie-studio",
-            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length },
+            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length, format: chosenFormat?.id || "youtube_standard" },
           });
         };
         reader.readAsDataURL(blob);
       }
-      toast.success("Movie exported with AI voices and saved to library!");
+      toast.success("Movie published — saved to your library and ready to share!");
+
     } catch (e) {
       console.error(e); toast.error("Export failed");
     } finally { setExporting(false); }
@@ -1677,8 +1684,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                 {previewSceneId === "__full__" ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Playing…</> : <><Play className="w-3 h-3 mr-1" /> Preview full movie</>}
               </Button>
               <Button onClick={exportMovie} disabled={exporting} size="sm" title="Stitches every scene + transitions + voice + music + SFX into ONE continuous video file">
-                {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Export stitched movie</>}
+                {exporting ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" />{exportProgress}%</> : <><Download className="w-3 h-3 mr-1" /> Publish movie</>}
               </Button>
+              {publishedBlob && !exporting && (
+                <Button onClick={() => setShareOpen(true)} size="sm" variant="default" title="Share the published movie file">
+                  <Share2 className="w-3 h-3 mr-1" /> Share movie
+                </Button>
+              )}
             </div>
 
             {/* Preview canvas */}
@@ -2121,6 +2133,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <MovieShareDialog
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          blob={publishedBlob}
+          title={title || "Oracle Lunar Movie"}
+          format={publishedFormat}
+        />
         <input ref={uploadInputRef} type="file" accept="image/*" onChange={handleUploadFile} className="hidden" />
         <MediaPickerDialog
           open={showLibrary}
