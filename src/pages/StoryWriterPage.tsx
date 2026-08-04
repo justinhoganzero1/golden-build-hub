@@ -276,7 +276,10 @@ const StoryWriterPage = () => {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
         const metadata = {
           author: story.author,
+          authorName: story.author,
+          slug: story.publishedUrl?.split("/").filter(Boolean).pop(),
           genre: story.genre,
+
           premise: story.premise,
           blurb: story.blurb || "",
           chapters: story.chapters,
