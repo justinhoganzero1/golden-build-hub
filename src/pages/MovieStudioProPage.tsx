@@ -173,6 +173,15 @@ const MovieStudioProPage = () => {
           </Card>
         )}
 
+        {/* AI host episode → full YouTube video, host + script generated for you */}
+        <Button
+          onClick={() => setHostWizardOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-red-600 via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+        >
+          <Tv className="w-6 h-6 mr-3" /> Make a full YouTube video with an AI host
+        </Button>
+
         {/* ONE button → pick a story from Story Writer → pick the movie style */}
         <Button
           onClick={() => setWizardOpen(true)}
@@ -181,6 +190,7 @@ const MovieStudioProPage = () => {
         >
           <BookOpen className="w-6 h-6 mr-3" /> Make a movie from a Story Writer story
         </Button>
+
 
         {/* Stories sent over from Story Writer — stored permanently */}
         <StoryHandoffInbox
