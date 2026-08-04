@@ -1624,3 +1624,15 @@ a[aria-disabled="true"],
   transition-duration: 0.06s !important;
 }
 
+
+/* ── App-wide render performance ──────────────────────────────────────────
+   Skip layout/paint work for offscreen media grids and cards, and stop the
+   browser reserving decode work for images that are not visible yet. This is
+   purely a rendering hint — nothing visual changes on screen.            */
+img, video {
+  content-visibility: auto;
+}
+.grid > * ,
+.holo-card {
+  contain: layout paint style;
+}
