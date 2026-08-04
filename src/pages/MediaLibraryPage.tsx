@@ -1,5 +1,6 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
 import SEO from "@/components/SEO";
+import LibraryTileFace from "@/components/library/LibraryTileFace";
 import { Link, useNavigate } from "react-router-dom";
 import { sendLibraryItemToMovieMaker } from "@/lib/movieHandoff";
 
@@ -374,10 +375,8 @@ const MediaLibraryPage = () => {
             {recentItems.map((m: any) => (
               <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                 className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
-                {isImageLike(m) ? (
-                  <img src={previewSrc(m)} alt={m.title} className="w-full h-full object-cover" />
-                ) : isVideoLike(m) ? (
-                  <video src={previewSrc(m)} poster={m.thumbnail_url || undefined} muted loop playsInline className="w-full h-full object-cover" />
+                {isImageLike(m) || isVideoLike(m) ? (
+                  <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                     {getMediaIcon(m.media_type)}
@@ -431,7 +430,7 @@ const MediaLibraryPage = () => {
                 className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
                 {isImageLike(m) ? (
                   <>
-                    <img src={previewSrc(m)} alt={m.title} className="w-full h-full object-cover" />
+                    <LibraryTileFace src={previewSrc(m)} alt={m.title} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
                       <p className="text-[9px] text-foreground truncate font-medium drop-shadow">{m.title || "Untitled"}</p>
@@ -439,7 +438,7 @@ const MediaLibraryPage = () => {
                   </>
                 ) : isVideoLike(m) ? (
                   <>
-                    <video src={previewSrc(m)} poster={thumb || undefined} muted loop playsInline className="w-full h-full object-cover" />
+                    <LibraryTileFace src={thumb || previewSrc(m)} alt={m.title} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
                     <Play className="absolute inset-0 m-auto w-7 h-7 text-primary drop-shadow-lg" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
@@ -448,7 +447,7 @@ const MediaLibraryPage = () => {
                   </>
                 ) : thumb ? (
                   <>
-                    <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
+                    <LibraryTileFace src={thumb} alt={m.title} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
                       <p className="text-[9px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
@@ -503,10 +502,10 @@ const MediaLibraryPage = () => {
               return (
                 <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                   className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
-                  {isImageLike(m) ? (
-                    <img src={previewSrc(m)} alt={m.title} className="w-14 h-14 rounded-xl object-cover border border-border" />
-                  ) : isVideoLike(m) ? (
-                    <video src={previewSrc(m)} poster={m.thumbnail_url || undefined} muted playsInline className="w-14 h-14 rounded-xl object-cover border border-border" />
+                  {isImageLike(m) || isVideoLike(m) ? (
+                    <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shrink-0">
+                      <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} />
+                    </div>
                   ) : (
                     <div className="holo-card w-14 h-14 rounded-xl border border-primary/25 flex items-center justify-center">
                       {getMediaIcon(m.media_type)}
