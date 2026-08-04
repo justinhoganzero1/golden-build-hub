@@ -1499,26 +1499,13 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const narrateChunk = async (text: string): Promise<Uint8Array | null> => {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
-    const token = getEdgeAuthTokenSync();
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        text,
-        // Audiobook quality: multilingual v2 + 44.1kHz/128kbps MP3
-        modelId: "eleven_multilingual_v2",
-        outputFormat: "mp3_44100_128",
-        settings: { stability: 0.55, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true, speed: 0.98 },
-      }),
-    });
-    const ct = res.headers.get("content-type") || "";
-    if (!res.ok || ct.includes("application/json")) return null;
-    return new Uint8Array(await res.arrayBuffer());
+    try {
+      return await narrateOneChunk(text);
+    } catch (e: any) {
+      throw new Error(e?.message || "Narration failed");
+    }
   };
+
 
   const exportAudiobook = async () => {
     if (!user) { toast.error("Sign in to build audiobook"); return; }
