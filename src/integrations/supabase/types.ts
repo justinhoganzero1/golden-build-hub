@@ -1613,6 +1613,42 @@ export type Database = {
           },
         ]
       }
+      movie_story_handoffs: {
+        Row: {
+          brief: Json
+          created_at: string
+          id: string
+          opened: boolean
+          opened_at: string | null
+          source: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brief?: Json
+          created_at?: string
+          id?: string
+          opened?: boolean
+          opened_at?: string | null
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          brief?: Json
+          created_at?: string
+          id?: string
+          opened?: boolean
+          opened_at?: string | null
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oracle_chat_usage: {
         Row: {
           created_at: string
