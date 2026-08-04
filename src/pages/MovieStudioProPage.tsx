@@ -11,6 +11,7 @@ import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
+import StoryHandoffInbox from "@/components/StoryHandoffInbox";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
@@ -35,6 +36,7 @@ const MovieStudioProPage = () => {
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [studioOpen, setStudioOpen] = useState(false);
   const [directorOpen, setDirectorOpen] = useState(false);
+  const [inboxKey, setInboxKey] = useState(0);
 
   const handleDirectorComplete = (result: MovieDirectorResult) => {
     sessionStorage.setItem("oracle_movie_brief", JSON.stringify(result));
@@ -51,6 +53,7 @@ const MovieStudioProPage = () => {
       if (params.get("fromStory") && sessionStorage.getItem("oracle_movie_brief")) {
         setStudioOpen(true);
       }
+      setInboxKey(k => k + 1);
     } catch { /* ignore */ }
   }, [user, authLoading]);
 
@@ -166,6 +169,12 @@ const MovieStudioProPage = () => {
             </div>
           </Card>
         )}
+
+        {/* Stories sent over from Story Writer — stored permanently */}
+        <StoryHandoffInbox
+          refreshKey={inboxKey}
+          onOpenStudio={() => setStudioOpen(true)}
+        />
 
         <MovieCostEstimator
           walletBalanceCents={balance ?? 0}
