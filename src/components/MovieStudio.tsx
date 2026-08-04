@@ -1189,7 +1189,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     setExporting(true); setExportProgress(0);
     try {
       const canvas = exportCanvasRef.current!;
-      canvas.width = 1920; canvas.height = 1080;
+      const chosenFormat = readMovieFormat();
+      canvas.width = chosenFormat?.width || 1920; canvas.height = chosenFormat?.height || 1080;
       const ctx = canvas.getContext("2d")!;
 
       // Video stream from canvas
