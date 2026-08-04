@@ -74,22 +74,34 @@ const AppBuilderPage = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prefillConsumedRef = useRef(false);
 
-  // Load saved apps
+  // Load saved apps. The shared media list omits the heavy `url`/`metadata`
+  // columns, so re-fetch them for the small set of app-builder rows — otherwise
+  // every saved app reopens with empty code.
   useEffect(() => {
     if (loadedFromLibrary || !userMedia) return;
     const appMedia = userMedia.filter((m: any) => m.source_page === "app-builder" && m.media_type === "app");
-    if (appMedia.length > 0) {
+    if (appMedia.length === 0) { setLoadedFromLibrary(true); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("user_media")
+        .select("id,title,url,metadata,created_at")
+        .in("id", appMedia.map((m: any) => m.id));
+      if (!alive) return;
+      const byId = new Map((data || []).map((r: any) => [r.id, r]));
       const loaded: AppProject[] = appMedia.map((m: any) => {
-        const meta = (m.metadata && typeof m.metadata === "object") ? m.metadata as Record<string, any> : {};
+        const full: any = byId.get(m.id) || m;
+        const meta = (full.metadata && typeof full.metadata === "object") ? full.metadata as Record<string, any> : {};
         return {
           id: m.id, name: m.title || "My App", type: "custom",
-          description: meta.description || "", code: m.url || "",
+          description: meta.description || "", code: full.url || "",
           created: new Date(m.created_at).toLocaleDateString(), mediaId: m.id,
         };
       });
       setProjects(loaded);
-    }
-    setLoadedFromLibrary(true);
+      setLoadedFromLibrary(true);
+    })();
+    return () => { alive = false; };
   }, [userMedia, loadedFromLibrary]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
