@@ -92,7 +92,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
       // Force 4K-quality output via prompt directive — the backend already uses
       // the highest-quality Nano Banana Pro model.
       const enhancedPrompt =
-        `${prompt}\n\nRender at 4K resolution (7680x4320), ultra-high detail, ` +
+        `${prompt}\n\nRender at 4K resolution (3840x2160), ultra-high detail, ` +
         `photorealistic sharpness, professional studio lighting, maximum fidelity, ` +
         `crisp textures, no compression artifacts.`;
       const resp = await fetch(IMAGE_URL, {

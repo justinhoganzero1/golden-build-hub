@@ -345,10 +345,10 @@ const DashboardPage = () => {
           <button
             key={t.path}
             onClick={() => navigate(t.path)}
-            className="holo-tile flex-1 flex flex-col items-center gap-1 p-2 rounded-xl"
+            className="ad-pill flex-1 flex flex-col items-center gap-1 px-2 py-2"
           >
-            <div className="holo-icon text-sky-400">{t.icon}</div>
-            <span className="text-[10px] text-foreground font-medium leading-tight">{t.label}</span>
+            <div className="holo-icon">{t.icon}</div>
+            <span className="text-[10px] font-semibold tracking-wide leading-tight">{t.label}</span>
           </button>
         ))}
       </div>
