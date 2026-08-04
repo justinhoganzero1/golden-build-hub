@@ -587,7 +587,7 @@ const StoryWriterPage = () => {
 
     const isPhotoreal = style.id === "realistic-4k" || style.id === "photo-normal" || style.id === "2_5d" || style.id === "cinematic";
     const PHOTOREAL = isPhotoreal
-      ? "8K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO plastic CGI look."
+      ? "4K ultra-photorealistic, lifelike human anatomy and skin, real-world physics, DSLR full-frame, 85mm lens, natural skin pores, believable eyes and hands, cinematic depth of field, dramatic natural lighting, indistinguishable from a real photograph. NO plastic CGI look."
       : "";
     const REALISM = [PHOTOREAL, style.id === "realistic-4k" ? CINEMATIC_4K : "", QUALITY_FLOOR].filter(Boolean).join(" ");
     let basePrompt = "";
@@ -1520,7 +1520,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     if (!confirm(
       `Narrate all ${story.chapters.length} chapters into a full audiobook?\n\n` +
       `This uses your ElevenLabs credits and packages Audible/ACX-ready MP3s ` +
-      `(44.1kHz 128kbps), opening & closing credits, a retail sample, and metadata.txt.`
+      `(44.1kHz 124kbps), opening & closing credits, a retail sample, and metadata.txt.`
     )) return;
 
     setAudioBusy(true);

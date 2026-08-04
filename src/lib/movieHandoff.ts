@@ -119,7 +119,7 @@ export const buildBriefFromStory = (story: StoryLike): MovieHandoffBrief => {
       title: story.title || "Untitled story",
       description: story.premise || "",
       tags: [story.genre || "story", "audiobook", "oracle lunar"].filter(Boolean),
-      thumbnail_prompt: `Cinematic 8K poster for "${story.title || "Untitled"}" — ${story.premise || story.genre || "dramatic scene"}`,
+      thumbnail_prompt: `Cinematic 4K poster for "${story.title || "Untitled"}" — ${story.premise || story.genre || "dramatic scene"}`,
       channel_name: story.author || "Oracle Lunar",
     },
   };
@@ -167,7 +167,7 @@ export const sendLibraryItemToMovieMaker = (
       title: item.title || "Oracle Lunar movie",
       description: script.slice(0, 400),
       tags: ["oracle lunar", "ai movie"],
-      thumbnail_prompt: `Cinematic 8K poster for "${item.title || "Oracle Lunar movie"}"`,
+      thumbnail_prompt: `Cinematic 4K poster for "${item.title || "Oracle Lunar movie"}"`,
       channel_name: "Oracle Lunar",
     },
   };

@@ -20,7 +20,7 @@ interface MediaPickerDialogProps {
  *
  * Tiles only fetch anything once they scroll into view, and what they show is a
  * *very* low-res thumbnail (storage-side resize where possible, canvas
- * downscale otherwise) so a grid of 8K artwork still loads instantly. The
+ * downscale otherwise) so a grid of 4K artwork still loads instantly. The
  * full-size original is only fetched at the moment the user actually picks it.
  */
 const MediaTile = ({

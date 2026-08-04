@@ -99,7 +99,7 @@ export default function PublicRealmsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
-      <SEO title="Public Realm Library — Oracle Lunar" description="Explore 8K photoreal 3D realms built by the Oracle Lunar community. Walk in free, or unlock premium realms — creators earn 70%." />
+      <SEO title="Public Realm Library — Oracle Lunar" description="Explore 4K photoreal 3D realms built by the Oracle Lunar community. Walk in free, or unlock premium realms — creators earn 70%." />
       <header className="border-b border-white/10 bg-black/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button asChild size="sm" variant="ghost" className="text-white/70 hover:text-white">
@@ -109,7 +109,7 @@ export default function PublicRealmsPage() {
             <h1 className="text-lg font-semibold flex items-center gap-2">
               <Globe2 className="w-5 h-5 text-amber-400" /> Public Realm Library
             </h1>
-            <p className="text-xs text-white/50">Walk through community-built 8K realms. Creators earn 70% on paid realms.</p>
+            <p className="text-xs text-white/50">Walk through community-built 4K realms. Creators earn 70% on paid realms.</p>
           </div>
           <Button asChild size="sm" className="bg-amber-500 hover:bg-amber-400 text-black">
             <Link to="/realm-builder"><Wand2 className="w-4 h-4 mr-1" /> Build yours</Link>

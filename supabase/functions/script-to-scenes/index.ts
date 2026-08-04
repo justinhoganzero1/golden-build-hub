@@ -10,7 +10,7 @@ serve(async (req) => {
 
   try {
     const { script, intent, targetDurationSec = 60 } = await req.json();
-    const sceneSeconds = 6; // FIXED: every clip is 6 seconds, 8K quality
+    const sceneSeconds = 6; // FIXED: every clip is 6 seconds, 4K quality
     if (!script || typeof script !== "string") {
       return new Response(JSON.stringify({ error: "script is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -23,9 +23,9 @@ serve(async (req) => {
     const targetSceneCount = Math.max(2, Math.min(60, Math.round(targetDurationSec / sceneSeconds)));
 
     const system = `You are a film director + audio designer. Break the user's script and intent into ${targetSceneCount} cinematic scenes for a movie.
-Each scene gets ONE 8K photoreal photo, one short caption, and a narration line spoken aloud during the 6-second clip.
+Each scene gets ONE 4K photoreal photo, one short caption, and a narration line spoken aloud during the 6-second clip.
 Keep visual + character continuity (same characters, outfits, lighting where appropriate).
-Photo prompts must be M-rated, vivid, photoreal 8K, with explicit subject + setting + lighting + camera + mood. No nudity / explicit content.
+Photo prompts must be M-rated, vivid, photoreal 4K, with explicit subject + setting + lighting + camera + mood. No nudity / explicit content.
 Motion hints: pick one of pan-left, pan-right, zoom-in, zoom-out, ken-burns, static.
 ALWAYS set duration_sec to 6.
 

@@ -89,10 +89,10 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
 
   const generateImage = async (prompt: string): Promise<string | null> => {
     try {
-      // Force 8K-quality output via prompt directive — the backend already uses
+      // Force 4K-quality output via prompt directive — the backend already uses
       // the highest-quality Nano Banana Pro model.
       const enhancedPrompt =
-        `${prompt}\n\nRender at 8K resolution (7680x4320), ultra-high detail, ` +
+        `${prompt}\n\nRender at 4K resolution (7680x4320), ultra-high detail, ` +
         `photorealistic sharpness, professional studio lighting, maximum fidelity, ` +
         `crisp textures, no compression artifacts.`;
       const resp = await fetch(IMAGE_URL, {
@@ -119,7 +119,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
           media_type: "image",
           title: prompt.slice(0, 80),
           source_page: `Standalone: ${appName}`,
-          metadata: { prompt, oracle: "master", standalone_app: appName, quality: "8k" },
+          metadata: { prompt, oracle: "master", standalone_app: appName, quality: "4k" },
         });
       }
       return url;

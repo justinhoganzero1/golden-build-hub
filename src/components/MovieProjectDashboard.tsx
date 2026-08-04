@@ -46,7 +46,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const QUALITY_LABEL: Record<string, string> = {
-  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 8K",
+  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "4k_ultimate": "🏆 ULTIMATE 4K",
 };
 
 export const MovieProjectDashboard = () => {
@@ -146,7 +146,7 @@ export const MovieProjectDashboard = () => {
           const pct = p.total_scenes > 0 ? (p.completed_scenes / p.total_scenes) * 100 : 0;
           const spent = (p.spent_cost_cents / 100).toFixed(2);
           const est = (p.estimated_cost_cents / 100).toFixed(2);
-          const isUltimate = p.quality_tier === "8k_ultimate";
+          const isUltimate = p.quality_tier === "4k_ultimate";
           const failed = failedScenes[p.id] ?? [];
           return (
             <div key={p.id} className={`p-3 rounded-lg border ${isUltimate ? "border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card" : "border-border/50 bg-muted/30"}`}>

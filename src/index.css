@@ -197,7 +197,7 @@ All colors MUST be HSL.
     50% { transform: translateY(-4px); }
   }
 
-  /* ── Holographic 8K Avatar Display ── */
+  /* ── Holographic 4K Avatar Display ── */
   .holo-avatar-wrap {
     position: relative;
     overflow: hidden;
@@ -1260,7 +1260,7 @@ a[aria-disabled="true"],
 
 
 /* ═══════════════════════════════════════════════════════════════
-   CHICLET v5 — 3D 8K REALISTIC CHROME-FRAMED TILES
+   CHICLET v5 — 3D 4K REALISTIC CHROME-FRAMED TILES
    Thin polished chrome bezel, deep glass body, parallax hover that
    pops the icon out of the screen and slowly rotates it in 3D until
    the user clicks or moves to another tile. Applies globally to
@@ -1544,7 +1544,7 @@ a[aria-disabled="true"],
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CHICLET v6 — REAL 8K OLED KEYBOARD KEYS
+   CHICLET v6 — REAL 4K OLED KEYBOARD KEYS
    Each tile is a sculpted, extruded chiclet keycap with a glossy
    crowned top, bevelled rim, deep extruded body, and a real
    3D press-down on hover. Final override — wins all earlier layers.

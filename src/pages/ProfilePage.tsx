@@ -85,10 +85,10 @@ const ProfilePage = () => {
       } else {
         // Pure generation mode
         const stylePrompts: Record<string, string> = {
-          "realistic-portrait": `Ultra-photorealistic 8K UHD portrait headshot of ${desc}. Shot on Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting. Shallow depth of field. Indistinguishable from a real photograph. Award-winning portrait photography.`,
+          "realistic-portrait": `Ultra-photorealistic 4K UHD portrait headshot of ${desc}. Shot on Canon EOS R5 with 85mm f/1.2 lens. Real human with visible pores, subsurface scattering, natural skin tones, individual hair strands, catch lights in eyes. Professional studio lighting. Shallow depth of field. Indistinguishable from a real photograph. Award-winning portrait photography.`,
           "anime": `Anime style character of ${desc}. Vibrant colors, detailed anime eyes, clean lines, 4K quality.`,
           "cartoon-3d": `3D Pixar-style cartoon character of ${desc}. Smooth render, vibrant, Disney quality, 4K.`,
-          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic, 8K cinematic.`,
+          "cyberpunk": `Cyberpunk character of ${desc}. Neon lighting, futuristic, blade runner aesthetic, 4K cinematic.`,
           "fantasy": `Epic fantasy character of ${desc}. Magical atmosphere, dramatic lighting, concept art quality.`,
           "watercolor": `Watercolor portrait of ${desc}. Soft washes, artistic brushstrokes, fine art quality.`,
           "minimalist": `Minimalist flat design avatar of ${desc}. Clean geometric shapes, modern design.`,

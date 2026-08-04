@@ -17,8 +17,8 @@ import SEO from "@/components/SEO";
  * RealmBuilderPage — Phase 1 foundation of the CAD-style Realm Builder.
  *
  * User flow:
- *  1. Describe the realm (text prompt, e.g. "Neon Tokyo rooftop at dusk, 8K photoreal").
- *  2. Oracle generates an 8K equirectangular panoramic skybox via Gemini 3 Pro.
+ *  1. Describe the realm (text prompt, e.g. "Neon Tokyo rooftop at dusk, 4K photoreal").
+ *  2. Oracle generates an 4K equirectangular panoramic skybox via Gemini 3 Pro.
  *  3. Pick or generate an avatar (from user_avatars).
  *  4. Walk inside the realm (FPS controls: WASD + mouse look).
  *  5. Save the realm, optionally publish a public shareable link.
@@ -52,7 +52,7 @@ interface RealmRow {
 function buildSkyboxPrompt(userPrompt: string): string {
   const clean = userPrompt.trim().replace(/\s+/g, " ");
   return (
-    `Ultra-photorealistic 8K 360° equirectangular panorama, seamless spherical ` +
+    `Ultra-photorealistic 4K 360° equirectangular panorama, seamless spherical ` +
     `projection, aspect ratio 2:1, zero distortion at the horizon line. ` +
     `Shot on a full-frame DSLR with a 24mm prime lens, natural real-world ` +
     `lighting, true-to-life color science, accurate white balance, realistic ` +
@@ -77,7 +77,7 @@ type OrthoView = "top" | "side" | "front" | "structure";
 function buildOrthoPrompt(userPrompt: string, view: OrthoView): string {
   const clean = userPrompt.trim().replace(/\s+/g, " ");
   const common =
-    `Ultra-photoreal 8K reference render of the SAME scene. ` +
+    `Ultra-photoreal 4K reference render of the SAME scene. ` +
     `Physically based materials, real lighting, accurate scale. ` +
     `Every rock, boulder, obstruction, prop and structure clearly visible ` +
     `and separated. Neutral studio backdrop. No text, no watermarks, no labels. `;
@@ -112,7 +112,7 @@ type Scene3DView = "depth" | "left" | "right" | "back";
 function buildScene3DPrompt(userPrompt: string, view: Scene3DView): string {
   const clean = userPrompt.trim().replace(/\s+/g, " ");
   const base =
-    `Ultra-photoreal 8K, DSLR capture, same real-world scene, same lighting, ` +
+    `Ultra-photoreal 4K, DSLR capture, same real-world scene, same lighting, ` +
     `same time of day, same materials and same color palette as: ${clean}. ` +
     `Indistinguishable from a real photograph. NO text, NO watermarks. `;
   switch (view) {
@@ -140,7 +140,7 @@ function makeSlug(title: string): string {
 export default function RealmBuilderPage() {
   const { user } = useAuth();
   const [title, setTitle] = useState("My First Realm");
-  const [prompt, setPrompt] = useState("A moonlit oceanside cliff at golden hour, waves crashing on rocks, cinematic 8K");
+  const [prompt, setPrompt] = useState("A moonlit oceanside cliff at golden hour, waves crashing on rocks, cinematic 4K");
   const [skyboxUrl, setSkyboxUrl] = useState<string | null>(null);
   const [orthoViews, setOrthoViews] = useState<Record<OrthoView, string | null>>({
     top: null, side: null, front: null, structure: null,
@@ -300,7 +300,7 @@ export default function RealmBuilderPage() {
     <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
       <SEO
         title="Realm Builder — Oracle Lunar"
-        description="Build 8K photoreal 3D realms with AI. Walk inside your creation, drop in your avatar, and share it."
+        description="Build 4K photoreal 3D realms with AI. Walk inside your creation, drop in your avatar, and share it."
       />
 
       <header className="border-b border-white/10 bg-black/50 backdrop-blur sticky top-0 z-30">
@@ -314,7 +314,7 @@ export default function RealmBuilderPage() {
               Realm Builder
               <span className="text-[10px] uppercase tracking-wider text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded-full">Phase 4</span>
             </h1>
-            <p className="text-xs text-white/50">Describe → 8K photoreal realm → walk inside → publish & earn</p>
+            <p className="text-xs text-white/50">Describe → 4K photoreal realm → walk inside → publish & earn</p>
           </div>
           <Button asChild size="sm" variant="ghost" className="text-amber-400 hover:text-amber-300">
             <Link to="/realms"><Globe2 className="w-4 h-4 mr-1" /> Public Library</Link>
@@ -342,10 +342,10 @@ export default function RealmBuilderPage() {
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={4}
                 className="mt-1 bg-black/40 border-white/10 text-sm"
-                placeholder="A moonlit oceanside cliff at golden hour, cinematic 8K..."
+                placeholder="A moonlit oceanside cliff at golden hour, cinematic 4K..."
               />
               <p className="text-[10px] text-white/40 mt-1">
-                Auto-wrapped as an 8K photoreal 360° panorama. Content stays within Google Play / M-rating safety rules.
+                Auto-wrapped as an 4K photoreal 360° panorama. Content stays within Google Play / M-rating safety rules.
               </p>
             </div>
             <Button
@@ -354,9 +354,9 @@ export default function RealmBuilderPage() {
               className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold"
             >
               {generating ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Rendering 8K realm…</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Rendering 4K realm…</>
               ) : (
-                <><Sparkles className="w-4 h-4 mr-2" /> Generate 8K Realm</>
+                <><Sparkles className="w-4 h-4 mr-2" /> Generate 4K Realm</>
               )}
             </Button>
           </Card>
@@ -516,7 +516,7 @@ export default function RealmBuilderPage() {
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-white/40 gap-2">
                 <Wand2 className="w-10 h-10" />
-                <p className="text-sm">Your 8K photoreal realm will appear here</p>
+                <p className="text-sm">Your 4K photoreal realm will appear here</p>
                 <p className="text-xs">Describe a place → hit Generate</p>
               </div>
             )}
