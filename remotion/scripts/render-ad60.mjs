@@ -56,7 +56,7 @@ const inputs = [
 ];
 
 // one whoosh per scene cut, plus impacts on the open and the finale
-const whooshes = CUTS.map((t, i) => `[4:a]adelay=${Math.round(t * 1000)}|${Math.round(t * 1000)},volume=0.42[w${i}]`);
+const whooshes = CUTS.map((t, i) => `[4:a]adelay=${Math.round(t * 1000)}|${Math.round(t * 1000)},volume=0.28[w${i}]`);
 const whooshTags = CUTS.map((_, i) => `[w${i}]`).join("");
 
 const filter = [
@@ -64,11 +64,11 @@ const filter = [
   `[1:a]adelay=${VO_OFFSET * 1000}|${VO_OFFSET * 1000},highpass=f=90,` +
     `equalizer=f=3200:t=q:w=1.4:g=3.5,acompressor=threshold=-18dB:ratio=4:attack=6:release=180,volume=1.35[vo]`,
   // score: full and loud in the gaps, ducked under the VO
-  `[2:a]atrim=0:60,volume=0.9,afade=t=in:st=0:d=0.5,afade=t=out:st=57.6:d=2.4[mus0]`,
+  `[2:a]atrim=0:60,volume=0.42,afade=t=in:st=0:d=0.5,afade=t=out:st=57.6:d=2.4[mus0]`,
   `[vo]asplit=2[vo1][vokey]`,
-  `[mus0][vokey]sidechaincompress=threshold=0.06:ratio=7:attack=8:release=320:makeup=1[mus]`,
-  `[3:a]adelay=0|0,volume=0.85[imp0]`,
-  `[3:a]adelay=55700|55700,volume=0.8[imp1]`,
+  `[mus0][vokey]sidechaincompress=threshold=0.03:ratio=12:attack=5:release=260:makeup=1[mus]`,
+  `[3:a]adelay=0|0,volume=0.6[imp0]`,
+  `[3:a]adelay=55700|55700,volume=0.55[imp1]`,
   ...whooshes,
   `[vo1][mus][imp0][imp1]${whooshTags}amix=inputs=${4 + CUTS.length}:duration=first:dropout_transition=0:normalize=0[mixed]`,
   `[mixed]loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.95[aout]`,
