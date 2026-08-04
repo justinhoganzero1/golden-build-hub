@@ -69,6 +69,13 @@ const OwnerDashboardPage = () => {
   const [libFilter, setLibFilter] = useState("All");
   const [libSearch, setLibSearch] = useState("");
   const [libSelected, setLibSelected] = useState<any>(null);
+  // The paginated library list omits the heavy `url`/`metadata` columns, so
+  // pull the full row when an item is opened (preview + download need `url`).
+  const openLibItem = async (m: any) => {
+    setLibSelected(m);
+    const { data } = await supabase.from("user_media").select("*").eq("id", m.id).maybeSingle();
+    if (data) setLibSelected((cur: any) => (cur && cur.id === m.id ? { ...cur, ...data } : cur));
+  };
   const [libShareItem, setLibShareItem] = useState<any>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [installStats, setInstallStats] = useState<{
@@ -1497,13 +1504,13 @@ const OwnerDashboardPage = () => {
                 {filteredLib.map((m: any) => (
                   <div key={m.id} className="relative">
                     <button
-                      onClick={() => setLibSelected(m)}
+                      onClick={() => void openLibItem(m)}
                       onMouseEnter={() => setHoveredItem(m.id)}
                       onMouseLeave={() => setHoveredItem(null)}
                       className="w-full aspect-square bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col items-center justify-center gap-1 hover:border-yellow-500/30 transition-all"
                     >
-                      {m.media_type === "image" && m.url ? (
-                        <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                      {m.media_type === "image" && (m.thumbnail_url || m.url) ? (
+                        <img src={m.thumbnail_url || m.url} alt={m.title} className="w-full h-full object-cover" />
                       ) : (
                         <>
                           {getMediaIcon(m.media_type)}
@@ -1523,10 +1530,10 @@ const OwnerDashboardPage = () => {
             ) : (
               <div className="space-y-2">
                 {filteredLib.map((m: any) => (
-                  <button key={m.id} onClick={() => setLibSelected(m)}
+                  <button key={m.id} onClick={() => void openLibItem(m)}
                     className="w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3 hover:border-yellow-500/30 transition-all text-left group">
-                    {m.media_type === "image" && m.url ? (
-                      <img src={m.url} alt={m.title} className="w-12 h-12 rounded-lg object-cover" />
+                    {m.media_type === "image" && (m.thumbnail_url || m.url) ? (
+                      <img src={m.thumbnail_url || m.url} alt={m.title} className="w-12 h-12 rounded-lg object-cover" />
                     ) : (
                       <div className="p-2 rounded-lg bg-white/10">{getMediaIcon(m.media_type)}</div>
                     )}
