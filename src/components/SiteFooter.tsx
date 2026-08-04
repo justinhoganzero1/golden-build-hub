@@ -52,6 +52,13 @@ const SiteFooter = () => {
           >
             <Mail className="w-3.5 h-3.5" /> Email the founder
           </button>
+          <Link
+            to="/inbox"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:border-primary/50 transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" /> My inbox
+          </Link>
+
           {isAdmin && (
             <Link
               to="/admin/inbox"

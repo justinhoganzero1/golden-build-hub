@@ -31,7 +31,7 @@ interface AccountVoice {
   use_case: string;
 }
 
-type Tab = "library" | "party" | "saved" | "studio";
+type Tab = "library" | "party" | "saved" | "studio" | "clone";
 type GenderFilter = "All" | "Male" | "Female" | "Neutral";
 
 const TTS_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-tts`;
@@ -62,6 +62,60 @@ export default function VoiceStudioPage() {
 
   // Assign dialog
   const [assignVoice, setAssignVoice] = useState<SavedVoice | null>(null);
+
+  // Voice cloning (ElevenLabs IVC)
+  const [cloneName, setCloneName] = useState("");
+  const [cloneDescription, setCloneDescription] = useState("");
+  const [cloneFiles, setCloneFiles] = useState<File[]>([]);
+  const [cloning, setCloning] = useState(false);
+  const [clonedVoiceId, setClonedVoiceId] = useState<string>("");
+
+  async function cloneVoice() {
+    if (!user) { toast.error("Sign in to clone a voice"); return; }
+    if (!cloneName.trim()) { toast.error("Give your voice a name"); return; }
+    if (cloneFiles.length === 0) { toast.error("Add at least one audio sample"); return; }
+    setCloning(true);
+    try {
+      const form = new FormData();
+      form.append("name", cloneName.trim());
+      if (cloneDescription.trim()) form.append("description", cloneDescription.trim());
+      cloneFiles.forEach((f) => form.append("files", f, f.name));
+
+      const res = await fetch(
+        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-clone-voice`,
+        {
+          method: "POST",
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+          body: form,
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.voice_id) {
+        const details = String(data?.details || "");
+        if (details.includes("paid_plan_required") || details.includes("instant voice cloning")) {
+          throw new Error("Voice cloning needs a paid ElevenLabs plan — upgrade via the banner above, then try again.");
+        }
+        throw new Error(data?.error || details || `Clone failed (${res.status})`);
+      }
+
+      setClonedVoiceId(data.voice_id);
+      toast.success(`Cloned "${cloneName}" — ready to use`);
+      try {
+        await saveVoice.mutateAsync({
+          name: cloneName.trim(),
+          gender: "Neutral",
+          source: "elevenlabs-clone",
+          voice_config: { voice_id: data.voice_id, settings },
+        });
+      } catch { /* saving is best-effort */ }
+      void loadAccountVoices();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Clone failed");
+    } finally {
+      setCloning(false);
+    }
+  }
+
 
   // Load account voices on mount
   useEffect(() => {
@@ -366,7 +420,7 @@ export default function VoiceStudioPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
-          {(["library", "party", "saved", "studio"] as Tab[]).map((t) => (
+          {(["library", "party", "saved", "studio", "clone"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -374,7 +428,8 @@ export default function VoiceStudioPage() {
                 tab === t ? "border-b-2 border-primary text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : "💾 Saved"}
+              {t === "studio" ? "🎛 Studio" : t === "library" ? "🎙 Library" : t === "party" ? `🎉 Party (${PARTY_VOICES.length})` : t === "clone" ? "🧬 Clone" : "💾 Saved"}
+
             </button>
           ))}
         </div>
@@ -737,7 +792,96 @@ export default function VoiceStudioPage() {
             </div>
           </div>
         )}
+
+        {/* CLONE — ElevenLabs Instant Voice Cloning */}
+        {tab === "clone" && (
+          <div className="max-w-2xl">
+            <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+              <div>
+                <h2 className="font-bold text-lg flex items-center gap-2"><Mic className="text-primary" size={18} /> Clone a voice</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upload 1–10 clean audio samples (30s–3min total is ideal). Oracle sends them straight to
+                  ElevenLabs Instant Voice Cloning and the new voice appears in your Library.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-1">Voice name</label>
+                <input
+                  value={cloneName}
+                  onChange={(e) => setCloneName(e.target.value)}
+                  placeholder="e.g. My Narrator"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-1">Description (optional)</label>
+                <input
+                  value={cloneDescription}
+                  onChange={(e) => setCloneDescription(e.target.value)}
+                  placeholder="Warm Australian male, calm storytelling"
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium block mb-1">Audio samples</label>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  multiple
+                  onChange={(e) => setCloneFiles(Array.from(e.target.files || []))}
+                  className="w-full text-sm"
+                />
+                {cloneFiles.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {cloneFiles.length} file{cloneFiles.length === 1 ? "" : "s"} ·{" "}
+                    {(cloneFiles.reduce((n, f) => n + f.size, 0) / 1024 / 1024).toFixed(1)} MB
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={() => void cloneVoice()}
+                disabled={cloning}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                {cloning ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
+                {cloning ? "Cloning…" : "Clone voice with ElevenLabs"}
+              </button>
+
+              {clonedVoiceId && (
+                <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 space-y-2">
+                  <p className="text-xs text-primary font-semibold">Clone ready — voice ID {clonedVoiceId}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => { setStudioVoiceId(clonedVoiceId); setStudioVoiceName(cloneName || "My Clone"); setTab("studio"); }}
+                      className="px-3 py-1.5 rounded text-xs bg-card border border-border hover:border-primary"
+                    >
+                      Open in Studio
+                    </button>
+                    <button
+                      onClick={() => generatePreview(clonedVoiceId, cloneName || "My Clone")}
+                      disabled={generating}
+                      className="px-3 py-1.5 rounded text-xs bg-primary/15 text-primary"
+                    >
+                      Preview clone
+                    </button>
+                    <button
+                      onClick={() => setAsOracleMaster(clonedVoiceId, cloneName || "My Clone", settings)}
+                      className="px-3 py-1.5 rounded text-xs bg-card border border-border hover:border-amber-400"
+                    >
+                      👑 Make Oracle's voice
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
 
       {/* Assign Dialog */}
       <Dialog open={!!assignVoice} onOpenChange={(o) => !o && setAssignVoice(null)}>
