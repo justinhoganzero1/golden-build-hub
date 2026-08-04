@@ -63,6 +63,54 @@ export default function VoiceStudioPage() {
   // Assign dialog
   const [assignVoice, setAssignVoice] = useState<SavedVoice | null>(null);
 
+  // Voice cloning (ElevenLabs IVC)
+  const [cloneName, setCloneName] = useState("");
+  const [cloneDescription, setCloneDescription] = useState("");
+  const [cloneFiles, setCloneFiles] = useState<File[]>([]);
+  const [cloning, setCloning] = useState(false);
+  const [clonedVoiceId, setClonedVoiceId] = useState<string>("");
+
+  async function cloneVoice() {
+    if (!user) { toast.error("Sign in to clone a voice"); return; }
+    if (!cloneName.trim()) { toast.error("Give your voice a name"); return; }
+    if (cloneFiles.length === 0) { toast.error("Add at least one audio sample"); return; }
+    setCloning(true);
+    try {
+      const form = new FormData();
+      form.append("name", cloneName.trim());
+      if (cloneDescription.trim()) form.append("description", cloneDescription.trim());
+      cloneFiles.forEach((f) => form.append("files", f, f.name));
+
+      const res = await fetch(
+        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/elevenlabs-clone-voice`,
+        {
+          method: "POST",
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+          body: form,
+        },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.voice_id) throw new Error(data?.details || data?.error || `Clone failed (${res.status})`);
+
+      setClonedVoiceId(data.voice_id);
+      toast.success(`Cloned "${cloneName}" — ready to use`);
+      try {
+        await saveVoice.mutateAsync({
+          name: cloneName.trim(),
+          gender: "Neutral",
+          source: "elevenlabs-clone",
+          voice_config: { voice_id: data.voice_id, settings },
+        });
+      } catch { /* saving is best-effort */ }
+      void loadAccountVoices();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Clone failed");
+    } finally {
+      setCloning(false);
+    }
+  }
+
+
   // Load account voices on mount
   useEffect(() => {
     void loadAccountVoices();
