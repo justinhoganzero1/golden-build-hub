@@ -16,7 +16,13 @@ const story = {
   ],
 };
 
-const buf = async (b: Blob) => await new Response(b as any).arrayBuffer();
+const buf = (b: Blob): Promise<ArrayBuffer> =>
+  new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result as ArrayBuffer);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsArrayBuffer(b);
+  });
 const bytes = async (b: Blob) => new Uint8Array(await buf(b));
 const asText = async (b: Blob) => new TextDecoder().decode(await bytes(b));
 
