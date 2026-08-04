@@ -2477,9 +2477,12 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             author: story.author,
             genre: story.genre,
             premise: story.premise,
+            blurb: story.blurb,
+            coverImage: story.coverImage,
             chapters: story.chapters,
             publishedUrl: story.publishedUrl,
           }}
+
         />
 
 
