@@ -101,6 +101,29 @@ const UrlBar: React.FC<{ globalFrame: number }> = ({ globalFrame }) => {
   );
 };
 
+/** Persistent proof-of-product badge: this ad was made inside the app. */
+const MadeWithBadge: React.FC = () => (
+  <div
+    style={{
+      position: "absolute",
+      top: 46,
+      right: 60,
+      zIndex: 70,
+      padding: "10px 22px",
+      borderRadius: 999,
+      border: `1px solid rgba(245,201,122,0.5)`,
+      background: "rgba(5,4,10,0.72)",
+      fontFamily: SANS,
+      fontSize: 19,
+      fontWeight: 700,
+      letterSpacing: 2,
+      color: "rgba(245,201,122,0.92)",
+    }}
+  >
+    THIS AD WAS MADE IN ORACLE LUNAR
+  </div>
+);
+
 /** Small persistent brand lockup, top-left. */
 const BrandMark: React.FC = () => (
   <div
@@ -546,6 +569,20 @@ const FinaleScene: React.FC = () => {
         >
           Start free. Go get it.
         </div>
+        <div
+          style={{
+            marginTop: 28,
+            fontFamily: SANS,
+            fontSize: 30,
+            fontWeight: 600,
+            letterSpacing: 2,
+            color: GOLD,
+            textAlign: "center",
+            opacity: spring({ frame: frame - 40, fps, config: { damping: 200 } }),
+          }}
+        >
+          Every second of this ad was made inside Oracle Lunar's Movie Maker.
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -760,6 +797,7 @@ export const Ad60: React.FC = () => {
       ))}
       <CutFlash />
       <BrandMark />
+      <MadeWithBadge />
       <UrlBar globalFrame={frame} />
     </AbsoluteFill>
   );

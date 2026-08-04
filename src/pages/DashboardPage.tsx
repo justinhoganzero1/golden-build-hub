@@ -345,7 +345,7 @@ const DashboardPage = () => {
           <button
             key={t.path}
             onClick={() => navigate(t.path)}
-            className="ad-pill flex-1 flex flex-col items-center gap-1 px-2 py-2"
+            className="flex-1 flex flex-col items-center gap-1 px-2 py-2 text-muted-foreground hover:text-primary transition-colors"
           >
             <div className="holo-icon">{t.icon}</div>
             <span className="text-[10px] font-semibold tracking-wide leading-tight">{t.label}</span>
