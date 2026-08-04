@@ -8,10 +8,10 @@ import { useMemo, useState } from "react";
 import { formatCentsAsCoins } from "@/lib/coins";
 
 const PRICING_CENTS_PER_MIN: Record<string, number> = {
-  sd: 50, hd: 200, "4k": 800, "8k_ultimate": 5000,
+  sd: 50, hd: 200, "4k": 800, "4k_ultimate": 5000,
 };
 const QUALITY_LABEL: Record<string, string> = {
-  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "8k_ultimate": "🏆 ULTIMATE 8K",
+  sd: "SD 720p", hd: "HD 1080p", "4k": "4K Pro", "4k_ultimate": "🏆 ULTIMATE 4K",
 };
 
 interface Props {
@@ -72,7 +72,7 @@ export const MovieCostEstimator = ({
                   : "bg-background border-border/50 text-muted-foreground hover:border-primary/50"
               }`}
             >
-              {q === "8k_ultimate" && <Crown className="w-3 h-3 inline mr-1 text-primary" />}
+              {q === "4k_ultimate" && <Crown className="w-3 h-3 inline mr-1 text-primary" />}
               {QUALITY_LABEL[q]}
               <div className="text-[9px] opacity-70">{formatCentsAsCoins(PRICING_CENTS_PER_MIN[q])} / min</div>
             </button>

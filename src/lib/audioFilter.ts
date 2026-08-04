@@ -9,7 +9,7 @@
  *  3  Voice profile (5s enrollment + passive learning)
  *  4  Oracle TTS mute window (mic muted while Oracle speaks)
  *  5  Adaptive noise floor calibration (auto-adjusts gate)
- *  6  Spectral subtraction (HP 85Hz / LP 8kHz)
+ *  6  Spectral subtraction (HP 85Hz / LP 4kHz)
  *  7  Voice Activity Detection (energy + ZCR)
  *  8  Confidence-weighted transcript filter (consumer-applied)
  *  9  Proximity gate (loudness floor)
@@ -227,7 +227,7 @@ export class AudioFilterPipeline {
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 2048;
 
-    // Layer 6: HP 85Hz (kills traffic rumble) + LP 8kHz (kills hiss)
+    // Layer 6: HP 85Hz (kills traffic rumble) + LP 4kHz (kills hiss)
     this.hp = this.ctx.createBiquadFilter();
     this.hp.type = "highpass";
     this.hp.frequency.value = 85;

@@ -165,7 +165,7 @@ export default function RealmViewerPage() {
     <div className="min-h-screen bg-black text-white">
       <SEO
         title={`${realm.title} — Realm`}
-        description={realm.prompt?.slice(0, 155) ?? "Walk into an 8K photoreal realm on Oracle Lunar."}
+        description={realm.prompt?.slice(0, 155) ?? "Walk into an 4K photoreal realm on Oracle Lunar."}
       />
       <header className="border-b border-white/10 bg-black/60 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">

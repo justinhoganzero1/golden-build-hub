@@ -99,7 +99,7 @@ const AIHostShowWizard = ({ open, onOpenChange, onReady }: Props) => {
       let hostImage: string | undefined;
       try {
         const res = await generateImage({
-          prompt: `${appearance}. Waist-up shot of the presenter looking directly into the camera, modern YouTube studio set, soft key light, shallow depth of field, photorealistic 8K, no text, no captions, no watermark.`,
+          prompt: `${appearance}. Waist-up shot of the presenter looking directly into the camera, modern YouTube studio set, soft key light, shallow depth of field, photorealistic 4K, no text, no captions, no watermark.`,
           tier: "premium",
         });
         hostImage = res.url;

@@ -1,4 +1,4 @@
-// Replicate upscaler — Real-ESRGAN (4x) for true 4K/8K upscaling.
+// Replicate upscaler — Real-ESRGAN (4x) for true 4K/4K upscaling.
 // Input:  { image_url: string, scale?: 2 | 4 | 8, face_enhance?: boolean }
 // Output: { image_url: string }  (Replicate-hosted PNG/JPG)
 
@@ -37,7 +37,7 @@ serve(async (req) => {
     if (!REPLICATE_API_TOKEN) {
       return new Response(JSON.stringify({
         error: "REPLICATE_API_TOKEN missing",
-        hint: "Add a Replicate API token in project secrets to enable 4K/8K upscaling.",
+        hint: "Add a Replicate API token in project secrets to enable 4K/4K upscaling.",
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

@@ -1,5 +1,5 @@
 // Movie Studio Pro — Stripe one-off checkout per quality tier.
-// Body: { project_id: string, quality_tier: "sd"|"hd"|"4k"|"8k_ultimate" }
+// Body: { project_id: string, quality_tier: "sd"|"hd"|"4k"|"4k_ultimate" }
 // Returns: { url: string } — redirect user to Stripe Checkout.
 // On success, Stripe redirects to /movie-payment-success?session_id=cs_...
 // then frontend calls verify-movie-payment to mark project paid + queue rendering.
@@ -16,7 +16,7 @@ const PRICE_IDS: Record<string, { price: string; amount_cents: number; label: st
   sd:           { price: "price_1TNob8LGip9LWuvpZsCHHeMU", amount_cents: 900,   label: "SD Quality"  },
   hd:           { price: "price_1TNobXLGip9LWuvp4XFCnQYf", amount_cents: 2900,  label: "HD Quality"  },
   "4k":         { price: "price_1TNobvLGip9LWuvp3hDSZO3I", amount_cents: 7900,  label: "4K Quality"  },
-  "8k_ultimate":{ price: "price_1TNocFLGip9LWuvpIhVz42ra", amount_cents: 19900, label: "8K Ultimate" },
+  "4k_ultimate":{ price: "price_1TNocFLGip9LWuvpIhVz42ra", amount_cents: 19900, label: "4K Ultimate" },
 };
 
 const json = (b: unknown, s = 200) =>

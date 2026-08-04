@@ -140,7 +140,7 @@ serve(async (req) => {
     const chosenTier: "fast" | "premium" =
       tier === "premium" ? "premium" :
       tier === "fast"    ? "fast"    :
-      (prompt.length > 220 || /logo|brand|hero|poster|cinematic|8k|magazine cover|product shot/i.test(prompt))
+      (prompt.length > 220 || /logo|brand|hero|poster|cinematic|4k|magazine cover|product shot/i.test(prompt))
         ? "premium" : "fast";
     const { model: defaultModel, cost: IMAGE_GEN_COST_CENTS } = IMAGE_MODELS[chosenTier];
 

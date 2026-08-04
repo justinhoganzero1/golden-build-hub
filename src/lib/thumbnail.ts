@@ -1,6 +1,6 @@
 // Tiny, fast previews for library grids.
 //
-// Full-size library artwork is often several megabytes (8K renders, data URLs),
+// Full-size library artwork is often several megabytes (4K renders, data URLs),
 // which makes a picker grid crawl. These helpers produce a *very* low-res
 // preview — server-side transform for Supabase Storage objects, canvas
 // downscale for data/blob/remote URLs — and memoise the result so scrolling

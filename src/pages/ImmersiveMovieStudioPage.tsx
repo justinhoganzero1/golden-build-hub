@@ -1336,7 +1336,7 @@ const ImmersiveMovieStudioPage = () => {
                 <Textarea
                   value={scenePrompt}
                   onChange={(e) => setScenePrompt(e.target.value.slice(0, 800))}
-                  placeholder="e.g. A Rottweiler in a Bintang singlet leans on a Bali beach bar at golden hour, ordering a cold Bintang. Photoreal 8K, warm rim light, shallow depth of field."
+                  placeholder="e.g. A Rottweiler in a Bintang singlet leans on a Bali beach bar at golden hour, ordering a cold Bintang. Photoreal 4K, warm rim light, shallow depth of field."
                   rows={5}
                   disabled={genBusy}
                 />

@@ -197,7 +197,7 @@ All colors MUST be HSL.
     50% { transform: translateY(-4px); }
   }
 
-  /* ── Holographic 8K Avatar Display ── */
+  /* ── Holographic 4K Avatar Display ── */
   .holo-avatar-wrap {
     position: relative;
     overflow: hidden;
@@ -1044,38 +1044,107 @@ a[aria-disabled="true"],
   100% { transform: scale(1.45) translateZ(0); }
 }
 
-/* ── Holographic button — for CTAs ── */
+/* ═══════════════════════════════════════════════════════════════
+   AD PILL — the single app-wide button surface.
+   Identical silhouette to the Oracle Lunar ad call-to-action:
+   full-round pill, gold hairline border, deep translucent black
+   fill, soft gold glow that intensifies on hover.
+   ═══════════════════════════════════════════════════════════════ */
+.ad-pill {
+  position: relative;
+  border-radius: 999px;
+  border: 2px solid hsl(var(--gold) / 0.55);
+  background: hsl(0 0% 2% / 0.82);
+  color: hsl(var(--gold-light));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--accent-white) / 0.08),
+    0 0 22px hsl(var(--gold) / 0.18);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.ad-pill:hover {
+  border-color: hsl(var(--gold));
+  color: hsl(var(--gold-light));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--accent-white) / 0.14),
+    0 0 40px hsl(var(--gold) / 0.42);
+  transform: translateY(-1px);
+}
+
+/* Primary CTA — brighter rim, hotter glow */
+.ad-pill--gold {
+  border-color: hsl(var(--gold));
+  background:
+    linear-gradient(180deg, hsl(var(--gold) / 0.16), hsl(0 0% 2% / 0.9));
+  color: hsl(var(--gold-light));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--accent-white) / 0.16),
+    0 0 34px hsl(var(--gold) / 0.34);
+}
+.ad-pill--gold:hover {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--accent-white) / 0.22),
+    0 0 56px hsl(var(--gold) / 0.55);
+}
+
+/* Quiet CTA — same pill, dimmer rim */
+.ad-pill--quiet {
+  border-color: hsl(var(--gold) / 0.38);
+  color: hsl(var(--gold) / 0.9);
+  background: hsl(0 0% 4% / 0.72);
+}
+
+/* Ghost — pill outline only appears on hover */
+.ad-pill--ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: hsl(var(--foreground));
+}
+.ad-pill--ghost:hover {
+  border-color: hsl(var(--gold) / 0.5);
+  background: hsl(var(--gold) / 0.08);
+  box-shadow: 0 0 26px hsl(var(--gold) / 0.22);
+}
+
+/* Danger — same pill silhouette, red rim */
+.ad-pill--danger {
+  border-color: hsl(var(--destructive) / 0.75);
+  color: hsl(var(--destructive));
+  background: hsl(0 0% 2% / 0.85);
+  box-shadow: 0 0 24px hsl(var(--destructive) / 0.22);
+}
+.ad-pill--danger:hover {
+  border-color: hsl(var(--destructive));
+  box-shadow: 0 0 42px hsl(var(--destructive) / 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-pill:hover { transform: none; }
+}
+
+/* ── Legacy holographic button — now matches the ad pill ── */
 .holo-button {
   position: relative;
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at 30% 20%, hsl(var(--accent-white) / 0.22), transparent 35%),
-    linear-gradient(135deg,
-      hsl(45 100% 55%) 0%,
-      hsl(40 95% 48%) 35%,
-      hsl(280 90% 56%) 72%,
-      hsl(45 100% 62%) 100%);
-  background-size: 200% 200%;
-  color: hsl(var(--primary-foreground));
+  border-radius: 999px;
+  border: 2px solid hsl(var(--gold));
+  background: linear-gradient(180deg, hsl(var(--gold) / 0.16), hsl(0 0% 2% / 0.9));
+  color: hsl(var(--gold-light));
   font-weight: 700;
-  border: 1px solid hsl(var(--accent-white) / 0.22);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.4),
-    inset 0 -2px 4px hsl(0 0% 0% / 0.3),
-    0 6px 16px hsl(var(--primary) / 0.28),
-    0 0 26px hsl(280 90% 60% / 0.24);
-  animation: holo-shimmer 8s ease-in-out infinite;
+    inset 0 1px 0 hsl(var(--accent-white) / 0.16),
+    0 0 34px hsl(var(--gold) / 0.34);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.25s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .holo-button:hover {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(-1px);
   box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.5),
-    inset 0 -2px 4px hsl(0 0% 0% / 0.3),
-    0 10px 24px hsl(280 80% 30% / 0.6),
-    0 0 36px hsl(200 90% 50% / 0.5);
+    inset 0 1px 0 hsl(var(--accent-white) / 0.22),
+    0 0 56px hsl(var(--gold) / 0.55);
 }
 
 .holo-button:active {
@@ -1191,7 +1260,7 @@ a[aria-disabled="true"],
 
 
 /* ═══════════════════════════════════════════════════════════════
-   CHICLET v5 — 3D 8K REALISTIC CHROME-FRAMED TILES
+   CHICLET v5 — 3D 4K REALISTIC CHROME-FRAMED TILES
    Thin polished chrome bezel, deep glass body, parallax hover that
    pops the icon out of the screen and slowly rotates it in 3D until
    the user clicks or moves to another tile. Applies globally to
@@ -1475,7 +1544,7 @@ a[aria-disabled="true"],
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CHICLET v6 — REAL 8K OLED KEYBOARD KEYS
+   CHICLET v6 — REAL 4K OLED KEYBOARD KEYS
    Each tile is a sculpted, extruded chiclet keycap with a glossy
    crowned top, bevelled rim, deep extruded body, and a real
    3D press-down on hover. Final override — wins all earlier layers.

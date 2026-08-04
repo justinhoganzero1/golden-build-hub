@@ -4,23 +4,29 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Oracle Lunar button system — the cinematic "ad pill".
+ * Every button in the app uses the same silhouette as the Oracle Lunar ad:
+ * a full-round gold-outlined pill on deep translucent black with a gold glow.
+ * Variants only change intensity / hue, never the shape.
+ */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[18px] text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "ad-pill inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-bold uppercase tracking-[0.08em] ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "holo-button text-primary-foreground",
-        destructive: "border border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/25 shadow-[0_0_18px_hsl(var(--destructive)/0.18)]",
-        outline: "border border-primary/35 bg-card/70 text-foreground shadow-[inset_0_1px_0_hsl(var(--accent-white)/0.10),0_0_16px_hsl(var(--primary)/0.16)] hover:border-primary/65 hover:bg-primary/10",
-        secondary: "border border-secondary bg-secondary/70 text-secondary-foreground hover:bg-secondary shadow-[0_0_16px_hsl(var(--primary)/0.12)]",
-        ghost: "text-foreground hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_18px_hsl(var(--primary)/0.18)]",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "ad-pill--gold",
+        destructive: "ad-pill--danger",
+        outline: "ad-pill--quiet",
+        secondary: "ad-pill--quiet",
+        ghost: "ad-pill--ghost",
+        link: "ad-pill--ghost normal-case tracking-normal text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-[16px] px-3",
-        lg: "h-11 rounded-[20px] px-8",
-        icon: "h-10 w-10 rounded-[16px]",
+        default: "h-10 px-6 py-2",
+        sm: "h-9 px-5 text-xs",
+        lg: "h-12 px-9 text-base",
+        icon: "h-10 w-10 px-0",
       },
     },
     defaultVariants: {

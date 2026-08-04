@@ -91,8 +91,8 @@ serve(async (req) => {
             currency: "usd",
             unit_amount: 400,
             product_data: {
-              name: "Living GIF (20s 8K)",
-              description: `Custom 20-second 8K animated avatar GIF.`,
+              name: "Living GIF (20s 4K)",
+              description: `Custom 20-second 4K animated avatar GIF.`,
             },
           },
           quantity: 1,

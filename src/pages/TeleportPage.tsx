@@ -32,7 +32,7 @@ const PRESETS: { emoji: string; label: string; prompt: string }[] = [
   { emoji: "🎷", label: "1920s Berlin jazz club", prompt: "inside a smoky 1920s Berlin jazz club, art-deco lighting, dressed in period-perfect Roaring Twenties attire, sepia-toned cinematic photo" },
   { emoji: "🏯", label: "Ancient Kyoto temple",   prompt: "walking through a mist-covered ancient Kyoto temple courtyard at dawn, cherry blossoms falling, wearing subtly period-appropriate clothing, painterly cinematic photo" },
   { emoji: "🌆", label: "Cyberpunk Tokyo",        prompt: "standing in a neon-drenched cyberpunk Tokyo alleyway at night, holographic signs, rain-slicked streets reflecting pink and cyan lights, Blade-Runner style photo" },
-  { emoji: "📸", label: "Cover of Vogue",         prompt: "high-fashion Vogue magazine cover shot, studio lighting, editorial pose, luxurious couture wardrobe, razor-sharp 8K fashion photography" },
+  { emoji: "📸", label: "Cover of Vogue",         prompt: "high-fashion Vogue magazine cover shot, studio lighting, editorial pose, luxurious couture wardrobe, razor-sharp 4K fashion photography" },
   { emoji: "🏔", label: "Everest summit",          prompt: "at the summit of Mount Everest in full mountaineering gear, prayer flags whipping in the wind, sunrise over the Himalayas, epic National Geographic photo" },
   { emoji: "🏛", label: "Ancient Rome, Forum",     prompt: "standing in the ancient Roman Forum during its golden age, wearing period-authentic Roman attire, marble columns and citizens in the background, cinematic photo" },
   { emoji: "🌊", label: "Underwater with whales", prompt: "swimming underwater beside a massive humpback whale, sunbeams cutting through crystal-clear ocean, National Geographic underwater photography" },
@@ -138,7 +138,7 @@ const TeleportPage = () => {
         `this must clearly be the same person, not a lookalike. ` +
         `Adapt their wardrobe and pose naturally to fit the new environment. ` +
         `NEW SCENE: ${where}. ` +
-        `Style: ultra-realistic 8K photograph, cinematic lighting, sharp focus, natural depth of field, ` +
+        `Style: ultra-realistic 4K photograph, cinematic lighting, sharp focus, natural depth of field, ` +
         `feel like a real photo the person actually took at that place.`;
 
       const resp = await fetch(GEN_URL, {

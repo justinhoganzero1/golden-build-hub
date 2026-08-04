@@ -10,7 +10,7 @@ import {
 } from "@/hooks/useLowPower";
 
 /**
- * QUANTUM VISIBILITY — 8K-realistic 3D world from a generated photo.
+ * QUANTUM VISIBILITY — 4K-realistic 3D world from a generated photo.
  *
  * - Subdivides the plane heavily (256×256) and displaces vertices using a
  *   luminance-derived depth field so the user can fly around inside the photo.
@@ -23,7 +23,7 @@ import {
 interface QuantumPhotoViewerProps {
   imageUrl: string;
   onClose?: () => void;
-  /** 0–1. Higher = more pronounced 3D pop. Default 0.55 for "8K realism" feel. */
+  /** 0–1. Higher = more pronounced 3D pop. Default 0.55 for "4K realism" feel. */
   depth?: number;
 }
 
@@ -56,7 +56,7 @@ function QuantumMesh({ url, depth }: { url: string; depth: number }) {
     return img.width / img.height;
   }, [tex]);
 
-  // Maximize anisotropic filtering for sharp 8K-style detail at oblique angles.
+  // Maximize anisotropic filtering for sharp 4K-style detail at oblique angles.
   useMemo(() => {
     tex.anisotropy = 16;
     tex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -96,7 +96,7 @@ export const QuantumPhotoViewer = ({
   const [hasError, setHasError] = useState(false);
   const prevPrefRef = useRef<LowPowerPreference | null>(null);
 
-  // POWER DIVERSION: while this 8K viewer is mounted, force low-power on the
+  // POWER DIVERSION: while this 4K viewer is mounted, force low-power on the
   // rest of the app so glows/animations/prefetch back off.
   useEffect(() => {
     prevPrefRef.current = getLowPowerPreference();

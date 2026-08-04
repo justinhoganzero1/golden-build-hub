@@ -210,7 +210,7 @@ Rules:
     if (!subject) { toast.error("Enter an episode title or topic first"); return; }
     setGeneratingThumb(true);
     try {
-      const prompt = `Ultra-realistic 8K YouTube thumbnail for a show titled "${subject}". Cinematic lighting, bold high-contrast composition, one clear focal subject, expressive face if any, dramatic background, punchy readable large title text overlay "${(state.showTitle || state.topic).slice(0, 40)}", vibrant colors, 16:9.`;
+      const prompt = `Ultra-realistic 4K YouTube thumbnail for a show titled "${subject}". Cinematic lighting, bold high-contrast composition, one clear focal subject, expressive face if any, dramatic background, punchy readable large title text overlay "${(state.showTitle || state.topic).slice(0, 40)}", vibrant colors, 16:9.`;
       const res = await generateImage({ prompt, tier: "premium" });
       update({ thumbnailUrl: res.url });
       toast.success("Thumbnail generated & saved to your Library");

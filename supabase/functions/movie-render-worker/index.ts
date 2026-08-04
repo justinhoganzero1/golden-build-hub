@@ -1,5 +1,5 @@
 // Cron-driven worker. Pulled by pg_cron every minute. Claims one job, runs it, updates state.
-// Job types: video | audio | upscale_4k | upscale_8k | stitch | thumbnail | trailer
+// Job types: video | audio | upscale_4k | upscale_4k | stitch | thumbnail | trailer
 //
 // 2026-04-19: Real production pipeline
 //   - Real Runway Gen-3 polling (image_to_video task with status polling)
@@ -104,7 +104,7 @@ async function runJob(job: any): Promise<any> {
     case "audio": return await renderAudio(job);
     case "lip_sync": return await lipSyncScene(job);
     case "upscale_4k": return await upscale(job, 4);
-    case "upscale_8k": return await upscale(job, 8);
+    case "upscale_4k": return await upscale(job, 8);
     case "stitch": return await stitchProject(job);
     case "thumbnail": return await renderThumbnail(job);
     case "trailer": return await renderTrailer(job);
@@ -458,8 +458,8 @@ async function upscale(job: any, factor: 4 | 8) {
     return { skipped: true, reason: !REPLICATE_API_TOKEN ? "no_replicate_token" : "no_source" };
   }
 
-  const useTopaz = factor === 8 && tier === "8k_ultimate";
-  // Real-ESRGAN model on Replicate (4x upscaler) — used for both 4K and as the 8K base
+  const useTopaz = factor === 8 && tier === "4k_ultimate";
+  // Real-ESRGAN model on Replicate (4x upscaler) — used for both 4K and as the 4K base
   // For Topaz tier we still use Real-ESRGAN as a stand-in but mark it; switching to Topaz Video AI
   // requires a different model slug & higher compute budget that's enabled by tier.
   const modelVersion = useTopaz
@@ -476,7 +476,7 @@ async function upscale(job: any, factor: 4 | 8) {
 
   const updates: any = { provider_cost_cents: (scene.provider_cost_cents ?? 0) + cost.total_cents };
   if (factor === 4) updates.video_4k_url = ownedUrl;
-  if (factor === 8) updates.video_8k_url = ownedUrl;
+  if (factor === 8) updates.video_4k_url = ownedUrl;
 
   await supabase.from("movie_scenes").update(updates).eq("id", scene.id);
   await bumpSpend(job.project_id, cost.total_cents);
@@ -532,7 +532,7 @@ async function stitchProject(job: any) {
   if (!scenes?.length || !project) throw new Error("no scenes to stitch");
 
   // Pick best resolution per scene
-  const sceneUrls = scenes.map(s => s.video_8k_url || s.video_4k_url || s.video_1080p_url).filter(Boolean) as string[];
+  const sceneUrls = scenes.map(s => s.video_4k_url || s.video_4k_url || s.video_1080p_url).filter(Boolean) as string[];
   const audioUrls = scenes.map(s => s.audio_url).filter(Boolean) as string[];
 
   if (!sceneUrls.length) throw new Error("no scene video URLs");
@@ -549,9 +549,9 @@ async function stitchProject(job: any) {
     srtUrl = pub.publicUrl;
   }
 
-  // Prefer lipsync_url > 8k > 4k > 1080p per scene
+  // Prefer lipsync_url > 4k > 4k > 1080p per scene
   const bestScenes = scenes.map(s => ({
-    url: s.lipsync_url || s.video_8k_url || s.video_4k_url || s.video_1080p_url,
+    url: s.lipsync_url || s.video_4k_url || s.video_4k_url || s.video_1080p_url,
     audio: s.lipsync_url ? null : s.audio_url,
     duration: Number(s.duration_seconds ?? 8),
   })).filter(x => x.url);
@@ -600,7 +600,7 @@ async function shotstackStitch(
   scenes: Array<{ url: string; audio: string | null; duration: number }>,
   qualityTier: string,
 ): Promise<string> {
-  const resMap: Record<string, string> = { sd: "sd", hd: "hd", "4k": "4k", "8k_ultimate": "4k" };
+  const resMap: Record<string, string> = { sd: "sd", hd: "hd", "4k": "4k", "4k_ultimate": "4k" };
   const resolution = resMap[qualityTier] ?? "hd";
 
   // Ken Burns effect rotation — camera pans/zooms INSIDE each still

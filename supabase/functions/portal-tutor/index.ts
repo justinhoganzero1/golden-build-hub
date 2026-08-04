@@ -26,7 +26,7 @@ ORACLE LUNAR is a cinematic AI super-app focused on user health, safety, and wel
 - Oracle: a personal AI guide that talks, listens, and remembers.
 - Crisis Hub & Safety Center (free tier).
 - Mind Hub: 8 wellness exercises with voice guidance.
-- Avatar Generator: 8K AI avatars with custom voices/personalities.
+- Avatar Generator: 4K AI avatars with custom voices/personalities.
 - Photography Hub & Live Vision.
 - AI Studio, Voice Studio (120+ voices + cloning).
 - Family Hub, Professional Hub, Marketing Hub, App Builder, POS Learn, Story Writer, Calendar/Diary, Wallet (BPAY/PayID).
