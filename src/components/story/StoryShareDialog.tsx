@@ -297,6 +297,75 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channel, open, url, storyKey]);
 
+  // ===== Complete-file sharing (the actual story, not just a link) =====
+  const [fileFormat, setFileFormat] = useState<StoryFileFormat | "mp3">("epub");
+  const [fileBusy, setFileBusy] = useState(false);
+  const [audioPct, setAudioPct] = useState(0);
+
+  const fileSource: StoryFileSource = useMemo(() => ({
+    title: story.title || "Untitled Story",
+    author: story.author,
+    genre: story.genre,
+    premise: story.premise,
+    blurb: story.blurb,
+    coverImage: story.coverImage,
+    chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [storyKey, story.blurb, story.coverImage]);
+
+  const hasText = (story.chapters || []).some(c => (c.content || "").trim().length > 0);
+
+  const makeFile = async (): Promise<File | null> => {
+    if (!hasText) {
+      toast.error("Write at least one chapter before sharing the file.");
+      return null;
+    }
+    if (fileFormat === "mp3") {
+      setAudioPct(1);
+      const f = await narrateStoryToMp3(fileSource, setAudioPct);
+      setAudioPct(0);
+      return f;
+    }
+    return buildStoryFile(fileSource, fileFormat);
+  };
+
+  const shareCompleteFile = async () => {
+    if (fileBusy) return;
+    setFileBusy(true);
+    try {
+      const file = await makeFile();
+      if (!file) return;
+      const result = await shareFiles([file], {
+        title: story.title || "Untitled Story",
+        text: `${story.title || "Untitled Story"}${story.author ? ` by ${story.author}` : ""}`,
+      });
+      if (result === "shared") toast.success("Sent — the complete file went with it.");
+      else if (result === "downloaded") toast.success(`Saved “${file.name}” — attach it to your message.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't build the file.");
+    } finally {
+      setFileBusy(false);
+      setAudioPct(0);
+    }
+  };
+
+  const downloadCompleteFile = async () => {
+    if (fileBusy) return;
+    setFileBusy(true);
+    try {
+      const file = await makeFile();
+      if (!file) return;
+      downloadFile(file);
+      toast.success(`Downloaded “${file.name}”.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't build the file.");
+    } finally {
+      setFileBusy(false);
+      setAudioPct(0);
+    }
+  };
+
+
   const copyBody = async () => {
     const ok = await robustCopy(body);
     if (ok) {
