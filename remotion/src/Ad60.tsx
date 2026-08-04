@@ -569,6 +569,20 @@ const FinaleScene: React.FC = () => {
         >
           Start free. Go get it.
         </div>
+        <div
+          style={{
+            marginTop: 28,
+            fontFamily: SANS,
+            fontSize: 30,
+            fontWeight: 600,
+            letterSpacing: 2,
+            color: GOLD,
+            textAlign: "center",
+            opacity: spring({ frame: frame - 40, fps, config: { damping: 200 } }),
+          }}
+        >
+          Every second of this ad was made inside Oracle Lunar's Movie Maker.
+        </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
