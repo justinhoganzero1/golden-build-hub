@@ -797,6 +797,7 @@ export const Ad60: React.FC = () => {
       ))}
       <CutFlash />
       <BrandMark />
+      <MadeWithBadge />
       <UrlBar globalFrame={frame} />
     </AbsoluteFill>
   );
