@@ -90,7 +90,13 @@ export default function VoiceStudioPage() {
         },
       );
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.voice_id) throw new Error(data?.details || data?.error || `Clone failed (${res.status})`);
+      if (!res.ok || !data?.voice_id) {
+        const details = String(data?.details || "");
+        if (details.includes("paid_plan_required") || details.includes("instant voice cloning")) {
+          throw new Error("Voice cloning needs a paid ElevenLabs plan — upgrade via the banner above, then try again.");
+        }
+        throw new Error(data?.error || details || `Clone failed (${res.status})`);
+      }
 
       setClonedVoiceId(data.voice_id);
       toast.success(`Cloned "${cloneName}" — ready to use`);
