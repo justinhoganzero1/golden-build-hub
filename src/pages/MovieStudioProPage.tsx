@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SEO from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
-import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, BookOpen } from "lucide-react";
+import { Film, Wallet, Lock, Sparkles, Loader2, Wand2, Crown, Check, X, BookOpen, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import OracleMovieDirector, { type MovieDirectorResult } from "@/components/Orac
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import StoryHandoffInbox from "@/components/StoryHandoffInbox";
 import StoryToMovieWizard from "@/components/movie/StoryToMovieWizard";
+import AIHostShowWizard from "@/components/movie/AIHostShowWizard";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
@@ -39,6 +40,7 @@ const MovieStudioProPage = () => {
   const [directorOpen, setDirectorOpen] = useState(false);
   const [inboxKey, setInboxKey] = useState(0);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [hostWizardOpen, setHostWizardOpen] = useState(false);
 
 
   const handleDirectorComplete = (result: MovieDirectorResult) => {
@@ -173,6 +175,15 @@ const MovieStudioProPage = () => {
           </Card>
         )}
 
+        {/* AI host episode → full YouTube video, host + script generated for you */}
+        <Button
+          onClick={() => setHostWizardOpen(true)}
+          size="lg"
+          className="w-full h-16 text-base font-bold bg-gradient-to-r from-red-600 via-primary/80 to-primary hover:opacity-90 text-primary-foreground shadow-[0_0_30px_hsl(var(--primary)/0.4)]"
+        >
+          <Tv className="w-6 h-6 mr-3" /> Make a full YouTube video with an AI host
+        </Button>
+
         {/* ONE button → pick a story from Story Writer → pick the movie style */}
         <Button
           onClick={() => setWizardOpen(true)}
@@ -181,6 +192,7 @@ const MovieStudioProPage = () => {
         >
           <BookOpen className="w-6 h-6 mr-3" /> Make a movie from a Story Writer story
         </Button>
+
 
         {/* Stories sent over from Story Writer — stored permanently */}
         <StoryHandoffInbox
@@ -246,6 +258,12 @@ const MovieStudioProPage = () => {
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onReady={() => { setInboxKey(k => k + 1); setStudioOpen(true); }}
+      />
+
+      <AIHostShowWizard
+        open={hostWizardOpen}
+        onOpenChange={setHostWizardOpen}
+        onReady={() => setStudioOpen(true)}
       />
 
       <OracleMovieDirector

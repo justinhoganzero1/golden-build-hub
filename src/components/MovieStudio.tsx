@@ -292,8 +292,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       if (brief?.script) setScript(brief.script);
       if (brief?.intent) setIntent(brief.intent);
       if (brief?.youtube?.title) setTitle(brief.youtube.title);
+      // Fully-authored segments (AI host show) — load straight onto the timeline
+      if (Array.isArray(brief?.scenes) && brief.scenes.length) {
+        setScenes(prev => prev.length ? prev : brief.scenes.slice(0, 30).map((s: any, i: number) => ({
+          id: uid(),
+          caption: s.caption || `Scene ${i + 1}`,
+          photo_prompt: s.photo_prompt || s.caption || `Scene ${i + 1}`,
+          motion: (s.motion || "ken-burns") as Motion,
+          duration_sec: s.duration_sec || CLIP_SECONDS,
+          image_url: s.image_url,
+          narration: s.narration,
+          speaker: s.speaker,
+          voice_style: s.voice_style,
+          is_news_segment: s.is_news_segment,
+          lower_third_name: s.lower_third_name,
+          lower_third_title: s.lower_third_title,
+        })));
+      }
       // Story Writer handoff can carry its cover / chapter artwork as ready frames
-      if (Array.isArray(brief?.frames) && brief.frames.length) {
+      else if (Array.isArray(brief?.frames) && brief.frames.length) {
         setScenes(prev => prev.length ? prev : brief.frames.slice(0, 20).map((url: string, i: number) => ({
           id: uid(),
           caption: `Scene ${i + 1}`,
