@@ -1487,10 +1487,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       try { musicSource?.stop(); } catch {}
       try { audioCtx.close(); } catch {}
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `${title || "oracle-lunar-movie"}-${Date.now()}.webm`;
-      a.click();
+      // Hand the finished file straight to the share sheet (no auto-download spam)
+      setPublishedBlob(blob);
+      setPublishedFormat(chosenFormat);
+      setShareOpen(true);
 
       // Save to library
       if (user) {
@@ -1501,12 +1501,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             title: title || "Oracle Lunar Movie",
             url: reader.result as string,
             source_page: "movie-studio",
-            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length },
+            metadata: { sceneCount: ready.length, totalSeconds: ready.length * CLIP_SECONDS, withVoice: missingAudio < ready.length, format: chosenFormat?.id || "youtube_standard" },
           });
         };
         reader.readAsDataURL(blob);
       }
-      toast.success("Movie exported with AI voices and saved to library!");
+      toast.success("Movie published — saved to your library and ready to share!");
+
     } catch (e) {
       console.error(e); toast.error("Export failed");
     } finally { setExporting(false); }
