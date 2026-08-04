@@ -12,6 +12,7 @@ import MovieStudio from "@/components/MovieStudio";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import StoryHandoffInbox from "@/components/StoryHandoffInbox";
+import StoryToMovieWizard from "@/components/movie/StoryToMovieWizard";
 import MovieCostEstimator from "@/components/MovieCostEstimator";
 import { HeyGenAffiliateCTA } from "@/components/HeyGenAffiliateCTA";
 import PartnerPowerSuite from "@/components/PartnerPowerSuite";
