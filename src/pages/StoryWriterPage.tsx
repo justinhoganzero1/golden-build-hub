@@ -1637,21 +1637,30 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
     try {
       const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
+      // Keep EVERYTHING the draft already had (cover art, blurb, chapter images)
+      // and stay on media_type 'story' — the public /stories/:slug page reads
+      // from that view, so flipping the type used to 404 every shared link.
       const metadata = {
           slug,
+          author: story.author,
+          authorName: story.author || user.email?.split("@")[0],
           genre: story.genre,
           premise: story.premise,
+          blurb: story.blurb || "",
+          coverImage: story.coverImage,
+          backImage: story.backImage,
           chapters: story.chapters,
           wordCount,
           published: true,
           publishedUrl,
-          authorName: user.email?.split("@")[0],
+          admin_library_visible: true,
+          kind: "story_doc",
+          library_kind: "story",
       };
       if (savingId) {
         const { error } = await supabase.from("user_media").update({
-          media_type: "document",
+          media_type: "story",
           title: story.title || "Untitled Story",
-          url: publishedUrl,
           source_page: "story-writer",
           is_public: true,
           metadata,
@@ -1661,14 +1670,18 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         const id = await saveToLibrary({
           media_type: "document",
           title: story.title || "Untitled Story",
-          url: publishedUrl,
+          url: `oracle-lunar://story/${crypto.randomUUID()}`,
           source_page: "story-writer",
           is_public: true,
           metadata,
         });
         if (!id) throw new Error("Story save was queued for retry");
+        const { error } = await supabase.from("user_media")
+          .update({ media_type: "story", is_public: true } as any).eq("id", id);
+        if (error) throw error;
         setSavingId(id);
       }
+
       setStory(s => ({ ...s, published: true, publishedUrl }));
       toast.success("Story published — share it anywhere!", { description: publishedUrl });
       setShareOpen(true);
