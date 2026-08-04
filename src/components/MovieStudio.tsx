@@ -1389,6 +1389,23 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                 ctx.fillText(`— ${scene.speaker}`, canvas.width / 2, canvas.height - 30);
               }
             }
+            // Burned-in call-to-action link bar (ad formats)
+            if (chosenFormat?.ctaUrl) {
+              const barH = Math.round(canvas.height * 0.09);
+              const y = canvas.height - barH;
+              ctx.fillStyle = "rgba(0,0,0,0.78)";
+              ctx.fillRect(0, y, canvas.width, barH);
+              ctx.fillStyle = "hsl(45 90% 60%)";
+              ctx.fillRect(0, y, canvas.width, Math.max(3, Math.round(barH * 0.05)));
+              ctx.textAlign = "center";
+              ctx.fillStyle = "hsl(45 95% 70%)";
+              ctx.font = `bold ${Math.round(barH * 0.44)}px sans-serif`;
+              ctx.fillText(
+                (chosenFormat.ctaLabel || chosenFormat.ctaUrl).toUpperCase(),
+                canvas.width / 2,
+                y + barH * 0.62,
+              );
+            }
             if (p < 1) requestAnimationFrame(tick);
             else resolve();
           };
