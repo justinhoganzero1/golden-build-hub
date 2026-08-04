@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface MovieHandoffBrief {
   script: string;
@@ -18,6 +19,69 @@ export const MOVIE_BRIEF_KEY = "oracle_movie_brief";
 /** Stash a brief for Movie Studio to pick up on open. */
 export const stashMovieBrief = (brief: MovieHandoffBrief) => {
   sessionStorage.setItem(MOVIE_BRIEF_KEY, JSON.stringify(brief));
+};
+
+export interface MovieHandoffRecord {
+  id: string;
+  title: string;
+  source: string;
+  brief: MovieHandoffBrief;
+  opened: boolean;
+  opened_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Permanently save a brief to the user's Movie Maker inbox so the story is
+ * still waiting for them next time they open the studio (new tab, new day,
+ * native app — sessionStorage does not survive any of those).
+ */
+export const saveMovieHandoff = async (
+  brief: MovieHandoffBrief,
+  source: "story_writer" | "library" | "director" = "story_writer",
+): Promise<string | null> => {
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) return null;
+    const { data, error } = await supabase
+      .from("movie_story_handoffs")
+      .insert({
+        user_id: auth.user.id,
+        title: brief.youtube?.title || "Untitled story",
+        source,
+        brief: brief as unknown as Record<string, unknown>,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return data?.id ?? null;
+  } catch (e) {
+    console.error("[movieHandoff] failed to save handoff", e);
+    return null;
+  }
+};
+
+/** Everything Story Writer / Library has sent to Movie Maker, newest first. */
+export const listMovieHandoffs = async (): Promise<MovieHandoffRecord[]> => {
+  const { data, error } = await supabase
+    .from("movie_story_handoffs")
+    .select("id, title, source, brief, opened, opened_at, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data || []) as unknown as MovieHandoffRecord[];
+};
+
+export const markMovieHandoffOpened = async (id: string) => {
+  await supabase
+    .from("movie_story_handoffs")
+    .update({ opened: true, opened_at: new Date().toISOString() })
+    .eq("id", id);
+};
+
+export const deleteMovieHandoff = async (id: string) => {
+  const { error } = await supabase.from("movie_story_handoffs").delete().eq("id", id);
+  if (error) throw error;
 };
 
 interface StoryLike {
@@ -74,8 +138,10 @@ export const sendStoryToMovieMaker = (
     toast.error("Write at least one chapter (or a premise) before sending to Movie Maker.");
     return;
   }
-  stashMovieBrief(buildBriefFromStory(story));
-  toast.success("Story sent to Movie Maker — opening the studio…");
+  const brief = buildBriefFromStory(story);
+  stashMovieBrief(brief);
+  void saveMovieHandoff(brief, "story_writer");
+  toast.success("Story sent to Movie Maker — it's saved there waiting for you.");
   navigate("/movie-studio-pro?fromStory=1");
 };
 
@@ -93,7 +159,7 @@ export const sendLibraryItemToMovieMaker = (
     toast.error("Nothing in this item to build a movie from.");
     return;
   }
-  stashMovieBrief({
+  const brief: MovieHandoffBrief = {
     script,
     intent: `Cinematic adaptation of "${item.title || "library item"}" from your Oracle Lunar library.`,
     frames,
@@ -104,7 +170,9 @@ export const sendLibraryItemToMovieMaker = (
       thumbnail_prompt: `Cinematic 8K poster for "${item.title || "Oracle Lunar movie"}"`,
       channel_name: "Oracle Lunar",
     },
-  });
-  toast.success("Sent to Movie Maker — opening the studio…");
+  };
+  stashMovieBrief(brief);
+  void saveMovieHandoff(brief, "library");
+  toast.success("Sent to Movie Maker — it's saved there waiting for you.");
   navigate("/movie-studio-pro?fromStory=1");
 };
