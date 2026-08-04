@@ -558,6 +558,64 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           </p>
         )}
 
+        <div className="rounded-xl border border-border p-3 space-y-3">
+          <div>
+            <p className="text-sm font-medium flex items-center gap-2">
+              <FileDown className="w-4 h-4 text-primary" />
+              Send the complete story as a file
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              The whole book — cover, chapters and illustrations — packaged in a real file the
+              recipient can open, read or listen to without an account.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {(Object.keys(STORY_FILE_META) as StoryFileFormat[]).map((f) => {
+              const meta = STORY_FILE_META[f];
+              const on = fileFormat === f;
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFileFormat(f)}
+                  className={`rounded-lg border p-2 text-left transition-colors ${on ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+                >
+                  <div className="text-xs font-medium">{meta.label}</div>
+                  <div className="text-[10px] text-muted-foreground leading-tight">{meta.hint}</div>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setFileFormat("mp3")}
+              className={`rounded-lg border p-2 text-left transition-colors ${fileFormat === "mp3" ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"}`}
+            >
+              <div className="text-xs font-medium flex items-center gap-1">
+                <Headphones className="w-3 h-3 text-primary" /> Audio (MP3)
+              </div>
+              <div className="text-[10px] text-muted-foreground leading-tight">Narrated audiobook</div>
+            </button>
+          </div>
+
+          {fileFormat === "mp3" && audioPct > 0 && (
+            <div className="h-1.5 rounded bg-muted overflow-hidden">
+              <div className="h-full bg-primary transition-all" style={{ width: `${audioPct}%` }} />
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button className="flex-1" onClick={shareCompleteFile} disabled={fileBusy}>
+              {fileBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
+              {fileBusy && fileFormat === "mp3" ? `Narrating… ${audioPct}%` : "Share the file"}
+            </Button>
+            <Button variant="outline" onClick={downloadCompleteFile} disabled={fileBusy}>
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2">
           <Button className="flex-1" onClick={send}>
             <Share2 className="w-4 h-4 mr-2" />
@@ -567,6 +625,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
             More apps…
           </Button>
         </div>
+
       </DialogContent>
     </Dialog>
   );
