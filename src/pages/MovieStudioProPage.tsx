@@ -38,6 +38,8 @@ const MovieStudioProPage = () => {
   const [studioOpen, setStudioOpen] = useState(false);
   const [directorOpen, setDirectorOpen] = useState(false);
   const [inboxKey, setInboxKey] = useState(0);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
 
   const handleDirectorComplete = (result: MovieDirectorResult) => {
     sessionStorage.setItem("oracle_movie_brief", JSON.stringify(result));
