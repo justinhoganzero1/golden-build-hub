@@ -618,7 +618,7 @@ const BEATS: Beat[] = [
         src="screens/photography-hub.jpg"
         route="/photography-hub"
         kicker="PHOTOGRAPHY HUB"
-        title="8K from one selfie."
+        title="4K from one selfie."
         side="left"
       />
     ),
