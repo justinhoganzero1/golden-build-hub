@@ -260,6 +260,12 @@ const MovieStudioProPage = () => {
         onReady={() => { setInboxKey(k => k + 1); setStudioOpen(true); }}
       />
 
+      <AIHostShowWizard
+        open={hostWizardOpen}
+        onOpenChange={setHostWizardOpen}
+        onReady={() => setStudioOpen(true)}
+      />
+
       <OracleMovieDirector
         open={directorOpen}
         onOpenChange={setDirectorOpen}
