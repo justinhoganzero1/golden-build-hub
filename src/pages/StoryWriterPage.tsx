@@ -282,6 +282,8 @@ const StoryWriterPage = () => {
 
           premise: story.premise,
           blurb: story.blurb || "",
+          prelude: story.prelude || "",
+          dedication: story.dedication || "",
           chapters: story.chapters,
           coverImage: story.coverImage,
           backImage: story.backImage,
