@@ -2,7 +2,9 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
+
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -135,6 +137,18 @@ const ProfilePage = () => {
       <UniversalBackButton />
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
       <div className="px-4 pt-14 pb-4">
+        {/* Vault lives here now (moved off the bottom bar) — a main tab inside the profile. */}
+        <Link
+          to="/vault"
+          className="mb-5 flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 hover:bg-primary/20 transition-colors"
+        >
+          <Shield className="w-5 h-5 text-primary shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Vault</p>
+            <p className="text-[11px] text-muted-foreground">Your private wallet, documents and secure files</p>
+          </div>
+        </Link>
+
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">
             {profileAvatar ? (

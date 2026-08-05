@@ -336,12 +336,12 @@ const DashboardPage = () => {
 
       <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around gap-2 px-2 py-2">
         {[
-          { label: "Home",     icon: <Home className="w-5 h-5" />,          path: "/dashboard" },
-          { label: "Oracle",   icon: <MessageCircle className="w-5 h-5" />, path: "/oracle" },
-          { label: "Vault",    icon: <Shield className="w-5 h-5" />,        path: "/vault" },
           { label: "Settings", icon: <Settings className="w-5 h-5" />,      path: "/settings" },
+          { label: "Oracle",   icon: <MessageCircle className="w-5 h-5" />, path: "/oracle" },
+          { label: "Home",     icon: <Home className="w-5 h-5" />,          path: "/dashboard" },
           { label: "Profile",  icon: <User className="w-5 h-5" />,          path: "/profile" },
         ].map((t) => (
+
           <button
             key={t.path}
             onClick={() => navigate(t.path)}
