@@ -540,7 +540,7 @@ const MediaLibraryPage = () => {
                 {isImageLike(selected) ? (
                   <img src={selected.url} alt={selected.title} className="w-full h-full object-contain" />
                 ) : selected.media_type === "video" ? (
-                  <video src={selected.url} poster={selected.thumbnail_url || undefined} controls playsInline className="w-full h-full object-contain" />
+                  <ResilientVideo src={selected.url} poster={selected.thumbnail_url || undefined} controls className="w-full h-full object-contain" />
                 ) : selected.media_type === "text" ? (
                   <div className="w-full h-full overflow-auto p-4 text-left text-xs leading-relaxed text-foreground whitespace-pre-wrap">
                     {selected.url}
