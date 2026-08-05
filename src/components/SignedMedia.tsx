@@ -67,11 +67,13 @@ type VideoProps = Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
 
 export function SignedVideo({ src, ttlSeconds, type = "video/mp4", onError, children, ...rest }: VideoProps) {
   const { resolved, retry } = useSignedSrc(src, ttlSeconds);
-  const ref = useRef<HTMLVideoElement>(null);
+  const { ref } = useResilientVideo({ onResign: retry });
   if (!resolved) return null;
   return (
     <video
       ref={ref}
+      playsInline
+      preload="auto"
       {...rest}
       key={resolved}
       onError={(e) => {
@@ -79,6 +81,7 @@ export function SignedVideo({ src, ttlSeconds, type = "video/mp4", onError, chil
         onError?.(e);
       }}
     >
+
       <source src={resolved} type={type} />
       {children}
     </video>
