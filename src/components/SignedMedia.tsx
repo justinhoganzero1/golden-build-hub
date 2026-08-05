@@ -5,6 +5,9 @@ import { useEffect, useRef, useState, type ImgHTMLAttributes, type VideoHTMLAttr
 import { resolveStorageUrl, parseStorageUrl, isPrivateStorageBucket } from "@/lib/signedStorageUrl";
 import { supabase } from "@/integrations/supabase/client";
 import useResilientVideo from "@/hooks/useResilientVideo";
+import { ExternalLink, RotateCw } from "lucide-react";
+import { DownloadButton } from "@/components/DownloadButton";
+import { Button } from "@/components/ui/button";
 
 function useSignedSrc(src: string | undefined, ttl = 3600) {
   const [resolved, setResolved] = useState<string>("");
