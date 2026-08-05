@@ -22,6 +22,7 @@ export function useResilientVideo(opts: {
   const lastTimeRef = useRef(0);
   const [recovering, setRecovering] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [exhausted, setExhausted] = useState(false);
 
   const clearTimer = () => {
     if (timerRef.current !== null) {
@@ -34,6 +35,12 @@ export function useResilientVideo(opts: {
     const el = ref.current;
     if (!el || !enabled || userPausedRef.current || el.ended) return;
     if (timerRef.current !== null) return; // one recovery in flight at a time
+    if (attemptRef.current >= VIDEO_FALLBACK_COUNT) {
+      // Every rung of the ladder failed — hand the viewer a manual escape hatch.
+      setRecovering(false);
+      setExhausted(true);
+      return;
+    }
 
     const step = fallbackFor(attemptRef.current);
     attemptRef.current += 1;
@@ -108,6 +115,7 @@ export function useResilientVideo(opts: {
       attemptRef.current = 0;
       setAttempts(0);
       setRecovering(false);
+      setExhausted(false);
       clearTimer();
     };
     const onUserPause = () => {
@@ -154,7 +162,19 @@ export function useResilientVideo(opts: {
     };
   }, [enabled, recover]);
 
-  return { ref, recovering, attempts, totalFallbacks: VIDEO_FALLBACK_COUNT };
+  const retry = useCallback(() => {
+    attemptRef.current = 0;
+    setAttempts(0);
+    setExhausted(false);
+    userPausedRef.current = false;
+    const v = ref.current;
+    if (v) {
+      v.load();
+      v.play().catch(() => {});
+    }
+  }, []);
+
+  return { ref, recovering, attempts, exhausted, retry, totalFallbacks: VIDEO_FALLBACK_COUNT };
 }
 
 export default useResilientVideo;
