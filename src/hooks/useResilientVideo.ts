@@ -22,6 +22,7 @@ export function useResilientVideo(opts: {
   const lastTimeRef = useRef(0);
   const [recovering, setRecovering] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [exhausted, setExhausted] = useState(false);
 
   const clearTimer = () => {
     if (timerRef.current !== null) {
