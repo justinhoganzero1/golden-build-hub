@@ -1436,6 +1436,22 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         }
       }
 
+      // Optional front matter — dedication and prelude (only if the author wrote them)
+      const frontFiles: { fname: string; title: string; id: string }[] = [];
+      const addFront = (id: string, heading: string, body: string) => {
+        const text = (body || "").trim();
+        if (!text) return;
+        const fname = `${id}.xhtml`;
+        const paras = text.split(/\n{2,}/).map(p => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`).join("\n");
+        oebps.file(fname,
+          `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${xmlEscape(heading)}</title></head>
+<body><h1>${xmlEscape(heading)}</h1>${paras}</body></html>`);
+        frontFiles.push({ fname, title: heading, id });
+      };
+      addFront("dedication", "Dedication", story.dedication || "");
+      addFront("prelude", "Prelude", story.prelude || "");
+
       // Chapter XHTMLs
       const chapterFiles = story.chapters.map((c, i) => {
         const fname = `chapter-${String(i + 1).padStart(3, "0")}.xhtml`;
