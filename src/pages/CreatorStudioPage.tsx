@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Camera, Clapperboard, Palette, Mic2, ArrowRight, Sparkles } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import SEO from "@/components/SEO";
+import StudioLibraryStrip from "@/components/studio/StudioLibraryStrip";
+
 
 interface StudioCard {
   key: string;
@@ -145,11 +147,15 @@ const CreatorStudioPage = () => {
           ))}
         </div>
 
+        {/* In-studio library */}
+        <StudioLibraryStrip />
+
         {/* Footer hint */}
         <p className="text-center text-xs text-muted-foreground/70 mt-8">
           Everything you create is auto-saved to your Media Library.
         </p>
       </div>
+
     </div>
   );
 };
