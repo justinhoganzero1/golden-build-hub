@@ -1045,7 +1045,75 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     }
   };
 
-  /** Write (or rewrite) the full back-cover blurb — the cover AI's source material. */
+  /** Optional front matter written by the Oracle — dedication or prelude. */
+  const aiWriteFrontMatter = async (kind: "dedication" | "prelude") => {
+    if (!requireMeta()) return;
+    try {
+      const sample = story.chapters.map(c => c.content).join("\n\n").slice(0, 6000);
+      const system = kind === "dedication"
+        ? `You are a bestselling author writing the dedication page of a book. Write 1-3 short, heartfelt lines. No headings, no quotes, no commentary — just the dedication.`
+        : `You are a master ${story.genre} novelist writing the PRELUDE that opens the book before Chapter 1. 400-700 words of atmospheric, hooking prose that sets up the world, the myth or the inciting shadow of the story without spoiling it. Prose only.${styleRule()}`;
+      const text = await callAI(
+        system,
+        `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\nBLURB: ${story.blurb || "(none)"}\n\nSTORY TEXT SO FAR:\n${sample || "(nothing written yet)"}\n\nWrite the ${kind}:`
+      );
+      const clean = (text || "").trim();
+      if (!clean) throw new Error("Nothing returned");
+      setStory(s => ({ ...s, [kind]: clean }));
+      toast.success(kind === "dedication" ? "Dedication written" : "Prelude written");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || `Could not write the ${kind}`);
+    }
+  };
+
+  /** ORACLE TAKEOVER — the Oracle finishes the whole book from wherever the author stopped. */
+  const [takeoverBusy, setTakeoverBusy] = useState<string | null>(null);
+  const oracleTakeOver = async () => {
+    if (!requireMeta()) return;
+    if (!window.confirm("Let the Oracle take over and finish this story? It will complete every unfinished chapter in your voice. Your existing writing is kept.")) return;
+    setTakeoverBusy("starting");
+    try {
+      const chapters = [...story.chapters];
+      for (let i = 0; i < chapters.length; i++) {
+        const ch = chapters[i];
+        const words = wordCount(ch.content || "");
+        if (words >= MIN_WORDS) continue;
+        setTakeoverBusy(`${ch.title} (${i + 1}/${chapters.length})`);
+        const previousContext = chapters
+          .slice(0, i)
+          .map(c => `${c.title}: ${(c.content || "").slice(0, 1200)}`)
+          .join("\n\n")
+          .slice(-9000);
+        const guidance = ch.content?.trim()
+          ? `The author already began this chapter. Keep every word they wrote, then continue seamlessly from it:\n\n${ch.content.slice(-3000)}`
+          : "(the author left this chapter empty — write it in full)";
+        const text = await generateLongChapter(
+          ch.title,
+          guidance,
+          previousContext,
+          targetWordsFor(i),
+          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`)
+        );
+        const merged = ch.content?.trim() ? `${ch.content.trim()}\n\n${text.trim()}` : text.trim();
+        trackEdit("ai", i, ch.content, merged, "Oracle takeover");
+        chapters[i] = { ...ch, content: merged };
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: merged };
+          return { ...s, chapters: next };
+        });
+      }
+      if (!story.dedication?.trim()) { setTakeoverBusy("dedication"); await aiWriteFrontMatter("dedication"); }
+      if (!story.prelude?.trim()) { setTakeoverBusy("prelude"); await aiWriteFrontMatter("prelude"); }
+      toast.success("The Oracle finished your story.");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Oracle takeover failed");
+    } finally {
+      setTakeoverBusy(null);
+    }
+  };
+
+
   const aiWriteBlurb = async () => {
     if (!requireMeta()) return;
     const sample = story.chapters
@@ -1436,6 +1504,22 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         }
       }
 
+      // Optional front matter — dedication and prelude (only if the author wrote them)
+      const frontFiles: { fname: string; title: string; id: string }[] = [];
+      const addFront = (id: string, heading: string, body: string) => {
+        const text = (body || "").trim();
+        if (!text) return;
+        const fname = `${id}.xhtml`;
+        const paras = text.split(/\n{2,}/).map(p => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`).join("\n");
+        oebps.file(fname,
+          `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${xmlEscape(heading)}</title></head>
+<body><h1>${xmlEscape(heading)}</h1>${paras}</body></html>`);
+        frontFiles.push({ fname, title: heading, id });
+      };
+      addFront("dedication", "Dedication", story.dedication || "");
+      addFront("prelude", "Prelude", story.prelude || "");
+
       // Chapter XHTMLs
       const chapterFiles = story.chapters.map((c, i) => {
         const fname = `chapter-${String(i + 1).padStart(3, "0")}.xhtml`;
@@ -1447,9 +1531,10 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         return { fname, title: c.title, id: `ch${i + 1}` };
       });
 
-      const manifestItems = chapterFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
-      const spineItems = chapterFiles.map(c => `<itemref idref="${c.id}"/>`).join("\n");
-      const navPoints = chapterFiles.map(c => `<li><a href="${c.fname}">${xmlEscape(c.title)}</a></li>`).join("\n");
+      const allFiles = [...frontFiles, ...chapterFiles];
+      const manifestItems = allFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
+      const spineItems = allFiles.map(c => `<itemref idref="${c.id}"/>`).join("\n");
+      const navPoints = allFiles.map(c => `<li><a href="${c.fname}">${xmlEscape(c.title)}</a></li>`).join("\n");
 
       oebps.file("nav.xhtml",
         `<?xml version="1.0" encoding="UTF-8"?>
@@ -1650,6 +1735,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           genre: story.genre,
           premise: story.premise,
           blurb: story.blurb || "",
+          prelude: story.prelude || "",
+          dedication: story.dedication || "",
           coverImage: story.coverImage,
           backImage: story.backImage,
           chapters: story.chapters,
@@ -1790,6 +1877,78 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
               This blurb is the primary source the cover artist AI reads for the front and back covers — the richer it is, the more accurate your artwork. It also saves with the story and is used in your EPUB description and share posts.
             </p>
           </div>
+
+          {/* ====== OPTIONAL FRONT MATTER — dedication + prelude ====== */}
+          <div className="rounded-xl border border-border bg-card p-3 space-y-3">
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Front matter (optional)
+            </p>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-semibold text-foreground">Dedication</label>
+                <button
+                  type="button"
+                  onClick={() => aiWriteFrontMatter("dedication")}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.dedication?.trim() ? "Rewrite" : "Write with AI"}
+                </button>
+              </div>
+              <textarea
+                value={story.dedication || ""}
+                onChange={e => setStory(s => ({ ...s, dedication: e.target.value }))}
+                placeholder="For Mum, who never stopped believing… (optional)"
+                rows={3}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-semibold text-foreground">Prelude</label>
+                <button
+                  type="button"
+                  onClick={() => aiWriteFrontMatter("prelude")}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.prelude?.trim() ? "Rewrite" : "Write with AI"}
+                </button>
+              </div>
+              <textarea
+                value={story.prelude || ""}
+                onChange={e => setStory(s => ({ ...s, prelude: e.target.value }))}
+                placeholder="An opening passage before Chapter 1 — set the scene, the myth, the warning… (optional)"
+                rows={5}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Both are optional. When filled they're saved with your story and placed before Chapter 1 in your EPUB, publish and share exports.
+              </p>
+            </div>
+          </div>
+
+          {/* ====== ORACLE TAKEOVER — let the Oracle finish the book ====== */}
+          <button
+            type="button"
+            onClick={oracleTakeOver}
+            disabled={takeoverBusy !== null || aiBusy}
+            className="w-full rounded-xl border border-amber-500/60 bg-gradient-to-r from-amber-500/20 to-primary/15 px-3 py-3 text-left disabled:opacity-60"
+          >
+            <span className="flex items-center gap-2 text-sm font-bold text-amber-300">
+              {takeoverBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {takeoverBusy ? `Oracle is writing… ${takeoverBusy}` : "Let the Oracle take over & finish my story"}
+            </span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">
+              The Oracle picks up exactly where you stopped, fills every unfinished chapter in your voice, and writes the dedication and prelude if they're empty.
+            </span>
+          </button>
+
+
 
 
           </div>
