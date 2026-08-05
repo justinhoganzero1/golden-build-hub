@@ -15,6 +15,8 @@ import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
+
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
@@ -377,20 +379,29 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       }
       // Story Writer handoff — auto-build the ENTIRE storyboard from the story
       else if (brief?.script) {
-        const frames: string[] = Array.isArray(brief?.frames) ? brief.frames : [];
-        if (frames.length) {
-          setScenes(prev => prev.length ? prev : frames.slice(0, 20).map((url: string, i: number) => ({
-            id: uid(),
-            caption: `Scene ${i + 1}`,
-            photo_prompt: brief.intent || `Scene ${i + 1}`,
-            motion: "ken-burns" as Motion,
-            duration_sec: CLIP_SECONDS,
-            image_url: url,
-          })));
-        }
-        void autoStoryboardFromStory(brief.script, brief.intent || "", frames, brief.title);
+        const rawFrames: string[] = Array.isArray(brief?.frames) ? brief.frames : [];
+        // Story artwork lives in the PRIVATE photography-assets bucket, so the
+        // `/object/public/...` URLs saved in the story doc are dead. Sign them
+        // before they hit the timeline or every frame renders blank.
+        void (async () => {
+          const frames = rawFrames.length
+            ? await Promise.all(rawFrames.map(u => resolveStorageUrl(u, 6 * 3600).catch(() => u)))
+            : [];
+          if (frames.length) {
+            setScenes(prev => prev.length ? prev : frames.slice(0, 20).map((url: string, i: number) => ({
+              id: uid(),
+              caption: `Scene ${i + 1}`,
+              photo_prompt: brief.intent || `Scene ${i + 1}`,
+              motion: "ken-burns" as Motion,
+              duration_sec: CLIP_SECONDS,
+              image_url: url,
+            })));
+          }
+          await autoStoryboardFromStory(brief.script, brief.intent || "", frames, brief.title);
+        })();
       }
       sessionStorage.removeItem("oracle_movie_brief");
+
 
       // Stash YouTube package for later publish step
       if (brief?.youtube) sessionStorage.setItem("oracle_youtube_pkg", JSON.stringify(brief.youtube));

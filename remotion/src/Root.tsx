@@ -2,6 +2,8 @@ import { Composition } from "remotion";
 import { MainVideo } from "./MainVideo";
 import { AdVideo } from "./AdVideo";
 import { Ad60 } from "./Ad60";
+import { StoryCut, STORYCUT_FRAMES } from "./StoryCut";
+
 
 // 35s @ 30fps = 1050 frames
 export const RemotionRoot = () => (
@@ -32,5 +34,15 @@ export const RemotionRoot = () => (
       width={1920}
       height={1080}
     />
+    {/* 3-minute condensed movie cut of a Story Writer story */}
+    <Composition
+      id="storycut"
+      component={StoryCut}
+      durationInFrames={STORYCUT_FRAMES}
+      fps={30}
+      width={1920}
+      height={1080}
+    />
   </>
 );
+
