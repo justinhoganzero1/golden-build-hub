@@ -115,12 +115,12 @@ const MovieShareDialog = ({ open, onOpenChange, blob, title, format, description
 
         <Card className="p-3 space-y-2">
           {previewUrl && (
-            <video
+            <ResilientVideo
               src={previewUrl}
               controls
               className="w-full rounded-md bg-black max-h-64"
-              playsInline
             />
+
           )}
           <p className="text-xs text-muted-foreground">
             <strong className="text-foreground">{file?.name}</strong> · {file?.type || "video"} · {sizeMb} MB ·{" "}
