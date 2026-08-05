@@ -156,25 +156,37 @@ serve(async (req) => {
     }
 
     // Route the request: user's own key → direct provider; otherwise → Lovable Gateway.
-    const endpoint = userKey ? cfg.byokEndpoint : "https://ai.gateway.lovable.dev/v1/chat/completions";
-    const authKey = userKey ?? LOVABLE_API_KEY;
-    const modelName = userKey ? cfg.byokModel : cfg.model;
+    const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-    const resp = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authKey}`,
-        "Content-Type": "application/json",
+    const callProvider = (useByok: boolean) => fetch(
+      useByok ? cfg.byokEndpoint : GATEWAY,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${useByok ? userKey : LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: useByok ? cfg.byokModel : cfg.model,
+          stream: true,
+          messages: [
+            { role: "system", content: cfg.system },
+            ...messages.slice(-20),
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: modelName,
-        stream: true,
-        messages: [
-          { role: "system", content: cfg.system },
-          ...messages.slice(-20),
-        ],
-      }),
-    });
+    );
+
+    let usedByok = !!userKey;
+    let resp = await callProvider(usedByok);
+
+    // BYOK key exhausted / rate limited / rejected → transparently fall back to the gateway.
+    if (usedByok && !resp.ok && [401, 402, 403, 429].includes(resp.status)) {
+      const detail = await resp.text().catch(() => "");
+      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 300));
+      usedByok = false;
+      resp = await callProvider(false);
+    }
 
     if (!resp.ok) {
       if (resp.status === 429) {
@@ -182,6 +194,7 @@ serve(async (req) => {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
       if (resp.status === 401 || resp.status === 403) {
         return new Response(JSON.stringify({
           error: userKey
