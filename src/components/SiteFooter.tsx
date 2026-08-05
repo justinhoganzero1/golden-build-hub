@@ -59,7 +59,7 @@ const SiteFooter = () => {
             <Mail className="w-3.5 h-3.5" /> My inbox
           </Link>
 
-          {isAdmin && (
+          {!adminLoading && isAdmin && (
             <Link
               to="/admin/inbox"
               className="flex items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
