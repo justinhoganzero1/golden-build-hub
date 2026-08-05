@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, type ImgHTMLAttributes, type VideoHTMLAttributes } from "react";
 import { resolveStorageUrl, parseStorageUrl, isPrivateStorageBucket } from "@/lib/signedStorageUrl";
 import { supabase } from "@/integrations/supabase/client";
+import useResilientVideo from "@/hooks/useResilientVideo";
 
 function useSignedSrc(src: string | undefined, ttl = 3600) {
   const [resolved, setResolved] = useState<string>("");
