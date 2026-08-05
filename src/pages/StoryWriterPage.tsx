@@ -1045,7 +1045,75 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     }
   };
 
-  /** Write (or rewrite) the full back-cover blurb — the cover AI's source material. */
+  /** Optional front matter written by the Oracle — dedication or prelude. */
+  const aiWriteFrontMatter = async (kind: "dedication" | "prelude") => {
+    if (!requireMeta()) return;
+    try {
+      const sample = story.chapters.map(c => c.content).join("\n\n").slice(0, 6000);
+      const system = kind === "dedication"
+        ? `You are a bestselling author writing the dedication page of a book. Write 1-3 short, heartfelt lines. No headings, no quotes, no commentary — just the dedication.`
+        : `You are a master ${story.genre} novelist writing the PRELUDE that opens the book before Chapter 1. 400-700 words of atmospheric, hooking prose that sets up the world, the myth or the inciting shadow of the story without spoiling it. Prose only.${styleRule()}`;
+      const text = await callAI(
+        system,
+        `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\nBLURB: ${story.blurb || "(none)"}\n\nSTORY TEXT SO FAR:\n${sample || "(nothing written yet)"}\n\nWrite the ${kind}:`
+      );
+      const clean = (text || "").trim();
+      if (!clean) throw new Error("Nothing returned");
+      setStory(s => ({ ...s, [kind]: clean }));
+      toast.success(kind === "dedication" ? "Dedication written" : "Prelude written");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || `Could not write the ${kind}`);
+    }
+  };
+
+  /** ORACLE TAKEOVER — the Oracle finishes the whole book from wherever the author stopped. */
+  const [takeoverBusy, setTakeoverBusy] = useState<string | null>(null);
+  const oracleTakeOver = async () => {
+    if (!requireMeta()) return;
+    if (!window.confirm("Let the Oracle take over and finish this story? It will complete every unfinished chapter in your voice. Your existing writing is kept.")) return;
+    setTakeoverBusy("starting");
+    try {
+      const chapters = [...story.chapters];
+      for (let i = 0; i < chapters.length; i++) {
+        const ch = chapters[i];
+        const words = wordCount(ch.content || "");
+        if (words >= MIN_WORDS) continue;
+        setTakeoverBusy(`${ch.title} (${i + 1}/${chapters.length})`);
+        const previousContext = chapters
+          .slice(0, i)
+          .map(c => `${c.title}: ${(c.content || "").slice(0, 1200)}`)
+          .join("\n\n")
+          .slice(-9000);
+        const guidance = ch.content?.trim()
+          ? `The author already began this chapter. Keep every word they wrote, then continue seamlessly from it:\n\n${ch.content.slice(-3000)}`
+          : "(the author left this chapter empty — write it in full)";
+        const text = await generateLongChapter(
+          ch.title,
+          guidance,
+          previousContext,
+          targetWordsFor(i),
+          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`)
+        );
+        const merged = ch.content?.trim() ? `${ch.content.trim()}\n\n${text.trim()}` : text.trim();
+        trackEdit("ai", i, ch.content, merged, "Oracle takeover");
+        chapters[i] = { ...ch, content: merged };
+        setStory(s => {
+          const next = [...s.chapters];
+          next[i] = { ...next[i], content: merged };
+          return { ...s, chapters: next };
+        });
+      }
+      if (!story.dedication?.trim()) { setTakeoverBusy("dedication"); await aiWriteFrontMatter("dedication"); }
+      if (!story.prelude?.trim()) { setTakeoverBusy("prelude"); await aiWriteFrontMatter("prelude"); }
+      toast.success("The Oracle finished your story.");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Oracle takeover failed");
+    } finally {
+      setTakeoverBusy(null);
+    }
+  };
+
+
   const aiWriteBlurb = async () => {
     if (!requireMeta()) return;
     const sample = story.chapters
