@@ -198,6 +198,8 @@ const StoryWriterPage = () => {
             genre: doc.genre || "Fantasy",
             premise: doc.premise || "",
             blurb: doc.blurb || "",
+            prelude: doc.prelude || "",
+            dedication: doc.dedication || "",
             chapters: Array.isArray(doc.chapters) && doc.chapters.length ? doc.chapters : [{ title: "Chapter 1", content: "" }],
             coverImage: doc.coverImage || undefined,
             backImage: doc.backImage || undefined,
