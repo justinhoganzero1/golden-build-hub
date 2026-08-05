@@ -35,6 +35,12 @@ export function useResilientVideo(opts: {
     const el = ref.current;
     if (!el || !enabled || userPausedRef.current || el.ended) return;
     if (timerRef.current !== null) return; // one recovery in flight at a time
+    if (attemptRef.current >= VIDEO_FALLBACK_COUNT) {
+      // Every rung of the ladder failed — hand the viewer a manual escape hatch.
+      setRecovering(false);
+      setExhausted(true);
+      return;
+    }
 
     const step = fallbackFor(attemptRef.current);
     attemptRef.current += 1;
