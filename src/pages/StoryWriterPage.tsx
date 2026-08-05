@@ -60,6 +60,10 @@ interface StoryDoc {
   premise: string;
   /** Full back-cover blurb — the cover AI draws its imagery from this. */
   blurb?: string;
+  /** Optional prelude that opens the book before Chapter 1. */
+  prelude?: string;
+  /** Optional dedication page. */
+  dedication?: string;
   chapters: StoryChapter[];
   /** AI-generated front cover image (data URL). */
   coverImage?: string;
@@ -198,6 +202,8 @@ const StoryWriterPage = () => {
             genre: doc.genre || "Fantasy",
             premise: doc.premise || "",
             blurb: doc.blurb || "",
+            prelude: doc.prelude || "",
+            dedication: doc.dedication || "",
             chapters: Array.isArray(doc.chapters) && doc.chapters.length ? doc.chapters : [{ title: "Chapter 1", content: "" }],
             coverImage: doc.coverImage || undefined,
             backImage: doc.backImage || undefined,
@@ -282,6 +288,8 @@ const StoryWriterPage = () => {
 
           premise: story.premise,
           blurb: story.blurb || "",
+          prelude: story.prelude || "",
+          dedication: story.dedication || "",
           chapters: story.chapters,
           coverImage: story.coverImage,
           backImage: story.backImage,
