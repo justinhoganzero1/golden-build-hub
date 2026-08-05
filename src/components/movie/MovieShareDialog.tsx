@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Download, Share2, Copy, Youtube, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getMovieFormat, type MovieFormat } from "@/lib/movieFormats";
+import ResilientVideo from "@/components/ResilientVideo";
 
 interface Props {
   open: boolean;
