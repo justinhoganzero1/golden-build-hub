@@ -207,6 +207,25 @@ const DashboardPage = () => {
         </div>
       </OracleMoonHeader>
 
+      {/* Primary nav — top row (moved off the bottom so it never covers content) */}
+      <nav className="px-4 pt-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        {[
+          { label: "Settings", icon: <Settings className="w-4 h-4" />,      path: "/settings" },
+          { label: "Oracle",   icon: <MessageCircle className="w-4 h-4" />, path: "/oracle" },
+          { label: "Home",     icon: <Home className="w-4 h-4" />,          path: "/dashboard" },
+          { label: "Profile",  icon: <User className="w-4 h-4" />,          path: "/profile" },
+        ].map((t) => (
+          <button
+            key={t.path}
+            onClick={() => navigate(t.path)}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-card/60 border border-border text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+          >
+            {t.icon}
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+
       {/* Welcome + status line */}
       <div className="px-4 py-3 flex items-center justify-between">
         <div>
@@ -289,7 +308,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Grouped sections */}
-      <div className="px-4 pb-24 space-y-3">
+      <div className="px-4 pb-10 space-y-3">
         {groups.map((group) => {
           const open = !!openMap[group.id];
           return (
@@ -334,24 +353,6 @@ const DashboardPage = () => {
       {/* Per-user connectors: each signed-in user brings their own API keys. Admin uses shared/system keys, so hidden. */}
       {!adminLoading && !isAdmin && <UserConnectorsPanel />}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around gap-2 px-2 py-2">
-        {[
-          { label: "Settings", icon: <Settings className="w-5 h-5" />,      path: "/settings" },
-          { label: "Oracle",   icon: <MessageCircle className="w-5 h-5" />, path: "/oracle" },
-          { label: "Home",     icon: <Home className="w-5 h-5" />,          path: "/dashboard" },
-          { label: "Profile",  icon: <User className="w-5 h-5" />,          path: "/profile" },
-        ].map((t) => (
-
-          <button
-            key={t.path}
-            onClick={() => navigate(t.path)}
-            className="flex-1 flex flex-col items-center gap-1 px-2 py-2 text-muted-foreground hover:text-primary transition-colors"
-          >
-            <div className="holo-icon">{t.icon}</div>
-            <span className="text-[10px] font-semibold tracking-wide leading-tight">{t.label}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 };
