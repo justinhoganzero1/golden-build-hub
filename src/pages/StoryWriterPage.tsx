@@ -1650,6 +1650,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           genre: story.genre,
           premise: story.premise,
           blurb: story.blurb || "",
+          prelude: story.prelude || "",
+          dedication: story.dedication || "",
           coverImage: story.coverImage,
           backImage: story.backImage,
           chapters: story.chapters,
