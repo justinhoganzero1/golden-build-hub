@@ -308,7 +308,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Grouped sections */}
-      <div className="px-4 pb-24 space-y-3">
+      <div className="px-4 pb-10 space-y-3">
         {groups.map((group) => {
           const open = !!openMap[group.id];
           return (
