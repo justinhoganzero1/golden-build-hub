@@ -15,6 +15,8 @@ import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
+
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
 const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
