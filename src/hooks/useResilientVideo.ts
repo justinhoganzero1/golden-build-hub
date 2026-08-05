@@ -115,6 +115,7 @@ export function useResilientVideo(opts: {
       attemptRef.current = 0;
       setAttempts(0);
       setRecovering(false);
+      setExhausted(false);
       clearTimer();
     };
     const onUserPause = () => {
@@ -161,7 +162,19 @@ export function useResilientVideo(opts: {
     };
   }, [enabled, recover]);
 
-  return { ref, recovering, attempts, totalFallbacks: VIDEO_FALLBACK_COUNT };
+  const retry = useCallback(() => {
+    attemptRef.current = 0;
+    setAttempts(0);
+    setExhausted(false);
+    userPausedRef.current = false;
+    const v = ref.current;
+    if (v) {
+      v.load();
+      v.play().catch(() => {});
+    }
+  }, []);
+
+  return { ref, recovering, attempts, exhausted, retry, totalFallbacks: VIDEO_FALLBACK_COUNT };
 }
 
 export default useResilientVideo;
