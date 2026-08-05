@@ -50,24 +50,19 @@ const InvestorPage = () => {
     }
     setSending(true);
     try {
-      // AI analysis
-      const { data: aiData } = await supabase.functions.invoke("ai-moderate", {
-        body: {
-          type: "investment",
-          content: `Investor: ${name}\nEmail: ${email}\nAmount: ${amount || "Not specified"}\nMessage: ${message}`,
-        },
-      });
-
-      const aiScore = aiData?.score ?? 50;
-      const aiNotes = aiData?.notes ?? "Pending review";
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) {
+        toast.error("Please sign in to submit an investment offer");
+        return;
+      }
 
       const { error } = await supabase.from("investment_offers").insert({
+        user_id: uid,
         investor_name: name,
         investor_email: email,
         offer_amount: amount || null,
         message,
-        ai_score: aiScore,
-        ai_notes: aiNotes,
       });
 
       if (error) throw error;
