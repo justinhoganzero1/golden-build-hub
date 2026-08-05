@@ -1463,9 +1463,10 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         return { fname, title: c.title, id: `ch${i + 1}` };
       });
 
-      const manifestItems = chapterFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
-      const spineItems = chapterFiles.map(c => `<itemref idref="${c.id}"/>`).join("\n");
-      const navPoints = chapterFiles.map(c => `<li><a href="${c.fname}">${xmlEscape(c.title)}</a></li>`).join("\n");
+      const allFiles = [...frontFiles, ...chapterFiles];
+      const manifestItems = allFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
+      const spineItems = allFiles.map(c => `<itemref idref="${c.id}"/>`).join("\n");
+      const navPoints = allFiles.map(c => `<li><a href="${c.fname}">${xmlEscape(c.title)}</a></li>`).join("\n");
 
       oebps.file("nav.xhtml",
         `<?xml version="1.0" encoding="UTF-8"?>
