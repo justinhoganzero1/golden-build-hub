@@ -207,6 +207,25 @@ const DashboardPage = () => {
         </div>
       </OracleMoonHeader>
 
+      {/* Primary nav — top row (moved off the bottom so it never covers content) */}
+      <nav className="px-4 pt-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        {[
+          { label: "Settings", icon: <Settings className="w-4 h-4" />,      path: "/settings" },
+          { label: "Oracle",   icon: <MessageCircle className="w-4 h-4" />, path: "/oracle" },
+          { label: "Home",     icon: <Home className="w-4 h-4" />,          path: "/dashboard" },
+          { label: "Profile",  icon: <User className="w-4 h-4" />,          path: "/profile" },
+        ].map((t) => (
+          <button
+            key={t.path}
+            onClick={() => navigate(t.path)}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-card/60 border border-border text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors"
+          >
+            {t.icon}
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+
       {/* Welcome + status line */}
       <div className="px-4 py-3 flex items-center justify-between">
         <div>
