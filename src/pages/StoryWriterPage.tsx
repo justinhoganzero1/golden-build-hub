@@ -60,6 +60,10 @@ interface StoryDoc {
   premise: string;
   /** Full back-cover blurb — the cover AI draws its imagery from this. */
   blurb?: string;
+  /** Optional prelude that opens the book before Chapter 1. */
+  prelude?: string;
+  /** Optional dedication page. */
+  dedication?: string;
   chapters: StoryChapter[];
   /** AI-generated front cover image (data URL). */
   coverImage?: string;
