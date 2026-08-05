@@ -1810,6 +1810,78 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             </p>
           </div>
 
+          {/* ====== OPTIONAL FRONT MATTER — dedication + prelude ====== */}
+          <div className="rounded-xl border border-border bg-card p-3 space-y-3">
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Front matter (optional)
+            </p>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-semibold text-foreground">Dedication</label>
+                <button
+                  type="button"
+                  onClick={() => aiWriteFrontMatter("dedication")}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.dedication?.trim() ? "Rewrite" : "Write with AI"}
+                </button>
+              </div>
+              <textarea
+                value={story.dedication || ""}
+                onChange={e => setStory(s => ({ ...s, dedication: e.target.value }))}
+                placeholder="For Mum, who never stopped believing… (optional)"
+                rows={3}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-semibold text-foreground">Prelude</label>
+                <button
+                  type="button"
+                  onClick={() => aiWriteFrontMatter("prelude")}
+                  disabled={aiBusy}
+                  className="text-[11px] px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 flex items-center gap-1 disabled:opacity-50"
+                >
+                  {aiBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  {story.prelude?.trim() ? "Rewrite" : "Write with AI"}
+                </button>
+              </div>
+              <textarea
+                value={story.prelude || ""}
+                onChange={e => setStory(s => ({ ...s, prelude: e.target.value }))}
+                placeholder="An opening passage before Chapter 1 — set the scene, the myth, the warning… (optional)"
+                rows={5}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground leading-relaxed resize-y"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Both are optional. When filled they're saved with your story and placed before Chapter 1 in your EPUB, publish and share exports.
+              </p>
+            </div>
+          </div>
+
+          {/* ====== ORACLE TAKEOVER — let the Oracle finish the book ====== */}
+          <button
+            type="button"
+            onClick={oracleTakeOver}
+            disabled={takeoverBusy !== null || aiBusy}
+            className="w-full rounded-xl border border-amber-500/60 bg-gradient-to-r from-amber-500/20 to-primary/15 px-3 py-3 text-left disabled:opacity-60"
+          >
+            <span className="flex items-center gap-2 text-sm font-bold text-amber-300">
+              {takeoverBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {takeoverBusy ? `Oracle is writing… ${takeoverBusy}` : "Let the Oracle take over & finish my story"}
+            </span>
+            <span className="block text-[11px] text-muted-foreground mt-0.5">
+              The Oracle picks up exactly where you stopped, fills every unfinished chapter in your voice, and writes the dedication and prelude if they're empty.
+            </span>
+          </button>
+
+
+
 
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
