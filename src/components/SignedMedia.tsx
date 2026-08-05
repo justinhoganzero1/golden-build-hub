@@ -68,23 +68,43 @@ type VideoProps = Omit<VideoHTMLAttributes<HTMLVideoElement>, "src"> & {
 
 export function SignedVideo({ src, ttlSeconds, type = "video/mp4", onError, children, ...rest }: VideoProps) {
   const { resolved, retry } = useSignedSrc(src, ttlSeconds);
-  const { ref } = useResilientVideo({ onResign: retry });
+  const { ref, exhausted, retry: retryPlayback, totalFallbacks } = useResilientVideo({ onResign: retry });
   if (!resolved) return null;
   return (
-    <video
-      ref={ref}
-      playsInline
-      preload="auto"
-      {...rest}
-      key={resolved}
-      onError={(e) => {
-        retry();
-        onError?.(e);
-      }}
-    >
+    <div className="relative w-full h-full">
+      <video
+        ref={ref}
+        playsInline
+        preload="auto"
+        {...rest}
+        key={resolved}
+        onError={(e) => {
+          retry();
+          onError?.(e);
+        }}
+      >
+        <source src={resolved} type={type} />
+        {children}
+      </video>
 
-      <source src={resolved} type={type} />
-      {children}
-    </video>
+      {exhausted && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/90 backdrop-blur-sm p-3 text-center">
+          <p className="text-xs text-muted-foreground max-w-[16rem]">
+            Streaming didn't hold after {totalFallbacks} retries. Save the file or open it directly instead.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            <DownloadButton url={resolved} filename="oracle-lunar-video.mp4" label="Download MP4" size="sm" />
+            <Button asChild size="sm" variant="outline">
+              <a href={resolved} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="w-3.5 h-3.5 mr-1" /> Open in new tab
+              </a>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={retryPlayback}>
+              <RotateCw className="w-3.5 h-3.5 mr-1" /> Retry
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
