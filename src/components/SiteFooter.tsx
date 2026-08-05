@@ -12,7 +12,7 @@ const HIDDEN_PREFIXES = ["/standalone", "/app/", "/oracle-preview", "/teleport"]
 
 const SiteFooter = () => {
   const { pathname } = useLocation();
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
   const [contactOpen, setContactOpen] = useState(false);
   const [kind, setKind] = useState<"general" | "investor">("general");
 
