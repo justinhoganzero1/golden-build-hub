@@ -2,7 +2,9 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen } from "lucide-react";
+import { User, Camera, Mail, Phone, MapPin, Edit3, Save, Sparkles, Loader2, Palette, Upload, Share2, ImagePlus, FolderOpen, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
+
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
