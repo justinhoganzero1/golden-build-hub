@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Camera, Clapperboard, Palette, Mic2, ArrowRight, Sparkles } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import SEO from "@/components/SEO";
+import StudioLibraryStrip from "@/components/studio/StudioLibraryStrip";
+
 
 interface StudioCard {
   key: string;
