@@ -229,6 +229,7 @@ const MoviePaymentSuccessPage = lazy(loaders["/movie-payment-success"]);
 const LivingGifStudioPage = lazy(loaders["/living-gif-studio"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
+const AiSearchPage = lazy(() => import("./pages/AiSearchPage"));
 const OraclePreviewPage = lazy(() => import("./pages/OraclePreviewPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
@@ -434,6 +435,7 @@ const App = () => (
                   <Route path="/ai-travel-planner" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-fitness-coach-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-investor-pitch" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/ai-search" element={<ErrorBoundary pageName="AI Search Reference"><AiSearchPage /></ErrorBoundary>} />
                   <Route path="/store/:accountId" element={<ErrorBoundary pageName="Creator Storefront"><StorefrontPage /></ErrorBoundary>} />
                   <Route path="/apps" element={<RequireAuth><ErrorBoundary pageName="Apps Storefront"><AppsStorefrontPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/apps/:slug" element={<RequireAuth><PaywallGate requiredTier="starter" featureName="Standalone Mini-App"><ErrorBoundary pageName="Standalone App"><StandaloneAppRoute /></ErrorBoundary></PaywallGate></RequireAuth>} />
