@@ -48,7 +48,7 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    const origin = req.headers.get("origin") || "https://golden-vault-builder.lovable.app";
+    const origin = req.headers.get("origin") || "https://oracle-lunar.online";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
