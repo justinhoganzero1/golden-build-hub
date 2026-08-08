@@ -2,6 +2,7 @@
 // Handles:
 //   - checkout.session.completed (movie payments + app unlocks + subscriptions)
 //   - payment_intent.succeeded   (fallback for movies if checkout event missed)
+//   - payment_intent.payment_failed (recorded for failure diagnostics)
 // For movie payments: marks project paid + kicks the script-chunker so rendering starts
 // even if the user never returns to the success page.
 // PUBLIC endpoint — verified via Stripe signature, no JWT.
@@ -115,6 +116,18 @@ async function grantCoinTopup(session: Stripe.Checkout.Session) {
   });
   if (error) throw error;
   log("coin topup credited", { user_id: userId, wallet_cents: Math.round(amount), session_id: session.id });
+
+  // Attribute the conversion for AI-search analytics (engine is joined by user_id).
+  try {
+    await supabase.from("ai_discovery_events").insert({
+      event_type: "topup",
+      path: "/wallet",
+      user_id: userId,
+      amount_cents: Math.round(amount),
+    });
+  } catch (e) {
+    console.error("[STRIPE-WEBHOOK] discovery log failed", e);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -145,11 +158,16 @@ Deno.serve(async (req) => {
   }
 
   log("event received", { type: event.type, id: event.id });
+  const obj = event.data.object as Record<string, any>;
   await logEvent({
     source: "webhook",
     status: "ok",
     event_type: event.type,
     stripe_event_id: event.id,
+    stripe_session_id: typeof obj?.id === "string" && obj.id.startsWith("cs_") ? obj.id : null,
+    stripe_customer_id: typeof obj?.customer === "string" ? obj.customer : null,
+    user_id: (obj?.metadata ?? {}).user_id ?? null,
+    amount_cents: Number(obj?.amount_total ?? obj?.amount_received ?? obj?.amount ?? 0) || null,
     message: "received",
   });
 
@@ -241,6 +259,29 @@ Deno.serve(async (req) => {
         if (projectId) {
           await markMoviePaid(projectId, pi.id, pi.amount_received ?? pi.amount ?? 0);
         }
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const meta = pi.metadata ?? {};
+        await logEvent({
+          source: "webhook",
+          status: "payment_failed",
+          event_type: event.type,
+          stripe_event_id: event.id,
+          stripe_customer_id: typeof pi.customer === "string" ? pi.customer : null,
+          user_id: meta.user_id ?? null,
+          amount_cents: pi.amount ?? null,
+          message: pi.last_payment_error?.message ?? "payment failed",
+          payload: {
+            payment_intent: pi.id,
+            decline_code: pi.last_payment_error?.decline_code ?? null,
+            code: pi.last_payment_error?.code ?? null,
+            metadata: meta,
+          },
+        });
+        log("payment failed", { pi: pi.id, reason: pi.last_payment_error?.message });
         break;
       }
 

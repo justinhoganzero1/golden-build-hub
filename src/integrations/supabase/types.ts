@@ -167,6 +167,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_discovery_events: {
+        Row: {
+          amount_cents: number | null
+          bot: string | null
+          created_at: string
+          engine: string | null
+          event_type: string
+          id: string
+          path: string | null
+          query_hint: string | null
+          referrer: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          bot?: string | null
+          created_at?: string
+          engine?: string | null
+          event_type: string
+          id?: string
+          path?: string | null
+          query_hint?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          bot?: string | null
+          created_at?: string
+          engine?: string | null
+          event_type?: string
+          id?: string
+          path?: string | null
+          query_hint?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_request_log: {
         Row: {
           created_at: string
