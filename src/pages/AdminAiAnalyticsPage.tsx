@@ -78,7 +78,7 @@ export default function AdminAiAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 pb-24">
-      <SEO title="AI Search Analytics — Oracle Lunar Admin" description="AI crawler and answer-engine traffic analytics." path="/admin/ai-analytics" noindex />
+      <SEO title="AI Search Analytics — Oracle Lunar Admin" description="AI crawler and answer-engine traffic analytics." path="/admin/ai-analytics" />
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h1 className="text-xl font-bold">AI Search Analytics</h1>
