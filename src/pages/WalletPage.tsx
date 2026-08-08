@@ -5,6 +5,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trackAiDiscovery } from "@/lib/aiDiscovery";
 
 const COINS_PER_DOLLAR = 5.37;
 const coinPacks = [5, 10, 20, 50, 100];
@@ -51,6 +52,7 @@ const WalletPage = () => {
       });
       if (error) throw error;
       if (!data?.url) throw new Error("Checkout did not return a payment link.");
+      await trackAiDiscovery("topup_started", { amount_cents: Math.round(dollars * 100) });
       window.location.href = data.url;
     } catch (err: any) {
       toast.error(err?.message || "Could not open coin checkout.");

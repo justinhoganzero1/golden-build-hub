@@ -44,3 +44,7 @@ verify_jwt = false
 # Owner-only revenue panel — validates JWT + admin role in code.
 [functions.stripe-revenue]
 verify_jwt = false
+
+# Public AI ingest manifest — crawlers cannot send a JWT.
+[functions.ai-ingest]
+verify_jwt = false

@@ -230,6 +230,8 @@ const LivingGifStudioPage = lazy(loaders["/living-gif-studio"]);
 const YouTubeShowStudioPage = lazy(loaders["/youtube-show-studio"]);
 const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const AiSearchPage = lazy(() => import("./pages/AiSearchPage"));
+const AdminAiAnalyticsPage = lazy(() => import("./pages/AdminAiAnalyticsPage"));
+const AdminAiHealthPage = lazy(() => import("./pages/AdminAiHealthPage"));
 const OraclePreviewPage = lazy(() => import("./pages/OraclePreviewPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
@@ -362,6 +364,8 @@ const App = () => (
                   <Route path="/admin/auth-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Auth Audit"><AdminAuthAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/build-aab" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Build AAB"><AdminBuildAABPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/users" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Users"><AdminUsersPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/ai-analytics" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="AI Analytics"><AdminAiAnalyticsPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/ai-health" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="AI Health"><AdminAiHealthPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/inbox" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Inbox"><AdminInboxPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/inbox" element={<RequireAuth><ErrorBoundary pageName="My Inbox"><InboxPage /></ErrorBoundary></RequireAuth>} />
 

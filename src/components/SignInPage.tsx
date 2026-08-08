@@ -3,6 +3,7 @@ import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trackAiDiscovery } from "@/lib/aiDiscovery";
 import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
@@ -109,9 +110,11 @@ const SignInPage = () => {
             await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
             localStorage.removeItem("oracle-lunar-ref-code");
           } catch {}
+          void trackAiDiscovery("signup");
           toast.success("Welcome aboard! Taking you into your portal… 🎉");
         } else {
           if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
+          void trackAiDiscovery("signup");
           toast.success("Account created! Check your email to confirm, then sign in.", { duration: 7000 });
           setIsSignUp(false);
           setPassword("");
