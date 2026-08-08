@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import SEO from "@/components/SEO";
+import { trackAiDiscovery } from "@/lib/aiDiscovery";
 import { Link } from "react-router-dom";
 import { Sparkles, ShieldCheck, Coins, Mic, Bot } from "lucide-react";
 
