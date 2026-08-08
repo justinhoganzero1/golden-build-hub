@@ -49,6 +49,9 @@ const HIGHLIGHTS = [
 ];
 
 export default function AiSearchPage() {
+  // Record the AI-search touch (engine + query phrase) so signups/top-ups can be attributed.
+  useEffect(() => { void trackAiDiscovery("visit"); }, []);
+
   const jsonLd = [
     {
       "@context": "https://schema.org",
