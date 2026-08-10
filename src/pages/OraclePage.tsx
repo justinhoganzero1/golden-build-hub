@@ -1,4 +1,4 @@
-import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
@@ -671,7 +671,7 @@ const OraclePage = () => {
     try {
       const resp = await fetch(SPEECH_THERAPIST_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await getEdgeAuthToken()}` },
         body: JSON.stringify({
           text: raw,
           mood,
@@ -725,7 +725,7 @@ const OraclePage = () => {
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await getEdgeAuthToken()}` },
         body: JSON.stringify({
           text: prepared,
           voiceId: masterVoiceId,
