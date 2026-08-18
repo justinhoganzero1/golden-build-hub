@@ -18,6 +18,7 @@ export interface TimelineScene {
   audio_url?: string;
   voice_id?: string;
   music_url?: string;
+  music_options?: string[];
   music_prompt?: string;
   music_volume?: number;
   generatingAudio?: boolean;
