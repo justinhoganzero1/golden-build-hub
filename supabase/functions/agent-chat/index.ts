@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+
 
 
 const corsHeaders = {
@@ -55,6 +57,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Hard auth gate: never touch the paid gateway for anonymous callers.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const authedUser = auth.user;
+
     const { agent, messages } = await req.json();
     if (!agent || !(agent in AGENTS)) {
       return new Response(JSON.stringify({ error: "Unknown agent" }), {
@@ -67,26 +74,26 @@ serve(async (req) => {
       });
     }
 
+    const rateLimited = await enforceRateLimit(req, authedUser, "agent-chat", { limit: 30, windowSeconds: 60 });
+    if (rateLimited) return rateLimited;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
-    let userId: string | null = null;
-    let userEmail: string | null = null;
+    let userId: string | null = authedUser.id;
+    let userEmail: string | null = authedUser.email;
     let userKey: string | null = null;
 
     const cfg = AGENTS[agent as AgentId];
 
-    if (token && SUPABASE_URL && SERVICE_KEY) {
+    if (SUPABASE_URL && SERVICE_KEY) {
+
       try {
         const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-        const { data: userData } = await admin.auth.getUser(token);
-        userId = userData?.user?.id ?? null;
-        userEmail = userData?.user?.email ?? null;
+
 
         if (userId) {
           // Look up this user's own provider key.
