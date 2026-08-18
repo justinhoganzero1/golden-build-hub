@@ -1,87 +1,71 @@
+# State-of-the-Art Per-User AI Billing
 
-# Voice AI Receptionist — Live Build Plan
+## Goal
+Replace estimated, fragmented charging with one server-enforced metering platform where every authenticated user has an isolated account, every paid AI/provider operation is attributable to that user, and the final charge is actual provider cost plus a 10% platform markup.
 
-Adds a new module to Oracle Lunar that answers a real phone number with an AI agent, books appointments to both Oracle Calendar and Google Calendar, fires text-back SMS on missed calls, and pushes every call into a built-in CRM pipeline with tags, follow-ups, and tasks.
-
-## What will be live in your app
-
-1. **Voice AI agent** — Twilio phone number → TwiML webhook → Gemini-powered agent that greets, handles FAQs, qualifies the caller, books appointments, and hands off to a human when rules trigger. Speech: Twilio `<Gather input="speech">` + ElevenLabs TTS streamed back via `<Play>`.
-2. **Admin console** (`/admin/voice-receptionist`) — edit the agent's prompt, knowledge base (FAQs Q&A list), business hours, languages, voice, handoff number, booking calendar, and pipeline mapping.
-3. **Booking rules + handoff** — JSON rules (e.g. "if intent=complaint OR value>$5k → transfer to +614..."). Booked slots check both calendars for conflicts.
-4. **Missed-call text-back** — Twilio `status_callback` detects `no-answer`/`busy`/`failed` and fires an SMS within seconds, plus a 24h + 72h reactivation drip if no reply.
-5. **CRM pipeline** — every call creates a `crm_contact` + `crm_activity`; agent can tag, advance pipeline stage, schedule a follow-up task, queue an SMS/email, and POST to an external webhook (Zapier/n8n/HighLevel-compatible) so it "feeds your whole system."
-
-## Capability tiles on the new module page
-
-Re-uses the screenshot's 5-tile layout, styled to Oracle Lunar (dark + amber), each tile linking to its live admin section.
-
-## Architecture (technical)
-
+## Architecture
 ```text
- Caller dials Twilio number
-        │
-        ▼
- Twilio Voice  ──webhook──►  edge: voice-receptionist-incoming  (TwiML)
-        │                              │
-        │                              ├─ Gemini reply via Lovable AI Gateway
-        │                              ├─ ElevenLabs TTS (existing key)
-        │                              └─ <Gather speech> loop until intent resolved
-        │
-        ├──status_callback──► edge: voice-receptionist-status
-        │                              └─ if missed → SMS text-back + drip enqueue
-        │
-        └──on "book"──► edge: voice-receptionist-book
-                                      ├─ insert into calendar_events (Oracle)
-                                      ├─ Google Calendar connector insert
-                                      └─ crm_activity + pipeline advance
+Signed-in user
+  -> authenticated AI operation
+  -> idempotent usage request
+  -> wallet preauthorization hold
+  -> provider execution
+  -> measured usage / provider receipt
+  -> actual-cost settlement (+10%)
+  -> immutable ledger + user receipt
+  -> reconciliation / automatic refund of unused hold
 ```
 
-### New edge functions
-- `voice-receptionist-incoming` — TwiML answer + speech-to-text loop + AI response.
-- `voice-receptionist-status` — missed-call detector + SMS firing + drip scheduler.
-- `voice-receptionist-book` — slot conflict check (Oracle + Google) + dual-write.
-- `voice-receptionist-sms-inbound` — inbound SMS replies into the CRM thread.
-- `voice-receptionist-drip-tick` — cron every 5 min, sends scheduled follow-ups.
-- `voice-receptionist-webhook-fanout` — POSTs CRM events to external URL when set.
+## Build
+1. **Create a double-entry billing ledger**
+   - Add immutable per-user billing accounts, usage requests, wallet holds, and ledger entries.
+   - Store provider, model, modality, units, estimated cost, actual cost, 10% fee, status, idempotency key, provider request ID, and timestamps.
+   - Keep wallet balance as a locked projection of posted ledger entries; prevent direct client mutation.
 
-### New tables (with RLS + GRANTs)
-- `voice_agent_config` (owner-only) — single row: prompt, voice_id, greeting, business_hours JSON, handoff_number, fallback_number, booking_calendar_ids, external_webhook_url.
-- `voice_knowledge_items` — Q&A pairs, embeddings optional.
-- `voice_call_logs` — call_sid, from, to, duration, transcript, intent, outcome, recording_url.
-- `crm_contacts` — phone, name, email, tags[], stage, owner_id, last_contact_at.
-- `crm_activities` — contact_id, type (call/sms/email/note/task/book), payload, occurs_at, status.
-- `crm_pipeline_stages` — ordered stages with colors.
-- `crm_followups` — scheduled tasks/messages, channel, body, send_at, status.
+2. **Implement reserve, settle, cancel, and refund operations**
+   - Atomically reserve the maximum expected amount before provider work begins.
+   - Settle from actual tokens, characters, seconds, images, video duration, calls, storage, or provider-reported cost.
+   - Release unused funds automatically; compensate failed/cancelled calls; make retries idempotent.
+   - Remove unlimited/admin/free bypasses from provider-cost accounting. Promotional access must be funded as a separate credit ledger, never hide real cost.
 
-### Frontend
-- `src/pages/VoiceReceptionistPage.tsx` — public landing with the 5 capability tiles (matches screenshot composition, Oracle styling).
-- `src/pages/admin/VoiceReceptionistAdminPage.tsx` — tabs: Agent · Knowledge · Hours & Handoff · Booking · Pipeline · Call Logs · CRM.
-- `src/components/voice/*` — CallTimeline, PipelineBoard (kanban), KnowledgeEditor, BusinessHoursEditor, ContactDrawer.
-- Add nav entries + module tile on the Super App grid.
+3. **Centralize provider metering**
+   - Replace the current `chargeAI` estimate-only helper with a shared metered operation wrapper.
+   - Add a versioned server-side rate-card registry with effective dates and cost formulas.
+   - Route every paid AI/provider function through the wrapper, including chat, agents, image, speech, music, video, movie, research, cloning, telephony, and worker paths.
+   - Reject unauthenticated paid operations and never trust a client-supplied user ID, cost, provider, model, or completion status.
 
-### Integrations
-- **Twilio** — already linked via connector (`TWILIO_API_KEY` present). User must (a) buy a number in Twilio console, (b) point Voice + Messaging webhooks at the deployed edge URLs (the admin page will display the exact URLs to paste).
-- **Google Calendar** — connect Google Calendar connector (workspace owner's account). I'll wire it; you click "Connect" once.
-- **ElevenLabs** — already linked, used for voice.
-- **Lovable AI Gateway** — Gemini 2.5 Flash for intent + response; no extra key.
+4. **Harden Stripe wallet funding**
+   - Bind one Stripe customer to one authenticated account.
+   - Use fixed server-approved top-up packs and same-origin production redirects.
+   - Process signed webhooks exactly once using event/session/payment-intent uniqueness.
+   - Post top-ups, disputes, refunds, and chargebacks to the ledger; never credit from metadata alone without confirming payment state and amount.
 
-## What you do (one-time, after I ship)
-1. Buy a Twilio number (or use existing).
-2. Approve the Google Calendar connection prompt I'll trigger.
-3. Open `/admin/voice-receptionist` → paste webhook URLs into Twilio → set greeting, hours, handoff number, knowledge.
-4. Test by calling your number.
+5. **Give each user modern spend controls**
+   - Show available, held, and spent balances separately.
+   - Add daily/monthly budgets, low-balance alerts, hard stops, auto top-up controls, and per-service usage receipts.
+   - Show actual provider cost, 10% platform fee, final total, status, and request ID for every operation.
 
-## Out of scope (call out before building)
-- Multi-tenant CRM per end-user (this is single-business: yours/owner). Adding per-user CRMs doubles the build.
-- Native HighLevel API push (we provide a generic webhook that HighLevel can subscribe to via Zapier/their inbound webhook trigger — same effect, no HL-specific code).
-- Voicemail transcription as a separate flow (covered by call recording + transcript on missed calls).
+6. **Add owner FinOps and reconciliation**
+   - Add aggregate margin, provider liability, held funds, failed settlements, negative balances, and unreconciled usage.
+   - Reconcile ledger totals against provider usage and Stripe events; alert on missing, duplicate, or margin-below-10% records.
 
-## Build order
-1. DB migration (all tables + RLS + grants).
-2. Edge functions (incoming → status → book → drip → fanout → sms-inbound).
-3. Google Calendar connector link.
-4. Admin page (config + knowledge + hours + pipeline + call logs).
-5. Public capability tiles page + nav entry.
-6. End-to-end smoke test instructions in the admin page header.
+7. **Test and rollout safely**
+   - Add concurrency, replay, insufficient-funds, failed-provider, partial-stream, webhook duplication, refund, spoofed-user, and exact-markup tests.
+   - Inventory all provider call sites and enforce a CI test that fails when a paid provider call lacks metering.
+   - Backfill opening ledger balances, run the new engine in shadow mode, compare totals, then switch charging atomically.
 
-Approve and I'll execute top-to-bottom.
+## Technical Rules
+- Currency accounting uses integer minor units with higher-precision internal cost units where sub-cent provider pricing requires it; round only at settlement boundaries.
+- The 10% fee is `ceil(actual_provider_cost × 0.10)` at the configured precision; the user pays provider cost plus fee.
+- Every mutation uses a unique idempotency key and database transaction with row locking.
+- Provider failures never become completed charges; streamed partial usage settles only measured consumption.
+- BYOK usage is still logged per user, but provider cost is marked externally paid and only an explicitly disclosed platform fee may be charged.
+- Existing promotional/free-for-life promises remain visible as funded promotional credits while actual provider costs remain auditable.
+
+## Acceptance Criteria
+- 100% of paid provider routes require an authenticated user and produce one attributable usage record.
+- No origin, role, grant, client flag, or retry can bypass metering or duplicate a charge.
+- Successful operations settle to actual measured cost plus exactly 10%; failed operations release holds.
+- Stripe replay cannot double-credit; refunds and disputes reverse the correct user's funds.
+- Each user can view only their own wallet, holds, usage, and receipts; owner reporting is server-authorized.
+- Automated tests prove isolation, atomicity, idempotency, margin, refunds, and complete provider-route coverage.
