@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import {
   Wand2, ChevronRight, ArrowLeft, Loader2, Mic, Music, Film, Clapperboard, Megaphone,
-  Sparkles, Volume2, Type, Video, Scissors, ListVideo, Play,
+  Sparkles, Volume2, Type, Video, Scissors, ListVideo, Play, Headphones, Settings2, FileText, Square, Download,
 } from "lucide-react";
+
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 
