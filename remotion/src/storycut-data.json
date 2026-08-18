@@ -1,268 +1,296 @@
 [
  {
-  "n": "This is Alex, an Aussie secret agent whose idea of deep cover involves a dodgy lanyard and a very squeaky rubber chicken.",
-  "c": "G'DAY LEGENDS",
+  "n": "Oracle Lunar presents: Scam the Scammer, Juzzy Style. A full-action thriller.",
+  "c": "SCAM THE SCAMMER",
   "m": "zoom-in",
   "f": 0,
-  "d": 7.06
+  "d": 7.46
  },
  {
-  "n": "He’s infiltrating India's biggest scam syndicate as 'Gary Windows', a tech support guru who’s about to cause a system crash.",
-  "c": "MEET GARY WINDOWS",
+  "n": "Smothering Western Sydney heat bakes a tin shed, heavy with the stench of dried blood. Macca\u2019s gone, bled dry by digital parasites. Now Juzzy sits in the dark, turning cold rage into pure, merciless vengeance.",
+  "c": "BLOOD ON THE KEYBOARD",
   "m": "pan-right",
   "f": 1,
-  "d": 7.15
+  "d": 16.5
  },
  {
-  "n": "His first masterstroke is breezing past security by guessing the central server password, which is of course, Password one two three.",
-  "c": "GENIUS PASSWORD",
-  "m": "zoom-in",
-  "f": 2,
-  "d": 7.07
- },
- {
-  "n": "But he’s not alone, because a rogue pigeon has just invaded the terminal and is now playing Minesweeper as the ultimate diversion.",
-  "c": "PIGEON POWER",
+  "n": "Dual monitors flare blue against a broad-shouldered Aussie built like an angle grinder. A stolen life, a synthetic ghost, and a syndicate scam. He isn't a cop, but he's cracking the lock.",
+  "c": "COLD BLOODED RECKONING",
   "m": "ken-burns",
-  "f": 3,
-  "d": 7.31
+  "f": 2,
+  "d": 13.77
  },
  {
-  "n": "When cornered by a suspicious manager, Alex deploys his secret weapon, claiming the rubber chicken is next-generation anti-hacking security hardware.",
-  "c": "HIGH-TECH CHICKEN",
+  "n": "Down a rain-drenched cul-de-sac in Wetherill Park, shrapnel-hard rain hammers an old Hilux. Juzzy stares down the dirty money laundry through a smoke-filled cab, counting down the seconds until the rats bolt.",
+  "c": "HUNTING THE LAUNDRY",
+  "m": "zoom-out",
+  "f": 3,
+  "d": 14.42
+ },
+ {
+  "n": "He fires up a rogue cell tower, spoofing local comms to trap their encrypted chatter. The syndicate thinks they're invisible in the Western Sydney storm. Juzzy\u2019s about to prove every bastard wrong.",
+  "c": "SIGNAL TRAPPED",
   "m": "pan-left",
   "f": 4,
-  "d": 8.93
+  "d": 13.26
  },
  {
-  "n": "The chaos escalates when his feathered accomplice accidentally trips the fire alarm, triggering a beautiful symphony of spilling chai and panicked scammers.",
-  "c": "CHAI SPILL CHAOS",
+  "n": "Thunder rattles a Smithfield warehouse as Juzzy stalks his target through the dark. Upstairs, a hulking ex-bikie mule panics, grabbing hardware keys and packing heat to make a run for it.",
+  "c": "CORNERED RAT",
+  "m": "zoom-in",
+  "f": 5,
+  "d": 14.46
+ },
+ {
+  "n": "Stepping straight out of the shadows, Juzzy cuts off the exit with hard knuckles and dead eyes. One heavy palm strike to the jaw drops the scum right onto the cold concrete floor.",
+  "c": "NO SURRENDER",
   "m": "pan-right",
   "f": 6,
-  "d": 8.63
+  "d": 12.06
  },
  {
-  "n": "Safely back in his questionable hotel room, he transfers all the syndicate's dirt onto a ridiculously fluffy pink cat USB drive.",
-  "c": "CAT-DRIVE DATA",
-  "m": "zoom-in",
+  "n": "The sweltering heat of Phnom Penh hits like wet wool, but Juzzy steps onto the tarmac carrying lethal digital poison. Posing as a disgraced broker, he walks straight toward the syndicate throne.",
+  "c": "INTO THE VIPERS DEN",
+  "m": "ken-burns",
   "f": 7,
-  "d": 7.97
+  "d": 15.9
  },
  {
-  "n": "He needs backup, so he recruits the Grey Avengers, a ruthless squad of pensioners armed with righteous fury and very overripe tomatoes.",
-  "c": "GREY AVENGERS",
-  "m": "zoom-in",
-  "f": 8,
-  "d": 7.52
- },
- {
-  "n": "The raid begins with a fruity fiasco, as a pensioner accidentally snipes a police inspector directly in the face with a squishy projectile.",
-  "c": "FRIENDLY FIRE",
-  "m": "ken-burns",
-  "f": 9,
-  "d": 8.14
- },
- {
-  "n": "Just as the chaos hits its peak, an old dear pulls the fire alarm seconds before a massive explosion rocks the villain’s hideout.",
-  "c": "KABOOM MATE",
+  "n": "Surrounded by armed heavies inside a blacked-out Lexus, Juzzy leans back with a smirk. The crime syndicate thinks they\u2019ve found a profitable mate. They\u2019ve just opened the door to their own executioner.",
+  "c": "HUNT THE HUNTER",
   "m": "zoom-out",
-  "f": 10,
-  "d": 7.6
+  "f": 8,
+  "d": 13.31
  },
  {
-  "n": "To establish dominance, their eighty-year-old enforcer promptly smashes an expensive sculpture, claiming he’s simply correcting the sanctuary’s negative juju flow.",
-  "c": "NEGATIVE JUJU",
+  "n": "Juzzy struts straight past two heavily armed guards in a icy Phnom Penh concrete bunker. He plays the cocky Aussie auditor, carrying a briefcase loaded with hidden taps and magnetic keyloggers.",
+  "c": "INSIDE THE BUNKER",
+  "m": "pan-left",
+  "f": 9,
+  "d": 13.0
+ },
+ {
+  "n": "The reinforced steel doors hiss open into pure madness. Two hundred trafficked kids work under buzzing fluorescent lights, trapped in a relentless digital nightmare while sweat-drenched syndicate bosses rake in millions.",
+  "c": "SILICON SLAVE FLOOR",
   "m": "zoom-in",
-  "f": 12,
-  "d": 9.05
+  "f": 10,
+  "d": 16.36
  },
  {
-  "n": "They stage a completely phony exorcism, convincing the paranoid cult leader to surrender his diamond-encrusted pen to be used as ghost bait.",
-  "c": "GHOST BAIT",
-  "m": "ken-burns",
-  "f": 13,
-  "d": 8.51
- },
- {
-  "n": "With a puff of freezing mist and some dramatic chanting, they triumphantly seal the imaginary financial demon inside a slightly dented thermos.",
-  "c": "DEMON IN THERMOS",
+  "n": "Heat and greed hang heavy over the scam floor as cold-hearted predators bleed innocent Aussie marks bone dry. But Juzzy isn't here for money\u2014he\u2019s here for a dead mate from Dubbo.",
+  "c": "PAYBACK FOR MACCA",
   "m": "pan-right",
-  "f": 14,
-  "d": 8.55
+  "f": 11,
+  "d": 13.55
  },
  {
-  "n": "Back in Kolkata, Alex strikes gold, unearthing hilarious security footage of the syndicate's big boss trying to socially engineer a pop-up toaster.",
-  "c": "TOASTER TAPE",
+  "n": "Moving like a ghost past screaming floor managers, Juzzy palms a deadly zero-day flash drive. One lie about network lag, and he plugs directly into their core switch, unleashing absolute mayhem.",
+  "c": "ZERO DAY PAYLOAD",
+  "m": "ken-burns",
+  "f": 12,
+  "d": 15.3
+ },
+ {
+  "n": "Sliding through Bangkok's jet-black waters in a gutted long-tail boat, Juzzy tracks the syndicate's dirty money string. Anger is useless now; only cold, lethal precision remains as he locks onto his target.",
+  "c": "BANGKOK AT NIGHT",
+  "m": "zoom-out",
+  "f": 13,
+  "d": 14.85
+ },
+ {
+  "n": "Perched inside a hyper-modern riverfront glass fortress, the syndicate\u2019s master accountant casually launders shattered lives over aged scotch. Juzzy tightens his grip on a silenced pistol and prepares to crash the party.",
+  "c": "CRASH THE PARTY",
+  "m": "pan-left",
+  "f": 14,
+  "d": 15.76
+ },
+ {
+  "n": "Deep in Bangkok's shadow-drenched shipping yards, Juzzy waits near the rotting pier. The syndicate thinks they are dealing with a rival cartel, completely unaware that an Aussie\u2019s grief makes the ultimate weapon.",
+  "c": "NO NEON LIGHTS",
   "m": "zoom-in",
   "f": 15,
-  "d": 8.92
+  "d": 15.86
  },
  {
-  "n": "Armed with the world's most pathetic blackmail material, he convinces Interpol to fly his entire squad of senior citizens straight to India.",
-  "c": "SENIORS ASSEMBLE",
-  "m": "zoom-out",
+  "n": "Headlights cut through the river fog as Chai steps out trembling with fear. Juzzy keeps to the shadows, baiting the nervous runner with stolen master keys to lure out the ultimate big fish.",
+  "c": "LURE THE BOSS",
+  "m": "pan-right",
   "f": 16,
-  "d": 8.3
+  "d": 13.12
  },
  {
-  "n": "Their nearly-blind getaway driver confidently rolls their clunky florist van straight through the main gates of the syndicate’s fortified headquarters.",
-  "c": "FLORIST VAN",
-  "m": "ken-burns",
-  "f": 18,
-  "d": 8.1
- },
- {
-  "n": "These aren't just pensioners, they're a finely-tuned machine of chaos, ready to serve justice one overripe vegetable at a time, mate.",
-  "c": "VEGETABLE JUSTICE",
-  "m": "pan-right",
-  "f": 8,
-  "d": 7.64
- },
- {
-  "n": "Covered in a glorious mess of tomato pulp, Alex watches his smug pigeon co-pilot pull a victory barrel-roll above the mayhem.",
-  "c": "VICTORY ROLL",
-  "m": "zoom-in",
-  "f": 19,
-  "d": 7.93
- },
- {
-  "n": "When the news crews arrive looking for a hero, Alex just deadpans the words 'rubber chicken' straight into the microphone.",
-  "c": "HERO'S WORDS",
-  "m": "zoom-in",
-  "f": 20,
-  "d": 7.19
- },
- {
-  "n": "The entire street spontaneously erupts into a wild Bollywood dance party, complete with cartwheeling retirees tumbling gracefully into decorative ferns.",
-  "c": "BOLLYWOOD BASH",
-  "m": "zoom-out",
-  "f": 21,
-  "d": 8.76
- },
- {
-  "n": "Amid the beautiful crimson aftermath, a proud vigilante officially adopts a single pristine souvenir fruit, affectionately naming the tomato 'Terry'.",
-  "c": "MEET TERRY",
-  "m": "ken-burns",
-  "f": 23,
-  "d": 9.14
- },
- {
-  "n": "Back at the hotel, the relentless pigeon struts into Alex's room with the undeniable swagger of a tiny, feathered crime lord.",
-  "c": "FEATHERED LANDLORD",
-  "m": "pan-right",
-  "f": 24,
-  "d": 7.27
- },
- {
-  "n": "He reunites with his legendary hacker mate Juzzie, and they use a stolen toilet-paper complaint login to launch a global cyber-strike.",
-  "c": "GLOBAL STRIKE",
-  "m": "zoom-in",
-  "f": 25,
-  "d": 8.14
- },
- {
-  "n": "From a single laptop, they begin dismantling the entire criminal network, causing financial chaos for scammers from Mumbai to Mozambique.",
-  "c": "CRIMINAL CHAOS",
-  "m": "zoom-out",
-  "f": 29,
-  "d": 8.06
- },
- {
-  "n": "Touching down in Brisbane, border security immediately recognizes the world-famous celebrity pigeon now perched triumphantly on our hero's shoulder.",
-  "c": "CELEBRITY BIRD",
-  "m": "ken-burns",
-  "f": 26,
-  "d": 8.6
- },
- {
-  "n": "But his homecoming is cut short by an ambush from his own team, as the Grey Avengers welcome him with a ceremonial tomato.",
-  "c": "HERO'S WELCOME",
-  "m": "zoom-in",
-  "f": 28,
-  "d": 7.39
- },
- {
-  "n": "The celebration moves to the Redcliffe Community Hall, where the bingo machine has been temporarily repurposed for a much more important mission.",
-  "c": "BINGO MISSION",
-  "m": "zoom-in",
-  "f": 30,
-  "d": 7.6
- },
- {
-  "n": "In front of a cheering crowd, Alex absolutely obliterates a cardboard effigy of the scam boss with one perfectly lethal tomato throw.",
-  "c": "LETHAL THROW",
-  "m": "pan-right",
-  "f": 31,
-  "d": 8.27
- },
- {
-  "n": "They are the heroes we didn't know we needed, proving that age is no barrier to delivering some good old-fashioned fruity justice.",
-  "c": "FRUITY JUSTICE",
+  "n": "Deep in the sticky Bangkok heat, an abandoned meat plant hums with stolen power. Bloodied but unbowed, Juzzy cuts through the perimeter fence, hunting the digital syndicate that ruined his mate.",
+  "c": "THE FROZEN VAULT",
   "m": "ken-burns",
   "f": 17,
-  "d": 7.48
+  "d": 14.06
  },
  {
-  "n": "They started a fire that can't be put out, a revolution built on mayhem, madness, and a whole lot of glorious mess.",
-  "c": "MAYHEM AND MADNESS",
-  "m": "zoom-in",
-  "f": 10,
-  "d": 7.43
- },
- {
-  "n": "With Juzzie on the keys and Alex on the ground, no dodgy call center or fake invoice is safe from their unique brand of chaos.",
-  "c": "NO SCAM SAFE",
-  "m": "pan-left",
-  "f": 25,
-  "d": 7.97
- },
- {
-  "n": "This summer, get ready for a tidal wave of tomato-fueled takedowns that will leave you breathless from laughing so hard, mate.",
-  "c": "TOMATO TAKEDOWNS",
-  "m": "pan-right",
-  "f": 9,
-  "d": 6.27
- },
- {
-  "n": "He’s got a plan for every problem, and a bird for every computer system that desperately needs a good game of Minesweeper.",
-  "c": "BIRD FOR HIRE",
-  "m": "ken-burns",
-  "f": 3,
-  "d": 5.94
- },
- {
-  "n": "Get ready to join the party, because when these legends fight back, the victory celebration is an absolutely mandatory Bollywood dance number.",
-  "c": "JOIN THE PARTY",
+  "n": "He pops the exhaust louvers with a hardened pry bar, slipping into a furnace of hot silicon and fried copper. Red emergency lights throb down the vent, leading straight into the enemy's lair.",
+  "c": "INTO THE HEAT",
   "m": "zoom-out",
-  "f": 21,
-  "d": 7.64
+  "f": 18,
+  "d": 13.55
  },
  {
-  "n": "He's got the world's most famous pigeon, a knack for trouble, and a complete disregard for international diplomatic protocols.",
-  "c": "FAMOUS PIGEON",
+  "n": "Inside the roaring vault, five thousand server blades scream like jet engines. Juzzy hooks into the mainframe, executing a merciless zero-knowledge script to bleed fifty million stolen Aussie dollars back to the victims.",
+  "c": "PAYBACK IS COMING",
   "m": "pan-left",
-  "f": 26,
-  "d": 7.31
+  "f": 19,
+  "d": 17.61
  },
  {
-  "n": "He came back a hero, welcomed by the only people who truly understand his methods: a squad of fruit-wielding, fearless pensioners.",
-  "c": "FEARLESS PENSIONERS",
-  "m": "ken-burns",
-  "f": 28,
-  "d": 7.6
+  "n": "Heavy boots smash through the main access doors as tactical flashlights pierce the humid dust. The mercenaries rack their carbines, but Juzzy stays put, watching the recovery percentage climb frame by bloody frame.",
+  "c": "DIGITAL WARFARE",
+  "m": "zoom-in",
+  "f": 20,
+  "d": 17.46
  },
  {
-  "n": "He’s got a license to thrill, a rubber chicken for protection, and a very, very particular set of ridiculous skills.",
-  "c": "RIDICULOUS SKILLS",
+  "n": "In a stilted jungle hut north of Phuket, Juzzy stitches a gash on his forearm while rain hammers the iron roof. Wiping out fifty million pissed off the syndicate, and now the hunters are at his door.",
+  "c": "NO SAFE PLACE",
   "m": "pan-right",
-  "f": 0,
-  "d": 6.39
+  "f": 21,
+  "d": 15.06
  },
  {
-  "n": "He is Gary Windows, and he's here to scam the scammers... Juzzy Style. You have got to be kidding me, mate.",
-  "c": "JUZZY STYLE",
+  "n": "Six military-grade hitmen move through the heavy jungle canopy with suppressed rifles. Juzzy doesn't blink. He triggers a digital wiper script, straps on his tactical vest, and prepares to turn the hunted into the hunter.",
+  "c": "HUNT THE HUNTERS",
+  "m": "ken-burns",
+  "f": 22,
+  "d": 15.52
+ },
+ {
+  "n": "With four dead mercenaries rotting in the brush, Juzzy retreats to a rusted shipping container. Blood drips from his ribs onto the keyboard as he decrypts the final master file to find the man who pulled the strings.",
+  "c": "THE MASTER MIND",
+  "m": "zoom-out",
+  "f": 23,
+  "d": 15.52
+ },
+ {
+  "n": "The terminal flashes red as Cayman shell accounts unravel across his screen. The digital ghost isn't hiding in some offshore jungle tax haven, but right in a high-frequency trading desk atop a gleaming glass skyscraper.",
+  "c": "TOP FLOOR TARGET",
+  "m": "pan-left",
+  "f": 24,
+  "d": 14.85
+ },
+ {
+  "n": "Thirty stories above the Surfers Paradise neon, Juzzy tracks his target through high-powered optics. Across the void sits forty million dollars of reinforced glass and high-frequency paranoia belonging to Viktor Vance.",
+  "c": "SURFERS PARADISE RECON",
+  "m": "zoom-in",
+  "f": 25,
+  "d": 16.31
+ },
+ {
+  "n": "He sets the laser mic, tapping Vance\u2019s penthouse audio through the humid ocean haze. The security grid spikes red with private military frequencies, but Juzzy is already building the blueprint to tear it down.",
+  "c": "HIGH-TECH SURVEILLANCE",
+  "m": "pan-right",
+  "f": 26,
+  "d": 14.56
+ },
+ {
+  "n": "Covered in bruises beneath a tailored Italian suit, Juzzy transforms into Garth Sterling. A rogue South African energy broker sitting on one hundred million dollars in unhosted Tether. The ultimate whale bait for a bloodthirsty shark.",
+  "c": "THE PERFECT COVER",
+  "m": "ken-burns",
+  "f": 27,
+  "d": 17.32
+ },
+ {
+  "n": "Armed with a rigged Patek Philippe watch and automated dummy wallets pinging Cayman Island nodes, Juzzy steps onto the pier. He moves with total authority, walking straight into the nest of high-end parasites.",
+  "c": "HUNTING THE SHARK",
+  "m": "zoom-out",
+  "f": 28,
+  "d": 14.51
+ },
+ {
+  "n": "Thirty-five floors up, Juzzy sits across from Viktor Vance inside a fortress of marble and brushed brass. Two hundred grand on his wrist, playing the arrogant offshore broker ready to wash a hundred mil.",
+  "c": "DEVIL AT THE TABLE",
+  "m": "pan-left",
+  "f": 29,
+  "d": 14.42
+ },
+ {
+  "n": "Vance pours a vintage Penfolds Grange, raising his glass with cold, calculating eyes. But beneath the polished civilized surface, armed ex-Special Forces bodyguards watch Juzzy\u2019s every breath, waiting for a single misstep.",
+  "c": "HIGH STAKES GAMBLE",
+  "m": "zoom-in",
+  "f": 30,
+  "d": 17.97
+ },
+ {
+  "n": "Tensions spike thirty floors above the Gold Coast strip as Vance grows suspicious. Juzzy executes a secret phone script, triggering a fake drone threat that pulls the kingpin and his guards out of the room.",
+  "c": "TRIGGER THE ALARM",
+  "m": "pan-right",
+  "f": 31,
+  "d": 13.91
+ },
+ {
+  "n": "The moment the doors lock shut, Juzzy spits the wine, dumps his tuxedo jacket, and unholsters his tech. Armed with fiber optics and zero-day drives, he slips into the service core to settle the score.",
+  "c": "BREACH THE VAULT",
   "m": "ken-burns",
   "f": 32,
-  "d": 6.69
+  "d": 15.06
+ },
+ {
+  "n": "Sweat stings Juzzy\u2019s eyes inside a thirty-story vault of hot silicone and optical fiber. He plugs Phnom Penh code directly into the network trunk, seizing total control of every screen across the Gold Coast strip.",
+  "c": "SYSTEM OVERRIDE INITIATED",
+  "m": "zoom-out",
+  "f": 33,
+  "d": 15.9
+ },
+ {
+  "n": "Viktor Vance toasts his corrupt parasites under crystal chandeliers until brutal electronic feedback shatters the room. High-definition screens flush blood red, blasting dead Macca\u2019s face across forty meters of high-tech displays for the world to see.",
+  "c": "THE LEDGER GOES LIVE",
+  "m": "pan-left",
+  "f": 34,
+  "d": 19.17
+ },
+ {
+  "n": "Steel blast shutters slam down, turning thirty floors of high-end luxury into a blood-red cage. Trapped inside with Vance\u2019s elite kill squad, Juzzy racks a stolen Sig Sauer and prepares for a brutal room-to-room fight.",
+  "c": "KILL SQUAD DEPLOYED",
+  "m": "zoom-in",
+  "f": 35,
+  "d": 15.45
+ },
+ {
+  "n": "Heavy tactical boots echo off Carrara marble, but Juzzy doesn't wait to be hunted. He kicks a barstool to break their angle, drops the point man center-mass, and rips a carbine out of the next shooter\u2019s grip.",
+  "c": "CLOSE QUARTERS CARNAGE",
+  "m": "pan-right",
+  "f": 36,
+  "d": 13.65
+ },
+ {
+  "n": "Explosives blow the steel access doors off their hinges, releasing Juzzy into a torrential coastal tempest. Thirty-four floors above Surfers Paradise, twin helicopter engines roar as Vance scrambles frantically toward his airborne escape.",
+  "c": "POINT BLANK STORM",
+  "m": "ken-burns",
+  "f": 37,
+  "d": 16.6
+ },
+ {
+  "n": "Juzzy slides across rain-slicked concrete under heavy automatic fire. He executes two wet-work shooters with dead-eyed precision, then sprints through burning lungs and cracked ribs toward the lifting skids to bring Vance down.",
+  "c": "NO ESCAPE ROUTE",
+  "m": "zoom-out",
+  "f": 38,
+  "d": 15.11
+ },
+ {
+  "n": "Viktor Vance lies bleeding on the wet concrete as police sirens echo thirty stories up the penthouse tower. Desperate threats spill from Vance\u2019s mouth, but Juzzy stands cold, unfazed, pulling up the final reverse-drain countdown.",
+  "c": "ACCOUNTING FOR BLOOD",
+  "m": "pan-left",
+  "f": 39,
+  "d": 16.86
+ },
+ {
+  "n": "Juzzy jams Vance\u2019s titanium hardware key straight into the tablet port. Eighty million in stolen offshore crypto instantly drains through multi-sig scripts, wiping Vance out completely and settling the score for his fallen mate.",
+  "c": "LEDGER BALANCED FOREVER",
+  "m": "zoom-in",
+  "f": 40,
+  "d": 16.17
+ },
+ {
+  "n": "Scam the Scammer, Juzzy Style. Written, illustrated and filmed inside Oracle Lunar.",
+  "c": "ORACLE LUNAR",
+  "m": "pan-right",
+  "f": 41,
+  "d": 7.91
  }
 ]
