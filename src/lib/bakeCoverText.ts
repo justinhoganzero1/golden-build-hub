@@ -22,23 +22,117 @@ export interface BakeTextOptions {
 
 type CoverIdentity = {
   display: string;
+  displayWeight: string;
   body: string;
+  bodyWeight: string;
+  /** Extra letter-spacing on the title, as a fraction of font size. */
+  tracking: number;
   light: string;
   mid: string;
   deep: string;
   accent: string;
 };
 
+/**
+ * Real display typefaces — loaded from Google Fonts at runtime so covers stop
+ * looking like default system text. Each identity pairs a characterful
+ * display face with a complementary body face.
+ */
+const GOOGLE_FONTS = [
+  "Anton",
+  "Bebas+Neue",
+  "Archivo+Black",
+  "Alfa+Slab+One",
+  "Cinzel:wght@700;900",
+  "Playfair+Display:ital,wght@0,700;0,900;1,700",
+  "Oswald:wght@400;600;700",
+  "Barlow+Condensed:wght@400;600;700",
+  "Cormorant+Garamond:wght@400;600;700",
+  "Inter:wght@400;600;800",
+  "Staatliches",
+  "Unbounded:wght@600;800",
+];
+
+let fontsReady: Promise<void> | null = null;
+
+function ensureCoverFonts(): Promise<void> {
+  if (fontsReady) return fontsReady;
+  fontsReady = (async () => {
+    if (typeof document === "undefined") return;
+    const id = "oracle-cover-fonts";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?${GOOGLE_FONTS.map(f => `family=${f}`).join("&")}&display=swap`;
+      document.head.appendChild(link);
+    }
+    const families = [
+      "700 96px Anton", "700 96px 'Bebas Neue'", "900 96px 'Archivo Black'",
+      "400 96px 'Alfa Slab One'", "900 96px Cinzel", "900 96px 'Playfair Display'",
+      "700 96px Oswald", "700 48px 'Barlow Condensed'", "600 48px 'Cormorant Garamond'",
+      "800 48px Inter", "400 96px Staatliches", "800 96px Unbounded",
+    ];
+    try {
+      await Promise.race([
+        Promise.all(families.map(f => (document as any).fonts?.load?.(f))),
+        new Promise(r => setTimeout(r, 6000)),
+      ]);
+      await (document as any).fonts?.ready;
+    } catch { /* fall back to system stacks */ }
+  })();
+  return fontsReady;
+}
+
 function coverIdentity(title: string, genre = ""): CoverIdentity {
   const seed = `${title}|${genre}`.split("").reduce((n, c) => ((n * 33) + c.charCodeAt(0)) >>> 0, 11);
   const identities: CoverIdentity[] = [
-    { display: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif", body: "Helvetica, Arial, sans-serif", light: "#effcff", mid: "#45d6ff", deep: "#0066ff", accent: "#ff315f" },
-    { display: "Rockwell, 'Courier New', serif", body: "Georgia, serif", light: "#fff2b8", mid: "#ff8a2a", deep: "#ed1d4f", accent: "#20e0bd" },
-    { display: "Palatino Linotype, Book Antiqua, Palatino, serif", body: "Palatino Linotype, serif", light: "#f4f0ff", mid: "#b98cff", deep: "#5e36cf", accent: "#ffcf3f" },
-    { display: "Trebuchet MS, Arial, sans-serif", body: "Trebuchet MS, Arial, sans-serif", light: "#f1fff5", mid: "#55e879", deep: "#087f63", accent: "#ff4c8b" },
-    { display: "Arial Black, Arial, sans-serif", body: "Arial, sans-serif", light: "#fff7ee", mid: "#ffcf45", deep: "#ef3e23", accent: "#00b8d9" },
+    // Blockbuster action
+    { display: "Anton, Impact, sans-serif", displayWeight: "400", body: "'Barlow Condensed', Helvetica, sans-serif", bodyWeight: "700", tracking: 0.02,
+      light: "#fff6e2", mid: "#ffb03a", deep: "#c81a10", accent: "#28e0ff" },
+    // Pulp / thriller slab
+    { display: "'Alfa Slab One', Rockwell, serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.0,
+      light: "#fff3cf", mid: "#ff8a2a", deep: "#a5122f", accent: "#22e3bd" },
+    // Literary elegance
+    { display: "'Playfair Display', Georgia, serif", displayWeight: "900", body: "'Cormorant Garamond', Georgia, serif", bodyWeight: "600", tracking: 0.01,
+      light: "#fdfbf5", mid: "#e6c98a", deep: "#8d6a2f", accent: "#d8452f" },
+    // Epic / historical
+    { display: "Cinzel, 'Times New Roman', serif", displayWeight: "900", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.09,
+      light: "#f6f1ff", mid: "#c4a7ff", deep: "#4b2ea8", accent: "#ffce3b" },
+    // Modern brutalist
+    { display: "'Archivo Black', Arial Black, sans-serif", displayWeight: "400", body: "Inter, Helvetica, sans-serif", bodyWeight: "800", tracking: -0.01,
+      light: "#f2fff7", mid: "#57ec8c", deep: "#046b52", accent: "#ff3f7f" },
+    // Poster / stencil
+    { display: "Staatliches, 'Bebas Neue', sans-serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.05,
+      light: "#eefaff", mid: "#4fd2ff", deep: "#0b3ecf", accent: "#ff5a2b" },
+    // Neon future
+    { display: "Unbounded, 'Bebas Neue', sans-serif", displayWeight: "800", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.03,
+      light: "#ffffff", mid: "#ff6ad5", deep: "#4b18b5", accent: "#3bf5d0" },
   ];
   return identities[seed % identities.length];
+}
+
+/** Draw a line of text with manual letter-spacing, centred on x. */
+function drawTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  tracking: number,
+  paint: (t: string, tx: number, ty: number) => void,
+) {
+  if (!tracking) { paint(text, x, y); return; }
+  const chars = [...text];
+  const widths = chars.map(c => ctx.measureText(c).width);
+  const total = widths.reduce((a, b) => a + b, 0) + tracking * (chars.length - 1);
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
+  let cx = x - total / 2;
+  chars.forEach((c, i) => {
+    paint(c, cx, y);
+    cx += widths[i] + tracking;
+  });
+  ctx.textAlign = prevAlign;
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -50,6 +144,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     img.src = url;
   });
 }
+
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const out: string[] = [];
@@ -123,7 +218,9 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
  * Composite the cover typography onto the artwork and return a JPEG data URL.
  */
 export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): Promise<string> {
+  await ensureCoverFonts();
   const img = await loadImage(artworkUrl);
+
   const H = opts.height ?? opts.size ?? 2775;
   const W = opts.width ?? 1875;
 
@@ -170,55 +267,101 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     // in the upper two-thirds; title + author sit in the lower band.
     scrim(ctx, W, H * 0.52, H * 0.48, "bottom");
 
-    const t = fitLines(ctx, title, inner, H * 0.22, W * 0.13, "900", identity.display, 1.02);
+    const t = fitLines(ctx, title, inner * 0.94, H * 0.22, W * 0.145, identity.displayWeight, identity.display, 1.02);
     const titleBlock = t.lines.length * t.lineHeight;
-    const authorSize = W * 0.05;
-    const genreSize = W * 0.026;
+    const authorSize = W * 0.052;
+    const genreSize = W * 0.024;
+    const track = t.fontSize * identity.tracking;
 
     const bottomPad = H * 0.055;
     const authorY = H - bottomPad - authorSize * 1.2;
-    const ruleY = authorY - W * 0.035;
-    const titleY = ruleY - W * 0.03 - titleBlock;
+    const ruleY = authorY - W * 0.038;
+    const titleY = ruleY - W * 0.032 - titleBlock;
     const genreY = titleY - W * 0.055;
 
     if (opts.genre) {
-      ctx.font = `700 ${genreSize}px ${identity.body}`;
+      ctx.font = `${identity.bodyWeight} ${genreSize}px ${identity.body}`;
       ctx.fillStyle = identity.accent;
-      ctx.fillText(opts.genre.toUpperCase().split("").join(" "), W / 2, genreY);
+      drawTracked(ctx, opts.genre.toUpperCase(), W / 2, genreY, genreSize * 0.34,
+        (s, x, y2) => ctx.fillText(s, x, y2));
     }
 
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.02;
-    ctx.shadowOffsetY = W * 0.006;
-    ctx.fillStyle = titleGradient(ctx, titleY, titleBlock, identity);
-    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, titleY + i * t.lineHeight));
-    ctx.restore();
+    // Title: soft drop shadow → dark outline → metallic gradient fill →
+    // a hairline highlight along the top. This is what reads as "designed"
+    // rather than "browser default text".
+    ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
+    t.lines.forEach((line, i) => {
+      const ly = titleY + i * t.lineHeight;
 
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = W * 0.03;
+      ctx.shadowOffsetY = W * 0.008;
+      ctx.fillStyle = "rgba(0,0,0,0.85)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(2, t.fontSize * 0.055);
+      ctx.strokeStyle = "rgba(8,6,10,0.92)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.fillStyle = titleGradient(ctx, ly, t.lineHeight, identity);
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = Math.max(1, t.fontSize * 0.012);
+      ctx.strokeStyle = identity.light;
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.restore();
+    });
+
+    // Twin rule with a diamond mark — a small piece of craft between title
+    // and byline.
     ctx.fillStyle = identity.accent;
-    ctx.fillRect(W * 0.33, ruleY, W * 0.34, Math.max(1, W * 0.0018));
+    const rw = W * 0.17;
+    const rh = Math.max(1.5, W * 0.0022);
+    ctx.fillRect(W / 2 - rw - W * 0.022, ruleY, rw, rh);
+    ctx.fillRect(W / 2 + W * 0.022, ruleY, rw, rh);
+    ctx.save();
+    ctx.translate(W / 2, ruleY + rh / 2);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillRect(-W * 0.007, -W * 0.007, W * 0.014, W * 0.014);
+    ctx.restore();
 
     // The author credit is deliberately flexible per book. Keep it as the
     // author's name alone and never duplicate it on the rear.
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.015;
-    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${authorSize}px ${identity.body}`;
+    ctx.shadowBlur = W * 0.018;
+    ctx.font = `${identity.bodyWeight} ${authorSize}px ${identity.body}`;
     ctx.fillStyle = identity.light;
-    ctx.fillText(layout === "editorial" ? author : author.toUpperCase(), W / 2, authorY);
+    const authorText = layout === "editorial" ? author : author.toUpperCase();
+    drawTracked(ctx, authorText, W / 2, authorY, authorSize * (layout === "editorial" ? 0.02 : 0.16),
+      (s, x, y2) => ctx.fillText(s, x, y2));
     ctx.restore();
   } else {
-    scrim(ctx, W, 0, H * 0.22, "top");
+    scrim(ctx, W, 0, H * 0.24, "top");
 
     let y = H * 0.05;
-    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.085, "900", identity.display, 1.05);
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.02;
-    ctx.fillStyle = titleGradient(ctx, y, t.lines.length * t.lineHeight, identity);
-    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * t.lineHeight));
-    ctx.restore();
+    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.09, identity.displayWeight, identity.display, 1.05);
+    const track = t.fontSize * identity.tracking;
+    ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
+    t.lines.forEach((line, i) => {
+      const ly = y + i * t.lineHeight;
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(2, t.fontSize * 0.05);
+      ctx.strokeStyle = "rgba(8,6,10,0.9)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.fillStyle = titleGradient(ctx, ly, t.lineHeight, identity);
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+    });
     y += t.lines.length * t.lineHeight + W * 0.02;
+
 
     // Blurb card
     const blurb = (opts.blurb || "").trim();
