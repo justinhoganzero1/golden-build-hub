@@ -16,6 +16,7 @@ import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
+import StoryboardTimeline from "@/components/movie/StoryboardTimeline";
 
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
@@ -753,6 +754,39 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, audio_url: dataUrl, generatingAudio: false } : s));
     } catch (e) {
       console.error(e); toast.error("Voice generation failed");
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: false } : s));
+    }
+  };
+
+  /** Replace (dub over) the voice-over on a scene with new text and/or a different voice. */
+  const redubScene = async (sceneId: string, text: string, voiceId: string) => {
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? { ...s, narration: text, voice_id: voiceId, audio_url: undefined }
+      : s));
+    // Let state settle so generateSceneAudio reads the new narration/voice.
+    await new Promise(r => setTimeout(r, 0));
+    setScenes(prev => { void prev; return prev; });
+    try {
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ text, voiceId }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
+        else toast.error("Dub failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, audio_url: dataUrl, generatingAudio: false } : s));
+      toast.success("Voice layer dubbed");
+    } catch (e) {
+      console.error(e); toast.error("Dub failed");
+    } finally {
       setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: false } : s));
     }
   };
@@ -1961,6 +1995,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                 </button>
               )}
             </div>
+
+            {/* Storyboard timeline: per-moment music + voice layers */}
+            <StoryboardTimeline
+              scenes={scenes}
+              onUpdateScene={(id, patch) => setScenes(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))}
+              onRedub={redubScene}
+              onGenerateSceneMusic={(id) => generateSceneMusic(id)}
+            />
 
             {/* Music suite (full-track underscore for the whole movie) */}
             <div className="rounded-lg p-3 border border-primary/30 bg-primary/5 space-y-2">
