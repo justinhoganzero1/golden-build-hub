@@ -1007,6 +1007,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       maxTokens: 16000,
     });
     onProgress?.(wordCount(text));
+    onChunk?.(text);
 
     // Continuation passes until we reach the unique target (long chapters need many).
     let attempts = 0;
@@ -1014,17 +1015,27 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       attempts++;
       const tail = text.slice(-3000);
       const remaining = targetWords - wordCount(text);
-      const more = await callAI(
-        `You are continuing the same ${story.genre} chapter seamlessly, in the same voice and tense. Do not repeat anything. Do not wrap up unless told. Add several more rich, fully-dramatised scenes. Continue the prose only.`,
-        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter — write at least ${Math.min(remaining, 3000).toLocaleString()} more words (chapter total target ${targetWords.toLocaleString()}+ words):`,
-        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
-      );
+      let more = "";
+      try {
+        more = await callAI(
+          `You are continuing the same ${story.genre} chapter seamlessly, in the same voice and tense. Do not repeat anything. Do not wrap up unless told. Add several more rich, fully-dramatised scenes. Continue the prose only.`,
+          `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter — write at least ${Math.min(remaining, 3000).toLocaleString()} more words (chapter total target ${targetWords.toLocaleString()}+ words):`,
+          { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+        );
+      } catch (e) {
+        // Keep everything written so far rather than losing the whole chapter.
+        console.warn("[generateLongChapter] continuation failed, keeping progress", e);
+        break;
+      }
       if (!more?.trim()) break;
       text = (text + "\n\n" + more).trim();
       onProgress?.(wordCount(text));
+      onChunk?.(text);
     }
     return text;
   };
+
+
 
 
   const aiContinue = async () => {
