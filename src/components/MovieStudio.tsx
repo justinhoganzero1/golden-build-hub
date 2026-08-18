@@ -2195,11 +2195,94 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           // Stop slightly after scene end so cross-fade tail can finish
           try { src.stop(t0 + sceneSec + 0.05); } catch {}
         }
+        // ----- Movie Host: schedule the presenter + interview audio for this scene -----
+        const beat = scene.host_beat;
+        const beatOffset = Math.max(0, Math.min(scene.duration_sec || 0, beat?.offset_sec ?? 0));
+        const hbuf = hostBeatBufs[idx];
+        if (hbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = hbuf;
+          const g = audioCtx.createGain(); g.gain.value = 1.0;
+          src.connect(g).connect(audioDest);
+          src.start(audioCtx.currentTime + beatOffset);
+        }
+        const iv = scene.interview;
+        const ivOffset = Math.max(0, Math.min(scene.duration_sec || 0, iv?.offset_sec ?? 0));
+        const ivHostBuf = ivHostBufs[idx];
+        const ivGuestBuf = ivGuestBufs[idx];
+        // Host asks first, guest answers straight after — whole exchange capped at 8s.
+        const ivHostDur = ivHostBuf?.duration ?? 0;
+        const guestStartOffset = ivOffset + Math.min(ivHostDur + 0.25, (iv ? clampInterviewSeconds(iv.seconds) : 0) - 0.5);
+        if (ivHostBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = ivHostBuf;
+          src.connect(audioDest);
+          src.start(audioCtx.currentTime + ivOffset);
+        }
+        if (ivGuestBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = ivGuestBuf;
+          src.connect(audioDest);
+          src.start(audioCtx.currentTime + Math.max(ivOffset, guestStartOffset));
+        }
+
         const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
             drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
+
+            // ----- Movie Host overlay (lip-synced talking head) -----
+            const tSec = (now - start) / 1000;
+            const ivSeconds = iv ? clampInterviewSeconds(iv.seconds) : 0;
+            const ivLive = !!iv && hostImg && tSec >= ivOffset && tSec <= ivOffset + ivSeconds;
+            if (ivLive && hostImg) {
+              // Two avatars facing each other — host left, guest right.
+              const cardW = Math.round(canvas.width * 0.26);
+              const cardH = Math.round(cardW * 1.25);
+              const yPos = Math.round(canvas.height - cardH - canvas.height * 0.14);
+              const hostLvl = envelopeAt(ivHostEnv[idx], tSec - ivOffset);
+              const guestLvl = envelopeAt(ivGuestEnv[idx], tSec - Math.max(ivOffset, guestStartOffset));
+              drawTalkingHead(ctx, {
+                img: hostImg, x: Math.round(canvas.width * 0.06), y: yPos, w: cardW, h: cardH,
+                level: hostLvl, mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                name: host.showPlate ? host.name : undefined, title: host.showPlate ? host.title : undefined,
+                time: tSec, speaking: hostLvl > 0.08,
+              });
+              const gImg = guestImgs[idx];
+              if (gImg) {
+                drawTalkingHead(ctx, {
+                  img: gImg, x: Math.round(canvas.width * 0.68), y: yPos, w: cardW, h: cardH,
+                  level: guestLvl, mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                  name: host.showPlate ? (iv!.guestName || "Guest") : undefined,
+                  title: host.showPlate ? "Live" : undefined,
+                  flip: true, time: tSec, speaking: guestLvl > 0.08,
+                });
+              }
+              // LIVE badge
+              ctx.save();
+              ctx.fillStyle = "rgba(200,20,30,0.9)";
+              const bw = Math.round(canvas.width * 0.09), bh = Math.round(canvas.height * 0.05);
+              ctx.fillRect(Math.round(canvas.width * 0.06), Math.round(canvas.height * 0.06), bw, bh);
+              ctx.fillStyle = "#fff";
+              ctx.textAlign = "center";
+              ctx.font = `bold ${Math.round(bh * 0.5)}px sans-serif`;
+              ctx.fillText("● LIVE", Math.round(canvas.width * 0.06) + bw / 2, Math.round(canvas.height * 0.06) + bh * 0.66);
+              ctx.restore();
+            } else if (hostActive && hostImg && beat?.audio_url && tSec >= beatOffset) {
+              const rect = hostRect(canvas.width, canvas.height, {
+                x: beat.x ?? host.x, y: beat.y ?? host.y, scale: beat.scale ?? host.scale,
+              });
+              drawTalkingHead(ctx, {
+                img: hostImg, ...rect,
+                level: envelopeAt(hostBeatEnv[idx], tSec - beatOffset),
+                mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                name: host.showPlate ? host.name : undefined,
+                title: host.showPlate ? host.title : undefined,
+                time: tSec, speaking: true,
+              });
+            }
+
             // Subtitles only render when explicitly enabled by the user (default OFF)
             if (subtitlesEnabled) {
               ctx.fillStyle = "rgba(0,0,0,0.55)";
