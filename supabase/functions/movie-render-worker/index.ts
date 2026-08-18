@@ -41,26 +41,91 @@ const SHOTSTACK_BASE = `https://api.shotstack.io/edit/${SHOTSTACK_ENV}`;
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
 
+// ---------------------------------------------------------------------------
+// Cron-driven resume machinery.
+//
+// Edge invocations are short-lived; provider renders (Runway, Veo, Replicate,
+// Shotstack) are not. Instead of blocking a whole invocation on a 5-minute poll
+// — and then throwing, which re-submitted and RE-CHARGED the provider on the
+// next tick — we persist the in-flight provider task id on the job row and
+// hand control back to cron. The next tick resumes polling the SAME task.
+// ---------------------------------------------------------------------------
+const TICK_BUDGET_MS = 90_000;
+let TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
+let CURRENT_JOB_ID: string | null = null;
+
+class RequeueSignal extends Error {
+  constructor(stage: string) {
+    super(`still rendering (${stage}) — resuming on next tick`);
+    this.name = "RequeueSignal";
+  }
+}
+
+const outOfTime = () => Date.now() >= TICK_DEADLINE;
+
+async function providerState(): Promise<Record<string, any>> {
+  if (!CURRENT_JOB_ID) return {};
+  const { data } = await supabase.from("movie_render_jobs")
+    .select("provider_state").eq("id", CURRENT_JOB_ID).maybeSingle();
+  return (data?.provider_state as Record<string, any>) ?? {};
+}
+
+async function rememberProvider(patch: Record<string, unknown>) {
+  if (!CURRENT_JOB_ID) return;
+  const current = await providerState();
+  await supabase.from("movie_render_jobs")
+    .update({ provider_state: { ...current, ...patch } }).eq("id", CURRENT_JOB_ID);
+}
+
+async function forgetProvider(...keys: string[]) {
+  if (!CURRENT_JOB_ID) return;
+  const current = await providerState();
+  for (const k of keys) delete current[k];
+  await supabase.from("movie_render_jobs")
+    .update({ provider_state: current }).eq("id", CURRENT_JOB_ID);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
     let processed = 0;
+    let resumed = 0;
     const maxJobsPerTick = 3;
     const results: any[] = [];
 
     for (let i = 0; i < maxJobsPerTick; i++) {
+      if (outOfTime()) break;
       const { data: claim } = await supabase.rpc("claim_next_render_job", { _worker_id: WORKER_ID });
       const job = claim?.[0];
       if (!job) break;
+      CURRENT_JOB_ID = job.job_id;
 
       try {
         const res = await runJob(job);
         await supabase.from("movie_render_jobs").update({
           status: "completed", completed_at: new Date().toISOString(),
-          result: res ?? {},
+          result: res ?? {}, provider_state: {},
         }).eq("id", job.job_id);
         results.push({ job_id: job.job_id, type: job.job_type, ok: true });
       } catch (e: any) {
+        // A resume signal is NOT a failure: the provider job is still running and
+        // its id is saved. Re-queue soon without burning a retry attempt.
+        if (e instanceof RequeueSignal) {
+          const { data: jobRow } = await supabase.from("movie_render_jobs")
+            .select("attempts").eq("id", job.job_id).maybeSingle();
+          await supabase.from("movie_render_jobs").update({
+            status: "queued",
+            attempts: Math.max(0, (jobRow?.attempts ?? 1) - 1),
+            error_message: null,
+            scheduled_for: new Date(Date.now() + 20_000).toISOString(),
+            locked_by: null, locked_at: null,
+          }).eq("id", job.job_id);
+          results.push({ job_id: job.job_id, type: job.job_type, resumed: true });
+          resumed++;
+          CURRENT_JOB_ID = null;
+          break; // out of budget for this tick
+        }
         const msg = e?.message ?? String(e);
         const { data: jobRow } = await supabase.from("movie_render_jobs")
           .select("attempts, max_attempts").eq("id", job.job_id).maybeSingle();
@@ -70,6 +135,7 @@ Deno.serve(async (req) => {
           error_message: msg,
           scheduled_for: isFinal ? null : new Date(Date.now() + 60_000).toISOString(),
           locked_by: null, locked_at: null,
+          provider_state: isFinal ? {} : undefined,
         }).eq("id", job.job_id);
         results.push({ job_id: job.job_id, type: job.job_type, ok: false, error: msg });
         if (job.scene_id && isFinal) {
@@ -84,10 +150,11 @@ Deno.serve(async (req) => {
           }).eq("id", job.scene_id);
         }
       }
+      CURRENT_JOB_ID = null;
       processed++;
     }
 
-    return new Response(JSON.stringify({ worker: WORKER_ID, processed, results }), {
+    return new Response(JSON.stringify({ worker: WORKER_ID, processed, resumed, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (e) {
@@ -97,6 +164,7 @@ Deno.serve(async (req) => {
     });
   }
 });
+
 
 async function runJob(job: any): Promise<any> {
   switch (job.job_type) {
