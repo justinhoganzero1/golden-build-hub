@@ -2029,6 +2029,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         decodeUrl(outroMusicUrl),
       ]);
 
+      // ----- Movie Host layer: audio buffers + lip-sync envelopes -----
+      const hostActive = host.enabled && !!host.imageUrl;
+      const [hostBeatBufs, ivHostBufs, ivGuestBufs] = await Promise.all([
+        Promise.all(ready.map(s => (hostActive ? decodeUrl(s.host_beat?.audio_url) : Promise.resolve(null)))),
+        Promise.all(ready.map(s => (hostActive ? decodeUrl(s.interview?.hostAudioUrl) : Promise.resolve(null)))),
+        Promise.all(ready.map(s => decodeUrl(s.interview?.guestAudioUrl))),
+      ]);
+      const hostBeatEnv = hostBeatBufs.map(b => (b ? audioEnvelope(b) : null));
+      const ivHostEnv = ivHostBufs.map(b => (b ? audioEnvelope(b) : null));
+      const ivGuestEnv = ivGuestBufs.map(b => (b ? audioEnvelope(b) : null));
+
+      const loadImg = (url?: string | null) =>
+        new Promise<HTMLImageElement | null>(res => {
+          if (!url) return res(null);
+          const i = new Image(); i.crossOrigin = "anonymous";
+          i.onload = () => res(i); i.onerror = () => res(null); i.src = url;
+        });
+      const hostImg = hostActive ? await loadImg(host.imageUrl) : null;
+      const guestImgs = await Promise.all(ready.map(s => loadImg(s.interview?.guestImageUrl)));
+
+
       // Combine video + audio tracks
       const combined = new MediaStream([
         ...videoStream.getVideoTracks(),
