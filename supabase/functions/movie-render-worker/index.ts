@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
           results.push({ job_id: job.job_id, type: job.job_type, resumed: true });
           resumed++;
           CURRENT_JOB_ID = null;
-          break; // out of budget for this tick
+          continue; // provider is still working; let another queued scene advance this tick
         }
         const msg = e?.message ?? String(e);
         const { data: jobRow } = await supabase.from("movie_render_jobs")
@@ -287,16 +287,16 @@ async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promi
     await rememberProvider({ runway_task_id: taskId });
   }
 
-  // 2. Poll within this tick's budget; cron resumes the same task afterwards.
-  while (!outOfTime()) {
-    await sleep(5000);
-    const poll = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
-      headers: {
-        "Authorization": `Bearer ${RUNWAY_API_KEY}`,
-        "X-Runway-Version": "2024-11-06",
-      },
-    });
-    if (!poll.ok) continue;
+  // 2. Poll once per tick. Never let one provider operation monopolise the
+  // worker: persist its id, requeue it, and advance another scene immediately.
+  await sleep(1500);
+  const poll = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
+    headers: {
+      "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+      "X-Runway-Version": "2024-11-06",
+    },
+  });
+  if (poll.ok) {
     const pj = await poll.json();
     if (pj.status === "SUCCEEDED") {
       await forgetProvider("runway_task_id");
@@ -371,12 +371,12 @@ async function lovableVideoFallback(prompt: string, durationSec: number): Promis
 }
 
 async function pollVeo(opId: string): Promise<string> {
-  while (!outOfTime()) {
-    await sleep(5000);
-    const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
-    });
-    if (!op.ok) continue;
+  // One short status check per tick keeps the queue moving across many scenes.
+  await sleep(1500);
+  const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+  });
+  if (op.ok) {
     const oj = await op.json();
     const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
     if (url) { await forgetProvider("veo_operation_id"); return url; }
