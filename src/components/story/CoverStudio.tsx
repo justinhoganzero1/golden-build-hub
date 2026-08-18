@@ -86,6 +86,26 @@ export default function CoverStudio({
         />
       </div>
 
+      {onRunSwarm && (
+        <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={onRunSwarm}
+            disabled={anyBusy}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/25"
+          >
+            {swarmBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+            {swarmBusy ? swarmBusy : "▶ Run the Cover Agent Swarm (art + blurb)"}
+          </button>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Casting, art director, copywriter, critic and lead agents read your finished book, lock the
+            real characters and world, write a fresh back-cover blurb and paint both covers in cinematic
+            4K photoreal — unique to this story every run.
+          </p>
+        </div>
+      )}
+
+
       <button
         type="button"
         onClick={onGenerateBoth}
