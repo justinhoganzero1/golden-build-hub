@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import {
   Wand2, ChevronRight, ArrowLeft, Loader2, Mic, Music, Film, Clapperboard, Megaphone,
-  Sparkles, Volume2, Type, Video, Scissors, ListVideo, Play,
+  Sparkles, Volume2, Type, Video, Scissors, ListVideo, Play, Headphones, Settings2, FileText, Square, Download,
 } from "lucide-react";
+
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 
@@ -23,6 +24,27 @@ export interface PipelineStep {
   status: PipelineStatus;
   error?: string;
 }
+
+export interface PipelineArtifact {
+  id: string;
+  label: string;
+  have: number;
+  total: number;
+}
+
+export interface AuditionLayers {
+  music: boolean;
+  sfx: boolean;
+  voice: boolean;
+  credits: boolean;
+}
+
+export interface ExportSettings {
+  resolution: "720p" | "1080p" | "1440p" | "4k";
+  bitrateMbps: number;
+  container: "webm" | "mp4";
+}
+
 
 export interface SuperAIActions {
   /** Do absolutely everything: storyboard art, voices, SFX, score, titles, credits, final cut. */
@@ -64,11 +86,29 @@ export interface SuperAIActions {
   startPipeline: () => void;
   resumePipeline: () => void;
   cancelPipeline: () => void;
+  /** What already exists on the timeline, so Resume can show what will be re-run. */
+  pipelineArtifacts: PipelineArtifact[];
+  /** Exact step Resume will run next. */
+  nextPipelineStepLabel: string;
+  // Preview mode — audition layers against the timeline, no render
+  auditionLayers: AuditionLayers;
+  auditionState: { at: number; total: number; label: string } | null;
+  startAudition: (layers: AuditionLayers) => void;
+  stopAudition: () => void;
+  // Export controls
+  exportSettings: ExportSettings;
+  setExportSettings: (patch: Partial<ExportSettings>) => void;
+  // Render report
+  hasRenderReport: boolean;
+  downloadRenderReport: () => void;
 }
+
 
 type JobId =
   | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "sfxAuto" | "score" | "music" | "musicAuto"
-  | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "export";
+  | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "preview" | "exportSetup"
+  | "export" | "report";
+
 
 interface Job {
   id: JobId;
@@ -96,9 +136,13 @@ const JOBS: Job[] = [
   { id: "openingTitles", icon: Type, title: "Opening credits only", desc: "Title card and front credits with your own tagline.", opensPanel: true },
   { id: "ads", icon: Megaphone, title: "Insert an advert", desc: "Drop your own promo at the front or the end — AI writes and voices it.", opensPanel: true },
   { id: "mix", icon: Scissors, title: "Final mix levels", desc: "Set how loud the music sits under the narration.", opensPanel: true },
+  { id: "preview", icon: Headphones, title: "Preview mode — audition without rendering", desc: "Play music, SFX, narration and credits against the timeline. Nothing is rendered and nothing is charged.", opensPanel: true },
   { id: "trailer", icon: Film, title: "Cut a preview trailer", desc: "Short punchy cut for socials." },
+  { id: "exportSetup", icon: Settings2, title: "Export settings", desc: "Choose resolution, bitrate and output format before the final render.", opensPanel: true },
   { id: "export", icon: Clapperboard, title: "Render the final cut", desc: "Stitch every scene, voice, music and credits into one file." },
+  { id: "report", icon: FileText, title: "Download the render report", desc: "Timeline changes, voices, music, SFX and any errors from the last run.", opensPanel: true },
 ];
+
 
 const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const [open, setOpen] = useState(false);
@@ -106,6 +150,8 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const [busy, setBusy] = useState<JobId | null>(null);
 
   const [voiceId, setVoiceId] = useState(CURATED_ELEVENLABS_VOICES[0].id);
+  const [auditionPick, setAuditionPick] = useState<AuditionLayers>(actions.auditionLayers);
+
   const [musicPrompt, setMusicPrompt] = useState("");
   const [subtitleLine, setSubtitleLine] = useState("");
   const [ad, setAd] = useState({ headline: "", script: "", visual: "", seconds: 10, position: "front" as "front" | "end" });
@@ -232,6 +278,22 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
                     </div>
                   ))}
                 </div>
+                {/* Resume clarity: what already exists and exactly what runs next */}
+                <div className="rounded-md border border-primary/40 bg-primary/5 p-2 space-y-1.5">
+                  <p className="text-[11px] font-bold text-primary">Already made — kept on resume</p>
+                  {actions.pipelineArtifacts.map(a => (
+                    <div key={a.id} className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">{a.label}</span>
+                      <span className={a.have >= a.total && a.total > 0 ? "font-bold text-primary" : "font-semibold"}>
+                        {a.have} / {a.total}
+                      </span>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                    Resume will re-run: <span className="font-bold text-foreground">{actions.nextPipelineStepLabel}</span>
+                    {" "}— everything above it is left untouched.
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Button className="flex-1" disabled={actions.pipelineRunning} onClick={() => actions.startPipeline()}>
                     {actions.pipelineRunning
@@ -240,12 +302,132 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
                   </Button>
                   {actions.pipelineRunning
                     ? <Button variant="destructive" onClick={() => actions.cancelPipeline()}>Cancel</Button>
-                    : actions.pipeline.some(p => p.status === "failed" || p.status === "cancelled")
-                      ? <Button variant="secondary" onClick={() => actions.resumePipeline()}>Resume</Button>
+                    : actions.pipeline.length
+                      ? <Button variant="secondary" onClick={() => actions.resumePipeline()}>Resume: {actions.nextPipelineStepLabel.split(" ").slice(0, 2).join(" ")}…</Button>
                       : null}
                 </div>
               </div>
             )}
+
+            {panel === "preview" && (
+              <div className="space-y-3 pb-8">
+                <Back />
+                <p className="text-[11px] text-muted-foreground">
+                  Audition the mix against the timeline. Layers play at their real offsets and volumes — no render, no charge.
+                </p>
+                <div className="space-y-1.5">
+                  {([
+                    ["music", "Music cues"],
+                    ["sfx", "Sound effects"],
+                    ["voice", "Narration"],
+                    ["credits", "Include title card & end credits"],
+                  ] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => setAuditionPick(prev => ({ ...prev, [key]: !prev[key] }))}
+                      className={`w-full text-left rounded-md border p-2 text-[11px] font-semibold ${auditionPick[key] ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}
+                    >
+                      {auditionPick[key] ? "✓ " : "○ "}{label}
+                    </button>
+                  ))}
+                </div>
+                {actions.auditionState && (
+                  <div className="rounded-md border border-border p-2 space-y-1">
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${Math.min(100, (actions.auditionState.at / Math.max(1, actions.auditionState.total)) * 100)}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {actions.auditionState.at.toFixed(0)}s / {actions.auditionState.total.toFixed(0)}s — {actions.auditionState.label}
+                    </p>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => actions.startAudition(auditionPick)}>
+                    <Play className="w-3.5 h-3.5 mr-1.5" /> {actions.auditionState ? "Restart audition" : "Play audition"}
+                  </Button>
+                  {actions.auditionState && (
+                    <Button variant="secondary" onClick={() => actions.stopAudition()}>
+                      <Square className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {panel === "exportSetup" && (
+              <div className="space-y-3 pb-8">
+                <Back />
+                <p className="text-[11px] text-muted-foreground">
+                  These settings are used the next time Super AI renders the final cut.
+                </p>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Resolution</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(["720p", "1080p", "1440p", "4k"] as const).map(r => (
+                      <button
+                        key={r}
+                        onClick={() => actions.setExportSettings({ resolution: r })}
+                        className={`rounded-md border p-2 text-[11px] font-semibold uppercase ${actions.exportSettings.resolution === r ? "border-primary bg-primary/10" : "border-border"}`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] mb-1">
+                    <span className="text-muted-foreground">Bitrate</span>
+                    <span className="font-semibold">{actions.exportSettings.bitrateMbps} Mbps</span>
+                  </div>
+                  <Slider
+                    value={[actions.exportSettings.bitrateMbps]}
+                    min={2} max={40} step={1}
+                    onValueChange={v => actions.setExportSettings({ bitrateMbps: v[0] })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    8 Mbps suits 1080p YouTube; push 20–40 for 4K masters (bigger files).
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Output format</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["webm", "mp4"] as const).map(c => (
+                      <button
+                        key={c}
+                        onClick={() => actions.setExportSettings({ container: c })}
+                        className={`rounded-md border p-2 text-[11px] font-semibold uppercase ${actions.exportSettings.container === c ? "border-primary bg-primary/10" : "border-border"}`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    MP4 is the safest upload format; if the browser can't record MP4, Super AI falls back to WebM and notes it in the report.
+                  </p>
+                </div>
+                <Button className="w-full" disabled={busy === "export"} onClick={() => run("export", actions.exportMovie)}>
+                  {busy === "export"
+                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Rendering…</>
+                    : <><Clapperboard className="w-3.5 h-3.5 mr-1.5" /> Render with these settings</>}
+                </Button>
+              </div>
+            )}
+
+            {panel === "report" && (
+              <div className="space-y-3 pb-8">
+                <Back />
+                <p className="text-[11px] text-muted-foreground">
+                  After each Super AI run and render, a report is written with every timeline change, the voices, music and SFX used, and anything that went wrong.
+                </p>
+                <Button className="w-full" disabled={!actions.hasRenderReport} onClick={() => actions.downloadRenderReport()}>
+                  <Download className="w-3.5 h-3.5 mr-1.5" /> Download render report
+                </Button>
+                {!actions.hasRenderReport && (
+                  <p className="text-[10px] text-muted-foreground">No report yet — render the final cut first.</p>
+                )}
+              </div>
+            )}
+
 
             {panel === "narration" && (
               <div className="space-y-3 pb-8">

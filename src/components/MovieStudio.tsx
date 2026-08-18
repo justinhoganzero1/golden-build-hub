@@ -17,7 +17,7 @@ import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
-import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus } from "@/components/movie/SuperAIPanel";
+import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus, type ExportSettings } from "@/components/movie/SuperAIPanel";
 
 
 
@@ -1501,6 +1501,163 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     await runPipeline(0);
   };
 
+  // ---- What already exists, so Resume can tell you exactly what will be re-run ----
+  const pipelineArtifacts = (() => {
+    const total = scenes.length;
+    const count = (fn: (s: Scene) => boolean) => scenes.filter(fn).length;
+    return [
+      { id: "images", label: "Scene artwork", have: count(s => !!s.image_url), total },
+      { id: "voices", label: "Narration takes", have: count(s => !!s.audio_url), total },
+      { id: "sfx", label: "Sound effects", have: count(s => !!s.sfx_url), total },
+      { id: "score", label: "Music cues placed", have: count(s => !!s.music_url), total },
+      {
+        id: "extras",
+        label: "Intro / theme / outro",
+        have: [introMusicUrl, themeMusicUrl, outroMusicUrl].filter(Boolean).length,
+        total: 3,
+      },
+      {
+        id: "credits",
+        label: "Titles + end credits",
+        have: (scenes.some(s => s.caption.startsWith("TITLE CARD")) ? 1 : 0) +
+          (scenes.some(s => s.caption.startsWith("END CREDITS")) ? 1 : 0),
+        total: 2,
+      },
+    ];
+  })();
+
+  const nextPipelineIndex = (() => {
+    if (!pipeline.length) return 0;
+    const idx = pipeline.findIndex(p => p.status !== "complete");
+    return idx === -1 ? 0 : idx;
+  })();
+  const nextPipelineStepLabel = PIPELINE_STEPS[nextPipelineIndex]?.label ?? PIPELINE_STEPS[0].label;
+
+  // ---- Preview mode: audition music / SFX / voice / credits against the timeline ----
+  const auditionRef = useRef<{ ctx: AudioContext; timer: number } | null>(null);
+  const [auditionLayers, setAuditionLayers] = useState({ music: true, sfx: true, voice: true, credits: true });
+  const [auditionState, setAuditionState] = useState<{ at: number; total: number; label: string } | null>(null);
+
+  const stopAudition = () => {
+    const a = auditionRef.current;
+    if (a) {
+      window.clearInterval(a.timer);
+      try { void a.ctx.close(); } catch { /* already closed */ }
+    }
+    auditionRef.current = null;
+    setAuditionState(null);
+  };
+
+  useEffect(() => () => stopAudition(), []);
+
+  const startAudition = async (layers: { music: boolean; sfx: boolean; voice: boolean; credits: boolean }) => {
+    stopAudition();
+    setAuditionLayers(layers);
+    const isCreditsScene = (s: Scene) => s.caption.startsWith("TITLE CARD") || s.caption.startsWith("END CREDITS");
+    const list = scenes.filter(s => layers.credits || !isCreditsScene(s));
+    if (!list.length) { toast.error("Nothing on the timeline to audition yet"); return; }
+
+    const AudioCtor: typeof AudioContext = (window.AudioContext || (window as any).webkitAudioContext);
+    const ctx = new AudioCtor();
+    const decode = async (u?: string | null) => {
+      if (!u) return null;
+      try { return await ctx.decodeAudioData(await (await fetch(u)).arrayBuffer()); } catch { return null; }
+    };
+
+    const starts: number[] = [];
+    let acc = 0;
+    list.forEach(s => { starts.push(acc); acc += s.duration_sec || CLIP_SECONDS; });
+    const total = acc;
+
+    const t0 = ctx.currentTime + 0.25;
+    const play = (buf: AudioBuffer | null, at: number, vol: number) => {
+      if (!buf) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = Math.max(0, Math.min(1, vol));
+      src.connect(g).connect(ctx.destination);
+      src.start(t0 + at);
+    };
+
+    await Promise.all(list.map(async (s, i) => {
+      const base = starts[i];
+      if (layers.voice) play(await decode(s.audio_url), base + (s.voice_offset_sec ?? 0), 1);
+      if (layers.sfx) play(await decode(s.sfx_url), base + (s.sfx_offset_sec ?? 0), s.sfx_volume ?? 0.6);
+      if (layers.music) play(await decode(s.music_url), base, s.music_volume ?? 0.25);
+    }));
+    if (layers.music && musicUrl) play(await decode(musicUrl), 0, musicVolume);
+
+    const timer = window.setInterval(() => {
+      const at = Math.max(0, ctx.currentTime - t0);
+      let idx = 0;
+      starts.forEach((st, i) => { if (at >= st) idx = i; });
+      setAuditionState({ at: Math.min(at, total), total, label: list[idx]?.caption || "" });
+      setPreviewSceneId(list[idx]?.id ?? null);
+      if (at >= total) stopAudition();
+    }, 250);
+    auditionRef.current = { ctx, timer };
+    setAuditionState({ at: 0, total, label: list[0].caption });
+    toast.success("Auditioning the timeline — nothing is being rendered");
+  };
+
+  // ---- Export controls (resolution / bitrate / container) ----
+  const [exportSettings, setExportSettings] = useState<ExportSettings>({
+    resolution: "1080p",
+    bitrateMbps: 8,
+    container: "webm",
+  });
+
+  // ---- Render report produced after a Super AI run / export ----
+  const [renderReport, setRenderReport] = useState<{ filename: string; text: string } | null>(null);
+
+  const buildRenderReport = (extra: { errors: string[]; blobBytes?: number; durationSec?: number; usedScenes: Scene[] }) => {
+    const voiceName = (id?: string) =>
+      CURATED_ELEVENLABS_VOICES.find(v => v.id === id)?.name || id || "default narrator";
+    const lines: string[] = [];
+    lines.push(`RENDER REPORT — ${title || "Untitled Movie"}`);
+    lines.push(`Generated ${new Date().toISOString()}`);
+    lines.push("");
+    lines.push(`Output: ${exportSettings.resolution} · ${exportSettings.bitrateMbps} Mbps · .${exportSettings.container}`);
+    if (extra.blobBytes) lines.push(`File size: ${(extra.blobBytes / 1024 / 1024).toFixed(1)} MB`);
+    if (extra.durationSec) lines.push(`Runtime: ${Math.floor(extra.durationSec / 60)}m ${Math.round(extra.durationSec % 60)}s`);
+    lines.push(`Scenes rendered: ${extra.usedScenes.length} of ${scenes.length}`);
+    lines.push("");
+    lines.push("PRODUCTION STEPS");
+    pipeline.forEach((p, i) => lines.push(`  ${i + 1}. ${p.label} — ${p.status}${p.error ? ` (${p.error})` : ""}`));
+    if (!pipeline.length) lines.push("  (no Super AI pipeline run this session)");
+    lines.push("");
+    lines.push("TIMELINE");
+    extra.usedScenes.forEach((s, i) => {
+      lines.push(`  ${i + 1}. ${s.caption} — ${s.duration_sec || CLIP_SECONDS}s`);
+      lines.push(`     voice: ${s.audio_url ? `${voiceName(resolveVoiceId(s))} @ +${(s.voice_offset_sec ?? 0).toFixed(1)}s` : "none"}`);
+      lines.push(`     music: ${s.music_url ? `${s.music_prompt || "cue"} @ ${Math.round((s.music_volume ?? 0.25) * 100)}%` : "none"}`);
+      lines.push(`     sfx:   ${s.sfx_url ? `${s.sfx_prompt || "effect"} @ +${(s.sfx_offset_sec ?? 0).toFixed(1)}s, ${Math.round((s.sfx_volume ?? 0.6) * 100)}%` : "none"}`);
+    });
+    lines.push("");
+    lines.push("GLOBAL AUDIO");
+    lines.push(`  Whole-movie score: ${musicUrl ? `${musicPrompt || "custom track"} @ ${Math.round(musicVolume * 100)}%` : "none"}`);
+    lines.push(`  Intro sting: ${introMusicUrl ? "yes" : "no"} · Theme: ${themeMusicUrl ? "yes" : "no"} · Outro: ${outroMusicUrl ? "yes" : "no"}`);
+    lines.push(`  Mix: music ${layerAudible(timelineMix, "music") ? "on" : "muted"} · voice ${layerAudible(timelineMix, "voice") ? "on" : "muted"}`);
+    lines.push("");
+    lines.push("ERRORS");
+    if (extra.errors.length) extra.errors.forEach(e => lines.push(`  - ${e}`));
+    else lines.push("  none");
+    const safe = (title || "movie").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    return { filename: `${safe}-render-report.txt`, text: lines.join("\n") };
+  };
+
+  const downloadRenderReport = () => {
+    if (!renderReport) { toast.error("Run a render first — the report is written when it finishes"); return; }
+    const blob = new Blob([renderReport.text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = renderReport.filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+
+
   const superAIActions: SuperAIActions = {
     runEverything,
     runProductionSwarm,
@@ -1532,7 +1689,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     startPipeline: () => { void runPipeline(0); },
     resumePipeline,
     cancelPipeline,
+    pipelineArtifacts,
+    nextPipelineStepLabel,
+    // Preview mode (audition, no render)
+    auditionLayers,
+    auditionState,
+    startAudition: layers => { void startAudition(layers); },
+    stopAudition,
+    // Export controls
+    exportSettings,
+    setExportSettings: patch => setExportSettings(prev => ({ ...prev, ...patch })),
+    // Render report
+    hasRenderReport: !!renderReport,
+    downloadRenderReport,
   };
+
 
 
   // ----- Scene CRUD -----
@@ -1705,7 +1876,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const canvas = exportCanvasRef.current!;
       const chosenFormat = readMovieFormat();
-      canvas.width = chosenFormat?.width || 1920; canvas.height = chosenFormat?.height || 1080;
+      // Export controls: user-chosen resolution wins over the saved aspect preset's height.
+      const RES_HEIGHTS: Record<ExportSettings["resolution"], number> = { "720p": 720, "1080p": 1080, "1440p": 1440, "4k": 2160 };
+      const baseW = chosenFormat?.width || 1920;
+      const baseH = chosenFormat?.height || 1080;
+      const targetH = RES_HEIGHTS[exportSettings.resolution];
+      const scale = targetH / baseH;
+      canvas.width = Math.round(baseW * scale / 2) * 2;
+      canvas.height = Math.round(baseH * scale / 2) * 2;
+
       const ctx = canvas.getContext("2d")!;
 
       // Video stream from canvas
@@ -1743,13 +1922,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         ...audioDest.stream.getAudioTracks(),
       ]);
 
-      const recorder = new MediaRecorder(combined, { mimeType: "video/webm;codecs=vp9,opus", videoBitsPerSecond: 8_000_000 });
+      const renderErrors: string[] = [];
+      const preferred = exportSettings.container === "mp4"
+        ? ["video/mp4;codecs=avc1.640028,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus"]
+        : ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+      const mimeType = preferred.find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
+      if (exportSettings.container === "mp4" && !mimeType.startsWith("video/mp4")) {
+        renderErrors.push("MP4 recording is not supported by this browser — fell back to WebM.");
+        toast.info("This browser can't record MP4 — rendering WebM instead");
+      }
+      const recorder = new MediaRecorder(combined, {
+        mimeType,
+        videoBitsPerSecond: Math.max(1, exportSettings.bitrateMbps) * 1_000_000,
+      });
+      const outType = mimeType.split(";")[0];
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       const finished = new Promise<Blob>(res => {
-        recorder.onstop = () => res(new Blob(chunks, { type: "video/webm" }));
+        recorder.onstop = () => res(new Blob(chunks, { type: outType }));
       });
       recorder.start();
+
 
       // Start music underscore at t=0, ducked under VO
       let musicSource: AudioBufferSourceNode | null = null;
@@ -2041,11 +2234,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         };
         reader.readAsDataURL(blob);
       }
-      toast.success("Movie published — saved to your library and ready to share!");
+
+      // Render report — timeline, voices, music, SFX and any errors from this run
+      if (missingAudio > 0) renderErrors.push(`${missingAudio} scene(s) rendered without narration.`);
+      if (ready.length !== scenes.length) renderErrors.push(`${scenes.length - ready.length} scene(s) skipped — no artwork.`);
+      pipeline.filter(p => p.status === "failed").forEach(p => renderErrors.push(`Pipeline step "${p.label}" failed: ${p.error || "unknown error"}`));
+      setRenderReport(buildRenderReport({
+        errors: renderErrors,
+        blobBytes: blob.size,
+        durationSec: ready.reduce((a, s) => a + (s.duration_sec || CLIP_SECONDS), 0),
+        usedScenes: ready,
+      }));
+      toast.success("Movie published — render report ready in Super AI");
 
     } catch (e) {
       console.error(e); toast.error("Export failed");
+      setRenderReport(buildRenderReport({
+        errors: [e instanceof Error ? e.message : "Export failed"],
+        usedScenes: scenes.filter(s => s.image_url),
+      }));
     } finally { setExporting(false); }
+
   };
 
   const totalSec = scenes.length * CLIP_SECONDS;
