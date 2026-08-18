@@ -18,6 +18,11 @@ import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
 import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus, type ExportSettings } from "@/components/movie/SuperAIPanel";
+import MovieHostPanel from "@/components/movie/MovieHostPanel";
+import {
+  DEFAULT_HOST, audioEnvelope, envelopeAt, drawTalkingHead, hostRect, hostPortraitPrompt,
+  clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
+} from "@/lib/movieHost";
 
 
 
