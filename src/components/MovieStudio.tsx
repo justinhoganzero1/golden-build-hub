@@ -1876,7 +1876,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const canvas = exportCanvasRef.current!;
       const chosenFormat = readMovieFormat();
-      canvas.width = chosenFormat?.width || 1920; canvas.height = chosenFormat?.height || 1080;
+      // Export controls: user-chosen resolution wins over the saved aspect preset's height.
+      const RES_HEIGHTS: Record<ExportSettings["resolution"], number> = { "720p": 720, "1080p": 1080, "1440p": 1440, "4k": 2160 };
+      const baseW = chosenFormat?.width || 1920;
+      const baseH = chosenFormat?.height || 1080;
+      const targetH = RES_HEIGHTS[exportSettings.resolution];
+      const scale = targetH / baseH;
+      canvas.width = Math.round(baseW * scale / 2) * 2;
+      canvas.height = Math.round(baseH * scale / 2) * 2;
+
       const ctx = canvas.getContext("2d")!;
 
       // Video stream from canvas
