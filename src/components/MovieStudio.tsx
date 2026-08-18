@@ -164,6 +164,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [musicVolume, setMusicVolume] = useState(0.15); // ducked well under VO
   const [musicSpeed, setMusicSpeed] = useState(1); // 0.5x – 2x playback rate
   const [generatingMusic, setGeneratingMusic] = useState(false);
+  const [scoreTeamBusy, setScoreTeamBusy] = useState(false);
+  const [scoreTeamNotes, setScoreTeamNotes] = useState<string[]>([]);
   // Intro / Theme / Credits / Outro
   const [introMusicUrl, setIntroMusicUrl] = useState<string | null>(null);
   const [themeMusicUrl, setThemeMusicUrl] = useState<string | null>(null);
@@ -884,6 +886,37 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     } catch (e) {
       console.error(e); toast.error("Music generation failed");
     } finally { setGeneratingMusic(false); }
+  };
+
+  const runAdaptiveScoreTeam = async () => {
+    if (!scenes.length) { toast.error("Build the movie scenes first"); return; }
+    setScoreTeamBusy(true);
+    setScoreTeamNotes([]);
+    try {
+      const sceneList = scenes.map((scene, index) =>
+        `${index + 1}. ${scene.caption} | tone=${scene.tone || "neutral"} | narration=${(scene.narration || "").slice(0, 180)}`
+      ).join("\n");
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({
+          type: "assistant",
+          prompt: `You are a film-score team with four roles: COMPOSER creates memorable original motifs; MUSIC EDITOR maps intensity to every scene; DIALOGUE MIXER keeps the score gentle under speech; QUALITY JUDGE rejects repetitive or tonally wrong cues. Design an original, copyright-safe, upbeat comic-action adventure score with bright 1980s synth-funk propulsion, heroic brass-and-snare rescue energy, nimble masked-swashbuckler guitar colours, and suspense that rises only where the story rises. Do not name or imitate any existing film, television theme, artist or song. Return exactly one numbered line per scene in this format: N. <instrumental generation prompt including BPM, instruments, mood, intensity 1-10, transition and NO vocals>.\n\nMOVIE: ${title || "Untitled movie"}\nINTENT: ${intent}\nSCENES:\n${sceneList}`,
+        }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const payload = await response.json();
+      const text = typeof payload === "string" ? payload : (payload.text || payload.result || "");
+      const cues = String(text).split("\n").map(line => line.replace(/^\s*\d+[.)-]?\s*/, "").trim()).filter(Boolean).slice(0, scenes.length);
+      if (cues.length !== scenes.length) throw new Error("The score team did not return a complete cue sheet");
+      setScoreTeamNotes(cues);
+      setScenes(previous => previous.map((scene, index) => ({ ...scene, music_prompt: cues[index] })));
+      toast.success(`Score team approved ${cues.length} adaptive scene cues — generate or audition each cue below`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Score team failed");
+    } finally {
+      setScoreTeamBusy(false);
+    }
   };
 
   // ----- Intro fanfare (5 selectable styles) -----
@@ -1871,6 +1904,28 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                 className="text-xs"
                 placeholder="Or describe your own (instrumental only — no vocals)…"
               />
+              <div className="border border-accent-blue/40 bg-background/60 p-2.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Waves className="w-4 h-4 text-accent-blue" />
+                  <span className="text-[11px] font-black uppercase text-accent-blue">Adaptive soundtrack team</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Composer, music editor, dialogue mixer and quality judge map a different original cue to every scene, with gentle dialogue beds and stronger suspense only where the action demands it.
+                </p>
+                <Button type="button" size="sm" variant="outline" onClick={runAdaptiveScoreTeam} disabled={scoreTeamBusy || !scenes.length}>
+                  {scoreTeamBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {scoreTeamBusy ? "Team scoring every scene…" : "Team-design the full adaptive score"}
+                </Button>
+                {scoreTeamNotes.length > 0 && (
+                  <div className="max-h-28 overflow-y-auto space-y-1 border-l-2 border-accent-blue/50 pl-2">
+                    {scoreTeamNotes.map((note, index) => (
+                      <p key={`${index}-${note}`} className="text-[9px] leading-relaxed text-foreground/80">
+                        <strong>Scene {index + 1}:</strong> {note}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={generateMusic} size="sm" variant="secondary" className="h-7 text-xs"
                   disabled={generatingMusic || !musicPrompt.trim()}>

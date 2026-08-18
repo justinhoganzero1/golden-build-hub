@@ -20,6 +20,27 @@ export interface BakeTextOptions {
   layout?: "masthead" | "title-author" | "cinematic" | "editorial";
 }
 
+type CoverIdentity = {
+  display: string;
+  body: string;
+  light: string;
+  mid: string;
+  deep: string;
+  accent: string;
+};
+
+function coverIdentity(title: string, genre = ""): CoverIdentity {
+  const seed = `${title}|${genre}`.split("").reduce((n, c) => ((n * 33) + c.charCodeAt(0)) >>> 0, 11);
+  const identities: CoverIdentity[] = [
+    { display: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif", body: "Helvetica, Arial, sans-serif", light: "#effcff", mid: "#45d6ff", deep: "#0066ff", accent: "#ff315f" },
+    { display: "Rockwell, 'Courier New', serif", body: "Georgia, serif", light: "#fff2b8", mid: "#ff8a2a", deep: "#ed1d4f", accent: "#20e0bd" },
+    { display: "Palatino Linotype, Book Antiqua, Palatino, serif", body: "Palatino Linotype, serif", light: "#f4f0ff", mid: "#b98cff", deep: "#5e36cf", accent: "#ffcf3f" },
+    { display: "Trebuchet MS, Arial, sans-serif", body: "Trebuchet MS, Arial, sans-serif", light: "#f1fff5", mid: "#55e879", deep: "#087f63", accent: "#ff4c8b" },
+    { display: "Arial Black, Arial, sans-serif", body: "Arial, sans-serif", light: "#fff7ee", mid: "#ffcf45", deep: "#ef3e23", accent: "#00b8d9" },
+  ];
+  return identities[seed % identities.length];
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
@@ -71,11 +92,11 @@ function fitLines(
   return { lines: wrap(ctx, text, maxWidth), fontSize, lineHeight: fontSize * lineRatio };
 }
 
-function goldGradient(ctx: CanvasRenderingContext2D, y: number, h: number) {
+function titleGradient(ctx: CanvasRenderingContext2D, y: number, h: number, identity: CoverIdentity) {
   const g = ctx.createLinearGradient(0, y, 0, y + h);
-  g.addColorStop(0, "#fff7e0");
-  g.addColorStop(0.5, "#ffd77a");
-  g.addColorStop(1, "#c9962f");
+  g.addColorStop(0, identity.light);
+  g.addColorStop(0.5, identity.mid);
+  g.addColorStop(1, identity.deep);
   return g;
 }
 
@@ -121,33 +142,34 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const title = (opts.title || "Untitled").toUpperCase();
   const author = opts.author || "Author";
   const layout = opts.layout ?? "masthead";
+  const identity = coverIdentity(title, opts.genre);
 
   if (opts.slot === "cover") {
     scrim(ctx, W, 0, H * 0.42, "top");
     let y = layout === "editorial" ? H * 0.12 : H * 0.055;
 
     if (opts.genre) {
-      ctx.font = `600 ${W * 0.026}px Helvetica, Arial, sans-serif`;
-      ctx.fillStyle = "rgba(255,215,122,0.9)";
+      ctx.font = `700 ${W * 0.026}px ${identity.body}`;
+      ctx.fillStyle = identity.accent;
       ctx.fillText(opts.genre.toUpperCase().split("").join(" "), W / 2, y);
       y += W * 0.055;
     }
 
-    ctx.fillStyle = "rgba(255,215,122,0.6)";
+    ctx.fillStyle = identity.accent;
     ctx.fillRect(W * 0.2, y, W * 0.6, Math.max(1, W * 0.002));
     y += W * 0.035;
 
-    const t = fitLines(ctx, title, inner, H * 0.24, W * 0.13, "900", "Georgia, 'Times New Roman', serif", 1.02);
+    const t = fitLines(ctx, title, inner, H * 0.24, W * 0.13, "900", identity.display, 1.02);
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.02;
     ctx.shadowOffsetY = W * 0.006;
-    ctx.fillStyle = goldGradient(ctx, y, t.lines.length * t.lineHeight);
+    ctx.fillStyle = titleGradient(ctx, y, t.lines.length * t.lineHeight, identity);
     t.lines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * t.lineHeight));
     ctx.restore();
     y += t.lines.length * t.lineHeight + W * 0.03;
 
-    ctx.fillStyle = "rgba(255,215,122,0.5)";
+    ctx.fillStyle = identity.accent;
     ctx.fillRect(W * 0.33, y, W * 0.34, Math.max(1, W * 0.0015));
 
     // The author credit is deliberately flexible per book. Keep it as the
@@ -158,19 +180,19 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.015;
-    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${W * (authorBelowTitle ? 0.043 : 0.052)}px ${layout === "editorial" ? "Helvetica, Arial, sans-serif" : "Georgia, 'Times New Roman', serif"}`;
-    ctx.fillStyle = "#ffffff";
+    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${W * (authorBelowTitle ? 0.043 : 0.052)}px ${identity.body}`;
+    ctx.fillStyle = identity.light;
     ctx.fillText(layout === "editorial" ? author : author.toUpperCase(), W / 2, authorY);
     ctx.restore();
   } else {
     scrim(ctx, W, 0, H * 0.22, "top");
 
     let y = H * 0.05;
-    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.085, "900", "Georgia, 'Times New Roman', serif", 1.05);
+    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.085, "900", identity.display, 1.05);
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.02;
-    ctx.fillStyle = goldGradient(ctx, y, t.lines.length * t.lineHeight);
+    ctx.fillStyle = titleGradient(ctx, y, t.lines.length * t.lineHeight, identity);
     t.lines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * t.lineHeight));
     ctx.restore();
     y += t.lines.length * t.lineHeight + W * 0.02;
@@ -186,7 +208,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       ctx.fillStyle = "rgba(0,0,0,0.72)";
       roundRect(ctx, cardX, cardY, cardW, cardH, W * 0.03);
       ctx.fill();
-      ctx.strokeStyle = "rgba(255,215,122,0.35)";
+      ctx.strokeStyle = identity.accent;
       ctx.lineWidth = Math.max(1, W * 0.002);
       ctx.stroke();
       ctx.restore();
@@ -194,7 +216,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       const textPad = W * 0.045;
       const b = fitLines(
         ctx, blurb, cardW - textPad * 2, cardH - textPad * 2,
-        W * 0.038, "400", "Georgia, 'Times New Roman', serif", 1.45,
+        W * 0.038, "400", identity.body, 1.45,
       );
       ctx.textAlign = "left";
       ctx.fillStyle = "rgba(255,255,255,0.96)";

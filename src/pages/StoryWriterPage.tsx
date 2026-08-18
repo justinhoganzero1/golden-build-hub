@@ -531,13 +531,13 @@ const StoryWriterPage = () => {
 
 
   /** Minimum illustrations produced whenever a chapter is illustrated. */
-  const MIN_IMAGES_PER_CHAPTER = 4;
+  const MIN_IMAGES_PER_CHAPTER = 3;
 
   /** Shot recipes so every illustration is visually distinct even on short chapters. */
   const SHOT_VARIETY = [
-    "wide establishing shot, low camera angle, full environment visible",
-    "medium two-shot at eye level, shallow depth of field",
-    "tight emotional close-up, over-the-shoulder framing",
+    "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins",
+    "inclusive medium-wide ensemble shot, all faces, hands and bodies fully inside frame, balanced foreground and background storytelling",
+    "immersive cinematic mosaic of three connected moments from this beat, seamless editorial composition with no borders and no text",
     "high-angle action shot with motion blur and dynamic diagonal composition",
     "dutch-angle dramatic shot at a different time of day",
     "extreme close-up detail of a key object with the scene blurred behind",
@@ -639,7 +639,10 @@ const StoryWriterPage = () => {
       const beatLine = beat
         ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat). It MUST be a completely different scene, camera angle and composition from every other illustration in this book — never repeat a previous image. `
         : "";
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      const chapterFormat = beat?.index === 2
+        ? "This selected image may be a seamless cinematic mosaic of complementary story moments, but must remain one coherent artwork with no panels, borders or lettering."
+        : SINGLE_PANEL;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
@@ -748,13 +751,23 @@ const StoryWriterPage = () => {
    * places in the chapter (and hand off cleanly as scenes to Movie Maker).
    */
   const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
+  const [illustrationTeamNotes, setIllustrationTeamNotes] = useState<string[]>([]);
   const illustrateChapterSet = async (
     idx: number,
     count = MIN_IMAGES_PER_CHAPTER,
   ): Promise<number> => {
     const ch = story.chapters[idx];
     if (!ch) return 0;
-    const beats = chapterBeats(ch.content, count);
+    let beats = chapterBeats(ch.content, count);
+    try {
+      const teamPlan = await callAI(
+        `You are a three-person publishing illustration team: STORY EDITOR chooses the ${count} most explanatory moments; CINEMATOGRAPHER ensures complete uncropped people and readable environments; CONTINUITY EDITOR checks cast, wardrobe, spelling and forbids visible text. Choose exactly ${count} distinct images. Image 3 may be a tasteful seamless mosaic only if it genuinely improves comprehension. Output exactly ${count} numbered lines, each a concise image brief.`,
+        `BOOK: ${story.title}\nCHAPTER: ${ch.title}\nTEXT:\n${(ch.content || "").slice(0, 12000)}`,
+      );
+      const planned = teamPlan.split("\n").map(line => line.replace(/^\s*\d+[.)-]?\s*/, "").trim()).filter(Boolean).slice(0, count);
+      if (planned.length === count) beats = planned;
+      setIllustrationTeamNotes(planned);
+    } catch { /* narrative beat fallback remains usable */ }
     let ok = 0;
     for (let b = 0; b < count; b++) {
       const done = await generateStoryImage(
@@ -767,7 +780,7 @@ const StoryWriterPage = () => {
     return ok;
   };
 
-  // Illustrate one chapter — minimum 4 images placed across the chapter's beats.
+  // Illustrate one chapter — three team-selected images placed across the chapter's beats.
   const reIllustrateChapter = async (idx: number) => {
     if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
     setChapterSetBusy(idx);
@@ -779,7 +792,7 @@ const StoryWriterPage = () => {
     }
   };
 
-  // Bulk: illustrate every chapter (min 4 images each), sequentially.
+  // Bulk: illustrate every chapter (three images each), sequentially.
   const [bulkBusy, setBulkBusy] = useState(false);
   const reIllustrateAllChapters = async () => {
     if (bulkBusy || imgBusy || chapterSetBusy !== null) return;
@@ -964,14 +977,14 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
 
 
 
-  // Long-chapter generator: every AI chapter must be AT LEAST 20,000 words,
+  // Long-chapter generator: every AI chapter must be AT LEAST 15,000 words,
   // and no two chapters may end up with the same word count (each chapter gets
   // its own unique target, spaced 200+ words apart).
-  const MIN_WORDS = 20000;
+  const MIN_WORDS = 15000;
   const WORD_STEP = 200;
   const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
 
-  /** Unique length target for a chapter: 20,000+ and > 200 words apart from every other chapter. */
+  /** Unique length target for a chapter: 15,000+ and > 200 words apart from every other chapter. */
   const targetWordsFor = (idx: number): number => {
     const taken = story.chapters
       .map((c, i) => (i === idx ? 0 : wordCount(c.content)))
@@ -1184,6 +1197,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
    * covers, so each run is unique to that story.
    */
   const [coverSwarm, setCoverSwarm] = useState<string | null>(null);
+  const [coverTeamNotes, setCoverTeamNotes] = useState<string[]>([]);
   const runCoverSwarm = async () => {
     if (!requireMeta()) return;
     const sample = story.chapters
@@ -1200,7 +1214,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           brief,
         ),
         callAI(
-          `You are the ART DIRECTOR of an award-winning book cover studio. Write the shot brief for the single most iconic FRONT cover moment and a quieter companion BACK cover moment for this ${story.genre} book. Cinematic, 4K photoreal, real lens language (focal length, lighting, grade, weather). Never describe or paint text, titles, author names, format labels, credits, logos or lettering. Leave intentional negative space for the app's editable professional typography. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
+          `You are the ART DIRECTOR of an award-winning book cover studio. Research from publishing expertise what currently sells in this exact genre: palette psychology, character hierarchy, facial emotion, lens, lighting, shelf-thumbnail impact and typography space. Avoid black-and-gold unless the actual story demands it. Prefer a rich multi-colour palette with a named dominant, secondary and contrast accent. Write the shot brief for one iconic FRONT moment and a genuinely different BACK moment. Cinematic 4K photoreal. Never request painted text. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
           brief,
         ),
         callAI(
@@ -1232,6 +1246,12 @@ BACK: <brief under 220 words>`,
       setStory(s => ({ ...s, blurb: cleanBlurb || s.blurb }));
       setFrontCoverDirection(frontDirection);
       setBackCoverDirection(backDirection);
+      setCoverTeamNotes([
+        `Casting locked: ${casting.replace(/\s+/g, " ").slice(0, 220)}`,
+        `Market art direction: ${artDirection.replace(/\s+/g, " ").slice(0, 220)}`,
+        `Critic corrections: ${critique.replace(/\s+/g, " ").slice(0, 220)}`,
+        `Lead decision: ${direction.replace(/\s+/g, " ").slice(0, 240)}`,
+      ]);
       setCoverPrompt("");
 
       setCoverSwarm("Painting the front cover…");
@@ -1456,7 +1476,7 @@ BACK: <brief under 220 words>`,
     if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
     try {
       const text = await callAI(
-        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 20,000+ words — never shorten). Return only the revised chapter prose.`,
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 15,000+ words — never shorten). Return only the revised chapter prose.`,
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
@@ -2231,6 +2251,7 @@ BACK: <brief under 220 words>`,
             backDirection={backCoverDirection}
             swarmBusy={coverSwarm}
             onRunSwarm={runCoverSwarm}
+            teamNotes={coverTeamNotes}
             storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
             onGenerateBoth={async () => {
               await generateStoryImage("cover", frontCoverDirection || coverPrompt);
@@ -2452,8 +2473,18 @@ BACK: <brief under 220 words>`,
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Every chapter gets at least 4 illustrations, spread across its opening, middle and closing beats — so they land in the right places and hand off as scenes to Movie Maker. Up to 6 per chapter.
+                    The illustration team selects 3 high-value 4K realistic images: an establishing scene, an inclusive character scene, and an optional immersive mosaic. Composition QA prevents cropped heads, hands and important action.
                   </p>
+                )}
+                {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
+                  <div className="border-l-2 border-accent-blue/60 pl-2 space-y-1">
+                    <p className="text-[10px] font-black uppercase text-accent-blue">Illustration team shot list</p>
+                    {illustrationTeamNotes.map((note, index) => (
+                      <p key={`${index}-${note}`} className="text-[10px] leading-relaxed text-foreground/80">
+                        <strong>{index + 1}.</strong> {note}
+                      </p>
+                    ))}
+                  </div>
                 )}
               </div>
             );
@@ -2464,7 +2495,7 @@ BACK: <brief under 220 words>`,
             {flowStage === "idle" && (
               <>
                 <p className="text-xs font-semibold text-primary">
-                  ✨ Generate Full Chapter (20,000+ words)
+                  ✨ Generate Full Chapter (15,000+ words)
                 </p>
                 <textarea
                   value={chapterGuidance}
