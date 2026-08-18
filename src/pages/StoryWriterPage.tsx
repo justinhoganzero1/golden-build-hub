@@ -1294,6 +1294,8 @@ Rules: the three title-gradient colours must read as one confident, high-contras
       setCoverTeamNotes([
         `Casting locked: ${casting.replace(/\s+/g, " ").slice(0, 220)}`,
         `Market art direction: ${artDirection.replace(/\s+/g, " ").slice(0, 220)}`,
+        `Montage architecture: ${montage.replace(/\s+/g, " ").slice(0, 220)}`,
+
         `Critic corrections: ${critique.replace(/\s+/g, " ").slice(0, 220)}`,
         `Lead decision: ${direction.replace(/\s+/g, " ").slice(0, 240)}`,
         ...(designNote ? [designNote] : []),
