@@ -63,6 +63,22 @@ describe.runIf(!!URL_BASE && !!ANON)("analytics RLS — user_id spoofing", () =>
     expect(status).toBe(201);
   });
 
+  it.each([
+    "click",
+    "download_start",
+    "guide_open",
+    "step_complete",
+    "install_success",
+    "install_failure",
+    "installed",
+  ])("accepts install funnel event_type %s anonymously", async (eventType) => {
+    const status = await insert("install_events", {
+      event_type: eventType,
+      platform: "android",
+    });
+    expect(status).toBe(201);
+  });
+
   it("blocks install_events that claim another user_id", async () => {
     const status = await insert("install_events", {
       event_type: "click",
@@ -72,6 +88,16 @@ describe.runIf(!!URL_BASE && !!ANON)("analytics RLS — user_id spoofing", () =>
     expect(isDenied(status)).toBe(true);
   });
 
+  it("blocks every install funnel event_type when user_id is spoofed", async () => {
+    const types = ["download_start", "guide_open", "step_complete", "install_success", "install_failure"];
+    const statuses = await Promise.all(
+      types.map((event_type) =>
+        insert("install_events", { event_type, platform: "android", user_id: OTHER_USER }),
+      ),
+    );
+    expect(statuses.every(isDenied)).toBe(true);
+  });
+
   it("blocks install_events with an unexpected event_type", async () => {
     const status = await insert("install_events", {
       event_type: "totally_made_up",
@@ -79,4 +105,19 @@ describe.runIf(!!URL_BASE && !!ANON)("analytics RLS — user_id spoofing", () =>
     });
     expect(isDenied(status)).toBe(true);
   });
+
+  it("blocks install_events with an unexpected platform", async () => {
+    const status = await insert("install_events", {
+      event_type: "click",
+      platform: "toaster",
+    });
+    expect(isDenied(status)).toBe(true);
+  });
+
+  it("keeps install_events unreadable by anonymous callers", async () => {
+    const res = await fetch(`${REST}/install_events?select=id&limit=1`, { headers });
+    const body = await res.json();
+    expect(Array.isArray(body) ? body.length : 0).toBe(0);
+  });
 });
+
