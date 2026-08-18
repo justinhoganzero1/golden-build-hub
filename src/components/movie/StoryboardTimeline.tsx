@@ -1,13 +1,14 @@
 // Storyboard timeline: scrub the movie, drop different music tracks at different times,
-// and re-dub / add AI voice layers on any beat of the film.
+// drag narration segments to new timings, and re-dub / add AI voice layers on any beat.
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Music, Mic, Upload, Sparkles, Play, Volume2 } from "lucide-react";
+import { Loader2, Music, Mic, Upload, Sparkles, Play, Volume2, VolumeX, Headphones } from "lucide-react";
 import { toast } from "sonner";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
+import VoiceWaveform from "@/components/movie/VoiceWaveform";
 
 export interface TimelineScene {
   id: string;
@@ -17,6 +18,8 @@ export interface TimelineScene {
   narration?: string;
   audio_url?: string;
   voice_id?: string;
+  /** Seconds after the scene starts that this narration should begin. */
+  voice_offset_sec?: number;
   music_url?: string;
   music_options?: string[];
   music_prompt?: string;
@@ -25,6 +28,20 @@ export interface TimelineScene {
   generatingSceneMusic?: boolean;
 }
 
+export interface TimelineMix {
+  musicMuted: boolean;
+  voiceMuted: boolean;
+  solo: "music" | "voice" | null;
+}
+
+export const DEFAULT_TIMELINE_MIX: TimelineMix = { musicMuted: false, voiceMuted: false, solo: null };
+
+/** Effective audibility of a layer given mute/solo state. */
+export const layerAudible = (mix: TimelineMix, layer: "music" | "voice") => {
+  if (mix.solo) return mix.solo === layer;
+  return layer === "music" ? !mix.musicMuted : !mix.voiceMuted;
+};
+
 interface Props {
   scenes: TimelineScene[];
   onUpdateScene: (id: string, patch: Partial<TimelineScene>) => void;
@@ -32,14 +49,26 @@ interface Props {
   onRedub: (id: string, text: string, voiceId: string) => Promise<void> | void;
   /** Generate backing music options for a scene from its music_prompt. */
   onGenerateSceneMusic: (id: string) => Promise<void> | void;
+  mix?: TimelineMix;
+  onMixChange?: (mix: TimelineMix) => void;
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
-const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMusic }: Props) => {
+const StoryboardTimeline = ({
+  scenes,
+  onUpdateScene,
+  onRedub,
+  onGenerateSceneMusic,
+  mix = DEFAULT_TIMELINE_MIX,
+  onMixChange,
+}: Props) => {
   const [playhead, setPlayhead] = useState(0); // seconds
   const [dubText, setDubText] = useState<Record<string, string>>({});
+  const [clipDur, setClipDur] = useState<Record<string, number>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const laneRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ id: string; startX: number; base: number; max: number } | null>(null);
 
   const { starts, total } = useMemo(() => {
     const starts: number[] = [];
@@ -57,9 +86,17 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
   if (!scenes.length) return null;
   const active = scenes[activeIndex];
   const activeVoice = active.voice_id || CURATED_ELEVENLABS_VOICES[0].id;
+  const musicOn = layerAudible(mix, "music");
+  const voiceOn = layerAudible(mix, "voice");
 
-  const preview = (url?: string) => {
+  const setMix = (patch: Partial<TimelineMix>) => onMixChange?.({ ...mix, ...patch });
+
+  const preview = (url: string | undefined, layer: "music" | "voice") => {
     if (!url) return;
+    if (!layerAudible(mix, layer)) {
+      toast.info(`${layer === "music" ? "Music" : "Voice"} layer is muted — unmute to audition it`);
+      return;
+    }
     audioRef.current?.pause();
     const a = new Audio(url);
     audioRef.current = a;
@@ -73,13 +110,59 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
     r.readAsDataURL(file);
   };
 
+  // ---- draggable voice segments -------------------------------------------
+  const onSegmentPointerDown = (e: React.PointerEvent, scene: TimelineScene, idx: number) => {
+    e.preventDefault();
+    const seg = clipDur[scene.id] ?? Math.min(scene.duration_sec, 4);
+    dragRef.current = {
+      id: scene.id,
+      startX: e.clientX,
+      base: scene.voice_offset_sec ?? 0,
+      max: Math.max(0, (scene.duration_sec || 20) - Math.min(seg, scene.duration_sec || 20)),
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onSegmentPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    const laneWidth = laneRef.current?.clientWidth || 1;
+    if (!d) return;
+    const deltaSec = ((e.clientX - d.startX) / laneWidth) * total;
+    const next = Math.max(0, Math.min(d.max, d.base + deltaSec));
+    onUpdateScene(d.id, { voice_offset_sec: Math.round(next * 10) / 10 });
+  };
+
+  const endDrag = () => { dragRef.current = null; };
+
   return (
     <div className="rounded-lg p-3 border border-accent-blue/40 bg-background/60 space-y-3">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Play className="w-4 h-4 text-accent-blue" />
         <span className="text-xs font-black uppercase text-accent-blue">Storyboard timeline</span>
-        <span className="text-[10px] text-muted-foreground ml-auto">
-          {scenes.length} beats · {fmt(total)} total
+        <div className="flex items-center gap-1 ml-auto">
+          <Button type="button" size="sm" variant={mix.musicMuted ? "destructive" : "ghost"}
+            className="h-6 text-[10px]" title="Mute music layer"
+            onClick={() => setMix({ musicMuted: !mix.musicMuted })}>
+            {mix.musicMuted ? <VolumeX className="w-3 h-3 mr-1" /> : <Music className="w-3 h-3 mr-1" />} Music
+          </Button>
+          <Button type="button" size="sm" variant={mix.solo === "music" ? "default" : "outline"}
+            className="h-6 text-[10px]" title="Solo music layer"
+            onClick={() => setMix({ solo: mix.solo === "music" ? null : "music" })}>
+            <Headphones className="w-3 h-3" />
+          </Button>
+          <Button type="button" size="sm" variant={mix.voiceMuted ? "destructive" : "ghost"}
+            className="h-6 text-[10px]" title="Mute voice layer"
+            onClick={() => setMix({ voiceMuted: !mix.voiceMuted })}>
+            {mix.voiceMuted ? <VolumeX className="w-3 h-3 mr-1" /> : <Mic className="w-3 h-3 mr-1" />} Voice
+          </Button>
+          <Button type="button" size="sm" variant={mix.solo === "voice" ? "default" : "outline"}
+            className="h-6 text-[10px]" title="Solo voice layer"
+            onClick={() => setMix({ solo: mix.solo === "voice" ? null : "voice" })}>
+            <Headphones className="w-3 h-3" />
+          </Button>
+        </div>
+        <span className="text-[10px] text-muted-foreground w-full">
+          {scenes.length} beats · {fmt(total)} total · music {musicOn ? "on" : "muted"} · voice {voiceOn ? "on" : "muted"}
         </span>
       </div>
 
@@ -110,6 +193,64 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
         </div>
       </div>
 
+      {/* Draggable voice segment lane */}
+      <div className="space-y-1">
+        <p className="text-[10px] text-muted-foreground">
+          Voice lane — drag any narration block sideways to change when it speaks.
+        </p>
+        <div
+          ref={laneRef}
+          className={`relative h-10 rounded border border-border/60 bg-muted/30 overflow-hidden ${voiceOn ? "" : "opacity-40"}`}
+          onPointerMove={onSegmentPointerMove}
+          onPointerUp={endDrag}
+          onPointerLeave={endDrag}
+        >
+          {scenes.map((s, i) => {
+            if (!s.audio_url) return null;
+            const dur = Math.min(clipDur[s.id] ?? Math.min(s.duration_sec, 4), s.duration_sec || 20);
+            const left = ((starts[i] + (s.voice_offset_sec ?? 0)) / total) * 100;
+            const width = Math.max(1.5, (dur / total) * 100);
+            return (
+              <div
+                key={s.id}
+                role="slider"
+                aria-label={`Narration timing for beat ${i + 1}`}
+                aria-valuemin={0}
+                aria-valuemax={Math.round(s.duration_sec || 20)}
+                aria-valuenow={Math.round(s.voice_offset_sec ?? 0)}
+                tabIndex={0}
+                onPointerDown={e => onSegmentPointerDown(e, s, i)}
+                onKeyDown={e => {
+                  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                  e.preventDefault();
+                  const step = e.key === "ArrowLeft" ? -0.5 : 0.5;
+                  const max = Math.max(0, (s.duration_sec || 20) - dur);
+                  onUpdateScene(s.id, {
+                    voice_offset_sec: Math.max(0, Math.min(max, (s.voice_offset_sec ?? 0) + step)),
+                  });
+                }}
+                onDoubleClick={() => setPlayhead(starts[i])}
+                style={{ left: `${left}%`, width: `${width}%` }}
+                title={`Beat ${i + 1} · +${(s.voice_offset_sec ?? 0).toFixed(1)}s — ${s.narration || s.caption}`}
+                className={`absolute top-1 bottom-1 rounded cursor-ew-resize border px-1 ${
+                  i === activeIndex ? "border-primary bg-primary/25" : "border-primary/40 bg-primary/10"
+                }`}
+              >
+                <VoiceWaveform
+                  url={s.audio_url}
+                  height={22}
+                  onDuration={d => setClipDur(prev => (prev[s.id] === d ? prev : { ...prev, [s.id]: d }))}
+                />
+              </div>
+            );
+          })}
+          <div
+            className="absolute top-0 bottom-0 w-px bg-primary pointer-events-none"
+            style={{ left: `${(playhead / Math.max(1, total)) * 100}%` }}
+          />
+        </div>
+      </div>
+
       {/* Playhead slider along the base of the storyboard */}
       <div className="space-y-1">
         <Slider
@@ -127,13 +268,13 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
       </div>
 
       {/* MUSIC LAYER at the playhead */}
-      <div className="rounded border border-border/60 p-2 space-y-2">
+      <div className={`rounded border border-border/60 p-2 space-y-2 ${musicOn ? "" : "opacity-60"}`}>
         <div className="flex items-center gap-2">
           <Music className="w-3.5 h-3.5 text-accent-blue" />
           <span className="text-[11px] font-bold uppercase">Music layer · scene {activeIndex + 1}</span>
           {active.music_url && (
             <Button type="button" size="sm" variant="ghost" className="h-6 ml-auto text-[10px]"
-              onClick={() => preview(active.music_url)}>
+              onClick={() => preview(active.music_url, "music")}>
               <Volume2 className="w-3 h-3 mr-1" /> Preview
             </Button>
           )}
@@ -197,6 +338,7 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
             />
           </div>
         </div>
+        {active.music_url && <VoiceWaveform url={active.music_url} height={24} color="hsl(200 90% 60%)" />}
         {!!active.music_options?.length && (
           <div className="flex flex-wrap gap-1">
             {active.music_options.map((url, i) => (
@@ -212,17 +354,45 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
       </div>
 
       {/* VOICE LAYER at the playhead */}
-      <div className="rounded border border-border/60 p-2 space-y-2">
+      <div className={`rounded border border-border/60 p-2 space-y-2 ${voiceOn ? "" : "opacity-60"}`}>
         <div className="flex items-center gap-2">
           <Mic className="w-3.5 h-3.5 text-primary" />
           <span className="text-[11px] font-bold uppercase">Voice layer · scene {activeIndex + 1}</span>
           {active.audio_url && (
             <Button type="button" size="sm" variant="ghost" className="h-6 ml-auto text-[10px]"
-              onClick={() => preview(active.audio_url)}>
+              onClick={() => preview(active.audio_url, "voice")}>
               <Volume2 className="w-3 h-3 mr-1" /> Play current dub
             </Button>
           )}
         </div>
+
+        {active.audio_url && (
+          <div className="rounded bg-muted/30 p-2 space-y-1">
+            <VoiceWaveform
+              url={active.audio_url}
+              height={30}
+              onDuration={d => setClipDur(prev => (prev[active.id] === d ? prev : { ...prev, [active.id]: d }))}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Starts at {fmt(starts[activeIndex] + (active.voice_offset_sec ?? 0))} ·{" "}
+              {(clipDur[active.id] ?? 0).toFixed(1)}s long · offset +{(active.voice_offset_sec ?? 0).toFixed(1)}s
+            </p>
+            <p className="text-[11px] italic">“{active.narration || active.caption}”</p>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground whitespace-nowrap">Start offset</span>
+          <Slider
+            value={[active.voice_offset_sec ?? 0]}
+            min={0}
+            max={Math.max(1, Math.round((active.duration_sec || 20) - Math.min(clipDur[active.id] ?? 2, active.duration_sec || 20)))}
+            step={0.5}
+            onValueChange={v => onUpdateScene(active.id, { voice_offset_sec: v[0] })}
+          />
+          <span className="text-[10px] tabular-nums w-10 text-right">+{(active.voice_offset_sec ?? 0).toFixed(1)}s</span>
+        </div>
+
         <Textarea
           rows={2}
           className="text-[11px]"
@@ -250,7 +420,7 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
             }}>
             {active.generatingAudio
               ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Dubbing…</>
-              : <><Mic className="w-3 h-3 mr-1" /> {active.audio_url ? "Re-dub this scene" : "Add voice here"}</>}
+              : <><Mic className="w-3 h-3 mr-1" /> {active.audio_url ? "Re-dub this beat only" : "Add voice here"}</>}
           </Button>
           <label className="h-7 px-2 text-[11px] inline-flex items-center gap-1 border border-border bg-input cursor-pointer hover:bg-muted/50">
             <Upload className="w-3 h-3" /> Upload voice
@@ -266,7 +436,7 @@ const StoryboardTimeline = ({ scenes, onUpdateScene, onRedub, onGenerateSceneMus
           </label>
           {active.audio_url && (
             <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]"
-              onClick={() => onUpdateScene(active.id, { audio_url: undefined })}>
+              onClick={() => onUpdateScene(active.id, { audio_url: undefined, voice_offset_sec: 0 })}>
               Remove voice
             </Button>
           )}
