@@ -1120,8 +1120,15 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           guidance,
           previousContext,
           targetWordsFor(i),
-          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`)
+          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`),
+          partial => setStory(s => {
+            const next = [...s.chapters];
+            const base = ch.content?.trim() ? `${ch.content.trim()}\n\n${partial.trim()}` : partial.trim();
+            next[i] = { ...next[i], content: base };
+            return { ...s, chapters: next };
+          })
         );
+
         const merged = ch.content?.trim() ? `${ch.content.trim()}\n\n${text.trim()}` : text.trim();
         trackEdit("ai", i, ch.content, merged, "Oracle takeover");
         chapters[i] = { ...ch, content: merged };
