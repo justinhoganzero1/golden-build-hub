@@ -8,6 +8,7 @@
 // =============================================================================
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
+import { safeOrigin } from "../_shared/origin.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
