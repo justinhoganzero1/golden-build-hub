@@ -535,7 +535,7 @@ const StoryWriterPage = () => {
 
   /** Hard framing rule: characters must always be shown whole, never decapitated by the frame. */
   const HEAD_SAFE =
-    "MANDATORY FRAMING: every human in the picture must be shown with their WHOLE head, face and hair fully inside the frame with clear headroom above the skull — never crop, slice or cut off a head, chin, or top of the hair at the frame edge. No headless torsos, no faceless or back-of-head-only figures, no subjects bleeding off the top edge. Keep at least 12% empty safe margin around every person, and show recognisable faces with correct anatomy.";
+    "MANDATORY AGENT ACCEPTANCE TEST: every human must have their WHOLE head, scalp, hair, ears, chin and face visibly inside the canvas with clear background above the skull. Keep the hero's head below the top 18% of the canvas and every person at least 12% away from every edge. Show the hero head-to-boots. Never crop, slice, conceal or place typography over a head, chin, hair, hands, feet or weapon. Before returning the image, inspect all four edges and reject/regenerate the composition yourself if any person touches an edge or any head is incomplete. No headless torsos, edge-entering bodies, faceless figures or back-of-head-only heroes.";
 
   /** Shot recipes so every illustration is visually distinct even on short chapters. */
   const SHOT_VARIETY = [
@@ -629,7 +629,7 @@ const StoryWriterPage = () => {
     // producing two near-identical poster compositions.
     const CAST_LOCK = `CONTINUITY LOCK: recurring people must retain their exact faces, ages, builds, hair, skin tone and wardrobe across the book. Do not swap identities or alter established appearance. If a character named Juzzy appears, he is ALWAYS the same man: a rugged mature Australian, shaved/close-buzzed head, weathered matte face, heavy stubble, scar over the brow, black rugged jacket and dark work trousers.`;
     if (slot === "cover") {
-      basePrompt = `FRONT COVER background artwork for a ${story.genre} book. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the hero striding directly toward the camera, weapon in hand, mid-action with a huge explosion and flying debris erupting behind them, the principal cast in real emotion and tension, with wardrobe, era, location, weather and mood taken directly from the blurb above. Show the hero full-length from the top of the head to the boots. Vertical 2:3 portrait framing, subjects centred in the middle band, with calm uncluttered darker space across the top third and the bottom fifth so overlaid title and author type stays legible. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `FRONT COVER background artwork for a ${story.genre} book. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the hero striding directly toward the camera, weapon in hand, mid-action with a huge explosion and flying debris erupting behind them, the principal cast in real emotion and tension, with wardrobe, era, location, weather and mood taken directly from the blurb above. Show the hero full-length from the top of the head to the boots, framed slightly smaller than usual so generous environment remains on all four sides. Vertical 2:3 portrait framing, hero centred in the upper-middle band, with calm uncluttered darker space in the bottom 32% for title and author typography. Do not reserve title space at the top. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
       basePrompt = `BACK COVER background artwork for the very same ${story.genre} book. It must NOT repeat the front cover's hero lineup, action pose, camera height, focal length, location framing, weather beat or silhouette. Choose a genuinely different narrative image: an aftermath, consequential location, symbolic evidence, antagonist viewpoint, or environmental story moment from the finished manuscript. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Keep any people secondary and away from the centre; leave a calm, low-detail centre field for readable blurb typography. Vertical 2:3 portrait framing. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
@@ -670,7 +670,7 @@ const StoryWriterPage = () => {
       let lastErr = "";
       for (let tryNo = 0; tryNo < 3; tryNo++) {
         const seed = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-        const variedPrompt = `${basePrompt} Unique variation seed ${seed}${tryNo > 0 ? ` — the previous attempt was too similar to an existing image; invent a clearly different scene, angle, lighting and moment.` : ""}`;
+        const variedPrompt = `${basePrompt} Unique variation seed ${seed}${tryNo > 0 ? ` — the previous attempt failed quality control. Recompose wider with substantially more clearance above every head and around every body; invent a clearly different scene, angle, lighting and moment.` : ""}`;
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
           method: "POST",
           headers: {

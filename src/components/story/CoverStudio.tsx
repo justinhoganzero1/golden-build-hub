@@ -217,7 +217,7 @@ export default function CoverStudio({
             <article key={slot} className="border border-border bg-card overflow-hidden shadow-lg">
               <div className="relative aspect-[2/3] bg-muted/30 overflow-hidden">
                 {printPreview ? (
-                  <SignedImage src={printPreview} alt={`${label}, exactly as exported for print`} className="absolute inset-0 w-full h-full object-cover" />
+                  <SignedImage src={printPreview} alt={`${label}, exactly as exported for print`} className="absolute inset-0 w-full h-full object-contain" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     {isBusy

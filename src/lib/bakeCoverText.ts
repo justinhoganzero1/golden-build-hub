@@ -133,20 +133,27 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable in this browser");
 
-  // Head-safe framing: cover-fit (no stretching) with the crop biased toward the
-  // top third so faces/heads are never sliced off.
+  // Lossless framing: never crop AI artwork during preview or print export.
+  // A soft full-bleed backdrop fills any aspect-ratio mismatch, then the entire
+  // original is fitted above it. This guarantees the compositor cannot remove
+  // a head, face, hand, foot, weapon or other edge detail the agents approved.
   {
     const srcAR = img.width / img.height;
     const dstAR = W / H;
-    let sx = 0, sy = 0, sw = img.width, sh = img.height;
-    if (srcAR > dstAR) {
-      sw = img.height * dstAR;
-      sx = (img.width - sw) / 2;
-    } else if (srcAR < dstAR) {
-      sh = img.width / dstAR;
-      sy = (img.height - sh) * 0.06; // keep heads in frame
+    if (Math.abs(srcAR - dstAR) > 0.002) {
+      const backgroundScale = Math.max(W / img.width, H / img.height);
+      const backgroundW = img.width * backgroundScale;
+      const backgroundH = img.height * backgroundScale;
+      ctx.save();
+      ctx.filter = `blur(${Math.max(18, W * 0.018)}px) brightness(0.55)`;
+      ctx.drawImage(img, (W - backgroundW) / 2, (H - backgroundH) / 2, backgroundW, backgroundH);
+      ctx.restore();
     }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+
+    const foregroundScale = Math.min(W / img.width, H / img.height);
+    const foregroundW = img.width * foregroundScale;
+    const foregroundH = img.height * foregroundScale;
+    ctx.drawImage(img, (W - foregroundW) / 2, (H - foregroundH) / 2, foregroundW, foregroundH);
   }
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
