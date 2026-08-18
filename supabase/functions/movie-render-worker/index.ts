@@ -703,25 +703,30 @@ async function shotstackStitch(
   const tracks: any[] = [{ clips: videoClips }];
   if (audioClips.length) tracks.push({ clips: audioClips });
 
-  const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
-    method: "POST",
-    headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      timeline: { background: "#000000", tracks },
-      output: { format: "mp4", resolution, fps: 30 },
-    }),
-  });
-  if (!submit.ok) {
-    const txt = await submit.text();
-    console.error("[shotstack submit failed]", submit.status, txt);
-    throw new Error(`Shotstack submit ${submit.status}: ${txt.slice(0, 300)}`);
+  // Resume an in-flight render instead of paying Shotstack for a second one.
+  let renderId: string | undefined = (await providerState()).shotstack_render_id;
+  if (!renderId) {
+    const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
+      method: "POST",
+      headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        timeline: { background: "#000000", tracks },
+        output: { format: "mp4", resolution, fps: 30 },
+      }),
+    });
+    if (!submit.ok) {
+      const txt = await submit.text();
+      console.error("[shotstack submit failed]", submit.status, txt);
+      throw new Error(`Shotstack submit ${submit.status}: ${txt.slice(0, 300)}`);
+    }
+    const sj = await submit.json();
+    renderId = sj?.response?.id;
+    if (!renderId) throw new Error(`Shotstack returned no render id: ${JSON.stringify(sj).slice(0, 300)}`);
+    await rememberProvider({ shotstack_render_id: renderId });
   }
-  const sj = await submit.json();
-  const renderId = sj?.response?.id;
-  if (!renderId) throw new Error(`Shotstack returned no render id: ${JSON.stringify(sj).slice(0, 300)}`);
 
-  // Poll up to 5 minutes (every 10s)
-  for (let i = 0; i < 30; i++) {
+  // Poll within this tick's budget; hand back to cron if it outlives it.
+  while (!outOfTime()) {
     await sleep(10_000);
     const poll = await fetch(`${SHOTSTACK_BASE}/render/${renderId}`, {
       headers: { "x-api-key": SHOTSTACK_API_KEY! },
@@ -729,15 +734,19 @@ async function shotstackStitch(
     if (!poll.ok) continue;
     const pj = await poll.json();
     const status = pj?.response?.status;
-    if (status === "done") return pj.response.url;
+    if (status === "done") {
+      await forgetProvider("shotstack_render_id");
+      return pj.response.url;
+    }
     if (status === "failed") {
+      await forgetProvider("shotstack_render_id");
       console.error("[shotstack failed]", pj.response?.error);
       throw new Error(`Shotstack render failed: ${pj.response?.error || "unknown"}`);
     }
   }
-  console.warn("[shotstack] still rendering after 5min");
-  throw new Error("Shotstack still rendering — retry");
+  throw new RequeueSignal("shotstack");
 }
+
 
 function buildSRT(scenes: any[]): string {
   let cursor = 0;
