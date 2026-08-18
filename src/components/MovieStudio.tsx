@@ -18,6 +18,11 @@ import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
 import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus, type ExportSettings } from "@/components/movie/SuperAIPanel";
+import MovieHostPanel from "@/components/movie/MovieHostPanel";
+import {
+  DEFAULT_HOST, audioEnvelope, envelopeAt, drawTalkingHead, hostRect, hostPortraitPrompt,
+  clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
+} from "@/lib/movieHost";
 
 
 
@@ -119,6 +124,11 @@ interface Scene {
   lower_third_name?: string;   // e.g. "Maya Chen"
   lower_third_title?: string;  // e.g. "ORACLE LUNAR Tech Reporter"
   broll_url?: string;          // optional B-roll image overlay (cutaway)
+  // Movie Host layer — lip-synced talking-head presenter over this scene
+  host_beat?: HostBeat;
+  // ≤8s two-avatar live interview (host ↔ character) over this scene
+  interview?: InterviewBeat;
+
   // Director controls (preset-driven, baked into the photo prompt)
   camera_angle?: CameraAngle;
   lighting_preset?: LightingPreset;
@@ -224,6 +234,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const nextBlockPrice = priceForBlockUSD(nextBlockNumber);
   // Newsroom (YouTube show) preset
   const [newsroomMode, setNewsroomMode] = useState(false);
+  // ----- Movie Host layer (talking head + live interviews) -----
+  const [host, setHost] = useState<HostConfig>(DEFAULT_HOST);
+  const [hostPanelOpen, setHostPanelOpen] = useState(false);
+  const [generatingPortrait, setGeneratingPortrait] = useState(false);
+  const patchHost = (patch: Partial<HostConfig>) => setHost(prev => ({ ...prev, ...patch }));
   const [showName, setShowName] = useState("");          // e.g. "ORACLE LUNAR Daily"
   const [hostName, setHostName] = useState("");          // e.g. "Alex Rivera"
   const [hostTitle, setHostTitle] = useState("");        // e.g. "Lead Anchor"
@@ -318,6 +333,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
       setStarring(""); setCoStarring(""); setGuestStars("");
       setTrailerScenes([]); setGeneratingTrailer(false);
+      setHost(DEFAULT_HOST); setHostPanelOpen(false); setGeneratingPortrait(false);
     }
   }, [open]);
 
@@ -659,7 +675,105 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     }
   };
 
+  // ----- Movie Host: portrait, voices, interviews -----
+  /** Render text to speech and return it as a data URL (used by the host layer). */
+  const ttsToDataUrl = async (text: string, voiceId: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ text, voiceId }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
+        else toast.error("Voice generation failed");
+        return null;
+      }
+      const blob = await resp.blob();
+      return await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error("[ttsToDataUrl]", e);
+      toast.error("Voice generation failed");
+      return null;
+    }
+  };
+
+  const generateHostPortrait = async (look: string) => {
+    setGeneratingPortrait(true);
+    try {
+      const prompt = hostPortraitPrompt(host.name || "the host", host.title || "", look);
+      const resp = await fetch(GEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("AI credits exhausted."); }
+        else toast.error("Host portrait failed");
+        return;
+      }
+      const data = await resp.json();
+      const url = data.images?.[0]?.image_url?.url;
+      if (!url) { toast.error("No portrait returned"); return; }
+      patchHost({ imageUrl: url, enabled: true });
+      if (user) saveMedia.mutate({
+        media_type: "image",
+        title: `Movie host — ${host.name}`,
+        url,
+        source_page: "movie-studio-host",
+        metadata: { look },
+      });
+      toast.success("Host is on camera");
+    } finally {
+      setGeneratingPortrait(false);
+    }
+  };
+
+  /** Voice one host piece-to-camera. */
+  const voiceHostBeat = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    const beat = scene?.host_beat;
+    if (!beat?.line?.trim()) { toast.error("Write the host's line first"); return; }
+    updateScene(sceneId, { host_beat: { ...beat, generating: true } });
+    const url = await ttsToDataUrl(beat.line.trim(), host.voiceId);
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? { ...s, host_beat: { ...(s.host_beat as HostBeat), audio_url: url ?? undefined, generating: false } }
+      : s));
+    if (url) toast.success("Host line recorded — lip-sync is live");
+  };
+
+  /** Voice both sides of a ≤8s live interview. */
+  const voiceInterview = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    const iv = scene?.interview;
+    if (!iv?.hostLine?.trim() || !iv?.guestLine?.trim()) {
+      toast.error("Write both the host question and the guest answer"); return;
+    }
+    updateScene(sceneId, { interview: { ...iv, generating: true } });
+    const [hostUrl, guestUrl] = await Promise.all([
+      ttsToDataUrl(iv.hostLine.trim(), host.voiceId),
+      ttsToDataUrl(iv.guestLine.trim(), iv.guestVoiceId),
+    ]);
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? {
+          ...s,
+          interview: {
+            ...(s.interview as InterviewBeat),
+            hostAudioUrl: hostUrl ?? undefined,
+            guestAudioUrl: guestUrl ?? undefined,
+            seconds: clampInterviewSeconds((s.interview as InterviewBeat).seconds),
+            generating: false,
+          },
+        }
+      : s));
+    if (hostUrl && guestUrl) toast.success("Interview recorded — both avatars will lip-sync");
+  };
+
   // ----- Generate REAL AI motion video for a scene -----
+
   // Engine = "gemini" (free, default) or "runway" (premium quality, requires RUNWAY_API_KEY).
   // Length = 5 or 10 seconds per scene (set on the scene card).
   const generateSceneVideo = async (sceneId: string) => {
@@ -1585,6 +1699,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       if (layers.voice) play(await decode(s.audio_url), base + (s.voice_offset_sec ?? 0), 1);
       if (layers.sfx) play(await decode(s.sfx_url), base + (s.sfx_offset_sec ?? 0), s.sfx_volume ?? 0.6);
       if (layers.music) play(await decode(s.music_url), base, s.music_volume ?? 0.25);
+      // Host layer auditions with the voice lane
+      if (layers.voice && host.enabled) {
+        play(await decode(s.host_beat?.audio_url), base + (s.host_beat?.offset_sec ?? 0), 1);
+        const ivAt = base + (s.interview?.offset_sec ?? 0);
+        const hb = await decode(s.interview?.hostAudioUrl);
+        play(hb, ivAt, 1);
+        play(await decode(s.interview?.guestAudioUrl), ivAt + Math.min((hb?.duration ?? 0) + 0.25, 7.5), 1);
+      }
     }));
     if (layers.music && musicUrl) play(await decode(musicUrl), 0, musicVolume);
 
@@ -1916,6 +2038,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         decodeUrl(outroMusicUrl),
       ]);
 
+      // ----- Movie Host layer: audio buffers + lip-sync envelopes -----
+      const hostActive = host.enabled && !!host.imageUrl;
+      const [hostBeatBufs, ivHostBufs, ivGuestBufs] = await Promise.all([
+        Promise.all(ready.map(s => (hostActive ? decodeUrl(s.host_beat?.audio_url) : Promise.resolve(null)))),
+        Promise.all(ready.map(s => (hostActive ? decodeUrl(s.interview?.hostAudioUrl) : Promise.resolve(null)))),
+        Promise.all(ready.map(s => decodeUrl(s.interview?.guestAudioUrl))),
+      ]);
+      const hostBeatEnv = hostBeatBufs.map(b => (b ? audioEnvelope(b) : null));
+      const ivHostEnv = ivHostBufs.map(b => (b ? audioEnvelope(b) : null));
+      const ivGuestEnv = ivGuestBufs.map(b => (b ? audioEnvelope(b) : null));
+
+      const loadImg = (url?: string | null) =>
+        new Promise<HTMLImageElement | null>(res => {
+          if (!url) return res(null);
+          const i = new Image(); i.crossOrigin = "anonymous";
+          i.onload = () => res(i); i.onerror = () => res(null); i.src = url;
+        });
+      const hostImg = hostActive ? await loadImg(host.imageUrl) : null;
+      const guestImgs = await Promise.all(ready.map(s => loadImg(s.interview?.guestImageUrl)));
+
+
       // Combine video + audio tracks
       const combined = new MediaStream([
         ...videoStream.getVideoTracks(),
@@ -2061,11 +2204,94 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           // Stop slightly after scene end so cross-fade tail can finish
           try { src.stop(t0 + sceneSec + 0.05); } catch {}
         }
+        // ----- Movie Host: schedule the presenter + interview audio for this scene -----
+        const beat = scene.host_beat;
+        const beatOffset = Math.max(0, Math.min(scene.duration_sec || 0, beat?.offset_sec ?? 0));
+        const hbuf = hostBeatBufs[idx];
+        if (hbuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = hbuf;
+          const g = audioCtx.createGain(); g.gain.value = 1.0;
+          src.connect(g).connect(audioDest);
+          src.start(audioCtx.currentTime + beatOffset);
+        }
+        const iv = scene.interview;
+        const ivOffset = Math.max(0, Math.min(scene.duration_sec || 0, iv?.offset_sec ?? 0));
+        const ivHostBuf = ivHostBufs[idx];
+        const ivGuestBuf = ivGuestBufs[idx];
+        // Host asks first, guest answers straight after — whole exchange capped at 8s.
+        const ivHostDur = ivHostBuf?.duration ?? 0;
+        const guestStartOffset = ivOffset + Math.min(ivHostDur + 0.25, (iv ? clampInterviewSeconds(iv.seconds) : 0) - 0.5);
+        if (ivHostBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = ivHostBuf;
+          src.connect(audioDest);
+          src.start(audioCtx.currentTime + ivOffset);
+        }
+        if (ivGuestBuf) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = ivGuestBuf;
+          src.connect(audioDest);
+          src.start(audioCtx.currentTime + Math.max(ivOffset, guestStartOffset));
+        }
+
         const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
             drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
+
+            // ----- Movie Host overlay (lip-synced talking head) -----
+            const tSec = (now - start) / 1000;
+            const ivSeconds = iv ? clampInterviewSeconds(iv.seconds) : 0;
+            const ivLive = !!iv && hostImg && tSec >= ivOffset && tSec <= ivOffset + ivSeconds;
+            if (ivLive && hostImg) {
+              // Two avatars facing each other — host left, guest right.
+              const cardW = Math.round(canvas.width * 0.26);
+              const cardH = Math.round(cardW * 1.25);
+              const yPos = Math.round(canvas.height - cardH - canvas.height * 0.14);
+              const hostLvl = envelopeAt(ivHostEnv[idx], tSec - ivOffset);
+              const guestLvl = envelopeAt(ivGuestEnv[idx], tSec - Math.max(ivOffset, guestStartOffset));
+              drawTalkingHead(ctx, {
+                img: hostImg, x: Math.round(canvas.width * 0.06), y: yPos, w: cardW, h: cardH,
+                level: hostLvl, mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                name: host.showPlate ? host.name : undefined, title: host.showPlate ? host.title : undefined,
+                time: tSec, speaking: hostLvl > 0.08,
+              });
+              const gImg = guestImgs[idx];
+              if (gImg) {
+                drawTalkingHead(ctx, {
+                  img: gImg, x: Math.round(canvas.width * 0.68), y: yPos, w: cardW, h: cardH,
+                  level: guestLvl, mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                  name: host.showPlate ? (iv!.guestName || "Guest") : undefined,
+                  title: host.showPlate ? "Live" : undefined,
+                  flip: true, time: tSec, speaking: guestLvl > 0.08,
+                });
+              }
+              // LIVE badge
+              ctx.save();
+              ctx.fillStyle = "rgba(200,20,30,0.9)";
+              const bw = Math.round(canvas.width * 0.09), bh = Math.round(canvas.height * 0.05);
+              ctx.fillRect(Math.round(canvas.width * 0.06), Math.round(canvas.height * 0.06), bw, bh);
+              ctx.fillStyle = "#fff";
+              ctx.textAlign = "center";
+              ctx.font = `bold ${Math.round(bh * 0.5)}px sans-serif`;
+              ctx.fillText("● LIVE", Math.round(canvas.width * 0.06) + bw / 2, Math.round(canvas.height * 0.06) + bh * 0.66);
+              ctx.restore();
+            } else if (hostActive && hostImg && beat?.audio_url && tSec >= beatOffset) {
+              const rect = hostRect(canvas.width, canvas.height, {
+                x: beat.x ?? host.x, y: beat.y ?? host.y, scale: beat.scale ?? host.scale,
+              });
+              drawTalkingHead(ctx, {
+                img: hostImg, ...rect,
+                level: envelopeAt(hostBeatEnv[idx], tSec - beatOffset),
+                mouthX: host.mouthX, mouthY: host.mouthY, frame: host.frame,
+                name: host.showPlate ? host.name : undefined,
+                title: host.showPlate ? host.title : undefined,
+                time: tSec, speaking: true,
+              });
+            }
+
             // Subtitles only render when explicitly enabled by the user (default OFF)
             if (subtitlesEnabled) {
               ctx.fillStyle = "rgba(0,0,0,0.55)";
@@ -2412,6 +2638,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             <div className="flex flex-wrap gap-2">
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Movie title" className="flex-1 min-w-[200px]" />
               <SuperAIPanel actions={superAIActions} />
+              <Button onClick={() => setHostPanelOpen(true)} size="sm" variant="secondary" className="border border-primary/40"
+                title="Add a movable, lip-synced talking-head host and live 8s interviews">
+                <Tv className="w-3 h-3 mr-1" /> {host.enabled ? `Host: ${host.name}` : "Add movie host"}
+              </Button>
               <Button onClick={runProductionSwarm} disabled={productionSwarmBusy} size="sm" className="border border-primary/40">
                 {productionSwarmBusy
                   ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Swarm running</>
@@ -2976,6 +3206,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <MovieHostPanel
+          open={hostPanelOpen}
+          onOpenChange={setHostPanelOpen}
+          host={host}
+          onHostChange={patchHost}
+          scenes={scenes.map(s => ({
+            id: s.id,
+            caption: s.caption,
+            image_url: s.image_url,
+            duration_sec: s.duration_sec,
+            host_beat: s.host_beat,
+            interview: s.interview,
+          }))}
+          onSceneChange={(id, patch) => updateScene(id, patch as Partial<Scene>)}
+          onGeneratePortrait={generateHostPortrait}
+          generatingPortrait={generatingPortrait}
+          onVoiceHostBeat={voiceHostBeat}
+          onVoiceInterview={voiceInterview}
+        />
         <MovieShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
