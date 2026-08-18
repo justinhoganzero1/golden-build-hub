@@ -218,7 +218,9 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
  * Composite the cover typography onto the artwork and return a JPEG data URL.
  */
 export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): Promise<string> {
+  await ensureCoverFonts();
   const img = await loadImage(artworkUrl);
+
   const H = opts.height ?? opts.size ?? 2775;
   const W = opts.width ?? 1875;
 
