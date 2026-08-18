@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper, Share2 } from "lucide-react";
+import { Loader2, Film, Wand2, Plus, Play, Pause, Download, Trash2, Sparkles, RefreshCw, Pencil, ImagePlus, Upload, Mic, Volume2, Music, Waves, Star, Tv, Newspaper, Share2, Users, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { useAuth } from "@/contexts/AuthContext";
@@ -134,6 +134,22 @@ interface MovieStudioProps {
   seedScript?: string;
 }
 
+type ProductionAgentStatus = "waiting" | "working" | "complete" | "failed";
+type ProductionAgent = {
+  id: "visual" | "voice" | "sound" | "score" | "quality";
+  name: string;
+  task: string;
+  status: ProductionAgentStatus;
+};
+
+const PRODUCTION_AGENTS: ProductionAgent[] = [
+  { id: "visual", name: "Visual Director", task: "Generating cinematic scene artwork", status: "waiting" },
+  { id: "voice", name: "Voice Director", task: "Producing expressive human narration", status: "waiting" },
+  { id: "sound", name: "Sound Designer", task: "Building scene sound effects", status: "waiting" },
+  { id: "score", name: "Score Composer", task: "Mapping suspense and music cues", status: "waiting" },
+  { id: "quality", name: "Final-Cut Editor", task: "Checking every production lane", status: "waiting" },
+];
+
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: MovieStudioProps) => {
@@ -158,6 +174,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null);
   const [sfxProgress, setSfxProgress] = useState<{ done: number; total: number } | null>(null);
+  const [productionSwarm, setProductionSwarm] = useState<ProductionAgent[]>(PRODUCTION_AGENTS);
+  const [productionSwarmBusy, setProductionSwarmBusy] = useState(false);
   // Music suite
   const [musicPrompt, setMusicPrompt] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
@@ -276,6 +294,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       setEditingSceneId(null); setEditPrompt(""); setPreviewSceneId(null);
       setExporting(false); setExportProgress(0);
       setCreditsLow(false); setGenProgress(null); setAudioProgress(null); setSfxProgress(null);
+      setProductionSwarm(PRODUCTION_AGENTS); setProductionSwarmBusy(false);
       setMusicPrompt(""); setMusicUrl(null); setGeneratingMusic(false);
       setIntroMusicUrl(null); setThemeMusicUrl(null); setOutroMusicUrl(null); setCreditsLines([]);
       setGeneratingIntro(false); setGeneratingTheme(false); setGeneratingOutro(false); setGeneratingCredits(false);
@@ -743,11 +762,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     if (pending.length === 0) { toast.info("All scenes already have audio"); return; }
     setAudioProgress({ done: 0, total: pending.length });
     let done = 0;
-    // Sequential to be gentle on TTS rate limits
-    for (const id of pending) {
-      await generateSceneAudio(id);
-      done += 1;
-      setAudioProgress({ done, total: pending.length });
+    // Four parallel voice workers keep long films moving without flooding the provider.
+    const BATCH = 4;
+    for (let i = 0; i < pending.length; i += BATCH) {
+      const chunk = pending.slice(i, i + BATCH);
+      await Promise.all(chunk.map(async id => {
+        await generateSceneAudio(id);
+        done += 1;
+        setAudioProgress({ done, total: pending.length });
+      }));
     }
     setTimeout(() => setAudioProgress(null), 1500);
     toast.success("All voices generated");
@@ -789,10 +812,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     if (pending.length === 0) { toast.info("Add SFX descriptions to scenes first"); return; }
     setSfxProgress({ done: 0, total: pending.length });
     let done = 0;
-    for (const id of pending) {
-      await generateSceneSfx(id);
-      done += 1;
-      setSfxProgress({ done, total: pending.length });
+    const BATCH = 4;
+    for (let i = 0; i < pending.length; i += BATCH) {
+      const chunk = pending.slice(i, i + BATCH);
+      await Promise.all(chunk.map(async id => {
+        await generateSceneSfx(id);
+        done += 1;
+        setSfxProgress({ done, total: pending.length });
+      }));
     }
     setTimeout(() => setSfxProgress(null), 1500);
     toast.success("All sound effects generated");
@@ -916,6 +943,47 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       toast.error(error instanceof Error ? error.message : "Score team failed");
     } finally {
       setScoreTeamBusy(false);
+    }
+  };
+
+  const runProductionSwarm = async () => {
+    if (!scenes.length) { toast.error("Build the movie scenes first"); return; }
+    if (productionSwarmBusy) return;
+    setProductionSwarmBusy(true);
+    setProductionSwarm(PRODUCTION_AGENTS.map(agent => ({
+      ...agent,
+      status: agent.id === "quality" ? "waiting" : "working",
+    })));
+
+    const setAgentStatus = (id: ProductionAgent["id"], status: ProductionAgentStatus) => {
+      setProductionSwarm(previous => previous.map(agent => agent.id === id ? { ...agent, status } : agent));
+    };
+    const runLane = async (id: ProductionAgent["id"], work: () => Promise<void>) => {
+      try {
+        await work();
+        setAgentStatus(id, "complete");
+        return true;
+      } catch (error) {
+        console.error(`${id} production agent failed`, error);
+        setAgentStatus(id, "failed");
+        return false;
+      }
+    };
+
+    try {
+      const results = await Promise.all([
+        runLane("visual", generateAll),
+        runLane("voice", generateAllAudio),
+        runLane("sound", generateAllSfx),
+        runLane("score", runAdaptiveScoreTeam),
+      ]);
+      setAgentStatus("quality", "working");
+      const failed = results.filter(result => !result).length;
+      setAgentStatus("quality", failed ? "failed" : "complete");
+      if (failed) toast.error(`Production swarm finished with ${failed} lane${failed === 1 ? "" : "s"} needing retry`);
+      else toast.success("All five production agents completed their work");
+    } finally {
+      setProductionSwarmBusy(false);
     }
   };
 
@@ -1756,6 +1824,32 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             </div>
           </div>
         )}
+        {(productionSwarmBusy || productionSwarm.some(agent => agent.status !== "waiting")) && (
+          <section className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-3" aria-live="polite">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                <Users className="w-4 h-4" /> Production swarm
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {productionSwarm.filter(agent => agent.status === "complete").length} / {productionSwarm.length} complete
+              </span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {productionSwarm.map(agent => (
+                <div key={agent.id} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 min-h-14">
+                  {agent.status === "working" && <Loader2 className="w-4 h-4 shrink-0 animate-spin text-primary" />}
+                  {agent.status === "complete" && <CheckCircle2 className="w-4 h-4 shrink-0 text-primary" />}
+                  {agent.status === "failed" && <AlertCircle className="w-4 h-4 shrink-0 text-destructive" />}
+                  {agent.status === "waiting" && <span className="w-4 h-4 shrink-0 rounded-full border border-muted-foreground/50" />}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold truncate">{agent.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{agent.status === "working" ? agent.task : agent.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         {scenes.length === 0 && (
           <div className="space-y-3">
             <div>
@@ -1808,6 +1902,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Movie title" className="flex-1 min-w-[200px]" />
+              <Button onClick={runProductionSwarm} disabled={productionSwarmBusy} size="sm" className="border border-primary/40">
+                {productionSwarmBusy
+                  ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Swarm running</>
+                  : <><Users className="w-3 h-3 mr-1" /> Run 5-agent production swarm</>}
+              </Button>
               <Button onClick={generateAll} variant="secondary" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" /> Generate all photos
               </Button>
