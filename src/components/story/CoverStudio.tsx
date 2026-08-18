@@ -343,7 +343,7 @@ export default function CoverStudio({
           </Button>
         </div>
         <p className="text-[10px] text-center text-muted-foreground">
-          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The rear reserves the bookseller barcode zone. No “A novel by” text is added.
+          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The rear reserves the bookseller barcode zone; author credit placement adapts to each book.
         </p>
       </div>
     </section>

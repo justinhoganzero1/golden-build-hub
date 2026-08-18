@@ -150,8 +150,8 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     ctx.fillStyle = "rgba(255,215,122,0.5)";
     ctx.fillRect(W * 0.33, y, W * 0.34, Math.max(1, W * 0.0015));
 
-    // The author credit is deliberately flexible per book. Never add a
-    // generic "A NOVEL BY" label and never duplicate the author on the rear.
+    // The author credit is deliberately flexible per book. Keep it as the
+    // author's name alone and never duplicate it on the rear.
     const authorBelowTitle = layout === "title-author" || layout === "editorial";
     const authorY = authorBelowTitle ? y + W * 0.05 : H * 0.92;
     if (!authorBelowTitle) scrim(ctx, W, H * 0.76, H * 0.24, "bottom");
