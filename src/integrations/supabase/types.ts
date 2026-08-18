@@ -4010,6 +4010,10 @@ export type Database = {
         Args: { _field?: string; _url: string }
         Returns: string
       }
+      living_gifs_privileged_unchanged: {
+        Args: { _new: Database["public"]["Tables"]["living_gifs"]["Row"] }
+        Returns: boolean
+      }
       log_auth_event: {
         Args: {
           _email: string
@@ -4021,6 +4025,10 @@ export type Database = {
           _user_id: string
         }
         Returns: string
+      }
+      movie_projects_privileged_unchanged: {
+        Args: { _new: Database["public"]["Tables"]["movie_projects"]["Row"] }
+        Returns: boolean
       }
       photo_template_quota: {
         Args: { _user_id: string }
