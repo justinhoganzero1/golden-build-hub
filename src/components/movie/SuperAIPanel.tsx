@@ -32,11 +32,16 @@ export interface SuperAIActions {
   generateAllVideo: () => Promise<void> | void;
   generateAllAudio: () => Promise<void> | void;
   generateAllSfx: () => Promise<void> | void;
+  /** Design SFX prompts, beat timestamps and volumes for every scene, then generate them. */
+  autoSfxTimeline: () => Promise<void> | void;
+  /** Map and place music cues across the whole timeline from the story beats. */
+  autoScoreTimeline: () => Promise<void> | void;
   runScoreTeam: () => Promise<void> | void;
   generateMovieMusic: () => Promise<void> | void;
   composeIntro: () => Promise<void> | void;
   composeTheme: () => Promise<void> | void;
   composeOutro: () => Promise<void> | void;
+  /** Build the opening title card AND the end credits roll from the story. */
   generateCredits: () => Promise<void> | void;
   /** Build the opening title card + credits scene at the very front of the movie. */
   addOpeningTitles: (subtitleLine: string) => Promise<void> | void;
@@ -51,10 +56,18 @@ export interface SuperAIActions {
   setMusicLevel: (v: number) => void;
   musicLevel: number;
   sceneCount: number;
+  // Step-by-step production pipeline
+  pipeline: PipelineStep[];
+  pipelineRunning: boolean;
+  pipelineStep: number;
+  musicCueProgress: { done: number; total: number } | null;
+  startPipeline: () => void;
+  resumePipeline: () => void;
+  cancelPipeline: () => void;
 }
 
 type JobId =
-  | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "score" | "music"
+  | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "sfxAuto" | "score" | "music" | "musicAuto"
   | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "export";
 
 interface Job {
