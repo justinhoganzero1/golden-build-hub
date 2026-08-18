@@ -85,7 +85,23 @@ export interface SuperAIActions {
   startPipeline: () => void;
   resumePipeline: () => void;
   cancelPipeline: () => void;
+  /** What already exists on the timeline, so Resume can show what will be re-run. */
+  pipelineArtifacts: PipelineArtifact[];
+  /** Exact step Resume will run next. */
+  nextPipelineStepLabel: string;
+  // Preview mode — audition layers against the timeline, no render
+  auditionLayers: AuditionLayers;
+  auditionState: { at: number; total: number; label: string } | null;
+  startAudition: (layers: AuditionLayers) => void;
+  stopAudition: () => void;
+  // Export controls
+  exportSettings: ExportSettings;
+  setExportSettings: (patch: Partial<ExportSettings>) => void;
+  // Render report
+  hasRenderReport: boolean;
+  downloadRenderReport: () => void;
 }
+
 
 type JobId =
   | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "sfxAuto" | "score" | "music" | "musicAuto"
