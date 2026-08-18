@@ -1325,8 +1325,14 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         target,
         (w) => {
           if (w < target) toast.info(`Writing… ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "chapter-progress" });
-        }
+        },
+        (partial) => setStory(s => {
+          const next = [...s.chapters];
+          next[activeChapter] = { ...next[activeChapter], content: partial };
+          return { ...s, chapters: next };
+        })
       );
+
 
       // Guarantee no two chapters share the same word count (200+ words apart).
       const others = story.chapters
