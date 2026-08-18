@@ -3069,6 +3069,12 @@ const OraclePage = () => {
           <button onClick={toggleMute} className={`p-2 rounded-full border transition-all ${isMuted ? "border-red-500/40 bg-red-600/20" : "border-green-500/40 bg-green-600/20"}`}>
             {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-green-400" />}
           </button>
+          <SwarmAgentsButton
+            currentInput={input}
+            onResult={(markdown) =>
+              setMessages(prev => [...prev, { id: `swarm-${Date.now()}`, role: "assistant", sender: `${oracleName} Swarm`, emoji: "🐝", color: "#FFD700", content: markdown } as any])
+            }
+          />
           {activeAgents.length >= 2 && (
             <button onClick={() => setShowDebate(p => !p)} className={`px-2 py-1 rounded-full border text-[9px] font-medium transition-all ${showDebate ? "border-orange-500/40 bg-orange-600/20 text-orange-300" : "border-gray-700 bg-gray-800/50 text-gray-500"}`}>
               {showDebate ? "🔥 Debates On" : "Debates Off"}
