@@ -302,6 +302,219 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_budgets: {
+        Row: {
+          auto_topup_enabled: boolean
+          auto_topup_pack_cents: number
+          auto_topup_threshold_cents: number
+          created_at: string
+          daily_limit_cents: number
+          hard_stop: boolean
+          low_balance_alert_cents: number
+          monthly_limit_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_topup_enabled?: boolean
+          auto_topup_pack_cents?: number
+          auto_topup_threshold_cents?: number
+          created_at?: string
+          daily_limit_cents?: number
+          hard_stop?: boolean
+          low_balance_alert_cents?: number
+          monthly_limit_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_topup_enabled?: boolean
+          auto_topup_pack_cents?: number
+          auto_topup_threshold_cents?: number
+          created_at?: string
+          daily_limit_cents?: number
+          hard_stop?: boolean
+          low_balance_alert_cents?: number
+          monthly_limit_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      billing_holds: {
+        Row: {
+          created_at: string
+          estimated_fee_micros: number
+          estimated_provider_cost_micros: number
+          expires_at: string
+          held_total_micros: number
+          id: string
+          model: string | null
+          provider: string | null
+          released_at: string | null
+          service: string
+          status: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_fee_micros: number
+          estimated_provider_cost_micros: number
+          expires_at?: string
+          held_total_micros: number
+          id?: string
+          model?: string | null
+          provider?: string | null
+          released_at?: string | null
+          service: string
+          status?: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estimated_fee_micros?: number
+          estimated_provider_cost_micros?: number
+          expires_at?: string
+          held_total_micros?: number
+          id?: string
+          model?: string | null
+          provider?: string | null
+          released_at?: string | null
+          service?: string
+          status?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_holds_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "billing_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_ledger_entries: {
+        Row: {
+          account_type: string
+          amount_micros: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          account_type: string
+          amount_micros: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          account_type?: string
+          amount_micros?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_ledger_entries_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "billing_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_transactions: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          model: string | null
+          original_transaction_id: string | null
+          platform_fee_micros: number
+          provider: string | null
+          provider_cost_micros: number
+          provider_request_id: string | null
+          request_key: string
+          service: string | null
+          settled_at: string | null
+          status: string
+          stripe_event_id: string | null
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          total_micros: number
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          original_transaction_id?: string | null
+          platform_fee_micros?: number
+          provider?: string | null
+          provider_cost_micros?: number
+          provider_request_id?: string | null
+          request_key: string
+          service?: string | null
+          settled_at?: string | null
+          status: string
+          stripe_event_id?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          total_micros?: number
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          original_transaction_id?: string | null
+          platform_fee_micros?: number
+          provider?: string | null
+          provider_cost_micros?: number
+          provider_request_id?: string | null
+          request_key?: string
+          service?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_event_id?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          total_micros?: number
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_transactions_original_transaction_id_fkey"
+            columns: ["original_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "billing_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           category: string | null
@@ -2443,6 +2656,62 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_events: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json
+          model: string | null
+          provider: string | null
+          provider_cost_micros: number
+          provider_request_id: string | null
+          quantity: number
+          service: string
+          transaction_id: string
+          unit_cost_micros: number
+          unit_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          provider?: string | null
+          provider_cost_micros?: number
+          provider_request_id?: string | null
+          quantity: number
+          service: string
+          transaction_id: string
+          unit_cost_micros?: number
+          unit_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json
+          model?: string | null
+          provider?: string | null
+          provider_cost_micros?: number
+          provider_request_id?: string | null
+          quantity?: number
+          service?: string
+          transaction_id?: string
+          unit_cost_micros?: number
+          unit_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "billing_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_ad_preferences: {
         Row: {
           ads_enabled: boolean
@@ -3552,6 +3821,67 @@ export type Database = {
       admin_topup_user: {
         Args: { _amount_cents: number; _note?: string; _user_id: string }
         Returns: number
+      }
+      billing_authorize: {
+        Args: {
+          _estimated_provider_cost_micros: number
+          _metadata?: Json
+          _model: string
+          _provider: string
+          _request_key: string
+          _service: string
+          _user_id: string
+        }
+        Returns: {
+          available_balance_micros: number
+          duplicate: boolean
+          held_total_micros: number
+          hold_id: string
+          transaction_id: string
+        }[]
+      }
+      billing_cancel: {
+        Args: { _reason?: string; _transaction_id: string }
+        Returns: boolean
+      }
+      billing_credit_stripe_topup: {
+        Args: {
+          _currency: string
+          _gross_cents: number
+          _metadata?: Json
+          _stripe_event_id: string
+          _stripe_payment_intent: string
+          _stripe_session_id: string
+          _user_id: string
+          _wallet_cents: number
+        }
+        Returns: {
+          duplicate: boolean
+          new_balance_cents: number
+          transaction_id: string
+        }[]
+      }
+      billing_refund: {
+        Args: {
+          _reason: string
+          _refund_micros: number
+          _transaction_id: string
+        }
+        Returns: string
+      }
+      billing_settle: {
+        Args: {
+          _actual_provider_cost_micros: number
+          _metadata?: Json
+          _provider_request_id?: string
+          _transaction_id: string
+          _usage?: Json
+        }
+        Returns: {
+          new_balance_cents: number
+          platform_fee_micros: number
+          total_billed_cents: number
+        }[]
       }
       check_ai_rate_limit: {
         Args: { _endpoint: string; _limit?: number; _window_seconds?: number }

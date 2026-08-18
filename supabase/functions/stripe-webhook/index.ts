@@ -101,21 +101,29 @@ async function markMoviePaid(projectId: string, paymentIntent: string | null, am
   }
 }
 
-async function grantCoinTopup(session: Stripe.Checkout.Session) {
+async function grantCoinTopup(session: Stripe.Checkout.Session, eventId: string) {
   const meta = session.metadata ?? {};
   const userId = meta.user_id;
-  const amount = Number(meta.wallet_cents ?? session.amount_total ?? 0);
-  if (!userId || !Number.isFinite(amount) || amount <= 0) {
-    log("coin topup missing metadata", { session_id: session.id, userId, amount });
+  const walletCents = Number(meta.wallet_cents ?? 0);
+  const grossCents = Number(session.amount_total ?? 0);
+  if (!userId || !Number.isFinite(walletCents) || walletCents <= 0 || grossCents <= 0) {
+    log("coin topup missing metadata", { session_id: session.id, userId, walletCents, grossCents });
     return;
   }
 
-  const { error } = await supabase.rpc("wallet_topup", {
+  const { data, error } = await supabase.rpc("billing_credit_stripe_topup", {
     _user_id: userId,
-    _amount_cents: Math.round(amount),
+    _stripe_event_id: eventId,
+    _stripe_session_id: session.id,
+    _stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
+    _wallet_cents: Math.round(walletCents),
+    _gross_cents: Math.round(grossCents),
+    _currency: session.currency ?? "usd",
+    _metadata: { checkout_mode: session.mode },
   });
   if (error) throw error;
-  log("coin topup credited", { user_id: userId, wallet_cents: Math.round(amount), session_id: session.id });
+  const result = Array.isArray(data) ? data[0] : data;
+  log(result?.duplicate ? "duplicate coin topup ignored" : "coin topup credited", { user_id: userId, wallet_cents: Math.round(walletCents), session_id: session.id });
 
   // Attribute the conversion for AI-search analytics (engine is joined by user_id).
   try {
@@ -123,7 +131,7 @@ async function grantCoinTopup(session: Stripe.Checkout.Session) {
       event_type: "topup",
       path: "/wallet",
       user_id: userId,
-      amount_cents: Math.round(amount),
+      amount_cents: Math.round(walletCents),
     });
   } catch (e) {
     console.error("[STRIPE-WEBHOOK] discovery log failed", e);
@@ -183,7 +191,7 @@ Deno.serve(async (req) => {
         const purchaseId = meta.purchase_id;
 
         if (purchaseType === "coin_topup") {
-          await grantCoinTopup(session);
+          await grantCoinTopup(session, event.id);
         } else if (purchaseId) {
           // Shop purchase — mark paid + bump creator download count
           const { data: existing } = await supabase
