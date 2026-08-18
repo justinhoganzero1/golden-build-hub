@@ -16,6 +16,14 @@ import {
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 
+export type PipelineStatus = "waiting" | "working" | "complete" | "failed" | "cancelled";
+export interface PipelineStep {
+  id: string;
+  label: string;
+  status: PipelineStatus;
+  error?: string;
+}
+
 export interface SuperAIActions {
   /** Do absolutely everything: storyboard art, voices, SFX, score, titles, credits, final cut. */
   runEverything: () => Promise<void> | void;
