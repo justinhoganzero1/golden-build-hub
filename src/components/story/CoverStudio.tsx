@@ -56,7 +56,6 @@ export default function CoverStudio({
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 31) + char.charCodeAt(0)) >>> 0, 7);
     return choices[seed % choices.length];
   }, [title, genre]);
-  const authorBelowTitle = layout === "title-author" || layout === "editorial";
   const coverTheme = useMemo(() => {
     const themes = ["electric", "coral", "violet", "emerald", "sunset"];
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 33) + char.charCodeAt(0)) >>> 0, 11);
