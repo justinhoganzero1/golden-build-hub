@@ -259,31 +259,36 @@ async function renderVideo(job: any) {
 }
 
 async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promise<string> {
-  // 1. Submit task
-  const submit = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RUNWAY_API_KEY}`,
-      "Content-Type": "application/json",
-      "X-Runway-Version": "2024-11-06",
-    },
-    body: JSON.stringify({
-      model: "gen3a_turbo",
-      promptText: (prompt ?? "").slice(0, 1000),
-      duration: Math.min(10, Math.max(5, Math.round(durationSec))),
-      ratio: "1280:768",
-    }),
-  });
-  if (!submit.ok) {
-    console.warn("[runway submit failed]", submit.status, await submit.text());
-    return "";
-  }
-  const submitJson = await submit.json();
-  const taskId = submitJson?.id;
-  if (!taskId) return "";
+  // 1. Resume an in-flight task if a previous tick already paid for one.
+  let taskId: string | undefined = (await providerState()).runway_task_id;
 
-  // 2. Poll up to 90s (worker tick is 60s; we leave headroom)
-  for (let attempt = 0; attempt < 18; attempt++) {
+  if (!taskId) {
+    const submit = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Runway-Version": "2024-11-06",
+      },
+      body: JSON.stringify({
+        model: "gen3a_turbo",
+        promptText: (prompt ?? "").slice(0, 1000),
+        duration: Math.min(10, Math.max(5, Math.round(durationSec))),
+        ratio: "1280:768",
+      }),
+    });
+    if (!submit.ok) {
+      console.warn("[runway submit failed]", submit.status, await submit.text());
+      return "";
+    }
+    const submitJson = await submit.json();
+    taskId = submitJson?.id;
+    if (!taskId) return "";
+    await rememberProvider({ runway_task_id: taskId });
+  }
+
+  // 2. Poll within this tick's budget; cron resumes the same task afterwards.
+  while (!outOfTime()) {
     await sleep(5000);
     const poll = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
       headers: {
@@ -294,15 +299,17 @@ async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promi
     if (!poll.ok) continue;
     const pj = await poll.json();
     if (pj.status === "SUCCEEDED") {
+      await forgetProvider("runway_task_id");
       return pj.output?.[0] ?? "";
     }
     if (pj.status === "FAILED") {
+      await forgetProvider("runway_task_id");
       throw new Error(`Runway task failed: ${pj.failure ?? "unknown"}`);
     }
   }
-  // Not done yet — throw to retry. The job will re-queue.
-  throw new Error("Runway task still rendering after 90s — will retry");
+  throw new RequeueSignal("runway");
 }
+
 
 async function replicateVideoFallback(prompt: string): Promise<string> {
   if (!REPLICATE_API_TOKEN) return "";
