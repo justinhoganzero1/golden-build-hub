@@ -45,10 +45,13 @@ Deno.serve(async (req) => {
     });
     const tok = await tokenRes.json();
     if (!tokenRes.ok) {
-      return new Response(JSON.stringify({ error: 'google_token_exchange_failed', detail: tok }), {
+      // Never echo Google's raw token-endpoint body back to the browser.
+      console.error('google_token_exchange_failed', tokenRes.status, tok?.error ?? 'unknown');
+      return new Response(JSON.stringify({ error: 'google_token_exchange_failed' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     // Get user's email from Google
     let email: string | null = null;
