@@ -627,7 +627,7 @@ const StoryWriterPage = () => {
     // The people and world stay recognisable, but the rear deliberately avoids
     // repeating the front's hero arrangement. This keeps continuity without
     // producing two near-identical poster compositions.
-    const CAST_LOCK = `CONTINUITY LOCK: recurring people must retain their exact faces, ages, builds, hair, skin tone and wardrobe across the book. Do not swap identities or alter established appearance.`;
+    const CAST_LOCK = `CONTINUITY LOCK: recurring people must retain their exact faces, ages, builds, hair, skin tone and wardrobe across the book. Do not swap identities or alter established appearance. If a character named Juzzy appears, he is ALWAYS the same man: a rugged mature Australian, shaved/close-buzzed head, weathered matte face, heavy stubble, scar over the brow, black rugged jacket and dark work trousers.`;
     if (slot === "cover") {
       basePrompt = `FRONT COVER background artwork for a ${story.genre} book. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the hero striding directly toward the camera, weapon in hand, mid-action with a huge explosion and flying debris erupting behind them, the principal cast in real emotion and tension, with wardrobe, era, location, weather and mood taken directly from the blurb above. Show the hero full-length from the top of the head to the boots. Vertical 2:3 portrait framing, subjects centred in the middle band, with calm uncluttered darker space across the top third and the bottom fifth so overlaid title and author type stays legible. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
