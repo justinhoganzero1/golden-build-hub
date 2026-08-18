@@ -17,7 +17,7 @@ import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
-import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus } from "@/components/movie/SuperAIPanel";
+import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus, type ExportSettings } from "@/components/movie/SuperAIPanel";
 
 
 
