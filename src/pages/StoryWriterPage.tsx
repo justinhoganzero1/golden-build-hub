@@ -533,15 +533,20 @@ const StoryWriterPage = () => {
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 3;
 
+  /** Hard framing rule: characters must always be shown whole, never decapitated by the frame. */
+  const HEAD_SAFE =
+    "MANDATORY FRAMING: every human in the picture must be shown with their WHOLE head, face and hair fully inside the frame with clear headroom above the skull — never crop, slice or cut off a head, chin, or top of the hair at the frame edge. No headless torsos, no faceless or back-of-head-only figures, no subjects bleeding off the top edge. Keep at least 12% empty safe margin around every person, and show recognisable faces with correct anatomy.";
+
   /** Shot recipes so every illustration is visually distinct even on short chapters. */
   const SHOT_VARIETY = [
-    "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins",
-    "inclusive medium-wide ensemble shot, all faces, hands and bodies fully inside frame, balanced foreground and background storytelling",
-    "immersive cinematic mosaic of three connected moments from this beat, seamless editorial composition with no borders and no text",
-    "high-angle action shot with motion blur and dynamic diagonal composition",
-    "dutch-angle dramatic shot at a different time of day",
-    "extreme close-up detail of a key object with the scene blurred behind",
+    "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins and full headroom",
+    "inclusive medium-wide ensemble shot, all heads, faces, hands and bodies fully inside frame with headroom, balanced foreground and background storytelling",
+    "immersive cinematic mosaic of three connected moments from this beat, each panel showing complete un-cropped figures, seamless editorial composition with no borders and no text",
+    "high-angle action shot with motion blur and dynamic diagonal composition, subjects complete head-to-toe inside frame",
+    "dutch-angle dramatic shot at a different time of day, full figures with headroom, no cropped heads",
+    "waist-up hero portrait moment with the full head and face in frame and the scene readable behind",
   ];
+
 
   /** Every URL this session has already placed in the book — used to reject duplicates. */
   const usedImageUrlsRef = useRef<Set<string>>(new Set());
