@@ -1698,6 +1698,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       if (layers.voice) play(await decode(s.audio_url), base + (s.voice_offset_sec ?? 0), 1);
       if (layers.sfx) play(await decode(s.sfx_url), base + (s.sfx_offset_sec ?? 0), s.sfx_volume ?? 0.6);
       if (layers.music) play(await decode(s.music_url), base, s.music_volume ?? 0.25);
+      // Host layer auditions with the voice lane
+      if (layers.voice && host.enabled) {
+        play(await decode(s.host_beat?.audio_url), base + (s.host_beat?.offset_sec ?? 0), 1);
+        const ivAt = base + (s.interview?.offset_sec ?? 0);
+        const hb = await decode(s.interview?.hostAudioUrl);
+        play(hb, ivAt, 1);
+        play(await decode(s.interview?.guestAudioUrl), ivAt + Math.min((hb?.duration ?? 0) + 0.25, 7.5), 1);
+      }
     }));
     if (layers.music && musicUrl) play(await decode(musicUrl), 0, musicVolume);
 
