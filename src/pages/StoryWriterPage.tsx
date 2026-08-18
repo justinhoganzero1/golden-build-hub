@@ -984,7 +984,7 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
   const WORD_STEP = 200;
   const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length;
 
-  /** Unique length target for a chapter: 20,000+ and > 200 words apart from every other chapter. */
+  /** Unique length target for a chapter: 15,000+ and > 200 words apart from every other chapter. */
   const targetWordsFor = (idx: number): number => {
     const taken = story.chapters
       .map((c, i) => (i === idx ? 0 : wordCount(c.content)))
@@ -1476,7 +1476,7 @@ BACK: <brief under 220 words>`,
     if (!editInstructions.trim()) { toast.error("Tell the AI what to change"); return; }
     try {
       const text = await callAI(
-        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 20,000+ words — never shorten). Return only the revised chapter prose.`,
+        `You are a master editor. Apply the user's edit instructions to the chapter. Preserve overall plot and length (still 15,000+ words — never shorten). Return only the revised chapter prose.`,
         `EDIT INSTRUCTIONS:\n${editInstructions}\n\nCHAPTER:\n${ch.content}`,
         { model: "google/gemini-2.5-pro", maxTokens: 16000 }
       );
@@ -2475,6 +2475,16 @@ BACK: <brief under 220 words>`,
                   <p className="text-[11px] text-muted-foreground">
                     The illustration team selects 3 high-value 4K realistic images: an establishing scene, an inclusive character scene, and an optional immersive mosaic. Composition QA prevents cropped heads, hands and important action.
                   </p>
+                )}
+                {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
+                  <div className="border-l-2 border-accent-blue/60 pl-2 space-y-1">
+                    <p className="text-[10px] font-black uppercase text-accent-blue">Illustration team shot list</p>
+                    {illustrationTeamNotes.map((note, index) => (
+                      <p key={`${index}-${note}`} className="text-[10px] leading-relaxed text-foreground/80">
+                        <strong>{index + 1}.</strong> {note}
+                      </p>
+                    ))}
+                  </div>
                 )}
               </div>
             );
