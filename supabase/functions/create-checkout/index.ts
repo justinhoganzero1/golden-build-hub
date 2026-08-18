@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -44,7 +45,7 @@ serve(async (req) => {
       if (customers.data.length > 0) customerId = customers.data[0].id;
     }
 
-    const origin = req.headers.get("origin") || "https://oracle-lunar.online";
+    const origin = safeOrigin(req);
 
     const isCoinTopup = !priceId;
     // Visitors pay 3× for the same coin pack; signed-up members pay 1×.

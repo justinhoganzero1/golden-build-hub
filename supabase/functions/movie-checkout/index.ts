@@ -4,6 +4,7 @@
 // On success, Stripe redirects to /movie-payment-success?session_id=cs_...
 // then frontend calls verify-movie-payment to mark project paid + queue rendering.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    const origin = req.headers.get("origin") ?? "https://oracle-lunar.online";
+    const origin = safeOrigin(req);
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
