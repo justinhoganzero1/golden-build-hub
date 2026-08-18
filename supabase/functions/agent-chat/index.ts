@@ -188,7 +188,7 @@ serve(async (req) => {
     // user's wallet — otherwise a deliberately-broken BYOK key buys free compute.
     if (usedByok && !resp.ok && [401, 402, 403, 429].includes(resp.status)) {
       const detail = await resp.text().catch(() => "");
-      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 300));
+      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 120).replace(/[A-Za-z0-9_-]{20,}/g, "[redacted]"));
 
       if (userId) {
         try {
