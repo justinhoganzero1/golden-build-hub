@@ -355,25 +355,29 @@ async function lovableVideoFallback(prompt: string, durationSec: number): Promis
     const opId: string | undefined = sj?.id || sj?.operation_id;
     if (!opId) return "";
     await rememberProvider({ veo_operation_id: opId });
-    while (!outOfTime()) {
-      await sleep(5000);
-      const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
-      });
-      if (!op.ok) continue;
-      const oj = await op.json();
-      const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
-      if (url) { await forgetProvider("veo_operation_id"); return url; }
-      if (oj?.status === "failed" || oj?.error) { await forgetProvider("veo_operation_id"); return ""; }
-    }
-    throw new RequeueSignal("lovable-veo");
+    return await pollVeo(opId);
   } catch (e) {
     if (e instanceof RequeueSignal) throw e;
     console.warn("[lovable video error]", e);
     return "";
   }
-
 }
+
+async function pollVeo(opId: string): Promise<string> {
+  while (!outOfTime()) {
+    await sleep(5000);
+    const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+    });
+    if (!op.ok) continue;
+    const oj = await op.json();
+    const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
+    if (url) { await forgetProvider("veo_operation_id"); return url; }
+    if (oj?.status === "failed" || oj?.error) { await forgetProvider("veo_operation_id"); return ""; }
+  }
+  throw new RequeueSignal("lovable-veo");
+}
+
 
 async function generateSceneKeyframe(prompt: string): Promise<string> {
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
