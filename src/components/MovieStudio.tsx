@@ -2234,11 +2234,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         };
         reader.readAsDataURL(blob);
       }
-      toast.success("Movie published — saved to your library and ready to share!");
+
+      // Render report — timeline, voices, music, SFX and any errors from this run
+      if (missingAudio > 0) renderErrors.push(`${missingAudio} scene(s) rendered without narration.`);
+      if (ready.length !== scenes.length) renderErrors.push(`${scenes.length - ready.length} scene(s) skipped — no artwork.`);
+      pipeline.filter(p => p.status === "failed").forEach(p => renderErrors.push(`Pipeline step "${p.label}" failed: ${p.error || "unknown error"}`));
+      setRenderReport(buildRenderReport({
+        errors: renderErrors,
+        blobBytes: blob.size,
+        durationSec: ready.reduce((a, s) => a + (s.duration_sec || CLIP_SECONDS), 0),
+        usedScenes: ready,
+      }));
+      toast.success("Movie published — render report ready in Super AI");
 
     } catch (e) {
       console.error(e); toast.error("Export failed");
+      setRenderReport(buildRenderReport({
+        errors: [e instanceof Error ? e.message : "Export failed"],
+        usedScenes: scenes.filter(s => s.image_url),
+      }));
     } finally { setExporting(false); }
+
   };
 
   const totalSec = scenes.length * CLIP_SECONDS;
