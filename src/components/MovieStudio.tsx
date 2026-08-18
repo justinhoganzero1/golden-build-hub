@@ -183,6 +183,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [sfxProgress, setSfxProgress] = useState<{ done: number; total: number } | null>(null);
   const [productionSwarm, setProductionSwarm] = useState<ProductionAgent[]>(PRODUCTION_AGENTS);
   const [productionSwarmBusy, setProductionSwarmBusy] = useState(false);
+  // Super AI step-by-step pipeline
+  const [pipeline, setPipeline] = useState<PipelineStep[]>([]);
+  const [superAIRunning, setSuperAIRunning] = useState(false);
+  const [superAIStep, setSuperAIStep] = useState(0);
+  const [musicCueProgress, setMusicCueProgress] = useState<{ done: number; total: number } | null>(null);
+  const superAICancel = useRef(false);
   // Music suite
   const [musicPrompt, setMusicPrompt] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
