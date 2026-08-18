@@ -552,30 +552,41 @@ async function upscale(job: any, factor: 4 | 8) {
 }
 
 async function replicateUpscale(version: string, videoUrl: string, scale: number): Promise<string> {
-  const r = await fetch("https://api.replicate.com/v1/predictions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-      "Content-Type": "application/json",
-      "Prefer": "wait",
-    },
-    body: JSON.stringify({ version, input: { video: videoUrl, scale } }),
-  });
-  if (!r.ok) return "";
-  const j = await r.json();
-  if (j.status === "succeeded") return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
-  // Poll for up to 60s
-  let url = j.urls?.get;
-  if (!url) return "";
-  for (let i = 0; i < 12; i++) {
+  // Resume a prediction started on an earlier tick rather than paying twice.
+  let url: string | undefined = (await providerState()).replicate_poll_url;
+  if (!url) {
+    const r = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+      },
+      body: JSON.stringify({ version, input: { video: videoUrl, scale } }),
+    });
+    if (!r.ok) return "";
+    const j = await r.json();
+    if (j.status === "succeeded") return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
+    url = j.urls?.get;
+    if (!url) return "";
+    await rememberProvider({ replicate_poll_url: url });
+  }
+  while (!outOfTime()) {
     await sleep(5000);
     const p = await fetch(url, { headers: { "Authorization": `Token ${REPLICATE_API_TOKEN}` } });
     const pj = await p.json();
-    if (pj.status === "succeeded") return Array.isArray(pj.output) ? pj.output[0] : (pj.output ?? "");
-    if (pj.status === "failed") throw new Error(`Replicate upscale failed: ${pj.error}`);
+    if (pj.status === "succeeded") {
+      await forgetProvider("replicate_poll_url");
+      return Array.isArray(pj.output) ? pj.output[0] : (pj.output ?? "");
+    }
+    if (pj.status === "failed") {
+      await forgetProvider("replicate_poll_url");
+      throw new Error(`Replicate upscale failed: ${pj.error}`);
+    }
   }
-  throw new Error("Replicate upscale still running — will retry");
+  throw new RequeueSignal("replicate-upscale");
 }
+
 
 // ============= STITCH (FFmpeg via Replicate, with caption burn-in) =============
 async function stitchProject(job: any) {
