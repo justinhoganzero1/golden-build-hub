@@ -326,9 +326,13 @@ async function replicateVideoFallback(prompt: string): Promise<string> {
 // Free internal fallback: generate a still with Gemini, then animate via Lovable Veo.
 async function lovableVideoFallback(prompt: string, durationSec: number): Promise<string> {
   try {
+    // Resume an operation started on an earlier tick — never re-generate.
+    const resumeOp: string | undefined = (await providerState()).veo_operation_id;
+    if (resumeOp) return await pollVeo(resumeOp);
     const imageDataUrl = await generateSceneKeyframe(prompt);
     if (!imageDataUrl) return "";
     const duration = durationSec <= 5 ? 5 : 10;
+
     const veoPrompt = (`Cinematic motion, smooth camera movement, natural subject motion. ${prompt ?? ""}`).slice(0, 480);
     const submit = await fetch("https://ai.gateway.lovable.dev/v1/video/generations", {
       method: "POST",
