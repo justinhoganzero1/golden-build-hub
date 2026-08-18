@@ -674,7 +674,105 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     }
   };
 
+  // ----- Movie Host: portrait, voices, interviews -----
+  /** Render text to speech and return it as a data URL (used by the host layer). */
+  const ttsToDataUrl = async (text: string, voiceId: string): Promise<string | null> => {
+    try {
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ text, voiceId }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
+        else toast.error("Voice generation failed");
+        return null;
+      }
+      const blob = await resp.blob();
+      return await new Promise<string>((res, rej) => {
+        const r = new FileReader(); r.onloadend = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.error("[ttsToDataUrl]", e);
+      toast.error("Voice generation failed");
+      return null;
+    }
+  };
+
+  const generateHostPortrait = async (look: string) => {
+    setGeneratingPortrait(true);
+    try {
+      const prompt = hostPortraitPrompt(host.name || "the host", host.title || "", look);
+      const resp = await fetch(GEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!resp.ok) {
+        if (resp.status === 402) { setCreditsLow(true); toast.error("AI credits exhausted."); }
+        else toast.error("Host portrait failed");
+        return;
+      }
+      const data = await resp.json();
+      const url = data.images?.[0]?.image_url?.url;
+      if (!url) { toast.error("No portrait returned"); return; }
+      patchHost({ imageUrl: url, enabled: true });
+      if (user) saveMedia.mutate({
+        media_type: "image",
+        title: `Movie host — ${host.name}`,
+        url,
+        source_page: "movie-studio-host",
+        metadata: { look },
+      });
+      toast.success("Host is on camera");
+    } finally {
+      setGeneratingPortrait(false);
+    }
+  };
+
+  /** Voice one host piece-to-camera. */
+  const voiceHostBeat = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    const beat = scene?.host_beat;
+    if (!beat?.line?.trim()) { toast.error("Write the host's line first"); return; }
+    updateScene(sceneId, { host_beat: { ...beat, generating: true } });
+    const url = await ttsToDataUrl(beat.line.trim(), host.voiceId);
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? { ...s, host_beat: { ...(s.host_beat as HostBeat), audio_url: url ?? undefined, generating: false } }
+      : s));
+    if (url) toast.success("Host line recorded — lip-sync is live");
+  };
+
+  /** Voice both sides of a ≤8s live interview. */
+  const voiceInterview = async (sceneId: string) => {
+    const scene = scenes.find(s => s.id === sceneId);
+    const iv = scene?.interview;
+    if (!iv?.hostLine?.trim() || !iv?.guestLine?.trim()) {
+      toast.error("Write both the host question and the guest answer"); return;
+    }
+    updateScene(sceneId, { interview: { ...iv, generating: true } });
+    const [hostUrl, guestUrl] = await Promise.all([
+      ttsToDataUrl(iv.hostLine.trim(), host.voiceId),
+      ttsToDataUrl(iv.guestLine.trim(), iv.guestVoiceId),
+    ]);
+    setScenes(prev => prev.map(s => s.id === sceneId
+      ? {
+          ...s,
+          interview: {
+            ...(s.interview as InterviewBeat),
+            hostAudioUrl: hostUrl ?? undefined,
+            guestAudioUrl: guestUrl ?? undefined,
+            seconds: clampInterviewSeconds((s.interview as InterviewBeat).seconds),
+            generating: false,
+          },
+        }
+      : s));
+    if (hostUrl && guestUrl) toast.success("Interview recorded — both avatars will lip-sync");
+  };
+
   // ----- Generate REAL AI motion video for a scene -----
+
   // Engine = "gemini" (free, default) or "runway" (premium quality, requires RUNWAY_API_KEY).
   // Length = 5 or 10 seconds per scene (set on the scene card).
   const generateSceneVideo = async (sceneId: string) => {
