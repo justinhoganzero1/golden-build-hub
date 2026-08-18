@@ -18,7 +18,28 @@ export interface BakeTextOptions {
   height?: number;
   /** Per-book typography treatment selected from the book identity. */
   layout?: "masthead" | "title-author" | "cinematic" | "editorial";
+  /** Explicit design decision made by the cover design agent. */
+  design?: CoverDesign;
 }
+
+/** What the DESIGN DIRECTOR agent returns and the compositor obeys. */
+export type CoverDesign = {
+  /** One of the named typographic identities below. */
+  identityKey?: string;
+  layout?: "masthead" | "title-author" | "cinematic" | "editorial";
+  /** Optional palette overrides, hex. */
+  light?: string;
+  mid?: string;
+  deep?: string;
+  accent?: string;
+  /** Optional extra letter-spacing on the title, fraction of font size. */
+  tracking?: number;
+}
+
+export const COVER_IDENTITY_KEYS = [
+  "blockbuster", "pulp", "literary", "epic", "brutalist", "poster", "neon",
+] as const;
+
 
 type CoverIdentity = {
   display: string;
