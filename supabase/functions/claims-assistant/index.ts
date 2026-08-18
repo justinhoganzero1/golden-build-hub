@@ -115,6 +115,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
   } catch (e) {
+    if (e instanceof AiGatewayError) return aiGatewayErrorResponse(e.upstreamStatus, corsHeaders);
+    console.error("claims-assistant error:", e);
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
