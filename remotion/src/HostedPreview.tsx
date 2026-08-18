@@ -136,9 +136,9 @@ const Grade: React.FC = () => (
 
 /* ------------------------------- scenes ------------------------------- */
 
-const StudioSeg: React.FC<{ seg: Seg; len: number }> = ({ seg, len }) => {
+const StudioSeg: React.FC<{ seg: Seg; len: number; pre: number }> = ({ seg, len, pre }) => {
   const frame = useCurrentFrame();
-  const level = envAt(seg.env, frame);
+  const level = envAt(seg.env, frame - pre);
   const t = frame / FPS;
   const fade = Math.min(
     interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" }),
@@ -204,9 +204,9 @@ const StudioSeg: React.FC<{ seg: Seg; len: number }> = ({ seg, len }) => {
   );
 };
 
-const CornerSeg: React.FC<{ seg: Seg; len: number }> = ({ seg, len }) => {
+const CornerSeg: React.FC<{ seg: Seg; len: number; pre: number }> = ({ seg, len, pre }) => {
   const frame = useCurrentFrame();
-  const level = envAt(seg.env, frame);
+  const level = envAt(seg.env, frame - pre);
   const t = frame / FPS;
   const p = frame / len;
   const zoom = interpolate(p, [0, 1], [1.06, 1.18]);
@@ -271,9 +271,9 @@ const CornerSeg: React.FC<{ seg: Seg; len: number }> = ({ seg, len }) => {
   );
 };
 
-const InterviewSeg: React.FC<{ seg: Seg; len: number }> = ({ seg, len }) => {
+const InterviewSeg: React.FC<{ seg: Seg; len: number; pre: number }> = ({ seg, len, pre }) => {
   const frame = useCurrentFrame();
-  const level = envAt(seg.env, frame);
+  const level = envAt(seg.env, frame - pre);
   const t = frame / FPS;
   const oSpeaking = seg.speaker === "o";
   const fade = Math.min(
@@ -367,7 +367,7 @@ export const HostedPreview: React.FC = () => (
       const Comp = seg.mode === "studio" ? StudioSeg : seg.mode === "corner" ? CornerSeg : InterviewSeg;
       return (
         <Sequence key={seg.i} from={Math.max(0, from)} durationInFrames={len}>
-          <Comp seg={seg} len={len} />
+          <Comp seg={seg} len={len} pre={idx === 0 ? 0 : 6} />
         </Sequence>
       );
     })}
