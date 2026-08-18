@@ -24,6 +24,27 @@ export interface PipelineStep {
   error?: string;
 }
 
+export interface PipelineArtifact {
+  id: string;
+  label: string;
+  have: number;
+  total: number;
+}
+
+export interface AuditionLayers {
+  music: boolean;
+  sfx: boolean;
+  voice: boolean;
+  credits: boolean;
+}
+
+export interface ExportSettings {
+  resolution: "720p" | "1080p" | "1440p" | "4k";
+  bitrateMbps: number;
+  container: "webm" | "mp4";
+}
+
+
 export interface SuperAIActions {
   /** Do absolutely everything: storyboard art, voices, SFX, score, titles, credits, final cut. */
   runEverything: () => Promise<void> | void;
