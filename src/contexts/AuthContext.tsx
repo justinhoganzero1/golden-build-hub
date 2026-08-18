@@ -31,6 +31,22 @@ const captureRefFromUrl = () => {
 
 const REWARD_FLAG_PREFIX = "oracle-lunar-reward-granted-";
 
+// Every signed-in account provisions its OWN role + profile + wallet, so all
+// AI usage is metered and paid inside that user's account. Idempotent server
+// side; we only de-dupe per browser session to avoid extra calls.
+const ensureOwnAccount = (userId: string) => {
+  try {
+    const key = `oracle-lunar-account-ready-${userId}`;
+    if (sessionStorage.getItem(key)) return;
+    supabase.functions
+      .invoke("ensure-account")
+      .then(({ error }) => {
+        if (!error) sessionStorage.setItem(key, "1");
+      })
+      .catch(() => {});
+  } catch {}
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -44,6 +60,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (session?.user) {
+          const uid = session.user.id;
+          setTimeout(() => ensureOwnAccount(uid), 0);
+        }
 
         // Best-effort welcome-reward trigger after email-confirmation sign-in.
         // Idempotent on the server, but we add a per-user flag to avoid spam.
@@ -70,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (session) {
         setSession(session);
         setUser(session.user);
+        ensureOwnAccount(session.user.id);
       }
       // No anonymous fallback — visitors must hit /sign-in to either log in
       // or join. This is intentional: every action should be tied to a
