@@ -381,6 +381,8 @@ const App = () => (
                   <Route path="/.lovable/oauth/consent" element={<ErrorBoundary pageName="OAuth Consent"><OAuthConsentPage /></ErrorBoundary>} />
                   <Route path="/settings/authorizations" element={<RequireAuth><ErrorBoundary pageName="Connected Apps"><OAuthAuthorizationsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/settings/connected-apps" element={<RequireAuth><ErrorBoundary pageName="Connected Apps"><OAuthAuthorizationsPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/settings/mcp" element={<RequireAuth><ErrorBoundary pageName="MCP Server"><MCPServerPage /></ErrorBoundary></RequireAuth>} />
+
                   <Route path="/verify-phone" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
                   <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
