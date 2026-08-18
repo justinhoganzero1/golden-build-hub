@@ -2216,6 +2216,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             busy={imgBusy}
             prompt={coverPrompt}
             onPromptChange={setCoverPrompt}
+            swarmBusy={coverSwarm}
+            onRunSwarm={runCoverSwarm}
             storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
             onGenerateBoth={async () => {
               await generateStoryImage("cover", coverPrompt);
