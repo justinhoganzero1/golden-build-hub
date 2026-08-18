@@ -41,27 +41,17 @@ export async function getUserFromRequest(req: Request): Promise<{ id: string; em
 }
 
 /**
- * Returns true if this request originated from a Lovable preview/published
- * URL (lovable.app / lovable.dev / lovableproject.com). On those origins
- * Lovable covers AI fees so visitors can preview freely — no wallet charge.
+ * Deprecated: no origin is exempt from billing any more. Every signed-in user
+ * pays their own provider cost + 10% from their own wallet.
  */
-export function isLovablePreviewOrigin(req: Request): boolean {
-  const origin = (req.headers.get("origin") || req.headers.get("referer") || "").toLowerCase();
-  if (!origin) return false;
-  try {
-    const u = new URL(origin);
-    const h = u.hostname;
-    return h.endsWith(".lovable.app") || h.endsWith(".lovable.dev") || h.endsWith(".lovableproject.com");
-  } catch {
-    return /\.lovable\.app|\.lovable\.dev|\.lovableproject\.com/.test(origin);
-  }
+export function isLovablePreviewOrigin(_req: Request): boolean {
+  return false;
 }
 
 /**
  * Charge a user's coin wallet for an AI call.
- * Provider cost is marked up by 5% (see pricing.ts) and recorded in ai_charges.
- * Anonymous visitors are billed 3× by the SQL function automatically.
- * Lovable preview origins are not charged at all (Lovable covers preview AI).
+ * Provider cost is marked up by 10% (see pricing.ts) and recorded in ai_charges
+ * under that user's own user_id — usage and billing are fully per-user.
  * Throws InsufficientCoinsError if balance is too low.
  */
 export async function chargeAI(
@@ -69,13 +59,11 @@ export async function chargeAI(
   service: string,
   provider_cost_cents: number,
   metadata: Record<string, unknown> = {},
-  req?: Request,
+  _req?: Request,
 ): Promise<ChargeResult> {
-  if (req && isLovablePreviewOrigin(req)) {
-    return { charge_id: "preview-free", total_cents: 0, new_balance_cents: 0 };
-  }
   const { provider_cost_cents: prov, platform_fee_cents: fee } = markupCents(provider_cost_cents);
   const client = createClient(SUPABASE_URL, SERVICE_KEY);
+
   const { data, error } = await client.rpc("wallet_charge_ai", {
     _user_id: user_id,
     _service: service,
