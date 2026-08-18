@@ -144,7 +144,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       sx = (img.width - sw) / 2;
     } else if (srcAR < dstAR) {
       sh = img.width / dstAR;
-      sy = (img.height - sh) * 0.18; // keep heads in frame
+      sy = (img.height - sh) * 0.06; // keep heads in frame
     }
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
   }
@@ -159,42 +159,44 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const identity = coverIdentity(title, opts.genre);
 
   if (opts.slot === "cover") {
-    scrim(ctx, W, 0, H * 0.42, "top");
-    let y = layout === "editorial" ? H * 0.12 : H * 0.055;
+    // Bottom-anchored masthead: the hero artwork stays completely unobstructed
+    // in the upper two-thirds; title + author sit in the lower band.
+    scrim(ctx, W, H * 0.52, H * 0.48, "bottom");
+
+    const t = fitLines(ctx, title, inner, H * 0.22, W * 0.13, "900", identity.display, 1.02);
+    const titleBlock = t.lines.length * t.lineHeight;
+    const authorSize = W * 0.05;
+    const genreSize = W * 0.026;
+
+    const bottomPad = H * 0.055;
+    const authorY = H - bottomPad - authorSize * 1.2;
+    const ruleY = authorY - W * 0.035;
+    const titleY = ruleY - W * 0.03 - titleBlock;
+    const genreY = titleY - W * 0.055;
 
     if (opts.genre) {
-      ctx.font = `700 ${W * 0.026}px ${identity.body}`;
+      ctx.font = `700 ${genreSize}px ${identity.body}`;
       ctx.fillStyle = identity.accent;
-      ctx.fillText(opts.genre.toUpperCase().split("").join(" "), W / 2, y);
-      y += W * 0.055;
+      ctx.fillText(opts.genre.toUpperCase().split("").join(" "), W / 2, genreY);
     }
 
-    ctx.fillStyle = identity.accent;
-    ctx.fillRect(W * 0.2, y, W * 0.6, Math.max(1, W * 0.002));
-    y += W * 0.035;
-
-    const t = fitLines(ctx, title, inner, H * 0.24, W * 0.13, "900", identity.display, 1.02);
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.02;
     ctx.shadowOffsetY = W * 0.006;
-    ctx.fillStyle = titleGradient(ctx, y, t.lines.length * t.lineHeight, identity);
-    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * t.lineHeight));
+    ctx.fillStyle = titleGradient(ctx, titleY, titleBlock, identity);
+    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, titleY + i * t.lineHeight));
     ctx.restore();
-    y += t.lines.length * t.lineHeight + W * 0.03;
 
     ctx.fillStyle = identity.accent;
-    ctx.fillRect(W * 0.33, y, W * 0.34, Math.max(1, W * 0.0015));
+    ctx.fillRect(W * 0.33, ruleY, W * 0.34, Math.max(1, W * 0.0018));
 
     // The author credit is deliberately flexible per book. Keep it as the
     // author's name alone and never duplicate it on the rear.
-    const authorBelowTitle = layout === "title-author" || layout === "editorial";
-    const authorY = authorBelowTitle ? y + W * 0.05 : H * 0.92;
-    if (!authorBelowTitle) scrim(ctx, W, H * 0.76, H * 0.24, "bottom");
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.015;
-    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${W * (authorBelowTitle ? 0.043 : 0.052)}px ${identity.body}`;
+    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${authorSize}px ${identity.body}`;
     ctx.fillStyle = identity.light;
     ctx.fillText(layout === "editorial" ? author : author.toUpperCase(), W / 2, authorY);
     ctx.restore();
