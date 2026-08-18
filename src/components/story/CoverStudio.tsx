@@ -1,4 +1,4 @@
-import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked } from "lucide-react";
+import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 
 /**
@@ -8,6 +8,10 @@ import { SignedImage } from "@/components/SignedMedia";
  * blurbs, no lettering of any kind — models render text badly). Every word you
  * see on the covers below is real HTML/CSS laid over the artwork, so the title,
  * author and blurb are always crisp, correctly spelled and guaranteed present.
+ *
+ * A team of AI agents (casting, art direction, copywriter, critic, lead) can
+ * design both covers and write the back-cover blurb straight from the finished
+ * book, so no two books ever get the same generic cover.
  */
 export interface CoverStudioProps {
   title: string;
@@ -24,15 +28,20 @@ export interface CoverStudioProps {
   onClearSlot: (slot: "cover" | "back") => void;
   onPickSlot: (slot: "cover" | "back") => void;
   storyWordCount: number;
+  /** Live status line while the cover agent swarm is running. */
+  swarmBusy?: string | null;
+  /** Launch the cover agent swarm. */
+  onRunSwarm?: () => void;
 }
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
   prompt, onPromptChange, onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
-  storyWordCount,
+  storyWordCount, swarmBusy, onRunSwarm,
 }: CoverStudioProps) {
-  const anyBusy = !!busy;
+  const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
+
 
   return (
     <section className="rounded-2xl border border-primary/40 bg-gradient-to-b from-primary/10 to-transparent p-3 space-y-3">
