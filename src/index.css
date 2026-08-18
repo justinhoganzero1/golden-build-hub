@@ -142,6 +142,24 @@ All colors MUST be HSL.
 
 /* ── Holographic 3D tile system ── */
 @layer components {
+  .cover-identity {
+    --cover-a: 190 100% 65%;
+    --cover-b: 220 100% 56%;
+    --cover-c: 346 100% 60%;
+    --cover-font: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  }
+  .cover-identity-coral { --cover-a: 44 100% 69%; --cover-b: 20 100% 58%; --cover-c: 346 82% 55%; --cover-font: Rockwell, 'Courier New', serif; }
+  .cover-identity-violet { --cover-a: 270 100% 91%; --cover-b: 267 82% 70%; --cover-c: 48 100% 62%; --cover-font: 'Palatino Linotype', Palatino, serif; }
+  .cover-identity-emerald { --cover-a: 142 100% 91%; --cover-b: 143 75% 57%; --cover-c: 337 100% 65%; --cover-font: 'Trebuchet MS', Arial, sans-serif; }
+  .cover-identity-sunset { --cover-a: 32 100% 94%; --cover-b: 48 100% 60%; --cover-c: 8 86% 54%; --cover-font: 'Arial Black', Arial, sans-serif; }
+  .cover-title-scrim { background: linear-gradient(to bottom, hsl(0 0% 0% / .9), hsl(var(--cover-b) / .24), transparent); }
+  .cover-display-title { font-family: var(--cover-font); letter-spacing: 0; color: hsl(var(--cover-a)); text-shadow: 0 3px 0 hsl(var(--cover-c) / .8), 0 7px 18px hsl(0 0% 0% / .95); }
+  .cover-kicker { color: hsl(var(--cover-c)); letter-spacing: .18em; }
+  .cover-rule { background: linear-gradient(to right, transparent, hsl(var(--cover-c)), transparent); }
+  .cover-blurb-panel { background: hsl(0 0% 3% / .88); border: 1px solid hsl(var(--cover-b) / .72); box-shadow: 0 18px 60px hsl(0 0% 0% / .9); }
+  .cover-blurb-copy { color: hsl(0 0% 100% / .96); text-shadow: 0 2px 6px hsl(0 0% 0% / .95); }
+  .cover-blurb-copy::first-letter { color: hsl(var(--cover-c)); }
+
   .holo-tile {
     position: relative;
     overflow: hidden;

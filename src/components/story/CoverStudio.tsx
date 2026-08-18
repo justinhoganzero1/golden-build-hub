@@ -38,13 +38,14 @@ export interface CoverStudioProps {
   swarmBusy?: string | null;
   /** Launch the cover agent swarm. */
   onRunSwarm?: () => void;
+  teamNotes?: string[];
 }
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
   prompt, onPromptChange, frontDirection, backDirection,
   onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
-  storyWordCount, swarmBusy, onRunSwarm,
+  storyWordCount, swarmBusy, onRunSwarm, teamNotes = [],
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
@@ -55,6 +56,11 @@ export default function CoverStudio({
     return choices[seed % choices.length];
   }, [title, genre]);
   const authorBelowTitle = layout === "title-author" || layout === "editorial";
+  const coverTheme = useMemo(() => {
+    const themes = ["electric", "coral", "violet", "emerald", "sunset"];
+    const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 33) + char.charCodeAt(0)) >>> 0, 11);
+    return themes[seed % themes.length];
+  }, [title, genre]);
 
   const dataUrlToFile = async (dataUrl: string, name: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -164,7 +170,20 @@ export default function CoverStudio({
         {anyBusy ? "Building both covers from your book…" : "Rebuild both with current directions"}
       </Button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3">
+      {teamNotes.length > 0 && (
+        <div className="mx-3 border border-accent-blue/40 bg-background/70 p-3">
+          <p className="text-[11px] font-black uppercase text-accent-blue">Creative team decisions</p>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {teamNotes.map((note, index) => (
+              <p key={`${index}-${note}`} className="text-[10px] leading-relaxed text-foreground/85">
+                <span className="font-bold text-primary">{index + 1}.</span> {note}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={`cover-identity cover-identity-${coverTheme} grid grid-cols-1 sm:grid-cols-2 gap-4 px-3`}>
         {(["cover", "back"] as const).map(slot => {
           const url = slot === "cover" ? coverImage : backImage;
           const isBusy = busy === slot;
@@ -190,26 +209,19 @@ export default function CoverStudio({
                 {slot === "cover" ? (
                   <>
                     {/* Top: series/genre rule + big title */}
-                    <div className="absolute inset-x-0 top-0 px-4 pt-4 pb-10 bg-gradient-to-b from-black/90 via-black/60 to-transparent">
+                    <div className="cover-title-scrim absolute inset-x-0 top-0 px-4 pt-4 pb-10">
                       {genre && (
-                        <p className="text-center text-amber-300/90 text-[clamp(0.4rem,1.1vw,0.6rem)] font-semibold uppercase tracking-[0.42em] mb-1.5">
+                        <p className="cover-kicker text-center text-[clamp(0.4rem,1.1vw,0.6rem)] font-semibold uppercase mb-1.5">
                           {genre}
                         </p>
                       )}
-                      <div className="mx-auto mb-2 h-px w-2/3 bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" />
+                      <div className="cover-rule mx-auto mb-2 h-px w-2/3" />
                       <h3
-                        className="text-center font-black uppercase leading-[0.92] tracking-[-0.01em] text-[clamp(1rem,4.6vw,2.3rem)]"
-                        style={{
-                          backgroundImage: "linear-gradient(180deg,#fff7e0 0%,#ffd77a 48%,#c9962f 100%)",
-                          WebkitBackgroundClip: "text",
-                          backgroundClip: "text",
-                          color: "transparent",
-                          filter: "drop-shadow(0 3px 10px rgba(0,0,0,0.95)) drop-shadow(0 0 1px rgba(0,0,0,0.9))",
-                        }}
+                        className="cover-display-title text-center font-black uppercase leading-[0.92] text-[clamp(1rem,4.6vw,2.3rem)]"
                       >
                         {title || "Your Title Here"}
                       </h3>
-                      <div className="mx-auto mt-2 h-px w-1/3 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+                      <div className="cover-rule mx-auto mt-2 h-px w-1/3" />
                       {authorBelowTitle && author && (
                         <p className="mt-3 text-center text-foreground text-[clamp(0.55rem,1.7vw,0.85rem)] font-bold uppercase drop-shadow-lg">
                           {author}
@@ -227,27 +239,20 @@ export default function CoverStudio({
                 ) : (
                   <>
                     {/* Back: title band at top */}
-                    <div className="absolute inset-x-0 top-0 px-4 pt-3 pb-8 bg-gradient-to-b from-black/90 via-black/55 to-transparent">
+                    <div className="cover-title-scrim absolute inset-x-0 top-0 px-4 pt-3 pb-8">
                       <h3
-                        className="text-center font-black uppercase leading-[0.95] tracking-tight text-[clamp(0.7rem,3vw,1.4rem)]"
-                        style={{
-                          backgroundImage: "linear-gradient(180deg,#fff7e0 0%,#ffd77a 50%,#c9962f 100%)",
-                          WebkitBackgroundClip: "text",
-                          backgroundClip: "text",
-                          color: "transparent",
-                          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.95))",
-                        }}
+                        className="cover-display-title text-center font-black uppercase leading-[0.95] text-[clamp(0.7rem,3vw,1.4rem)]"
                       >
                         {title || "Your Title Here"}
                       </h3>
-                      <div className="mx-auto mt-1.5 h-px w-1/2 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+                      <div className="cover-rule mx-auto mt-1.5 h-px w-1/2" />
                     </div>
 
                     {/* Back: AI-written blurb card */}
                     <div className="absolute inset-x-0 top-[22%] bottom-[18%] flex items-center justify-center px-3">
-                      <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/[0.92] backdrop-blur-[10px] border border-amber-300/60 px-3.5 py-3.5 shadow-[0_18px_60px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(0,0,0,0.6)]">
+                      <div className="cover-blurb-panel w-full max-h-full overflow-y-auto px-3.5 py-3.5">
                         {blurb?.trim() ? (
-                          <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
+                          <p className="cover-blurb-copy text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap first-letter:text-[1.9em] first-letter:font-black first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
                             {blurb.trim()}
                           </p>
                         ) : (
@@ -280,15 +285,6 @@ export default function CoverStudio({
                 )}
               </div>
 
-              <div className="px-3 py-2 border-t border-border bg-background/60 min-h-14">
-                <p className="text-[10px] font-semibold text-primary uppercase tracking-wider">
-                  {slot === "cover" ? "Front concept" : "Rear concept"}
-                </p>
-                <p className="text-[10px] text-muted-foreground line-clamp-2">
-                  {(slot === "cover" ? frontDirection : backDirection) ||
-                    (slot === "cover" ? "Iconic sales image from the finished book" : "Distinct story aftermath with clear blurb space")}
-                </p>
-              </div>
               <Button
                 type="button"
                 variant="ghost"
