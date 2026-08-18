@@ -1,71 +1,108 @@
-# State-of-the-Art Per-User AI Billing
+# Oracle Lunar Per-User Billing 2.0
 
-## Goal
-Replace estimated, fragmented charging with one server-enforced metering platform where every authenticated user has an isolated account, every paid AI/provider operation is attributable to that user, and the final charge is actual provider cost plus a 10% platform markup.
+## Expert verdict
+Three independent reviews—a principal fintech architect, an adversarial payments reviewer, and an AI FinOps architect—rejected the current implementation for production approval.
 
-## Architecture
+Key blockers:
+- Many paid AI/provider routes do not debit a user's wallet at all.
+- Stripe webhook retries can credit the same top-up more than once.
+- Movie rendering uses a race-prone manual balance update outside the billing engine.
+- Most charges are estimates, not actual tokens, characters, seconds, images, or provider cost.
+- Failed work can remain charged because there is no universal hold, settlement, cancellation, and refund lifecycle.
+- “Unlimited” and admin paths hide real economic cost from reporting.
+- Provider pricing and markup rules are duplicated and inconsistent.
+
+## Target experience
+Every signed-in member receives an isolated billing account. Every paid operation follows one auditable lifecycle:
+
 ```text
-Signed-in user
-  -> authenticated AI operation
-  -> idempotent usage request
-  -> wallet preauthorization hold
+Authenticated user
+  -> unique usage request
+  -> server-calculated quote
+  -> wallet hold
   -> provider execution
-  -> measured usage / provider receipt
-  -> actual-cost settlement (+10%)
-  -> immutable ledger + user receipt
-  -> reconciliation / automatic refund of unused hold
+  -> actual usage measurement
+  -> settlement at provider cost + 10%
+  -> unused hold released
+  -> immutable receipt and ledger entry
 ```
 
-## Build
-1. **Create a double-entry billing ledger**
-   - Add immutable per-user billing accounts, usage requests, wallet holds, and ledger entries.
-   - Store provider, model, modality, units, estimated cost, actual cost, 10% fee, status, idempotency key, provider request ID, and timestamps.
-   - Keep wallet balance as a locked projection of posted ledger entries; prevent direct client mutation.
+A provider failure cancels the hold. A partial streamed result settles only measured usage. A retry cannot charge twice. Promotional access uses separately funded promotional credits—it never erases real provider costs.
 
-2. **Implement reserve, settle, cancel, and refund operations**
-   - Atomically reserve the maximum expected amount before provider work begins.
-   - Settle from actual tokens, characters, seconds, images, video duration, calls, storage, or provider-reported cost.
-   - Release unused funds automatically; compensate failed/cancelled calls; make retries idempotent.
-   - Remove unlimited/admin/free bypasses from provider-cost accounting. Promotional access must be funded as a separate credit ledger, never hide real cost.
+## Implementation
 
-3. **Centralize provider metering**
-   - Replace the current `chargeAI` estimate-only helper with a shared metered operation wrapper.
-   - Add a versioned server-side rate-card registry with effective dates and cost formulas.
-   - Route every paid AI/provider function through the wrapper, including chat, agents, image, speech, music, video, movie, research, cloning, telephony, and worker paths.
-   - Reject unauthenticated paid operations and never trust a client-supplied user ID, cost, provider, model, or completion status.
+### 1. Stop current revenue and wallet integrity leaks
+- Make Stripe top-ups exactly-once using unique Stripe event, checkout session, and payment-intent identifiers in one atomic credit operation.
+- Replace movie rendering's manual balance update with the central transactional billing engine.
+- Add server-approved minimum/maximum top-up packs; ignore client-supplied prices and user IDs.
+- Record and alert on unhandled completed Stripe sessions.
+- Confirm wallet-mutating database functions cannot be called by anonymous or normal client roles.
 
-4. **Harden Stripe wallet funding**
-   - Bind one Stripe customer to one authenticated account.
-   - Use fixed server-approved top-up packs and same-origin production redirects.
-   - Process signed webhooks exactly once using event/session/payment-intent uniqueness.
-   - Post top-ups, disputes, refunds, and chargebacks to the ledger; never credit from metadata alone without confirming payment state and amount.
+### 2. Introduce an immutable financial ledger
+- Add per-user billing accounts, usage requests, wallet holds, ledger entries, refunds, and reconciliation records.
+- Use integer minor units plus micro-unit precision for sub-cent provider costs; round only during settlement.
+- Make ledger records append-only, including against accidental privileged updates; corrections use compensating entries.
+- Backfill each current wallet balance as a signed opening-balance entry.
 
-5. **Give each user modern spend controls**
-   - Show available, held, and spent balances separately.
-   - Add daily/monthly budgets, low-balance alerts, hard stops, auto top-up controls, and per-service usage receipts.
-   - Show actual provider cost, 10% platform fee, final total, status, and request ID for every operation.
+### 3. Add transactional reserve, settle, cancel, and refund operations
+- `authorize`: lock the user's account and reserve a server-calculated maximum before work starts.
+- `settle`: apply actual provider cost plus `ceil(actual cost × 10%)`, post the ledger entries, and release unused funds atomically.
+- `cancel`: release the full hold when no paid work is delivered.
+- `refund`: post a traceable credit linked to the original charge; never rewrite history.
+- Give every operation a unique idempotency key and terminal status.
 
-6. **Add owner FinOps and reconciliation**
-   - Add aggregate margin, provider liability, held funds, failed settlements, negative balances, and unreconciled usage.
-   - Reconcile ledger totals against provider usage and Stripe events; alert on missing, duplicate, or margin-below-10% records.
+### 4. Meter actual provider usage
+- Build provider adapters for tokens, characters, generated images, audio seconds, video seconds, call minutes, SMS segments, compute time, storage, and bandwidth.
+- Store provider, model, modality, input/output units, provider request ID, estimate, actual cost, fee, total, and variance.
+- Use a versioned server-side rate registry with effective dates when a provider does not return per-request cost.
+- Reconcile those estimates against provider usage/invoices and automatically true-up or refund differences.
 
-7. **Test and rollout safely**
-   - Add concurrency, replay, insufficient-funds, failed-provider, partial-stream, webhook duplication, refund, spoofed-user, and exact-markup tests.
-   - Inventory all provider call sites and enforce a CI test that fails when a paid provider call lacks metering.
-   - Backfill opening ledger balances, run the new engine in shadow mode, compare totals, then switch charging atomically.
+### 5. Route every paid function through one billing wrapper
+- Cover chat, multi-agent fallback, coding, research, tutoring, moderation, image generation, voice, transcription, cloning, music, video, movies, living GIFs, telephony, web crawling, autonomous builds, storage, and bandwidth.
+- Require server-validated identity for every paid path; never accept identity, cost, provider, model, or completion status from the client.
+- Treat BYOK as externally paid usage: still meter and attribute it, but do not charge provider cost to the Oracle Lunar wallet unless a separately disclosed platform fee applies.
+- Add a repository test that fails whenever a provider call exists without the billing wrapper.
 
-## Technical Rules
-- Currency accounting uses integer minor units with higher-precision internal cost units where sub-cent provider pricing requires it; round only at settlement boundaries.
-- The 10% fee is `ceil(actual_provider_cost × 0.10)` at the configured precision; the user pays provider cost plus fee.
-- Every mutation uses a unique idempotency key and database transaction with row locking.
-- Provider failures never become completed charges; streamed partial usage settles only measured consumption.
-- BYOK usage is still logged per user, but provider cost is marked externally paid and only an explicitly disclosed platform fee may be charged.
-- Existing promotional/free-for-life promises remain visible as funded promotional credits while actual provider costs remain auditable.
+### 6. Preserve truthful promotion and owner accounting
+- Remove admin/unlimited exemptions from cost accounting.
+- Represent trials, rewards, and lifetime benefits as funded promotional credits so provider expense remains visible.
+- Replace hardcoded owner-email billing authorization with server-side role checks.
+- Alert on unusual promotional-credit issuance and spend velocity.
 
-## Acceptance Criteria
-- 100% of paid provider routes require an authenticated user and produce one attributable usage record.
-- No origin, role, grant, client flag, or retry can bypass metering or duplicate a charge.
-- Successful operations settle to actual measured cost plus exactly 10%; failed operations release holds.
-- Stripe replay cannot double-credit; refunds and disputes reverse the correct user's funds.
-- Each user can view only their own wallet, holds, usage, and receipts; owner reporting is server-authorized.
-- Automated tests prove isolation, atomicity, idempotency, margin, refunds, and complete provider-route coverage.
+### 7. Harden Stripe funding and reversals
+- Bind one Stripe customer record to one authenticated billing account.
+- Credit wallets only after verified paid status and server-matched amount/currency.
+- Handle completed checkout, successful/failed payment, refund, dispute, and chargeback events.
+- Reverse the correct user's funds through compensating ledger entries and flag unresolved negative balances.
+
+### 8. Add user spend controls and receipts
+- Wallet displays available, held, promotional, and spent balances separately.
+- Add daily/monthly budgets, hard stops, low-balance alerts, and optional auto top-up.
+- Every receipt shows service/model, measured units, actual provider cost, 10% fee, final total, status, and request ID.
+- Users can view only their own billing data.
+
+### 9. Add owner FinOps and reconciliation
+- Show provider liability, revenue, exact margin, open holds, failed settlements, refunds, disputes, negative balances, and unreconciled usage.
+- Compare metered totals with provider invoices and Stripe funding.
+- Alert on duplicate events, missing settlements, stale holds, cost variance, and any effective margin below 10%.
+
+### 10. Roll out without risking existing balances
+1. Add the ledger and actual-usage recording in shadow mode with no billing change.
+2. Migrate Stripe top-ups and expensive video/movie paths first.
+3. Compare old and new totals and resolve variance.
+4. Migrate all remaining provider routes.
+5. Atomically make the new ledger authoritative while preserving compatibility views.
+
+## Required automated proof
+- Parallel requests cannot overspend one wallet.
+- Replayed client requests and Stripe events cannot double-charge or double-credit.
+- Spoofed user IDs, costs, plans, models, and completion states are rejected.
+- Failed operations release holds; partial operations settle measured usage only.
+- Refunds, disputes, and chargebacks reverse the correct account exactly once.
+- Every successful paid operation creates one attributable usage record and balanced ledger transaction.
+- Provider cost plus fee equals the settled total, with an effective 10% markup at the defined precision.
+- Ledger totals reconstruct every wallet balance and reconcile with Stripe/provider totals.
+- Every paid provider route is covered by the metering-enforcement test.
+
+## Thumbs-up gate
+The specialists recommend approval only after all tests above pass, 100% of paid routes are covered, Stripe replay is proven idempotent, provider failures are proven non-chargeable, and reconciliation reports no unexplained balance drift.
