@@ -104,15 +104,18 @@ export const MovieProjectDashboard = () => {
   const publishToYouTube = async (project: Project) => {
     if (!project.final_video_url) return;
     toast.loading("Preparing YouTube package…");
+    // Use the AI-authored YouTube package from the Story Writer handoff when we have one.
+    const pkg = (project as any)?.brief?.youtube ?? {};
     const { data, error } = await supabase.functions.invoke("youtube-publish", {
       body: {
         action: "bundle",
-        title: project.title,
-        description: `Created with ORACLE LUNAR Movie Studio Pro`,
-        tags: ["AI", "Movie", "ORACLE LUNAR"],
+        title: pkg.title || project.title,
+        description: pkg.description || `Created with ORACLE LUNAR Movie Studio Pro — https://oracle-lunar.online`,
+        tags: Array.isArray(pkg.tags) && pkg.tags.length ? pkg.tags : ["AI", "Movie", "ORACLE LUNAR"],
         video_url: project.final_video_url,
       },
     });
+
     toast.dismiss();
     if (error || data?.error) {
       toast.error(error?.message || data?.error);

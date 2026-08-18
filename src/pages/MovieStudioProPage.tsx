@@ -129,7 +129,7 @@ const MovieStudioProPage = () => {
             <FeatureRow ok={limits.allowHD} label="HD 1080p slideshow" />
             <FeatureRow ok={limits.allowCaptions} label="Burn-in captions" />
             <FeatureRow ok label="Ken Burns pan/zoom" />
-            <FeatureRow ok={limits.allowYouTubeOAuth} label="1-click YouTube" />
+            <FeatureRow ok={limits.allowYouTubeOAuth} label="YouTube publish kit (title, description, tags, thumbnail)" />
             <FeatureRow ok label="Download MP4" />
             <FeatureRow ok label="22-Q Oracle director" />
             <FeatureRow ok label="Wallet pay-per-render" />

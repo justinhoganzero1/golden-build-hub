@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -57,7 +58,11 @@ export async function persistImageToStorage(
     const { data } = supabase.storage.from("photography-assets").getPublicUrl(path);
     return data?.publicUrl || dataUrl;
   } catch (e) {
+    // Loud, not silent: a data-URL fallback is stripped by the story loader, so
+    // the artwork would quietly disappear on the next reload if we said nothing.
     console.warn("[persistImageToStorage] falling back to data URL:", e);
+    toast.warning("That image could not be saved permanently — regenerate it before closing the story.");
     return dataUrl;
   }
 }
+

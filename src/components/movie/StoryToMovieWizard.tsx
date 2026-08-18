@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BookOpen, Film, Loader2, Inbox, ArrowLeft, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   listMovieHandoffs,
   markMovieHandoffOpened,
@@ -34,11 +35,13 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
   const [items, setItems] = useState<MovieHandoffRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [picked, setPicked] = useState<MovieHandoffRecord | null>(null);
+  const [format, setFormat] = useState<MovieFormat | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setPicked(null);
+    setFormat(null);
     setLoading(true);
     listMovieHandoffs()
       .then(setItems)
@@ -46,20 +49,59 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
       .finally(() => setLoading(false));
   }, [open]);
 
-  const choose = async (format: MovieFormat) => {
+  const choose = async (fmt: MovieFormat) => {
     if (!picked) return;
     setBusy(true);
     try {
       stashMovieBrief(picked.brief);
-      stashMovieFormat(format);
+      stashMovieFormat(fmt);
       await markMovieHandoffOpened(picked.id);
-      toast.success(`"${picked.title}" loaded as a ${format.label}`);
+      toast.success(`"${picked.title}" loaded as a ${fmt.label}`);
       onOpenChange(false);
-      onReady(picked, format);
+      onReady(picked, fmt);
     } finally {
       setBusy(false);
     }
   };
+
+  /**
+   * Full render path: creates a real movie_projects row so the queued
+   * scene-by-scene render pipeline (chunker → render jobs → stitch → final MP4
+   * → YouTube kit) actually runs, instead of only the in-browser quick cut.
+   */
+  const queueFullRender = async (fmt: MovieFormat) => {
+    if (!picked) return;
+    setBusy(true);
+    try {
+      const minutes = Math.max(0.15, Math.round((fmt.targetSeconds / 60) * 100) / 100);
+      const { data, error } = await supabase.functions.invoke("movie-project-create", {
+        body: {
+          title: picked.brief?.youtube?.title || picked.title,
+          logline: picked.brief?.intent || "",
+          genre: "story",
+          target_duration_minutes: minutes,
+          quality_tier: "hd",
+          brief: { ...picked.brief, format: fmt, source_handoff_id: picked.id },
+        },
+      });
+      const err = error?.message || (data as any)?.error;
+      if (err) {
+        toast.error(err);
+        return;
+      }
+      stashMovieBrief(picked.brief);
+      stashMovieFormat(fmt);
+      await markMovieHandoffOpened(picked.id);
+      toast.success(`"${picked.title}" queued as a full ${fmt.label} render — track it in Your Movies below.`);
+      onOpenChange(false);
+      onReady(picked, fmt);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not queue that render");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   const remove = async (item: MovieHandoffRecord) => {
     try {
@@ -152,7 +194,7 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
           </>
         )}
 
-        {picked && (
+        {picked && !format && (
           <>
             <p className="text-xs text-muted-foreground">
               Turning <strong className="text-foreground">{picked.title}</strong> into a movie. Pick the cut you want —
@@ -163,7 +205,7 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
                 <button
                   key={f.id}
                   disabled={busy}
-                  onClick={() => void choose(f)}
+                  onClick={() => setFormat(f)}
                   className="w-full text-left p-3 rounded-lg border border-border/60 bg-background/40 hover:border-primary/60 hover:bg-primary/5 transition-colors disabled:opacity-50"
                 >
                   <p className="text-sm font-bold">
@@ -181,6 +223,48 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
             </Button>
           </>
         )}
+
+        {picked && format && (
+          <>
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{picked.title}</strong> · {format.emoji} {format.label}. How should we
+              build it?
+            </p>
+            <div className="space-y-2">
+              <button
+                disabled={busy}
+                onClick={() => void queueFullRender(format)}
+                className="w-full text-left p-3 rounded-lg border border-primary/50 bg-primary/5 hover:bg-primary/10 transition-colors disabled:opacity-50"
+              >
+                <p className="text-sm font-bold">🎬 Full movie render (YouTube-ready)</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Queues the real render pipeline: scene breakdown, narration, stitching and a finished MP4 with a
+                  YouTube publish kit. Costs coins and runs in the background.
+                </p>
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => void choose(format)}
+                className="w-full text-left p-3 rounded-lg border border-border/60 bg-background/40 hover:border-primary/60 hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                <p className="text-sm font-bold">⚡ Quick cut in the studio</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Builds instantly in your browser from the story's illustrations — great for a fast preview or a
+                  social clip.
+                </p>
+              </button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setFormat(null)} className="text-xs" disabled={busy}>
+              <ArrowLeft className="w-3 h-3 mr-2" /> Pick a different cut
+            </Button>
+            {busy && (
+              <p className="text-[11px] text-muted-foreground flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" /> Setting it up…
+              </p>
+            )}
+          </>
+        )}
+
       </DialogContent>
     </Dialog>
   );

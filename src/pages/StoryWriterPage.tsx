@@ -827,7 +827,13 @@ const StoryWriterPage = () => {
           prevContext,
           target,
           (w) => toast.info(`Chapter ${i + 1}: ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "regen-progress" }),
+          (partial) => setStory(s => {
+            const next = [...s.chapters];
+            next[i] = { ...next[i], content: partial };
+            return { ...s, chapters: next };
+          }),
         );
+
         rewritten[i] = text;
         setStory(s => {
           const next = [...s.chapters];
@@ -981,8 +987,11 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
     guidance: string,
     previousContext: string,
     targetWords: number = MIN_WORDS + WORD_STEP,
-    onProgress?: (words: number) => void
+    onProgress?: (words: number) => void,
+    /** Called with the full text so far after every pass so nothing is lost if a later pass fails. */
+    onChunk?: (partial: string) => void
   ): Promise<string> => {
+
     const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
 Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}`;
 
@@ -1004,6 +1013,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       maxTokens: 16000,
     });
     onProgress?.(wordCount(text));
+    onChunk?.(text);
 
     // Continuation passes until we reach the unique target (long chapters need many).
     let attempts = 0;
@@ -1011,17 +1021,27 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       attempts++;
       const tail = text.slice(-3000);
       const remaining = targetWords - wordCount(text);
-      const more = await callAI(
-        `You are continuing the same ${story.genre} chapter seamlessly, in the same voice and tense. Do not repeat anything. Do not wrap up unless told. Add several more rich, fully-dramatised scenes. Continue the prose only.`,
-        `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter — write at least ${Math.min(remaining, 3000).toLocaleString()} more words (chapter total target ${targetWords.toLocaleString()}+ words):`,
-        { model: "google/gemini-2.5-pro", maxTokens: 16000 }
-      );
+      let more = "";
+      try {
+        more = await callAI(
+          `You are continuing the same ${story.genre} chapter seamlessly, in the same voice and tense. Do not repeat anything. Do not wrap up unless told. Add several more rich, fully-dramatised scenes. Continue the prose only.`,
+          `STORY: ${story.title}\nCHAPTER: ${chapterTitle}\n\nLAST PORTION:\n${tail}\n\nContinue the chapter — write at least ${Math.min(remaining, 3000).toLocaleString()} more words (chapter total target ${targetWords.toLocaleString()}+ words):`,
+          { model: "google/gemini-2.5-pro", maxTokens: 16000 }
+        );
+      } catch (e) {
+        // Keep everything written so far rather than losing the whole chapter.
+        console.warn("[generateLongChapter] continuation failed, keeping progress", e);
+        break;
+      }
       if (!more?.trim()) break;
       text = (text + "\n\n" + more).trim();
       onProgress?.(wordCount(text));
+      onChunk?.(text);
     }
     return text;
   };
+
+
 
 
   const aiContinue = async () => {
@@ -1100,8 +1120,15 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           guidance,
           previousContext,
           targetWordsFor(i),
-          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`)
+          w => setTakeoverBusy(`${ch.title} — ${w.toLocaleString()} words`),
+          partial => setStory(s => {
+            const next = [...s.chapters];
+            const base = ch.content?.trim() ? `${ch.content.trim()}\n\n${partial.trim()}` : partial.trim();
+            next[i] = { ...next[i], content: base };
+            return { ...s, chapters: next };
+          })
         );
+
         const merged = ch.content?.trim() ? `${ch.content.trim()}\n\n${text.trim()}` : text.trim();
         trackEdit("ai", i, ch.content, merged, "Oracle takeover");
         chapters[i] = { ...ch, content: merged };
@@ -1298,8 +1325,14 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
         target,
         (w) => {
           if (w < target) toast.info(`Writing… ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "chapter-progress" });
-        }
+        },
+        (partial) => setStory(s => {
+          const next = [...s.chapters];
+          next[activeChapter] = { ...next[activeChapter], content: partial };
+          return { ...s, chapters: next };
+        })
       );
+
 
       // Guarantee no two chapters share the same word count (200+ words apart).
       const others = story.chapters
@@ -1712,7 +1745,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       a.download = `${slugify(title)}-audiobook.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Audiobook package ready — Audible/ACX compliant.");
+      toast.success("Audiobook package ready — formatted for Audible/ACX submission. Check the included checklist before uploading.");
     } catch (e: any) {
       toast.error(e?.message || "Audiobook build failed");
     } finally {
