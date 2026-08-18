@@ -34,21 +34,15 @@ const SEG = [
   { id: 4, s: "o", mode: "corner", img: 2, gapAfter: 0.15, text:
     "Juzzy is not a cop. He's a bloke built like an angle grinder with two monitors, a stolen life to account for, and absolutely nothing left to lose." },
   { id: 5, s: "o", mode: "corner", img: 4, gapAfter: 0.15, text:
-    "He spoofs a rogue cell tower in a rain hammered cul de sac and pulls the syndicate's encrypted chatter straight out of the storm." },
+    "He spoofs a rogue cell tower and pulls the syndicate's encrypted chatter out of the storm." },
   { id: 6, s: "o", mode: "corner", img: 7, gapAfter: 0.15, text:
-    "That signal drags him into a Smithfield warehouse, then a bunker, then a floor full of stolen phones humming like a beehive." },
-  { id: 18, s: "o", mode: "corner", img: 10, gapAfter: 0.15, text:
-    "Inside the bunker it's a silicon slave floor. Rows of stolen handsets, scripts taped to the wall, and a quota board with somebody's nan's pension written on it." },
+    "That signal drags him into a Smithfield bunker, a floor of stolen phones humming like a beehive." },
   { id: 7, s: "o", mode: "corner", img: 13, gapAfter: 0.15, text:
     "From there the film goes international. Bangkok at night. Neon off wet bitumen. A boss who has never once had to look a victim in the eye." },
   { id: 8, s: "o", mode: "corner", img: 17, gapAfter: 0.15, text:
     "There's a frozen vault, a zero day payload, and a ledger of everything they ever took. And Juzzy is about to make that ledger public." },
-  { id: 19, s: "o", mode: "corner", img: 20, gapAfter: 0.15, text:
-    "Chapter fourteen is where it turns into digital warfare. He doesn't rob them. He makes every account they hold pay itself back, cent by cent, in front of them." },
   { id: 9, s: "o", mode: "corner", img: 25, gapAfter: 0.15, text:
-    "The back half moves to Surfers Paradise, high rise glass, surveillance rigs and a card table where the devil orders a second drink." },
-  { id: 20, s: "o", mode: "corner", img: 30, gapAfter: 0.3, text:
-    "And the poker table scene is the best twelve pages in the book. One hand, two liars, and a phone face down on the felt." },
+    "The back half moves to Surfers Paradise, high rise glass and a card table where the devil orders a second drink." },
   { id: 10, s: "o", mode: "corner", img: 35, gapAfter: 0.35, text:
     "Then the alarm goes, a kill squad deploys, and the last five chapters are close quarters, point blank, no escape route." },
 
