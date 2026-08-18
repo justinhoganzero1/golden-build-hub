@@ -40,7 +40,10 @@ export interface CoverStudioProps {
   /** Launch the cover agent swarm. */
   onRunSwarm?: () => void;
   teamNotes?: string[];
+  /** Typography + palette decision made by the design agent. */
+  design?: CoverDesign;
 }
+
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
