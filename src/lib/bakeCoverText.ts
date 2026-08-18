@@ -225,15 +225,6 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       ctx.textAlign = "center";
     }
 
-    // Reserve a clean retail barcode zone. The barcode itself is supplied by
-    // the bookseller/printer and must not be invented by the cover generator.
-    ctx.save();
-    ctx.fillStyle = "rgba(255,255,255,0.96)";
-    ctx.fillRect(W * 0.58, H * 0.84, W * 0.32, H * 0.105);
-    ctx.strokeStyle = "rgba(0,0,0,0.22)";
-    ctx.lineWidth = Math.max(2, W * 0.0015);
-    ctx.strokeRect(W * 0.58, H * 0.84, W * 0.32, H * 0.105);
-    ctx.restore();
   }
 
   return canvas.toDataURL("image/jpeg", 0.94);
