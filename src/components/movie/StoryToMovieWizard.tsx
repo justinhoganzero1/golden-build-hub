@@ -97,7 +97,7 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
     try {
       stashMovieBrief(picked.brief);
       stashMovieFormat(fmt);
-      await markMovieHandoffOpened(picked.id);
+      if (!isLibrary(picked.id)) await markMovieHandoffOpened(picked.id);
       toast.success(`"${picked.title}" loaded as a ${fmt.label}`);
       onOpenChange(false);
       onReady(picked, fmt);
@@ -133,7 +133,7 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
       }
       stashMovieBrief(picked.brief);
       stashMovieFormat(fmt);
-      await markMovieHandoffOpened(picked.id);
+      if (!isLibrary(picked.id)) await markMovieHandoffOpened(picked.id);
       toast.success(`"${picked.title}" queued as a full ${fmt.label} render — track it in Your Movies below.`);
       onOpenChange(false);
       onReady(picked, fmt);
@@ -146,6 +146,10 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
 
 
   const remove = async (item: MovieHandoffRecord) => {
+    if (isLibrary(item.id)) {
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      return;
+    }
     try {
       await deleteMovieHandoff(item.id);
       setItems(prev => prev.filter(i => i.id !== item.id));
