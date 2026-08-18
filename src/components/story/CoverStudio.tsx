@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw, Download, Share2 } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export default function CoverStudio({
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
   const [exportBusy, setExportBusy] = useState<"download" | "share" | null>(null);
+  const [printPreviews, setPrintPreviews] = useState<{ cover?: string; back?: string }>({});
   const layout = useMemo<BakeTextOptions["layout"]>(() => {
     const choices: NonNullable<BakeTextOptions["layout"]>[] = ["masthead", "title-author", "cinematic", "editorial"];
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 31) + char.charCodeAt(0)) >>> 0, 7);
@@ -61,6 +62,22 @@ export default function CoverStudio({
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 33) + char.charCodeAt(0)) >>> 0, 11);
     return themes[seed % themes.length];
   }, [title, genre]);
+
+  // The on-screen covers are the same flattened pixels sent to download/share.
+  // No editor labels, controls, placeholders or concept notes sit over the art.
+  useEffect(() => {
+    let active = true;
+    const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
+    Promise.all([
+      coverImage ? bakeCoverText(coverImage, { ...common, slot: "cover" }) : Promise.resolve(undefined),
+      backImage ? bakeCoverText(backImage, { ...common, slot: "back", blurb }) : Promise.resolve(undefined),
+    ]).then(([cover, back]) => {
+      if (active) setPrintPreviews({ cover, back });
+    }).catch(() => {
+      if (active) setPrintPreviews({ cover: coverImage, back: backImage });
+    });
+    return () => { active = false; };
+  }, [title, author, genre, blurb, coverImage, backImage, layout]);
 
   const dataUrlToFile = async (dataUrl: string, name: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -188,15 +205,12 @@ export default function CoverStudio({
           const url = slot === "cover" ? coverImage : backImage;
           const isBusy = busy === slot;
           const label = slot === "cover" ? "Front Cover" : "Back Cover";
+          const printPreview = slot === "cover" ? printPreviews.cover : printPreviews.back;
           return (
             <article key={slot} className="border border-border bg-card overflow-hidden shadow-lg">
-              <p className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${slot === "cover" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
-                {label} preview
-              </p>
-
               <div className="relative aspect-[2/3] bg-muted/30 overflow-hidden">
-                {url ? (
-                  <SignedImage src={url} alt={`${label} artwork`} className="absolute inset-0 w-full h-full object-cover" />
+                {printPreview ? (
+                  <SignedImage src={printPreview} alt={`${label}, exactly as exported for print`} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     {isBusy
@@ -205,84 +219,6 @@ export default function CoverStudio({
                   </div>
                 )}
 
-                {/* ── Real HTML/CSS type, never painted by the model ── */}
-                {slot === "cover" ? (
-                  <>
-                    {/* Top: series/genre rule + big title */}
-                    <div className="cover-title-scrim absolute inset-x-0 top-0 px-4 pt-4 pb-10">
-                      {genre && (
-                        <p className="cover-kicker text-center text-[clamp(0.4rem,1.1vw,0.6rem)] font-semibold uppercase mb-1.5">
-                          {genre}
-                        </p>
-                      )}
-                      <div className="cover-rule mx-auto mb-2 h-px w-2/3" />
-                      <h3
-                        className="cover-display-title text-center font-black uppercase leading-[0.92] text-[clamp(1rem,4.6vw,2.3rem)]"
-                      >
-                        {title || "Your Title Here"}
-                      </h3>
-                      <div className="cover-rule mx-auto mt-2 h-px w-1/3" />
-                      {authorBelowTitle && author && (
-                        <p className="mt-3 text-center text-foreground text-[clamp(0.55rem,1.7vw,0.85rem)] font-bold uppercase drop-shadow-lg">
-                          {author}
-                        </p>
-                      )}
-                    </div>
-
-                    {!authorBelowTitle && author && (
-                      <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-5 bg-gradient-to-t from-black/90 via-black/55 to-transparent">
-                        <p className="text-center text-foreground text-[clamp(0.65rem,2vw,1rem)] font-bold uppercase drop-shadow-lg">{author}</p>
-                      </div>
-                    )}
-
-                  </>
-                ) : (
-                  <>
-                    {/* Back: title band at top */}
-                    <div className="cover-title-scrim absolute inset-x-0 top-0 px-4 pt-3 pb-8">
-                      <h3
-                        className="cover-display-title text-center font-black uppercase leading-[0.95] text-[clamp(0.7rem,3vw,1.4rem)]"
-                      >
-                        {title || "Your Title Here"}
-                      </h3>
-                      <div className="cover-rule mx-auto mt-1.5 h-px w-1/2" />
-                    </div>
-
-                    {/* Back: AI-written blurb card */}
-                    <div className="absolute inset-x-0 top-[22%] bottom-[18%] flex items-center justify-center px-3">
-                      <div className="cover-blurb-panel w-full max-h-full overflow-y-auto px-3.5 py-3.5">
-                        {blurb?.trim() ? (
-                          <p className="cover-blurb-copy text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap first-letter:text-[1.9em] first-letter:font-black first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
-                            {blurb.trim()}
-                          </p>
-                        ) : (
-                          <p className="text-amber-200/80 text-[clamp(0.5rem,1.5vw,0.75rem)] leading-relaxed italic text-center">
-                            {swarmBusy
-                              ? "The cover swarm is writing your back-cover blurb…"
-                              : "Run the cover swarm — the agents write this blurb from your finished book."}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="absolute right-[10%] bottom-[5.5%] h-[10.5%] w-[32%] bg-foreground/95 border border-background/20" aria-label="Retail barcode safe zone" />
-
-                  </>
-                )}
-
-
-                {url && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    onClick={() => onClearSlot(slot)}
-                    className="absolute top-1 right-1 z-10 h-7 w-7"
-                    aria-label={`Remove ${label} artwork`}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                )}
               </div>
 
               <Button
@@ -303,6 +239,16 @@ export default function CoverStudio({
               >
                 <ImageIcon className="w-3 h-3" /> Library / device
               </Button>
+              {url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onClearSlot(slot)}
+                  className="w-full rounded-none h-9 text-[11px] text-destructive border-t border-border"
+                >
+                  <X className="w-3 h-3" /> Remove artwork
+                </Button>
+              )}
             </article>
           );
         })}
@@ -339,7 +285,7 @@ export default function CoverStudio({
           </Button>
         </div>
         <p className="text-[10px] text-center text-muted-foreground">
-          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The rear reserves the bookseller barcode zone; author credit placement adapts to each book.
+          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The preview is the exact flattened print file; author credit placement adapts to each book.
         </p>
       </div>
     </section>
