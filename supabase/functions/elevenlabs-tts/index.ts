@@ -1,4 +1,7 @@
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,6 +109,21 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Meter and bill the characters this user actually synthesised.
+    try {
+      const chars = normalizedText.substring(0, 5000).length;
+      const cost = Math.max(1, Math.ceil((chars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
+      await chargeAI(auth.user.id, "elevenlabs-tts", cost, {
+        provider: "elevenlabs",
+        model: selectedModel,
+        characters: chars,
+        voice_id: selectedVoice,
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("elevenlabs-tts billing error:", billErr);
+    }
+
     return new Response(response.body, {
       status: 200,
       headers: {
@@ -114,6 +132,7 @@ Deno.serve(async (req) => {
         "Cache-Control": "no-cache",
       },
     });
+
   } catch (error) {
     console.error("TTS error:", error);
     return new Response(

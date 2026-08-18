@@ -3,11 +3,20 @@
 // Each image gets `per_image_seconds` of screen time with a Ken-Burns zoom + fade.
 // The compiled MP4 is returned as `video_url` and saved to the user's library by the client.
 //
-// SAFETY: this is provider-billed (Shotstack ~ $0.05 / sec rendered + 10% margin).
-// For now we render at 720x1280 to keep cost minimal. A coin-deduction step belongs here
-// in the upcoming "paywall every paid AI call" sweep.
+// BILLING: provider-billed (Shotstack per second rendered + platform margin).
+// The caller must be signed in and is charged via a two-phase hold/settle so a
+// failed render never costs the user anything.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import {
+  authorizeAI,
+  settleAI,
+  cancelAI,
+  InsufficientCoinsError,
+  insufficientCoinsResponse,
+} from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,13 +47,39 @@ interface Body {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let hold: { transactionId: string } | null = null;
+  let settled = false;
+  let estimate = 0;
+
   try {
     if (!KEY) throw new Error("SHOTSTACK_API_KEY not configured");
+
+    // Signed-in users only — this endpoint spends real provider money.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const rl = await enforceRateLimit(req, auth.user, "compile-marketing-video");
+    if (rl) return rl;
 
     const body: Body = await req.json();
     const images = (body.images ?? []).filter(Boolean).slice(0, 16);
     if (images.length < 2) throw new Error("Need at least 2 images.");
     const per = Math.max(1, Math.min(6, body.per_image_seconds ?? 2.5));
+
+    // Hold the estimated render cost before we submit to Shotstack.
+    const totalSeconds = Math.ceil(images.length * per);
+    estimate = Math.max(1, totalSeconds * PROVIDER_RATES.shotstack_render_per_second);
+    try {
+      hold = await authorizeAI(auth.user.id, "compile-marketing-video", estimate, {
+        provider: "shotstack",
+        seconds: totalSeconds,
+        images: images.length,
+        aspect: body.aspect ?? "9:16",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      throw billErr;
+    }
+
 
     // 1) Upload any data: URLs to Supabase storage so Shotstack can fetch them.
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -115,6 +150,9 @@ Deno.serve(async (req) => {
     }
     if (!finalUrl) throw new Error("Render timed out — try fewer images.");
 
+    // Render delivered — settle the hold at the estimated amount.
+    if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
+
     return new Response(JSON.stringify({ video_url: finalUrl, render_id: renderId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -124,5 +162,11 @@ Deno.serve(async (req) => {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    // Failed / timed-out renders release the hold — the user is never charged.
+    if (hold && !settled) {
+      try { await cancelAI(hold.transactionId, "render_failed"); } catch (_) { /* best effort */ }
+    }
   }
 });
+

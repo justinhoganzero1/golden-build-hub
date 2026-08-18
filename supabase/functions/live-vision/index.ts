@@ -1,4 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,13 +12,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // 🔒 FORT KNOX: require valid JWT
-    const authHeader = req.headers.get("Authorization") || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Sign up required to use Live Vision." }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Real JWT validation (previously only checked the "Bearer " prefix).
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const rl = await enforceRateLimit(req, auth.user, "live-vision");
+    if (rl) return rl;
+
 
     const { image, mode, target, history } = await req.json();
     // Validate image is a proper data URL with actual base64 payload
@@ -81,11 +83,24 @@ serve(async (req) => {
     const data = await response.json();
     const analysis = data.choices?.[0]?.message?.content || "No analysis available.";
 
+    // Bill the user's own wallet only after the provider actually delivered.
+    try {
+      await chargeAI(auth.user.id, "live-vision", PROVIDER_RATES.lovable_ai_vision_per_call, {
+        provider: "lovable-ai",
+        model: "google/gemini-2.5-flash",
+        mode: typeof mode === "string" ? mode : "scene",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("live-vision billing error:", billErr);
+    }
+
     return new Response(JSON.stringify({ analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("live-vision error:", e);
+
     return new Response(JSON.stringify({ fallback: true, reason: "exception", analysis: "QUIET", error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

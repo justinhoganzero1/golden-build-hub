@@ -62,6 +62,16 @@ export const PROVIDER_RATES = {
   lovable_ai_image_gen_per_image: 4,
   lovable_ai_image_pro_per_image: 8,
 
+  // Vision / multimodal analysis (image in, text out)
+  lovable_ai_vision_per_call: 1,
+
+  // Veo / Gemini Video generation — expensive, per second of output
+  veo_video_per_second: 20,
+
+  // Shotstack render — per second of finished video
+  shotstack_render_per_second: 5,
+
+
   // Infra passthrough
   github_actions_per_build_minute: 1,
   storage_per_gb_month: 2,

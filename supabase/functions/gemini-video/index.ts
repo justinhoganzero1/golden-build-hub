@@ -7,6 +7,9 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +61,10 @@ async function fetchAsBase64(url: string): Promise<{ data: string; mime: string 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  let hold: { transactionId: string } | null = null;
+  let settled = false;
+  let estimate = 0;
+
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
@@ -71,6 +78,22 @@ serve(async (req) => {
 
     const KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!KEY) return json({ error: "LOVABLE_API_KEY missing" }, 500);
+
+    // Two-phase billing: hold the funds before we burn provider compute.
+    const seconds = duration === 10 ? 10 : 5;
+    estimate = seconds * PROVIDER_RATES.veo_video_per_second;
+    try {
+      hold = await authorizeAI(auth.user.id, "gemini-video", estimate, {
+        provider: "lovable-ai",
+        model: "veo-3.0-generate-001",
+        seconds,
+        ratio,
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      throw billErr;
+    }
+
 
     // Encode source image
     const { data: imgB64, mime } = await fetchAsBase64(image_url);
@@ -132,9 +155,11 @@ serve(async (req) => {
             const buf = new Uint8Array(await dl.arrayBuffer());
             let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
             const dataUrl = `data:video/mp4;base64,${btoa(bin)}`;
+            if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
             return json({ video_url: dataUrl });
           }
         } catch (_) { /* fall through */ }
+        if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
         return json({ video_url: url });
       }
       if (oj.error) return json({ error: oj.error.message || "Gemini Video failed" }, 502);
@@ -143,5 +168,12 @@ serve(async (req) => {
   } catch (e) {
     console.error("gemini-video error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown" }, 500);
+  } finally {
+    // Any path that did not settle releases the hold — the user is never charged
+    // for compute they did not receive.
+    if (hold && !settled) {
+      try { await cancelAI(hold.transactionId, "provider_failed"); } catch (_) { /* best effort */ }
+    }
   }
 });
+

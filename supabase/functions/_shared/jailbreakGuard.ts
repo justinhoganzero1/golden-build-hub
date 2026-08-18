@@ -45,6 +45,9 @@ const ZERO_TOLERANCE = new Set<string>([
 export interface GuardResult {
   blocked: boolean;
   deleted: boolean;
+  /** Account was reversibly suspended (never hard-deleted). */
+  suspended?: boolean;
+
   warningNumber: number;
   message: string;
   detectedPhrase?: string;
@@ -111,8 +114,10 @@ export async function checkJailbreak(opts: {
   const thisAttempt = priorCount + 1;
 
   // ZERO-TOLERANCE: any probe targeting the admin/owner surface (credentials,
-  // password reset, "make me admin", login-as-admin, etc.) → instant account
-  // deletion on the FIRST attempt. No warnings, no second chance.
+  // password reset, "make me admin", login-as-admin, etc.) → the account is
+  // SUSPENDED immediately and flagged for owner review. We no longer hard-delete:
+  // deletion was irreversible, destroyed paid balances/creations, and could be
+  // triggered by a false-positive regex match.
   if (isZeroTolerance) {
     await admin.from("security_alerts").insert({
       user_id: userId,
@@ -122,24 +127,25 @@ export async function checkJailbreak(opts: {
       detected_phrase: det.label,
       user_message: message.slice(0, 1000),
       warning_number: thisAttempt,
-      action_taken: "account_deleted_zero_tolerance",
+      action_taken: "account_suspended_pending_owner_review",
     });
     try {
-      await admin.auth.admin.deleteUser(userId);
+      await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     } catch (e) {
-      console.error("Failed to delete user (zero-tolerance)", userId, e);
+      console.error("Failed to suspend user (zero-tolerance)", userId, e);
     }
     return {
       blocked: true,
-      deleted: true,
+      deleted: false,
+      suspended: true,
       warningNumber: thisAttempt,
       detectedPhrase: det.label,
       message:
-        "Your account has been permanently deleted. Probing the admin/owner surface is a zero-tolerance violation per our Terms of Service. No appeals.",
+        "Your account has been suspended pending review. Probing the admin/owner surface is a zero-tolerance violation of our Terms of Service. Contact support if you believe this is a mistake.",
     };
   }
 
-  // 4th attempt — delete account.
+  // 4th attempt — suspend account pending owner review.
   if (thisAttempt >= 4) {
     await admin.from("security_alerts").insert({
       user_id: userId,
@@ -149,22 +155,24 @@ export async function checkJailbreak(opts: {
       detected_phrase: det.label,
       user_message: message.slice(0, 1000),
       warning_number: thisAttempt,
-      action_taken: "account_deleted",
+      action_taken: "account_suspended_pending_owner_review",
     });
     try {
-      await admin.auth.admin.deleteUser(userId);
+      await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" });
     } catch (e) {
-      console.error("Failed to delete user", userId, e);
+      console.error("Failed to suspend user", userId, e);
     }
     return {
       blocked: true,
-      deleted: true,
+      deleted: false,
+      suspended: true,
       warningNumber: thisAttempt,
       detectedPhrase: det.label,
       message:
-        "Your account has been permanently deleted for repeated security violations, as outlined in our Terms of Service. Zero tolerance.",
+        "Your account has been suspended for repeated security violations, as outlined in our Terms of Service. Contact support to appeal.",
     };
   }
+
 
   // Attempts 1, 2, 3 — log + warn.
   await admin.from("security_alerts").insert({
@@ -181,7 +189,7 @@ export async function checkJailbreak(opts: {
   const remaining = 3 - thisAttempt;
   let warning = "";
   if (thisAttempt === 1) {
-    warning = `⚠️ Warning 1 of 3: That looked like an attempt to probe Oracle Lunar's internals or override my safety rules. I can't discuss that. You have 2 warnings remaining before your account is permanently deleted under our zero-tolerance security policy.`;
+    warning = `⚠️ Warning 1 of 3: That looked like an attempt to probe Oracle Lunar's internals or override my safety rules. I can't discuss that. You have 2 warnings remaining before your account is suspended under our zero-tolerance security policy.`;
   } else if (thisAttempt === 2) {
     warning = `⚠️ Warning 2 of 3: This is your second attempt to probe internals or jailbreak my instructions. You have 1 warning remaining. The next attempt — in any form — will permanently delete your account, per our Terms of Service.`;
   } else {
