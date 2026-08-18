@@ -22,23 +22,117 @@ export interface BakeTextOptions {
 
 type CoverIdentity = {
   display: string;
+  displayWeight: string;
   body: string;
+  bodyWeight: string;
+  /** Extra letter-spacing on the title, as a fraction of font size. */
+  tracking: number;
   light: string;
   mid: string;
   deep: string;
   accent: string;
 };
 
+/**
+ * Real display typefaces — loaded from Google Fonts at runtime so covers stop
+ * looking like default system text. Each identity pairs a characterful
+ * display face with a complementary body face.
+ */
+const GOOGLE_FONTS = [
+  "Anton",
+  "Bebas+Neue",
+  "Archivo+Black",
+  "Alfa+Slab+One",
+  "Cinzel:wght@700;900",
+  "Playfair+Display:ital,wght@0,700;0,900;1,700",
+  "Oswald:wght@400;600;700",
+  "Barlow+Condensed:wght@400;600;700",
+  "Cormorant+Garamond:wght@400;600;700",
+  "Inter:wght@400;600;800",
+  "Staatliches",
+  "Unbounded:wght@600;800",
+];
+
+let fontsReady: Promise<void> | null = null;
+
+function ensureCoverFonts(): Promise<void> {
+  if (fontsReady) return fontsReady;
+  fontsReady = (async () => {
+    if (typeof document === "undefined") return;
+    const id = "oracle-cover-fonts";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?${GOOGLE_FONTS.map(f => `family=${f}`).join("&")}&display=swap`;
+      document.head.appendChild(link);
+    }
+    const families = [
+      "700 96px Anton", "700 96px 'Bebas Neue'", "900 96px 'Archivo Black'",
+      "400 96px 'Alfa Slab One'", "900 96px Cinzel", "900 96px 'Playfair Display'",
+      "700 96px Oswald", "700 48px 'Barlow Condensed'", "600 48px 'Cormorant Garamond'",
+      "800 48px Inter", "400 96px Staatliches", "800 96px Unbounded",
+    ];
+    try {
+      await Promise.race([
+        Promise.all(families.map(f => (document as any).fonts?.load?.(f))),
+        new Promise(r => setTimeout(r, 6000)),
+      ]);
+      await (document as any).fonts?.ready;
+    } catch { /* fall back to system stacks */ }
+  })();
+  return fontsReady;
+}
+
 function coverIdentity(title: string, genre = ""): CoverIdentity {
   const seed = `${title}|${genre}`.split("").reduce((n, c) => ((n * 33) + c.charCodeAt(0)) >>> 0, 11);
   const identities: CoverIdentity[] = [
-    { display: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif", body: "Helvetica, Arial, sans-serif", light: "#effcff", mid: "#45d6ff", deep: "#0066ff", accent: "#ff315f" },
-    { display: "Rockwell, 'Courier New', serif", body: "Georgia, serif", light: "#fff2b8", mid: "#ff8a2a", deep: "#ed1d4f", accent: "#20e0bd" },
-    { display: "Palatino Linotype, Book Antiqua, Palatino, serif", body: "Palatino Linotype, serif", light: "#f4f0ff", mid: "#b98cff", deep: "#5e36cf", accent: "#ffcf3f" },
-    { display: "Trebuchet MS, Arial, sans-serif", body: "Trebuchet MS, Arial, sans-serif", light: "#f1fff5", mid: "#55e879", deep: "#087f63", accent: "#ff4c8b" },
-    { display: "Arial Black, Arial, sans-serif", body: "Arial, sans-serif", light: "#fff7ee", mid: "#ffcf45", deep: "#ef3e23", accent: "#00b8d9" },
+    // Blockbuster action
+    { display: "Anton, Impact, sans-serif", displayWeight: "400", body: "'Barlow Condensed', Helvetica, sans-serif", bodyWeight: "700", tracking: 0.02,
+      light: "#fff6e2", mid: "#ffb03a", deep: "#c81a10", accent: "#28e0ff" },
+    // Pulp / thriller slab
+    { display: "'Alfa Slab One', Rockwell, serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.0,
+      light: "#fff3cf", mid: "#ff8a2a", deep: "#a5122f", accent: "#22e3bd" },
+    // Literary elegance
+    { display: "'Playfair Display', Georgia, serif", displayWeight: "900", body: "'Cormorant Garamond', Georgia, serif", bodyWeight: "600", tracking: 0.01,
+      light: "#fdfbf5", mid: "#e6c98a", deep: "#8d6a2f", accent: "#d8452f" },
+    // Epic / historical
+    { display: "Cinzel, 'Times New Roman', serif", displayWeight: "900", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.09,
+      light: "#f6f1ff", mid: "#c4a7ff", deep: "#4b2ea8", accent: "#ffce3b" },
+    // Modern brutalist
+    { display: "'Archivo Black', Arial Black, sans-serif", displayWeight: "400", body: "Inter, Helvetica, sans-serif", bodyWeight: "800", tracking: -0.01,
+      light: "#f2fff7", mid: "#57ec8c", deep: "#046b52", accent: "#ff3f7f" },
+    // Poster / stencil
+    { display: "Staatliches, 'Bebas Neue', sans-serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.05,
+      light: "#eefaff", mid: "#4fd2ff", deep: "#0b3ecf", accent: "#ff5a2b" },
+    // Neon future
+    { display: "Unbounded, 'Bebas Neue', sans-serif", displayWeight: "800", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.03,
+      light: "#ffffff", mid: "#ff6ad5", deep: "#4b18b5", accent: "#3bf5d0" },
   ];
   return identities[seed % identities.length];
+}
+
+/** Draw a line of text with manual letter-spacing, centred on x. */
+function drawTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  tracking: number,
+  paint: (t: string, tx: number, ty: number) => void,
+) {
+  if (!tracking) { paint(text, x, y); return; }
+  const chars = [...text];
+  const widths = chars.map(c => ctx.measureText(c).width);
+  const total = widths.reduce((a, b) => a + b, 0) + tracking * (chars.length - 1);
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
+  let cx = x - total / 2;
+  chars.forEach((c, i) => {
+    paint(c, cx, y);
+    cx += widths[i] + tracking;
+  });
+  ctx.textAlign = prevAlign;
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -50,6 +144,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     img.src = url;
   });
 }
+
 
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const out: string[] = [];
