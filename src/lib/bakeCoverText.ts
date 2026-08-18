@@ -18,7 +18,28 @@ export interface BakeTextOptions {
   height?: number;
   /** Per-book typography treatment selected from the book identity. */
   layout?: "masthead" | "title-author" | "cinematic" | "editorial";
+  /** Explicit design decision made by the cover design agent. */
+  design?: CoverDesign;
 }
+
+/** What the DESIGN DIRECTOR agent returns and the compositor obeys. */
+export type CoverDesign = {
+  /** One of the named typographic identities below. */
+  identityKey?: string;
+  layout?: "masthead" | "title-author" | "cinematic" | "editorial";
+  /** Optional palette overrides, hex. */
+  light?: string;
+  mid?: string;
+  deep?: string;
+  accent?: string;
+  /** Optional extra letter-spacing on the title, fraction of font size. */
+  tracking?: number;
+}
+
+export const COVER_IDENTITY_KEYS = [
+  "blockbuster", "pulp", "literary", "epic", "brutalist", "poster", "neon",
+] as const;
+
 
 type CoverIdentity = {
   display: string;
@@ -84,33 +105,51 @@ function ensureCoverFonts(): Promise<void> {
   return fontsReady;
 }
 
-function coverIdentity(title: string, genre = ""): CoverIdentity {
+const IDENTITIES: Record<string, CoverIdentity> = {
+  // Blockbuster action
+  blockbuster: { display: "Anton, Impact, sans-serif", displayWeight: "400", body: "'Barlow Condensed', Helvetica, sans-serif", bodyWeight: "700", tracking: 0.02,
+    light: "#fff6e2", mid: "#ffb03a", deep: "#c81a10", accent: "#28e0ff" },
+  // Pulp / thriller slab
+  pulp: { display: "'Alfa Slab One', Rockwell, serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.0,
+    light: "#fff3cf", mid: "#ff8a2a", deep: "#a5122f", accent: "#22e3bd" },
+  // Literary elegance
+  literary: { display: "'Playfair Display', Georgia, serif", displayWeight: "900", body: "'Cormorant Garamond', Georgia, serif", bodyWeight: "600", tracking: 0.01,
+    light: "#fdfbf5", mid: "#e6c98a", deep: "#8d6a2f", accent: "#d8452f" },
+  // Epic / historical
+  epic: { display: "Cinzel, 'Times New Roman', serif", displayWeight: "900", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.09,
+    light: "#f6f1ff", mid: "#c4a7ff", deep: "#4b2ea8", accent: "#ffce3b" },
+  // Modern brutalist
+  brutalist: { display: "'Archivo Black', Arial Black, sans-serif", displayWeight: "400", body: "Inter, Helvetica, sans-serif", bodyWeight: "800", tracking: -0.01,
+    light: "#f2fff7", mid: "#57ec8c", deep: "#046b52", accent: "#ff3f7f" },
+  // Poster / stencil
+  poster: { display: "Staatliches, 'Bebas Neue', sans-serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.05,
+    light: "#eefaff", mid: "#4fd2ff", deep: "#0b3ecf", accent: "#ff5a2b" },
+  // Neon future
+  neon: { display: "Unbounded, 'Bebas Neue', sans-serif", displayWeight: "800", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.03,
+    light: "#ffffff", mid: "#ff6ad5", deep: "#4b18b5", accent: "#3bf5d0" },
+};
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function coverIdentity(title: string, genre = "", design?: CoverDesign): CoverIdentity {
   const seed = `${title}|${genre}`.split("").reduce((n, c) => ((n * 33) + c.charCodeAt(0)) >>> 0, 11);
-  const identities: CoverIdentity[] = [
-    // Blockbuster action
-    { display: "Anton, Impact, sans-serif", displayWeight: "400", body: "'Barlow Condensed', Helvetica, sans-serif", bodyWeight: "700", tracking: 0.02,
-      light: "#fff6e2", mid: "#ffb03a", deep: "#c81a10", accent: "#28e0ff" },
-    // Pulp / thriller slab
-    { display: "'Alfa Slab One', Rockwell, serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.0,
-      light: "#fff3cf", mid: "#ff8a2a", deep: "#a5122f", accent: "#22e3bd" },
-    // Literary elegance
-    { display: "'Playfair Display', Georgia, serif", displayWeight: "900", body: "'Cormorant Garamond', Georgia, serif", bodyWeight: "600", tracking: 0.01,
-      light: "#fdfbf5", mid: "#e6c98a", deep: "#8d6a2f", accent: "#d8452f" },
-    // Epic / historical
-    { display: "Cinzel, 'Times New Roman', serif", displayWeight: "900", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.09,
-      light: "#f6f1ff", mid: "#c4a7ff", deep: "#4b2ea8", accent: "#ffce3b" },
-    // Modern brutalist
-    { display: "'Archivo Black', Arial Black, sans-serif", displayWeight: "400", body: "Inter, Helvetica, sans-serif", bodyWeight: "800", tracking: -0.01,
-      light: "#f2fff7", mid: "#57ec8c", deep: "#046b52", accent: "#ff3f7f" },
-    // Poster / stencil
-    { display: "Staatliches, 'Bebas Neue', sans-serif", displayWeight: "400", body: "Oswald, Arial, sans-serif", bodyWeight: "600", tracking: 0.05,
-      light: "#eefaff", mid: "#4fd2ff", deep: "#0b3ecf", accent: "#ff5a2b" },
-    // Neon future
-    { display: "Unbounded, 'Bebas Neue', sans-serif", displayWeight: "800", body: "Inter, Helvetica, sans-serif", bodyWeight: "600", tracking: 0.03,
-      light: "#ffffff", mid: "#ff6ad5", deep: "#4b18b5", accent: "#3bf5d0" },
-  ];
-  return identities[seed % identities.length];
+  const keys = COVER_IDENTITY_KEYS;
+  const key = design?.identityKey && IDENTITIES[design.identityKey]
+    ? design.identityKey
+    : keys[seed % keys.length];
+  const base = IDENTITIES[key];
+  return {
+    ...base,
+    ...(HEX.test(design?.light || "") ? { light: design!.light! } : {}),
+    ...(HEX.test(design?.mid || "") ? { mid: design!.mid! } : {}),
+    ...(HEX.test(design?.deep || "") ? { deep: design!.deep! } : {}),
+    ...(HEX.test(design?.accent || "") ? { accent: design!.accent! } : {}),
+    ...(typeof design?.tracking === "number" && design.tracking >= -0.05 && design.tracking <= 0.2
+      ? { tracking: design.tracking }
+      : {}),
+  };
 }
+
 
 /** Draw a line of text with manual letter-spacing, centred on x. */
 function drawTracked(
@@ -259,8 +298,9 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const inner = W - pad * 2;
   const title = (opts.title || "Untitled").toUpperCase();
   const author = opts.author || "Author";
-  const layout = opts.layout ?? "masthead";
-  const identity = coverIdentity(title, opts.genre);
+  const layout = opts.design?.layout ?? opts.layout ?? "masthead";
+  const identity = coverIdentity(title, opts.genre, opts.design);
+
 
   if (opts.slot === "cover") {
     // Bottom-anchored masthead: the hero artwork stays completely unobstructed

@@ -34,6 +34,8 @@ import { recordEdit, buildReport, authorshipLogText } from "@/lib/humanEdits";
 import { allDisclosures, combinedDisclosure, type DisclosureFacts } from "@/lib/aiDisclosure";
 import { provenanceBlock, scrubIdentifiers, stripImageMetadata, safeFileName } from "@/lib/metadataHygiene";
 import { narrateChunk as narrateOneChunk } from "@/lib/storyNarration";
+import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
+
 
 
 
@@ -1203,6 +1205,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
    */
   const [coverSwarm, setCoverSwarm] = useState<string | null>(null);
   const [coverTeamNotes, setCoverTeamNotes] = useState<string[]>([]);
+  const [coverDesign, setCoverDesign] = useState<CoverDesign | undefined>(undefined);
+
   const runCoverSwarm = async () => {
     if (!requireMeta()) return;
     const sample = story.chapters
@@ -1251,13 +1255,45 @@ BACK: <brief under 220 words>`,
       setStory(s => ({ ...s, blurb: cleanBlurb || s.blurb }));
       setFrontCoverDirection(frontDirection);
       setBackCoverDirection(backDirection);
+
+      // TYPOGRAPHY / DESIGN DIRECTOR agent — picks the actual title treatment,
+      // layout and palette so the lettering is designed, never defaulted.
+      setCoverSwarm("Design director agent choosing typography + palette…");
+      let designNote = "";
+      try {
+        const designRaw = await callAI(
+          `You are the DESIGN DIRECTOR of a bestselling cover studio, an expert typographer. Choose the title treatment for this book. Reply with ONLY minified JSON, no prose, no code fences:
+{"identityKey":"<one of ${COVER_IDENTITY_KEYS.join("|")}>","layout":"<masthead|title-author|cinematic|editorial>","light":"#RRGGBB","mid":"#RRGGBB","deep":"#RRGGBB","accent":"#RRGGBB","tracking":<number -0.02..0.12>,"why":"<one sentence>"}
+Rules: the three title-gradient colours must read as one confident, high-contrast palette against the artwork (light = highlight, mid = body colour, deep = shadow), the accent is for the rule/genre line and must pop. Never default to plain white-on-black. Match genre convention but be bold and modern; letter-spacing should suit the face (condensed slabs tight, engraved serifs wide).`,
+          `${brief}\n\nART DIRECTION:\n${artDirection}\n\nFRONT ART:\n${frontDirection}`,
+        );
+        const json = (designRaw || "").replace(/```json|```/g, "").match(/\{[\s\S]*\}/)?.[0];
+        if (json) {
+          const parsed = JSON.parse(json) as CoverDesign & { why?: string };
+          setCoverDesign({
+            identityKey: parsed.identityKey,
+            layout: parsed.layout,
+            light: parsed.light,
+            mid: parsed.mid,
+            deep: parsed.deep,
+            accent: parsed.accent,
+            tracking: typeof parsed.tracking === "number" ? parsed.tracking : undefined,
+          });
+          designNote = `Design director: ${parsed.identityKey} / ${parsed.layout} — ${parsed.why || "typography locked"}`;
+        }
+      } catch {
+        designNote = "Design director: fell back to the book's default typographic identity";
+      }
+
       setCoverTeamNotes([
         `Casting locked: ${casting.replace(/\s+/g, " ").slice(0, 220)}`,
         `Market art direction: ${artDirection.replace(/\s+/g, " ").slice(0, 220)}`,
         `Critic corrections: ${critique.replace(/\s+/g, " ").slice(0, 220)}`,
         `Lead decision: ${direction.replace(/\s+/g, " ").slice(0, 240)}`,
+        ...(designNote ? [designNote] : []),
       ]);
       setCoverPrompt("");
+
 
       setCoverSwarm("Painting the front cover…");
       await generateStoryImage("cover", frontDirection);
@@ -2257,6 +2293,8 @@ BACK: <brief under 220 words>`,
             swarmBusy={coverSwarm}
             onRunSwarm={runCoverSwarm}
             teamNotes={coverTeamNotes}
+            design={coverDesign}
+
             storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
             onGenerateBoth={async () => {
               await generateStoryImage("cover", frontCoverDirection || coverPrompt);

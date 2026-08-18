@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw, Download, Share2 } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 import { Button } from "@/components/ui/button";
-import { bakeCoverText, type BakeTextOptions } from "@/lib/bakeCoverText";
+import { bakeCoverText, type BakeTextOptions, type CoverDesign } from "@/lib/bakeCoverText";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { toast } from "sonner";
 
@@ -40,23 +40,28 @@ export interface CoverStudioProps {
   /** Launch the cover agent swarm. */
   onRunSwarm?: () => void;
   teamNotes?: string[];
+  /** Typography + palette decision made by the design agent. */
+  design?: CoverDesign;
 }
+
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
   prompt, onPromptChange, frontDirection, backDirection,
   onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
-  storyWordCount, swarmBusy, onRunSwarm, teamNotes = [],
+  storyWordCount, swarmBusy, onRunSwarm, teamNotes = [], design,
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
   const [exportBusy, setExportBusy] = useState<"download" | "share" | null>(null);
   const [printPreviews, setPrintPreviews] = useState<{ cover?: string; back?: string }>({});
   const layout = useMemo<BakeTextOptions["layout"]>(() => {
+    if (design?.layout) return design.layout;
     const choices: NonNullable<BakeTextOptions["layout"]>[] = ["masthead", "title-author", "cinematic", "editorial"];
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 31) + char.charCodeAt(0)) >>> 0, 7);
     return choices[seed % choices.length];
-  }, [title, genre]);
+  }, [title, genre, design?.layout]);
+  const designKey = JSON.stringify(design ?? {});
   const coverTheme = useMemo(() => {
     const themes = ["electric", "coral", "violet", "emerald", "sunset"];
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 33) + char.charCodeAt(0)) >>> 0, 11);
@@ -67,7 +72,7 @@ export default function CoverStudio({
   // No editor labels, controls, placeholders or concept notes sit over the art.
   useEffect(() => {
     let active = true;
-    const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
+    const common = { title, author, genre, width: 1875, height: 2775, layout, design } as const;
     Promise.all([
       coverImage ? resolveStorageUrl(coverImage, 3600) : Promise.resolve(undefined),
       backImage ? resolveStorageUrl(backImage, 3600) : Promise.resolve(undefined),
@@ -80,7 +85,8 @@ export default function CoverStudio({
       if (active) setPrintPreviews({ cover: coverImage, back: backImage });
     });
     return () => { active = false; };
-  }, [title, author, genre, blurb, coverImage, backImage, layout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, author, genre, blurb, coverImage, backImage, layout, designKey]);
 
   const dataUrlToFile = async (dataUrl: string, name: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -89,7 +95,8 @@ export default function CoverStudio({
 
   const buildRetailFiles = async () => {
     if (!coverImage || !backImage) throw new Error("Build both covers first");
-    const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
+    const common = { title, author, genre, width: 1875, height: 2775, layout, design } as const;
+
     const [resolvedCover, resolvedBack] = await Promise.all([
       resolveStorageUrl(coverImage, 3600),
       resolveStorageUrl(backImage, 3600),
