@@ -134,6 +134,36 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_controls: {
+        Row: {
+          agents_enabled: boolean
+          autonomous_actions_enabled: boolean
+          id: boolean
+          max_actions_per_invocation: number
+          max_spend_per_invocation_cents: number
+          paused_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          agents_enabled?: boolean
+          autonomous_actions_enabled?: boolean
+          id?: boolean
+          max_actions_per_invocation?: number
+          max_spend_per_invocation_cents?: number
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agents_enabled?: boolean
+          autonomous_actions_enabled?: boolean
+          id?: boolean
+          max_actions_per_invocation?: number
+          max_spend_per_invocation_cents?: number
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_charges: {
         Row: {
           created_at: string
@@ -311,6 +341,8 @@ export type Database = {
           daily_limit_cents: number
           hard_stop: boolean
           low_balance_alert_cents: number
+          max_daily_limit_cents: number
+          max_monthly_limit_cents: number
           monthly_limit_cents: number
           updated_at: string
           user_id: string
@@ -323,6 +355,8 @@ export type Database = {
           daily_limit_cents?: number
           hard_stop?: boolean
           low_balance_alert_cents?: number
+          max_daily_limit_cents?: number
+          max_monthly_limit_cents?: number
           monthly_limit_cents?: number
           updated_at?: string
           user_id: string
@@ -335,6 +369,8 @@ export type Database = {
           daily_limit_cents?: number
           hard_stop?: boolean
           low_balance_alert_cents?: number
+          max_daily_limit_cents?: number
+          max_monthly_limit_cents?: number
           monthly_limit_cents?: number
           updated_at?: string
           user_id?: string
@@ -3861,6 +3897,7 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      billing_expire_stale_holds: { Args: never; Returns: number }
       billing_refund: {
         Args: {
           _reason: string

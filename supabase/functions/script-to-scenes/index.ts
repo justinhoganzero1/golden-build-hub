@@ -1,4 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +12,23 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Paid LLM compute — authenticate, rate limit, then bill the caller's wallet.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const rl = await enforceRateLimit(req, auth.user, "script-to-scenes");
+    if (rl) return rl;
+    try {
+      await chargeAI(auth.user.id, "script-to-scenes", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+        provider: "lovable-ai",
+        model: "google/gemini-2.5-flash",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      throw billErr;
+    }
+
     const { script, intent, targetDurationSec = 60 } = await req.json();
+
     const sceneSeconds = 6; // FIXED: every clip is 6 seconds, 4K quality
     if (!script || typeof script !== "string") {
       return new Response(JSON.stringify({ error: "script is required" }), {

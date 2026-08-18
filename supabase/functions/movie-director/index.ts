@@ -6,6 +6,10 @@
 //  action: "finalize"       -> returns { script, intent, youtube: { title, description, tags, chapters, thumbnail_prompt } }
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +47,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Paid LLM compute — authenticate, rate limit, then bill the caller's wallet.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const rl = await enforceRateLimit(req, auth.user, "movie-director");
+    if (rl) return rl;
+
     const body = await req.json();
+
     const action: "next_question" | "finalize" = body.action;
     const answers: AnswerMap = body.answers || {};
     const known: AnswerMap = body.known || {}; // pre-filled from ORACLE LUNAR (avatars, voices, profile)
@@ -74,7 +85,17 @@ ${ctx || "(nothing yet)"}
 
 Rewrite the question in 1 short conversational sentence. Reference what they already told you when natural. Do not list multiple questions. No emojis.`;
 
+      try {
+        await chargeAI(auth.user.id, "movie-director", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+          provider: "lovable-ai", model: "google/gemini-2.5-flash-lite", action: "next_question",
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        throw billErr;
+      }
+
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -97,7 +118,17 @@ Rewrite the question in 1 short conversational sentence. Reference what they alr
     if (action === "finalize") {
       // Build the final script + YouTube package via tool-call
       const ctx = Object.entries(merged).map(([k, v]) => `${k}: ${v}`).join("\n");
+      try {
+        await chargeAI(auth.user.id, "movie-director", PROVIDER_RATES.lovable_ai_gemini_pro_per_call, {
+          provider: "lovable-ai", model: "google/gemini-2.5-flash", action: "finalize",
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        throw billErr;
+      }
+
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
