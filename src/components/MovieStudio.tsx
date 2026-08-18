@@ -1936,11 +1936,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Movie title" className="flex-1 min-w-[200px]" />
+              <SuperAIPanel actions={superAIActions} />
               <Button onClick={runProductionSwarm} disabled={productionSwarmBusy} size="sm" className="border border-primary/40">
                 {productionSwarmBusy
                   ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Swarm running</>
                   : <><Users className="w-3 h-3 mr-1" /> Run 5-agent production swarm</>}
               </Button>
+
               <Button onClick={generateAll} variant="secondary" size="sm">
                 <Sparkles className="w-3 h-3 mr-1" /> Generate all photos
               </Button>
