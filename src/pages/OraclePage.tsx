@@ -2445,11 +2445,120 @@ const OraclePage = () => {
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
             })();
           } else if (kind === "STORY" || kind === "POEM") {
-            try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
-            askOpenChoice({ kind: "story", deepPath: `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+            // Actually WRITE it here in the chat and save it to the Library —
+            // pre-filling Story Writer and navigating away used to lose the
+            // work entirely if the user never opened that page.
+            const label = kind === "POEM" ? "poem" : "story";
+            toast.success(`Writing your ${label} now…`);
+            (async () => {
+              let draft = "";
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-chat`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({
+                    agent: "lyra",
+                    messages: [{
+                      role: "user",
+                      content: kind === "POEM"
+                        ? `Write a complete, polished poem. Output only the poem, with a title on the first line.\n\nBrief: ${prompt}`
+                        : `Write a complete, publishable short story with a title, a clear beginning, middle and end. Output only the story text in markdown.\n\nBrief: ${prompt}`,
+                    }],
+                  }),
+                });
+                if (!r.ok) throw new Error(await r.text().catch(() => `HTTP ${r.status}`));
+                const raw = r.body ? await new Response(r.body).text() : await r.text();
+                draft = raw.split("\n").map((line) => {
+                  if (!line.startsWith("data: ")) return "";
+                  const d = line.slice(6).trim();
+                  if (!d || d === "[DONE]") return "";
+                  try { return JSON.parse(d).choices?.[0]?.delta?.content || ""; } catch { return ""; }
+                }).join("").trim();
+              } catch (e) {
+                console.error(`GEN_${kind} failed`, e);
+              }
+              if (!draft) {
+                toast.error(`I couldn't finish that ${label} — opening Story Writer with your brief instead`);
+                try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
+                askOpenChoice({ kind: "story", deepPath: `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+                return;
+              }
+              // Hand the finished draft to Story Writer AND persist it now.
+              try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
+              try { sessionStorage.setItem("story-writer-draft", draft); } catch {}
+              let savedId: string | undefined;
+              try {
+                const dataUrl = `data:text/markdown;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(draft)))}`;
+                const saved: any = await saveMedia.mutateAsync({
+                  media_type: "text",
+                  title: `${kind === "POEM" ? "Poem" : "Story"}: ${prompt.slice(0, 60)}`,
+                  url: dataUrl,
+                  source_page: "oracle-story",
+                  metadata: { kind: label, prompt, body: draft.slice(0, 20000) } as any,
+                });
+                savedId = saved?.id || saved;
+              } catch (err) {
+                console.error("Oracle story library save failed", err);
+                toast.error(`${label} written, but the library save failed`);
+              }
+              setMessages(prev => [...prev, {
+                id: `${Date.now()}-story`, role: "assistant", sender: oracleName, emoji: "📖", color: "#FFD700",
+                content: draft,
+              } as Message]);
+              askOpenChoice({ kind: "story", deepPath: savedId ? `/media-library?item=${savedId}` : `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+            })();
           } else if (kind === "APP") {
-            try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
-            askOpenChoice({ kind: "app", deepPath: `/app-builder?prompt=${encodeURIComponent(prompt)}` });
+            // Build it for real in the background and save the finished
+            // single-file app to the Library — no page change required.
+            toast.success("Master App Builder is building that now…");
+            (async () => {
+              try {
+                const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ prompt }),
+                });
+                if (!resp.ok || !resp.body) throw new Error(await resp.text().catch(() => `HTTP ${resp.status}`));
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+                let code = "";
+                let architecture = "";
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buffer += decoder.decode(value, { stream: true });
+                  let idx: number;
+                  while ((idx = buffer.indexOf("\n\n")) !== -1) {
+                    const block = buffer.slice(0, idx).trim();
+                    buffer = buffer.slice(idx + 2);
+                    if (!block.startsWith("data:")) continue;
+                    try {
+                      const evt = JSON.parse(block.slice(5).trim());
+                      if (evt.event === "done") { code = evt.code || ""; architecture = evt.architecture || ""; }
+                      else if (evt.event === "error") throw new Error(evt.message || "Build error");
+                    } catch { /* ignore parse */ }
+                  }
+                }
+                if (!code) throw new Error("Pipeline finished without code");
+                const dataUrl = `data:text/html;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(code)))}`;
+                let savedId: string | undefined;
+                const saved: any = await saveMedia.mutateAsync({
+                  media_type: "app" as any,
+                  title: `App: ${prompt.slice(0, 60)}`,
+                  url: dataUrl,
+                  source_page: "app-builder",
+                  metadata: { kind: "app", prompt, architecture: architecture.slice(0, 1500), built_by: "oracle-marker" } as any,
+                });
+                savedId = saved?.id || saved;
+                askOpenChoice({ kind: "app", deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
+              } catch (e) {
+                console.error("GEN_APP build failed", e);
+                toast.error("The build failed — opening App Builder with your brief");
+                try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
+                askOpenChoice({ kind: "app", deepPath: `/app-builder?prompt=${encodeURIComponent(prompt)}` });
+              }
+            })();
           } else if (kind === "VIDEO") {
             // No native video pipeline yet — fall back to image + concierge note.
             toast("Short video pipeline is rolling out — I'll generate a hero image for now.");
