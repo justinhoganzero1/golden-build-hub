@@ -1,22 +1,11 @@
 // Centralized pricing & markup helpers.
-// RULE: every external paid provider call (Runway, ElevenLabs, Replicate, OpenAI, Twilio, etc.)
-// is passed through to the user at provider_cost + PLATFORM_MARKUP (currently 5%).
-// Internal compute (Gemini via Lovable AI) follows the broader Movie Studio pricing schedule.
+// RULE: every user is charged 100% of their own provider cost + a flat 10% platform markup.
+// No user is subsidised, no origin is exempt. Applies to Lovable AI compute and every
+// external provider (ElevenLabs, HeyGen, Runway, Replicate, Twilio, storage, bandwidth).
 //
-// Use markupCents() in any edge function that bills the user wallet for a third-party call.
+// Use markupCents() in any edge function that bills the user wallet.
 
-// Bumped from 5% → 25% to fully cover ALL provider costs:
-//   • Lovable AI compute (Gemini, GPT, image gen) bundled into every flow
-//   • ElevenLabs voice / SFX / music
-//   • HeyGen avatar video
-//   • Runway image-to-video
-//   • Replicate upscaling
-//   • Twilio voice (in addition to its own +50% in wallet_charge_call)
-//   • GitHub Actions / Codemagic build minutes
-//   • Supabase storage + bandwidth + edge function invocations
-//   • Stripe payment processing fees on top-ups
-// Anything we forgot is absorbed by this single buffer.
-export const PLATFORM_MARKUP_PCT = 0.25;
+export const PLATFORM_MARKUP_PCT = 0.10;
 export const MIN_BILLABLE_CENTS = 1;     // never bill 0
 
 export interface MarkedUp {
@@ -26,7 +15,7 @@ export interface MarkedUp {
 }
 
 /**
- * Apply the standard +5% platform markup to a third-party provider cost.
+ * Apply the standard +10% platform markup to a provider cost.
  * Always rounds the platform fee UP to the nearest cent so we never lose money.
  */
 export function markupCents(provider_cost_cents: number): MarkedUp {
@@ -38,6 +27,7 @@ export function markupCents(provider_cost_cents: number): MarkedUp {
     total_cents: provider + fee,
   };
 }
+
 
 // ---------------- Provider rate cards (in cents) ----------------
 // These are conservative estimates — adjust as real invoices come in.
