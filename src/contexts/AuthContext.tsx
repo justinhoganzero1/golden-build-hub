@@ -91,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (session) {
         setSession(session);
         setUser(session.user);
+        ensureOwnAccount(session.user.id);
       }
       // No anonymous fallback — visitors must hit /sign-in to either log in
       // or join. This is intentional: every action should be tied to a
