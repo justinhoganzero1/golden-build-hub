@@ -16,7 +16,7 @@ import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
-import StoryboardTimeline from "@/components/movie/StoryboardTimeline";
+import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
 
 
 const SCENE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/script-to-scenes`;
@@ -97,6 +97,7 @@ interface Scene {
   voice_style?: string;
   voice_id?: string; // explicit ElevenLabs voice (overrides voice_style)
   audio_url?: string; // data URL of generated mp3
+  voice_offset_sec?: number; // narration start offset within the scene
   generatingAudio?: boolean;
   // SFX (per scene)
   sfx_prompt?: string;
@@ -164,6 +165,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [previewSceneId, setPreviewSceneId] = useState<string | null>(null);
+  const [timelineMix, setTimelineMix] = useState<TimelineMix>(DEFAULT_TIMELINE_MIX);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [publishedBlob, setPublishedBlob] = useState<Blob | null>(null);
@@ -1487,7 +1489,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
 
       // Start music underscore at t=0, ducked under VO
       let musicSource: AudioBufferSourceNode | null = null;
-      if (musicBuffer) {
+      if (musicBuffer && layerAudible(timelineMix, "music")) {
         musicSource = audioCtx.createBufferSource();
         musicSource.buffer = musicBuffer;
         musicSource.loop = true;
@@ -1552,12 +1554,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
 
         // Schedule this scene's narration (full volume)
         const vbuf = voiceBuffers[idx];
-        if (vbuf) {
+        if (vbuf && layerAudible(timelineMix, "voice")) {
           const src = audioCtx.createBufferSource();
           src.buffer = vbuf;
           const g = audioCtx.createGain(); g.gain.value = 1.0;
           src.connect(g).connect(audioDest);
-          src.start();
+          // Honour the timeline position the user dragged this narration to.
+          const offset = Math.max(0, Math.min(scene.duration_sec || 0, scene.voice_offset_sec ?? 0));
+          src.start(audioCtx.currentTime + offset);
         }
         // Schedule scene SFX (slightly ducked so VO stays clear)
         const sbuf = sfxBuffers[idx];
@@ -1571,7 +1575,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         // Schedule per-scene backing music with cross-fade between adjacent scenes.
         // Cross-fade duration is decided by crossfadeFor() (auto = Oracle picks per transition).
         const mbuf = sceneMusicBuffers[idx];
-        if (mbuf) {
+        if (mbuf && layerAudible(timelineMix, "music")) {
           const src = audioCtx.createBufferSource();
           src.buffer = mbuf;
           const g = audioCtx.createGain();
@@ -2000,6 +2004,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
               onUpdateScene={(id, patch) => setScenes(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s))}
               onRedub={redubScene}
               onGenerateSceneMusic={(id) => generateSceneMusic(id)}
+              mix={timelineMix}
+              onMixChange={setTimelineMix}
             />
 
             {/* Music suite (full-track underscore for the whole movie) */}
