@@ -1,5 +1,6 @@
-import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users } from "lucide-react";
+import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
+import { Button } from "@/components/ui/button";
 
 /**
  * Cover Studio — the FINAL illustration step of Story Writer.
@@ -23,6 +24,8 @@ export interface CoverStudioProps {
   busy: string | null;
   prompt: string;
   onPromptChange: (v: string) => void;
+  frontDirection?: string;
+  backDirection?: string;
   onGenerateBoth: () => void;
   onGenerateSlot: (slot: "cover" | "back") => void;
   onClearSlot: (slot: "cover" | "back") => void;
@@ -36,7 +39,8 @@ export interface CoverStudioProps {
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
-  prompt, onPromptChange, onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
+  prompt, onPromptChange, frontDirection, backDirection,
+  onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
   storyWordCount, swarmBusy, onRunSwarm,
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
@@ -44,38 +48,39 @@ export default function CoverStudio({
 
 
   return (
-    <section className="rounded-2xl border border-primary/40 bg-gradient-to-b from-primary/10 to-transparent p-3 space-y-3">
-      <header className="space-y-1">
-        <h2 className="text-sm font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider">
-          <BookMarked className="w-4 h-4" /> Cover Studio — do this last
+    <section className="border-y border-primary/40 bg-card/40 py-4 space-y-4">
+      <header className="px-3 space-y-1">
+        <h2 className="text-base font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
+          <BookMarked className="w-5 h-5" /> Book Cover Swarm Studio
         </h2>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          One AI box for both covers. It reads your <b>entire finished story</b> plus the blurb
-          and paints pure 3D 4K ultra-realistic artwork — <b>no text is ever painted into the
-          picture</b>. Your title, author name and full blurb are laid over the art as real,
-          perfectly readable text.
+          The team reads the finished book, designs two different cinematic concepts, writes the
+          rear blurb, then builds the front and back together. Artwork stays text-free; editable
+          book text is added only in the preview and exports.
         </p>
       </header>
 
       {!ready && (
-        <p className="text-[11px] rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-amber-200">
+        <p className="mx-3 text-[11px] rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-amber-200">
           Write the story first — covers come last so the art can be baked from the whole book.
         </p>
       )}
 
-      <div className="space-y-1.5">
+      <div className="px-3 space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-[11px] font-semibold text-primary uppercase tracking-wider">
             Cover art direction (optional)
           </label>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => onPromptChange("")}
             disabled={!prompt}
-            className="text-[10px] px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground disabled:opacity-40 flex items-center gap-1"
+            className="h-7 text-[10px] text-muted-foreground"
           >
             <Eraser className="w-3 h-3" /> Clear
-          </button>
+          </Button>
         </div>
         <textarea
           value={prompt}
@@ -86,43 +91,24 @@ export default function CoverStudio({
         />
       </div>
 
-      {onRunSwarm && (
-        <div className="space-y-1.5">
-          <button
-            type="button"
-            onClick={onRunSwarm}
-            disabled={anyBusy}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/25"
-          >
-            {swarmBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-            {swarmBusy ? swarmBusy : "▶ Run the Cover Agent Swarm (art + blurb)"}
-          </button>
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Casting, art director, copywriter, critic and lead agents read your finished book, lock the
-            real characters and world, write a fresh back-cover blurb and paint both covers in cinematic
-            4K photoreal — unique to this story every run.
-          </p>
-        </div>
-      )}
-
-
-      <button
+      <Button
         type="button"
         onClick={onGenerateBoth}
         disabled={anyBusy}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/20"
+        variant="outline"
+        className="mx-3 w-[calc(100%-1.5rem)] h-11 font-bold text-sm"
       >
         {anyBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {anyBusy ? "Baking cover artwork from your whole story…" : "▶ Bake Front + Back Covers from the Whole Story"}
-      </button>
+        {anyBusy ? "Building both covers from your book…" : "Rebuild both with current directions"}
+      </Button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-3">
         {(["cover", "back"] as const).map(slot => {
           const url = slot === "cover" ? coverImage : backImage;
           const isBusy = busy === slot;
           const label = slot === "cover" ? "Front Cover" : "Back Cover";
           return (
-            <div key={slot} className="rounded-xl border border-border bg-card overflow-hidden">
+            <article key={slot} className="border border-border bg-card overflow-hidden shadow-lg">
               <p className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${slot === "cover" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
                 {label} preview
               </p>
@@ -164,15 +150,6 @@ export default function CoverStudio({
                       <div className="mx-auto mt-2 h-px w-1/3 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
                     </div>
 
-                    {/* Bottom: author footer */}
-                    <div className="absolute inset-x-0 bottom-0 px-4 pt-12 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
-                      <p className="text-center text-white/60 text-[clamp(0.38rem,1vw,0.55rem)] uppercase tracking-[0.4em] mb-1">
-                        A novel by
-                      </p>
-                      <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.6rem,2.2vw,1.05rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-                        {author || "Author Name"}
-                      </p>
-                    </div>
                   </>
                 ) : (
                   <>
@@ -210,49 +187,74 @@ export default function CoverStudio({
                       </div>
                     </div>
 
-                    {/* Back: author footer — always "A NOVEL BY <author>" */}
-                    <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
-                      <p className="text-center text-white/60 text-[clamp(0.36rem,0.95vw,0.5rem)] uppercase tracking-[0.4em] mb-1">
-                        A novel by
-                      </p>
-                      <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.55rem,2vw,0.95rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-                        {author || "Author Name"}
-                      </p>
-                    </div>
-
                   </>
                 )}
 
 
                 {url && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
                     onClick={() => onClearSlot(slot)}
-                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center z-10"
+                    className="absolute top-1 right-1 z-10 h-7 w-7"
                     aria-label={`Remove ${label} artwork`}
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
-              <button
+              <div className="px-3 py-2 border-t border-border bg-background/60 min-h-14">
+                <p className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                  {slot === "cover" ? "Front concept" : "Rear concept"}
+                </p>
+                <p className="text-[10px] text-muted-foreground line-clamp-2">
+                  {(slot === "cover" ? frontDirection : backDirection) ||
+                    (slot === "cover" ? "Iconic sales image from the finished book" : "Distinct story aftermath with clear blurb space")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => onGenerateSlot(slot)}
                 disabled={anyBusy}
-                className="w-full py-2 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:opacity-60 flex items-center justify-center gap-1.5"
+                className="w-full rounded-none h-10 text-[11px] text-primary"
               >
                 {isBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                {url ? `Re-bake ${label} artwork` : `Bake ${label} artwork`}
-              </button>
-              <button
+                {url ? `Rebuild ${label}` : `Build ${label}`}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => onPickSlot(slot)}
-                className="w-full py-2 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 border-t border-border flex items-center justify-center gap-1.5"
+                className="w-full rounded-none h-10 text-[11px] text-muted-foreground border-t border-border"
               >
                 <ImageIcon className="w-3 h-3" /> Library / device
-              </button>
-            </div>
+              </Button>
+            </article>
           );
         })}
       </div>
+
+      {onRunSwarm && (
+        <div className="px-3 pt-1 space-y-2">
+          <Button
+            type="button"
+            size="lg"
+            onClick={onRunSwarm}
+            disabled={anyBusy || !ready}
+            className="w-full min-h-14 h-auto whitespace-normal text-sm font-black"
+          >
+            {swarmBusy ? <Loader2 className="w-5 h-5 animate-spin" /> : coverImage || backImage ? <RefreshCw className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+            {swarmBusy ? swarmBusy : "Agent Swarm: redesign front + back from the finished book"}
+          </Button>
+          <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+            One tap runs casting, front-art, rear-art, copywriting, criticism and lead-direction agents,
+            then replaces both covers and the blurb. The front and rear use separate compositions.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
