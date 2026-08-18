@@ -1216,14 +1216,18 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     const brief = `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\nEXTRA DIRECTION FROM AUTHOR: ${coverPrompt || "(none)"}\n\nBOOK TEXT:\n${sample || "(no chapters yet — work from the premise)"}`;
 
     try {
-      setCoverSwarm("Casting + art direction agents reading the book…");
-      const [casting, artDirection, blurb] = await Promise.all([
+      setCoverSwarm("Casting + art direction + montage agents reading the book…");
+      const [casting, artDirection, montage, blurb] = await Promise.all([
         callAI(
           "You are the CASTING agent for a book cover team. From the book text, lock the principal cast: for each, exact age, build, face, hair, skin, wardrobe, and signature prop. Then lock the world: era, city, weather, time of day, palette. Output tight bullet lines only, no preamble.",
           brief,
         ),
         callAI(
-          `You are the ART DIRECTOR of an award-winning book cover studio. Research from publishing expertise what currently sells in this exact genre: palette psychology, character hierarchy, facial emotion, lens, lighting, shelf-thumbnail impact and typography space. Avoid black-and-gold unless the actual story demands it. Prefer a rich multi-colour palette with a named dominant, secondary and contrast accent. Write the shot brief for one iconic FRONT moment and a genuinely different BACK moment. Cinematic 4K photoreal. Never request painted text. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
+          `You are the ART DIRECTOR of an award-winning book cover studio whose covers win the ABCD / Clio design awards. The house style for this book is BLOCKBUSTER CINEMATIC MONTAGE: a layered movie-poster composition — hero large in the foreground mid-stride toward camera, secondary characters and story beats layered behind at smaller scale, fire, blast debris, smoke plumes, muzzle flash, rain of sparks, vehicles, skyline — all fused into one seamless photoreal image with true depth (foreground / midground / background), volumetric light shafts and anamorphic flare. Never a flat single-subject portrait, never a literal grid of separate panels — one continuous cinematic frame with montage layering. Research what sells in this genre: palette psychology, character hierarchy, facial emotion, lens choice, shelf-thumbnail impact at 1cm, typography space. Rich multi-colour palette with a named dominant, secondary and contrast accent; avoid black-and-gold unless the story demands it. Write the shot brief for one iconic FRONT montage and a genuinely different BACK montage. Cinematic 4K photoreal, whole heads always in frame with headroom. Never request painted text. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
+          brief,
+        ),
+        callAI(
+          `You are the MONTAGE ARCHITECT — you design blockbuster movie-poster layering. From the book, choose the SIX strongest visual beats (the hero moment, the antagonist, the betrayal, the chase/heist, the explosion, the aftermath). For each, give one line: subject, action, scale in frame (hero/large/mid/small/silhouette), depth layer, and lighting. Then state exactly how they fuse into ONE continuous photoreal frame — where the smoke, fire glow and shadow gradients hide the seams, where the eye travels, and where the clean negative space for title typography sits. Bullet lines only.`,
           brief,
         ),
         callAI(
@@ -1234,17 +1238,19 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
       setCoverSwarm("Critic agent reviewing…");
       const critique = await callAI(
-        "You are the CRITIC on a cover team. Attack the art direction: what looks generic, stocky, AI-typical or off-book? Give concrete fixes only, max 10 bullets.",
-        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}`,
+        "You are the CRITIC on an award-jury cover team. Attack the art direction and montage plan: what looks generic, stocky, AI-typical, flat, off-book, or would fail as a 1cm thumbnail? Demand more depth layering, stronger silhouette read, better focal hierarchy and real cinematic drama. Give concrete fixes only, max 10 bullets.",
+        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}\n\nMONTAGE PLAN:\n${montage}`,
       );
 
       setCoverSwarm("Lead agent merging the winning direction…");
       const finalDirection = await callAI(
-        `You are the LEAD of the cover team. Produce TWO independent image-model briefs. FRONT must be the iconic high-impact sales image. BACK must be a different narrative idea, location, camera angle, focal length and visual hierarchy — never a rearranged version of the front and never a second hero lineup. Preserve character identity only when a character actually appears. Never request text, titles, author names, format labels, credits, typography, logos or lettering. Leave clean negative space for separately composited retail typography and a lower-right rear barcode zone. Output exactly:
-FRONT: <brief under 220 words>
-BACK: <brief under 220 words>`,
-        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}\n\nCRITIC:\n${critique}`,
+        `You are the LEAD of the cover team. Produce TWO independent image-model briefs for an AWARD-WINNING blockbuster montage cover set. Both must be ONE seamless photoreal cinematic frame with explicit foreground / midground / background layering of story beats — explosions, fire glow, smoke, debris, sparks, weather, skyline — fused with light and shadow, anamorphic flare, volumetric shafts, 35mm depth of field. FRONT is the iconic high-impact sales montage led by the hero walking toward camera at large scale with full head and headroom. BACK is a genuinely different montage: different beats, location, camera angle, focal length and visual hierarchy — never a rearranged front, never a second hero lineup. Preserve locked character identity wherever a character appears. Every person must have their whole head in frame with clear headroom; nothing important within 12% of any edge. Never request text, titles, author names, format labels, credits, typography, logos or lettering. Leave clean negative space in the lower third of the front for composited retail typography and a lower-right rear barcode zone. Output exactly:
+FRONT: <brief under 240 words>
+BACK: <brief under 240 words>`,
+        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}\n\nMONTAGE PLAN:\n${montage}\n\nCRITIC:\n${critique}`,
       );
+
+
 
       const cleanBlurb = (blurb || "").trim();
       const direction = (finalDirection || "").trim();
