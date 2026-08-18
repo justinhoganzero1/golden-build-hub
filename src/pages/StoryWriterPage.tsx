@@ -34,6 +34,8 @@ import { recordEdit, buildReport, authorshipLogText } from "@/lib/humanEdits";
 import { allDisclosures, combinedDisclosure, type DisclosureFacts } from "@/lib/aiDisclosure";
 import { provenanceBlock, scrubIdentifiers, stripImageMetadata, safeFileName } from "@/lib/metadataHygiene";
 import { narrateChunk as narrateOneChunk } from "@/lib/storyNarration";
+import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
+
 
 
 
