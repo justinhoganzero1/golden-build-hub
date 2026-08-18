@@ -91,9 +91,7 @@ serve(async (req) => {
 
       try {
         const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-        const { data: userData } = await admin.auth.getUser(token);
-        userId = userData?.user?.id ?? null;
-        userEmail = userData?.user?.email ?? null;
+
 
         if (userId) {
           // Look up this user's own provider key.
