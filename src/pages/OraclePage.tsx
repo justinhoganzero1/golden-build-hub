@@ -2560,9 +2560,11 @@ const OraclePage = () => {
               }
             })();
           } else if (kind === "VIDEO") {
-            // No native video pipeline yet — fall back to image + concierge note.
-            toast("Short video pipeline is rolling out — I'll generate a hero image for now.");
+            // Real pipeline: cinematic hero frame -> Gemini/Veo image-to-video.
+            // If the animation step fails we still keep (and save) the frame.
+            toast.success("Filming that for you…");
             (async () => {
+              let imgUrl: string | undefined;
               try {
                 const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`, {
                   method: "POST",
@@ -2571,12 +2573,36 @@ const OraclePage = () => {
                 });
                 if (!r.ok) throw new Error("image-gen failed");
                 const data = await r.json();
-                const imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
-                if (imgUrl) {
-                  saveMedia.mutate({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });
-                  toast.success("Hero frame saved to your Library");
-                }
-              } catch (e) { console.error(e); }
+                imgUrl = data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || data?.images?.[0];
+              } catch (e) { console.error("GEN_VIDEO frame failed", e); }
+              if (!imgUrl) { toast.error("Video generation failed — please try again"); return; }
+              try {
+                const vr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-video`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ image_url: imgUrl, prompt, duration: 5, ratio: "16:9" }),
+                });
+                if (!vr.ok) throw new Error(await vr.text().catch(() => `HTTP ${vr.status}`));
+                const vdata = await vr.json();
+                const videoUrl = vdata?.video_url;
+                if (!videoUrl) throw new Error("no video_url");
+                let savedId: string | undefined;
+                try {
+                  const saved: any = await saveMedia.mutateAsync({
+                    media_type: "video" as any,
+                    title: `Video: ${prompt.slice(0, 60)}`,
+                    url: videoUrl,
+                    source_page: "oracle-video",
+                    metadata: { kind: "video", prompt, source_frame: imgUrl } as any,
+                  });
+                  savedId = saved?.id || saved;
+                } catch (err) { console.error("Oracle video library save failed", err); }
+                askOpenChoice({ kind: "video", deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+              } catch (e) {
+                console.error("GEN_VIDEO animate failed", e);
+                saveMedia.mutate({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });
+                toast("Animation step failed — I saved the cinematic frame to your Library instead");
+              }
             })();
           }
         }
