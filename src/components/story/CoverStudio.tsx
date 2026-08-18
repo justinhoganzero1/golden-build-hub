@@ -173,21 +173,33 @@ export default function CoverStudio({
                       <div className="mx-auto mt-1.5 h-px w-1/2 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
                     </div>
 
-                    {/* Back: blurb card */}
-                    <div className="absolute inset-x-0 top-[22%] bottom-[16%] flex items-center justify-center px-3">
+                    {/* Back: AI-written blurb card */}
+                    <div className="absolute inset-x-0 top-[22%] bottom-[18%] flex items-center justify-center px-3">
                       <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/[0.92] backdrop-blur-[10px] border border-amber-300/60 px-3.5 py-3.5 shadow-[0_18px_60px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(0,0,0,0.6)]">
-                        <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
-                          {blurb?.trim() || "Write your blurb above — it appears here in full, perfectly readable, on the back cover."}
-                        </p>
+                        {blurb?.trim() ? (
+                          <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
+                            {blurb.trim()}
+                          </p>
+                        ) : (
+                          <p className="text-amber-200/80 text-[clamp(0.5rem,1.5vw,0.75rem)] leading-relaxed italic text-center">
+                            {swarmBusy
+                              ? "The cover swarm is writing your back-cover blurb…"
+                              : "Run the cover swarm — the agents write this blurb from your finished book."}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Back: author footer */}
+                    {/* Back: author footer — always "A NOVEL BY <author>" */}
                     <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
+                      <p className="text-center text-white/60 text-[clamp(0.36rem,0.95vw,0.5rem)] uppercase tracking-[0.4em] mb-1">
+                        A novel by
+                      </p>
                       <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.55rem,2vw,0.95rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
                         {author || "Author Name"}
                       </p>
                     </div>
+
                   </>
                 )}
 
