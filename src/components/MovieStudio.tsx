@@ -1824,8 +1824,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             </div>
           </div>
         )}
-        {(productionSwarmBusy || productionSwarm.some(agent => agent.status !== "waiting")) && (
-          <section className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-3" aria-live="polite">
+        <section className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-3" aria-live="polite">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-bold text-primary">
                 <Users className="w-4 h-4" /> Production swarm
@@ -1849,7 +1848,6 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
               ))}
             </div>
           </section>
-        )}
         {scenes.length === 0 && (
           <div className="space-y-3">
             <div>
