@@ -135,9 +135,13 @@ const JOBS: Job[] = [
   { id: "openingTitles", icon: Type, title: "Opening credits only", desc: "Title card and front credits with your own tagline.", opensPanel: true },
   { id: "ads", icon: Megaphone, title: "Insert an advert", desc: "Drop your own promo at the front or the end — AI writes and voices it.", opensPanel: true },
   { id: "mix", icon: Scissors, title: "Final mix levels", desc: "Set how loud the music sits under the narration.", opensPanel: true },
+  { id: "preview", icon: Headphones, title: "Preview mode — audition without rendering", desc: "Play music, SFX, narration and credits against the timeline. Nothing is rendered and nothing is charged.", opensPanel: true },
   { id: "trailer", icon: Film, title: "Cut a preview trailer", desc: "Short punchy cut for socials." },
+  { id: "exportSetup", icon: Settings2, title: "Export settings", desc: "Choose resolution, bitrate and output format before the final render.", opensPanel: true },
   { id: "export", icon: Clapperboard, title: "Render the final cut", desc: "Stitch every scene, voice, music and credits into one file." },
+  { id: "report", icon: FileText, title: "Download the render report", desc: "Timeline changes, voices, music, SFX and any errors from the last run.", opensPanel: true },
 ];
+
 
 const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const [open, setOpen] = useState(false);
