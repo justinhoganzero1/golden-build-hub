@@ -763,9 +763,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     setScenes(prev => prev.map(s => s.id === sceneId
       ? { ...s, narration: text, voice_id: voiceId, audio_url: undefined }
       : s));
-    // Let state settle so generateSceneAudio reads the new narration/voice.
-    await new Promise(r => setTimeout(r, 0));
-    setScenes(prev => { void prev; return prev; });
+    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: true } : s));
     try {
       const resp = await fetch(TTS_URL, {
         method: "POST",
