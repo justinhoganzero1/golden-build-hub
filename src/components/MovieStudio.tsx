@@ -1922,13 +1922,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         ...audioDest.stream.getAudioTracks(),
       ]);
 
-      const recorder = new MediaRecorder(combined, { mimeType: "video/webm;codecs=vp9,opus", videoBitsPerSecond: 8_000_000 });
+      const renderErrors: string[] = [];
+      const preferred = exportSettings.container === "mp4"
+        ? ["video/mp4;codecs=avc1.640028,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus"]
+        : ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+      const mimeType = preferred.find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
+      if (exportSettings.container === "mp4" && !mimeType.startsWith("video/mp4")) {
+        renderErrors.push("MP4 recording is not supported by this browser — fell back to WebM.");
+        toast.info("This browser can't record MP4 — rendering WebM instead");
+      }
+      const recorder = new MediaRecorder(combined, {
+        mimeType,
+        videoBitsPerSecond: Math.max(1, exportSettings.bitrateMbps) * 1_000_000,
+      });
+      const outType = mimeType.split(";")[0];
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       const finished = new Promise<Blob>(res => {
-        recorder.onstop = () => res(new Blob(chunks, { type: "video/webm" }));
+        recorder.onstop = () => res(new Blob(chunks, { type: outType }));
       });
       recorder.start();
+
 
       // Start music underscore at t=0, ducked under VO
       let musicSource: AudioBufferSourceNode | null = null;
