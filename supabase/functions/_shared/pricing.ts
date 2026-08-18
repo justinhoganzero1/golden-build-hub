@@ -31,7 +31,7 @@ export function markupCents(provider_cost_cents: number): MarkedUp {
 
 // ---------------- Provider rate cards (in cents) ----------------
 // These are conservative estimates — adjust as real invoices come in.
-// All values are PROVIDER cost. The +5% markup is added on top automatically.
+// All values are PROVIDER cost. The +10% markup is added on top automatically.
 export const PROVIDER_RATES = {
   // Runway image-to-video Gen-3 Turbo: ~$0.05 per second
   runway_image_to_video_per_second: 5,
@@ -50,7 +50,7 @@ export const PROVIDER_RATES = {
   replicate_upscale_4x: 2,
   replicate_upscale_8x: 4,
 
-  // Twilio (also +50% in wallet_charge_call)
+  // Twilio provider rates (the standard platform markup is applied separately)
   twilio_voice_per_min_inbound: 1,
   twilio_voice_per_min_outbound: 2,
   twilio_sms_per_segment: 1,

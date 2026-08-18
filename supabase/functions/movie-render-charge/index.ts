@@ -1,6 +1,6 @@
 // Movie Studio Pro — render charge gate.
 // Charges the user's wallet at:
-//   provider compute estimate + PLATFORM_MARKUP_PCT (5%) on top of every outside cost
+//   provider compute estimate + the standard 10% platform margin
 //   + an additional service fee that scales with duration (covers Lovable AI + storage)
 //
 // action=estimate → returns price + breakdown, no charge
@@ -14,6 +14,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { markupCents, PROVIDER_RATES } from "../_shared/pricing.ts";
+import { authorizeAI, settleAI, InsufficientCoinsError } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +33,7 @@ interface Body {
   hd?: boolean;
   with_captions?: boolean;
   action: "estimate" | "charge";
+  request_key?: string;
 }
 
 function price(b: Body) {
@@ -66,7 +68,7 @@ function price(b: Body) {
       lovable_compute_markup_cents: internal_fee,
       hd_surcharge_cents: b.hd ? HD_SURCHARGE_CENTS : 0,
       captions_surcharge_cents: b.with_captions ? CAPTION_SURCHARGE_CENTS : 0,
-      platform_markup_pct: 5,
+      platform_markup_pct: 10,
       service_markup_pct: 60,
     },
   };
@@ -109,45 +111,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    // CHARGE — atomic deduction
-    const { data: wallet } = await supabase
-      .from("wallet_balances")
-      .select("balance_cents")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    const balance = wallet?.balance_cents ?? 0;
-    if (balance < p.total_cents) {
-      return json({
-        error: "insufficient_balance",
-        required_cents: p.total_cents,
-        balance_cents: balance,
-        short_cents: p.total_cents - balance,
-        ...p,
-      }, 402);
-    }
-
-    await supabase
-      .from("wallet_balances")
-      .upsert({ user_id: user.id, balance_cents: balance - p.total_cents }, { onConflict: "user_id" });
-
-    await supabase.from("call_charges").insert({
-      user_id: user.id,
-      destination: `movie_render:${body.scene_count}scenes${body.hd ? ":hd" : ""}${body.with_captions ? ":cc" : ""}`,
-      duration_seconds: body.scene_count * SECONDS_PER_SCENE,
-      twilio_cost_cents: p.base_cents,
-      service_fee_cents: p.service_fee_cents,
-      total_billed_cents: p.total_cents,
-      status: "movie_render",
-    });
+    // Atomic, idempotent authorization + settlement. The request key should be
+    // persisted by the caller so retries can never double-charge a render.
+    const requestKey = body.request_key || `movie-render:${crypto.randomUUID()}`;
+    const authorization = await authorizeAI(
+      user.id,
+      requestKey,
+      "movie_render",
+      "multi-provider",
+      body.hd ? "movie-hd" : "movie-standard",
+      p.base_cents,
+      { scene_count: body.scene_count, hd: !!body.hd, captions: !!body.with_captions },
+    );
+    const settled = await settleAI(
+      authorization.transaction_id,
+      p.base_cents,
+      undefined,
+      [
+        { unit_type: "video_second", quantity: body.scene_count * SECONDS_PER_SCENE },
+        { unit_type: "character", quantity: body.scene_count * AVG_VO_CHARS_PER_SCENE },
+      ],
+      { estimated_total_cents: p.total_cents },
+    );
 
     return json({
       success: true,
       ...p,
-      new_balance_cents: balance - p.total_cents,
+      billing_transaction_id: authorization.transaction_id,
+      duplicate: authorization.duplicate,
+      new_balance_cents: settled.new_balance_cents,
     });
   } catch (e) {
     console.error("movie-render-charge error:", e);
+    if (e instanceof InsufficientCoinsError) {
+      return json({ error: "insufficient_balance", required_cents: e.needed_cents, balance_cents: e.balance_cents }, 402);
+    }
     return json({ error: e instanceof Error ? e.message : "unknown" }, 500);
   }
 });

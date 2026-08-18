@@ -1,6 +1,7 @@
-// Shared coin-wallet helpers for edge functions.
-// Every paid AI call MUST chargeAI() before invoking the upstream provider.
-// If insufficient balance, throw InsufficientCoinsError → caller returns 402.
+// Shared per-user billing helpers for edge functions.
+// Paid providers should authorizeAI() before work, then settleAI() with measured
+// usage or cancelAI() when the provider fails. chargeAI() remains as a safe,
+// atomic compatibility path for endpoints not yet converted to two-phase usage.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { markupCents } from "./pricing.ts";
@@ -22,6 +23,98 @@ export interface ChargeResult {
   charge_id: string;
   total_cents: number;
   new_balance_cents: number;
+}
+
+export interface BillingAuthorization {
+  transaction_id: string;
+  hold_id: string;
+  held_total_micros: number;
+  available_balance_micros: number;
+  duplicate: boolean;
+}
+
+export interface UsageEvent {
+  unit_type: "input_token" | "output_token" | "character" | "image" | "audio_second" | "video_second" | "call_minute" | "sms_segment" | "compute_second" | "storage_gb" | "bandwidth_gb" | "request";
+  quantity: number;
+  unit_cost_micros?: number;
+  provider_cost_micros?: number;
+  metadata?: Record<string, unknown>;
+}
+
+function serviceClient() {
+  return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+}
+
+function centsToMicros(cents: number): number {
+  return Math.max(10_000, Math.ceil(cents) * 10_000);
+}
+
+async function currentBalance(userId: string): Promise<number> {
+  const { data } = await serviceClient().from("wallet_balances").select("balance_cents").eq("user_id", userId).maybeSingle();
+  return data?.balance_cents ?? 0;
+}
+
+/** Reserve estimated funds without spending them. Safe to retry with the same request key. */
+export async function authorizeAI(
+  userId: string,
+  requestKey: string,
+  service: string,
+  provider: string,
+  model: string,
+  estimatedProviderCostCents: number,
+  metadata: Record<string, unknown> = {},
+): Promise<BillingAuthorization> {
+  const estimatedMicros = centsToMicros(estimatedProviderCostCents);
+  const { data, error } = await serviceClient().rpc("billing_authorize", {
+    _user_id: userId,
+    _request_key: requestKey,
+    _service: service,
+    _provider: provider,
+    _model: model,
+    _estimated_provider_cost_micros: estimatedMicros,
+    _metadata: metadata,
+  });
+  if (error) {
+    if (error.message.includes("insufficient_funds")) {
+      const balance = await currentBalance(userId);
+      const total = Math.ceil((estimatedMicros * 1.1) / 10_000);
+      throw new InsufficientCoinsError(total, balance);
+    }
+    throw new Error(`billing_authorize failed: ${error.message}`);
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("billing_authorize returned no row");
+  return row as BillingAuthorization;
+}
+
+/** Settle a hold from actual provider cost and measured usage. Safe to retry. */
+export async function settleAI(
+  transactionId: string,
+  actualProviderCostCents: number,
+  providerRequestId?: string,
+  usage: UsageEvent[] = [],
+  metadata: Record<string, unknown> = {},
+): Promise<{ total_billed_cents: number; new_balance_cents: number; platform_fee_micros: number }> {
+  const { data, error } = await serviceClient().rpc("billing_settle", {
+    _transaction_id: transactionId,
+    _actual_provider_cost_micros: centsToMicros(actualProviderCostCents),
+    _provider_request_id: providerRequestId ?? null,
+    _usage: usage,
+    _metadata: metadata,
+  });
+  if (error) throw new Error(`billing_settle failed: ${error.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("billing_settle returned no row");
+  return row;
+}
+
+/** Release a hold when provider work fails before settlement. */
+export async function cancelAI(transactionId: string, reason = "provider_failed"): Promise<void> {
+  const { error } = await serviceClient().rpc("billing_cancel", {
+    _transaction_id: transactionId,
+    _reason: reason,
+  });
+  if (error) throw new Error(`billing_cancel failed: ${error.message}`);
 }
 
 /**
@@ -61,24 +154,22 @@ export async function chargeAI(
   metadata: Record<string, unknown> = {},
   _req?: Request,
 ): Promise<ChargeResult> {
-  const { provider_cost_cents: prov, platform_fee_cents: fee } = markupCents(provider_cost_cents);
-  const client = createClient(SUPABASE_URL, SERVICE_KEY);
-
-  const { data, error } = await client.rpc("wallet_charge_ai", {
-    _user_id: user_id,
-    _service: service,
-    _provider_cost_cents: prov,
-    _platform_fee_cents: fee,
-    _metadata: metadata,
-  });
-  if (error) throw new Error(`wallet_charge_ai failed: ${error.message}`);
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) throw new Error("wallet_charge_ai returned no row");
-  if (row.insufficient) {
-    throw new InsufficientCoinsError(row.total_billed_cents, row.new_balance_cents);
-  }
+  const { provider_cost_cents: prov } = markupCents(provider_cost_cents);
+  const requestKey = typeof metadata.request_key === "string" && metadata.request_key
+    ? metadata.request_key
+    : `${service}:${crypto.randomUUID()}`;
+  const authorization = await authorizeAI(
+    user_id,
+    requestKey,
+    service,
+    typeof metadata.provider === "string" ? metadata.provider : "unknown",
+    typeof metadata.model === "string" ? metadata.model : "unknown",
+    prov,
+    metadata,
+  );
+  const row = await settleAI(authorization.transaction_id, prov, undefined, [{ unit_type: "request", quantity: 1 }], metadata);
   return {
-    charge_id: row.charge_id,
+    charge_id: authorization.transaction_id,
     total_cents: row.total_billed_cents,
     new_balance_cents: row.new_balance_cents,
   };
