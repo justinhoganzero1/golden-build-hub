@@ -61,6 +61,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
+        if (session?.user) {
+          const uid = session.user.id;
+          setTimeout(() => ensureOwnAccount(uid), 0);
+        }
+
         // Best-effort welcome-reward trigger after email-confirmation sign-in.
         // Idempotent on the server, but we add a per-user flag to avoid spam.
         if (event === "SIGNED_IN" && session?.user) {
