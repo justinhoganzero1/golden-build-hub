@@ -1203,6 +1203,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
    */
   const [coverSwarm, setCoverSwarm] = useState<string | null>(null);
   const [coverTeamNotes, setCoverTeamNotes] = useState<string[]>([]);
+  const [coverDesign, setCoverDesign] = useState<CoverDesign | undefined>(undefined);
+
   const runCoverSwarm = async () => {
     if (!requireMeta()) return;
     const sample = story.chapters
