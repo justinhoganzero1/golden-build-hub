@@ -150,6 +150,8 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const [busy, setBusy] = useState<JobId | null>(null);
 
   const [voiceId, setVoiceId] = useState(CURATED_ELEVENLABS_VOICES[0].id);
+  const [auditionPick, setAuditionPick] = useState<AuditionLayers>(actions.auditionLayers);
+
   const [musicPrompt, setMusicPrompt] = useState("");
   const [subtitleLine, setSubtitleLine] = useState("");
   const [ad, setAd] = useState({ headline: "", script: "", visual: "", seconds: 10, position: "front" as "front" | "end" });
