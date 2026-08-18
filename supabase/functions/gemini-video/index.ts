@@ -61,7 +61,7 @@ async function fetchAsBase64(url: string): Promise<{ data: string; mime: string 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  let hold: { transactionId: string } | null = null;
+  let hold: { transaction_id: string } | null = null;
   let settled = false;
   let estimate = 0;
 
@@ -83,7 +83,7 @@ serve(async (req) => {
     const seconds = duration === 10 ? 10 : 5;
     estimate = seconds * PROVIDER_RATES.veo_video_per_second;
     try {
-      hold = await authorizeAI(auth.user.id, "gemini-video", estimate, {
+      hold = await authorizeAI(auth.user.id, `gemini-video:${crypto.randomUUID()}`, "gemini-video", "lovable-ai", "veo-3.0-generate-001", estimate, {
         provider: "lovable-ai",
         model: "veo-3.0-generate-001",
         seconds,
@@ -155,11 +155,11 @@ serve(async (req) => {
             const buf = new Uint8Array(await dl.arrayBuffer());
             let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
             const dataUrl = `data:video/mp4;base64,${btoa(bin)}`;
-            if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
+            if (hold) { await settleAI(hold.transaction_id, estimate); settled = true; }
             return json({ video_url: dataUrl });
           }
         } catch (_) { /* fall through */ }
-        if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
+        if (hold) { await settleAI(hold.transaction_id, estimate); settled = true; }
         return json({ video_url: url });
       }
       if (oj.error) return json({ error: oj.error.message || "Gemini Video failed" }, 502);
@@ -172,7 +172,7 @@ serve(async (req) => {
     // Any path that did not settle releases the hold — the user is never charged
     // for compute they did not receive.
     if (hold && !settled) {
-      try { await cancelAI(hold.transactionId, "provider_failed"); } catch (_) { /* best effort */ }
+      try { await cancelAI(hold.transaction_id, "provider_failed"); } catch (_) { /* best effort */ }
     }
   }
 });

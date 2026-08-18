@@ -47,7 +47,7 @@ interface Body {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  let hold: { transactionId: string } | null = null;
+  let hold: { transaction_id: string } | null = null;
   let settled = false;
   let estimate = 0;
 
@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     const totalSeconds = Math.ceil(images.length * per);
     estimate = Math.max(1, totalSeconds * PROVIDER_RATES.shotstack_render_per_second);
     try {
-      hold = await authorizeAI(auth.user.id, "compile-marketing-video", estimate, {
+      hold = await authorizeAI(auth.user.id, `compile-marketing-video:${crypto.randomUUID()}`, "compile-marketing-video", "shotstack", "shotstack-render", estimate, {
         provider: "shotstack",
         seconds: totalSeconds,
         images: images.length,
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     if (!finalUrl) throw new Error("Render timed out — try fewer images.");
 
     // Render delivered — settle the hold at the estimated amount.
-    if (hold) { await settleAI(hold.transactionId, estimate); settled = true; }
+    if (hold) { await settleAI(hold.transaction_id, estimate); settled = true; }
 
     return new Response(JSON.stringify({ video_url: finalUrl, render_id: renderId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -165,7 +165,7 @@ Deno.serve(async (req) => {
   } finally {
     // Failed / timed-out renders release the hold — the user is never charged.
     if (hold && !settled) {
-      try { await cancelAI(hold.transactionId, "render_failed"); } catch (_) { /* best effort */ }
+      try { await cancelAI(hold.transaction_id, "render_failed"); } catch (_) { /* best effort */ }
     }
   }
 });
