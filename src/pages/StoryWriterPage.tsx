@@ -1200,7 +1200,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
           brief,
         ),
         callAI(
-          `You are the ART DIRECTOR of an award-winning book cover studio. Write the shot brief for the single most iconic FRONT cover moment and a quieter companion BACK cover moment for this ${story.genre} book. Cinematic, 4K photoreal, real lens language (focal length, lighting, grade, weather). Never describe text, titles, logos or lettering. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
+          `You are the ART DIRECTOR of an award-winning book cover studio. Write the shot brief for the single most iconic FRONT cover moment and a quieter companion BACK cover moment for this ${story.genre} book. Cinematic, 4K photoreal, real lens language (focal length, lighting, grade, weather). Never describe or paint text, titles, author names, format labels, credits, logos or lettering. Leave intentional negative space for the app's editable professional typography. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
           brief,
         ),
         callAI(
@@ -1217,7 +1217,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
 
       setCoverSwarm("Lead agent merging the winning direction…");
       const finalDirection = await callAI(
-        `You are the LEAD of the cover team. Produce TWO independent image-model briefs. FRONT must be the iconic high-impact sales image. BACK must be a different narrative idea, location, camera angle, focal length and visual hierarchy — never a rearranged version of the front and never a second hero lineup. Preserve character identity only when a character actually appears. Never request text, titles, author names, typography, logos or lettering. Output exactly:
+        `You are the LEAD of the cover team. Produce TWO independent image-model briefs. FRONT must be the iconic high-impact sales image. BACK must be a different narrative idea, location, camera angle, focal length and visual hierarchy — never a rearranged version of the front and never a second hero lineup. Preserve character identity only when a character actually appears. Never request text, titles, author names, format labels, credits, typography, logos or lettering. Leave clean negative space for separately composited retail typography and a lower-right rear barcode zone. Output exactly:
 FRONT: <brief under 220 words>
 BACK: <brief under 220 words>`,
         `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}\n\nCRITIC:\n${critique}`,
