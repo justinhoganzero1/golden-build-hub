@@ -1689,7 +1689,21 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     startPipeline: () => { void runPipeline(0); },
     resumePipeline,
     cancelPipeline,
+    pipelineArtifacts,
+    nextPipelineStepLabel,
+    // Preview mode (audition, no render)
+    auditionLayers,
+    auditionState,
+    startAudition: layers => { void startAudition(layers); },
+    stopAudition,
+    // Export controls
+    exportSettings,
+    setExportSettings: patch => setExportSettings(prev => ({ ...prev, ...patch })),
+    // Render report
+    hasRenderReport: !!renderReport,
+    downloadRenderReport,
   };
+
 
 
   // ----- Scene CRUD -----
