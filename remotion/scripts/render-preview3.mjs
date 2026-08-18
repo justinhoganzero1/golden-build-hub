@@ -24,7 +24,7 @@ const composition = await selectComposition({ serveUrl: bundled, id: "preview3",
 console.log("frames:", composition.durationInFrames);
 
 if (STILLS_ONLY) {
-  for (const f of [40, 300, 1200, 3900, 4300, 5300]) {
+  for (const f of [40, 1200, 3980, 4150]) {
     await renderStill({
       composition, serveUrl: bundled, frame: f,
       output: `/tmp/p3-${f}.png`, puppeteerInstance: browser, overwrite: true,

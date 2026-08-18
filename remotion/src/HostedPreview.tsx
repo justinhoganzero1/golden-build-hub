@@ -76,13 +76,13 @@ const TalkingHead: React.FC<{
           position: "absolute",
           left: "50%",
           top: `${mouthY * 100}%`,
-          width: `${9 * (0.8 + level * 0.5)}%`,
-          height: `${3.4 * Math.max(0.05, level)}%`,
+          width: `${5 * (0.8 + level * 0.4)}%`,
+          height: `${2.2 * Math.max(0.05, level)}%`,
           transform: "translate(-50%, -50%)",
           borderRadius: "50%",
           background: "rgba(30,9,14,0.86)",
-          opacity: level > 0.05 ? Math.min(0.85, 0.3 + level * 0.7) : 0,
-          filter: "blur(1.2px)",
+          opacity: level > 0.12 ? Math.min(0.6, 0.18 + level * 0.5) : 0,
+          filter: "blur(2.5px)",
         }}
       />
       {/* teeth on wide vowels */}
@@ -91,12 +91,12 @@ const TalkingHead: React.FC<{
           position: "absolute",
           left: "50%",
           top: `${mouthY * 100 - 0.7}%`,
-          width: `${6.4 * (0.8 + level * 0.4)}%`,
+          width: `${3.4 * (0.8 + level * 0.4)}%`,
           height: "0.75%",
           transform: "translate(-50%, -50%)",
           borderRadius: "50%",
           background: "rgba(255,250,240,0.7)",
-          opacity: level > 0.55 ? (level - 0.55) * 1.4 : 0,
+          opacity: level > 0.62 ? (level - 0.62) * 1.1 : 0,
           filter: "blur(1px)",
         }}
       />
@@ -160,7 +160,7 @@ const StudioSeg: React.FC<{ seg: Seg; len: number; pre: number }> = ({ seg, len,
       </div>
 
       {seg.plate && (
-        <div style={{ position: "absolute", left: 118, top: 946 }}>
+        <div style={{ position: "absolute", left: 118, top: 918 }}>
           <Plate name="OLIVIA VANCE" title="ORACLE LUNAR SCREENING ROOM" w={700} />
         </div>
       )}
