@@ -1,6 +1,9 @@
-import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw, Download, Share2 } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 import { Button } from "@/components/ui/button";
+import { bakeCoverText, type BakeTextOptions } from "@/lib/bakeCoverText";
+import { toast } from "sonner";
 
 /**
  * Cover Studio — the FINAL illustration step of Story Writer.
@@ -45,6 +48,65 @@ export default function CoverStudio({
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
+  const [exportBusy, setExportBusy] = useState<"download" | "share" | null>(null);
+  const layout = useMemo<BakeTextOptions["layout"]>(() => {
+    const choices: NonNullable<BakeTextOptions["layout"]>[] = ["masthead", "title-author", "cinematic", "editorial"];
+    const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 31) + char.charCodeAt(0)) >>> 0, 7);
+    return choices[seed % choices.length];
+  }, [title, genre]);
+  const authorBelowTitle = layout === "title-author" || layout === "editorial";
+
+  const dataUrlToFile = async (dataUrl: string, name: string) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    return new File([blob], name, { type: "image/jpeg" });
+  };
+
+  const buildRetailFiles = async () => {
+    if (!coverImage || !backImage) throw new Error("Build both covers first");
+    const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
+    const [front, back] = await Promise.all([
+      bakeCoverText(coverImage, { ...common, slot: "cover" }),
+      bakeCoverText(backImage, { ...common, slot: "back", blurb }),
+    ]);
+    const safe = (title || "book").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return Promise.all([
+      dataUrlToFile(front, `${safe}-front-print-6x9-bleed.jpg`),
+      dataUrlToFile(back, `${safe}-back-print-6x9-bleed.jpg`),
+    ]);
+  };
+
+  const downloadRetailFiles = async () => {
+    setExportBusy("download");
+    try {
+      const files = await buildRetailFiles();
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = file.name;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      });
+      toast.success("Print-ready front and rear covers downloaded");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cover export failed");
+    } finally { setExportBusy(null); }
+  };
+
+  const shareRetailFiles = async () => {
+    setExportBusy("share");
+    try {
+      const files = await buildRetailFiles();
+      if (navigator.canShare?.({ files })) {
+        await navigator.share({ files, title: `${title} covers`, text: "Print-ready front and rear book covers" });
+      } else {
+        throw new Error("File sharing is unavailable here — use Download instead");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error(error instanceof Error ? error.message : "Cover sharing failed");
+    } finally { setExportBusy(null); }
+  };
 
 
   return (
@@ -148,7 +210,18 @@ export default function CoverStudio({
                         {title || "Your Title Here"}
                       </h3>
                       <div className="mx-auto mt-2 h-px w-1/3 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
+                      {authorBelowTitle && author && (
+                        <p className="mt-3 text-center text-foreground text-[clamp(0.55rem,1.7vw,0.85rem)] font-bold uppercase drop-shadow-lg">
+                          {author}
+                        </p>
+                      )}
                     </div>
+
+                    {!authorBelowTitle && author && (
+                      <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-5 bg-gradient-to-t from-black/90 via-black/55 to-transparent">
+                        <p className="text-center text-foreground text-[clamp(0.65rem,2vw,1rem)] font-bold uppercase drop-shadow-lg">{author}</p>
+                      </div>
+                    )}
 
                   </>
                 ) : (
@@ -186,6 +259,8 @@ export default function CoverStudio({
                         )}
                       </div>
                     </div>
+
+                    <div className="absolute right-[10%] bottom-[5.5%] h-[10.5%] w-[32%] bg-foreground/95 border border-background/20" aria-label="Retail barcode safe zone" />
 
                   </>
                 )}
@@ -255,6 +330,22 @@ export default function CoverStudio({
           </p>
         </div>
       )}
+
+      <div className="px-3 pt-2 space-y-2 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button type="button" variant="outline" onClick={downloadRetailFiles} disabled={anyBusy || !!exportBusy || !coverImage || !backImage}>
+            {exportBusy === "download" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Download print covers
+          </Button>
+          <Button type="button" variant="outline" onClick={shareRetailFiles} disabled={anyBusy || !!exportBusy || !coverImage || !backImage}>
+            {exportBusy === "share" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            Share cover files
+          </Button>
+        </div>
+        <p className="text-[10px] text-center text-muted-foreground">
+          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The rear reserves the bookseller barcode zone. No “A novel by” text is added.
+        </p>
+      </div>
     </section>
   );
 }

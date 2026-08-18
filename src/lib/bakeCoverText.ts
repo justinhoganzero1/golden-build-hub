@@ -13,6 +13,11 @@ export interface BakeTextOptions {
   genre?: string;
   /** Long edge of the output image. */
   size?: number;
+  /** Exact print dimensions. Defaults to 6x9in plus 0.125in bleed at 300 DPI. */
+  width?: number;
+  height?: number;
+  /** Per-book typography treatment selected from the book identity. */
+  layout?: "masthead" | "title-author" | "cinematic" | "editorial";
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -98,10 +103,8 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
  */
 export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): Promise<string> {
   const img = await loadImage(artworkUrl);
-  const targetH = opts.size ?? 2048;
-  const ratio = (img.naturalWidth || 1400) / (img.naturalHeight || 2100);
-  const H = targetH;
-  const W = Math.round(H * ratio);
+  const H = opts.height ?? opts.size ?? 2775;
+  const W = opts.width ?? 1875;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -117,10 +120,11 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const inner = W - pad * 2;
   const title = (opts.title || "Untitled").toUpperCase();
   const author = opts.author || "Author";
+  const layout = opts.layout ?? "masthead";
 
   if (opts.slot === "cover") {
     scrim(ctx, W, 0, H * 0.42, "top");
-    let y = H * 0.055;
+    let y = layout === "editorial" ? H * 0.12 : H * 0.055;
 
     if (opts.genre) {
       ctx.font = `600 ${W * 0.026}px Helvetica, Arial, sans-serif`;
@@ -146,17 +150,17 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     ctx.fillStyle = "rgba(255,215,122,0.5)";
     ctx.fillRect(W * 0.33, y, W * 0.34, Math.max(1, W * 0.0015));
 
-    // Author footer
-    scrim(ctx, W, H * 0.74, H * 0.26, "bottom");
+    // The author credit is deliberately flexible per book. Never add a
+    // generic "A NOVEL BY" label and never duplicate the author on the rear.
+    const authorBelowTitle = layout === "title-author" || layout === "editorial";
+    const authorY = authorBelowTitle ? y + W * 0.05 : H * 0.92;
+    if (!authorBelowTitle) scrim(ctx, W, H * 0.76, H * 0.24, "bottom");
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
     ctx.shadowBlur = W * 0.015;
-    ctx.font = `500 ${W * 0.024}px Helvetica, Arial, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.65)";
-    ctx.fillText("A  N O V E L   B Y", W / 2, H * 0.885);
-    ctx.font = `700 ${W * 0.055}px Georgia, 'Times New Roman', serif`;
+    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${W * (authorBelowTitle ? 0.043 : 0.052)}px ${layout === "editorial" ? "Helvetica, Arial, sans-serif" : "Georgia, 'Times New Roman', serif"}`;
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(author.toUpperCase(), W / 2, H * 0.915);
+    ctx.fillText(layout === "editorial" ? author : author.toUpperCase(), W / 2, authorY);
     ctx.restore();
   } else {
     scrim(ctx, W, 0, H * 0.22, "top");
@@ -199,13 +203,14 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       ctx.textAlign = "center";
     }
 
-    scrim(ctx, W, H * 0.8, H * 0.2, "bottom");
+    // Reserve a clean retail barcode zone. The barcode itself is supplied by
+    // the bookseller/printer and must not be invented by the cover generator.
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.015;
-    ctx.font = `700 ${W * 0.045}px Georgia, 'Times New Roman', serif`;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(author.toUpperCase(), W / 2, H * 0.925);
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    ctx.fillRect(W * 0.58, H * 0.84, W * 0.32, H * 0.105);
+    ctx.strokeStyle = "rgba(0,0,0,0.22)";
+    ctx.lineWidth = Math.max(2, W * 0.0015);
+    ctx.strokeRect(W * 0.58, H * 0.84, W * 0.32, H * 0.105);
     ctx.restore();
   }
 
