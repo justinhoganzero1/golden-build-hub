@@ -3205,6 +3205,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         )}
 
         <canvas ref={exportCanvasRef} style={{ display: "none" }} />
+        <MovieHostPanel
+          open={hostPanelOpen}
+          onOpenChange={setHostPanelOpen}
+          host={host}
+          onHostChange={patchHost}
+          scenes={scenes.map(s => ({
+            id: s.id,
+            caption: s.caption,
+            image_url: s.image_url,
+            duration_sec: s.duration_sec,
+            host_beat: s.host_beat,
+            interview: s.interview,
+          }))}
+          onSceneChange={(id, patch) => updateScene(id, patch as Partial<Scene>)}
+          onGeneratePortrait={generateHostPortrait}
+          generatingPortrait={generatingPortrait}
+          onVoiceHostBeat={voiceHostBeat}
+          onVoiceInterview={voiceInterview}
+        />
         <MovieShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
