@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw, Download, Share2 } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 import { Button } from "@/components/ui/button";
-import { bakeCoverText, type BakeTextOptions } from "@/lib/bakeCoverText";
+import { bakeCoverText, type BakeTextOptions, type CoverDesign } from "@/lib/bakeCoverText";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { toast } from "sonner";
 
