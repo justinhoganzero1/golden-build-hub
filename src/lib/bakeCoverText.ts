@@ -267,55 +267,101 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     // in the upper two-thirds; title + author sit in the lower band.
     scrim(ctx, W, H * 0.52, H * 0.48, "bottom");
 
-    const t = fitLines(ctx, title, inner, H * 0.22, W * 0.13, "900", identity.display, 1.02);
+    const t = fitLines(ctx, title, inner * 0.94, H * 0.22, W * 0.145, identity.displayWeight, identity.display, 1.02);
     const titleBlock = t.lines.length * t.lineHeight;
-    const authorSize = W * 0.05;
-    const genreSize = W * 0.026;
+    const authorSize = W * 0.052;
+    const genreSize = W * 0.024;
+    const track = t.fontSize * identity.tracking;
 
     const bottomPad = H * 0.055;
     const authorY = H - bottomPad - authorSize * 1.2;
-    const ruleY = authorY - W * 0.035;
-    const titleY = ruleY - W * 0.03 - titleBlock;
+    const ruleY = authorY - W * 0.038;
+    const titleY = ruleY - W * 0.032 - titleBlock;
     const genreY = titleY - W * 0.055;
 
     if (opts.genre) {
-      ctx.font = `700 ${genreSize}px ${identity.body}`;
+      ctx.font = `${identity.bodyWeight} ${genreSize}px ${identity.body}`;
       ctx.fillStyle = identity.accent;
-      ctx.fillText(opts.genre.toUpperCase().split("").join(" "), W / 2, genreY);
+      drawTracked(ctx, opts.genre.toUpperCase(), W / 2, genreY, genreSize * 0.34,
+        (s, x, y2) => ctx.fillText(s, x, y2));
     }
 
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.02;
-    ctx.shadowOffsetY = W * 0.006;
-    ctx.fillStyle = titleGradient(ctx, titleY, titleBlock, identity);
-    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, titleY + i * t.lineHeight));
-    ctx.restore();
+    // Title: soft drop shadow → dark outline → metallic gradient fill →
+    // a hairline highlight along the top. This is what reads as "designed"
+    // rather than "browser default text".
+    ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
+    t.lines.forEach((line, i) => {
+      const ly = titleY + i * t.lineHeight;
 
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = W * 0.03;
+      ctx.shadowOffsetY = W * 0.008;
+      ctx.fillStyle = "rgba(0,0,0,0.85)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(2, t.fontSize * 0.055);
+      ctx.strokeStyle = "rgba(8,6,10,0.92)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.fillStyle = titleGradient(ctx, ly, t.lineHeight, identity);
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = Math.max(1, t.fontSize * 0.012);
+      ctx.strokeStyle = identity.light;
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.restore();
+    });
+
+    // Twin rule with a diamond mark — a small piece of craft between title
+    // and byline.
     ctx.fillStyle = identity.accent;
-    ctx.fillRect(W * 0.33, ruleY, W * 0.34, Math.max(1, W * 0.0018));
+    const rw = W * 0.17;
+    const rh = Math.max(1.5, W * 0.0022);
+    ctx.fillRect(W / 2 - rw - W * 0.022, ruleY, rw, rh);
+    ctx.fillRect(W / 2 + W * 0.022, ruleY, rw, rh);
+    ctx.save();
+    ctx.translate(W / 2, ruleY + rh / 2);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillRect(-W * 0.007, -W * 0.007, W * 0.014, W * 0.014);
+    ctx.restore();
 
     // The author credit is deliberately flexible per book. Keep it as the
     // author's name alone and never duplicate it on the rear.
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.015;
-    ctx.font = `${layout === "cinematic" ? "800" : "700"} ${authorSize}px ${identity.body}`;
+    ctx.shadowBlur = W * 0.018;
+    ctx.font = `${identity.bodyWeight} ${authorSize}px ${identity.body}`;
     ctx.fillStyle = identity.light;
-    ctx.fillText(layout === "editorial" ? author : author.toUpperCase(), W / 2, authorY);
+    const authorText = layout === "editorial" ? author : author.toUpperCase();
+    drawTracked(ctx, authorText, W / 2, authorY, authorSize * (layout === "editorial" ? 0.02 : 0.16),
+      (s, x, y2) => ctx.fillText(s, x, y2));
     ctx.restore();
   } else {
-    scrim(ctx, W, 0, H * 0.22, "top");
+    scrim(ctx, W, 0, H * 0.24, "top");
 
     let y = H * 0.05;
-    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.085, "900", identity.display, 1.05);
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.95)";
-    ctx.shadowBlur = W * 0.02;
-    ctx.fillStyle = titleGradient(ctx, y, t.lines.length * t.lineHeight, identity);
-    t.lines.forEach((line, i) => ctx.fillText(line, W / 2, y + i * t.lineHeight));
-    ctx.restore();
+    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.09, identity.displayWeight, identity.display, 1.05);
+    const track = t.fontSize * identity.tracking;
+    ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
+    t.lines.forEach((line, i) => {
+      const ly = y + i * t.lineHeight;
+      ctx.save();
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(2, t.fontSize * 0.05);
+      ctx.strokeStyle = "rgba(8,6,10,0.9)";
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.strokeText(s, x, y2));
+      ctx.fillStyle = titleGradient(ctx, ly, t.lineHeight, identity);
+      drawTracked(ctx, line, W / 2, ly, track, (s, x, y2) => ctx.fillText(s, x, y2));
+      ctx.restore();
+    });
     y += t.lines.length * t.lineHeight + W * 0.02;
+
 
     // Blurb card
     const blurb = (opts.blurb || "").trim();
