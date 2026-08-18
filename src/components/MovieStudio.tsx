@@ -1933,6 +1933,31 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                     ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Composing...</>
                     : musicUrl ? <><RefreshCw className="w-3 h-3 mr-1" /> Re-compose</> : <><Sparkles className="w-3 h-3 mr-1" /> Compose music</>}
                 </Button>
+                <label className="h-7 px-2 text-xs inline-flex items-center gap-1 border border-border bg-input cursor-pointer hover:bg-muted/50">
+                  <Upload className="w-3 h-3" /> Upload your own track
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setMusicUrl(String(reader.result));
+                        toast.success(`Soundtrack loaded: ${file.name}`);
+                      };
+                      reader.onerror = () => toast.error("Could not read that audio file");
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {musicUrl && (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setMusicUrl(null)}>
+                    Remove track
+                  </Button>
+                )}
                 {musicUrl && (
                   <audio
                     src={musicUrl}
