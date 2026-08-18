@@ -144,7 +144,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
       sx = (img.width - sw) / 2;
     } else if (srcAR < dstAR) {
       sh = img.width / dstAR;
-      sy = (img.height - sh) * 0.18; // keep heads in frame
+      sy = (img.height - sh) * 0.06; // keep heads in frame
     }
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
   }
