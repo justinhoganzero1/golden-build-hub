@@ -234,6 +234,11 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const nextBlockPrice = priceForBlockUSD(nextBlockNumber);
   // Newsroom (YouTube show) preset
   const [newsroomMode, setNewsroomMode] = useState(false);
+  // ----- Movie Host layer (talking head + live interviews) -----
+  const [host, setHost] = useState<HostConfig>(DEFAULT_HOST);
+  const [hostPanelOpen, setHostPanelOpen] = useState(false);
+  const [generatingPortrait, setGeneratingPortrait] = useState(false);
+  const patchHost = (patch: Partial<HostConfig>) => setHost(prev => ({ ...prev, ...patch }));
   const [showName, setShowName] = useState("");          // e.g. "ORACLE LUNAR Daily"
   const [hostName, setHostName] = useState("");          // e.g. "Alex Rivera"
   const [hostTitle, setHostTitle] = useState("");        // e.g. "Lead Anchor"
