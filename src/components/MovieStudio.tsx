@@ -104,6 +104,8 @@ interface Scene {
   // SFX (per scene)
   sfx_prompt?: string;
   sfx_url?: string;
+  sfx_offset_sec?: number; // where in the scene the effect lands
+  sfx_volume?: number;     // 0..1, default 0.6
   generatingSfx?: boolean;
   // Per-scene backing music
   music_prompt?: string;
