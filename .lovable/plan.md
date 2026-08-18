@@ -1,87 +1,108 @@
+# Oracle Lunar Per-User Billing 2.0
 
-# Voice AI Receptionist — Live Build Plan
+## Expert verdict
+Three independent reviews—a principal fintech architect, an adversarial payments reviewer, and an AI FinOps architect—rejected the current implementation for production approval.
 
-Adds a new module to Oracle Lunar that answers a real phone number with an AI agent, books appointments to both Oracle Calendar and Google Calendar, fires text-back SMS on missed calls, and pushes every call into a built-in CRM pipeline with tags, follow-ups, and tasks.
+Key blockers:
+- Many paid AI/provider routes do not debit a user's wallet at all.
+- Stripe webhook retries can credit the same top-up more than once.
+- Movie rendering uses a race-prone manual balance update outside the billing engine.
+- Most charges are estimates, not actual tokens, characters, seconds, images, or provider cost.
+- Failed work can remain charged because there is no universal hold, settlement, cancellation, and refund lifecycle.
+- “Unlimited” and admin paths hide real economic cost from reporting.
+- Provider pricing and markup rules are duplicated and inconsistent.
 
-## What will be live in your app
-
-1. **Voice AI agent** — Twilio phone number → TwiML webhook → Gemini-powered agent that greets, handles FAQs, qualifies the caller, books appointments, and hands off to a human when rules trigger. Speech: Twilio `<Gather input="speech">` + ElevenLabs TTS streamed back via `<Play>`.
-2. **Admin console** (`/admin/voice-receptionist`) — edit the agent's prompt, knowledge base (FAQs Q&A list), business hours, languages, voice, handoff number, booking calendar, and pipeline mapping.
-3. **Booking rules + handoff** — JSON rules (e.g. "if intent=complaint OR value>$5k → transfer to +614..."). Booked slots check both calendars for conflicts.
-4. **Missed-call text-back** — Twilio `status_callback` detects `no-answer`/`busy`/`failed` and fires an SMS within seconds, plus a 24h + 72h reactivation drip if no reply.
-5. **CRM pipeline** — every call creates a `crm_contact` + `crm_activity`; agent can tag, advance pipeline stage, schedule a follow-up task, queue an SMS/email, and POST to an external webhook (Zapier/n8n/HighLevel-compatible) so it "feeds your whole system."
-
-## Capability tiles on the new module page
-
-Re-uses the screenshot's 5-tile layout, styled to Oracle Lunar (dark + amber), each tile linking to its live admin section.
-
-## Architecture (technical)
+## Target experience
+Every signed-in member receives an isolated billing account. Every paid operation follows one auditable lifecycle:
 
 ```text
- Caller dials Twilio number
-        │
-        ▼
- Twilio Voice  ──webhook──►  edge: voice-receptionist-incoming  (TwiML)
-        │                              │
-        │                              ├─ Gemini reply via Lovable AI Gateway
-        │                              ├─ ElevenLabs TTS (existing key)
-        │                              └─ <Gather speech> loop until intent resolved
-        │
-        ├──status_callback──► edge: voice-receptionist-status
-        │                              └─ if missed → SMS text-back + drip enqueue
-        │
-        └──on "book"──► edge: voice-receptionist-book
-                                      ├─ insert into calendar_events (Oracle)
-                                      ├─ Google Calendar connector insert
-                                      └─ crm_activity + pipeline advance
+Authenticated user
+  -> unique usage request
+  -> server-calculated quote
+  -> wallet hold
+  -> provider execution
+  -> actual usage measurement
+  -> settlement at provider cost + 10%
+  -> unused hold released
+  -> immutable receipt and ledger entry
 ```
 
-### New edge functions
-- `voice-receptionist-incoming` — TwiML answer + speech-to-text loop + AI response.
-- `voice-receptionist-status` — missed-call detector + SMS firing + drip scheduler.
-- `voice-receptionist-book` — slot conflict check (Oracle + Google) + dual-write.
-- `voice-receptionist-sms-inbound` — inbound SMS replies into the CRM thread.
-- `voice-receptionist-drip-tick` — cron every 5 min, sends scheduled follow-ups.
-- `voice-receptionist-webhook-fanout` — POSTs CRM events to external URL when set.
+A provider failure cancels the hold. A partial streamed result settles only measured usage. A retry cannot charge twice. Promotional access uses separately funded promotional credits—it never erases real provider costs.
 
-### New tables (with RLS + GRANTs)
-- `voice_agent_config` (owner-only) — single row: prompt, voice_id, greeting, business_hours JSON, handoff_number, fallback_number, booking_calendar_ids, external_webhook_url.
-- `voice_knowledge_items` — Q&A pairs, embeddings optional.
-- `voice_call_logs` — call_sid, from, to, duration, transcript, intent, outcome, recording_url.
-- `crm_contacts` — phone, name, email, tags[], stage, owner_id, last_contact_at.
-- `crm_activities` — contact_id, type (call/sms/email/note/task/book), payload, occurs_at, status.
-- `crm_pipeline_stages` — ordered stages with colors.
-- `crm_followups` — scheduled tasks/messages, channel, body, send_at, status.
+## Implementation
 
-### Frontend
-- `src/pages/VoiceReceptionistPage.tsx` — public landing with the 5 capability tiles (matches screenshot composition, Oracle styling).
-- `src/pages/admin/VoiceReceptionistAdminPage.tsx` — tabs: Agent · Knowledge · Hours & Handoff · Booking · Pipeline · Call Logs · CRM.
-- `src/components/voice/*` — CallTimeline, PipelineBoard (kanban), KnowledgeEditor, BusinessHoursEditor, ContactDrawer.
-- Add nav entries + module tile on the Super App grid.
+### 1. Stop current revenue and wallet integrity leaks
+- Make Stripe top-ups exactly-once using unique Stripe event, checkout session, and payment-intent identifiers in one atomic credit operation.
+- Replace movie rendering's manual balance update with the central transactional billing engine.
+- Add server-approved minimum/maximum top-up packs; ignore client-supplied prices and user IDs.
+- Record and alert on unhandled completed Stripe sessions.
+- Confirm wallet-mutating database functions cannot be called by anonymous or normal client roles.
 
-### Integrations
-- **Twilio** — already linked via connector (`TWILIO_API_KEY` present). User must (a) buy a number in Twilio console, (b) point Voice + Messaging webhooks at the deployed edge URLs (the admin page will display the exact URLs to paste).
-- **Google Calendar** — connect Google Calendar connector (workspace owner's account). I'll wire it; you click "Connect" once.
-- **ElevenLabs** — already linked, used for voice.
-- **Lovable AI Gateway** — Gemini 2.5 Flash for intent + response; no extra key.
+### 2. Introduce an immutable financial ledger
+- Add per-user billing accounts, usage requests, wallet holds, ledger entries, refunds, and reconciliation records.
+- Use integer minor units plus micro-unit precision for sub-cent provider costs; round only during settlement.
+- Make ledger records append-only, including against accidental privileged updates; corrections use compensating entries.
+- Backfill each current wallet balance as a signed opening-balance entry.
 
-## What you do (one-time, after I ship)
-1. Buy a Twilio number (or use existing).
-2. Approve the Google Calendar connection prompt I'll trigger.
-3. Open `/admin/voice-receptionist` → paste webhook URLs into Twilio → set greeting, hours, handoff number, knowledge.
-4. Test by calling your number.
+### 3. Add transactional reserve, settle, cancel, and refund operations
+- `authorize`: lock the user's account and reserve a server-calculated maximum before work starts.
+- `settle`: apply actual provider cost plus `ceil(actual cost × 10%)`, post the ledger entries, and release unused funds atomically.
+- `cancel`: release the full hold when no paid work is delivered.
+- `refund`: post a traceable credit linked to the original charge; never rewrite history.
+- Give every operation a unique idempotency key and terminal status.
 
-## Out of scope (call out before building)
-- Multi-tenant CRM per end-user (this is single-business: yours/owner). Adding per-user CRMs doubles the build.
-- Native HighLevel API push (we provide a generic webhook that HighLevel can subscribe to via Zapier/their inbound webhook trigger — same effect, no HL-specific code).
-- Voicemail transcription as a separate flow (covered by call recording + transcript on missed calls).
+### 4. Meter actual provider usage
+- Build provider adapters for tokens, characters, generated images, audio seconds, video seconds, call minutes, SMS segments, compute time, storage, and bandwidth.
+- Store provider, model, modality, input/output units, provider request ID, estimate, actual cost, fee, total, and variance.
+- Use a versioned server-side rate registry with effective dates when a provider does not return per-request cost.
+- Reconcile those estimates against provider usage/invoices and automatically true-up or refund differences.
 
-## Build order
-1. DB migration (all tables + RLS + grants).
-2. Edge functions (incoming → status → book → drip → fanout → sms-inbound).
-3. Google Calendar connector link.
-4. Admin page (config + knowledge + hours + pipeline + call logs).
-5. Public capability tiles page + nav entry.
-6. End-to-end smoke test instructions in the admin page header.
+### 5. Route every paid function through one billing wrapper
+- Cover chat, multi-agent fallback, coding, research, tutoring, moderation, image generation, voice, transcription, cloning, music, video, movies, living GIFs, telephony, web crawling, autonomous builds, storage, and bandwidth.
+- Require server-validated identity for every paid path; never accept identity, cost, provider, model, or completion status from the client.
+- Treat BYOK as externally paid usage: still meter and attribute it, but do not charge provider cost to the Oracle Lunar wallet unless a separately disclosed platform fee applies.
+- Add a repository test that fails whenever a provider call exists without the billing wrapper.
 
-Approve and I'll execute top-to-bottom.
+### 6. Preserve truthful promotion and owner accounting
+- Remove admin/unlimited exemptions from cost accounting.
+- Represent trials, rewards, and lifetime benefits as funded promotional credits so provider expense remains visible.
+- Replace hardcoded owner-email billing authorization with server-side role checks.
+- Alert on unusual promotional-credit issuance and spend velocity.
+
+### 7. Harden Stripe funding and reversals
+- Bind one Stripe customer record to one authenticated billing account.
+- Credit wallets only after verified paid status and server-matched amount/currency.
+- Handle completed checkout, successful/failed payment, refund, dispute, and chargeback events.
+- Reverse the correct user's funds through compensating ledger entries and flag unresolved negative balances.
+
+### 8. Add user spend controls and receipts
+- Wallet displays available, held, promotional, and spent balances separately.
+- Add daily/monthly budgets, hard stops, low-balance alerts, and optional auto top-up.
+- Every receipt shows service/model, measured units, actual provider cost, 10% fee, final total, status, and request ID.
+- Users can view only their own billing data.
+
+### 9. Add owner FinOps and reconciliation
+- Show provider liability, revenue, exact margin, open holds, failed settlements, refunds, disputes, negative balances, and unreconciled usage.
+- Compare metered totals with provider invoices and Stripe funding.
+- Alert on duplicate events, missing settlements, stale holds, cost variance, and any effective margin below 10%.
+
+### 10. Roll out without risking existing balances
+1. Add the ledger and actual-usage recording in shadow mode with no billing change.
+2. Migrate Stripe top-ups and expensive video/movie paths first.
+3. Compare old and new totals and resolve variance.
+4. Migrate all remaining provider routes.
+5. Atomically make the new ledger authoritative while preserving compatibility views.
+
+## Required automated proof
+- Parallel requests cannot overspend one wallet.
+- Replayed client requests and Stripe events cannot double-charge or double-credit.
+- Spoofed user IDs, costs, plans, models, and completion states are rejected.
+- Failed operations release holds; partial operations settle measured usage only.
+- Refunds, disputes, and chargebacks reverse the correct account exactly once.
+- Every successful paid operation creates one attributable usage record and balanced ledger transaction.
+- Provider cost plus fee equals the settled total, with an effective 10% markup at the defined precision.
+- Ledger totals reconstruct every wallet balance and reconcile with Stripe/provider totals.
+- Every paid provider route is covered by the metering-enforcement test.
+
+## Thumbs-up gate
+The specialists recommend approval only after all tests above pass, 100% of paid routes are covered, Stripe replay is proven idempotent, provider failures are proven non-chargeable, and reconciliation reports no unexplained balance drift.
