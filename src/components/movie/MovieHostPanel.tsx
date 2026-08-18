@@ -11,7 +11,6 @@ import { Loader2, Mic, Move, Sparkles, Tv, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import {
-  DEFAULT_HOST,
   HOST_POSITION_PRESETS,
   MAX_INTERVIEW_SEC,
   clampInterviewSeconds,

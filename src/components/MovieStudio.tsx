@@ -333,6 +333,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       setShowFavouritesPicker(false); setFavouritesTargetId(null);
       setStarring(""); setCoStarring(""); setGuestStars("");
       setTrailerScenes([]); setGeneratingTrailer(false);
+      setHost(DEFAULT_HOST); setHostPanelOpen(false); setGeneratingPortrait(false);
     }
   }, [open]);
 
