@@ -79,19 +79,21 @@ interface Job {
 }
 
 const JOBS: Job[] = [
-  { id: "everything", icon: Sparkles, title: "Make the whole movie for me", desc: "Super AI runs every agent end to end: artwork, narration, SFX, score, opening titles, ads, end credits and the final cut." },
+  { id: "everything", icon: Sparkles, title: "Make the whole movie for me", desc: "Step-by-step production with live progress — pause, resume or cancel at any point.", opensPanel: true },
   { id: "swarm", icon: Clapperboard, title: "Run the 5-agent production swarm", desc: "Visual Director, Voice Director, Sound Designer, Score Composer and Final-Cut Editor work in parallel." },
   { id: "images", icon: Film, title: "Illustrate every scene", desc: "4K cinematic, head-safe framing on every shot." },
   { id: "video", icon: Video, title: "Turn every scene into moving footage", desc: "Image-to-video motion on each beat." },
   { id: "narration", icon: Mic, title: "Narration & dubbing booth", desc: "Pick the voice, re-dub every beat, or hand it a new performance.", opensPanel: true },
-  { id: "sfx", icon: Volume2, title: "Design the sound effects", desc: "Per-scene foley and impacts." },
-  { id: "score", icon: Music, title: "Adaptive score team", desc: "A different original cue mapped to every scene, ducked under dialogue." },
-  { id: "music", icon: Music, title: "Background music for the whole movie", desc: "Choose a vibe from 100 trending instrumentals or describe your own.", opensPanel: true },
+  { id: "sfxAuto", icon: Volume2, title: "Auto sound design across the movie", desc: "AI writes an effect for every beat, places it on its timestamp with its own volume, then generates them all." },
+  { id: "sfx", icon: Volume2, title: "Generate the sound effects I've written", desc: "Per-scene foley and impacts from the prompts already on the timeline." },
+  { id: "musicAuto", icon: Music, title: "Auto background music across the timeline", desc: "Maps a cue to every story beat, generates it and sets the level from the beat's intensity." },
+  { id: "score", icon: Music, title: "Adaptive score team (cue sheet only)", desc: "Writes a different original cue for every scene without generating audio." },
+  { id: "music", icon: Music, title: "One track for the whole movie", desc: "Choose a vibe from 100 trending instrumentals or describe your own.", opensPanel: true },
   { id: "intro", icon: Play, title: "Compose the intro sting", desc: "Opening music bed under the titles." },
   { id: "theme", icon: Music, title: "Compose the main theme", desc: "The recurring signature track." },
   { id: "outro", icon: Music, title: "Compose the outro", desc: "Music that plays under the end credits." },
-  { id: "openingTitles", icon: Type, title: "Opening credits at the front", desc: "Title card and front credits drawn from your Story Writer story.", opensPanel: true },
-  { id: "credits", icon: ListVideo, title: "End credits roll", desc: "Cast, voice cast, score and story credits pulled from the script." },
+  { id: "credits", icon: ListVideo, title: "Opening + end credits from my story", desc: "Builds the title card at the front and the credits roll at the end, pulled from your story, cast and score." },
+  { id: "openingTitles", icon: Type, title: "Opening credits only", desc: "Title card and front credits with your own tagline.", opensPanel: true },
   { id: "ads", icon: Megaphone, title: "Insert an advert", desc: "Drop your own promo at the front or the end — AI writes and voices it.", opensPanel: true },
   { id: "mix", icon: Scissors, title: "Final mix levels", desc: "Set how loud the music sits under the narration.", opensPanel: true },
   { id: "trailer", icon: Film, title: "Cut a preview trailer", desc: "Short punchy cut for socials." },
@@ -116,11 +118,12 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const onJob = (job: Job) => {
     if (job.opensPanel) { setPanel(job.id); return; }
     const map: Partial<Record<JobId, () => Promise<void> | void>> = {
-      everything: actions.runEverything,
       swarm: actions.runProductionSwarm,
       images: actions.generateAllImages,
       video: actions.generateAllVideo,
       sfx: actions.generateAllSfx,
+      sfxAuto: actions.autoSfxTimeline,
+      musicAuto: actions.autoScoreTimeline,
       score: actions.runScoreTeam,
       intro: actions.composeIntro,
       theme: actions.composeTheme,
@@ -132,6 +135,7 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
     const fn = map[job.id];
     if (fn) void run(job.id, fn);
   };
+
 
   const Back = () => (
     <button onClick={() => setPanel(null)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
