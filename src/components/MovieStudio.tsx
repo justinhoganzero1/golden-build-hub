@@ -1664,14 +1664,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           const offset = Math.max(0, Math.min(scene.duration_sec || 0, scene.voice_offset_sec ?? 0));
           src.start(audioCtx.currentTime + offset);
         }
-        // Schedule scene SFX (slightly ducked so VO stays clear)
+        // Schedule scene SFX at its beat timestamp, at the volume set on the scene.
         const sbuf = sfxBuffers[idx];
         if (sbuf) {
           const src = audioCtx.createBufferSource();
           src.buffer = sbuf;
-          const g = audioCtx.createGain(); g.gain.value = 0.6;
+          const g = audioCtx.createGain();
+          g.gain.value = Math.max(0, Math.min(1, scene.sfx_volume ?? 0.6));
           src.connect(g).connect(audioDest);
-          src.start();
+          const sfxOffset = Math.max(0, Math.min(scene.duration_sec || 0, scene.sfx_offset_sec ?? 0));
+          src.start(audioCtx.currentTime + sfxOffset);
         }
         // Schedule per-scene backing music with cross-fade between adjacent scenes.
         // Cross-fade duration is decided by crossfadeFor() (auto = Oracle picks per transition).
