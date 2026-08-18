@@ -3,6 +3,7 @@ import { MainVideo } from "./MainVideo";
 import { AdVideo } from "./AdVideo";
 import { Ad60 } from "./Ad60";
 import { StoryCut, STORYCUT_FRAMES } from "./StoryCut";
+import { HostedPreview, PREVIEW3_FRAMES } from "./HostedPreview";
 
 
 // 35s @ 30fps = 1050 frames
@@ -39,6 +40,15 @@ export const RemotionRoot = () => (
       id="storycut"
       component={StoryCut}
       durationInFrames={STORYCUT_FRAMES}
+      fps={30}
+      width={1920}
+      height={1080}
+    />
+    {/* 3-minute hosted preview with Olivia Vance + live interview */}
+    <Composition
+      id="preview3"
+      component={HostedPreview}
+      durationInFrames={PREVIEW3_FRAMES}
       fps={30}
       width={1920}
       height={1080}
