@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+
 
 
 const corsHeaders = {
