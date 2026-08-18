@@ -350,7 +350,8 @@ async function lovableVideoFallback(prompt: string, durationSec: number): Promis
     if (direct) return direct;
     const opId: string | undefined = sj?.id || sj?.operation_id;
     if (!opId) return "";
-    for (let i = 0; i < 36; i++) {
+    await rememberProvider({ veo_operation_id: opId });
+    while (!outOfTime()) {
       await sleep(5000);
       const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
@@ -358,14 +359,16 @@ async function lovableVideoFallback(prompt: string, durationSec: number): Promis
       if (!op.ok) continue;
       const oj = await op.json();
       const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
-      if (url) return url;
-      if (oj?.status === "failed" || oj?.error) return "";
+      if (url) { await forgetProvider("veo_operation_id"); return url; }
+      if (oj?.status === "failed" || oj?.error) { await forgetProvider("veo_operation_id"); return ""; }
     }
-    return "";
+    throw new RequeueSignal("lovable-veo");
   } catch (e) {
+    if (e instanceof RequeueSignal) throw e;
     console.warn("[lovable video error]", e);
     return "";
   }
+
 }
 
 async function generateSceneKeyframe(prompt: string): Promise<string> {
