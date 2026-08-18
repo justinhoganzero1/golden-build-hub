@@ -1745,7 +1745,7 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
       a.download = `${slugify(title)}-audiobook.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Audiobook package ready — Audible/ACX compliant.");
+      toast.success("Audiobook package ready — formatted for Audible/ACX submission. Check the included checklist before uploading.");
     } catch (e: any) {
       toast.error(e?.message || "Audiobook build failed");
     } finally {
