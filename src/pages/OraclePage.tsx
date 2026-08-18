@@ -2657,17 +2657,64 @@ const OraclePage = () => {
 
       // Update displayed message with cleaned content
       const finalDisplayContent = stripSelfNaming(cleanContent || cleanedOracleContent);
+      let verifyTargetId: string | null = null;
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.sender === oracleName) {
+          verifyTargetId = last.id;
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: finalDisplayContent } : m);
         }
+        const newId = "oracle-" + Date.now();
+        verifyTargetId = newId;
         return [...prev, {
-          id: "oracle-" + Date.now(), role: "assistant", sender: oracleName,
+          id: newId, role: "assistant", sender: oracleName,
           emoji: oracleAvatar ? "👤" : "🔮", color: "#9b87f5", content: finalDisplayContent,
           avatar_url: oracleAvatar?.image_url || undefined,
         }];
       });
+
+      // ─── BACKGROUND ANSWER SWARM ───
+      // The user already has Oracle's first answer. In the background a small
+      // swarm independently re-answers, fact-checks and critiques it, and a
+      // judge merges the best of everything. If the result is materially
+      // better, the visible answer is quietly upgraded in place — so the user
+      // always ends up with the best answer, not just the first one.
+      // Skipped for creations/navigation turns (those already did real work)
+      // and for trivially short replies where there is nothing to improve.
+      if (
+        finalDisplayContent.length > 120 &&
+        creationMarkers.length === 0 &&
+        recodeMarkers.length === 0 &&
+        !navPath
+      ) {
+        const verifyId = verifyTargetId;
+        const verifyQuestion = text;
+        const verifyHistory = allMsgs.slice(-6).map(m => `${m.sender}: ${m.content}`).join("\n").slice(0, 4000);
+        (async () => {
+          try {
+            const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-verify-swarm`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+              body: JSON.stringify({
+                question: verifyQuestion,
+                draft: finalDisplayContent,
+                history: verifyHistory,
+                checkers: 3,
+              }),
+            });
+            if (!resp.ok) return;
+            const v = await resp.json();
+            if (!v?.materially_better || typeof v.final !== "string" || !v.final.trim()) return;
+            const improved = stripSelfNaming(v.final.trim());
+            setMessages(prev => prev.map(m => (m.id === verifyId ? { ...m, content: improved, verified: true } as any : m)));
+            toast.success("I double-checked that with my swarm and improved the answer.");
+          } catch (e) {
+            // Verification is a bonus pass — never surface its failures.
+            console.warn("verify swarm skipped", e);
+          }
+        })();
+      }
+
 
       // Auto-save every Oracle answer to the user's library as a text note.
       // Users own their library and can delete any item from My Library.
