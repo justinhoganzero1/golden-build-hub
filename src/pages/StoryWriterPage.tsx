@@ -1170,6 +1170,71 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
     }
   };
 
+  /**
+   * COVER SWARM — a team of specialist AI agents design the front and back
+   * covers from the finished book, every single time. Nothing is generic:
+   *  • Casting agent locks the real characters, wardrobe and world.
+   *  • Art director writes the cinematic 4K photoreal art direction.
+   *  • Copywriter writes the back-cover blurb (always fresh, never a placeholder).
+   *  • Critic tears both apart and the lead merges the winning direction.
+   * The lead's art direction is fed straight into the image generator for both
+   * covers, so each run is unique to that story.
+   */
+  const [coverSwarm, setCoverSwarm] = useState<string | null>(null);
+  const runCoverSwarm = async () => {
+    if (!requireMeta()) return;
+    const sample = story.chapters
+      .map(c => `${c.title}\n${(c.content || "").slice(0, 1500)}`)
+      .join("\n\n")
+      .slice(0, 12000);
+    const brief = `TITLE: ${story.title}\nAUTHOR: ${story.author}\nGENRE: ${story.genre}\nPREMISE: ${story.premise}\nEXTRA DIRECTION FROM AUTHOR: ${coverPrompt || "(none)"}\n\nBOOK TEXT:\n${sample || "(no chapters yet — work from the premise)"}`;
+
+    try {
+      setCoverSwarm("Casting + art direction agents reading the book…");
+      const [casting, artDirection, blurb] = await Promise.all([
+        callAI(
+          "You are the CASTING agent for a book cover team. From the book text, lock the principal cast: for each, exact age, build, face, hair, skin, wardrobe, and signature prop. Then lock the world: era, city, weather, time of day, palette. Output tight bullet lines only, no preamble.",
+          brief,
+        ),
+        callAI(
+          `You are the ART DIRECTOR of an award-winning book cover studio. Write the shot brief for the single most iconic FRONT cover moment and a quieter companion BACK cover moment for this ${story.genre} book. Cinematic, 4K photoreal, real lens language (focal length, lighting, grade, weather). Never describe text, titles, logos or lettering. Output exactly two labelled paragraphs: "FRONT:" and "BACK:".`,
+          brief,
+        ),
+        callAI(
+          "You are a bestselling publisher's copywriter. Write the back-cover blurb: 150-220 words, present tense, hook first, name the protagonist, the world, the stakes and the central conflict, end on an irresistible promise. Prose only — no headings, no quotes, no spoilers.",
+          brief,
+        ),
+      ]);
+
+      setCoverSwarm("Critic agent reviewing…");
+      const critique = await callAI(
+        "You are the CRITIC on a cover team. Attack the art direction: what looks generic, stocky, AI-typical or off-book? Give concrete fixes only, max 10 bullets.",
+        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}`,
+      );
+
+      setCoverSwarm("Lead agent merging the winning direction…");
+      const finalDirection = await callAI(
+        "You are the LEAD of the cover team. Merge the casting lock, art direction and the critic's fixes into ONE final art brief the image model will read verbatim. Keep the exact cast description so front and back match. Never mention text, titles, author names or lettering. Under 320 words, plain prose.",
+        `${brief}\n\nCASTING:\n${casting}\n\nART DIRECTION:\n${artDirection}\n\nCRITIC:\n${critique}`,
+      );
+
+      const cleanBlurb = (blurb || "").trim();
+      const direction = (finalDirection || "").trim();
+      setStory(s => ({ ...s, blurb: cleanBlurb || s.blurb }));
+      setCoverPrompt(direction);
+
+      setCoverSwarm("Painting the front cover…");
+      await generateStoryImage("cover", direction);
+      setCoverSwarm("Painting the back cover…");
+      await generateStoryImage("back", direction);
+      toast.success("Cover swarm finished — fresh blurb and both covers built from your book");
+    } catch (e: any) {
+      if (e?.message !== "blocked") toast.error(e?.message || "Cover swarm failed");
+    } finally {
+      setCoverSwarm(null);
+    }
+  };
+
   const aiOutline = async () => {
     if (!requireMeta()) return;
     if (!story.premise.trim()) {
@@ -2151,6 +2216,8 @@ Write the full chapter now (${targetWords.toLocaleString()}+ words):`;
             busy={imgBusy}
             prompt={coverPrompt}
             onPromptChange={setCoverPrompt}
+            swarmBusy={coverSwarm}
+            onRunSwarm={runCoverSwarm}
             storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
             onGenerateBoth={async () => {
               await generateStoryImage("cover", coverPrompt);

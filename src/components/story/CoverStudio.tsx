@@ -1,4 +1,4 @@
-import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked } from "lucide-react";
+import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users } from "lucide-react";
 import { SignedImage } from "@/components/SignedMedia";
 
 /**
@@ -8,6 +8,10 @@ import { SignedImage } from "@/components/SignedMedia";
  * blurbs, no lettering of any kind — models render text badly). Every word you
  * see on the covers below is real HTML/CSS laid over the artwork, so the title,
  * author and blurb are always crisp, correctly spelled and guaranteed present.
+ *
+ * A team of AI agents (casting, art direction, copywriter, critic, lead) can
+ * design both covers and write the back-cover blurb straight from the finished
+ * book, so no two books ever get the same generic cover.
  */
 export interface CoverStudioProps {
   title: string;
@@ -24,15 +28,20 @@ export interface CoverStudioProps {
   onClearSlot: (slot: "cover" | "back") => void;
   onPickSlot: (slot: "cover" | "back") => void;
   storyWordCount: number;
+  /** Live status line while the cover agent swarm is running. */
+  swarmBusy?: string | null;
+  /** Launch the cover agent swarm. */
+  onRunSwarm?: () => void;
 }
 
 export default function CoverStudio({
   title, author, blurb, genre, coverImage, backImage, busy,
   prompt, onPromptChange, onGenerateBoth, onGenerateSlot, onClearSlot, onPickSlot,
-  storyWordCount,
+  storyWordCount, swarmBusy, onRunSwarm,
 }: CoverStudioProps) {
-  const anyBusy = !!busy;
+  const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
+
 
   return (
     <section className="rounded-2xl border border-primary/40 bg-gradient-to-b from-primary/10 to-transparent p-3 space-y-3">
@@ -76,6 +85,26 @@ export default function CoverStudio({
           className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-y"
         />
       </div>
+
+      {onRunSwarm && (
+        <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={onRunSwarm}
+            disabled={anyBusy}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/25"
+          >
+            {swarmBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+            {swarmBusy ? swarmBusy : "▶ Run the Cover Agent Swarm (art + blurb)"}
+          </button>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            Casting, art director, copywriter, critic and lead agents read your finished book, lock the
+            real characters and world, write a fresh back-cover blurb and paint both covers in cinematic
+            4K photoreal — unique to this story every run.
+          </p>
+        </div>
+      )}
+
 
       <button
         type="button"
@@ -164,21 +193,33 @@ export default function CoverStudio({
                       <div className="mx-auto mt-1.5 h-px w-1/2 bg-gradient-to-r from-transparent via-amber-300/60 to-transparent" />
                     </div>
 
-                    {/* Back: blurb card */}
-                    <div className="absolute inset-x-0 top-[22%] bottom-[16%] flex items-center justify-center px-3">
+                    {/* Back: AI-written blurb card */}
+                    <div className="absolute inset-x-0 top-[22%] bottom-[18%] flex items-center justify-center px-3">
                       <div className="w-full max-h-full overflow-y-auto rounded-xl bg-black/[0.92] backdrop-blur-[10px] border border-amber-300/60 px-3.5 py-3.5 shadow-[0_18px_60px_rgba(0,0,0,0.95),inset_0_0_0_1px_rgba(0,0,0,0.6)]">
-                        <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
-                          {blurb?.trim() || "Write your blurb above — it appears here in full, perfectly readable, on the back cover."}
-                        </p>
+                        {blurb?.trim() ? (
+                          <p className="text-white text-[clamp(0.55rem,1.75vw,0.85rem)] leading-relaxed whitespace-pre-wrap drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] first-letter:text-[1.9em] first-letter:font-black first-letter:text-amber-300 first-letter:float-left first-letter:mr-1.5 first-letter:leading-[0.85]">
+                            {blurb.trim()}
+                          </p>
+                        ) : (
+                          <p className="text-amber-200/80 text-[clamp(0.5rem,1.5vw,0.75rem)] leading-relaxed italic text-center">
+                            {swarmBusy
+                              ? "The cover swarm is writing your back-cover blurb…"
+                              : "Run the cover swarm — the agents write this blurb from your finished book."}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Back: author footer */}
+                    {/* Back: author footer — always "A NOVEL BY <author>" */}
                     <div className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-4 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
+                      <p className="text-center text-white/60 text-[clamp(0.36rem,0.95vw,0.5rem)] uppercase tracking-[0.4em] mb-1">
+                        A novel by
+                      </p>
                       <p className="text-white text-center font-bold tracking-[0.22em] uppercase text-[clamp(0.55rem,2vw,0.95rem)] drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
                         {author || "Author Name"}
                       </p>
                     </div>
+
                   </>
                 )}
 
