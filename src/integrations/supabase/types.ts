@@ -1722,6 +1722,7 @@ export type Database = {
           payload: Json | null
           priority: number | null
           project_id: string
+          provider_state: Json
           result: Json | null
           scene_id: string | null
           scheduled_for: string
@@ -1743,6 +1744,7 @@ export type Database = {
           payload?: Json | null
           priority?: number | null
           project_id: string
+          provider_state?: Json
           result?: Json | null
           scene_id?: string | null
           scheduled_for?: string
@@ -1764,6 +1766,7 @@ export type Database = {
           payload?: Json | null
           priority?: number | null
           project_id?: string
+          provider_state?: Json
           result?: Json | null
           scene_id?: string | null
           scheduled_for?: string
