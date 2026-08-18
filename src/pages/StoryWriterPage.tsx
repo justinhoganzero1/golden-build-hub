@@ -827,7 +827,13 @@ const StoryWriterPage = () => {
           prevContext,
           target,
           (w) => toast.info(`Chapter ${i + 1}: ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "regen-progress" }),
+          (partial) => setStory(s => {
+            const next = [...s.chapters];
+            next[i] = { ...next[i], content: partial };
+            return { ...s, chapters: next };
+          }),
         );
+
         rewritten[i] = text;
         setStory(s => {
           const next = [...s.chapters];
