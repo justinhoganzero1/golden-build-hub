@@ -41,26 +41,91 @@ const SHOTSTACK_BASE = `https://api.shotstack.io/edit/${SHOTSTACK_ENV}`;
 
 const WORKER_ID = `worker-${crypto.randomUUID().slice(0, 8)}`;
 
+// ---------------------------------------------------------------------------
+// Cron-driven resume machinery.
+//
+// Edge invocations are short-lived; provider renders (Runway, Veo, Replicate,
+// Shotstack) are not. Instead of blocking a whole invocation on a 5-minute poll
+// — and then throwing, which re-submitted and RE-CHARGED the provider on the
+// next tick — we persist the in-flight provider task id on the job row and
+// hand control back to cron. The next tick resumes polling the SAME task.
+// ---------------------------------------------------------------------------
+const TICK_BUDGET_MS = 90_000;
+let TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
+let CURRENT_JOB_ID: string | null = null;
+
+class RequeueSignal extends Error {
+  constructor(stage: string) {
+    super(`still rendering (${stage}) — resuming on next tick`);
+    this.name = "RequeueSignal";
+  }
+}
+
+const outOfTime = () => Date.now() >= TICK_DEADLINE;
+
+async function providerState(): Promise<Record<string, any>> {
+  if (!CURRENT_JOB_ID) return {};
+  const { data } = await supabase.from("movie_render_jobs")
+    .select("provider_state").eq("id", CURRENT_JOB_ID).maybeSingle();
+  return (data?.provider_state as Record<string, any>) ?? {};
+}
+
+async function rememberProvider(patch: Record<string, unknown>) {
+  if (!CURRENT_JOB_ID) return;
+  const current = await providerState();
+  await supabase.from("movie_render_jobs")
+    .update({ provider_state: { ...current, ...patch } }).eq("id", CURRENT_JOB_ID);
+}
+
+async function forgetProvider(...keys: string[]) {
+  if (!CURRENT_JOB_ID) return;
+  const current = await providerState();
+  for (const k of keys) delete current[k];
+  await supabase.from("movie_render_jobs")
+    .update({ provider_state: current }).eq("id", CURRENT_JOB_ID);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
     let processed = 0;
+    let resumed = 0;
     const maxJobsPerTick = 3;
     const results: any[] = [];
 
     for (let i = 0; i < maxJobsPerTick; i++) {
+      if (outOfTime()) break;
       const { data: claim } = await supabase.rpc("claim_next_render_job", { _worker_id: WORKER_ID });
       const job = claim?.[0];
       if (!job) break;
+      CURRENT_JOB_ID = job.job_id;
 
       try {
         const res = await runJob(job);
         await supabase.from("movie_render_jobs").update({
           status: "completed", completed_at: new Date().toISOString(),
-          result: res ?? {},
+          result: res ?? {}, provider_state: {},
         }).eq("id", job.job_id);
         results.push({ job_id: job.job_id, type: job.job_type, ok: true });
       } catch (e: any) {
+        // A resume signal is NOT a failure: the provider job is still running and
+        // its id is saved. Re-queue soon without burning a retry attempt.
+        if (e instanceof RequeueSignal) {
+          const { data: jobRow } = await supabase.from("movie_render_jobs")
+            .select("attempts").eq("id", job.job_id).maybeSingle();
+          await supabase.from("movie_render_jobs").update({
+            status: "queued",
+            attempts: Math.max(0, (jobRow?.attempts ?? 1) - 1),
+            error_message: null,
+            scheduled_for: new Date(Date.now() + 20_000).toISOString(),
+            locked_by: null, locked_at: null,
+          }).eq("id", job.job_id);
+          results.push({ job_id: job.job_id, type: job.job_type, resumed: true });
+          resumed++;
+          CURRENT_JOB_ID = null;
+          break; // out of budget for this tick
+        }
         const msg = e?.message ?? String(e);
         const { data: jobRow } = await supabase.from("movie_render_jobs")
           .select("attempts, max_attempts").eq("id", job.job_id).maybeSingle();
@@ -70,6 +135,7 @@ Deno.serve(async (req) => {
           error_message: msg,
           scheduled_for: isFinal ? null : new Date(Date.now() + 60_000).toISOString(),
           locked_by: null, locked_at: null,
+          provider_state: isFinal ? {} : undefined,
         }).eq("id", job.job_id);
         results.push({ job_id: job.job_id, type: job.job_type, ok: false, error: msg });
         if (job.scene_id && isFinal) {
@@ -84,10 +150,11 @@ Deno.serve(async (req) => {
           }).eq("id", job.scene_id);
         }
       }
+      CURRENT_JOB_ID = null;
       processed++;
     }
 
-    return new Response(JSON.stringify({ worker: WORKER_ID, processed, results }), {
+    return new Response(JSON.stringify({ worker: WORKER_ID, processed, resumed, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (e) {
@@ -97,6 +164,7 @@ Deno.serve(async (req) => {
     });
   }
 });
+
 
 async function runJob(job: any): Promise<any> {
   switch (job.job_type) {
@@ -191,31 +259,36 @@ async function renderVideo(job: any) {
 }
 
 async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promise<string> {
-  // 1. Submit task
-  const submit = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RUNWAY_API_KEY}`,
-      "Content-Type": "application/json",
-      "X-Runway-Version": "2024-11-06",
-    },
-    body: JSON.stringify({
-      model: "gen3a_turbo",
-      promptText: (prompt ?? "").slice(0, 1000),
-      duration: Math.min(10, Math.max(5, Math.round(durationSec))),
-      ratio: "1280:768",
-    }),
-  });
-  if (!submit.ok) {
-    console.warn("[runway submit failed]", submit.status, await submit.text());
-    return "";
-  }
-  const submitJson = await submit.json();
-  const taskId = submitJson?.id;
-  if (!taskId) return "";
+  // 1. Resume an in-flight task if a previous tick already paid for one.
+  let taskId: string | undefined = (await providerState()).runway_task_id;
 
-  // 2. Poll up to 90s (worker tick is 60s; we leave headroom)
-  for (let attempt = 0; attempt < 18; attempt++) {
+  if (!taskId) {
+    const submit = await fetch("https://api.dev.runwayml.com/v1/image_to_video", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RUNWAY_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Runway-Version": "2024-11-06",
+      },
+      body: JSON.stringify({
+        model: "gen3a_turbo",
+        promptText: (prompt ?? "").slice(0, 1000),
+        duration: Math.min(10, Math.max(5, Math.round(durationSec))),
+        ratio: "1280:768",
+      }),
+    });
+    if (!submit.ok) {
+      console.warn("[runway submit failed]", submit.status, await submit.text());
+      return "";
+    }
+    const submitJson = await submit.json();
+    taskId = submitJson?.id;
+    if (!taskId) return "";
+    await rememberProvider({ runway_task_id: taskId });
+  }
+
+  // 2. Poll within this tick's budget; cron resumes the same task afterwards.
+  while (!outOfTime()) {
     await sleep(5000);
     const poll = await fetch(`https://api.dev.runwayml.com/v1/tasks/${taskId}`, {
       headers: {
@@ -226,15 +299,17 @@ async function runwayGenerateAndPoll(prompt: string, durationSec: number): Promi
     if (!poll.ok) continue;
     const pj = await poll.json();
     if (pj.status === "SUCCEEDED") {
+      await forgetProvider("runway_task_id");
       return pj.output?.[0] ?? "";
     }
     if (pj.status === "FAILED") {
+      await forgetProvider("runway_task_id");
       throw new Error(`Runway task failed: ${pj.failure ?? "unknown"}`);
     }
   }
-  // Not done yet — throw to retry. The job will re-queue.
-  throw new Error("Runway task still rendering after 90s — will retry");
+  throw new RequeueSignal("runway");
 }
+
 
 async function replicateVideoFallback(prompt: string): Promise<string> {
   if (!REPLICATE_API_TOKEN) return "";
@@ -258,9 +333,13 @@ async function replicateVideoFallback(prompt: string): Promise<string> {
 // Free internal fallback: generate a still with Gemini, then animate via Lovable Veo.
 async function lovableVideoFallback(prompt: string, durationSec: number): Promise<string> {
   try {
+    // Resume an operation started on an earlier tick — never re-generate.
+    const resumeOp: string | undefined = (await providerState()).veo_operation_id;
+    if (resumeOp) return await pollVeo(resumeOp);
     const imageDataUrl = await generateSceneKeyframe(prompt);
     if (!imageDataUrl) return "";
     const duration = durationSec <= 5 ? 5 : 10;
+
     const veoPrompt = (`Cinematic motion, smooth camera movement, natural subject motion. ${prompt ?? ""}`).slice(0, 480);
     const submit = await fetch("https://ai.gateway.lovable.dev/v1/video/generations", {
       method: "POST",
@@ -282,23 +361,30 @@ async function lovableVideoFallback(prompt: string, durationSec: number): Promis
     if (direct) return direct;
     const opId: string | undefined = sj?.id || sj?.operation_id;
     if (!opId) return "";
-    for (let i = 0; i < 36; i++) {
-      await sleep(5000);
-      const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
-      });
-      if (!op.ok) continue;
-      const oj = await op.json();
-      const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
-      if (url) return url;
-      if (oj?.status === "failed" || oj?.error) return "";
-    }
-    return "";
+    await rememberProvider({ veo_operation_id: opId });
+    return await pollVeo(opId);
   } catch (e) {
+    if (e instanceof RequeueSignal) throw e;
     console.warn("[lovable video error]", e);
     return "";
   }
 }
+
+async function pollVeo(opId: string): Promise<string> {
+  while (!outOfTime()) {
+    await sleep(5000);
+    const op = await fetch(`https://ai.gateway.lovable.dev/v1/video/generations/${opId}`, {
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+    });
+    if (!op.ok) continue;
+    const oj = await op.json();
+    const url: string | undefined = oj?.data?.[0]?.url || oj?.video_url || oj?.url;
+    if (url) { await forgetProvider("veo_operation_id"); return url; }
+    if (oj?.status === "failed" || oj?.error) { await forgetProvider("veo_operation_id"); return ""; }
+  }
+  throw new RequeueSignal("lovable-veo");
+}
+
 
 async function generateSceneKeyframe(prompt: string): Promise<string> {
   const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -484,30 +570,41 @@ async function upscale(job: any, factor: 4 | 8) {
 }
 
 async function replicateUpscale(version: string, videoUrl: string, scale: number): Promise<string> {
-  const r = await fetch("https://api.replicate.com/v1/predictions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Token ${REPLICATE_API_TOKEN}`,
-      "Content-Type": "application/json",
-      "Prefer": "wait",
-    },
-    body: JSON.stringify({ version, input: { video: videoUrl, scale } }),
-  });
-  if (!r.ok) return "";
-  const j = await r.json();
-  if (j.status === "succeeded") return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
-  // Poll for up to 60s
-  let url = j.urls?.get;
-  if (!url) return "";
-  for (let i = 0; i < 12; i++) {
+  // Resume a prediction started on an earlier tick rather than paying twice.
+  let url: string | undefined = (await providerState()).replicate_poll_url;
+  if (!url) {
+    const r = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait",
+      },
+      body: JSON.stringify({ version, input: { video: videoUrl, scale } }),
+    });
+    if (!r.ok) return "";
+    const j = await r.json();
+    if (j.status === "succeeded") return Array.isArray(j.output) ? j.output[0] : (j.output ?? "");
+    url = j.urls?.get;
+    if (!url) return "";
+    await rememberProvider({ replicate_poll_url: url });
+  }
+  while (!outOfTime()) {
     await sleep(5000);
     const p = await fetch(url, { headers: { "Authorization": `Token ${REPLICATE_API_TOKEN}` } });
     const pj = await p.json();
-    if (pj.status === "succeeded") return Array.isArray(pj.output) ? pj.output[0] : (pj.output ?? "");
-    if (pj.status === "failed") throw new Error(`Replicate upscale failed: ${pj.error}`);
+    if (pj.status === "succeeded") {
+      await forgetProvider("replicate_poll_url");
+      return Array.isArray(pj.output) ? pj.output[0] : (pj.output ?? "");
+    }
+    if (pj.status === "failed") {
+      await forgetProvider("replicate_poll_url");
+      throw new Error(`Replicate upscale failed: ${pj.error}`);
+    }
   }
-  throw new Error("Replicate upscale still running — will retry");
+  throw new RequeueSignal("replicate-upscale");
 }
+
 
 // ============= STITCH (FFmpeg via Replicate, with caption burn-in) =============
 async function stitchProject(job: any) {
@@ -635,25 +732,30 @@ async function shotstackStitch(
   const tracks: any[] = [{ clips: videoClips }];
   if (audioClips.length) tracks.push({ clips: audioClips });
 
-  const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
-    method: "POST",
-    headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      timeline: { background: "#000000", tracks },
-      output: { format: "mp4", resolution, fps: 30 },
-    }),
-  });
-  if (!submit.ok) {
-    const txt = await submit.text();
-    console.error("[shotstack submit failed]", submit.status, txt);
-    throw new Error(`Shotstack submit ${submit.status}: ${txt.slice(0, 300)}`);
+  // Resume an in-flight render instead of paying Shotstack for a second one.
+  let renderId: string | undefined = (await providerState()).shotstack_render_id;
+  if (!renderId) {
+    const submit = await fetch(`${SHOTSTACK_BASE}/render`, {
+      method: "POST",
+      headers: { "x-api-key": SHOTSTACK_API_KEY!, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        timeline: { background: "#000000", tracks },
+        output: { format: "mp4", resolution, fps: 30 },
+      }),
+    });
+    if (!submit.ok) {
+      const txt = await submit.text();
+      console.error("[shotstack submit failed]", submit.status, txt);
+      throw new Error(`Shotstack submit ${submit.status}: ${txt.slice(0, 300)}`);
+    }
+    const sj = await submit.json();
+    renderId = sj?.response?.id;
+    if (!renderId) throw new Error(`Shotstack returned no render id: ${JSON.stringify(sj).slice(0, 300)}`);
+    await rememberProvider({ shotstack_render_id: renderId });
   }
-  const sj = await submit.json();
-  const renderId = sj?.response?.id;
-  if (!renderId) throw new Error(`Shotstack returned no render id: ${JSON.stringify(sj).slice(0, 300)}`);
 
-  // Poll up to 5 minutes (every 10s)
-  for (let i = 0; i < 30; i++) {
+  // Poll within this tick's budget; hand back to cron if it outlives it.
+  while (!outOfTime()) {
     await sleep(10_000);
     const poll = await fetch(`${SHOTSTACK_BASE}/render/${renderId}`, {
       headers: { "x-api-key": SHOTSTACK_API_KEY! },
@@ -661,15 +763,19 @@ async function shotstackStitch(
     if (!poll.ok) continue;
     const pj = await poll.json();
     const status = pj?.response?.status;
-    if (status === "done") return pj.response.url;
+    if (status === "done") {
+      await forgetProvider("shotstack_render_id");
+      return pj.response.url;
+    }
     if (status === "failed") {
+      await forgetProvider("shotstack_render_id");
       console.error("[shotstack failed]", pj.response?.error);
       throw new Error(`Shotstack render failed: ${pj.response?.error || "unknown"}`);
     }
   }
-  console.warn("[shotstack] still rendering after 5min");
-  throw new Error("Shotstack still rendering — retry");
+  throw new RequeueSignal("shotstack");
 }
+
 
 function buildSRT(scenes: any[]): string {
   let cursor = 0;
