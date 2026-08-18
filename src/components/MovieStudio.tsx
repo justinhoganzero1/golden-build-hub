@@ -119,6 +119,11 @@ interface Scene {
   lower_third_name?: string;   // e.g. "Maya Chen"
   lower_third_title?: string;  // e.g. "ORACLE LUNAR Tech Reporter"
   broll_url?: string;          // optional B-roll image overlay (cutaway)
+  // Movie Host layer — lip-synced talking-head presenter over this scene
+  host_beat?: HostBeat;
+  // ≤8s two-avatar live interview (host ↔ character) over this scene
+  interview?: InterviewBeat;
+
   // Director controls (preset-driven, baked into the photo prompt)
   camera_angle?: CameraAngle;
   lighting_preset?: LightingPreset;
