@@ -212,6 +212,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [generatingTrailer, setGeneratingTrailer] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
+  /** Idempotency key for the current export attempt (prevents double charges). */
+  const renderRequestKeyRef = useRef<string | null>(null);
   const previewAnimRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<string | null>(null);
