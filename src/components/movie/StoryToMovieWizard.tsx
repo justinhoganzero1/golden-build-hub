@@ -34,11 +34,13 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
   const [items, setItems] = useState<MovieHandoffRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [picked, setPicked] = useState<MovieHandoffRecord | null>(null);
+  const [format, setFormat] = useState<MovieFormat | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setPicked(null);
+    setFormat(null);
     setLoading(true);
     listMovieHandoffs()
       .then(setItems)
@@ -46,20 +48,59 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
       .finally(() => setLoading(false));
   }, [open]);
 
-  const choose = async (format: MovieFormat) => {
+  const choose = async (fmt: MovieFormat) => {
     if (!picked) return;
     setBusy(true);
     try {
       stashMovieBrief(picked.brief);
-      stashMovieFormat(format);
+      stashMovieFormat(fmt);
       await markMovieHandoffOpened(picked.id);
-      toast.success(`"${picked.title}" loaded as a ${format.label}`);
+      toast.success(`"${picked.title}" loaded as a ${fmt.label}`);
       onOpenChange(false);
-      onReady(picked, format);
+      onReady(picked, fmt);
     } finally {
       setBusy(false);
     }
   };
+
+  /**
+   * Full render path: creates a real movie_projects row so the queued
+   * scene-by-scene render pipeline (chunker → render jobs → stitch → final MP4
+   * → YouTube kit) actually runs, instead of only the in-browser quick cut.
+   */
+  const queueFullRender = async (fmt: MovieFormat) => {
+    if (!picked) return;
+    setBusy(true);
+    try {
+      const minutes = Math.max(0.15, Math.round((fmt.targetSeconds / 60) * 100) / 100);
+      const { data, error } = await supabase.functions.invoke("movie-project-create", {
+        body: {
+          title: picked.brief?.youtube?.title || picked.title,
+          logline: picked.brief?.intent || "",
+          genre: "story",
+          target_duration_minutes: minutes,
+          quality_tier: "hd",
+          brief: { ...picked.brief, format: fmt, source_handoff_id: picked.id },
+        },
+      });
+      const err = error?.message || (data as any)?.error;
+      if (err) {
+        toast.error(err);
+        return;
+      }
+      stashMovieBrief(picked.brief);
+      stashMovieFormat(fmt);
+      await markMovieHandoffOpened(picked.id);
+      toast.success(`"${picked.title}" queued as a full ${fmt.label} render — track it in Your Movies below.`);
+      onOpenChange(false);
+      onReady(picked, fmt);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not queue that render");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   const remove = async (item: MovieHandoffRecord) => {
     try {
