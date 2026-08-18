@@ -16,6 +16,14 @@ import {
 import { CURATED_ELEVENLABS_VOICES } from "@/data/elevenLabsVoices";
 import { MUSIC_PRESETS_TOP_100 } from "@/data/movieMusicPresets";
 
+export type PipelineStatus = "waiting" | "working" | "complete" | "failed" | "cancelled";
+export interface PipelineStep {
+  id: string;
+  label: string;
+  status: PipelineStatus;
+  error?: string;
+}
+
 export interface SuperAIActions {
   /** Do absolutely everything: storyboard art, voices, SFX, score, titles, credits, final cut. */
   runEverything: () => Promise<void> | void;
@@ -24,11 +32,16 @@ export interface SuperAIActions {
   generateAllVideo: () => Promise<void> | void;
   generateAllAudio: () => Promise<void> | void;
   generateAllSfx: () => Promise<void> | void;
+  /** Design SFX prompts, beat timestamps and volumes for every scene, then generate them. */
+  autoSfxTimeline: () => Promise<void> | void;
+  /** Map and place music cues across the whole timeline from the story beats. */
+  autoScoreTimeline: () => Promise<void> | void;
   runScoreTeam: () => Promise<void> | void;
   generateMovieMusic: () => Promise<void> | void;
   composeIntro: () => Promise<void> | void;
   composeTheme: () => Promise<void> | void;
   composeOutro: () => Promise<void> | void;
+  /** Build the opening title card AND the end credits roll from the story. */
   generateCredits: () => Promise<void> | void;
   /** Build the opening title card + credits scene at the very front of the movie. */
   addOpeningTitles: (subtitleLine: string) => Promise<void> | void;
@@ -43,10 +56,18 @@ export interface SuperAIActions {
   setMusicLevel: (v: number) => void;
   musicLevel: number;
   sceneCount: number;
+  // Step-by-step production pipeline
+  pipeline: PipelineStep[];
+  pipelineRunning: boolean;
+  pipelineStep: number;
+  musicCueProgress: { done: number; total: number } | null;
+  startPipeline: () => void;
+  resumePipeline: () => void;
+  cancelPipeline: () => void;
 }
 
 type JobId =
-  | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "score" | "music"
+  | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "sfxAuto" | "score" | "music" | "musicAuto"
   | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "export";
 
 interface Job {
@@ -58,19 +79,21 @@ interface Job {
 }
 
 const JOBS: Job[] = [
-  { id: "everything", icon: Sparkles, title: "Make the whole movie for me", desc: "Super AI runs every agent end to end: artwork, narration, SFX, score, opening titles, ads, end credits and the final cut." },
+  { id: "everything", icon: Sparkles, title: "Make the whole movie for me", desc: "Step-by-step production with live progress — pause, resume or cancel at any point.", opensPanel: true },
   { id: "swarm", icon: Clapperboard, title: "Run the 5-agent production swarm", desc: "Visual Director, Voice Director, Sound Designer, Score Composer and Final-Cut Editor work in parallel." },
   { id: "images", icon: Film, title: "Illustrate every scene", desc: "4K cinematic, head-safe framing on every shot." },
   { id: "video", icon: Video, title: "Turn every scene into moving footage", desc: "Image-to-video motion on each beat." },
   { id: "narration", icon: Mic, title: "Narration & dubbing booth", desc: "Pick the voice, re-dub every beat, or hand it a new performance.", opensPanel: true },
-  { id: "sfx", icon: Volume2, title: "Design the sound effects", desc: "Per-scene foley and impacts." },
-  { id: "score", icon: Music, title: "Adaptive score team", desc: "A different original cue mapped to every scene, ducked under dialogue." },
-  { id: "music", icon: Music, title: "Background music for the whole movie", desc: "Choose a vibe from 100 trending instrumentals or describe your own.", opensPanel: true },
+  { id: "sfxAuto", icon: Volume2, title: "Auto sound design across the movie", desc: "AI writes an effect for every beat, places it on its timestamp with its own volume, then generates them all." },
+  { id: "sfx", icon: Volume2, title: "Generate the sound effects I've written", desc: "Per-scene foley and impacts from the prompts already on the timeline." },
+  { id: "musicAuto", icon: Music, title: "Auto background music across the timeline", desc: "Maps a cue to every story beat, generates it and sets the level from the beat's intensity." },
+  { id: "score", icon: Music, title: "Adaptive score team (cue sheet only)", desc: "Writes a different original cue for every scene without generating audio." },
+  { id: "music", icon: Music, title: "One track for the whole movie", desc: "Choose a vibe from 100 trending instrumentals or describe your own.", opensPanel: true },
   { id: "intro", icon: Play, title: "Compose the intro sting", desc: "Opening music bed under the titles." },
   { id: "theme", icon: Music, title: "Compose the main theme", desc: "The recurring signature track." },
   { id: "outro", icon: Music, title: "Compose the outro", desc: "Music that plays under the end credits." },
-  { id: "openingTitles", icon: Type, title: "Opening credits at the front", desc: "Title card and front credits drawn from your Story Writer story.", opensPanel: true },
-  { id: "credits", icon: ListVideo, title: "End credits roll", desc: "Cast, voice cast, score and story credits pulled from the script." },
+  { id: "credits", icon: ListVideo, title: "Opening + end credits from my story", desc: "Builds the title card at the front and the credits roll at the end, pulled from your story, cast and score." },
+  { id: "openingTitles", icon: Type, title: "Opening credits only", desc: "Title card and front credits with your own tagline.", opensPanel: true },
   { id: "ads", icon: Megaphone, title: "Insert an advert", desc: "Drop your own promo at the front or the end — AI writes and voices it.", opensPanel: true },
   { id: "mix", icon: Scissors, title: "Final mix levels", desc: "Set how loud the music sits under the narration.", opensPanel: true },
   { id: "trailer", icon: Film, title: "Cut a preview trailer", desc: "Short punchy cut for socials." },
@@ -95,11 +118,12 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
   const onJob = (job: Job) => {
     if (job.opensPanel) { setPanel(job.id); return; }
     const map: Partial<Record<JobId, () => Promise<void> | void>> = {
-      everything: actions.runEverything,
       swarm: actions.runProductionSwarm,
       images: actions.generateAllImages,
       video: actions.generateAllVideo,
       sfx: actions.generateAllSfx,
+      sfxAuto: actions.autoSfxTimeline,
+      musicAuto: actions.autoScoreTimeline,
       score: actions.runScoreTeam,
       intro: actions.composeIntro,
       theme: actions.composeTheme,
@@ -111,6 +135,7 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
     const fn = map[job.id];
     if (fn) void run(job.id, fn);
   };
+
 
   const Back = () => (
     <button onClick={() => setPanel(null)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
@@ -167,6 +192,58 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {panel === "everything" && (
+              <div className="space-y-3 pb-8">
+                <Back />
+                <p className="text-[11px] text-muted-foreground">
+                  Super AI runs the production one step at a time. If a step fails, fix the problem and hit resume — completed steps are never redone.
+                </p>
+                <div className="space-y-1.5">
+                  {(actions.pipeline.length ? actions.pipeline : [
+                    { id: "images", label: "Illustrate every scene", status: "waiting" as const },
+                    { id: "voices", label: "Record the narration", status: "waiting" as const },
+                    { id: "sfx", label: "Design and place the sound effects", status: "waiting" as const },
+                    { id: "score", label: "Score the timeline with music cues", status: "waiting" as const },
+                    { id: "extras", label: "Compose intro, theme and outro", status: "waiting" as const },
+                    { id: "credits", label: "Build opening titles and end credits", status: "waiting" as const },
+                  ]).map((step, i) => (
+                    <div key={step.id} className="rounded-md border border-border p-2 flex items-start gap-2">
+                      <span className="mt-0.5">
+                        {step.status === "working" && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+                        {step.status === "complete" && <span className="text-[11px] text-primary font-bold">✓</span>}
+                        {step.status === "failed" && <span className="text-[11px] text-destructive font-bold">!</span>}
+                        {step.status === "cancelled" && <span className="text-[11px] text-muted-foreground font-bold">■</span>}
+                        {step.status === "waiting" && <span className="text-[11px] text-muted-foreground">{i + 1}</span>}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-[11px] font-semibold">{step.label}</span>
+                        {"error" in step && step.error && (
+                          <span className="block text-[10px] text-destructive mt-0.5">{step.error}</span>
+                        )}
+                        {step.status === "working" && actions.musicCueProgress && step.id === "score" && (
+                          <span className="block text-[10px] text-muted-foreground mt-0.5">
+                            {actions.musicCueProgress.done} / {actions.musicCueProgress.total} cues placed
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button className="flex-1" disabled={actions.pipelineRunning} onClick={() => actions.startPipeline()}>
+                    {actions.pipelineRunning
+                      ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Step {actions.pipelineStep + 1} running…</>
+                      : <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Start production</>}
+                  </Button>
+                  {actions.pipelineRunning
+                    ? <Button variant="destructive" onClick={() => actions.cancelPipeline()}>Cancel</Button>
+                    : actions.pipeline.some(p => p.status === "failed" || p.status === "cancelled")
+                      ? <Button variant="secondary" onClick={() => actions.resumePipeline()}>Resume</Button>
+                      : null}
+                </div>
               </div>
             )}
 

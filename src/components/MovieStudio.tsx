@@ -17,7 +17,7 @@ import MovieShareDialog from "@/components/movie/MovieShareDialog";
 import { readMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
-import SuperAIPanel, { type SuperAIActions } from "@/components/movie/SuperAIPanel";
+import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus } from "@/components/movie/SuperAIPanel";
 
 
 
@@ -104,6 +104,8 @@ interface Scene {
   // SFX (per scene)
   sfx_prompt?: string;
   sfx_url?: string;
+  sfx_offset_sec?: number; // where in the scene the effect lands
+  sfx_volume?: number;     // 0..1, default 0.6
   generatingSfx?: boolean;
   // Per-scene backing music
   music_prompt?: string;
@@ -181,6 +183,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [sfxProgress, setSfxProgress] = useState<{ done: number; total: number } | null>(null);
   const [productionSwarm, setProductionSwarm] = useState<ProductionAgent[]>(PRODUCTION_AGENTS);
   const [productionSwarmBusy, setProductionSwarmBusy] = useState(false);
+  // Super AI step-by-step pipeline
+  const [pipeline, setPipeline] = useState<PipelineStep[]>([]);
+  const [superAIRunning, setSuperAIRunning] = useState(false);
+  const [superAIStep, setSuperAIStep] = useState(0);
+  const [musicCueProgress, setMusicCueProgress] = useState<{ done: number; total: number } | null>(null);
+  const superAICancel = useRef(false);
   // Music suite
   const [musicPrompt, setMusicPrompt] = useState("");
   const [musicUrl, setMusicUrl] = useState<string | null>(null);
@@ -1336,13 +1344,161 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     toast.success(`Advert inserted ${adSpec.position === "front" ? "before" : "after"} the movie`);
   };
 
+  // ---- Credits pulled from the story: opening title card + end credits roll ----
+  const generateStoryCredits = async () => {
+    if (!scenes.length) { toast.error("Build the movie scenes first"); return; }
+    await generateCredits();
+    const movieTitle = title || "Untitled Movie";
+    const hasOpening = scenes.some(s => s.caption.startsWith("TITLE CARD"));
+    const hasEnd = scenes.some(s => s.caption.startsWith("END CREDITS"));
+    if (!hasOpening) await addOpeningTitles("");
+    if (!hasEnd) {
+      const id = uid();
+      setScenes(prev => [...prev, {
+        id,
+        caption: `END CREDITS — ${movieTitle}`,
+        photo_prompt: `Cinematic 4K end-credits backdrop for the film "${movieTitle}": dark, moody, wide negative space, subtle film grain, no text, no faces cropped.`,
+        motion: "ken-burns",
+        duration_sec: 14,
+        narration: "",
+        speaker: "narrator",
+        voice_style: "narrator-male-warm",
+        sfx_prompt: "",
+        music_prompt: "warm conclusive end-credits cue, instrumental, cinematic",
+        music_volume: 0.4,
+      }]);
+      await generateScenePhoto(id);
+    }
+    if (!outroMusicUrl) await composeOutroMusic();
+    toast.success("Opening titles and end credits built from your story");
+  };
+
+  // ---- Automatic music cues placed across the whole timeline from the story beats ----
+  const autoScoreTimeline = async () => {
+    if (!scenes.length) { toast.error("Build the movie scenes first"); return; }
+    await runAdaptiveScoreTeam();
+    // Read the freshly-written cues off state
+    const withCues = await new Promise<Scene[]>(resolve => setScenes(prev => { resolve(prev); return prev; }));
+    const targets = withCues.filter(s => !s.music_url && s.music_prompt?.trim());
+    if (!targets.length) { toast.info("Every beat already has a music cue"); return; }
+    let done = 0;
+    for (const scene of targets) {
+      if (superAICancel.current) break;
+      const url = await generateSceneMusicOption(scene.id, scene.music_prompt!.trim());
+      const intensity = Number((scene.music_prompt!.match(/intensity\s*(\d+)/i) || [])[1] || 5);
+      if (url) {
+        setScenes(prev => prev.map(s => s.id === scene.id
+          ? { ...s, music_url: url, music_volume: Math.max(0.08, Math.min(0.45, intensity / 22)) }
+          : s));
+      }
+      done += 1;
+      setMusicCueProgress({ done, total: targets.length });
+    }
+    setTimeout(() => setMusicCueProgress(null), 1500);
+    toast.success("Music cues placed across the whole timeline");
+  };
+
+  // ---- Automatic SFX design: prompts, beat timestamps and volumes for every scene ----
+  const autoSfxTimeline = async () => {
+    if (!scenes.length) { toast.error("Build the movie scenes first"); return; }
+    try {
+      const sceneList = scenes.map((s, i) =>
+        `${i + 1}. ${s.caption} | ${s.duration_sec}s | ${(s.narration || s.photo_prompt || "").slice(0, 160)}`
+      ).join("\n");
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        body: JSON.stringify({
+          type: "assistant",
+          prompt: `You are a film sound designer. For each scene below return exactly one line:\nN | <short sound effect description> | <seconds into the scene the effect hits> | <volume 0.1-1.0>\nKeep the effect under the dialogue, never louder than 0.8 when there is narration, and vary the timestamps so hits land on the story beat.\n\nSCENES:\n${sceneList}`,
+        }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      const payload = await resp.json();
+      const text = typeof payload === "string" ? payload : (payload.text || payload.result || "");
+      const rows = String(text).split("\n").map(l => l.trim()).filter(l => /\|/.test(l));
+      if (!rows.length) throw new Error("The sound designer returned no cue sheet");
+      setScenes(prev => prev.map((s, i) => {
+        const row = rows[i];
+        if (!row) return s;
+        const parts = row.split("|").map(p => p.trim());
+        const prompt = (parts[1] || "").replace(/^\d+[.)-]?\s*/, "");
+        const at = Number((parts[2] || "").replace(/[^\d.]/g, ""));
+        const vol = Number((parts[3] || "").replace(/[^\d.]/g, ""));
+        if (!prompt) return s;
+        return {
+          ...s,
+          sfx_prompt: prompt,
+          sfx_url: undefined,
+          sfx_offset_sec: Number.isFinite(at) ? Math.max(0, Math.min(s.duration_sec, at)) : 0,
+          sfx_volume: Number.isFinite(vol) && vol > 0 ? Math.max(0.05, Math.min(1, vol)) : 0.6,
+        };
+      }));
+      toast.success("Sound design mapped to every beat — generating effects…");
+      await generateAllSfx();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sound design failed");
+      throw e;
+    }
+  };
+
+  // ---- Step-by-step Super AI production pipeline (progress, errors, resume, cancel) ----
+  const PIPELINE_STEPS: { id: string; label: string; run: () => Promise<void> }[] = [
+    { id: "images", label: "Illustrate every scene", run: async () => { await generateAll(); } },
+    { id: "voices", label: "Record the narration", run: async () => { await generateAllAudio(); } },
+    { id: "sfx", label: "Design and place the sound effects", run: autoSfxTimeline },
+    { id: "score", label: "Score the timeline with music cues", run: autoScoreTimeline },
+    { id: "extras", label: "Compose intro, theme and outro", run: async () => { await generateAllExtras(); } },
+    { id: "credits", label: "Build opening titles and end credits", run: generateStoryCredits },
+  ];
+
+  const runPipeline = async (fromIndex = 0) => {
+    if (superAIRunning) return;
+    superAICancel.current = false;
+    setSuperAIRunning(true);
+    setPipeline(prev => {
+      const base = PIPELINE_STEPS.map((s, i) => {
+        const existing = prev.find(p => p.id === s.id);
+        return { id: s.id, label: s.label, status: (i < fromIndex && existing?.status === "complete" ? "complete" : "waiting") as PipelineStatus, error: undefined as string | undefined };
+      });
+      return base;
+    });
+    try {
+      for (let i = fromIndex; i < PIPELINE_STEPS.length; i++) {
+        if (superAICancel.current) {
+          setPipeline(prev => prev.map((p, idx) => idx === i ? { ...p, status: "cancelled" } : p));
+          setSuperAIStep(i);
+          toast.info("Super AI production cancelled — resume when you're ready");
+          return;
+        }
+        setSuperAIStep(i);
+        setPipeline(prev => prev.map((p, idx) => idx === i ? { ...p, status: "working", error: undefined } : p));
+        try {
+          await PIPELINE_STEPS[i].run();
+          setPipeline(prev => prev.map((p, idx) => idx === i ? { ...p, status: "complete" } : p));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Step failed";
+          console.error(`Super AI step ${PIPELINE_STEPS[i].id} failed`, error);
+          setPipeline(prev => prev.map((p, idx) => idx === i ? { ...p, status: "failed", error: message } : p));
+          toast.error(`${PIPELINE_STEPS[i].label} failed — fix it and resume`);
+          return;
+        }
+      }
+      toast.success("Super AI finished the production — review the timeline, then render the final cut.");
+    } finally {
+      setSuperAIRunning(false);
+    }
+  };
+
+  const cancelPipeline = () => { superAICancel.current = true; };
+  const resumePipeline = () => {
+    const nextIndex = pipeline.findIndex(p => p.status !== "complete");
+    void runPipeline(nextIndex === -1 ? 0 : nextIndex);
+  };
+
   const runEverything = async () => {
     toast.info("Super AI is taking over the whole production…");
-    await runProductionSwarm();
-    await generateAllExtras();
-    if (creditsLines.length === 0) await generateCredits();
-    await addOpeningTitles("");
-    toast.success("Super AI finished the production — review the timeline, then render the final cut.");
+    await runPipeline(0);
   };
 
   const superAIActions: SuperAIActions = {
@@ -1352,12 +1508,14 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     generateAllVideo,
     generateAllAudio,
     generateAllSfx,
+    autoSfxTimeline,
+    autoScoreTimeline,
     runScoreTeam: runAdaptiveScoreTeam,
     generateMovieMusic: generateMusic,
     composeIntro: composeIntroMusic,
     composeTheme: composeThemeTrack,
     composeOutro: composeOutroMusic,
-    generateCredits,
+    generateCredits: generateStoryCredits,
     addOpeningTitles,
     applyVoiceToAll,
     setMusicVibe,
@@ -1367,6 +1525,13 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     setMusicLevel: setMusicVolume,
     musicLevel: musicVolume,
     sceneCount: scenes.length,
+    pipeline,
+    pipelineRunning: superAIRunning,
+    pipelineStep: superAIStep,
+    musicCueProgress,
+    startPipeline: () => { void runPipeline(0); },
+    resumePipeline,
+    cancelPipeline,
   };
 
 
@@ -1662,14 +1827,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           const offset = Math.max(0, Math.min(scene.duration_sec || 0, scene.voice_offset_sec ?? 0));
           src.start(audioCtx.currentTime + offset);
         }
-        // Schedule scene SFX (slightly ducked so VO stays clear)
+        // Schedule scene SFX at its beat timestamp, at the volume set on the scene.
         const sbuf = sfxBuffers[idx];
         if (sbuf) {
           const src = audioCtx.createBufferSource();
           src.buffer = sbuf;
-          const g = audioCtx.createGain(); g.gain.value = 0.6;
+          const g = audioCtx.createGain();
+          g.gain.value = Math.max(0, Math.min(1, scene.sfx_volume ?? 0.6));
           src.connect(g).connect(audioDest);
-          src.start();
+          const sfxOffset = Math.max(0, Math.min(scene.duration_sec || 0, scene.sfx_offset_sec ?? 0));
+          src.start(audioCtx.currentTime + sfxOffset);
         }
         // Schedule per-scene backing music with cross-fade between adjacent scenes.
         // Cross-fade duration is decided by crossfadeFor() (auto = Oracle picks per transition).
