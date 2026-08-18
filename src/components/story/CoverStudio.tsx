@@ -3,6 +3,7 @@ import { Loader2, Sparkles, ImageIcon, X, Eraser, BookMarked, Users, RefreshCw, 
 import { SignedImage } from "@/components/SignedMedia";
 import { Button } from "@/components/ui/button";
 import { bakeCoverText, type BakeTextOptions } from "@/lib/bakeCoverText";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { toast } from "sonner";
 
 /**
@@ -68,9 +69,12 @@ export default function CoverStudio({
     let active = true;
     const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
     Promise.all([
-      coverImage ? bakeCoverText(coverImage, { ...common, slot: "cover" }) : Promise.resolve(undefined),
-      backImage ? bakeCoverText(backImage, { ...common, slot: "back", blurb }) : Promise.resolve(undefined),
-    ]).then(([cover, back]) => {
+      coverImage ? resolveStorageUrl(coverImage, 3600) : Promise.resolve(undefined),
+      backImage ? resolveStorageUrl(backImage, 3600) : Promise.resolve(undefined),
+    ]).then(([resolvedCover, resolvedBack]) => Promise.all([
+      resolvedCover ? bakeCoverText(resolvedCover, { ...common, slot: "cover" }) : Promise.resolve(undefined),
+      resolvedBack ? bakeCoverText(resolvedBack, { ...common, slot: "back", blurb }) : Promise.resolve(undefined),
+    ])).then(([cover, back]) => {
       if (active) setPrintPreviews({ cover, back });
     }).catch(() => {
       if (active) setPrintPreviews({ cover: coverImage, back: backImage });
@@ -86,9 +90,13 @@ export default function CoverStudio({
   const buildRetailFiles = async () => {
     if (!coverImage || !backImage) throw new Error("Build both covers first");
     const common = { title, author, genre, width: 1875, height: 2775, layout } as const;
+    const [resolvedCover, resolvedBack] = await Promise.all([
+      resolveStorageUrl(coverImage, 3600),
+      resolveStorageUrl(backImage, 3600),
+    ]);
     const [front, back] = await Promise.all([
-      bakeCoverText(coverImage, { ...common, slot: "cover" }),
-      bakeCoverText(backImage, { ...common, slot: "back", blurb }),
+      bakeCoverText(resolvedCover, { ...common, slot: "cover" }),
+      bakeCoverText(resolvedBack, { ...common, slot: "back", blurb }),
     ]);
     const safe = (title || "book").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     return Promise.all([
