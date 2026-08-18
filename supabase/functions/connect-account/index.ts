@@ -124,10 +124,7 @@ Deno.serve(async (req) => {
         throw new Error("No Connect account found. Create one first.");
       }
 
-      const origin =
-        req.headers.get("origin") ||
-        body.origin ||
-        "https://oracle-lunar.online";
+      const origin = safeOrigin(req);
 
       const accountLink = await stripe.accountLinks.create({
         account: row.stripe_account_id,
