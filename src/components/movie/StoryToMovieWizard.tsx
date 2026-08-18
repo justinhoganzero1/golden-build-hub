@@ -78,11 +78,18 @@ const StoryToMovieWizard = ({ open, onOpenChange, onReady }: Props) => {
     setPicked(null);
     setFormat(null);
     setLoading(true);
-    listMovieHandoffs()
-      .then(setItems)
+    Promise.allSettled([listMovieHandoffs(), listLibraryStories()])
+      .then(([sent, lib]) => {
+        const a = sent.status === "fulfilled" ? sent.value : [];
+        const b = lib.status === "fulfilled" ? lib.value : [];
+        const titles = new Set(a.map(i => i.title));
+        setItems([...a, ...b.filter(i => !titles.has(i.title))]);
+      })
       .catch(e => console.error("[StoryToMovieWizard] load failed", e))
       .finally(() => setLoading(false));
   }, [open]);
+
+  const isLibrary = (id: string) => id.startsWith("lib:");
 
   const choose = async (fmt: MovieFormat) => {
     if (!picked) return;
