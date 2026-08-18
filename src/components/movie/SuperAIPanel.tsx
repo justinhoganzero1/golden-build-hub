@@ -195,6 +195,58 @@ const SuperAIPanel = ({ actions }: { actions: SuperAIActions }) => {
               </div>
             )}
 
+            {panel === "everything" && (
+              <div className="space-y-3 pb-8">
+                <Back />
+                <p className="text-[11px] text-muted-foreground">
+                  Super AI runs the production one step at a time. If a step fails, fix the problem and hit resume — completed steps are never redone.
+                </p>
+                <div className="space-y-1.5">
+                  {(actions.pipeline.length ? actions.pipeline : [
+                    { id: "images", label: "Illustrate every scene", status: "waiting" as const },
+                    { id: "voices", label: "Record the narration", status: "waiting" as const },
+                    { id: "sfx", label: "Design and place the sound effects", status: "waiting" as const },
+                    { id: "score", label: "Score the timeline with music cues", status: "waiting" as const },
+                    { id: "extras", label: "Compose intro, theme and outro", status: "waiting" as const },
+                    { id: "credits", label: "Build opening titles and end credits", status: "waiting" as const },
+                  ]).map((step, i) => (
+                    <div key={step.id} className="rounded-md border border-border p-2 flex items-start gap-2">
+                      <span className="mt-0.5">
+                        {step.status === "working" && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
+                        {step.status === "complete" && <span className="text-[11px] text-primary font-bold">✓</span>}
+                        {step.status === "failed" && <span className="text-[11px] text-destructive font-bold">!</span>}
+                        {step.status === "cancelled" && <span className="text-[11px] text-muted-foreground font-bold">■</span>}
+                        {step.status === "waiting" && <span className="text-[11px] text-muted-foreground">{i + 1}</span>}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-[11px] font-semibold">{step.label}</span>
+                        {"error" in step && step.error && (
+                          <span className="block text-[10px] text-destructive mt-0.5">{step.error}</span>
+                        )}
+                        {step.status === "working" && actions.musicCueProgress && step.id === "score" && (
+                          <span className="block text-[10px] text-muted-foreground mt-0.5">
+                            {actions.musicCueProgress.done} / {actions.musicCueProgress.total} cues placed
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button className="flex-1" disabled={actions.pipelineRunning} onClick={() => actions.startPipeline()}>
+                    {actions.pipelineRunning
+                      ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Step {actions.pipelineStep + 1} running…</>
+                      : <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Start production</>}
+                  </Button>
+                  {actions.pipelineRunning
+                    ? <Button variant="destructive" onClick={() => actions.cancelPipeline()}>Cancel</Button>
+                    : actions.pipeline.some(p => p.status === "failed" || p.status === "cancelled")
+                      ? <Button variant="secondary" onClick={() => actions.resumePipeline()}>Resume</Button>
+                      : null}
+                </div>
+              </div>
+            )}
+
             {panel === "narration" && (
               <div className="space-y-3 pb-8">
                 <Back />
