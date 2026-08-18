@@ -2293,6 +2293,8 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             swarmBusy={coverSwarm}
             onRunSwarm={runCoverSwarm}
             teamNotes={coverTeamNotes}
+            design={coverDesign}
+
             storyWordCount={story.chapters.reduce((n, c) => n + (c.content || "").split(/\s+/).filter(Boolean).length, 0)}
             onGenerateBoth={async () => {
               await generateStoryImage("cover", frontCoverDirection || coverPrompt);
