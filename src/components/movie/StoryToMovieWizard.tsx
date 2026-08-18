@@ -10,8 +10,43 @@ import {
   markMovieHandoffOpened,
   deleteMovieHandoff,
   stashMovieBrief,
+  buildBriefFromStory,
   type MovieHandoffRecord,
 } from "@/lib/movieHandoff";
+
+/** Stories saved in the user's library that were never explicitly "sent". */
+const listLibraryStories = async (): Promise<MovieHandoffRecord[]> => {
+  const { data, error } = await supabase
+    .from("user_media")
+    .select("id, title, metadata, created_at")
+    .eq("media_type", "story")
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  return (data || [])
+    .map((row: any) => {
+      const m = row.metadata || {};
+      const brief = buildBriefFromStory({
+        title: row.title || m.title,
+        author: m.authorName || m.author,
+        genre: m.genre,
+        premise: m.premise || m.blurb,
+        coverImage: m.coverImage,
+        backImage: m.backImage,
+        chapters: Array.isArray(m.chapters) ? m.chapters : [],
+      });
+      return {
+        id: `lib:${row.id}`,
+        title: row.title || "Untitled story",
+        source: "library",
+        brief,
+        opened: false,
+        opened_at: null,
+        created_at: row.created_at,
+      } as MovieHandoffRecord;
+    })
+    .filter(r => (r.brief.script || "").trim().length > 0 || (r.brief.frames?.length ?? 0) > 0);
+};
 import { MOVIE_FORMATS, stashMovieFormat, type MovieFormat } from "@/lib/movieFormats";
 
 interface Props {
