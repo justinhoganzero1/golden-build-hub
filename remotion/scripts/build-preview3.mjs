@@ -22,45 +22,49 @@ const FPS = 30;
 // mode: "studio" = full-frame host, "corner" = host over story still,
 //       "interview" = two heads facing each other.
 const SEG = [
-  { s: "o", mode: "studio", plate: true, gapAfter: 0.35, text:
+  { id: 0, s: "o", mode: "studio", plate: true, gapAfter: 0.35, text:
     "G'day, I'm Olivia Vance, and welcome to the Oracle Lunar screening room." },
-  { s: "o", mode: "studio", plate: true, gapAfter: 0.5, text:
+  { id: 1, s: "o", mode: "studio", plate: true, gapAfter: 0.5, text:
     "Before we start, one thing, straight up. Everything you're about to see is for entertainment purposes only. None of these thoughts, none of these scenes, none of these people are real. Every frame, every voice, every word of it was made up and generated inside the Oracle Lunar app. Nobody was hurt, nothing happened, it's a story. Right. Now let's get into it." },
 
-  { s: "o", mode: "corner", img: 0, gapAfter: 0.2, text:
+  { id: 2, s: "o", mode: "corner", img: 0, gapAfter: 0.2, text:
     "This is Scam the Scammer, Juzzy Style. Three minutes of a twenty chapter Aussie revenge thriller written, illustrated, narrated and cut into a film without a single camera being switched on." },
-  { s: "o", mode: "corner", img: 1, gapAfter: 0.15, text:
+  { id: 3, s: "o", mode: "corner", img: 1, gapAfter: 0.15, text:
     "It opens in a tin shed in Western Sydney, in the kind of heat that bends the air. Juzzy's best mate Macca is gone, bled dry by a call centre full of digital parasites." },
-  { s: "o", mode: "corner", img: 2, gapAfter: 0.15, text:
+  { id: 4, s: "o", mode: "corner", img: 2, gapAfter: 0.15, text:
     "Juzzy is not a cop. He's a bloke built like an angle grinder with two monitors, a stolen life to account for, and absolutely nothing left to lose." },
-  { s: "o", mode: "corner", img: 4, gapAfter: 0.15, text:
+  { id: 5, s: "o", mode: "corner", img: 4, gapAfter: 0.15, text:
     "He spoofs a rogue cell tower in a rain hammered cul de sac and pulls the syndicate's encrypted chatter straight out of the storm." },
-  { s: "o", mode: "corner", img: 7, gapAfter: 0.15, text:
+  { id: 6, s: "o", mode: "corner", img: 7, gapAfter: 0.15, text:
     "That signal drags him into a Smithfield warehouse, then a bunker, then a floor full of stolen phones humming like a beehive." },
-  { s: "o", mode: "corner", img: 13, gapAfter: 0.15, text:
+  { id: 7, s: "o", mode: "corner", img: 13, gapAfter: 0.15, text:
     "From there the film goes international. Bangkok at night. Neon off wet bitumen. A boss who has never once had to look a victim in the eye." },
-  { s: "o", mode: "corner", img: 17, gapAfter: 0.15, text:
+  { id: 8, s: "o", mode: "corner", img: 17, gapAfter: 0.15, text:
     "There's a frozen vault, a zero day payload, and a ledger of everything they ever took. And Juzzy is about to make that ledger public." },
-  { s: "o", mode: "corner", img: 25, gapAfter: 0.15, text:
+  { id: 19, s: "o", mode: "corner", img: 20, gapAfter: 0.15, text:
+    "Chapter fourteen is where it turns into digital warfare. He doesn't rob them. He makes every account they hold pay itself back, cent by cent, in front of them." },
+  { id: 9, s: "o", mode: "corner", img: 25, gapAfter: 0.15, text:
     "The back half moves to Surfers Paradise, high rise glass, surveillance rigs and a card table where the devil orders a second drink." },
-  { s: "o", mode: "corner", img: 35, gapAfter: 0.35, text:
+  { id: 20, s: "o", mode: "corner", img: 30, gapAfter: 0.3, text:
+    "And the poker table scene is the best twelve pages in the book. One hand, two liars, and a phone face down on the felt." },
+  { id: 10, s: "o", mode: "corner", img: 35, gapAfter: 0.35, text:
     "Then the alarm goes, a kill squad deploys, and the last five chapters are close quarters, point blank, no escape route." },
 
   // ---- 20 second live interview ----
-  { s: "o", mode: "interview", gapAfter: 0.12, text:
+  { id: 11, s: "o", mode: "interview", gapAfter: 0.12, text:
     "Juzzy, you're live with me. Twenty seconds. Why not just hand it to the police?" },
-  { s: "j", mode: "interview", gapAfter: 0.12, text:
+  { id: 12, s: "j", mode: "interview", gapAfter: 0.12, text:
     "Police had six months, love. Macca had six days. I didn't want an arrest. I wanted the ledger on every screen they own." },
-  { s: "o", mode: "interview", gapAfter: 0.12, text:
+  { id: 13, s: "o", mode: "interview", gapAfter: 0.12, text:
     "And the ending. Would you do it again?" },
-  { s: "j", mode: "interview", gapAfter: 0.35, text:
+  { id: 14, s: "j", mode: "interview", gapAfter: 0.35, text:
     "Every single time. Balanced forever, mate." },
 
-  { s: "o", mode: "corner", img: 40, gapAfter: 0.15, text:
+  { id: 15, s: "o", mode: "corner", img: 40, gapAfter: 0.15, text:
     "That interview never happened. Neither did he. Both faces, both voices and every scene behind me came out of one app." },
-  { s: "o", mode: "studio", plate: true, gapAfter: 0.15, text:
+  { id: 16, s: "o", mode: "studio", plate: true, gapAfter: 0.15, text:
     "Twenty chapters, thirty six thousand words, forty two illustrations, a full narrated cut and this hosted preview. One prompt, one afternoon." },
-  { s: "o", mode: "studio", plate: false, gapAfter: 0.9, text:
+  { id: 17, s: "o", mode: "studio", plate: false, gapAfter: 0.9, text:
     "Write yours at oracle dash lunar dot online. I'm Olivia Vance. Entertainment only, remember. Goodnight." },
 ];
 
@@ -123,7 +127,7 @@ const segments = [];
 let t = 0;
 for (let i = 0; i < SEG.length; i++) {
   const seg = SEG[i];
-  const name = `${String(i).padStart(2, "0")}.mp3`;
+  const name = `${String(seg.id).padStart(2, "0")}.mp3`;
   const file = path.join(OUT_AUDIO, name);
   await tts(seg.text, seg.s === "o" ? OLIVIA : JUZZY, file);
   const d = dur(file);
