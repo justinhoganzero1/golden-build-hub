@@ -2637,6 +2637,10 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             <div className="flex flex-wrap gap-2">
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Movie title" className="flex-1 min-w-[200px]" />
               <SuperAIPanel actions={superAIActions} />
+              <Button onClick={() => setHostPanelOpen(true)} size="sm" variant="secondary" className="border border-primary/40"
+                title="Add a movable, lip-synced talking-head host and live 8s interviews">
+                <Tv className="w-3 h-3 mr-1" /> {host.enabled ? `Host: ${host.name}` : "Add movie host"}
+              </Button>
               <Button onClick={runProductionSwarm} disabled={productionSwarmBusy} size="sm" className="border border-primary/40">
                 {productionSwarmBusy
                   ? <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Swarm running</>
