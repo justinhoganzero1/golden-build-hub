@@ -533,15 +533,20 @@ const StoryWriterPage = () => {
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 3;
 
+  /** Hard framing rule: characters must always be shown whole, never decapitated by the frame. */
+  const HEAD_SAFE =
+    "MANDATORY FRAMING: every human in the picture must be shown with their WHOLE head, face and hair fully inside the frame with clear headroom above the skull — never crop, slice or cut off a head, chin, or top of the hair at the frame edge. No headless torsos, no faceless or back-of-head-only figures, no subjects bleeding off the top edge. Keep at least 12% empty safe margin around every person, and show recognisable faces with correct anatomy.";
+
   /** Shot recipes so every illustration is visually distinct even on short chapters. */
   const SHOT_VARIETY = [
-    "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins",
-    "inclusive medium-wide ensemble shot, all faces, hands and bodies fully inside frame, balanced foreground and background storytelling",
-    "immersive cinematic mosaic of three connected moments from this beat, seamless editorial composition with no borders and no text",
-    "high-angle action shot with motion blur and dynamic diagonal composition",
-    "dutch-angle dramatic shot at a different time of day",
-    "extreme close-up detail of a key object with the scene blurred behind",
+    "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins and full headroom",
+    "inclusive medium-wide ensemble shot, all heads, faces, hands and bodies fully inside frame with headroom, balanced foreground and background storytelling",
+    "immersive cinematic mosaic of three connected moments from this beat, each panel showing complete un-cropped figures, seamless editorial composition with no borders and no text",
+    "high-angle action shot with motion blur and dynamic diagonal composition, subjects complete head-to-toe inside frame",
+    "dutch-angle dramatic shot at a different time of day, full figures with headroom, no cropped heads",
+    "waist-up hero portrait moment with the full head and face in frame and the scene readable behind",
   ];
+
 
   /** Every URL this session has already placed in the book — used to reject duplicates. */
   const usedImageUrlsRef = useRef<Set<string>>(new Set());
@@ -624,10 +629,10 @@ const StoryWriterPage = () => {
     // producing two near-identical poster compositions.
     const CAST_LOCK = `CONTINUITY LOCK: recurring people must retain their exact faces, ages, builds, hair, skin tone and wardrobe across the book. Do not swap identities or alter established appearance.`;
     if (slot === "cover") {
-      basePrompt = `FRONT COVER background artwork for a ${story.genre} book. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the principal cast mid-action, real emotion and tension, with the characters, wardrobe, era, location, weather and mood taken directly from the blurb above. Vertical 2:3 portrait framing, subjects centred in the middle band, with calm uncluttered darker space across the top third and the bottom fifth so overlaid title and author type stays legible. ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `FRONT COVER background artwork for a ${story.genre} book. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Paint the single most iconic moment of this book: the hero striding directly toward the camera, weapon in hand, mid-action with a huge explosion and flying debris erupting behind them, the principal cast in real emotion and tension, with wardrobe, era, location, weather and mood taken directly from the blurb above. Show the hero full-length from the top of the head to the boots. Vertical 2:3 portrait framing, subjects centred in the middle band, with calm uncluttered darker space across the top third and the bottom fifth so overlaid title and author type stays legible. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
     } else if (slot === "back") {
-      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book. It must NOT repeat the front cover's hero lineup, action pose, camera height, focal length, location framing, weather beat or silhouette. Choose a genuinely different narrative image: an aftermath, consequential location, symbolic evidence, antagonist viewpoint, or environmental story moment from the finished manuscript. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Keep any people secondary and away from the centre; leave a calm, low-detail centre field for readable blurb typography. Vertical 2:3 portrait framing. ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `BACK COVER background artwork for the very same ${story.genre} book. It must NOT repeat the front cover's hero lineup, action pose, camera height, focal length, location framing, weather beat or silhouette. Choose a genuinely different narrative image: an aftermath, consequential location, symbolic evidence, antagonist viewpoint, or environmental story moment from the finished manuscript. ${story.premise}.${BLURB_BRIEF}${STORY_DIGEST} Keep any people secondary and away from the centre; leave a calm, low-detail centre field for readable blurb typography. Vertical 2:3 portrait framing. ${HEAD_SAFE} ${CAST_LOCK} ${NO_TYPE} ${COVER_LOOK} ${SINGLE_PANEL} ${ART_BIBLE} ${REALISM}`;
 
 
 
@@ -642,7 +647,7 @@ const StoryWriterPage = () => {
       const chapterFormat = beat?.index === 2
         ? "This selected image may be a seamless cinematic mosaic of complementary story moments, but must remain one coherent artwork with no panels, borders or lettering."
         : SINGLE_PANEL;
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;

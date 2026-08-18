@@ -133,7 +133,21 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas unavailable in this browser");
 
-  ctx.drawImage(img, 0, 0, W, H);
+  // Head-safe framing: cover-fit (no stretching) with the crop biased toward the
+  // top third so faces/heads are never sliced off.
+  {
+    const srcAR = img.width / img.height;
+    const dstAR = W / H;
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    if (srcAR > dstAR) {
+      sw = img.height * dstAR;
+      sx = (img.width - sw) / 2;
+    } else if (srcAR < dstAR) {
+      sh = img.width / dstAR;
+      sy = (img.height - sh) * 0.18; // keep heads in frame
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+  }
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
