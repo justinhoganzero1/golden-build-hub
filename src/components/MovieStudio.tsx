@@ -1269,6 +1269,103 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     setTrailerScenes(prev => prev.filter((_, i) => i !== slotIndex));
   };
 
+  // ================= SUPER AI ==================================================
+  // One button that can run every production job in the studio, plus the jobs the
+  // swarm needs for a finished film: opening credits, advert breaks, end credits.
+  const generateAllVideo = async () => {
+    for (const s of scenes) {
+      if (!s.video_url && s.image_url) await generateSceneVideo(s.id);
+    }
+  };
+
+  const applyVoiceToAll = async (voiceId: string) => {
+    for (const s of scenes) {
+      const text = (s.narration || "").trim();
+      if (!text) continue;
+      await redubScene(s.id, text, voiceId);
+    }
+    toast.success("Whole movie re-dubbed in the new voice");
+  };
+
+  const setMusicVibe = async (prompt: string) => {
+    setMusicPrompt(prompt);
+    await generateMusic();
+  };
+
+  const addOpeningTitles = async (subtitleLine: string) => {
+    if (creditsLines.length === 0) await generateCredits();
+    const id = uid();
+    const movieTitle = title || "Untitled Movie";
+    setScenes(prev => [{
+      id,
+      caption: `TITLE CARD — ${movieTitle}`,
+      photo_prompt: `Cinematic 4K opening title card for the film "${movieTitle}". ${subtitleLine ? `Tagline: ${subtitleLine}. ` : ""}Dramatic negative space in the lower third for titles, film-grain, award-winning key art, no text artefacts, no cropped heads.`,
+      motion: "ken-burns",
+      duration_sec: 8,
+      narration: subtitleLine || "",
+      speaker: "narrator",
+      voice_style: "narrator-male-warm",
+      sfx_prompt: "",
+      music_prompt: "epic opening title sting, cinematic, instrumental",
+      music_volume: 0.35,
+    }, ...prev]);
+    await generateScenePhoto(id);
+    toast.success("Opening credits added at the front of the movie");
+  };
+
+  const insertAd = async (adSpec: { headline: string; script: string; visual: string; seconds: number; position: "front" | "end" }) => {
+    const id = uid();
+    const adScene: Scene = {
+      id,
+      caption: `AD — ${adSpec.headline}`,
+      photo_prompt: adSpec.visual || `High-end commercial key visual for "${adSpec.headline}", 4K, glossy advertising photography, bold clean composition, space for a headline.`,
+      motion: "ken-burns",
+      duration_sec: adSpec.seconds,
+      narration: adSpec.script || adSpec.headline,
+      speaker: "narrator",
+      voice_style: "narrator-male-warm",
+      sfx_prompt: "",
+      music_prompt: "upbeat commercial bed, instrumental",
+      music_volume: 0.3,
+    };
+    setScenes(prev => adSpec.position === "front" ? [adScene, ...prev] : [...prev, adScene]);
+    await generateScenePhoto(id);
+    await generateSceneAudio(id);
+    toast.success(`Advert inserted ${adSpec.position === "front" ? "before" : "after"} the movie`);
+  };
+
+  const runEverything = async () => {
+    toast.info("Super AI is taking over the whole production…");
+    await runProductionSwarm();
+    await generateAllExtras();
+    if (creditsLines.length === 0) await generateCredits();
+    await addOpeningTitles("");
+    toast.success("Super AI finished the production — review the timeline, then render the final cut.");
+  };
+
+  const superAIActions: SuperAIActions = {
+    runEverything,
+    runProductionSwarm,
+    generateAllImages: generateAll,
+    generateAllVideo,
+    generateAllAudio,
+    generateAllSfx,
+    runScoreTeam: runAdaptiveScoreTeam,
+    generateMovieMusic: generateMusic,
+    composeIntro: composeIntroMusic,
+    composeTheme: composeThemeTrack,
+    composeOutro: composeOutroMusic,
+    generateCredits,
+    addOpeningTitles,
+    applyVoiceToAll,
+    setMusicVibe,
+    insertAd,
+    generateTrailer: generatePreviewTrailer,
+    exportMovie: () => exportMovie(),
+    setMusicLevel: setMusicVolume,
+    musicLevel: musicVolume,
+    sceneCount: scenes.length,
+  };
 
 
   // ----- Scene CRUD -----
