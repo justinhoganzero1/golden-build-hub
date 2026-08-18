@@ -37,6 +37,8 @@ const SEG = [
     "He spoofs a rogue cell tower in a rain hammered cul de sac and pulls the syndicate's encrypted chatter straight out of the storm." },
   { id: 6, s: "o", mode: "corner", img: 7, gapAfter: 0.15, text:
     "That signal drags him into a Smithfield warehouse, then a bunker, then a floor full of stolen phones humming like a beehive." },
+  { id: 18, s: "o", mode: "corner", img: 10, gapAfter: 0.15, text:
+    "Inside the bunker it's a silicon slave floor. Rows of stolen handsets, scripts taped to the wall, and a quota board with somebody's nan's pension written on it." },
   { id: 7, s: "o", mode: "corner", img: 13, gapAfter: 0.15, text:
     "From there the film goes international. Bangkok at night. Neon off wet bitumen. A boss who has never once had to look a victim in the eye." },
   { id: 8, s: "o", mode: "corner", img: 17, gapAfter: 0.15, text:
