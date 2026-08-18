@@ -1,6 +1,7 @@
 // Claims Assistant: research claim requirements + draft claim letter
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+import { AiGatewayError, aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -59,7 +60,7 @@ Use only facts the user provided. Mark any unknown field as [TO CONFIRM]. Includ
       messages: [{ role: "system", content: sys }, { role: "user", content: userMsg }],
     }),
   });
-  if (!r.ok) throw new Error(`AI ${r.status}`);
+  if (!r.ok) { await r.text().catch(() => ""); throw new AiGatewayError(r.status); }
   const data = await r.json();
   return data.choices?.[0]?.message?.content || "";
 }
@@ -114,6 +115,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
   } catch (e) {
+    if (e instanceof AiGatewayError) return aiGatewayErrorResponse(e.upstreamStatus, corsHeaders);
+    console.error("claims-assistant error:", e);
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

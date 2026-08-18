@@ -3,6 +3,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -180,13 +183,30 @@ serve(async (req) => {
     let usedByok = !!userKey;
     let resp = await callProvider(usedByok);
 
-    // BYOK key exhausted / rate limited / rejected → transparently fall back to the gateway.
+    // BYOK key exhausted / rate limited / rejected → transparently fall back to the
+    // gateway. The fallback runs on PLATFORM credit, so it must be billed to the
+    // user's wallet — otherwise a deliberately-broken BYOK key buys free compute.
     if (usedByok && !resp.ok && [401, 402, 403, 429].includes(resp.status)) {
       const detail = await resp.text().catch(() => "");
-      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 300));
+      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 120).replace(/[A-Za-z0-9_-]{20,}/g, "[redacted]"));
+
+      if (userId) {
+        try {
+          await chargeAI(userId, "agent-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+            provider: "lovable-ai",
+            model: cfg.model,
+            reason: "byok_fallback",
+          });
+        } catch (billErr) {
+          if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+          console.error("agent-chat fallback billing error:", billErr);
+        }
+      }
+
       usedByok = false;
       resp = await callProvider(false);
     }
+
 
     if (!resp.ok) {
       if (resp.status === 429) {

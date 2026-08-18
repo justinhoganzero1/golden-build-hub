@@ -2,6 +2,7 @@
 // host persona + appearance prompt, a fully-scripted show broken into
 // host pieces-to-camera and B-roll beats, plus ready-to-publish YouTube metadata.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { mapAiGatewayStatus } from "../_shared/aiStatus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,8 @@ Return ONLY valid JSON:
     if (!resp.ok) {
       const text = await resp.text();
       console.error(`[youtube-host-show] gateway ${resp.status}: ${text}`);
-      return json({ error: "AI request failed", status: resp.status, details: text }, resp.status);
+      const f = mapAiGatewayStatus(resp.status);
+      return json({ error: f.code, message: f.message }, f.status);
     }
 
     const data = await resp.json();

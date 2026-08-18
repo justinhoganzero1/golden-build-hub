@@ -2,6 +2,7 @@
 // Uses Lovable AI Gemini Pro for script + scene breakdown, then writes movie_scenes + movie_character_bible.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { ELEVENLABS_VOICES } from "../_shared/voice-pool.ts";
+import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,8 +102,9 @@ Return JSON of shape:
     });
 
     if (!aiResp.ok) {
-      const t = await aiResp.text();
-      throw new Error(`AI error ${aiResp.status}: ${t}`);
+      const t = await aiResp.text().catch(() => "");
+      console.error(`movie-script-chunker gateway ${aiResp.status}:`, t.slice(0, 200));
+      return aiGatewayErrorResponse(aiResp.status, corsHeaders);
     }
     const aiData = await aiResp.json();
     const raw = aiData.choices?.[0]?.message?.content ?? "{}";

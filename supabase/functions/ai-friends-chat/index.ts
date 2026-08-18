@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -149,7 +150,11 @@ serve(async (req) => {
           });
         }
       } else {
-        await response.text();
+        await response.text().catch(() => "");
+        // Rate limit / credit exhaustion must surface to the caller, not be swallowed.
+        if (response.status === 429 || response.status === 402) {
+          return aiGatewayErrorResponse(response.status, corsHeaders);
+        }
       }
     }
 
