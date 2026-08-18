@@ -23,6 +23,7 @@ import { saveOracleTextTurn } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { resolveOracleCommand, dispatchOracleCommand, stripOracleMarkers } from "@/lib/oracleControl";
 import OracleImageComposer from "@/components/OracleImageComposer";
+import SwarmAgentsButton from "@/components/oracle/SwarmAgentsButton";
 
 interface Message {
   id: string;
