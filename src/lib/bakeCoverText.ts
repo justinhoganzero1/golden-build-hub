@@ -298,8 +298,9 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
   const inner = W - pad * 2;
   const title = (opts.title || "Untitled").toUpperCase();
   const author = opts.author || "Author";
-  const layout = opts.layout ?? "masthead";
-  const identity = coverIdentity(title, opts.genre);
+  const layout = opts.design?.layout ?? opts.layout ?? "masthead";
+  const identity = coverIdentity(title, opts.genre, opts.design);
+
 
   if (opts.slot === "cover") {
     // Bottom-anchored masthead: the hero artwork stays completely unobstructed
