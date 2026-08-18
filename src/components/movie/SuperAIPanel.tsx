@@ -105,7 +105,9 @@ export interface SuperAIActions {
 
 type JobId =
   | "everything" | "swarm" | "images" | "video" | "narration" | "sfx" | "sfxAuto" | "score" | "music" | "musicAuto"
-  | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "export";
+  | "intro" | "theme" | "outro" | "credits" | "openingTitles" | "ads" | "mix" | "trailer" | "preview" | "exportSetup"
+  | "export" | "report";
+
 
 interface Job {
   id: JobId;
