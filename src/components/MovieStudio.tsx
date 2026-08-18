@@ -212,6 +212,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [generatingTrailer, setGeneratingTrailer] = useState(false);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const exportCanvasRef = useRef<HTMLCanvasElement>(null);
+  /** Idempotency key for the current export attempt (prevents double charges). */
+  const renderRequestKeyRef = useRef<string | null>(null);
   const previewAnimRef = useRef<number | null>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<string | null>(null);
@@ -1274,8 +1276,19 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           return;
         }
         if (!confirm(`This export will charge ${priceFmt} from your wallet (balance: ${balFmt}). Proceed?`)) return;
+        // Stable idempotency key per export attempt — a retry or double-click
+        // reuses the same key so the wallet is only ever charged once.
+        if (!renderRequestKeyRef.current) {
+          renderRequestKeyRef.current = `movie-render:${crypto.randomUUID()}`;
+        }
         const { data: chg, error: chgErr } = await supabase.functions.invoke("movie-render-charge", {
-          body: { scene_count: ready.length, hd: true, with_captions: subtitlesEnabled, action: "charge" },
+          body: {
+            scene_count: ready.length,
+            hd: true,
+            with_captions: subtitlesEnabled,
+            action: "charge",
+            request_key: renderRequestKeyRef.current,
+          },
         });
         if (chgErr || !chg?.success) {
           toast.error(chg?.error === "insufficient_balance" ? "Wallet ran out — top up first" : "Charge failed, export cancelled");

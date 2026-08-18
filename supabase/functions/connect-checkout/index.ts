@@ -8,6 +8,7 @@
 // =============================================================================
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
+import { safeOrigin } from "../_shared/origin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
     const applicationFee = Math.floor((subtotal * PLATFORM_FEE_BPS) / 10_000);
 
     const origin =
-      req.headers.get("origin") || "https://oracle-lunar.online";
+      safeOrigin(req);
 
     const session = await stripe.checkout.sessions.create(
       {

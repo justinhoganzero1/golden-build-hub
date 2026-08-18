@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       "multi-provider",
       body.hd ? "movie-hd" : "movie-standard",
       p.base_cents,
-      { scene_count: body.scene_count, hd: !!body.hd, captions: !!body.with_captions },
+      { scene_count: body.scene_count, hd: !!body.hd, captions: !!body.with_captions, project_id: body.project_id ?? null },
     );
     const settled = await settleAI(
       authorization.transaction_id,

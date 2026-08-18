@@ -8,6 +8,7 @@
 // =============================================================================
 
 import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
+import { safeOrigin } from "../_shared/origin.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -124,10 +125,7 @@ Deno.serve(async (req) => {
         throw new Error("No Connect account found. Create one first.");
       }
 
-      const origin =
-        req.headers.get("origin") ||
-        body.origin ||
-        "https://oracle-lunar.online";
+      const origin = safeOrigin(req);
 
       const accountLink = await stripe.accountLinks.create({
         account: row.stripe_account_id,

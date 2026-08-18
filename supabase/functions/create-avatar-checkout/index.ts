@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
@@ -47,8 +48,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: isPartner ? "subscription" : "payment",
-      success_url: `${req.headers.get("origin")}/avatar-generator?purchased=${product}`,
-      cancel_url: `${req.headers.get("origin")}/avatar-generator`,
+      success_url: `${safeOrigin(req)}/avatar-generator?purchased=${product}`,
+      cancel_url: `${safeOrigin(req)}/avatar-generator`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
