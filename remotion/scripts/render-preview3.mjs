@@ -63,9 +63,10 @@ const T = data.total;
 const filter = [
   ...delays,
   `${voTags}amix=inputs=${data.segments.length}:duration=longest:normalize=0[vo]`,
+  `[vo]asplit=2[sc][vo2]`,
   `[${musicIdx}:a]aloop=loop=-1:size=2e9,atrim=0:${T.toFixed(2)},volume=0.13,afade=t=in:st=0:d=2,afade=t=out:st=${(T - 3).toFixed(2)}:d=3[mus]`,
-  `[mus][vo]sidechaincompress=threshold=0.04:ratio=12:attack=6:release=320[duck]`,
-  `[duck][vo]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[aout]`,
+  `[mus][sc]sidechaincompress=threshold=0.04:ratio=12:attack=6:release=320[duck]`,
+  `[duck][vo2]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[aout]`,
 ].join(";");
 
 console.log("mixing audio…");
