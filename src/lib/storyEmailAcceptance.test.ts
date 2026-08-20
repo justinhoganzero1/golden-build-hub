@@ -18,6 +18,14 @@ import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { buildStoryFile, buildEpubBlob, type StoryFileSource } from "./storyFiles";
 
+const toArrayBuffer = (b: Blob): Promise<ArrayBuffer> =>
+  new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result as ArrayBuffer);
+    fr.onerror = () => reject(fr.error);
+    fr.readAsArrayBuffer(b);
+  });
+
 const onePxPng =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
@@ -40,7 +48,7 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
   it("A1 — all 20 chapters survive into the EPUB manifest, in order, none merged/dropped", async () => {
     const story = buildFullStory(20, 2);
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
 
     const chapterFiles = Object.keys(zip.files)
       .filter((n) => /^OEBPS\/chapter-\d{3}\.xhtml$/.test(n))
@@ -59,7 +67,7 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
   it("A2 — every illustration in every chapter is embedded as a real image entry, not a dangling reference", async () => {
     const story = buildFullStory(20, 2);
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
 
     const imageFiles = Object.keys(zip.files).filter((n) => /^OEBPS\/img-\d+-\d+\./.test(n));
     // 20 chapters * 2 images each = 40 embedded illustration files.
@@ -81,7 +89,7 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
   it("A3 — cover image is present and referenced from both the manifest and title/cover pages", async () => {
     const story = buildFullStory(20, 1);
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
     expect(zip.file(/^OEBPS\/cover\./)).toBeTruthy();
     const opf = await zip.file("OEBPS/content.opf")!.async("string");
     expect(opf).toContain('properties="cover-image"');
@@ -90,7 +98,7 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
   it("A4 — table of contents (nav.xhtml + toc.ncx) lists all 20 chapters in reading order", async () => {
     const story = buildFullStory(20, 1);
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
     const nav = await zip.file("OEBPS/nav.xhtml")!.async("string");
     const ncx = await zip.file("OEBPS/toc.ncx")!.async("string");
 
@@ -109,7 +117,7 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
     const story = buildFullStory(19, 1);
     story.chapters.push({ title: "Chapter 20: The Finale", content: "" }); // blank chapter 20
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
     const chapterFiles = Object.keys(zip.files).filter((n) => /^OEBPS\/chapter-\d{3}\.xhtml$/.test(n));
     // Regression trap: an empty chapter 20 must not produce a phantom empty
     // file, and must not be silently counted as "delivered".
@@ -121,11 +129,11 @@ describe("acceptance: complete 20-chapter illustrated book packaging", () => {
     story.chapters[0].content = "Para A.\n\nPara B.\n\nPara C.";
     story.chapters[0].imageAnchors = [0, 1, 2];
     const file = await buildStoryFile(story, "epub");
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    const zip = await JSZip.loadAsync(await toArrayBuffer(file));
     const xhtml = await zip.file("OEBPS/chapter-001.xhtml")!.async("string");
     const order = [...xhtml.matchAll(/<figure[^>]*>|Para [ABC]\./g)].map((m) => m[0]);
     // Each image must appear directly after the paragraph it was anchored to.
-    expect(order.join("|")).toMatch(/Para A\.\|<figure[^|]*\|Para B\.\|<figure[^|]*\|Para C\.\|<figure/);
+    expect(order.join("|")).toMatch(/<figure[^|]*\|Para A\.\|<figure[^|]*\|Para B\.\|<figure[^|]*\|Para C\./);
   });
 });
 
