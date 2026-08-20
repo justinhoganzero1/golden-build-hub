@@ -23,6 +23,7 @@ import StoragePanel from "@/components/StoragePanel";
 import StoryLibraryBrowser from "@/components/StoryLibraryBrowser";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
+import IllustrationPlate from "@/components/story/IllustrationPlate";
 import CoverStudio from "@/components/story/CoverStudio";
 
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
@@ -977,7 +978,8 @@ const StoryWriterPage = () => {
       const target = next[chapterIdx];
       const imgs = (target.images || []).filter((_, i) => i !== imageIdx);
       const anchors = (target.imageAnchors || []).filter((_, i) => i !== imageIdx);
-      next[chapterIdx] = { ...target, images: imgs, imageAnchors: anchors };
+      const holos = (target.imageHolo || []).filter((_, i) => i !== imageIdx);
+      next[chapterIdx] = { ...target, images: imgs, imageAnchors: anchors, imageHolo: holos };
       return { ...s, chapters: next };
     });
   };
