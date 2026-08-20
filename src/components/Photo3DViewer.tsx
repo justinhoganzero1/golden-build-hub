@@ -120,17 +120,21 @@ const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false, movement }: 
       </Suspense>
       <CameraDriver movement={effectiveMovement} />
       {userControlEnabled && (
-        <OrbitControls
-          enablePan={false}
-          enableZoom
-          minDistance={2}
-          maxDistance={5}
-          minPolarAngle={Math.PI / 2 - 0.6}
-          maxPolarAngle={Math.PI / 2 + 0.6}
-          minAzimuthAngle={-0.8}
-          maxAzimuthAngle={0.8}
-          rotateSpeed={0.6}
-        />
+        freeOrbit ? (
+          <OrbitControls enablePan enableZoom minDistance={0.4} maxDistance={12} rotateSpeed={0.7} />
+        ) : (
+          <OrbitControls
+            enablePan={false}
+            enableZoom
+            minDistance={2}
+            maxDistance={5}
+            minPolarAngle={Math.PI / 2 - 0.6}
+            maxPolarAngle={Math.PI / 2 + 0.6}
+            minAzimuthAngle={-0.8}
+            maxAzimuthAngle={0.8}
+            rotateSpeed={0.6}
+          />
+        )
       )}
     </Canvas>
   );
