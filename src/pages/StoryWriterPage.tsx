@@ -1641,9 +1641,9 @@ Rules: the three title-gradient colours must read as one confident, high-contras
     toast.success("Compliance kit downloaded — disclosures, provenance and authorship log.");
   };
 
-  const exportEpub = async () => {
+  const exportEpub = async (opts?: { returnFile?: boolean }): Promise<File | null> => {
     if (!story.chapters.some(c => c.content.trim())) {
-      toast.error("Write at least one chapter first."); return;
+      toast.error("Write at least one chapter first."); return null;
     }
     setEpubBusy(true);
     try {
