@@ -378,11 +378,10 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
 
     switch (channel) {
       case "email": {
-        const subject = encodeURIComponent(`Read my story: ${title}`);
-        await robustOpen(`mailto:${email.trim()}?subject=${subject}&body=${enc}`);
-        toast.success("Opening your email app…");
+        await emailWholeStory();
         return;
       }
+
       case "sms": {
         await robustOpen(`sms:${phone.trim()}?body=${enc}`);
         toast.success("Opening your messages app…");
