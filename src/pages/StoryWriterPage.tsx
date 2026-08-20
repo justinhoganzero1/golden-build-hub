@@ -2617,23 +2617,25 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
                 </div>
                 {imgs.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div>
                     {imgs.map((src, i) => (
-                      <div key={i} className="relative rounded-lg overflow-hidden border border-border">
-                        <SignedImage src={src} alt={`Illustration ${i + 1}`} className="w-full aspect-video object-cover" />
-                        <button
-                          onClick={() => removeChapterImage(activeChapter, i)}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center"
-                          aria-label="Remove image"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <IllustrationPlate
+                        key={`${src}-${i}`}
+                        src={src}
+                        index={i + 1}
+                        holographic={!!ch?.imageHolo?.[i]}
+                        caption={
+                          typeof ch?.imageAnchors?.[i] === "number"
+                            ? `sits after paragraph ${ch!.imageAnchors![i]}`
+                            : undefined
+                        }
+                        onRemove={() => removeChapterImage(activeChapter, i)}
+                      />
                     ))}
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    The illustration team selects 3 high-value 4K realistic images: an establishing scene, an inclusive character scene, and an optional immersive mosaic. Composition QA prevents cropped heads, hands and important action.
+                    Every illustration is a full-page portrait plate — one single scene per page, never split — built with foreground/midground/background depth so the reader can orbit and zoom 360° into it. In the final five chapters one plate is rendered as a holographic showcase.
                   </p>
                 )}
                 {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
