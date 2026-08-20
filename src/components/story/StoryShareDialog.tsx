@@ -26,7 +26,7 @@ export interface ShareStory {
   premise?: string;
   blurb?: string;
   coverImage?: string;
-  chapters?: { title: string; content: string; images?: string[] }[];
+  chapters?: { title: string; content: string; images?: string[]; imageAnchors?: number[] }[];
   publishedUrl?: string;
 }
 
@@ -305,7 +305,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     premise: story.premise,
     blurb: story.blurb,
     coverImage: story.coverImage,
-    chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+    chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [storyKey, story.blurb, story.coverImage]);
 
@@ -397,7 +397,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           genre: story.genre,
           blurb: story.blurb,
           coverImage: story.coverImage,
-          chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+          chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
           attachment,
         },
       });
