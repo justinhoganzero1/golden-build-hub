@@ -1,7 +1,12 @@
 // Emails a finished EPUB straight to a reader's @kindle.com address using
 // Amazon's "Send to Kindle" personal-document email service.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const PRIMARY_FROM = Deno.env.get("KINDLE_FROM_EMAIL") || "Oracle Lunar Books <kindle@oracle-lunar.online>";
 const FALLBACK_FROM = "Oracle Lunar Books <onboarding@resend.dev>";

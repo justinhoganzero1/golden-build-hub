@@ -1,7 +1,12 @@
 // Emails an entire story — every chapter plus every illustration — to a
 // recipient. No link back to the app is required: the email IS the book.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const PRIMARY_FROM = Deno.env.get("KINDLE_FROM_EMAIL") || "Oracle Lunar Books <kindle@oracle-lunar.online>";
 const FALLBACK_FROM = "Oracle Lunar Books <onboarding@resend.dev>";
@@ -185,15 +190,19 @@ Deno.serve(async (req) => {
       return { ok: res.ok, status: res.status, out };
     };
 
+    let usedFrom = PRIMARY_FROM;
     let result = await send(PRIMARY_FROM);
-    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) result = await send(FALLBACK_FROM);
+    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) {
+      usedFrom = FALLBACK_FROM;
+      result = await send(FALLBACK_FROM);
+    }
 
     if (!result.ok) {
       console.error(`Resend failed [${result.status}]:`, JSON.stringify(result.out));
       return json({ error: (result.out as any)?.message ?? "Email delivery failed.", status: result.status }, 502);
     }
 
-    return json({ sent: true, to: recipients[0] });
+    return json({ sent: true, to: recipients[0], sender: usedFrom });
   } catch (e) {
     return json({ error: (e as Error)?.message ?? "Unexpected error" }, 500);
   }

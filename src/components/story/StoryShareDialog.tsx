@@ -365,7 +365,8 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
   };
 
   // Emails the WHOLE story — chapters and illustrations rendered inside the
-  // message body — plus the EPUB attached. No link back to the app needed.
+  // message body. One click: type an address, press send. No attachment is
+  // built (the base64 EPUB made the request too large to reach the server).
   const [emailBusy, setEmailBusy] = useState(false);
   const emailWholeStory = async () => {
     const to = email.trim();
@@ -379,18 +380,6 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     }
     setEmailBusy(true);
     try {
-      let attachment: { filename: string; contentBase64: string } | undefined;
-      try {
-        const epub = await buildStoryFile(fileSource, "epub");
-        const b64: string = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
-          r.onerror = () => reject(r.error);
-          r.readAsDataURL(epub);
-        });
-        if (b64.length < 25 * 1024 * 1024) attachment = { filename: epub.name, contentBase64: b64 };
-      } catch { /* the inline story still goes out without the attachment */ }
-
       const { data, error } = await supabase.functions.invoke("email-story", {
         body: {
           to,
@@ -404,10 +393,14 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           coverImage: story.coverImage,
           backImage: story.backImage,
           chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
-          attachment,
         },
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        const detail = await (error as any)?.context?.text?.().catch(() => "");
+        let msg = error.message;
+        try { msg = JSON.parse(detail)?.error || msg; } catch { if (detail) msg = detail; }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Sent — the complete story is in ${to}'s inbox.`);
     } catch (e: any) {
@@ -416,6 +409,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
       setEmailBusy(false);
     }
   };
+
 
 
   const copyBody = async () => {
@@ -587,19 +581,31 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         </div>
 
         {channel === "email" && (
-          <Input
-            type="email"
-            placeholder="Friend's email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div className="rounded-xl border border-primary/40 bg-primary/5 p-3 space-y-2">
+            <p className="text-sm font-bold">Send the whole book in one click</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="Type the email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !emailBusy) void emailWholeStory(); }}
+                className="flex-1"
+              />
+              <Button onClick={() => void emailWholeStory()} disabled={emailBusy} className="sm:w-40">
+                {emailBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                {emailBusy ? "Sending…" : "Send"}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Front cover → dedication → prelude → chapters 1-20 with every illustration in its right
+              place → rear cover → back blurb. They just open it and scroll. No link, no sign-up.
+            </p>
+          </div>
         )}
-        {channel === "email" && (
-          <p className="text-[11px] text-muted-foreground">
-            We send the complete book — every chapter and every illustration — inside the email
-            itself, with the EPUB attached. No link, no sign-up for your reader.
-          </p>
-        )}
+
         {channel === "sms" && (
           <Input
             type="tel"
