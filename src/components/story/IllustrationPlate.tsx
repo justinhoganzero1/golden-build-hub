@@ -102,7 +102,7 @@ export const IllustrationPlate = ({ src, index, caption, holographic, onRemove }
           <div className="flex-1">
             {resolved ? (
               <Suspense fallback={<div className="h-full flex items-center justify-center text-white/70"><Loader2 className="w-6 h-6 animate-spin" /></div>}>
-                <Photo3DViewer imageUrl={resolved} depth={holographic ? 0.85 : 0.45} />
+                <Photo3DViewer imageUrl={resolved} depth={holographic ? 0.85 : 0.45} freeOrbit />
               </Suspense>
             ) : (
               <div className="h-full flex items-center justify-center text-white/70">
