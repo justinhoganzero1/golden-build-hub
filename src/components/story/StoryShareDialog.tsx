@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 const PUBLIC_ORIGIN = "https://oracle-lunar.online";
 
 export interface ShareStory {
+  id?: string;
   title: string;
   author?: string;
   genre?: string;
@@ -384,6 +385,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         body: {
           to,
           message: body,
+          storyId: story.id,
           title: story.title || "Untitled Story",
           author: story.author,
           genre: story.genre,
@@ -402,7 +404,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         throw new Error(msg);
       }
       if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Sent — the complete story is in ${to}'s inbox.`);
+      toast.success(`Sent ${Number((data as any)?.parts) || story.chapters?.length || 1} ordered parts — every chapter and illustration is in ${to}'s inbox.`);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't email the story.");
     } finally {
