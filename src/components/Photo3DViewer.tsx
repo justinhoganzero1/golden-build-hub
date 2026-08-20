@@ -13,6 +13,8 @@ interface Photo3DViewerProps {
   autoOrbit?: boolean;
   /** Named camera movement pattern used during playback/export. */
   movement?: CameraMovement;
+  /** Unrestricted 360° orbit + deep zoom (used by full-page book plates). */
+  freeOrbit?: boolean;
 }
 
 function PhotoMesh({ url, depth = 0.35 }: { url: string; depth?: number }) {
