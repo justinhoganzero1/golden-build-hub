@@ -2682,6 +2682,15 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                       {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />} Delete + re-illustrate BOOK
                     </button>
                     <button
+                      onClick={() => resumeReIllustrateFrom(activeChapter)}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-accent-blue/20 border border-accent-blue text-accent-blue font-black flex items-center gap-1 disabled:opacity-60"
+                      title="Resume an interrupted book re-illustration from this chapter to the end"
+                    >
+                      {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} Resume from Ch {activeChapter + 1} → end
+                    </button>
+
+                    <button
                       onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
                       disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
                       className="text-[11px] px-2.5 py-1 rounded-full border border-border text-foreground font-semibold disabled:opacity-60"
