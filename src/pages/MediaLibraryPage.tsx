@@ -46,6 +46,8 @@ const TYPE_FILTERS = [
   { key: "audio",  label: "Audio",     icon: Music },
 ] as const;
 
+const PAGE_SIZE = 20;
+
 /* ── Map source_page (and metadata) to collection keys ── */
 function getCollectionKey(sourcePage: string | null, mediaType?: string, metadata?: any): string {
   // Movies: any video from Movie Studio
@@ -88,6 +90,7 @@ const MediaLibraryPage = () => {
   const [showCollections, setShowCollections] = useState(true);
   const [savingShare, setSavingShare] = useState(false);
   const [priceInput, setPriceInput] = useState<string>("");
+  const [page, setPage] = useState(1);
 
   // Sync price input with selected item
   useEffect(() => {
@@ -166,6 +169,17 @@ const MediaLibraryPage = () => {
       return true;
     });
   }, [mediaItems, activeCollection, typeFilter, search]);
+
+  /* ── Pagination: 20 tiles per page (previews only render when in view) ── */
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [activeCollection, typeFilter, search, view]);
+  useEffect(() => { if (page > pageCount) setPage(1); }, [page, pageCount]);
+  const paged = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  );
+
+
 
   /* ── Recent & starred ── */
   const recentItems = useMemo(() => {
@@ -421,7 +435,7 @@ const MediaLibraryPage = () => {
           </div>
         ) : view === "grid" ? (
           <div className="grid grid-cols-3 gap-2">
-            {filtered.map((m: any) => {
+            {paged.map((m: any) => {
               const thumb = m.thumbnail_url || (m.metadata && (m.metadata.thumbnail || m.metadata.cover || m.metadata.poster || m.metadata.preview_url || m.metadata.image)) || null;
               const isAudio = m.media_type === "audio";
               const isText = m.media_type === "text" || m.media_type === "story" || m.media_type === "document";
@@ -497,7 +511,7 @@ const MediaLibraryPage = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map((m: any) => {
+            {paged.map((m: any) => {
               const colKey = getCollectionKey(m.source_page, m.media_type, m.metadata);
               const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
               return (
