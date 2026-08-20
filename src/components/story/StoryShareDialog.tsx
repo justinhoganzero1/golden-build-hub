@@ -14,6 +14,8 @@ import {
   type StoryFileFormat, type StoryFileSource,
 } from "@/lib/storyFiles";
 import { narrateStoryToMp3 } from "@/lib/storyNarration";
+import { supabase } from "@/integrations/supabase/client";
+
 
 const PUBLIC_ORIGIN = "https://oracle-lunar.online";
 
@@ -45,7 +47,7 @@ interface Channel {
 }
 
 const CHANNELS: Channel[] = [
-  { id: "email", label: "Email", hint: "Long-form letter with an excerpt", icon: Mail },
+  { id: "email", label: "Email", hint: "Sends the whole story + images", icon: Mail },
   { id: "facebook", label: "Facebook post", hint: "Story blurb + hashtags", icon: Facebook, limit: 1500 },
   { id: "messenger", label: "Messenger", hint: "Short friendly message", icon: MessageCircle, limit: 400 },
   { id: "whatsapp", label: "WhatsApp", hint: "Short message + link", icon: MessageCircle, limit: 600 },
@@ -174,17 +176,11 @@ export const formatForChannel = (channel: ChannelId, story: ShareStory, url: str
         ``,
         `I just finished a ${story.genre || "new"} story called “${title}”${by} and I'd love you to read it.`,
         ``,
-        `What it's about:`,
-        logline(story),
-        ``,
-        `A taste of it:`,
-        `“${excerpt(story, 700)}”`,
-        ``,
-        `Read the whole thing here:`,
-        url,
+        `The whole story — every chapter and every illustration — is in this email, so there's nothing to click and nothing to sign up for. Just scroll and read.`,
         ``,
         `— ${story.author || "Written with Oracle Lunar"}`,
       ].join("\n");
+
 
     case "facebook":
       return clamp([
@@ -365,6 +361,56 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     }
   };
 
+  // Emails the WHOLE story — chapters and illustrations rendered inside the
+  // message body — plus the EPUB attached. No link back to the app needed.
+  const [emailBusy, setEmailBusy] = useState(false);
+  const emailWholeStory = async () => {
+    const to = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Enter the recipient's email address first.");
+      return;
+    }
+    if (!hasText) {
+      toast.error("Write at least one chapter first.");
+      return;
+    }
+    setEmailBusy(true);
+    try {
+      let attachment: { filename: string; contentBase64: string } | undefined;
+      try {
+        const epub = await buildStoryFile(fileSource, "epub");
+        const b64: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(epub);
+        });
+        if (b64.length < 25 * 1024 * 1024) attachment = { filename: epub.name, contentBase64: b64 };
+      } catch { /* the inline story still goes out without the attachment */ }
+
+      const { data, error } = await supabase.functions.invoke("email-story", {
+        body: {
+          to,
+          message: body,
+          title: story.title || "Untitled Story",
+          author: story.author,
+          genre: story.genre,
+          blurb: story.blurb,
+          coverImage: story.coverImage,
+          chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+          attachment,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Sent — the complete story is in ${to}'s inbox.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't email the story.");
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
 
   const copyBody = async () => {
     const ok = await robustCopy(body);
@@ -384,11 +430,10 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
 
     switch (channel) {
       case "email": {
-        const subject = encodeURIComponent(`Read my story: ${title}`);
-        await robustOpen(`mailto:${email.trim()}?subject=${subject}&body=${enc}`);
-        toast.success("Opening your email app…");
+        await emailWholeStory();
         return;
       }
+
       case "sms": {
         await robustOpen(`sms:${phone.trim()}?body=${enc}`);
         toast.success("Opening your messages app…");
@@ -538,10 +583,16 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         {channel === "email" && (
           <Input
             type="email"
-            placeholder="Friend's email address (optional)"
+            placeholder="Friend's email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        )}
+        {channel === "email" && (
+          <p className="text-[11px] text-muted-foreground">
+            We send the complete book — every chapter and every illustration — inside the email
+            itself, with the EPUB attached. No link, no sign-up for your reader.
+          </p>
         )}
         {channel === "sms" && (
           <Input
@@ -617,10 +668,13 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button className="flex-1" onClick={send}>
-            <Share2 className="w-4 h-4 mr-2" />
-            Share to {active.label}
+          <Button className="flex-1" onClick={send} disabled={emailBusy}>
+            {emailBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
+            {channel === "email"
+              ? (emailBusy ? "Sending the whole story…" : "Email the entire story")
+              : `Share to ${active.label}`}
           </Button>
+
           <Button variant="outline" onClick={nativeShare}>
             More apps…
           </Button>
