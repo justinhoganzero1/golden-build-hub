@@ -2720,7 +2720,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Every illustration is a full-page portrait plate — one single scene per page, never split — built with foreground/midground/background depth so the reader can orbit and zoom 360° into it. In the final five chapters one plate is rendered as a holographic showcase.
+                    Every illustration is a full-page portrait plate — one single scene per page, never split — with rich foreground/midground/background depth. Tap any plate to view it full screen. In the final five chapters one plate is rendered as a holographic showcase.
                   </p>
                 )}
                 {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
