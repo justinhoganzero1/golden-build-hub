@@ -361,6 +361,56 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     }
   };
 
+  // Emails the WHOLE story — chapters and illustrations rendered inside the
+  // message body — plus the EPUB attached. No link back to the app needed.
+  const [emailBusy, setEmailBusy] = useState(false);
+  const emailWholeStory = async () => {
+    const to = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      toast.error("Enter the recipient's email address first.");
+      return;
+    }
+    if (!hasText) {
+      toast.error("Write at least one chapter first.");
+      return;
+    }
+    setEmailBusy(true);
+    try {
+      let attachment: { filename: string; contentBase64: string } | undefined;
+      try {
+        const epub = await buildStoryFile(fileSource, "epub");
+        const b64: string = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(epub);
+        });
+        if (b64.length < 25 * 1024 * 1024) attachment = { filename: epub.name, contentBase64: b64 };
+      } catch { /* the inline story still goes out without the attachment */ }
+
+      const { data, error } = await supabase.functions.invoke("email-story", {
+        body: {
+          to,
+          message: body,
+          title: story.title || "Untitled Story",
+          author: story.author,
+          genre: story.genre,
+          blurb: story.blurb,
+          coverImage: story.coverImage,
+          chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images })),
+          attachment,
+        },
+      });
+      if (error) throw new Error(error.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Sent — the complete story is in ${to}'s inbox.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't email the story.");
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+
 
   const copyBody = async () => {
     const ok = await robustCopy(body);
