@@ -369,6 +369,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
   // message body. One click: type an address, press send. No attachment is
   // built (the base64 EPUB made the request too large to reach the server).
   const [emailBusy, setEmailBusy] = useState(false);
+  const [emailProgress, setEmailProgress] = useState("");
   const emailWholeStory = async () => {
     const to = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
