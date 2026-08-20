@@ -794,7 +794,9 @@ const StoryWriterPage = () => {
    * places in the chapter (and hand off cleanly as scenes to Movie Maker).
    */
   const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
+  const [readMode, setReadMode] = useState(false);
   const [illustrationTeamNotes, setIllustrationTeamNotes] = useState<string[]>([]);
+
   const illustrateChapterSet = async (
     idx: number,
     count = MIN_IMAGES_PER_CHAPTER,
@@ -872,6 +874,30 @@ const StoryWriterPage = () => {
       setBulkBusy(false);
     }
   };
+
+  /**
+   * Resume a stopped "re-illustrate BOOK" run: wipes and redraws every chapter
+   * from `startIdx` to the end, so an interrupted pass can be picked up where it
+   * died instead of restarting the whole book.
+   */
+  const resumeReIllustrateFrom = async (startIdx: number) => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    const total = story.chapters.length;
+    if (startIdx < 0 || startIdx >= total) return;
+    if (!confirm(`Resume re-illustration from chapter ${startIdx + 1} through chapter ${total}? Existing illustrations in those chapters are deleted and drawn fresh.`)) return;
+    setBulkBusy(true);
+    let ok = 0;
+    try {
+      for (let i = startIdx; i < total; i++) {
+        toast.info(`Re-illustrating chapter ${i + 1} of ${total}…`, { id: "reillustrate-resume" });
+        ok += await wipeAndReIllustrateChapter(i, true);
+      }
+      toast.success(`Resumed run complete — ${ok} new full-page plates across chapters ${startIdx + 1}–${total}, including holographic showcase plates.`, { id: "reillustrate-resume" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
 
   // Illustrate one chapter — three team-selected images placed across the chapter's beats.
   const reIllustrateChapter = async (idx: number) => {
@@ -2549,6 +2575,52 @@ Rules: the three title-gradient colours must read as one confident, high-contras
               </button>
             )}
           </div>
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setReadMode(r => !r)}
+              className={`text-[11px] px-3 py-1 rounded-full font-bold border ${readMode ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground"}`}
+            >
+              {readMode ? "Edit text" : "Read illustrated (plates in place)"}
+            </button>
+          </div>
+          {readMode ? (
+            (() => {
+              const ch = story.chapters[activeChapter];
+              const paras = (ch?.content || "").split(/\n{2,}/).filter(p => p.trim());
+              const imgs = ch?.images || [];
+              const plates = imgs.map((src, i) => ({
+                src,
+                i,
+                at: Math.max(0, Math.min(paras.length, typeof ch?.imageAnchors?.[i] === "number"
+                  ? ch!.imageAnchors![i]
+                  : Math.round(((i + 1) / (imgs.length + 1)) * paras.length))),
+              })).sort((a, b) => a.at - b.at);
+              const out: JSX.Element[] = [];
+              let next = 0;
+              const pushPlate = (p: { src: string; i: number }) => out.push(
+                <IllustrationPlate
+                  key={`plate-${p.i}`}
+                  src={p.src}
+                  index={p.i + 1}
+                  holographic={!!ch?.imageHolo?.[p.i]}
+                  caption={`Full-page plate — sits after paragraph ${plates.find(x => x.i === p.i)?.at ?? 0}`}
+                  onRemove={() => removeChapterImage(activeChapter, p.i)}
+                />,
+              );
+              paras.forEach((p, idx) => {
+                while (next < plates.length && plates[next].at <= idx) pushPlate(plates[next++]);
+                out.push(
+                  <p key={`p-${idx}`} className="text-sm font-serif leading-relaxed text-foreground mb-3">{p}</p>,
+                );
+              });
+              while (next < plates.length) pushPlate(plates[next++]);
+              return (
+                <div className="bg-card border border-border rounded-lg px-4 py-4">
+                  {out.length ? out : <p className="text-xs text-muted-foreground">Nothing to read yet.</p>}
+                </div>
+              );
+            })()
+          ) : (
           <textarea
             value={story.chapters[activeChapter]?.content || ""}
             onFocus={() => { humanEditBaselineRef.current = story.chapters[activeChapter]?.content || ""; }}
@@ -2569,6 +2641,8 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             rows={16}
             className="w-full bg-card border border-border rounded-lg px-3 py-3 text-sm text-foreground leading-relaxed resize-y font-serif"
           />
+          )}
+
 
           {/* Chapter illustrations — max 2 per chapter */}
           {(() => {
