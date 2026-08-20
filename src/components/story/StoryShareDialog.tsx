@@ -47,7 +47,7 @@ interface Channel {
 }
 
 const CHANNELS: Channel[] = [
-  { id: "email", label: "Email", hint: "Long-form letter with an excerpt", icon: Mail },
+  { id: "email", label: "Email", hint: "Sends the whole story + images", icon: Mail },
   { id: "facebook", label: "Facebook post", hint: "Story blurb + hashtags", icon: Facebook, limit: 1500 },
   { id: "messenger", label: "Messenger", hint: "Short friendly message", icon: MessageCircle, limit: 400 },
   { id: "whatsapp", label: "WhatsApp", hint: "Short message + link", icon: MessageCircle, limit: 600 },
@@ -583,10 +583,16 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         {channel === "email" && (
           <Input
             type="email"
-            placeholder="Friend's email address (optional)"
+            placeholder="Friend's email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        )}
+        {channel === "email" && (
+          <p className="text-[11px] text-muted-foreground">
+            We send the complete book — every chapter and every illustration — inside the email
+            itself, with the EPUB attached. No link, no sign-up for your reader.
+          </p>
         )}
         {channel === "sms" && (
           <Input
