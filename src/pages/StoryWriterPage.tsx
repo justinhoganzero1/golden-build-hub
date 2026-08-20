@@ -25,6 +25,7 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
 import IllustrationPlate from "@/components/story/IllustrationPlate";
 import CoverStudio from "@/components/story/CoverStudio";
+import { Button } from "@/components/ui/button";
 
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
@@ -583,6 +584,53 @@ const StoryWriterPage = () => {
   };
 
   /**
+   * Place existing artwork without generating anything or calling a paid AI.
+   * The scorer favours visually descriptive/action-heavy paragraphs near evenly
+   * distributed story beats, so plates follow relevant prose instead of piling
+   * up at the end of a chapter.
+   */
+  const placeExistingIllustrations = () => {
+    let placed = 0;
+    setStory(current => ({
+      ...current,
+      chapters: current.chapters.map(chapter => {
+        const images = chapter.images || [];
+        const paragraphs = (chapter.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+        if (!images.length || !paragraphs.length) return chapter;
+
+        const used = new Set<number>();
+        const anchors = images.map((_, imageIndex) => {
+          const target = Math.max(1, Math.round(((imageIndex + 1) / (images.length + 1)) * paragraphs.length));
+          const radius = Math.max(2, Math.ceil(paragraphs.length / Math.max(4, images.length * 2)));
+          let bestBoundary = target;
+          let bestScore = Number.NEGATIVE_INFINITY;
+
+          for (let boundary = Math.max(1, target - radius); boundary <= Math.min(paragraphs.length, target + radius); boundary++) {
+            if (used.has(boundary)) continue;
+            const paragraph = paragraphs[boundary - 1];
+            const visualWords = paragraph.match(/\b(saw|looked|stood|walked|ran|turned|opened|entered|street|room|building|car|light|dark|fire|explosion|blood|face|eyes|door|window|night|sky|crowd|weapon|gun|smoke|shadow|wearing|dressed)\b/gi)?.length || 0;
+            const dialoguePenalty = (paragraph.match(/[“”"]/g)?.length || 0) > 4 ? 2 : 0;
+            const distancePenalty = Math.abs(boundary - target) * 0.35;
+            const score = visualWords * 2 + Math.min(paragraph.length / 180, 3) - dialoguePenalty - distancePenalty;
+            if (score > bestScore) {
+              bestScore = score;
+              bestBoundary = boundary;
+            }
+          }
+
+          used.add(bestBoundary);
+          placed += 1;
+          return bestBoundary;
+        }).sort((a, b) => a - b);
+
+        return { ...chapter, imageAnchors: anchors };
+      }),
+    }));
+    setReadMode(true);
+    toast.success(`${placed} existing illustration${placed === 1 ? "" : "s"} placed inside the story — no images generated and no AI charge.`);
+  };
+
+  /**
    * A compressed read of the ENTIRE finished manuscript — this is what the
    * Cover Studio hands the artist AI so the covers are baked from the whole
    * book rather than just the premise.
@@ -794,7 +842,7 @@ const StoryWriterPage = () => {
    * places in the chapter (and hand off cleanly as scenes to Movie Maker).
    */
   const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
-  const [readMode, setReadMode] = useState(false);
+  const [readMode, setReadMode] = useState(true);
   const [illustrationTeamNotes, setIllustrationTeamNotes] = useState<string[]>([]);
 
   const illustrateChapterSet = async (
