@@ -3134,7 +3134,10 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             genre: story.genre,
             premise: story.premise,
             blurb: story.blurb,
+            dedication: story.dedication,
+            prelude: story.prelude,
             coverImage: story.coverImage,
+            backImage: story.backImage,
             chapters: story.chapters,
             publishedUrl: story.publishedUrl,
           }}

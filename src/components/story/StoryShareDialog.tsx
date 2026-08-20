@@ -25,7 +25,10 @@ export interface ShareStory {
   genre?: string;
   premise?: string;
   blurb?: string;
+  dedication?: string;
+  prelude?: string;
   coverImage?: string;
+  backImage?: string;
   chapters?: { title: string; content: string; images?: string[]; imageAnchors?: number[] }[];
   publishedUrl?: string;
 }
