@@ -94,7 +94,7 @@ function CameraDriver({ movement }: { movement: CameraMovement }) {
   return null;
 }
 
-const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false, movement }: Photo3DViewerProps) => {
+const Photo3DViewer = ({ imageUrl, depth = 0.35, autoOrbit = false, movement, freeOrbit = false }: Photo3DViewerProps) => {
   const [hasError, setHasError] = useState(false);
   useEffect(() => setHasError(false), [imageUrl]);
 
