@@ -121,12 +121,14 @@ Deno.serve(async (req) => {
     const allChapters = (Array.isArray(body.chapters) ? body.chapters : []).slice(0, MAX_CHAPTERS)
       .filter((c) => typeof c?.content === "string" && c.content.trim());
     if (!allChapters.length) return json({ error: "There's no story text to email yet." }, 400);
-    const requestedPart = Number.isInteger(incoming.partNumber) ? Number(incoming.partNumber) : null;
+    const requestedPart = incoming.storyId && Number.isInteger(incoming.partNumber) ? Number(incoming.partNumber) : null;
     if (requestedPart !== null && (requestedPart < 1 || requestedPart > allChapters.length)) {
       return json({ error: "Invalid book part requested." }, 400);
     }
     const chapters = requestedPart === null ? allChapters : [allChapters[requestedPart - 1]];
-    const chapterOffset = requestedPart === null ? 0 : requestedPart - 1;
+    const chapterOffset = requestedPart !== null
+      ? requestedPart - 1
+      : Number.isInteger(incoming.partNumber) ? Math.max(0, Number(incoming.partNumber) - 1) : 0;
     const totalParts = Math.max(allChapters.length, Number(incoming.totalParts) || 0);
 
     const loadImage = async (url: string, cid: string) => {
