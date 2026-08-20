@@ -84,6 +84,8 @@ h1{font-size:2.4rem;line-height:1.15;margin:0 0 .25rem;color:#f7d488;}
 .cover{width:100%;border-radius:14px;margin:0 0 2rem;}
 h2{margin:3rem 0 1rem;font-size:1.5rem;color:#f7d488;border-bottom:1px solid #33303c;padding-bottom:.4rem;}
 .blurb{border-left:3px solid #f7d488;padding-left:1rem;color:#d8d0c2;font-style:italic;}
+figure.plate{margin:2.5rem 0;page-break-before:always;page-break-after:always;}
+figure.plate img{width:100%;border-radius:12px;}
 footer{margin-top:4rem;text-align:center;color:#8d8678;font-size:.85rem;}
 a{color:#f7d488;}
 </style></head><body><main>
@@ -136,7 +138,8 @@ p.center{text-indent:0;text-align:center;margin:.5em 0;}
 .titlepage .author{font-size:1.1em;font-style:italic;margin-top:1em;}
 .copyright{font-size:.85em;text-align:center;margin-top:12%;}
 img{max-width:100%;height:auto;}
-figure{margin:1.2em 0;text-align:center;page-break-inside:avoid;}`,
+figure{margin:0;padding:0;text-align:center;page-break-before:always;page-break-after:always;page-break-inside:avoid;}
+figure img{max-width:100%;max-height:96vh;height:auto;}`,
   );
 
   let coverManifest = "";
@@ -195,7 +198,7 @@ figure{margin:1.2em 0;text-align:center;page-break-inside:avoid;}`,
       const iname = `img-${i + 1}-${k + 1}.${parsed.ext}`;
       oebps.file(iname, parsed.bytes);
       imageManifest.push(`<item id="img${i + 1}_${k + 1}" href="${iname}" media-type="${parsed.mime}"/>`);
-      imgTags.push(`<figure><img src="${iname}" alt="Illustration"/></figure>`);
+      imgTags.push(`<figure class="plate"><img src="${iname}" alt="Full-page illustration"/></figure>`);
       imgAnchors.push(c.imageAnchors?.[k]);
     });
     const paras = c.content
