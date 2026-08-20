@@ -421,6 +421,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     } catch (e: any) {
       toast.error(e?.message || "Couldn't email the story.");
     } finally {
+      setEmailProgress("");
       setEmailBusy(false);
     }
   };
