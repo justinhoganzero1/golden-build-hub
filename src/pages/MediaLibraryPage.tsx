@@ -202,8 +202,10 @@ const MediaLibraryPage = () => {
     m.thumbnail_url ||
     (m.metadata && (m.metadata.thumbnail || m.metadata.cover || m.metadata.poster || m.metadata.preview_url || m.metadata.image)) ||
     null;
-  const isImageLike = (m: any) => (m.media_type === "image" || m.media_type === "gif") && !!previewSrc(m);
-  const isVideoLike = (m: any) => m.media_type === "video" && !!previewSrc(m);
+  // Type alone decides whether a tile shows artwork — LibraryTileFace lazily
+  // pulls the row's `url` (omitted from the list query) when no thumbnail exists.
+  const isImageLike = (m: any) => m.media_type === "image" || m.media_type === "gif";
+  const isVideoLike = (m: any) => m.media_type === "video";
 
   const handleDownloadSelected = async () => {
     if (!selected?.url) return;
@@ -391,7 +393,7 @@ const MediaLibraryPage = () => {
               <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
                 className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
                 {isImageLike(m) || isVideoLike(m) ? (
-                  <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} />
+                  <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m)} />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                     {getMediaIcon(m.media_type)}
@@ -445,7 +447,7 @@ const MediaLibraryPage = () => {
                 className="group aspect-square bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative">
                 {isImageLike(m) ? (
                   <>
-                    <LibraryTileFace src={previewSrc(m)} alt={m.title} />
+                    <LibraryTileFace src={previewSrc(m)} alt={m.title} mediaId={m.id} canBackfill={isImageLike(m)} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
                       <p className="text-[9px] text-foreground truncate font-medium drop-shadow">{m.title || "Untitled"}</p>
@@ -453,7 +455,7 @@ const MediaLibraryPage = () => {
                   </>
                 ) : isVideoLike(m) ? (
                   <>
-                    <LibraryTileFace src={thumb || previewSrc(m)} alt={m.title} />
+                    <LibraryTileFace src={thumb || previewSrc(m)} alt={m.title} mediaId={m.id} canBackfill={isImageLike(m)} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
                     <Play className="absolute inset-0 m-auto w-7 h-7 text-primary drop-shadow-lg" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
@@ -462,7 +464,7 @@ const MediaLibraryPage = () => {
                   </>
                 ) : thumb ? (
                   <>
-                    <LibraryTileFace src={thumb} alt={m.title} />
+                    <LibraryTileFace src={thumb} alt={m.title} mediaId={m.id} canBackfill={isImageLike(m)} />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/0 to-transparent" />
                     <div className="absolute bottom-1 left-1.5 right-1.5">
                       <p className="text-[9px] text-foreground truncate font-medium">{m.title || "Untitled"}</p>
@@ -519,7 +521,7 @@ const MediaLibraryPage = () => {
                   className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
                   {isImageLike(m) || isVideoLike(m) ? (
                     <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shrink-0">
-                      <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} />
+                      <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m)} />
                     </div>
                   ) : (
                     <div className="holo-card w-14 h-14 rounded-xl border border-primary/25 flex items-center justify-center">
