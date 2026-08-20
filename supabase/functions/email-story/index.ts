@@ -27,6 +27,8 @@ interface StoryPayload {
   to?: string | string[];
   message?: string;
   storyId?: string;
+  partNumber?: number;
+  totalParts?: number;
   title?: string;
   author?: string;
   genre?: string;
@@ -116,9 +118,16 @@ Deno.serve(async (req) => {
     const blurb = String(body.blurb ?? "").slice(0, 10000);
     const dedication = String(body.dedication ?? "").slice(0, 5000);
     const prelude = String(body.prelude ?? "").slice(0, 50000);
-    const chapters = (Array.isArray(body.chapters) ? body.chapters : []).slice(0, MAX_CHAPTERS)
+    const allChapters = (Array.isArray(body.chapters) ? body.chapters : []).slice(0, MAX_CHAPTERS)
       .filter((c) => typeof c?.content === "string" && c.content.trim());
-    if (!chapters.length) return json({ error: "There's no story text to email yet." }, 400);
+    if (!allChapters.length) return json({ error: "There's no story text to email yet." }, 400);
+    const requestedPart = Number.isInteger(incoming.partNumber) ? Number(incoming.partNumber) : null;
+    if (requestedPart !== null && (requestedPart < 1 || requestedPart > allChapters.length)) {
+      return json({ error: "Invalid book part requested." }, 400);
+    }
+    const chapters = requestedPart === null ? allChapters : [allChapters[requestedPart - 1]];
+    const chapterOffset = requestedPart === null ? 0 : requestedPart - 1;
+    const totalParts = Math.max(allChapters.length, Number(incoming.totalParts) || 0);
 
     const loadImage = async (url: string, cid: string) => {
       if (!url) return null;
@@ -153,15 +162,16 @@ Deno.serve(async (req) => {
     const delivered: string[] = [];
     for (let chapterIndex = 0; chapterIndex < chapters.length; chapterIndex++) {
       const chapter = chapters[chapterIndex];
+      const bookChapterIndex = chapterOffset + chapterIndex;
       const attachments: unknown[] = [];
       const images = (chapter.images ?? []).filter(Boolean).slice(0, MAX_IMAGES_PER_CHAPTER);
       const imageHtml: string[] = [];
       for (let imageIndex = 0; imageIndex < images.length; imageIndex++) {
-        const cid = `chapter-${chapterIndex + 1}-image-${imageIndex + 1}`;
+        const cid = `chapter-${bookChapterIndex + 1}-image-${imageIndex + 1}`;
         const attachment = await loadImage(images[imageIndex], cid);
         if (attachment) {
           attachments.push(attachment);
-          imageHtml.push(`<img src="cid:${cid}" alt="${esc(chapter.title || `Chapter ${chapterIndex + 1}`)} illustration" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:22px auto"/>`);
+          imageHtml.push(`<img src="cid:${cid}" alt="${esc(chapter.title || `Chapter ${bookChapterIndex + 1}`)} illustration" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:22px auto"/>`);
         }
       }
 
@@ -181,7 +191,7 @@ Deno.serve(async (req) => {
       while (nextImage < placed.length) chapterParts.push(placed[nextImage++].tag);
 
       const front: string[] = [];
-      if (chapterIndex === 0) {
+      if (bookChapterIndex === 0) {
         const cover = await loadImage(String(body.coverImage ?? ""), "front-cover");
         if (cover) {
           attachments.push(cover);
@@ -194,7 +204,7 @@ Deno.serve(async (req) => {
       }
 
       const rear: string[] = [];
-      if (chapterIndex === chapters.length - 1) {
+      if (bookChapterIndex === totalParts - 1) {
         const back = await loadImage(String(body.backImage ?? ""), "rear-cover");
         if (back) {
           attachments.push(back);
@@ -203,17 +213,17 @@ Deno.serve(async (req) => {
         if (blurb) rear.push(`<div style="font-style:italic;color:#444;margin:20px 0">${paras(blurb)}</div>`);
       }
 
-      const html = `<!doctype html><html><body style="margin:0;background:#fff"><main style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#fff">${front.join("")}<p style="font-size:12px;color:#777;text-align:center">Part ${chapterIndex + 1} of ${chapters.length}${genre ? ` · ${esc(genre)}` : ""}</p><hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/><h2 style="font-size:22px;color:#111">${esc(chapter.title || `Chapter ${chapterIndex + 1}`)}</h2>${chapterParts.join("")}${rear.join("")}<p style="margin:34px 0 0;font-size:11px;color:#999;text-align:center">End of part ${chapterIndex + 1} of ${chapters.length}</p></main></body></html>`;
-      if (new TextEncoder().encode(html).length > 90000) throw new Error(`Chapter ${chapterIndex + 1} is too large for a reliable email.`);
+      const html = `<!doctype html><html><body style="margin:0;background:#fff"><main style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#fff">${front.join("")}<p style="font-size:12px;color:#777;text-align:center">Part ${bookChapterIndex + 1} of ${totalParts}${genre ? ` · ${esc(genre)}` : ""}</p><hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/><h2 style="font-size:22px;color:#111">${esc(chapter.title || `Chapter ${bookChapterIndex + 1}`)}</h2>${chapterParts.join("")}${rear.join("")}<p style="margin:34px 0 0;font-size:11px;color:#999;text-align:center">End of part ${bookChapterIndex + 1} of ${totalParts}</p></main></body></html>`;
+      if (new TextEncoder().encode(html).length > 90000) throw new Error(`Chapter ${bookChapterIndex + 1} is too large for a reliable email.`);
 
-      const subject = `[${String(chapterIndex + 1).padStart(2, "0")}/${chapters.length}] ${title} — ${chapter.title || `Chapter ${chapterIndex + 1}`}`;
+      const subject = `[${String(bookChapterIndex + 1).padStart(2, "0")}/${totalParts}] ${title} — ${chapter.title || `Chapter ${bookChapterIndex + 1}`}`;
       let result = await sendMessage(PRIMARY_FROM, subject, html, attachments);
       if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) result = await sendMessage(FALLBACK_FROM, subject, html, attachments);
       if (!result.ok) {
-        console.error(`Book delivery failed at part ${chapterIndex + 1} [${result.status}]`, JSON.stringify(result.result));
-        return json({ error: `Delivery stopped at chapter ${chapterIndex + 1}. No success was claimed.`, delivered: delivered.length, details: result.result }, 502);
+        console.error(`Book delivery failed at part ${bookChapterIndex + 1} [${result.status}]`, JSON.stringify(result.result));
+        return json({ error: `Delivery stopped at chapter ${bookChapterIndex + 1}. No success was claimed.`, delivered: delivered.length, details: result.result }, 502);
       }
-      delivered.push(chapter.title || `Chapter ${chapterIndex + 1}`);
+      delivered.push(chapter.title || `Chapter ${bookChapterIndex + 1}`);
     }
 
     return json({ sent: true, to: recipients[0], parts: delivered.length, chapters: delivered.length, images: chapters.reduce((n, c) => n + (c.images?.length ?? 0), 0) + (body.coverImage ? 1 : 0) + (body.backImage ? 1 : 0) });

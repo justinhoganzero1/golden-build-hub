@@ -381,11 +381,14 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     }
     setEmailBusy(true);
     try {
-      const { data, error } = await supabase.functions.invoke("email-story", {
+      const chapters = story.chapters || [];
+      const sends = chapters.map((chapter, chapterIndex) => supabase.functions.invoke("email-story", {
         body: {
           to,
           message: body,
           storyId: story.id,
+          partNumber: chapterIndex + 1,
+          totalParts: chapters.length,
           title: story.title || "Untitled Story",
           author: story.author,
           genre: story.genre,
@@ -394,17 +397,13 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           prelude: story.prelude,
           coverImage: story.coverImage,
           backImage: story.backImage,
-          chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
+          chapters: story.id ? undefined : [{ title: chapter.title, content: chapter.content, images: chapter.images, imageAnchors: chapter.imageAnchors }],
         },
-      });
-      if (error) {
-        const detail = await (error as any)?.context?.text?.().catch(() => "");
-        let msg = error.message;
-        try { msg = JSON.parse(detail)?.error || msg; } catch { if (detail) msg = detail; }
-        throw new Error(msg);
-      }
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success(`Sent ${Number((data as any)?.parts) || story.chapters?.length || 1} ordered parts — every chapter and illustration is in ${to}'s inbox.`);
+      }));
+      const results = await Promise.all(sends);
+      const failures = results.filter(({ data, error }) => error || (data as any)?.error);
+      if (failures.length) throw new Error(`${failures.length} of ${chapters.length} chapters failed to send. Nothing has been falsely marked complete.`);
+      toast.success(`Sent ${chapters.length} ordered parts — every chapter and illustration is in ${to}'s inbox.`);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't email the story.");
     } finally {
