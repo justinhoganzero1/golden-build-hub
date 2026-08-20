@@ -1,6 +1,4 @@
-// Delivers a complete illustrated book as an ordered email volume.
-// One chapter per message avoids Gmail's hard clipping threshold, while CID
-// attachments make private illustrations render inside the email itself.
+// Delivers the complete illustrated book in one ordered email.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -121,42 +119,23 @@ Deno.serve(async (req) => {
     const allChapters = (Array.isArray(body.chapters) ? body.chapters : []).slice(0, MAX_CHAPTERS)
       .filter((c) => typeof c?.content === "string" && c.content.trim());
     if (!allChapters.length) return json({ error: "There's no story text to email yet." }, 400);
-    const requestedPart = incoming.storyId && Number.isInteger(incoming.partNumber) ? Number(incoming.partNumber) : null;
-    if (requestedPart !== null && (requestedPart < 1 || requestedPart > allChapters.length)) {
-      return json({ error: "Invalid book part requested." }, 400);
-    }
-    const chapters = requestedPart === null ? allChapters : [allChapters[requestedPart - 1]];
-    const chapterOffset = requestedPart !== null
-      ? requestedPart - 1
-      : Number.isInteger(incoming.partNumber) ? Math.max(0, Number(incoming.partNumber) - 1) : 0;
-    const totalParts = Math.max(allChapters.length, Number(incoming.totalParts) || 0);
-
-    const loadImage = async (url: string, cid: string) => {
-      if (!url) return null;
-      let bytes: Uint8Array;
-      let mime = "image/jpeg";
+    const emailImageUrl = async (url: string) => {
+      if (!url) return "";
       const ref = storageRef(url);
       if (ref) {
-        const { data, error } = await service.storage.from(ref.bucket).download(ref.path);
-        if (error || !data) throw new Error(`Could not load illustration ${cid}.`);
-        bytes = new Uint8Array(await data.arrayBuffer());
-        mime = data.type || (ref.path.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg");
-      } else {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Could not load illustration ${cid}.`);
-        bytes = new Uint8Array(await response.arrayBuffer());
-        mime = response.headers.get("content-type") || mime;
+        const { data, error } = await service.storage.from(ref.bucket).createSignedUrl(ref.path, 60 * 60 * 24 * 30);
+        if (error || !data?.signedUrl) throw new Error("Could not prepare a book illustration for email.");
+        return data.signedUrl;
       }
-      const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
-      return { filename: `${cid}.${ext}`, content: bytesToBase64(bytes), content_id: cid };
+      return url;
     };
 
-    const sendMessage = async (from: string, subject: string, html: string, attachments: unknown[]) => {
+    const sendMessage = async (from: string, subject: string, html: string) => {
       for (let attempt = 1; ; attempt++) {
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from, to: recipients, reply_to: userData.user.email ?? undefined, subject, html, attachments }),
+          body: JSON.stringify({ from, to: recipients, reply_to: userData.user.email ?? undefined, subject, html }),
         });
         const result = await response.json().catch(() => ({}));
         if (response.status === 429 && attempt < 4) {
@@ -167,20 +146,25 @@ Deno.serve(async (req) => {
       }
     };
 
-    const delivered: string[] = [];
-    for (let chapterIndex = 0; chapterIndex < chapters.length; chapterIndex++) {
-      const chapter = chapters[chapterIndex];
-      const bookChapterIndex = chapterOffset + chapterIndex;
-      const attachments: unknown[] = [];
+    const bookParts: string[] = [];
+    const coverUrl = await emailImageUrl(String(body.coverImage ?? ""));
+    if (coverUrl) bookParts.push(`<img src="${esc(coverUrl)}" alt="${esc(title)} front cover" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 24px"/>`);
+    bookParts.push(`<h1 style="font-size:30px;margin:16px 0 4px;color:#111;text-align:center">${esc(title)}</h1>`);
+    if (author) bookParts.push(`<p style="margin:0 0 20px;font-size:15px;color:#555;text-align:center">by ${esc(author)}</p>`);
+    if (body.message) bookParts.push(`<div style="margin:22px 0">${paras(String(body.message).slice(0, 5000))}</div>`);
+    if (dedication) bookParts.push(`<div style="font-style:italic;text-align:center;margin:24px 0">${paras(dedication)}</div>`);
+    if (prelude) bookParts.push(`<hr style="border:none;border-top:1px solid #ddd;margin:30px 0"/><h2>Prelude</h2>${paras(prelude)}`);
+
+    let imageCount = coverUrl ? 1 : 0;
+    for (let chapterIndex = 0; chapterIndex < allChapters.length; chapterIndex++) {
+      const chapter = allChapters[chapterIndex];
       const images = (chapter.images ?? []).filter(Boolean).slice(0, MAX_IMAGES_PER_CHAPTER);
       const imageHtml: string[] = [];
       for (let imageIndex = 0; imageIndex < images.length; imageIndex++) {
-        const cid = `chapter-${bookChapterIndex + 1}-image-${imageIndex + 1}`;
-        const attachment = await loadImage(images[imageIndex], cid);
-        if (attachment) {
-          attachments.push(attachment);
-          imageHtml.push(`<img src="cid:${cid}" alt="${esc(chapter.title || `Chapter ${bookChapterIndex + 1}`)} illustration" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:22px auto"/>`);
-        }
+        const imageUrl = await emailImageUrl(images[imageIndex]);
+        if (!imageUrl) continue;
+        imageCount += 1;
+        imageHtml.push(`<img src="${esc(imageUrl)}" alt="${esc(chapter.title || `Chapter ${chapterIndex + 1}`)} illustration" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:22px auto"/>`);
       }
 
       const blocks = String(chapter.content ?? "").split(/\n{2,}/).filter((p) => p.trim());
@@ -198,43 +182,26 @@ Deno.serve(async (req) => {
       });
       while (nextImage < placed.length) chapterParts.push(placed[nextImage++].tag);
 
-      const front: string[] = [];
-      if (bookChapterIndex === 0) {
-        const cover = await loadImage(String(body.coverImage ?? ""), "front-cover");
-        if (cover) {
-          attachments.push(cover);
-          front.push(`<img src="cid:front-cover" alt="${esc(title)} front cover" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 24px"/>`);
-        }
-        front.push(`<h1 style="font-size:30px;margin:16px 0 4px;color:#111;text-align:center">${esc(title)}</h1>`);
-        if (author) front.push(`<p style="margin:0 0 20px;font-size:15px;color:#555;text-align:center">by ${esc(author)}</p>`);
-        if (dedication) front.push(`<div style="font-style:italic;text-align:center;margin:24px 0">${paras(dedication)}</div>`);
-        if (prelude) front.push(`<hr style="border:none;border-top:1px solid #ddd;margin:30px 0"/><h2>Prelude</h2>${paras(prelude)}`);
-      }
-
-      const rear: string[] = [];
-      if (bookChapterIndex === totalParts - 1) {
-        const back = await loadImage(String(body.backImage ?? ""), "rear-cover");
-        if (back) {
-          attachments.push(back);
-          rear.push(`<hr style="border:none;border-top:1px solid #ddd;margin:36px 0"/><img src="cid:rear-cover" alt="${esc(title)} rear cover" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:20px auto"/>`);
-        }
-        if (blurb) rear.push(`<div style="font-style:italic;color:#444;margin:20px 0">${paras(blurb)}</div>`);
-      }
-
-      const html = `<!doctype html><html><body style="margin:0;background:#fff"><main style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#fff">${front.join("")}<p style="font-size:12px;color:#777;text-align:center">Part ${bookChapterIndex + 1} of ${totalParts}${genre ? ` · ${esc(genre)}` : ""}</p><hr style="border:none;border-top:1px solid #ddd;margin:20px 0"/><h2 style="font-size:22px;color:#111">${esc(chapter.title || `Chapter ${bookChapterIndex + 1}`)}</h2>${chapterParts.join("")}${rear.join("")}<p style="margin:34px 0 0;font-size:11px;color:#999;text-align:center">End of part ${bookChapterIndex + 1} of ${totalParts}</p></main></body></html>`;
-      if (new TextEncoder().encode(html).length > 90000) throw new Error(`Chapter ${bookChapterIndex + 1} is too large for a reliable email.`);
-
-      const subject = `[${String(bookChapterIndex + 1).padStart(2, "0")}/${totalParts}] ${title} — ${chapter.title || `Chapter ${bookChapterIndex + 1}`}`;
-      let result = await sendMessage(PRIMARY_FROM, subject, html, attachments);
-      if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) result = await sendMessage(FALLBACK_FROM, subject, html, attachments);
-      if (!result.ok) {
-        console.error(`Book delivery failed at part ${bookChapterIndex + 1} [${result.status}]`, JSON.stringify(result.result));
-        return json({ error: `Delivery stopped at chapter ${bookChapterIndex + 1}. No success was claimed.`, delivered: delivered.length, details: result.result }, 502);
-      }
-      delivered.push(chapter.title || `Chapter ${bookChapterIndex + 1}`);
+      bookParts.push(`<hr style="border:none;border-top:1px solid #ddd;margin:34px 0"/><p style="font-size:12px;color:#777;text-align:center">Chapter ${chapterIndex + 1} of ${allChapters.length}${genre ? ` · ${esc(genre)}` : ""}</p><h2 style="font-size:22px;color:#111">${esc(chapter.title || `Chapter ${chapterIndex + 1}`)}</h2>${chapterParts.join("")}`);
     }
 
-    return json({ sent: true, to: recipients[0], parts: delivered.length, chapters: delivered.length, images: chapters.reduce((n, c) => n + (c.images?.length ?? 0), 0) + (body.coverImage ? 1 : 0) + (body.backImage ? 1 : 0) });
+    const backUrl = await emailImageUrl(String(body.backImage ?? ""));
+    if (backUrl) {
+      imageCount += 1;
+      bookParts.push(`<hr style="border:none;border-top:1px solid #ddd;margin:36px 0"/><img src="${esc(backUrl)}" alt="${esc(title)} rear cover" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:20px auto"/>`);
+    }
+    if (blurb) bookParts.push(`<div style="font-style:italic;color:#444;margin:20px 0">${paras(blurb)}</div>`);
+
+    const html = `<!doctype html><html><body style="margin:0;background:#fff"><main style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#fff">${bookParts.join("")}<p style="margin:34px 0 0;font-size:11px;color:#999;text-align:center">End of complete book</p></main></body></html>`;
+    const subject = `${title} — Complete illustrated book (${allChapters.length} chapters)`;
+    let result = await sendMessage(PRIMARY_FROM, subject, html);
+    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) result = await sendMessage(FALLBACK_FROM, subject, html);
+    if (!result.ok) {
+      console.error(`Complete book delivery failed [${result.status}]`, JSON.stringify(result.result));
+      return json({ error: "The complete book email was not accepted for delivery.", details: result.result }, 502);
+    }
+
+    return json({ sent: true, to: recipients[0], emails: 1, chapters: allChapters.length, images: imageCount });
   } catch (error) {
     console.error("email-story error", error);
     return json({ error: error instanceof Error ? error.message : "Unexpected email error" }, 500);

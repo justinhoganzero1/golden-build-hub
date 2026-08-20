@@ -383,14 +383,12 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     setEmailBusy(true);
     try {
       const chapters = story.chapters || [];
-      const sendPart = async (chapter: any, chapterIndex: number, attempt = 1): Promise<void> => {
-        const { data, error } = await supabase.functions.invoke("email-story", {
+      setEmailProgress(`Sending all ${chapters.length} chapters in one email…`);
+      const { data, error } = await supabase.functions.invoke("email-story", {
           body: {
             to,
             message: body,
             storyId: story.id,
-            partNumber: chapterIndex + 1,
-            totalParts: chapters.length,
             title: story.title || "Untitled Story",
             author: story.author,
             genre: story.genre,
@@ -399,24 +397,14 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
             prelude: story.prelude,
             coverImage: story.coverImage,
             backImage: story.backImage,
-            chapters: story.id ? undefined : [{ title: chapter.title, content: chapter.content, images: chapter.images, imageAnchors: chapter.imageAnchors }],
+            chapters: story.id ? undefined : chapters,
           },
         });
-        if (error || (data as any)?.error) {
-          if (attempt < 3) {
-            await new Promise((r) => setTimeout(r, 1500 * attempt));
-            return sendPart(chapter, chapterIndex, attempt + 1);
-          }
-          throw new Error(`Chapter ${chapterIndex + 1} failed to send: ${(data as any)?.error || error?.message}`);
-        }
-      };
-      for (let i = 0; i < chapters.length; i++) {
-        setEmailProgress(`Sending chapter ${i + 1} of ${chapters.length}…`);
-        await sendPart(chapters[i], i);
-        await new Promise((r) => setTimeout(r, 700));
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "The complete book email failed to send.");
       }
       setEmailProgress("");
-      toast.success(`Sent ${chapters.length} ordered parts — every chapter and illustration is in ${to}'s inbox.`);
+      toast.success(`Sent one complete email with ${chapters.length} chapters, both covers, and all illustrations to ${to}.`);
 
     } catch (e: any) {
       toast.error(e?.message || "Couldn't email the story.");
