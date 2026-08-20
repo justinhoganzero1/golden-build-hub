@@ -152,13 +152,19 @@ Deno.serve(async (req) => {
     };
 
     const sendMessage = async (from: string, subject: string, html: string, attachments: unknown[]) => {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: recipients, reply_to: userData.user.email ?? undefined, subject, html, attachments }),
-      });
-      const result = await response.json().catch(() => ({}));
-      return { ok: response.ok, status: response.status, result };
+      for (let attempt = 1; ; attempt++) {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to: recipients, reply_to: userData.user.email ?? undefined, subject, html, attachments }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.status === 429 && attempt < 4) {
+          await new Promise((r) => setTimeout(r, 1200 * attempt));
+          continue;
+        }
+        return { ok: response.ok, status: response.status, result };
+      }
     };
 
     const delivered: string[] = [];
