@@ -3129,6 +3129,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           open={shareOpen}
           onOpenChange={setShareOpen}
           story={{
+            id: story.id,
             title: story.title,
             author: story.author,
             genre: story.genre,
