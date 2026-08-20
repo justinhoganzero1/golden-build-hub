@@ -174,17 +174,11 @@ export const formatForChannel = (channel: ChannelId, story: ShareStory, url: str
         ``,
         `I just finished a ${story.genre || "new"} story called “${title}”${by} and I'd love you to read it.`,
         ``,
-        `What it's about:`,
-        logline(story),
-        ``,
-        `A taste of it:`,
-        `“${excerpt(story, 700)}”`,
-        ``,
-        `Read the whole thing here:`,
-        url,
+        `The whole story — every chapter and every illustration — is in this email, so there's nothing to click and nothing to sign up for. Just scroll and read.`,
         ``,
         `— ${story.author || "Written with Oracle Lunar"}`,
       ].join("\n");
+
 
     case "facebook":
       return clamp([
