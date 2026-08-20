@@ -365,7 +365,8 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
   };
 
   // Emails the WHOLE story — chapters and illustrations rendered inside the
-  // message body — plus the EPUB attached. No link back to the app needed.
+  // message body. One click: type an address, press send. No attachment is
+  // built (the base64 EPUB made the request too large to reach the server).
   const [emailBusy, setEmailBusy] = useState(false);
   const emailWholeStory = async () => {
     const to = email.trim();
@@ -379,18 +380,6 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     }
     setEmailBusy(true);
     try {
-      let attachment: { filename: string; contentBase64: string } | undefined;
-      try {
-        const epub = await buildStoryFile(fileSource, "epub");
-        const b64: string = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
-          r.onerror = () => reject(r.error);
-          r.readAsDataURL(epub);
-        });
-        if (b64.length < 25 * 1024 * 1024) attachment = { filename: epub.name, contentBase64: b64 };
-      } catch { /* the inline story still goes out without the attachment */ }
-
       const { data, error } = await supabase.functions.invoke("email-story", {
         body: {
           to,
@@ -404,10 +393,14 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           coverImage: story.coverImage,
           backImage: story.backImage,
           chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
-          attachment,
         },
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        const detail = await (error as any)?.context?.text?.().catch(() => "");
+        let msg = error.message;
+        try { msg = JSON.parse(detail)?.error || msg; } catch { if (detail) msg = detail; }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Sent — the complete story is in ${to}'s inbox.`);
     } catch (e: any) {
@@ -416,6 +409,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
       setEmailBusy(false);
     }
   };
+
 
 
   const copyBody = async () => {
