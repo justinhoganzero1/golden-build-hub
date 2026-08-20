@@ -662,10 +662,13 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button className="flex-1" onClick={send}>
-            <Share2 className="w-4 h-4 mr-2" />
-            Share to {active.label}
+          <Button className="flex-1" onClick={send} disabled={emailBusy}>
+            {emailBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Share2 className="w-4 h-4 mr-2" />}
+            {channel === "email"
+              ? (emailBusy ? "Sending the whole story…" : "Email the entire story")
+              : `Share to ${active.label}`}
           </Button>
+
           <Button variant="outline" onClick={nativeShare}>
             More apps…
           </Button>
