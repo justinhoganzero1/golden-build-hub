@@ -1599,6 +1599,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
   /** EPUB3 — accepted by Kindle (KDP), Kobo, Apple Books, Google Play Books,
    *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
   const [epubBusy, setEpubBusy] = useState(false);
+  const [kindleOpen, setKindleOpen] = useState(false);
   // === Compliance kit: provenance + disclosures + authorship log (privacy-scrubbed) ===
   const disclosureFacts = (opts: { voice?: boolean } = {}): DisclosureFacts => ({
     title: scrubIdentifiers(story.title || "Untitled"),
