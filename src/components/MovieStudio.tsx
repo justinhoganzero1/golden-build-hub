@@ -2472,6 +2472,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         usedScenes: ready,
       }));
       toast.success("Movie published — render report ready in Super AI");
+      // This paid export completed: retire the idempotency key so the NEXT export
+      // is billed as a new charge instead of silently replaying the settled one.
+      renderRequestKeyRef.current = null;
 
     } catch (e) {
       console.error(e); toast.error("Export failed");
