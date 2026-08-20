@@ -369,6 +369,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
   // message body. One click: type an address, press send. No attachment is
   // built (the base64 EPUB made the request too large to reach the server).
   const [emailBusy, setEmailBusy] = useState(false);
+  const [emailProgress, setEmailProgress] = useState("");
   const emailWholeStory = async () => {
     const to = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
@@ -382,31 +383,45 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
     setEmailBusy(true);
     try {
       const chapters = story.chapters || [];
-      const sends = chapters.map((chapter, chapterIndex) => supabase.functions.invoke("email-story", {
-        body: {
-          to,
-          message: body,
-          storyId: story.id,
-          partNumber: chapterIndex + 1,
-          totalParts: chapters.length,
-          title: story.title || "Untitled Story",
-          author: story.author,
-          genre: story.genre,
-          blurb: story.blurb,
-          dedication: story.dedication,
-          prelude: story.prelude,
-          coverImage: story.coverImage,
-          backImage: story.backImage,
-          chapters: story.id ? undefined : [{ title: chapter.title, content: chapter.content, images: chapter.images, imageAnchors: chapter.imageAnchors }],
-        },
-      }));
-      const results = await Promise.all(sends);
-      const failures = results.filter(({ data, error }) => error || (data as any)?.error);
-      if (failures.length) throw new Error(`${failures.length} of ${chapters.length} chapters failed to send. Nothing has been falsely marked complete.`);
+      const sendPart = async (chapter: any, chapterIndex: number, attempt = 1): Promise<void> => {
+        const { data, error } = await supabase.functions.invoke("email-story", {
+          body: {
+            to,
+            message: body,
+            storyId: story.id,
+            partNumber: chapterIndex + 1,
+            totalParts: chapters.length,
+            title: story.title || "Untitled Story",
+            author: story.author,
+            genre: story.genre,
+            blurb: story.blurb,
+            dedication: story.dedication,
+            prelude: story.prelude,
+            coverImage: story.coverImage,
+            backImage: story.backImage,
+            chapters: story.id ? undefined : [{ title: chapter.title, content: chapter.content, images: chapter.images, imageAnchors: chapter.imageAnchors }],
+          },
+        });
+        if (error || (data as any)?.error) {
+          if (attempt < 3) {
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+            return sendPart(chapter, chapterIndex, attempt + 1);
+          }
+          throw new Error(`Chapter ${chapterIndex + 1} failed to send: ${(data as any)?.error || error?.message}`);
+        }
+      };
+      for (let i = 0; i < chapters.length; i++) {
+        setEmailProgress(`Sending chapter ${i + 1} of ${chapters.length}…`);
+        await sendPart(chapters[i], i);
+        await new Promise((r) => setTimeout(r, 700));
+      }
+      setEmailProgress("");
       toast.success(`Sent ${chapters.length} ordered parts — every chapter and illustration is in ${to}'s inbox.`);
+
     } catch (e: any) {
       toast.error(e?.message || "Couldn't email the story.");
     } finally {
+      setEmailProgress("");
       setEmailBusy(false);
     }
   };
@@ -597,7 +612,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
               />
               <Button onClick={() => void emailWholeStory()} disabled={emailBusy} className="sm:w-40">
                 {emailBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-                {emailBusy ? "Sending…" : "Send"}
+                {emailBusy ? (emailProgress || "Sending…") : "Send"}
               </Button>
             </div>
             <p className="text-[11px] text-muted-foreground">
