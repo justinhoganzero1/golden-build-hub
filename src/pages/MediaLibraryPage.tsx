@@ -202,8 +202,10 @@ const MediaLibraryPage = () => {
     m.thumbnail_url ||
     (m.metadata && (m.metadata.thumbnail || m.metadata.cover || m.metadata.poster || m.metadata.preview_url || m.metadata.image)) ||
     null;
-  const isImageLike = (m: any) => (m.media_type === "image" || m.media_type === "gif") && !!previewSrc(m);
-  const isVideoLike = (m: any) => m.media_type === "video" && !!previewSrc(m);
+  // Type alone decides whether a tile shows artwork — LibraryTileFace lazily
+  // pulls the row's `url` (omitted from the list query) when no thumbnail exists.
+  const isImageLike = (m: any) => m.media_type === "image" || m.media_type === "gif";
+  const isVideoLike = (m: any) => m.media_type === "video";
 
   const handleDownloadSelected = async () => {
     if (!selected?.url) return;
