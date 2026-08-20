@@ -7,6 +7,8 @@ export interface StoryChapter {
   title: string;
   content: string;
   images?: string[];
+  /** Paragraph index each illustration should follow, parallel to `images`. */
+  imageAnchors?: number[];
 }
 
 export interface StoryFileSource {
@@ -186,6 +188,7 @@ figure{margin:1.2em 0;text-align:center;page-break-inside:avoid;}`,
   const chapterFiles = chapters.map((c, i) => {
     const fname = `chapter-${String(i + 1).padStart(3, "0")}.xhtml`;
     const imgTags: string[] = [];
+    const imgAnchors: (number | undefined)[] = [];
     (c.images || []).forEach((img, k) => {
       const parsed = img ? dataUrlToBytes(img) : null;
       if (!parsed) return;
@@ -193,19 +196,35 @@ figure{margin:1.2em 0;text-align:center;page-break-inside:avoid;}`,
       oebps.file(iname, parsed.bytes);
       imageManifest.push(`<item id="img${i + 1}_${k + 1}" href="${iname}" media-type="${parsed.mime}"/>`);
       imgTags.push(`<figure><img src="${iname}" alt="Illustration"/></figure>`);
+      imgAnchors.push(c.imageAnchors?.[k]);
     });
     const paras = c.content
       .split(/\n{2,}/)
       .map((p, pi) => `<p${pi === 0 ? ' class="first"' : ""}>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`);
-    // Spread illustrations evenly through the chapter.
+    // Place each illustration at the paragraph the AI anchored it to; fall back
+    // to an even spread for older stories with no anchors.
     const body: string[] = [];
-    const every = imgTags.length ? Math.max(1, Math.floor(paras.length / (imgTags.length + 1))) : 0;
-    let placed = 0;
-    paras.forEach((p, idx) => {
-      body.push(p);
-      if (every && placed < imgTags.length && (idx + 1) % every === 0) body.push(imgTags[placed++]);
-    });
-    while (placed < imgTags.length) body.push(imgTags[placed++]);
+    const hasAnchors = imgAnchors.some((a) => typeof a === "number");
+    if (hasAnchors) {
+      const resolved = imgTags.map((tag, k) => ({
+        tag,
+        at: Math.max(0, Math.min(paras.length, imgAnchors[k] ?? Math.round(((k + 1) / (imgTags.length + 1)) * paras.length))),
+      })).sort((a, b) => a.at - b.at);
+      let next = 0;
+      paras.forEach((p, idx) => {
+        while (next < resolved.length && resolved[next].at <= idx) body.push(resolved[next++].tag);
+        body.push(p);
+      });
+      while (next < resolved.length) body.push(resolved[next++].tag);
+    } else {
+      const every = imgTags.length ? Math.max(1, Math.floor(paras.length / (imgTags.length + 1))) : 0;
+      let placed = 0;
+      paras.forEach((p, idx) => {
+        body.push(p);
+        if (every && placed < imgTags.length && (idx + 1) % every === 0) body.push(imgTags[placed++]);
+      });
+      while (placed < imgTags.length) body.push(imgTags[placed++]);
+    }
     oebps.file(
       fname,
       `<?xml version="1.0" encoding="UTF-8"?>

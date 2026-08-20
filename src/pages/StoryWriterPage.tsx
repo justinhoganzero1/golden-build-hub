@@ -45,8 +45,10 @@ import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
 interface StoryChapter {
   title: string;
   content: string;
-  /** Up to 2 AI-generated illustrations per chapter (data URLs). */
+  /** Up to 6 AI-generated illustrations per chapter (data URLs / storage URLs). */
   images?: string[];
+  /** Paragraph index each illustration should sit AFTER, parallel to `images`. */
+  imageAnchors?: number[];
 }
 interface StoryCharacter {
   id: string;
@@ -533,6 +535,16 @@ const StoryWriterPage = () => {
   const CINEMATIC_4K = "Render as an extreme-quality 4K cinematic 3D frame: film-grade depth, layered lighting, realistic subsurface scattering, tangible textures, believable physics, shot as if it were a still from a big-budget motion picture directly depicting this story's scene.";
 
 
+  /**
+   * Non-negotiable continuity + world rules applied to every interior
+   * illustration so cast, wardrobe, hair, sets and signage stay book-accurate.
+   */
+  const CONTINUITY_BIBLE =
+    "CHARACTER & WORLD CONTINUITY (mandatory): every recurring character must match the book exactly — same face, age, ethnicity, build, skin tone, eye colour, hair length/colour/style, facial hair (or clean-shaven if the book says so), tattoos, scars and injuries at this point in the story. Wardrobe must be the exact outfit described in this chapter: same garments, colours, materials, jackets, boots, hats, jewellery, weapons and carried props — never invent new clothing. Locations, buildings, streets, vehicles, interiors, weather, time of day and special effects must match the described scene precisely and stay consistent with earlier chapters. " +
+    "SIGNAGE: avoid text wherever possible; if a sign, badge, number plate or shopfront is unavoidable it must be real, correctly spelled English with no gibberish, no invented glyphs and no misspellings. " +
+    "MORAL READ: antagonists look genuinely menacing — dark, dingy, grimy surroundings, cold hard lighting, harsh shadow, cruel worn faces; protagonists read as heroic — cleaner light, warmth on the face, upright confident posture, clear readable eyes. " +
+    "QUALITY: 4K ultra-high-definition, real-world photographic realism as if shot on set, no CGI plastic sheen, no cartoon drift unless the chosen style demands it.";
+
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 3;
 
@@ -589,7 +601,8 @@ const StoryWriterPage = () => {
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
-    beat?: { index: number; total: number; text: string },
+    beat?: { index: number; total: number; text: string; anchor?: number },
+    avoidBriefs?: string[],
   ): Promise<boolean> => {
 
 
@@ -650,7 +663,10 @@ const StoryWriterPage = () => {
       const chapterFormat = beat?.index === 2
         ? "This selected image may be a seamless cinematic mosaic of complementary story moments, but must remain one coherent artwork with no panels, borders or lettering."
         : SINGLE_PANEL;
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${CONTINUITY_BIBLE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      if (avoidBriefs?.length) {
+        basePrompt += ` FRESH-ART RULE: this book previously had illustrations of these exact moments — ${avoidBriefs.slice(0, 8).map(b => `"${String(b).slice(0, 140)}"`).join("; ")}. Your image must be a demonstrably DIFFERENT picture: different moment, different camera angle, different staging, different lighting and different composition from all of them, while keeping the same cast, wardrobe and world.`;
+      }
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
@@ -720,12 +736,21 @@ const StoryWriterPage = () => {
         const next = [...s.chapters];
         const target = next[slot.index];
         const existing = target.images || [];
+        const anchors = target.imageAnchors || [];
+        // Where this picture belongs in the chapter (paragraph index it follows).
+        const paraCount = (target.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
+        const anchor =
+          typeof beat?.anchor === "number"
+            ? beat.anchor
+            : beat
+              ? Math.min(paraCount, Math.round(((beat.index + 1) / (beat.total + 1)) * paraCount))
+              : paraCount;
         const MAX_PER_CHAPTER = 6;
         if (existing.length >= MAX_PER_CHAPTER) {
           toast.info(`Max ${MAX_PER_CHAPTER} images per chapter — replacing the oldest.`);
-          next[slot.index] = { ...target, images: [...existing.slice(1), url] };
+          next[slot.index] = { ...target, images: [...existing.slice(1), url], imageAnchors: [...anchors.slice(1), anchor] };
         } else {
-          next[slot.index] = { ...target, images: [...existing, url] };
+          next[slot.index] = { ...target, images: [...existing, url], imageAnchors: [...anchors, anchor] };
         }
         return { ...s, chapters: next };
       });
@@ -763,6 +788,7 @@ const StoryWriterPage = () => {
   const illustrateChapterSet = async (
     idx: number,
     count = MIN_IMAGES_PER_CHAPTER,
+    avoidBriefs?: string[],
   ): Promise<number> => {
     const ch = story.chapters[idx];
     if (!ch) return 0;
@@ -776,16 +802,65 @@ const StoryWriterPage = () => {
       if (planned.length === count) beats = planned;
       setIllustrationTeamNotes(planned);
     } catch { /* narrative beat fallback remains usable */ }
+    // Where each image belongs in the chapter, in reading order.
+    const paraCount = (ch.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
     let ok = 0;
     for (let b = 0; b < count; b++) {
+      const anchor = Math.min(paraCount, Math.round(((b + 1) / (count + 1)) * paraCount));
       const done = await generateStoryImage(
         { kind: "chapter", index: idx },
         undefined,
-        { index: b, total: count, text: beats[b] },
+        { index: b, total: count, text: beats[b], anchor },
+        avoidBriefs,
       );
       if (done) ok++;
     }
     return ok;
+  };
+
+  /**
+   * Nuke every illustration in a chapter and draw a completely new set.
+   * The old shot list is handed back to the artist as a "do not repeat" brief,
+   * and a continuity agent verifies the new set is genuinely different.
+   */
+  const wipeAndReIllustrateChapter = async (idx: number, silent = false): Promise<number> => {
+    const ch = story.chapters[idx];
+    if (!ch) return 0;
+    const previous = [...illustrationTeamNotes];
+    setStory(s => {
+      const next = [...s.chapters];
+      next[idx] = { ...next[idx], images: [], imageAnchors: [] };
+      return { ...s, chapters: next };
+    });
+    const ok = await illustrateChapterSet(idx, MIN_IMAGES_PER_CHAPTER, previous);
+    if (!silent) {
+      if (ok > 0) toast.success(`Chapter re-illustrated — ${ok} brand-new image${ok === 1 ? "" : "s"} placed in position.`);
+      else toast.error("Re-illustration failed — no new images were produced.");
+    }
+    return ok;
+  };
+
+  const deleteAndReIllustrateChapter = async (idx: number) => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    if (!confirm(`Delete EVERY illustration in this chapter and draw a completely new set of ${MIN_IMAGES_PER_CHAPTER}? The new images will be different pictures — same cast, wardrobe and world.`)) return;
+    setChapterSetBusy(idx);
+    try { await wipeAndReIllustrateChapter(idx); } finally { setChapterSetBusy(null); }
+  };
+
+  const deleteAndReIllustrateBook = async () => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    if (!confirm(`Delete EVERY illustration in all ${story.chapters.length} chapters and re-illustrate the entire book from scratch? This can take a long while — keep this tab open.`)) return;
+    setBulkBusy(true);
+    let ok = 0;
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        toast.info(`Re-illustrating chapter ${i + 1}/${story.chapters.length}…`, { id: "reillustrate-all" });
+        ok += await wipeAndReIllustrateChapter(i, true);
+      }
+      toast.success(`Whole book re-illustrated — ${ok} new images placed in position.`, { id: "reillustrate-all" });
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   // Illustrate one chapter — three team-selected images placed across the chapter's beats.
@@ -892,7 +967,8 @@ const StoryWriterPage = () => {
       const next = [...s.chapters];
       const target = next[chapterIdx];
       const imgs = (target.images || []).filter((_, i) => i !== imageIdx);
-      next[chapterIdx] = { ...target, images: imgs };
+      const anchors = (target.imageAnchors || []).filter((_, i) => i !== imageIdx);
+      next[chapterIdx] = { ...target, images: imgs, imageAnchors: anchors };
       return { ...s, chapters: next };
     });
   };
@@ -2503,6 +2579,22 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                     >
                       {isBusy || chapterSetBusy === activeChapter ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                       Illustrate Chapter ({MIN_IMAGES_PER_CHAPTER} images)
+                    </button>
+                    <button
+                      onClick={() => deleteAndReIllustrateChapter(activeChapter)}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/50 text-destructive font-semibold flex items-center gap-1 disabled:opacity-60"
+                      title="Delete every illustration in this chapter and draw a totally new set"
+                    >
+                      <X className="w-3 h-3" /> Delete + re-illustrate chapter
+                    </button>
+                    <button
+                      onClick={deleteAndReIllustrateBook}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-destructive/25 border border-destructive text-destructive font-black flex items-center gap-1 disabled:opacity-60"
+                      title="Delete every illustration in the whole book and re-illustrate it"
+                    >
+                      {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />} Delete + re-illustrate BOOK
                     </button>
                     <button
                       onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
