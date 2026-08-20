@@ -2732,10 +2732,25 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
 
 
+        {/* Send straight to Kindle */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={() => setKindleOpen(true)}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
+          >
+            <BookMarked className="w-4 h-4" />
+            Send this book to my Kindle — guided, one tap
+          </button>
+          <p className="pt-1 text-[10px] text-muted-foreground">
+            Step-by-step bubbles walk you through it once, then Oracle Lunar emails the finished
+            Kindle EPUB into your library automatically.
+          </p>
+        </div>
+
         {/* Retailer-ready exports */}
         <div className="px-4 pt-4 grid grid-cols-2 gap-2">
           <button
-            onClick={exportEpub}
+            onClick={() => void exportEpub()}
             disabled={epubBusy}
             className="py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
           >
