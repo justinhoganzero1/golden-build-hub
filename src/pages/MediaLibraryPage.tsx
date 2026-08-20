@@ -527,6 +527,29 @@ const MediaLibraryPage = () => {
             })}
           </div>
         )}
+
+        {/* ── Pagination (20 per page) ── */}
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center justify-center gap-2 mt-5">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-xs rounded-full border border-border text-foreground disabled:opacity-40 hover:border-primary/50"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {pageCount} · {filtered.length} items
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              disabled={page >= pageCount}
+              className="px-3 py-1.5 text-xs rounded-full border border-border text-foreground disabled:opacity-40 hover:border-primary/50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Detail dialog ── */}
