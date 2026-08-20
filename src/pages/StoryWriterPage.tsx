@@ -1753,17 +1753,23 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 </package>`);
 
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+      const fileName = `${slugify(story.title)}.epub`;
+      if (opts?.returnFile) {
+        return new File([blob], fileName, { type: "application/epub+zip" });
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${slugify(story.title)}.epub`;
+      a.download = fileName;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("EPUB ready — upload to Kindle, Kobo, Apple Books, Google Play, B&N, Draft2Digital or Smashwords.");
       // Auto-attach the compliance kit (KDP declaration, provenance, authorship log)
       await downloadComplianceKit({ voice: false });
+      return null;
     } catch (e: any) {
       toast.error(e?.message || "EPUB export failed");
+      return null;
     } finally {
       setEpubBusy(false);
     }
