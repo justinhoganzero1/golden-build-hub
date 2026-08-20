@@ -14,6 +14,7 @@ import {
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StoryShareDialog from "@/components/story/StoryShareDialog";
+import SendToKindleDialog from "@/components/story/SendToKindleDialog";
 import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
@@ -1599,6 +1600,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
   /** EPUB3 — accepted by Kindle (KDP), Kobo, Apple Books, Google Play Books,
    *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
   const [epubBusy, setEpubBusy] = useState(false);
+  const [kindleOpen, setKindleOpen] = useState(false);
   // === Compliance kit: provenance + disclosures + authorship log (privacy-scrubbed) ===
   const disclosureFacts = (opts: { voice?: boolean } = {}): DisclosureFacts => ({
     title: scrubIdentifiers(story.title || "Untitled"),
@@ -1641,9 +1643,9 @@ Rules: the three title-gradient colours must read as one confident, high-contras
     toast.success("Compliance kit downloaded — disclosures, provenance and authorship log.");
   };
 
-  const exportEpub = async () => {
+  const exportEpub = async (opts?: { returnFile?: boolean }): Promise<File | null> => {
     if (!story.chapters.some(c => c.content.trim())) {
-      toast.error("Write at least one chapter first."); return;
+      toast.error("Write at least one chapter first."); return null;
     }
     setEpubBusy(true);
     try {
@@ -1753,17 +1755,23 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 </package>`);
 
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+      const fileName = `${slugify(story.title)}.epub`;
+      if (opts?.returnFile) {
+        return new File([blob], fileName, { type: "application/epub+zip" });
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${slugify(story.title)}.epub`;
+      a.download = fileName;
       a.click();
       URL.revokeObjectURL(url);
       toast.success("EPUB ready — upload to Kindle, Kobo, Apple Books, Google Play, B&N, Draft2Digital or Smashwords.");
       // Auto-attach the compliance kit (KDP declaration, provenance, authorship log)
       await downloadComplianceKit({ voice: false });
+      return null;
     } catch (e: any) {
       toast.error(e?.message || "EPUB export failed");
+      return null;
     } finally {
       setEpubBusy(false);
     }
@@ -2726,10 +2734,25 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
 
 
+        {/* Send straight to Kindle */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={() => setKindleOpen(true)}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
+          >
+            <BookMarked className="w-4 h-4" />
+            Send this book to my Kindle — guided, one tap
+          </button>
+          <p className="pt-1 text-[10px] text-muted-foreground">
+            Step-by-step bubbles walk you through it once, then Oracle Lunar emails the finished
+            Kindle EPUB into your library automatically.
+          </p>
+        </div>
+
         {/* Retailer-ready exports */}
         <div className="px-4 pt-4 grid grid-cols-2 gap-2">
           <button
-            onClick={exportEpub}
+            onClick={() => void exportEpub()}
             disabled={epubBusy}
             className="py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
           >
@@ -2839,6 +2862,13 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             Publish first to share a public link, or share the Oracle Lunar link to invite friends.
           </p>
         </div>
+
+        <SendToKindleDialog
+          open={kindleOpen}
+          onOpenChange={setKindleOpen}
+          title={story.title || "Untitled Story"}
+          buildEpub={() => exportEpub({ returnFile: true })}
+        />
 
         <StoryShareDialog
           open={shareOpen}
