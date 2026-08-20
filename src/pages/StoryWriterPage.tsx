@@ -2533,6 +2533,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 Chapters ({story.chapters.length})
               </p>
               <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  onClick={placeExistingIllustrations}
+                  disabled={!story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
+                  className="h-9 px-4 font-black italic"
+                  title="Places existing images inside the story without generating or charging for new images"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Magical AI Place Images — FREE
+                </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
                   disabled={regenBusy || bulkBusy || !!imgBusy || chapterSetBusy !== null}
@@ -2623,7 +2633,10 @@ Rules: the three title-gradient colours must read as one confident, high-contras
               </button>
             )}
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-[11px] text-muted-foreground">
+              {readMode ? "Illustrations are shown at their saved paragraph positions." : "Edit mode hides placed plates while you type."}
+            </p>
             <button
               onClick={() => setReadMode(r => !r)}
               className={`text-[11px] px-3 py-1 rounded-full font-bold border ${readMode ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground"}`}
@@ -2692,7 +2705,9 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           )}
 
 
-          {/* Chapter illustrations — max 2 per chapter */}
+          {/* Illustration controls. In illustrated reading mode the plates are
+              already rendered inside the prose, so never duplicate them in a
+              misleading stack below the chapter. */}
           {(() => {
             const ch = story.chapters[activeChapter];
             const imgs = ch?.images || [];
@@ -2749,7 +2764,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                   </div>
 
                 </div>
-                {imgs.length > 0 ? (
+                {!readMode && imgs.length > 0 ? (
                   <div>
                     {imgs.map((src, i) => (
                       <IllustrationPlate
@@ -2766,9 +2781,13 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                       />
                     ))}
                   </div>
-                ) : (
+                ) : imgs.length === 0 ? (
                   <p className="text-[11px] text-muted-foreground">
                     Every illustration is a full-page portrait plate — one single scene per page, never split — with rich foreground/midground/background depth. Tap any plate to view it full screen. In the final five chapters one plate is rendered as a holographic showcase.
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-primary">
+                    All {imgs.length} illustrations are placed inside the chapter above. Switch to Edit text only when you need the raw illustration manager.
                   </p>
                 )}
                 {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
