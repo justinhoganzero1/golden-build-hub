@@ -22,7 +22,7 @@ const imgTag = (src: string, alt: string) =>
     ? `<img src="${esc(src)}" alt="${esc(alt)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:20px auto;border-radius:10px" />`
     : "";
 
-interface Chapter { title?: string; content?: string; images?: string[] }
+interface Chapter { title?: string; content?: string; images?: string[]; imageAnchors?: number[] }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -95,18 +95,24 @@ Deno.serve(async (req) => {
       const text = (c.content ?? "").trim();
       if (!text) return;
       const images = (c.images ?? []).filter(Boolean).slice(0, 12);
+      const anchors = c.imageAnchors ?? [];
       const blocks = text.split(/\n{2,}/).filter((p) => p.trim());
-      // Spread illustrations evenly through the chapter.
-      const every = images.length ? Math.max(1, Math.floor(blocks.length / (images.length + 1))) : 0;
+      const alt = `${c.title ?? `Chapter ${i + 1}`} illustration`;
       let html = "";
+      // Each illustration sits at the paragraph the AI anchored it to; older
+      // stories with no anchors fall back to an even spread.
+      const placed = images.map((img, k) => ({
+        img,
+        at: Math.max(0, Math.min(blocks.length, typeof anchors[k] === "number"
+          ? Number(anchors[k])
+          : Math.round(((k + 1) / (images.length + 1)) * blocks.length))),
+      })).sort((a, b) => a.at - b.at);
+      let next = 0;
       blocks.forEach((p, idx) => {
+        while (next < placed.length && placed[next].at <= idx) html += imgTag(placed[next++].img, alt);
         html += paras(p);
-        if (every && idx > 0 && idx % every === 0) {
-          const img = images.shift();
-          if (img) html += imgTag(img, `${c.title ?? `Chapter ${i + 1}`} illustration`);
-        }
       });
-      images.forEach((img) => { html += imgTag(img, `${c.title ?? `Chapter ${i + 1}`} illustration`); });
+      while (next < placed.length) html += imgTag(placed[next++].img, alt);
       parts.push(
         `<hr style="border:none;border-top:1px solid #e6e6e6;margin:34px 0" />
          <h2 style="font-size:22px;margin:0 0 14px;color:#111">${esc(c.title || `Chapter ${i + 1}`)}</h2>
