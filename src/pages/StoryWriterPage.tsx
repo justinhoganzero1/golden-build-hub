@@ -49,6 +49,8 @@ interface StoryChapter {
   images?: string[];
   /** Paragraph index each illustration should sit AFTER, parallel to `images`. */
   imageAnchors?: number[];
+  /** Parallel to `images`: true when the plate is a holographic 3D showcase. */
+  imageHolo?: boolean[];
 }
 interface StoryCharacter {
   id: string;
@@ -556,7 +558,7 @@ const StoryWriterPage = () => {
   const SHOT_VARIETY = [
     "wide establishing shot, eye-level camera, complete environment and every character visible head-to-toe with generous safe margins and full headroom",
     "inclusive medium-wide ensemble shot, all heads, faces, hands and bodies fully inside frame with headroom, balanced foreground and background storytelling",
-    "immersive cinematic mosaic of three connected moments from this beat, each panel showing complete un-cropped figures, seamless editorial composition with no borders and no text",
+    "intimate close-quarters full-page scene, shallow depth of field, one continuous moment, complete un-cropped figures",
     "high-angle action shot with motion blur and dynamic diagonal composition, subjects complete head-to-toe inside frame",
     "dutch-angle dramatic shot at a different time of day, full figures with headroom, no cropped heads",
     "waist-up hero portrait moment with the full head and face in frame and the scene readable behind",
@@ -612,6 +614,8 @@ const StoryWriterPage = () => {
     if (!requireMeta()) return false;
 
     const ch = typeof slot === "string" ? null : story.chapters[slot.index];
+    // Set when this chapter plate is the holographic showcase (last 5 chapters).
+    let holoRef = false;
 
     const style = ART_STYLES.find(s => s.id === imgStyleId) ?? ART_STYLES[0];
     const userExtra = (customPrompt?.trim() || imgCustomPrompt.trim());
@@ -660,10 +664,14 @@ const StoryWriterPage = () => {
       const beatLine = beat
         ? `This is illustration ${beat.index + 1} of ${beat.total} for this chapter — depict ONLY the moment described below (the ${beat.index === 0 ? "opening" : beat.index === beat.total - 1 ? "closing" : "middle"} beat). It MUST be a completely different scene, camera angle and composition from every other illustration in this book — never repeat a previous image. `
         : "";
-      const chapterFormat = beat?.index === 2
-        ? "This selected image may be a seamless cinematic mosaic of complementary story moments, but must remain one coherent artwork with no panels, borders or lettering."
-        : SINGLE_PANEL;
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${CONTINUITY_BIBLE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      const chapterFormat = SINGLE_PANEL;
+      const FULL_PAGE = "FULL-PAGE PLATE FORMAT (mandatory): this artwork fills an entire book page on its own. Vertical 2:3 portrait, full-bleed edge to edge, ONE single unified scene only — never a split scene, diptych, triptych, before/after, panel grid, mosaic, inset or collage. If the beat contains two moments, choose the single strongest one and render only that. Build genuine depth for a 3D parallax reader: clear foreground, midground and background separation, layered atmosphere, volumetric light shafts and parallax-friendly negative space, so the picture holds up when the reader orbits and zooms into it.";
+      const holoPlate = slot.index >= Math.max(0, story.chapters.length - 5) && !!beat && beat.index === beat.total - 1;
+      const HOLOGRAM = holoPlate
+        ? " HOLOGRAPHIC SHOWCASE PLATE: render this one as a volumetric hologram of the scene — luminous prismatic light, translucent layered depth planes floating in dark space, iridescent scan-lines and refraction, glowing particulate atmosphere, extreme separation between foreground/midground/background so the reader can orbit 360° around it. Keep the cast, wardrobe and story moment accurate; the hologram is the medium, not a different scene."
+        : "";
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${CONTINUITY_BIBLE} ${FULL_PAGE}${HOLOGRAM} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      holoRef = holoPlate;
       if (avoidBriefs?.length) {
         basePrompt += ` FRESH-ART RULE: this book previously had illustrations of these exact moments — ${avoidBriefs.slice(0, 8).map(b => `"${String(b).slice(0, 140)}"`).join("; ")}. Your image must be a demonstrably DIFFERENT picture: different moment, different camera angle, different staging, different lighting and different composition from all of them, while keeping the same cast, wardrobe and world.`;
       }
@@ -737,6 +745,7 @@ const StoryWriterPage = () => {
         const target = next[slot.index];
         const existing = target.images || [];
         const anchors = target.imageAnchors || [];
+        const holos = target.imageHolo || [];
         // Where this picture belongs in the chapter (paragraph index it follows).
         const paraCount = (target.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
         const anchor =
@@ -748,9 +757,9 @@ const StoryWriterPage = () => {
         const MAX_PER_CHAPTER = 6;
         if (existing.length >= MAX_PER_CHAPTER) {
           toast.info(`Max ${MAX_PER_CHAPTER} images per chapter — replacing the oldest.`);
-          next[slot.index] = { ...target, images: [...existing.slice(1), url], imageAnchors: [...anchors.slice(1), anchor] };
+          next[slot.index] = { ...target, images: [...existing.slice(1), url], imageAnchors: [...anchors.slice(1), anchor], imageHolo: [...holos.slice(1), holoRef] };
         } else {
-          next[slot.index] = { ...target, images: [...existing, url], imageAnchors: [...anchors, anchor] };
+          next[slot.index] = { ...target, images: [...existing, url], imageAnchors: [...anchors, anchor], imageHolo: [...holos, holoRef] };
         }
         return { ...s, chapters: next };
       });
@@ -795,7 +804,7 @@ const StoryWriterPage = () => {
     let beats = chapterBeats(ch.content, count);
     try {
       const teamPlan = await callAI(
-        `You are a three-person publishing illustration team: STORY EDITOR chooses the ${count} most explanatory moments; CINEMATOGRAPHER ensures complete uncropped people and readable environments; CONTINUITY EDITOR checks cast, wardrobe, spelling and forbids visible text. Choose exactly ${count} distinct images. Image 3 may be a tasteful seamless mosaic only if it genuinely improves comprehension. Output exactly ${count} numbered lines, each a concise image brief.`,
+        `You are a three-person publishing illustration team: STORY EDITOR chooses the ${count} most explanatory moments; CINEMATOGRAPHER ensures complete uncropped people and readable environments; CONTINUITY EDITOR checks cast, wardrobe, spelling and forbids visible text. Choose exactly ${count} distinct images. Every image is a FULL-PAGE single-scene plate — never a split scene, mosaic or panel grid. Output exactly ${count} numbered lines, each a concise image brief.`,
         `BOOK: ${story.title}\nCHAPTER: ${ch.title}\nTEXT:\n${(ch.content || "").slice(0, 12000)}`,
       );
       const planned = teamPlan.split("\n").map(line => line.replace(/^\s*\d+[.)-]?\s*/, "").trim()).filter(Boolean).slice(0, count);
@@ -829,7 +838,7 @@ const StoryWriterPage = () => {
     const previous = [...illustrationTeamNotes];
     setStory(s => {
       const next = [...s.chapters];
-      next[idx] = { ...next[idx], images: [], imageAnchors: [] };
+      next[idx] = { ...next[idx], images: [], imageAnchors: [], imageHolo: [] };
       return { ...s, chapters: next };
     });
     const ok = await illustrateChapterSet(idx, MIN_IMAGES_PER_CHAPTER, previous);
