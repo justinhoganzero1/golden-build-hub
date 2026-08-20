@@ -788,6 +788,7 @@ const StoryWriterPage = () => {
   const illustrateChapterSet = async (
     idx: number,
     count = MIN_IMAGES_PER_CHAPTER,
+    avoidBriefs?: string[],
   ): Promise<number> => {
     const ch = story.chapters[idx];
     if (!ch) return 0;
@@ -801,16 +802,65 @@ const StoryWriterPage = () => {
       if (planned.length === count) beats = planned;
       setIllustrationTeamNotes(planned);
     } catch { /* narrative beat fallback remains usable */ }
+    // Where each image belongs in the chapter, in reading order.
+    const paraCount = (ch.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
     let ok = 0;
     for (let b = 0; b < count; b++) {
+      const anchor = Math.min(paraCount, Math.round(((b + 1) / (count + 1)) * paraCount));
       const done = await generateStoryImage(
         { kind: "chapter", index: idx },
         undefined,
-        { index: b, total: count, text: beats[b] },
+        { index: b, total: count, text: beats[b], anchor },
+        avoidBriefs,
       );
       if (done) ok++;
     }
     return ok;
+  };
+
+  /**
+   * Nuke every illustration in a chapter and draw a completely new set.
+   * The old shot list is handed back to the artist as a "do not repeat" brief,
+   * and a continuity agent verifies the new set is genuinely different.
+   */
+  const wipeAndReIllustrateChapter = async (idx: number, silent = false): Promise<number> => {
+    const ch = story.chapters[idx];
+    if (!ch) return 0;
+    const previous = [...illustrationTeamNotes];
+    setStory(s => {
+      const next = [...s.chapters];
+      next[idx] = { ...next[idx], images: [], imageAnchors: [] };
+      return { ...s, chapters: next };
+    });
+    const ok = await illustrateChapterSet(idx, MIN_IMAGES_PER_CHAPTER, previous);
+    if (!silent) {
+      if (ok > 0) toast.success(`Chapter re-illustrated — ${ok} brand-new image${ok === 1 ? "" : "s"} placed in position.`);
+      else toast.error("Re-illustration failed — no new images were produced.");
+    }
+    return ok;
+  };
+
+  const deleteAndReIllustrateChapter = async (idx: number) => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    if (!confirm(`Delete EVERY illustration in this chapter and draw a completely new set of ${MIN_IMAGES_PER_CHAPTER}? The new images will be different pictures — same cast, wardrobe and world.`)) return;
+    setChapterSetBusy(idx);
+    try { await wipeAndReIllustrateChapter(idx); } finally { setChapterSetBusy(null); }
+  };
+
+  const deleteAndReIllustrateBook = async () => {
+    if (imgBusy || chapterSetBusy !== null || bulkBusy) return;
+    if (!confirm(`Delete EVERY illustration in all ${story.chapters.length} chapters and re-illustrate the entire book from scratch? This can take a long while — keep this tab open.`)) return;
+    setBulkBusy(true);
+    let ok = 0;
+    try {
+      for (let i = 0; i < story.chapters.length; i++) {
+        toast.info(`Re-illustrating chapter ${i + 1}/${story.chapters.length}…`, { id: "reillustrate-all" });
+        ok += await wipeAndReIllustrateChapter(i, true);
+      }
+      toast.success(`Whole book re-illustrated — ${ok} new images placed in position.`, { id: "reillustrate-all" });
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   // Illustrate one chapter — three team-selected images placed across the chapter's beats.
@@ -917,7 +967,8 @@ const StoryWriterPage = () => {
       const next = [...s.chapters];
       const target = next[chapterIdx];
       const imgs = (target.images || []).filter((_, i) => i !== imageIdx);
-      next[chapterIdx] = { ...target, images: imgs };
+      const anchors = (target.imageAnchors || []).filter((_, i) => i !== imageIdx);
+      next[chapterIdx] = { ...target, images: imgs, imageAnchors: anchors };
       return { ...s, chapters: next };
     });
   };
@@ -2528,6 +2579,22 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                     >
                       {isBusy || chapterSetBusy === activeChapter ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                       Illustrate Chapter ({MIN_IMAGES_PER_CHAPTER} images)
+                    </button>
+                    <button
+                      onClick={() => deleteAndReIllustrateChapter(activeChapter)}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-destructive/15 border border-destructive/50 text-destructive font-semibold flex items-center gap-1 disabled:opacity-60"
+                      title="Delete every illustration in this chapter and draw a totally new set"
+                    >
+                      <X className="w-3 h-3" /> Delete + re-illustrate chapter
+                    </button>
+                    <button
+                      onClick={deleteAndReIllustrateBook}
+                      disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-destructive/25 border border-destructive text-destructive font-black flex items-center gap-1 disabled:opacity-60"
+                      title="Delete every illustration in the whole book and re-illustrate it"
+                    >
+                      {bulkBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />} Delete + re-illustrate BOOK
                     </button>
                     <button
                       onClick={() => generateStoryImage({ kind: "chapter", index: activeChapter })}
