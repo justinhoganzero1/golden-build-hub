@@ -190,15 +190,19 @@ Deno.serve(async (req) => {
       return { ok: res.ok, status: res.status, out };
     };
 
+    let usedFrom = PRIMARY_FROM;
     let result = await send(PRIMARY_FROM);
-    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) result = await send(FALLBACK_FROM);
+    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) {
+      usedFrom = FALLBACK_FROM;
+      result = await send(FALLBACK_FROM);
+    }
 
     if (!result.ok) {
       console.error(`Resend failed [${result.status}]:`, JSON.stringify(result.out));
       return json({ error: (result.out as any)?.message ?? "Email delivery failed.", status: result.status }, 502);
     }
 
-    return json({ sent: true, to: recipients[0] });
+    return json({ sent: true, to: recipients[0], sender: usedFrom });
   } catch (e) {
     return json({ error: (e as Error)?.message ?? "Unexpected error" }, 500);
   }
