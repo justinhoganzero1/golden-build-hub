@@ -139,6 +139,16 @@ Deno.serve(async (req) => {
       );
     });
 
+    // ---- REAR COVER + BACK BLURB ----
+    if (body.backImage || blurb) {
+      parts.push(
+        `<hr style="border:none;border-top:1px solid #e6e6e6;margin:40px 0" />
+         ${body.backImage ? imgTag(String(body.backImage), `${title} back cover`) : ""}
+         ${blurb ? `<div style="font-style:italic;color:#444;margin:20px 0 0">${paras(blurb)}</div>` : ""}`,
+      );
+    }
+
+
     const html = `<!doctype html><html><body style="margin:0;background:#ffffff">
       <div style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#ffffff">
         ${parts.join("")}
