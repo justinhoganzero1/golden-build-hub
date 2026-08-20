@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getThumbnailUrl } from "@/lib/thumbnail";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Ultra-light tile face for library grids.
@@ -10,6 +11,10 @@ import { getThumbnailUrl } from "@/lib/thumbnail";
  *   60 tiles costs kilobytes instead of tens of megabytes.
  * - Video tiles render a still poster instead of a <video> element — decoding
  *   dozens of video streams is the single heaviest thing a grid can do.
+ * - List queries omit the heavy `url` column, so when a row has no
+ *   `thumbnail_url` yet we lazily fetch that single row's `url` (only for the
+ *   ~20 tiles actually on screen), build a tiny preview, and write it back to
+ *   `thumbnail_url` so it never has to be computed again.
  */
 interface Props {
   src?: string | null;
@@ -17,9 +22,21 @@ interface Props {
   className?: string;
   size?: number;
   fallback?: React.ReactNode;
+  /** user_media row id — enables lazy backfill when `src` is missing. */
+  mediaId?: string | null;
+  /** only image-like rows are worth backfilling. */
+  canBackfill?: boolean;
 }
 
-const LibraryTileFace = ({ src, alt = "", className = "", size = 160, fallback = null }: Props) => {
+const LibraryTileFace = ({
+  src,
+  alt = "",
+  className = "",
+  size = 160,
+  fallback = null,
+  mediaId = null,
+  canBackfill = false,
+}: Props) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
   const [thumb, setThumb] = useState<string | null>(null);
@@ -41,14 +58,45 @@ const LibraryTileFace = ({ src, alt = "", className = "", size = 160, fallback =
 
   useEffect(() => {
     let cancelled = false;
-    if (!visible || !src) return;
-    getThumbnailUrl(src, size)
-      .then((u) => { if (!cancelled) setThumb(u || null); })
-      .catch(() => { if (!cancelled) setFailed(true); });
-    return () => { cancelled = true; };
-  }, [visible, src, size]);
+    if (!visible) return;
 
-  if (!src || failed) return <>{fallback}</>;
+    const run = async () => {
+      let source = src || null;
+
+      // No thumbnail stored on the row — pull the full media URL for this one
+      // row on demand (the list query deliberately omits it).
+      if (!source && mediaId && canBackfill) {
+        try {
+          const { data } = await supabase
+            .from("user_media")
+            .select("url")
+            .eq("id", mediaId)
+            .maybeSingle();
+          source = (data as any)?.url || null;
+        } catch { /* ignore — falls back below */ }
+      }
+      if (!source) { if (!cancelled) setFailed(true); return; }
+
+      let out: string | null = null;
+      try {
+        out = await getThumbnailUrl(source, size);
+      } catch { /* handled below */ }
+      if (cancelled) return;
+      if (!out) { setFailed(true); return; }
+      setThumb(out);
+
+      // Persist a genuinely small preview so future page loads are instant.
+      if (!src && mediaId && canBackfill && out.startsWith("data:image/") && out.length < 60_000) {
+        supabase.from("user_media").update({ thumbnail_url: out }).eq("id", mediaId).then(() => {});
+      }
+    };
+
+    run();
+    return () => { cancelled = true; };
+  }, [visible, src, size, mediaId, canBackfill]);
+
+  if ((!src && !(mediaId && canBackfill)) || failed) return <>{fallback}</>;
+
 
   return (
     <div ref={ref} className={`w-full h-full ${className}`}>
