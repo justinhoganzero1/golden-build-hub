@@ -2862,6 +2862,13 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           </p>
         </div>
 
+        <SendToKindleDialog
+          open={kindleOpen}
+          onOpenChange={setKindleOpen}
+          title={story.title || "Untitled Story"}
+          buildEpub={() => exportEpub({ returnFile: true })}
+        />
+
         <StoryShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
