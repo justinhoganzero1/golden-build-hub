@@ -25,6 +25,7 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import { SignedImage } from "@/components/SignedMedia";
 import IllustrationPlate from "@/components/story/IllustrationPlate";
 import CoverStudio from "@/components/story/CoverStudio";
+import { Button } from "@/components/ui/button";
 
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { sendStoryToMovieMaker } from "@/lib/movieHandoff";
@@ -583,6 +584,53 @@ const StoryWriterPage = () => {
   };
 
   /**
+   * Place existing artwork without generating anything or calling a paid AI.
+   * The scorer favours visually descriptive/action-heavy paragraphs near evenly
+   * distributed story beats, so plates follow relevant prose instead of piling
+   * up at the end of a chapter.
+   */
+  const placeExistingIllustrations = () => {
+    let placed = 0;
+    setStory(current => ({
+      ...current,
+      chapters: current.chapters.map(chapter => {
+        const images = chapter.images || [];
+        const paragraphs = (chapter.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+        if (!images.length || !paragraphs.length) return chapter;
+
+        const used = new Set<number>();
+        const anchors = images.map((_, imageIndex) => {
+          const target = Math.max(1, Math.round(((imageIndex + 1) / (images.length + 1)) * paragraphs.length));
+          const radius = Math.max(2, Math.ceil(paragraphs.length / Math.max(4, images.length * 2)));
+          let bestBoundary = target;
+          let bestScore = Number.NEGATIVE_INFINITY;
+
+          for (let boundary = Math.max(1, target - radius); boundary <= Math.min(paragraphs.length, target + radius); boundary++) {
+            if (used.has(boundary)) continue;
+            const paragraph = paragraphs[boundary - 1];
+            const visualWords = paragraph.match(/\b(saw|looked|stood|walked|ran|turned|opened|entered|street|room|building|car|light|dark|fire|explosion|blood|face|eyes|door|window|night|sky|crowd|weapon|gun|smoke|shadow|wearing|dressed)\b/gi)?.length || 0;
+            const dialoguePenalty = (paragraph.match(/[“”"]/g)?.length || 0) > 4 ? 2 : 0;
+            const distancePenalty = Math.abs(boundary - target) * 0.35;
+            const score = visualWords * 2 + Math.min(paragraph.length / 180, 3) - dialoguePenalty - distancePenalty;
+            if (score > bestScore) {
+              bestScore = score;
+              bestBoundary = boundary;
+            }
+          }
+
+          used.add(bestBoundary);
+          placed += 1;
+          return bestBoundary;
+        }).sort((a, b) => a - b);
+
+        return { ...chapter, imageAnchors: anchors };
+      }),
+    }));
+    setReadMode(true);
+    toast.success(`${placed} existing illustration${placed === 1 ? "" : "s"} placed inside the story — no images generated and no AI charge.`);
+  };
+
+  /**
    * A compressed read of the ENTIRE finished manuscript — this is what the
    * Cover Studio hands the artist AI so the covers are baked from the whole
    * book rather than just the premise.
@@ -794,7 +842,7 @@ const StoryWriterPage = () => {
    * places in the chapter (and hand off cleanly as scenes to Movie Maker).
    */
   const [chapterSetBusy, setChapterSetBusy] = useState<number | null>(null);
-  const [readMode, setReadMode] = useState(false);
+  const [readMode, setReadMode] = useState(true);
   const [illustrationTeamNotes, setIllustrationTeamNotes] = useState<string[]>([]);
 
   const illustrateChapterSet = async (
@@ -2485,6 +2533,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 Chapters ({story.chapters.length})
               </p>
               <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  onClick={placeExistingIllustrations}
+                  disabled={!story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
+                  className="h-9 px-4 font-black italic"
+                  title="Places existing images inside the story without generating or charging for new images"
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Magical AI Place Images — FREE
+                </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
                   disabled={regenBusy || bulkBusy || !!imgBusy || chapterSetBusy !== null}
@@ -2575,7 +2633,10 @@ Rules: the three title-gradient colours must read as one confident, high-contras
               </button>
             )}
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-[11px] text-muted-foreground">
+              {readMode ? "Illustrations are shown at their saved paragraph positions." : "Edit mode hides placed plates while you type."}
+            </p>
             <button
               onClick={() => setReadMode(r => !r)}
               className={`text-[11px] px-3 py-1 rounded-full font-bold border ${readMode ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground"}`}
@@ -2644,7 +2705,9 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           )}
 
 
-          {/* Chapter illustrations — max 2 per chapter */}
+          {/* Illustration controls. In illustrated reading mode the plates are
+              already rendered inside the prose, so never duplicate them in a
+              misleading stack below the chapter. */}
           {(() => {
             const ch = story.chapters[activeChapter];
             const imgs = ch?.images || [];
@@ -2701,7 +2764,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                   </div>
 
                 </div>
-                {imgs.length > 0 ? (
+                {!readMode && imgs.length > 0 ? (
                   <div>
                     {imgs.map((src, i) => (
                       <IllustrationPlate
@@ -2718,9 +2781,13 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                       />
                     ))}
                   </div>
-                ) : (
+                ) : imgs.length === 0 ? (
                   <p className="text-[11px] text-muted-foreground">
                     Every illustration is a full-page portrait plate — one single scene per page, never split — with rich foreground/midground/background depth. Tap any plate to view it full screen. In the final five chapters one plate is rendered as a holographic showcase.
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-semibold text-primary">
+                    All {imgs.length} illustrations are placed inside the chapter above. Switch to Edit text only when you need the raw illustration manager.
                   </p>
                 )}
                 {illustrationTeamNotes.length > 0 && chapterSetBusy === activeChapter && (
