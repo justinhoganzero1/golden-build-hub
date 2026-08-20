@@ -56,7 +56,10 @@ Deno.serve(async (req) => {
       author?: string;
       genre?: string;
       blurb?: string;
+      dedication?: string;
+      prelude?: string;
       coverImage?: string;
+      backImage?: string;
       chapters?: Chapter[];
       attachment?: { filename?: string; contentBase64?: string };
     } | null;
@@ -73,6 +76,8 @@ Deno.serve(async (req) => {
     const author = String(body.author ?? "").slice(0, 120);
     const genre = String(body.genre ?? "").slice(0, 80);
     const blurb = String(body.blurb ?? "").slice(0, 2000);
+    const dedication = String(body.dedication ?? "").slice(0, 2000);
+    const prelude = String(body.prelude ?? "").slice(0, 20000);
     const note = String(body.message ?? "").slice(0, 4000);
     const chapters = Array.isArray(body.chapters) ? body.chapters.slice(0, 200) : [];
     if (!chapters.some((c) => (c.content ?? "").trim())) {
@@ -80,16 +85,30 @@ Deno.serve(async (req) => {
     }
 
     const parts: string[] = [];
+    // ---- FRONT COVER ----
     parts.push(
       `<div style="text-align:center;padding:8px 0 20px">
-        ${body.coverImage ? imgTag(String(body.coverImage), `${title} cover`) : ""}
+        ${body.coverImage ? imgTag(String(body.coverImage), `${title} front cover`) : ""}
         <h1 style="font-size:30px;margin:16px 0 4px;color:#111">${esc(title)}</h1>
         ${author ? `<p style="margin:0;font-size:15px;color:#555">by ${esc(author)}</p>` : ""}
         ${genre ? `<p style="margin:6px 0 0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#8a6a1f">${esc(genre)}</p>` : ""}
       </div>`,
     );
     if (note) parts.push(`<div style="border-left:3px solid #d4af37;padding:4px 14px;margin:0 0 24px">${paras(note)}</div>`);
-    if (blurb) parts.push(`<div style="font-style:italic;color:#444;margin:0 0 28px">${paras(blurb)}</div>`);
+    // ---- DEDICATION ----
+    if (dedication) {
+      parts.push(
+        `<div style="text-align:center;font-style:italic;color:#444;margin:0 0 28px">${paras(dedication)}</div>`,
+      );
+    }
+    // ---- PRELUDE ----
+    if (prelude) {
+      parts.push(
+        `<hr style="border:none;border-top:1px solid #e6e6e6;margin:34px 0" />
+         <h2 style="font-size:22px;margin:0 0 14px;color:#111">Prelude</h2>
+         ${paras(prelude)}`,
+      );
+    }
 
     chapters.forEach((c, i) => {
       const text = (c.content ?? "").trim();
@@ -119,6 +138,16 @@ Deno.serve(async (req) => {
          ${html}`,
       );
     });
+
+    // ---- REAR COVER + BACK BLURB ----
+    if (body.backImage || blurb) {
+      parts.push(
+        `<hr style="border:none;border-top:1px solid #e6e6e6;margin:40px 0" />
+         ${body.backImage ? imgTag(String(body.backImage), `${title} back cover`) : ""}
+         ${blurb ? `<div style="font-style:italic;color:#444;margin:20px 0 0">${paras(blurb)}</div>` : ""}`,
+      );
+    }
+
 
     const html = `<!doctype html><html><body style="margin:0;background:#ffffff">
       <div style="max-width:640px;margin:0 auto;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;background:#ffffff">

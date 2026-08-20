@@ -25,7 +25,10 @@ export interface ShareStory {
   genre?: string;
   premise?: string;
   blurb?: string;
+  dedication?: string;
+  prelude?: string;
   coverImage?: string;
+  backImage?: string;
   chapters?: { title: string; content: string; images?: string[]; imageAnchors?: number[] }[];
   publishedUrl?: string;
 }
@@ -396,7 +399,10 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
           author: story.author,
           genre: story.genre,
           blurb: story.blurb,
+          dedication: story.dedication,
+          prelude: story.prelude,
           coverImage: story.coverImage,
+          backImage: story.backImage,
           chapters: (story.chapters || []).map(c => ({ title: c.title, content: c.content, images: c.images, imageAnchors: c.imageAnchors })),
           attachment,
         },
