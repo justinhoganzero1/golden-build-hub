@@ -95,7 +95,12 @@ ${chapters}
   return new Blob([html], { type: "text/html;charset=utf-8" });
 };
 
-/** EPUB3 — accepted by Kindle/KDP, Kobo, Apple Books, Google Play Books. */
+/**
+ * EPUB3 — validated against Amazon KDP / Send to Kindle requirements.
+ * Includes: Kindle-safe CSS, title page, copyright page, EPUB3 nav + landmarks,
+ * legacy NCX (Kindle's converter still reads it), cover-image properties,
+ * reflowable metadata and a guide element.
+ */
 export const buildEpubBlob = async (story: StoryFileSource): Promise<Blob> => {
   const zip = new JSZip();
   zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
@@ -108,28 +113,73 @@ export const buildEpubBlob = async (story: StoryFileSource): Promise<Blob> => {
   );
 
   const oebps = zip.folder("OEBPS")!;
-  const bookId = `urn:uuid:${crypto.randomUUID()}`;
+  const uuid = crypto.randomUUID();
+  const bookId = `urn:uuid:${uuid}`;
   const title = xmlEscape(story.title || "Untitled");
   const author = xmlEscape(story.author || "Anonymous");
   const now = new Date().toISOString().split(".")[0] + "Z";
+  const year = new Date().getFullYear();
+
+  // Kindle-safe stylesheet: no fixed pixel fonts, no absolute positioning.
+  oebps.file(
+    "style.css",
+    `body{margin:0;padding:0;font-family:serif;line-height:1.5;text-align:left;}
+h1{font-size:1.6em;margin:1em 0 .6em;text-align:center;page-break-before:always;}
+h1.first{page-break-before:avoid;}
+p{margin:0;text-indent:1.2em;}
+p.first{text-indent:0;margin-top:.6em;}
+p.center{text-indent:0;text-align:center;margin:.5em 0;}
+.titlepage{text-align:center;margin-top:20%;}
+.titlepage h1{font-size:2em;page-break-before:avoid;}
+.titlepage .author{font-size:1.1em;font-style:italic;margin-top:1em;}
+.copyright{font-size:.85em;text-align:center;margin-top:12%;}
+img{max-width:100%;height:auto;}
+figure{margin:1.2em 0;text-align:center;page-break-inside:avoid;}`,
+  );
 
   let coverManifest = "";
   let coverSpine = "";
   let coverMeta = "";
+  let coverGuide = "";
   const cover = story.coverImage ? dataUrlToBytes(story.coverImage) : null;
   if (cover) {
     oebps.file(`cover.${cover.ext}`, cover.bytes);
     oebps.file(
       "cover.xhtml",
       `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Cover</title></head>
-<body><div style="text-align:center;"><img src="cover.${cover.ext}" alt="Cover" style="max-width:100%;"/></div></body></html>`,
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Cover</title>
+<link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body epub:type="cover"><div style="text-align:center;"><img src="cover.${cover.ext}" alt="${title} cover"/></div></body></html>`,
     );
     coverManifest = `<item id="cover-image" href="cover.${cover.ext}" media-type="${cover.mime}" properties="cover-image"/>
 <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
     coverSpine = `<itemref idref="cover" linear="yes"/>`;
     coverMeta = `<meta name="cover" content="cover-image"/>`;
+    coverGuide = `<reference type="cover" title="Cover" href="cover.xhtml"/>`;
   }
+
+  // Front matter — KDP expects a title page and a copyright page.
+  oebps.file(
+    "titlepage.xhtml",
+    `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>${title}</title>
+<link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body epub:type="titlepage"><div class="titlepage"><h1>${title}</h1>
+<p class="author">${author}</p></div></body></html>`,
+  );
+  oebps.file(
+    "copyright.xhtml",
+    `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Copyright</title>
+<link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body epub:type="copyright-page"><div class="copyright">
+<p class="center">${title}</p>
+<p class="center">Copyright &#169; ${year} ${author}</p>
+<p class="center">All rights reserved.</p>
+<p class="center">This is a work of fiction. Names, characters, places and incidents are the product of the author's imagination or are used fictitiously.</p>
+<p class="center">Produced with AI assistance and reviewed by the author. Created with Oracle Lunar.</p>
+</div></body></html>`,
+  );
 
   const chapters = nonEmptyChapters(story);
   const imageManifest: string[] = [];
@@ -142,11 +192,11 @@ export const buildEpubBlob = async (story: StoryFileSource): Promise<Blob> => {
       const iname = `img-${i + 1}-${k + 1}.${parsed.ext}`;
       oebps.file(iname, parsed.bytes);
       imageManifest.push(`<item id="img${i + 1}_${k + 1}" href="${iname}" media-type="${parsed.mime}"/>`);
-      imgTags.push(`<div style="text-align:center;margin:1.5em 0;"><img src="${iname}" alt="Illustration" style="max-width:100%;"/></div>`);
+      imgTags.push(`<figure><img src="${iname}" alt="Illustration"/></figure>`);
     });
     const paras = c.content
       .split(/\n{2,}/)
-      .map((p) => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`);
+      .map((p, pi) => `<p${pi === 0 ? ' class="first"' : ""}>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`);
     // Spread illustrations evenly through the chapter.
     const body: string[] = [];
     const every = imgTags.length ? Math.max(1, Math.floor(paras.length / (imgTags.length + 1))) : 0;
@@ -159,8 +209,9 @@ export const buildEpubBlob = async (story: StoryFileSource): Promise<Blob> => {
     oebps.file(
       fname,
       `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${xmlEscape(c.title || "Chapter")}</title></head>
-<body><h1>${xmlEscape(c.title || "Chapter")}</h1>${body.join("\n")}</body></html>`,
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>${xmlEscape(c.title || "Chapter")}</title>
+<link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body epub:type="bodymatter"><h1${i === 0 ? ' class="first"' : ""}>${xmlEscape(c.title || "Chapter")}</h1>${body.join("\n")}</body></html>`,
     );
     return { fname, title: c.title || `Chapter ${i + 1}`, id: `ch${i + 1}` };
   });
@@ -175,39 +226,91 @@ export const buildEpubBlob = async (story: StoryFileSource): Promise<Blob> => {
     "nav.xhtml",
     `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
-<head><title>Table of Contents</title></head>
-<body><nav epub:type="toc"><h1>Contents</h1><ol>${navPoints}</ol></nav></body></html>`,
+<head><title>Table of Contents</title><link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body><nav epub:type="toc" id="toc"><h1>Contents</h1><ol>${navPoints}</ol></nav>
+<nav epub:type="landmarks" hidden="hidden"><ol>
+${cover ? `<li><a epub:type="cover" href="cover.xhtml">Cover</a></li>` : ""}
+<li><a epub:type="titlepage" href="titlepage.xhtml">Title Page</a></li>
+<li><a epub:type="bodymatter" href="${chapterFiles[0]?.fname || "titlepage.xhtml"}">Start Reading</a></li>
+</ol></nav></body></html>`,
+  );
+
+  // Legacy NCX — Kindle's KindleGen/Kindle Previewer path still prefers it.
+  const ncxPoints = [
+    { src: "titlepage.xhtml", label: "Title Page" },
+    ...chapterFiles.map((c) => ({ src: c.fname, label: c.title })),
+  ]
+    .map(
+      (p, i) =>
+        `<navPoint id="np${i + 1}" playOrder="${i + 1}"><navLabel><text>${xmlEscape(p.label)}</text></navLabel><content src="${p.src}"/></navPoint>`,
+    )
+    .join("\n");
+  oebps.file(
+    "toc.ncx",
+    `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${bookId}"/>
+    <meta name="dtb:depth" content="1"/>
+    <meta name="dtb:totalPageCount" content="0"/>
+    <meta name="dtb:maxPageNumber" content="0"/>
+  </head>
+  <docTitle><text>${title}</text></docTitle>
+  <docAuthor><text>${author}</text></docAuthor>
+  <navMap>${ncxPoints}</navMap>
+</ncx>`,
   );
 
   oebps.file(
     "content.opf",
     `<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="en">
-  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="en" prefix="rendition: http://www.idpf.org/vocab/rendition/#">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
     <dc:identifier id="bookid">${bookId}</dc:identifier>
     <dc:title>${title}</dc:title>
-    <dc:creator>${author}</dc:creator>
+    <dc:creator id="creator">${author}</dc:creator>
+    <meta refines="#creator" property="role" scheme="marc:relators">aut</meta>
+    <meta refines="#creator" property="file-as">${author}</meta>
     <dc:language>en</dc:language>
+    <dc:date>${now}</dc:date>
+    <dc:publisher>${author}</dc:publisher>
+    <dc:rights>Copyright &#169; ${year} ${author}. All rights reserved.</dc:rights>
     <dc:description>${xmlEscape(story.blurb || story.premise || "")}</dc:description>
     <dc:subject>${xmlEscape(story.genre || "")}</dc:subject>
     <meta property="dcterms:modified">${now}</meta>
+    <meta property="rendition:layout">reflowable</meta>
+    <meta property="rendition:spread">auto</meta>
     ${coverMeta}
   </metadata>
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="css" href="style.css" media-type="text/css"/>
+    <item id="titlepage" href="titlepage.xhtml" media-type="application/xhtml+xml"/>
+    <item id="copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
     ${coverManifest}
     ${imageManifest.join("\n")}
     ${manifestItems}
   </manifest>
-  <spine>
+  <spine toc="ncx" page-progression-direction="ltr">
     ${coverSpine}
+    <itemref idref="titlepage" linear="yes"/>
+    <itemref idref="copyright" linear="yes"/>
+    <itemref idref="nav" linear="yes"/>
     ${spineItems}
   </spine>
+  <guide>
+    ${coverGuide}
+    <reference type="title-page" title="Title Page" href="titlepage.xhtml"/>
+    <reference type="toc" title="Contents" href="nav.xhtml"/>
+    <reference type="text" title="Start Reading" href="${chapterFiles[0]?.fname || "titlepage.xhtml"}"/>
+  </guide>
 </package>`,
   );
 
   return zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
 };
+
 
 /** PDF — the safest "everyone can open it" format. */
 export const buildPdfBlob = async (story: StoryFileSource): Promise<Blob> => {
