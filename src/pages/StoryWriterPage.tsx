@@ -45,8 +45,10 @@ import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
 interface StoryChapter {
   title: string;
   content: string;
-  /** Up to 2 AI-generated illustrations per chapter (data URLs). */
+  /** Up to 6 AI-generated illustrations per chapter (data URLs / storage URLs). */
   images?: string[];
+  /** Paragraph index each illustration should sit AFTER, parallel to `images`. */
+  imageAnchors?: number[];
 }
 interface StoryCharacter {
   id: string;
@@ -533,6 +535,16 @@ const StoryWriterPage = () => {
   const CINEMATIC_4K = "Render as an extreme-quality 4K cinematic 3D frame: film-grade depth, layered lighting, realistic subsurface scattering, tangible textures, believable physics, shot as if it were a still from a big-budget motion picture directly depicting this story's scene.";
 
 
+  /**
+   * Non-negotiable continuity + world rules applied to every interior
+   * illustration so cast, wardrobe, hair, sets and signage stay book-accurate.
+   */
+  const CONTINUITY_BIBLE =
+    "CHARACTER & WORLD CONTINUITY (mandatory): every recurring character must match the book exactly — same face, age, ethnicity, build, skin tone, eye colour, hair length/colour/style, facial hair (or clean-shaven if the book says so), tattoos, scars and injuries at this point in the story. Wardrobe must be the exact outfit described in this chapter: same garments, colours, materials, jackets, boots, hats, jewellery, weapons and carried props — never invent new clothing. Locations, buildings, streets, vehicles, interiors, weather, time of day and special effects must match the described scene precisely and stay consistent with earlier chapters. " +
+    "SIGNAGE: avoid text wherever possible; if a sign, badge, number plate or shopfront is unavoidable it must be real, correctly spelled English with no gibberish, no invented glyphs and no misspellings. " +
+    "MORAL READ: antagonists look genuinely menacing — dark, dingy, grimy surroundings, cold hard lighting, harsh shadow, cruel worn faces; protagonists read as heroic — cleaner light, warmth on the face, upright confident posture, clear readable eyes. " +
+    "QUALITY: 4K ultra-high-definition, real-world photographic realism as if shot on set, no CGI plastic sheen, no cartoon drift unless the chosen style demands it.";
+
   /** Minimum illustrations produced whenever a chapter is illustrated. */
   const MIN_IMAGES_PER_CHAPTER = 3;
 
@@ -589,7 +601,8 @@ const StoryWriterPage = () => {
   const generateStoryImage = async (
     slot: "cover" | "back" | { kind: "chapter"; index: number },
     customPrompt?: string,
-    beat?: { index: number; total: number; text: string },
+    beat?: { index: number; total: number; text: string; anchor?: number },
+    avoidBriefs?: string[],
   ): Promise<boolean> => {
 
 
@@ -650,7 +663,10 @@ const StoryWriterPage = () => {
       const chapterFormat = beat?.index === 2
         ? "This selected image may be a seamless cinematic mosaic of complementary story moments, but must remain one coherent artwork with no panels, borders or lettering."
         : SINGLE_PANEL;
-      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      basePrompt = `Interior illustration for "${ch.title}" in the ${story.genre} novel "${story.title}", in exactly the same visual world as the book's covers. ${beatLine}Camera/composition for THIS image: ${shot}. Depict: ${snippet || story.premise}. COMPOSITION QA: do not crop heads, hair, hands, feet or important props; keep every main subject fully inside frame with 12% safe space; show enough environment to understand the scene; use correct anatomy and consistent cast. ${HEAD_SAFE} ${CONTINUITY_BIBLE} ${chapterFormat} ${ART_BIBLE} ${REALISM}`;
+      if (avoidBriefs?.length) {
+        basePrompt += ` FRESH-ART RULE: this book previously had illustrations of these exact moments — ${avoidBriefs.slice(0, 8).map(b => `"${String(b).slice(0, 140)}"`).join("; ")}. Your image must be a demonstrably DIFFERENT picture: different moment, different camera angle, different staging, different lighting and different composition from all of them, while keeping the same cast, wardrobe and world.`;
+      }
     }
 
     if (userExtra) basePrompt += ` User direction: ${userExtra}.`;
@@ -720,12 +736,21 @@ const StoryWriterPage = () => {
         const next = [...s.chapters];
         const target = next[slot.index];
         const existing = target.images || [];
+        const anchors = target.imageAnchors || [];
+        // Where this picture belongs in the chapter (paragraph index it follows).
+        const paraCount = (target.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
+        const anchor =
+          typeof beat?.anchor === "number"
+            ? beat.anchor
+            : beat
+              ? Math.min(paraCount, Math.round(((beat.index + 1) / (beat.total + 1)) * paraCount))
+              : paraCount;
         const MAX_PER_CHAPTER = 6;
         if (existing.length >= MAX_PER_CHAPTER) {
           toast.info(`Max ${MAX_PER_CHAPTER} images per chapter — replacing the oldest.`);
-          next[slot.index] = { ...target, images: [...existing.slice(1), url] };
+          next[slot.index] = { ...target, images: [...existing.slice(1), url], imageAnchors: [...anchors.slice(1), anchor] };
         } else {
-          next[slot.index] = { ...target, images: [...existing, url] };
+          next[slot.index] = { ...target, images: [...existing, url], imageAnchors: [...anchors, anchor] };
         }
         return { ...s, chapters: next };
       });
