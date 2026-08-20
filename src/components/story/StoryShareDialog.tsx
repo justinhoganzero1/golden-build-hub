@@ -611,7 +611,7 @@ const StoryShareDialog = ({ open, onOpenChange, story }: Props) => {
               />
               <Button onClick={() => void emailWholeStory()} disabled={emailBusy} className="sm:w-40">
                 {emailBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
-                {emailBusy ? "Sending…" : "Send"}
+                {emailBusy ? (emailProgress || "Sending…") : "Send"}
               </Button>
             </div>
             <p className="text-[11px] text-muted-foreground">
