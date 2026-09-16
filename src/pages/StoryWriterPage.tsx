@@ -1953,6 +1953,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
   <manifest>
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
     ${coverManifest}
+    ${imageManifest.join("\n")}
     ${manifestItems}
   </manifest>
   <spine>
