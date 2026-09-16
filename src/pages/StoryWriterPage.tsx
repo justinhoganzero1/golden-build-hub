@@ -1825,32 +1825,53 @@ Rules: the three title-gradient colours must read as one confident, high-contras
       const author = xmlEscape(authorName());
       const now = new Date().toISOString().split(".")[0] + "Z";
 
+      // Turn any illustration reference (data URL, public or private storage URL)
+      // into real bytes so the EPUB carries the artwork itself.
+      const imageBytes = async (src?: string): Promise<{ bytes: Uint8Array; mime: string; ext: string } | null> => {
+        if (!src) return null;
+        try {
+          const m = src.match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
+          if (m) {
+            const mime = m[1];
+            const cleaned = await stripImageMetadata(src, mime === "image/jpeg" ? "image/jpeg" : "image/png");
+            let bytes = cleaned;
+            if (!bytes) {
+              const bin = atob(m[2]);
+              bytes = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            }
+            return { bytes, mime, ext: mime.split("/")[1].replace("jpeg", "jpg") };
+          }
+          if (!/^https?:\/\//i.test(src)) return null;
+          const url = await resolveStorageUrl(src, 3600).catch(() => src);
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const buf = new Uint8Array(await res.arrayBuffer());
+          const mime = res.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+          if (!mime.startsWith("image/")) return null;
+          return { bytes: buf, mime, ext: mime.split("/")[1].replace("jpeg", "jpg") };
+        } catch {
+          return null;
+        }
+      };
+
+      const imageManifest: string[] = [];
+
       // Cover image (optional)
       let coverManifest = "";
       let coverSpine = "";
       let coverMeta = "";
-      if (story.coverImage?.startsWith("data:image/")) {
-        const m = story.coverImage.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (m) {
-          const ext = m[1].split("/")[1].replace("jpeg", "jpg");
-          // Privacy-only metadata hygiene: re-encode the cover so EXIF/GPS/device
-          // identifiers are dropped. Provenance stays in PROVENANCE.txt.
-          let bytes = await stripImageMetadata(story.coverImage, m[1] === "image/jpeg" ? "image/jpeg" : "image/png");
-          if (!bytes) {
-            const bin = atob(m[2]);
-            bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-          }
-          oebps.file(`cover.${ext}`, bytes);
-          oebps.file("cover.xhtml",
-            `<?xml version="1.0" encoding="UTF-8"?>
+      const coverImg = await imageBytes(story.coverImage);
+      if (coverImg) {
+        oebps.file(`cover.${coverImg.ext}`, coverImg.bytes);
+        oebps.file("cover.xhtml",
+          `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>Cover</title></head>
-<body><div style="text-align:center;"><img src="cover.${ext}" alt="Cover" style="max-width:100%;"/></div></body></html>`);
-          coverManifest = `<item id="cover-image" href="cover.${ext}" media-type="${m[1]}" properties="cover-image"/>
+<body><div style="text-align:center;margin:0;"><img src="cover.${coverImg.ext}" alt="Cover" style="max-width:100%;"/></div></body></html>`);
+        coverManifest = `<item id="cover-image" href="cover.${coverImg.ext}" media-type="${coverImg.mime}" properties="cover-image"/>
 <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>`;
-          coverSpine = `<itemref idref="cover" linear="yes"/>`;
-          coverMeta = `<meta name="cover" content="cover-image"/>`;
-        }
+        coverSpine = `<itemref idref="cover" linear="yes"/>`;
+        coverMeta = `<meta name="cover" content="cover-image"/>`;
       }
 
       // Optional front matter — dedication and prelude (only if the author wrote them)
@@ -1869,16 +1890,41 @@ Rules: the three title-gradient colours must read as one confident, high-contras
       addFront("dedication", "Dedication", story.dedication || "");
       addFront("prelude", "Prelude", story.prelude || "");
 
-      // Chapter XHTMLs
-      const chapterFiles = story.chapters.map((c, i) => {
+      // Chapter XHTMLs — full-page illustrations placed at their anchors
+      const chapterFiles = await Promise.all(story.chapters.map(async (c, i) => {
         const fname = `chapter-${String(i + 1).padStart(3, "0")}.xhtml`;
-        const paras = c.content.split(/\n{2,}/).map(p => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`).join("\n");
+        const paras = c.content.split(/\n{2,}/).map(p => `<p>${xmlEscape(p).replace(/\n/g, "<br/>")}</p>`);
+
+        const plates: { tag: string; at: number }[] = [];
+        const imgs = c.images || [];
+        for (let k = 0; k < imgs.length; k++) {
+          const parsed = await imageBytes(imgs[k]);
+          if (!parsed) continue;
+          const iname = `img-${i + 1}-${k + 1}.${parsed.ext}`;
+          oebps.file(iname, parsed.bytes);
+          imageManifest.push(`<item id="img${i + 1}_${k + 1}" href="${iname}" media-type="${parsed.mime}"/>`);
+          const anchor = c.imageAnchors?.[k];
+          plates.push({
+            tag: `<div style="page-break-before:always;page-break-after:always;text-align:center;"><img src="${iname}" alt="Illustration" style="max-width:100%;max-height:95%;"/></div>`,
+            at: Math.max(0, Math.min(paras.length, typeof anchor === "number" ? anchor : Math.round(((k + 1) / (imgs.length + 1)) * paras.length))),
+          });
+        }
+        plates.sort((a, b) => a.at - b.at);
+
+        const body: string[] = [];
+        let pi = 0;
+        for (const plate of plates) {
+          while (pi < plate.at && pi < paras.length) body.push(paras[pi++]);
+          body.push(plate.tag);
+        }
+        while (pi < paras.length) body.push(paras[pi++]);
+
         oebps.file(fname,
           `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${xmlEscape(c.title)}</title></head>
-<body><h1>${xmlEscape(c.title)}</h1>${paras}</body></html>`);
+<body><h1>${xmlEscape(c.title)}</h1>${body.join("\n")}</body></html>`);
         return { fname, title: c.title, id: `ch${i + 1}` };
-      });
+      }));
 
       const allFiles = [...frontFiles, ...chapterFiles];
       const manifestItems = allFiles.map(c => `<item id="${c.id}" href="${c.fname}" media-type="application/xhtml+xml"/>`).join("\n");
