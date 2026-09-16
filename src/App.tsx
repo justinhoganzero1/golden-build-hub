@@ -29,6 +29,7 @@ import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
 import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
+import PreviewShield from "@/components/PreviewShield";
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -295,6 +296,7 @@ const App = () => (
               <OracleControlListener />
               <AdminFlagBootstrap />
               <InteractionAuthGate />
+              <PreviewShield />
               <Suspense fallback={null}><WalletPaywallModal /></Suspense>
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 
