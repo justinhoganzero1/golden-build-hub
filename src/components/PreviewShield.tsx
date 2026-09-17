@@ -2,22 +2,27 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { usePreviewMode } from "@/hooks/usePreviewMode";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Look-but-don't-take shield for visitors browsing inside the Lovable preview.
+ * Look-but-don't-take shield for anonymous visitors browsing inside the
+ * Lovable preview.
  *
  * Preview visitors can navigate every page and see every feature, but they
  * cannot copy content out, drag/save media, print, or open devtools shortcuts.
- * The owner (admin) is never shielded — they are working on the real app.
+ * Any signed-in member — paying or free-tier — is never shielded: they have
+ * their own account and membership, so nothing is restricted for them.
+ * The owner (admin) is never shielded either.
  */
 const SHIELD_STYLE_ID = "oracle-preview-shield-style";
 
 const PreviewShield = () => {
   const isPreview = usePreviewMode();
   const { isAdmin, loading } = useIsAdmin();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (loading || isAdmin || !isPreview) return;
+    if (loading || isAdmin || user || !isPreview) return;
 
     let warned = 0;
     const warn = (msg: string) => {
@@ -88,7 +93,7 @@ const PreviewShield = () => {
       document.removeEventListener("keydown", onKeyDown, true);
       document.getElementById(SHIELD_STYLE_ID)?.remove();
     };
-  }, [isPreview, isAdmin, loading]);
+  }, [isPreview, isAdmin, loading, user]);
 
   return null;
 };
