@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -105,6 +107,19 @@ serve(async (req) => {
       const t = await resp.text();
       console.error("oracle-coder gateway error", resp.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Charge before streaming back to the client — the gateway accepted the
+    // request, so bill the estimated cost for the model used up front.
+    const rate = model === "openai/gpt-5" ? PROVIDER_RATES.lovable_ai_gpt5_per_call : PROVIDER_RATES.lovable_ai_gemini_flash_per_call;
+    try {
+      await chargeAI(auth.user.id, "oracle-coder", rate, {
+        provider: "lovable_ai",
+        model,
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("oracle-coder billing error:", billErr);
     }
 
     return new Response(resp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });

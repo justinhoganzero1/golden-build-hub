@@ -1,11 +1,11 @@
 // Centralized pricing & markup helpers.
-// RULE: every user is charged 100% of their own provider cost + a flat 10% platform markup.
+// RULE: every user is charged 100% of their own provider cost + a flat 20% platform markup.
 // No user is subsidised, no origin is exempt. Applies to Lovable AI compute and every
 // external provider (ElevenLabs, HeyGen, Runway, Replicate, Twilio, storage, bandwidth).
 //
 // Use markupCents() in any edge function that bills the user wallet.
 
-export const PLATFORM_MARKUP_PCT = 0.10;
+export const PLATFORM_MARKUP_PCT = 0.20;
 export const MIN_BILLABLE_CENTS = 1;     // never bill 0
 
 export interface MarkedUp {
@@ -15,7 +15,7 @@ export interface MarkedUp {
 }
 
 /**
- * Apply the standard +10% platform markup to a provider cost.
+ * Apply the standard +20% platform markup to a provider cost.
  * Always rounds the platform fee UP to the nearest cent so we never lose money.
  */
 export function markupCents(provider_cost_cents: number): MarkedUp {
@@ -31,7 +31,7 @@ export function markupCents(provider_cost_cents: number): MarkedUp {
 
 // ---------------- Provider rate cards (in cents) ----------------
 // These are conservative estimates — adjust as real invoices come in.
-// All values are PROVIDER cost. The +10% markup is added on top automatically.
+// All values are PROVIDER cost. The +20% markup is added on top automatically.
 export const PROVIDER_RATES = {
   // Runway image-to-video Gen-3 Turbo: ~$0.05 per second
   runway_image_to_video_per_second: 5,
