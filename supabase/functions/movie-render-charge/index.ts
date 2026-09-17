@@ -1,6 +1,6 @@
 // Movie Studio Pro — render charge gate.
 // Charges the user's wallet at:
-//   provider compute estimate + the standard 10% platform margin
+//   provider compute estimate + the standard 20% platform margin
 //   + an additional service fee that scales with duration (covers Lovable AI + storage)
 //
 // action=estimate → returns price + breakdown, no charge
@@ -32,8 +32,9 @@ interface Body {
   scene_count: number;
   hd?: boolean;
   with_captions?: boolean;
-  action: "estimate" | "charge";
+  action: "estimate" | "charge" | "refund";
   request_key?: string;
+  project_id?: string;
 }
 
 function price(b: Body) {
@@ -68,7 +69,7 @@ function price(b: Body) {
       lovable_compute_markup_cents: internal_fee,
       hd_surcharge_cents: b.hd ? HD_SURCHARGE_CENTS : 0,
       captions_surcharge_cents: b.with_captions ? CAPTION_SURCHARGE_CENTS : 0,
-      platform_markup_pct: 10,
+      platform_markup_pct: 20,
       service_markup_pct: 60,
     },
   };
@@ -109,6 +110,31 @@ Deno.serve(async (req) => {
         balance_cents: wallet?.balance_cents ?? 0,
         sufficient: (wallet?.balance_cents ?? 0) >= p.total_cents,
       });
+    }
+
+    // Refund: the render failed after money was taken. Release a hold or post a
+    // full compensating refund for the settled charge — once, keyed by request_key.
+    if (body.action === "refund") {
+      if (!body.request_key) return json({ error: "request_key required" }, 400);
+      const { data: tx } = await supabase
+        .from("billing_transactions")
+        .select("id, status, total_micros")
+        .eq("user_id", user.id)
+        .eq("request_key", body.request_key)
+        .maybeSingle();
+      if (!tx) return json({ success: true, refunded: false, reason: "no_charge" });
+      if (tx.status === "held") {
+        await supabase.rpc("billing_cancel", { _transaction_id: tx.id, _reason: "render_failed" });
+      } else if (tx.status === "settled") {
+        await supabase.rpc("billing_refund", {
+          _transaction_id: tx.id,
+          _refund_micros: tx.total_micros,
+          _reason: "render_failed",
+        });
+      } else {
+        return json({ success: true, refunded: false, reason: "already_released" });
+      }
+      return json({ success: true, refunded: true, refunded_cents: Math.round((tx.total_micros ?? 0) / 10_000) });
     }
 
     // Atomic, idempotent authorization + settlement. The request key should be

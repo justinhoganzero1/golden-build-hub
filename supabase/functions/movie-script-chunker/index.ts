@@ -3,6 +3,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { ELEVENLABS_VOICES } from "../_shared/voice-pool.ts";
 import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
+import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,6 +112,31 @@ Return JSON of shape:
     const raw = aiData.choices?.[0]?.message?.content ?? "{}";
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
+
+    // Bill the owning user's wallet only after the provider call actually
+    // succeeded. Works the same whether this was called by the user directly
+    // or internally (service role, e.g. stripe-webhook) — either way the
+    // project's own user_id is the one who pays.
+    try {
+      await chargeAI(userId, "movie-script-chunker", PROVIDER_RATES.lovable_ai_gemini_pro_per_call, {
+        provider: "lovable-ai",
+        model: "google/gemini-2.5-pro",
+        project_id,
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) {
+        await supabase.from("movie_projects").update({
+          status: "failed",
+        }).eq("id", project_id);
+        return new Response(JSON.stringify({
+          error: "insufficient_coins",
+          message: "Not enough coins. Top up your wallet to continue.",
+          needed_cents: billErr.needed_cents,
+          balance_cents: billErr.balance_cents,
+        }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      throw billErr;
+    }
 
     // 2) Lock character bible w/ auto-assigned ElevenLabs voices
     const charInserts = (parsed.characters ?? []).map((c: any, i: number) => {

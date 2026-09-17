@@ -5,6 +5,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,8 +75,9 @@ async function callAI(opts: {
   model?: string;
   reasoning?: "minimal" | "low" | "medium" | "high";
   images?: string[];
+  userId?: string;
 }): Promise<string> {
-  const { apiKey, system, user, model = MODEL_PRIMARY, reasoning = "medium", images = [] } = opts;
+  const { apiKey, system, user, model = MODEL_PRIMARY, reasoning = "medium", images = [], userId } = opts;
 
   const userContent: any =
     images.length > 0
@@ -105,7 +108,20 @@ async function callAI(opts: {
     throw new Error(`AI ${resp.status}: ${t.slice(0, 300)}`);
   }
   const data = await resp.json();
-  return data?.choices?.[0]?.message?.content ?? "";
+  const content: string = data?.choices?.[0]?.message?.content ?? "";
+
+  // Bill the user's wallet for this completed AI step only after the
+  // provider call actually succeeded. Long multi-step builds are charged
+  // incrementally, one step at a time, so a mid-build failure never bills
+  // for work that was never delivered.
+  if (userId) {
+    const rate = model.startsWith("openai/gpt-5")
+      ? PROVIDER_RATES.lovable_ai_gpt5_per_call
+      : PROVIDER_RATES.lovable_ai_gemini_flash_per_call;
+    await chargeAI(userId, "app-builder-autonomous", rate, { provider: "lovable-ai", model });
+  }
+
+  return content;
 }
 
 function extractCode(text: string): string {
@@ -176,7 +192,7 @@ serve(async (req) => {
         try {
           send("stage", { stage: "market", message: "Market recon — scanning competing apps & real user reviews…" });
           const queriesRaw = await callAI({
-            apiKey, model: MODEL_FAST, reasoning: "minimal",
+            apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "minimal",
             system: `Turn the user's app idea into EXACTLY 3 web-search queries, one per line, no numbering, no quotes:
 1) best existing apps in this category (competitors)
 2) user reviews / complaints / 1-star feedback about those apps
@@ -190,7 +206,7 @@ Each query max 12 words.`,
           const raw = results.map((r, i) => `### ${queries[i]}\n${r.summary}`).join("\n\n").slice(0, 24000);
           if (marketSources.length) {
             marketBrief = await callAI({
-              apiKey, model: MODEL_PRIMARY, reasoning: "medium",
+              apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "medium",
               system: `You are a competitive product strategist. From the raw web research, output a tight COMPETITIVE BRIEF (< 450 words, markdown bullets, no preamble):
 - Top competitors (name + what they do well)
 - TOP 8 recurring user complaints / 1-star themes (quote the pain, be specific)
@@ -212,7 +228,7 @@ Only use what is supported by the research. No invented product names.`,
         // === STAGE 1: ARCHITECT ===
         send("stage", { stage: "architect", message: "Designing app architecture & framework…" });
         const architecture = await callAI({
-          apiKey,
+          apiKey, userId: auth.user.id,
           model: MODEL_PRIMARY,
           reasoning: "high",
           system: `You are a principal software architect. The user gives ONE command; you design the WHOLE ship-ready product from it — do not ask questions, do not leave TODOs, assume and decide everything.
@@ -237,7 +253,7 @@ Keep under 600 words. Markdown bullet form.`,
         send("stage", { stage: "backend", message: "Backend agent + Design agent working in parallel…" });
         const [backend, designPlan] = await Promise.all([
           callAI({
-            apiKey,
+            apiKey, userId: auth.user.id,
             model: MODEL_PRIMARY,
             reasoning: "medium",
             system: `You are a senior backend engineer. Given the architecture, write the complete BACKEND LAYER as a self-contained <script> block intended to be embedded in a single HTML file.
@@ -252,7 +268,7 @@ Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
             user: `ARCHITECTURE:\n${architecture}`,
           }),
           callAI({
-            apiKey,
+            apiKey, userId: auth.user.id,
             model: MODEL_FAST,
             reasoning: "low",
             system: `You are a senior product designer + copywriter. From the architecture, output a tight DESIGN & COPY PLAN the frontend agent will execute. Include:
@@ -272,7 +288,7 @@ Markdown bullets, < 400 words, no preamble.`,
         // === STAGE 3: FRONTEND skeleton ===
         send("stage", { stage: "frontend", message: "Constructing frontend frame…" });
         const frontend = await callAI({
-          apiKey,
+          apiKey, userId: auth.user.id,
           model: MODEL_PRIMARY,
           reasoning: "medium",
           system: `You are a senior frontend engineer. Build a COMPLETE single-file HTML app skeleton wired to the provided backend script and following the design plan.
@@ -303,7 +319,7 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
         // === STAGE 4: FLESH OUT ===
         send("stage", { stage: "flesh", message: "Fleshing out content, copy, and interactions…" });
         const fleshed = await callAI({
-          apiKey,
+          apiKey, userId: auth.user.id,
           model: MODEL_PRIMARY,
           reasoning: "high",
           system: `You are a product designer + copywriter + senior engineer. Take the HTML and FLESH IT OUT to production quality:
@@ -325,7 +341,7 @@ Output ONLY the complete updated HTML document. No markdown fences. No commentar
         // === STAGE 4b: COPYWRITER agent — eradicate generic/placeholder copy ===
         send("stage", { stage: "copywriter", message: "Copywriter agent rewriting every placeholder into real copy…" });
         const copyPass = await callAI({
-          apiKey, model: MODEL_PRIMARY, reasoning: "medium",
+          apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "medium",
           system: `You are a senior conversion copywriter. Scan the HTML and REPLACE every weak, generic, or placeholder phrase with sharp, specific, on-brand copy that a paying customer would respect.
 ZERO TOLERANCE for: "Lorem ipsum", "Your text here", "Placeholder", "Sample", "TODO", "Coming soon" (unless the feature is genuinely roadmap), "Lipsum", "Click here", "Learn more" without context, single-word buttons that aren't action verbs, vague headlines like "Welcome to our app".
 Add: real testimonials with names + roles + cities, real-sounding company stats, concrete benefits with numbers, clear CTAs ("Start my 7-day trial", "Book a free 15-min consult"), founder note, trust line.
@@ -341,7 +357,7 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
         // === STAGE 4c: ASSETS agent — fill every missing image / icon ===
         send("stage", { stage: "assets", message: "Assets agent wiring real images, icons, and OG art…" });
         const assetPass = await callAI({
-          apiKey, model: MODEL_FAST, reasoning: "low",
+          apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "low",
           system: `You are an asset director. Scan the HTML for ANY <img> with empty/placeholder/broken src, missing alt, missing favicon, missing og:image, missing apple-touch-icon, or empty avatar circles.
 Replace with real working URLs from these CDNs ONLY (allow-listed):
 - https://images.unsplash.com/...?auto=format&fit=crop&w=...&q=80  (use real Unsplash photo IDs you know)
@@ -360,7 +376,7 @@ Preserve all other markup, scripts, and IDs. Output ONLY the complete HTML docum
         // === STAGE 4d: MARKETING agent — Play Store listing baked in ===
         send("stage", { stage: "marketing", message: "Marketing agent generating Play Store listing + share assets…" });
         const marketing = await callAI({
-          apiKey, model: MODEL_FAST, reasoning: "low",
+          apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "low",
           system: `You are an ASO/Play Store specialist. From the HTML, output a single JSON object with these exact keys (no preamble):
 {"title":"<≤30 chars>","short_description":"<≤80 chars>","full_description":"<≤4000 chars, persuasive, with bullet feature list>","keywords":["..."],"category":"<Play category>","content_rating":"<Everyone|Teen|Mature 17+>","price_tier":"<free|$0.99|$2.99|$4.99|$9.99|subscription>","privacy_summary":"<2 sentences>","support_email":"support@example.com"}
 Output ONLY valid JSON. No markdown.`,
@@ -380,7 +396,7 @@ Output ONLY valid JSON. No markdown.`,
         for (let attempt = 1; attempt <= MAX_FIX_LOOPS; attempt++) {
           send("stage", { stage: "smoke", message: `Smoke testing (pass ${attempt}/${MAX_FIX_LOOPS})…` });
           const report = await callAI({
-            apiKey,
+            apiKey, userId: auth.user.id,
             model: MODEL_FAST,
             reasoning: "medium",
             system: `You are a strict QA engineer. Statically analyze the provided HTML for runtime/render bugs. Check:
@@ -418,7 +434,7 @@ FAIL
             send("stage", { stage: "research", message: "Searching the web for solutions…" });
             // Ask the fast model to turn the QA report into a concise search query.
             const queryRaw = await callAI({
-              apiKey, model: MODEL_FAST, reasoning: "minimal",
+              apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "minimal",
               system: `Turn this QA bug report into ONE Google search query (max 12 words) that would find a fix or a library that solves it. Output ONLY the query, no quotes, no preamble.`,
               user: report.slice(0, 2000),
             });
@@ -441,7 +457,7 @@ FAIL
           // FIX (with research + permission to add safe libraries via CDN)
           send("stage", { stage: "fix", message: `Applying fixes (pass ${attempt})…` });
           const fixed = await callAI({
-            apiKey,
+            apiKey, userId: auth.user.id,
             model: MODEL_PRIMARY,
             reasoning: "high",
             system: `You are a senior engineer fixing a production single-file HTML app.
@@ -470,7 +486,7 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
         // in front of paying users / submit it to a store today".
         send("stage", { stage: "ship", message: "Ship-ready pass — onboarding, legal, SEO, PWA, analytics, payments…" });
         const shipped = await callAI({
-          apiKey, model: MODEL_PRIMARY, reasoning: "high",
+          apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "high",
           system: `You are a launch engineer. Take the HTML and make it SHIP-READY — a real product a stranger could use and pay for today. Add anything missing:
 - First-run onboarding / guided empty state, and a persistent "how it works" entry point
 - Working settings, data export, and delete-my-data control (localStorage backed)
@@ -495,7 +511,7 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
         let shipChecklist = "";
         try {
           shipChecklist = await callAI({
-            apiKey, model: MODEL_FAST, reasoning: "low",
+            apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "low",
             system: `You are a launch manager. Output a SHIP CHECKLIST for this app in markdown: what is already DONE inside the build (tick list) and the SHORT list of things only a human can do (domain, store account, real Stripe keys, screenshots). Max 250 words. No preamble.`,
             user: `HTML HEAD + CONFIG:\n${code.slice(0, 12000)}`,
           });
@@ -512,6 +528,16 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
         });
         controller.close();
       } catch (err) {
+        if (err instanceof InsufficientCoinsError) {
+          send("error", {
+            message: "Not enough coins. Top up your wallet to continue.",
+            code: "insufficient_coins",
+            needed_cents: err.needed_cents,
+            balance_cents: err.balance_cents,
+          });
+          controller.close();
+          return;
+        }
         const msg = err instanceof Error ? err.message : String(err);
         console.error("autonomous builder error", msg);
         send("error", { message: msg });

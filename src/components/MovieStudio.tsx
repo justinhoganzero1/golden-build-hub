@@ -2477,7 +2477,25 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       renderRequestKeyRef.current = null;
 
     } catch (e) {
-      console.error(e); toast.error("Export failed");
+      console.error(e);
+      // The export was paid for up front — a failed render must give the money back.
+      if (!isAdmin && renderRequestKeyRef.current) {
+        try {
+          const { data: ref } = await supabase.functions.invoke("movie-render-charge", {
+            body: { scene_count: 1, action: "refund", request_key: renderRequestKeyRef.current },
+          });
+          if (ref?.refunded) {
+            toast.error(`Export failed — refunded $${((ref.refunded_cents ?? 0) / 100).toFixed(2)} to your wallet`);
+          } else {
+            toast.error("Export failed");
+          }
+        } catch {
+          toast.error("Export failed");
+        }
+        renderRequestKeyRef.current = null;
+      } else {
+        toast.error("Export failed");
+      }
       setRenderReport(buildRenderReport({
         errors: [e instanceof Error ? e.message : "Export failed"],
         usedScenes: scenes.filter(s => s.image_url),

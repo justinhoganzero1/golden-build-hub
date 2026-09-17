@@ -105,7 +105,19 @@ export async function requireUser(req: Request): Promise<AuthResult> {
 export async function requireOwner(req: Request): Promise<AuthResult> {
   const r = await requireUser(req);
   if (r.response) return r;
-  if ((r.user.email || "").toLowerCase().trim() !== OWNER_EMAIL) {
+
+  // Primary check: the admin ROLE in public.user_roles (server-side, tamper-proof).
+  // The historical owner email stays only as a fallback so access never breaks.
+  let hasAdminRole = false;
+  try {
+    const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false },
+    });
+    const { data } = await svc.rpc("has_role", { _user_id: r.user.id, _role: "admin" });
+    hasAdminRole = data === true;
+  } catch (_) { /* fall back to email check */ }
+
+  if (!hasAdminRole && (r.user.email || "").toLowerCase().trim() !== OWNER_EMAIL) {
     await auditLog({
       user_id: r.user.id,
       email: r.user.email,

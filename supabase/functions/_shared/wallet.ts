@@ -77,7 +77,7 @@ export async function authorizeAI(
   if (error) {
     if (error.message.includes("insufficient_funds")) {
       const balance = await currentBalance(userId);
-      const total = Math.ceil((estimatedMicros * 1.1) / 10_000);
+      const total = Math.ceil((estimatedMicros * 1.2) / 10_000);
       throw new InsufficientCoinsError(total, balance);
     }
     throw new Error(`billing_authorize failed: ${error.message}`);
@@ -135,7 +135,7 @@ export async function getUserFromRequest(req: Request): Promise<{ id: string; em
 
 /**
  * Deprecated: no origin is exempt from billing any more. Every signed-in user
- * pays their own provider cost + 10% from their own wallet.
+ * pays their own provider cost + 20% from their own wallet.
  */
 export function isLovablePreviewOrigin(_req: Request): boolean {
   return false;
@@ -143,7 +143,7 @@ export function isLovablePreviewOrigin(_req: Request): boolean {
 
 /**
  * Charge a user's coin wallet for an AI call.
- * Provider cost is marked up by 10% (see pricing.ts) and recorded in ai_charges
+ * Provider cost is marked up by 20% (see pricing.ts) and recorded in ai_charges
  * under that user's own user_id — usage and billing are fully per-user.
  * Throws InsufficientCoinsError if balance is too low.
  */

@@ -3,6 +3,8 @@
 // into an actionable answer. Returns { answer, sources[] }.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +69,17 @@ serve(async (req) => {
     const ai = await aiRes.json();
     if (!aiRes.ok) throw new Error(ai?.error?.message || "AI failed");
     const answer = ai.choices?.[0]?.message?.content || "";
+
+    // Bill the user's own wallet only after the provider actually delivered.
+    try {
+      await chargeAI(auth.user.id, "oracle-research", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+        provider: "lovable_ai",
+        model: "google/gemini-2.5-flash",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("oracle-research billing error:", billErr);
+    }
 
     return new Response(JSON.stringify({
       answer,

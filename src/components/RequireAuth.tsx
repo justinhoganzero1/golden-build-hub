@@ -5,21 +5,48 @@ import { usePreviewMode } from "@/hooks/usePreviewMode";
 
 /**
  * Auth lock only — age gate removed.
+ *
+ * OPEN FRONT DOOR: visitors may BROWSE the whole app without signing in.
+ * The moment they try to type or generate, InteractionAuthGate walls them and
+ * asks them to join. Only private/money/admin areas below still demand a
+ * session up front.
  */
 interface RequireAuthProps {
   children: ReactNode;
   freeAccess?: boolean; // deprecated — no feature is free anymore
 }
 
+// Routes that hold personal data, money or owner controls: always signed-in only.
+const PRIVATE_PREFIXES = [
+  "/admin",
+  "/owner",
+  "/wallet",
+  "/profile",
+  "/vault",
+  "/personal-vault",
+  "/inbox",
+  "/settings",
+  "/media-library",
+  "/subscription",
+  "/calendar",
+];
+
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const isPreview = usePreviewMode();
 
-  // Lovable preview hosts (*.lovable.app / *.lovableproject.com / *.lovable.dev
-  // or ?preview=1) bypass the auth wall so reviewers can see the entire project
-  // without signing in. Real end users on oracle-lunar.online still get gated.
+  // Lovable preview hosts bypass the wall entirely so reviewers see everything.
   if (isPreview) {
+    return <>{children}</>;
+  }
+
+  const isPrivate = PRIVATE_PREFIXES.some(
+    (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
+  );
+
+  if (!isPrivate) {
+    // Public browsing: render immediately, no auth spinner, no redirect.
     return <>{children}</>;
   }
 
@@ -39,4 +66,3 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
 };
 
 export default RequireAuth;
-
