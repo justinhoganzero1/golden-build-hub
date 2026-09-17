@@ -127,6 +127,12 @@ const CreditDashboardPage = () => {
                   {trial.daysLeft === 0 ? "Ended " : "Ends "}
                   {trial.endDate.toLocaleDateString()}
                 </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {trial.daysLeft === 0
+                    ? "You're on the free membership: 10 chats and 1 picture a day, free forever. Add credit for unlimited use, video and movies."
+                    : "After the trial you keep a free membership: 10 chats and 1 picture a day."}
+                </p>
+
               </>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">Sign in to see your trial.</p>
