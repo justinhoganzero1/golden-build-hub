@@ -73,6 +73,7 @@ const loaders = {
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
+  "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
   "/admin/editor": () => import("./pages/AdminEditorPage"),
