@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
+import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +10,7 @@ const corsHeaders = {
 };
 
 const FREE_DAILY_LIMIT = 25;
+const TRIAL_DAYS = 7;
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
 serve(async (req) => {
@@ -60,7 +63,45 @@ serve(async (req) => {
             );
           } catch (_) { /* fall through to limit enforcement */ }
 
-          if (!isAdmin && !serverSubscribed) {
+          // ── TRIAL ENFORCEMENT ──
+          // The free daily allowance exists ONLY inside the 7-day trial window.
+          // After that the user must either have loaded their own provider key
+          // (user_ai_keys) or have coins in their wallet — otherwise no AI runs.
+          const createdAt = userData?.user?.created_at ? new Date(userData.user.created_at).getTime() : Date.now();
+          const trialActive = Date.now() - createdAt < TRIAL_DAYS * 24 * 60 * 60 * 1000;
+          let hasOwnKey = false;
+          try {
+            const { data: keyRow } = await admin
+              .from("user_ai_keys")
+              .select("openai_key, gemini_key")
+              .eq("user_id", userId)
+              .maybeSingle();
+            hasOwnKey = !!(keyRow?.openai_key || keyRow?.gemini_key);
+          } catch (_) { /* treat as no key */ }
+
+          if (!isAdmin && !serverSubscribed && !trialActive && !hasOwnKey) {
+            // Trial over: every message is paid for from the user's own wallet.
+            try {
+              await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+                provider: "lovable_ai",
+                model: "google/gemini-2.5-flash",
+              });
+              usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
+            } catch (err) {
+              if (err instanceof InsufficientCoinsError) {
+                return new Response(
+                  JSON.stringify({
+                    error: "trial_ended",
+                    message: "Your free trial has ended. Top up your wallet or add your own API key to keep chatting with the Oracle.",
+                    needed_cents: err.needed_cents,
+                    balance_cents: err.balance_cents,
+                  }),
+                  { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+                );
+              }
+              throw err;
+            }
+          } else if (!isAdmin && !serverSubscribed) {
             // Atomically increment + read count
             const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
               _user_id: userId,
