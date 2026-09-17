@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("movie-render-charge error:", e);
     if (e instanceof InsufficientCoinsError) {
-      return json({ error: "insufficient_balance", required_cents: e.needed_cents, balance_cents: e.balance_cents }, 402);
+      return json({ error: "insufficient_coins", needed_cents: e.needed_cents, required_cents: e.needed_cents, balance_cents: e.balance_cents }, 402);
     }
     return json({ error: e instanceof Error ? e.message : "unknown" }, 500);
   }

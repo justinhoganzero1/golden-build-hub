@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       });
     }
     if (resp.status === 402) {
-      return new Response(JSON.stringify({ error: "Credits exhausted" }), {
+      return new Response(JSON.stringify({ error: "insufficient_coins", message: "Not enough coins. Top up your wallet to continue.", needed_cents: 0, balance_cents: 0 }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

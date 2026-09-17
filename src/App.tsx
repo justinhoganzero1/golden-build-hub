@@ -253,6 +253,7 @@ const AdminInboxPage = lazy(() => import("./pages/AdminInboxPage"));
 const InboxPage = lazy(() => import("./pages/InboxPage"));
 
 const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
+const WalletTopupReturn = lazy(() => import("./components/WalletTopupReturn"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
 const SiteFooter = lazy(() => import("./components/SiteFooter"));
 const queryClient = new QueryClient({
@@ -298,6 +299,7 @@ const App = () => (
               <InteractionAuthGate />
               <PreviewShield />
               <Suspense fallback={null}><WalletPaywallModal /></Suspense>
+              <Suspense fallback={null}><WalletTopupReturn /></Suspense>
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 
               <Suspense fallback={<Loading />}>

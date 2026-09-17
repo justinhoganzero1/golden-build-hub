@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { PublishSellControls, defaultPublishSellState, type PublishSellState } from "@/components/PublishSellControls";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import RegenerateAppWizard, { APP_STYLES, type AppRegenPlan } from "@/components/appbuilder/RegenerateAppWizard";
+import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
@@ -355,6 +356,11 @@ const AppBuilderPage = () => {
               shipChecklist = evt.shipChecklist || "";
             } else if (evt.event === "error") {
               errorMsg = evt.message || "Build error";
+              // The stream already returned HTTP 200, so the global 402 catcher
+              // can't see this — raise the top-up wall from the event itself.
+              if (evt.code === "insufficient_coins" || /insufficient|not enough coins/i.test(errorMsg)) {
+                notifyWalletInsufficient({ service: "app-builder" });
+              }
             }
           } catch { /* ignore parse */ }
         }

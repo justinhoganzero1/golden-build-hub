@@ -104,7 +104,7 @@ AUDIO RULES:
 
     if (!resp.ok) {
       if (resp.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (resp.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (resp.status === 402) return new Response(JSON.stringify({ error: "insufficient_coins", message: "Not enough coins. Top up your wallet to continue.", needed_cents: 0, balance_cents: 0 }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const t = await resp.text();
       console.error("scene-gen err", resp.status, t);
       return new Response(JSON.stringify({ error: "Scene planning failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
