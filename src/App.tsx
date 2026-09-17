@@ -73,6 +73,7 @@ const loaders = {
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
+  "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
   "/admin/editor": () => import("./pages/AdminEditorPage"),
@@ -197,6 +198,7 @@ const StoryPublicPage = lazy(loaders["/stories/:slug"]);
 const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
+const CreditDashboardPage = lazy(loaders["/credit"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
 const AdminEditorPage = lazy(loaders["/admin/editor"]);
@@ -359,6 +361,7 @@ const App = () => (
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/credit" element={<RequireAuth><ErrorBoundary pageName="Credit Dashboard"><CreditDashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
                   <Route path="/owner-dashboard" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Owner Dashboard"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/library" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Library"><OwnerDashboardPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
