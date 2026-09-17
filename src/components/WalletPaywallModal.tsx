@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Coins, Loader2, Wallet } from "lucide-react";
+import { Coins, Loader2, Wallet, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WALLET_INSUFFICIENT_EVENT, WalletInsufficientDetail } from "@/lib/walletPaywall";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const COINS_PER_DOLLAR = 5.37;
-const packs = [5, 10, 20, 50];
+const DEFAULT_PACK = 10;
+const OTHER_PACKS = [5, 20, 50];
 
 const WalletPaywallModal = () => {
   const { user } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<WalletInsufficientDetail>({});
   const [loading, setLoading] = useState<number | null>(null);
@@ -35,7 +37,7 @@ const WalletPaywallModal = () => {
     setLoading(dollars);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { coinPackDollars: dollars },
+        body: { coinPackDollars: dollars, returnTo: location.pathname },
       });
       if (error) throw error;
       if (!data?.url) throw new Error("Checkout did not return a payment link.");
@@ -57,11 +59,10 @@ const WalletPaywallModal = () => {
             <div className="p-2 rounded-xl bg-primary/10">
               <Wallet className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-primary">You've hit the wall</DialogTitle>
+            <DialogTitle className="text-primary">You've hit the cap</DialogTitle>
           </div>
           <DialogDescription>
-            Your coin wallet ran out on your last request. Top up to keep going —
-            every user has their own private wallet, and you only pay when you use it.
+            Add credit and you're back working in about ten seconds. You only ever pay for what you use.
           </DialogDescription>
         </DialogHeader>
 
@@ -72,34 +73,55 @@ const WalletPaywallModal = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {packs.map((d) => (
+        {/* Primary, front-and-centre action */}
+        <Button
+          size="lg"
+          className="w-full h-16 text-lg font-extrabold rounded-2xl"
+          disabled={loading !== null}
+          onClick={() => buy(DEFAULT_PACK)}
+        >
+          {loading === DEFAULT_PACK ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Zap className="w-5 h-5 mr-2" /> Add ${DEFAULT_PACK} to keep going
+            </>
+          )}
+        </Button>
+        <p className="text-center text-xs text-muted-foreground mt-2">
+          {(DEFAULT_PACK * COINS_PER_DOLLAR).toFixed(0)} coins · card payment · instant
+        </p>
+
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          {OTHER_PACKS.map((d) => (
             <Button
               key={d}
               variant="outline"
-              className="h-auto py-3 flex flex-col items-center border-primary/30 hover:bg-primary/10"
+              size="sm"
+              className="border-primary/20"
               disabled={loading !== null}
               onClick={() => buy(d)}
             >
-              {loading === d ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <div className="flex items-center gap-1 text-primary font-semibold">
-                    <Coins className="w-4 h-4" /> {(d * COINS_PER_DOLLAR).toFixed(1)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">${d}</div>
-                </>
-              )}
+              {loading === d ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Coins className="w-3 h-3 mr-1" />${d}</>}
             </Button>
           ))}
         </div>
 
-        <div className="flex justify-between mt-3">
-          <Button variant="ghost" size="sm" onClick={() => { setOpen(false); nav("/wallet"); }}>
-            Full wallet
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Not now</Button>
+        <div className="mt-4 text-center space-y-1">
+          <button
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-primary"
+            onClick={() => { setOpen(false); nav("/get-api-key/openai"); }}
+          >
+            Rather use your own API key? Set one up here
+          </button>
+          <div className="flex justify-center gap-4 pt-1">
+            <button className="text-xs text-muted-foreground hover:text-primary" onClick={() => { setOpen(false); nav("/wallet"); }}>
+              Full wallet
+            </button>
+            <button className="text-xs text-muted-foreground hover:text-primary" onClick={() => setOpen(false)}>
+              Not now
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
