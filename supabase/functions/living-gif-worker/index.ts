@@ -12,6 +12,8 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,7 +175,40 @@ async function processOne(): Promise<{ processed: boolean; result?: unknown }> {
     const stage = gif.pipeline_stage;
 
     if (!stage || stage === "queued") {
-      await submitRunway(gif);
+      const seconds = 10;
+      const estimate = seconds * PROVIDER_RATES.runway_image_to_video_per_second;
+      let hold;
+      try {
+        hold = await authorizeAI(
+          gif.user_id,
+          `living-gif-worker:${gif.gif_id}:runway`,
+          "living-gif-worker",
+          "runway",
+          "gen3a_turbo",
+          estimate,
+          { gif_id: gif.gif_id, seconds },
+        );
+      } catch (e) {
+        if (e instanceof InsufficientCoinsError) {
+          await supa.from("living_gifs").update({
+            status: "failed",
+            pipeline_stage: "failed",
+            error_message: "Insufficient coins to generate this GIF.",
+            locked_at: null,
+            locked_by: null,
+            updated_at: new Date().toISOString(),
+          }).eq("id", gif.gif_id);
+          return { processed: true, result: { stage: "insufficient_coins", gif_id: gif.gif_id } };
+        }
+        throw e;
+      }
+      try {
+        await submitRunway(gif);
+        await settleAI(hold.transaction_id, estimate);
+      } catch (e) {
+        await cancelAI(hold.transaction_id, "runway_submit_failed");
+        throw e;
+      }
       return { processed: true, result: { stage: "runway_submitted", gif_id: gif.gif_id } };
     }
 
@@ -189,7 +224,48 @@ async function processOne(): Promise<{ processed: boolean; result?: unknown }> {
         }).eq("id", gif.gif_id);
         return { processed: true, result: { stage: "runway_polling", gif_id: gif.gif_id } };
       }
-      const next = await submitReplicate(gif, videoUrl);
+      let next: string;
+      if (REPLICATE_API_TOKEN) {
+        const upEstimate = PROVIDER_RATES.replicate_upscale_4x;
+        let upHold;
+        try {
+          upHold = await authorizeAI(
+            gif.user_id,
+            `living-gif-worker:${gif.gif_id}:replicate`,
+            "living-gif-worker",
+            "replicate",
+            "real-esrgan-4x",
+            upEstimate,
+            { gif_id: gif.gif_id },
+          );
+        } catch (e) {
+          if (e instanceof InsufficientCoinsError) {
+            await supa.from("living_gifs").update({
+              status: "failed",
+              pipeline_stage: "failed",
+              error_message: "Insufficient coins to upscale this GIF.",
+              locked_at: null,
+              locked_by: null,
+              updated_at: new Date().toISOString(),
+            }).eq("id", gif.gif_id);
+            return { processed: true, result: { stage: "insufficient_coins", gif_id: gif.gif_id } };
+          }
+          throw e;
+        }
+        try {
+          next = await submitReplicate(gif, videoUrl);
+          if (next.startsWith("pending:")) {
+            await settleAI(upHold.transaction_id, upEstimate);
+          } else {
+            await cancelAI(upHold.transaction_id, "replicate_unavailable");
+          }
+        } catch (e) {
+          await cancelAI(upHold.transaction_id, "replicate_submit_failed");
+          throw e;
+        }
+      } else {
+        next = videoUrl;
+      }
       if (next.startsWith("pending:")) {
         await supa.from("living_gifs").update({
           pipeline_stage: "replicate_pending",
