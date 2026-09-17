@@ -119,9 +119,9 @@ const AgentKeyPanel = ({ agentId, onSaved }: Props) => {
           </p>
           <button
             onClick={() => navigate(`/get-api-key/${agentId === "nova" ? "openai" : "gemini"}`)}
-            className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500 text-black text-xs font-extrabold italic hover:bg-amber-400 active:scale-95 transition"
+            className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-primary"
           >
-            <Sparkles className="w-3 h-3" /> GET MY OWN {cfg.provider.toUpperCase()} KEY (2 MIN)
+            <Sparkles className="w-3 h-3" /> How to get your own {cfg.provider} key
           </button>
         </div>
       </div>
