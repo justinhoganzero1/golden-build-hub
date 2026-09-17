@@ -91,7 +91,8 @@ serve(async (req) => {
               if (err instanceof InsufficientCoinsError) {
                 return new Response(
                   JSON.stringify({
-                    error: "trial_ended",
+                    error: "insufficient_coins",
+                    reason: "trial_ended",
                     message: "Your free trial has ended. Top up your wallet or add your own API key to keep chatting with the Oracle.",
                     needed_cents: err.needed_cents,
                     balance_cents: err.balance_cents,
@@ -123,7 +124,7 @@ serve(async (req) => {
                     message: `You've reached today's free chat limit (${FREE_DAILY_LIMIT} messages). Upgrade for unlimited Oracle chat.`,
                     usage: usageInfo,
                   }),
-                  { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                  { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
                 );
               }
             }

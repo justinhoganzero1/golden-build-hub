@@ -107,7 +107,7 @@ serve(async (req) => {
     } catch (e) {
       if (e instanceof InsufficientCoinsError) {
         return json(
-          { error: "Not enough coins for this swarm.", code: "insufficient_funds", needed_cents: e.needed_cents, balance_cents: e.balance_cents },
+          { error: "insufficient_coins", message: "Not enough coins for this swarm.", code: "insufficient_funds", needed_cents: e.needed_cents, balance_cents: e.balance_cents },
           402,
         );
       }
