@@ -1,4 +1,6 @@
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +62,18 @@ Deno.serve(async (req) => {
 
     let parsed: Record<string, unknown> = {};
     try { parsed = JSON.parse(text); } catch { /* ignore */ }
+
+    // Bill the user's own wallet only after the clone actually succeeded.
+    try {
+      await chargeAI(auth.user.id, "elevenlabs-clone-voice", PROVIDER_RATES.elevenlabs_voice_clone_flat, {
+        provider: "elevenlabs",
+        model: "voice-clone",
+        voice_id: parsed.voice_id,
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("elevenlabs-clone-voice billing error:", billErr);
+    }
 
     return json({ voice_id: parsed.voice_id, name, requires_verification: parsed.requires_verification ?? false });
   } catch (error) {

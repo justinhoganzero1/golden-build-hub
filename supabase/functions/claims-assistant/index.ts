@@ -2,6 +2,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
 import { AiGatewayError, aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -107,6 +109,18 @@ Deno.serve(async (req) => {
     if (action === "draft") {
       const res = await research(provider);
       const draft = await draftLetter(claim_data || {}, res);
+
+      // Bill the user's own wallet only after the draft was actually generated.
+      try {
+        await chargeAI(userId!, "claims-assistant", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+          provider: "lovable-ai",
+          model: "google/gemini-2.5-flash",
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        console.error("claims-assistant billing error:", billErr);
+      }
+
       if (claim_id) {
         await supabase.from("user_claims").update({ ai_draft: draft, ai_research: res, status: "drafted" }).eq("id", claim_id);
       }

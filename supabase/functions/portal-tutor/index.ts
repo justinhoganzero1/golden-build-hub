@@ -4,6 +4,9 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
+import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -100,6 +103,12 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Real JWT validation — this endpoint now requires a signed-in user so we can bill their wallet.
+    const auth = await requireUser(req);
+    if (auth.response) return auth.response;
+    const rl = await enforceRateLimit(req, auth.user, "portal-tutor");
+    if (rl) return rl;
+
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -114,21 +123,9 @@ Deno.serve(async (req) => {
         ? [...messages].reverse().find((m: { role: string }) => m.role === "user")?.content || ""
         : "";
 
-    // 🛡️ JAILBREAK GUARD — identify user if a JWT was passed
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-    let userId: string | null = null;
-    let userEmail: string | null = null;
-    if (token && SUPABASE_URL && SERVICE_KEY) {
-      try {
-        const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-        const { data } = await admin.auth.getUser(token);
-        userId = data?.user?.id ?? null;
-        userEmail = data?.user?.email ?? null;
-      } catch (_) { /* ignore */ }
-    }
+    // 🛡️ JAILBREAK GUARD
+    const userId: string | null = auth.user.id;
+    const userEmail: string | null = auth.user.email;
     const guard = await checkJailbreak({
       userId, userEmail,
       isOwner: userEmail?.toLowerCase() === ADMIN_EMAIL,
@@ -184,6 +181,17 @@ Deno.serve(async (req) => {
     const data = await resp.json();
     const rawReply: string = data.choices?.[0]?.message?.content || "";
     const cleaned = await captureLead(rawReply, lastUserMsg);
+
+    // Bill the user's own wallet only after the AI reply actually succeeded.
+    try {
+      await chargeAI(auth.user.id, "portal-tutor", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+        provider: "lovable-ai",
+        model: "google/gemini-2.5-flash",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("portal-tutor billing error:", billErr);
+    }
 
     return new Response(JSON.stringify({ reply: cleaned }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

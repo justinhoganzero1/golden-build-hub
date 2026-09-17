@@ -2,6 +2,8 @@
 // extraction mode pulls the 22 fields from a single user monologue.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -62,6 +64,17 @@ Extract as JSON:
       const raw = j.choices?.[0]?.message?.content ?? "{}";
       const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
       const extracted = JSON.parse(cleaned);
+
+      try {
+        await chargeAI(auth.user.id, "oracle-voice-director", PROVIDER_RATES.lovable_ai_gemini_pro_per_call, {
+          provider: "lovable_ai",
+          model: "google/gemini-2.5-pro",
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        console.error("oracle-voice-director billing error:", billErr);
+      }
+
       return new Response(JSON.stringify({ ok: true, extracted }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
       });
@@ -82,6 +95,17 @@ Extract as JSON:
       const j = await r.json();
       const raw = j.choices?.[0]?.message?.content ?? "{}";
       const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+
+      try {
+        await chargeAI(auth.user.id, "oracle-voice-director", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+          provider: "lovable_ai",
+          model: "google/gemini-2.5-flash",
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        console.error("oracle-voice-director billing error:", billErr);
+      }
+
       return new Response(cleaned, {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
       });

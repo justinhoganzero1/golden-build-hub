@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -155,6 +157,20 @@ serve(async (req) => {
         if (response.status === 429 || response.status === 402) {
           return aiGatewayErrorResponse(response.status, corsHeaders);
         }
+      }
+    }
+
+    // Bill once per successful provider call made in the loop above.
+    if (responses.length > 0) {
+      try {
+        await chargeAI(auth.user.id, "ai-friends-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call * responses.length, {
+          provider: "lovable_ai",
+          model: "google/gemini-2.5-flash-lite",
+          responses: responses.length,
+        });
+      } catch (billErr) {
+        if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+        console.error("ai-friends-chat billing error:", billErr);
       }
     }
 
