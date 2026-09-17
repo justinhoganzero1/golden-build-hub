@@ -32,8 +32,9 @@ interface Body {
   scene_count: number;
   hd?: boolean;
   with_captions?: boolean;
-  action: "estimate" | "charge";
+  action: "estimate" | "charge" | "refund";
   request_key?: string;
+  project_id?: string;
 }
 
 function price(b: Body) {
