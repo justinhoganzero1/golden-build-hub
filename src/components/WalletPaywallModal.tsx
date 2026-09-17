@@ -22,8 +22,12 @@ const WalletPaywallModal = () => {
 
   useEffect(() => {
     const handler = (e: Event) => {
-      setDetail((e as CustomEvent).detail || {});
-      setOpen(true);
+      setOpen((prev) => {
+        // Ignore repeat events while the modal is already up (or mid-checkout).
+        if (prev) return prev;
+        setDetail((e as CustomEvent).detail || {});
+        return true;
+      });
     };
     window.addEventListener(WALLET_INSUFFICIENT_EVENT, handler);
     return () => window.removeEventListener(WALLET_INSUFFICIENT_EVENT, handler);

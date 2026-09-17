@@ -10,7 +10,14 @@ export type WalletInsufficientDetail = {
 
 export const WALLET_INSUFFICIENT_EVENT = "wallet:insufficient";
 
+// A burst of parallel paid calls all fail at once when the wallet runs dry.
+// Only the first one should raise the modal, or it flickers and resets.
+let lastFiredAt = 0;
+
 export function notifyWalletInsufficient(detail: WalletInsufficientDetail = {}) {
+  const now = Date.now();
+  if (now - lastFiredAt < 4000) return;
+  lastFiredAt = now;
   try {
     window.dispatchEvent(new CustomEvent(WALLET_INSUFFICIENT_EVENT, { detail }));
   } catch {
