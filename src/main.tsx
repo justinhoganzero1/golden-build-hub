@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
+import { installWalletInterceptor } from "./lib/walletInterceptor";
+
+// Any paid AI call that comes back 402 raises the "add $10 and keep going" modal.
+installWalletInterceptor();
 
 // Initialize Capacitor plugins when running as native app
 const initNative = async () => {

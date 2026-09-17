@@ -70,6 +70,11 @@ const ApiKeyReminder = () => {
     setOpen(false);
     navigate(`/get-api-key/${targetProvider}`);
   };
+  const goTopUp = () => {
+    void trackEvent("api_key_reminder_topup_clicked", { medium: "wallet" });
+    setOpen(false);
+    navigate("/wallet");
+  };
   const later = () => {
     void trackEvent("api_key_reminder_dismissed", { source: urgent ? "urgent" : "friendly" });
     setOpen(false);
