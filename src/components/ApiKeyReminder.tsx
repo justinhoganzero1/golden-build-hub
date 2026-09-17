@@ -71,7 +71,7 @@ const ApiKeyReminder = () => {
     navigate(`/get-api-key/${targetProvider}`);
   };
   const goTopUp = () => {
-    void trackEvent("api_key_reminder_topup_clicked", { medium: "wallet" });
+    void trackEvent("api_key_reminder_cta_clicked", { medium: "wallet_topup" });
     setOpen(false);
     navigate("/wallet");
   };
