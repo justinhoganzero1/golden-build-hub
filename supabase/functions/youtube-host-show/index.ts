@@ -3,6 +3,8 @@
 // host pieces-to-camera and B-roll beats, plus ready-to-publish YouTube metadata.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { mapAiGatewayStatus } from "../_shared/aiStatus.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,6 +108,17 @@ Return ONLY valid JSON:
 
     if (!Array.isArray(show?.segments) || !show.segments.length) {
       return json({ error: "The generated show had no segments" }, 502);
+    }
+
+    // Bill the user's wallet only after the provider actually delivered a show.
+    try {
+      await chargeAI(ud.user.id, "youtube-host-show", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+        provider: "lovable-ai",
+        model: "google/gemini-3.6-flash",
+      });
+    } catch (billErr) {
+      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
+      console.error("[youtube-host-show] billing error:", billErr);
     }
 
     return json(show);
