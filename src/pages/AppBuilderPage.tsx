@@ -355,6 +355,11 @@ const AppBuilderPage = () => {
               shipChecklist = evt.shipChecklist || "";
             } else if (evt.event === "error") {
               errorMsg = evt.message || "Build error";
+              // The stream already returned HTTP 200, so the global 402 catcher
+              // can't see this — raise the top-up wall from the event itself.
+              if (evt.code === "insufficient_coins" || /insufficient|not enough coins/i.test(errorMsg)) {
+                notifyWalletInsufficient({ service: "app-builder" });
+              }
             }
           } catch { /* ignore parse */ }
         }
