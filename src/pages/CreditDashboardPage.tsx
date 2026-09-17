@@ -37,12 +37,12 @@ const CreditDashboardPage = () => {
         supabase.rpc("is_owner"),
         supabase.rpc("has_unlimited_ai"),
         supabase.rpc("has_active_reward", { _user_id: user.id }),
-        supabase.from("ai_charges").select("total_billed_cents").eq("user_id", user.id).limit(500),
+        supabase.from("ai_charges").select("total_cents").eq("user_id", user.id).limit(500),
       ]);
       setBalanceCents(balRes.data?.balance_cents ?? 0);
       setUnlimited(ownerRes.data === true || unlimitedRes.data === true || rewardRes.data === true);
-      const rows = (spendRes.data ?? []) as { total_billed_cents: number | null }[];
-      setSpentCents(rows.reduce((a, r) => a + (r.total_billed_cents ?? 0), 0));
+      const rows = (spendRes.data ?? []) as { total_cents: number | null }[];
+      setSpentCents(rows.reduce((a, r) => a + (r.total_cents ?? 0), 0));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load your credit.");
     } finally {
