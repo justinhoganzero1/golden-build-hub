@@ -19,7 +19,9 @@ serve(async (req) => {
   );
 
   try {
-    const { priceId, mode, coinPackDollars } = await req.json();
+    const { priceId, mode, coinPackDollars, returnTo } = await req.json();
+    // Only allow same-origin relative paths back into the app.
+    const safeReturn = typeof returnTo === "string" && /^\/[A-Za-z0-9\-_/]*$/.test(returnTo) ? returnTo : "/wallet";
     const dollars = Number(coinPackDollars ?? 0);
     if (!priceId && (!Number.isFinite(dollars) || dollars <= 0)) {
       throw new Error("coinPackDollars or priceId is required");
@@ -80,8 +82,8 @@ serve(async (req) => {
             is_anonymous: String(isAnon),
           }
         : undefined,
-      success_url: `${origin}/wallet?coins=success`,
-      cancel_url: `${origin}/wallet?coins=canceled`,
+      success_url: `${origin}${isCoinTopup ? safeReturn : "/wallet"}?coins=success`,
+      cancel_url: `${origin}${isCoinTopup ? safeReturn : "/wallet"}?coins=canceled`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {

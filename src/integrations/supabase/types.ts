@@ -260,6 +260,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_counters: {
+        Row: {
+          created_at: string
+          est_cost_cents: number
+          id: string
+          last_request_at: string | null
+          request_count: number
+          service: string
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          est_cost_cents?: number
+          id?: string
+          last_request_at?: string | null
+          request_count?: number
+          service: string
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          est_cost_cents?: number
+          id?: string
+          last_request_at?: string | null
+          request_count?: number
+          service?: string
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage_limits: {
+        Row: {
+          cooldown_seconds: number
+          created_at: string
+          enabled: boolean
+          id: string
+          max_cost_cents_day: number | null
+          max_cost_cents_month: number | null
+          max_requests_day: number | null
+          max_requests_month: number | null
+          service: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          cooldown_seconds?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          max_cost_cents_day?: number | null
+          max_cost_cents_month?: number | null
+          max_requests_day?: number | null
+          max_requests_month?: number | null
+          service: string
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          cooldown_seconds?: number
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          max_cost_cents_day?: number | null
+          max_cost_cents_month?: number | null
+          max_requests_day?: number | null
+          max_requests_month?: number | null
+          service?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_unlocks: {
         Row: {
           amount_cents: number
@@ -3978,6 +4056,19 @@ export type Database = {
         Returns: number
       }
       delete_user_account: { Args: { _user_id: string }; Returns: boolean }
+      enforce_ai_limit: {
+        Args: { _est_cost?: number; _service: string; _user_id: string }
+        Returns: {
+          allowed: boolean
+          cost_today_cents: number
+          limit_cost_cents: number
+          limit_requests: number
+          reason: string
+          requests_today: number
+          retry_after_seconds: number
+          tier: string
+        }[]
+      }
       get_story_writer_document: { Args: { _story_id: string }; Returns: Json }
       get_story_writer_images: { Args: { _story_id: string }; Returns: Json }
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
@@ -4053,6 +4144,7 @@ export type Database = {
         Args: { _project_id: string }
         Returns: undefined
       }
+      resolve_ai_tier: { Args: { _user_id: string }; Returns: string }
       retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
       save_library_item: {
         Args: {
