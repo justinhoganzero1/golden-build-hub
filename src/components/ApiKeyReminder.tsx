@@ -108,7 +108,7 @@ const ApiKeyReminder = () => {
                 Your free trial is almost up.
               </h2>
               <p className="mt-3 text-base italic font-semibold text-muted-foreground">
-                Add your own {targetLabel} key to keep using Nova and Lyra for free forever — or top up your wallet to keep going with pay‑per‑use.
+                Add $10 of credit and everything keeps working — you only pay for what you actually use.
               </p>
               <p className="mt-2 text-sm italic text-muted-foreground">
                 Takes about 2 minutes. Your account stays active either way.
@@ -126,22 +126,28 @@ const ApiKeyReminder = () => {
                 </span>
               </div>
               <p className="mt-4 text-sm italic text-muted-foreground">
-                Good news — you can keep everything free forever by loading your own {targetLabel} key. Follow the simple instructions.
+                Keep everything running by adding a little credit — it takes about ten seconds.
               </p>
             </>
           )}
 
           <button
-            onClick={goWizard}
+            onClick={goTopUp}
             className="mt-8 w-full h-16 rounded-2xl bg-amber-500 text-black text-lg font-extrabold italic hover:bg-amber-400 active:scale-95 transition shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
           >
-            <Sparkles className="w-5 h-5" /> SHOW ME HOW (2 MIN)
+            <Sparkles className="w-5 h-5" /> ADD $10 AND KEEP GOING
           </button>
           <button
             onClick={later}
             className="mt-3 w-full h-12 rounded-2xl border border-border bg-card text-sm italic font-semibold text-muted-foreground hover:bg-secondary transition"
           >
             {urgent ? "Not now" : "Remind me tomorrow"}
+          </button>
+          <button
+            onClick={goWizard}
+            className="mt-3 text-xs italic text-muted-foreground underline underline-offset-2 hover:text-primary"
+          >
+            Rather use your own {targetLabel} key? Set one up here
           </button>
         </div>
       </div>
