@@ -1,6 +1,6 @@
 // Movie Studio Pro — render charge gate.
 // Charges the user's wallet at:
-//   provider compute estimate + the standard 10% platform margin
+//   provider compute estimate + the standard 20% platform margin
 //   + an additional service fee that scales with duration (covers Lovable AI + storage)
 //
 // action=estimate → returns price + breakdown, no charge
@@ -69,7 +69,7 @@ function price(b: Body) {
       lovable_compute_markup_cents: internal_fee,
       hd_surcharge_cents: b.hd ? HD_SURCHARGE_CENTS : 0,
       captions_surcharge_cents: b.with_captions ? CAPTION_SURCHARGE_CENTS : 0,
-      platform_markup_pct: 10,
+      platform_markup_pct: 20,
       service_markup_pct: 60,
     },
   };
