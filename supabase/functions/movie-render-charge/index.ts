@@ -112,6 +112,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Refund: the render failed after money was taken. Release a hold or post a
+    // full compensating refund for the settled charge — once, keyed by request_key.
+    if (body.action === "refund") {
+      if (!body.request_key) return json({ error: "request_key required" }, 400);
+      const { data: tx } = await supabase
+        .from("billing_transactions")
+        .select("id, status, total_micros")
+        .eq("user_id", user.id)
+        .eq("request_key", body.request_key)
+        .maybeSingle();
+      if (!tx) return json({ success: true, refunded: false, reason: "no_charge" });
+      if (tx.status === "held") {
+        await supabase.rpc("billing_cancel", { _transaction_id: tx.id, _reason: "render_failed" });
+      } else if (tx.status === "settled") {
+        await supabase.rpc("billing_refund", {
+          _transaction_id: tx.id,
+          _refund_micros: tx.total_micros,
+          _reason: "render_failed",
+        });
+      } else {
+        return json({ success: true, refunded: false, reason: "already_released" });
+      }
+      return json({ success: true, refunded: true, refunded_cents: Math.round((tx.total_micros ?? 0) / 10_000) });
+    }
+
     // Atomic, idempotent authorization + settlement. The request key should be
     // persisted by the caller so retries can never double-charge a render.
     const requestKey = body.request_key || `movie-render:${crypto.randomUUID()}`;
