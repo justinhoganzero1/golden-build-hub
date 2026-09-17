@@ -350,8 +350,18 @@ const DashboardPage = () => {
       {/* Affiliate / partner brag bar — Lovable featured, ElevenLabs + HeyGen alongside. */}
       <PartnerBubbles />
 
-      {/* Per-user connectors: each signed-in user brings their own API keys. Admin uses shared/system keys, so hidden. */}
-      {!adminLoading && !isAdmin && <UserConnectorsPanel />}
+      {/* Bring-your-own-key is now opt-in only: a small link, collapsed by default.
+          Wallet top-up is the default way to pay. Admin uses shared/system keys. */}
+      {!adminLoading && !isAdmin && (
+        <details className="mx-4 my-3">
+          <summary className="cursor-pointer list-none text-xs text-muted-foreground underline underline-offset-2 hover:text-primary">
+            Advanced: use your own API keys instead of your wallet
+          </summary>
+          <div className="mt-2">
+            <UserConnectorsPanel />
+          </div>
+        </details>
+      )}
 
     </div>
   );
