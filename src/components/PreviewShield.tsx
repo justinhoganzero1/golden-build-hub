@@ -93,7 +93,7 @@ const PreviewShield = () => {
       document.removeEventListener("keydown", onKeyDown, true);
       document.getElementById(SHIELD_STYLE_ID)?.remove();
     };
-  }, [isPreview, isAdmin, loading]);
+  }, [isPreview, isAdmin, loading, user]);
 
   return null;
 };
