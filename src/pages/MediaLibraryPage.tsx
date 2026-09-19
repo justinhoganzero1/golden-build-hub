@@ -168,20 +168,28 @@ const MediaLibraryPage = () => {
   /* ── Filtering ── */
   const filtered = useMemo(() => {
     return mediaItems.filter((m: any) => {
+      if (scope === "others" && m.user_id === user?.id) return false;
       if (activeCollection !== "all" && getCollectionKey(m.source_page, m.media_type, m.metadata) !== activeCollection) return false;
       if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
       if (search && !(m.title || "").toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [mediaItems, activeCollection, typeFilter, search]);
+  }, [mediaItems, activeCollection, typeFilter, search, scope, user?.id]);
 
   /* ── Pagination: 20 tiles per page (previews only render when in view) ── */
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  useEffect(() => { setPage(1); }, [activeCollection, typeFilter, search, view]);
+  useEffect(() => { setPage(1); }, [activeCollection, typeFilter, search, view, scope]);
   useEffect(() => { if (page > pageCount) setPage(1); }, [page, pageCount]);
-  const paged = useMemo(
+  const pagedRows = useMemo(
     () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [filtered, page],
+  );
+  // Thumbnails are fetched only for the 20 rows on screen — stored previews can
+  // be megabytes each, so they must never travel with the whole list.
+  const { data: thumbMap = {} } = useMediaThumbnails(pagedRows.map((m: any) => m.id));
+  const paged = useMemo(
+    () => pagedRows.map((m: any) => ({ ...m, thumbnail_url: thumbMap[m.id] ?? null })),
+    [pagedRows, thumbMap],
   );
 
 
