@@ -158,9 +158,13 @@ const MediaLibraryPage = () => {
   }, [qc]);
 
   /* ── Counts per collection ── */
+  const scopedItems = useMemo(
+    () => (scope === "others" ? mediaItems.filter((m: any) => m.user_id !== user?.id) : mediaItems),
+    [mediaItems, scope, user?.id],
+  );
   const collectionCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: mediaItems.length };
-    mediaItems.forEach((m: any) => {
+    const counts: Record<string, number> = { all: scopedItems.length };
+    scopedItems.forEach((m: any) => {
       const key = getCollectionKey(m.source_page, m.media_type, m.metadata);
       counts[key] = (counts[key] || 0) + 1;
     });
