@@ -76,8 +76,10 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
 
 const MediaLibraryPage = () => {
   const { isAdmin } = useIsAdmin();
-  const [scope, setScope] = useState<"mine" | "everyone">("mine");
-  const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia(isAdmin ? scope : "mine");
+  const [scope, setScope] = useState<"mine" | "others" | "everyone">("mine");
+  const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia(
+    isAdmin && scope !== "mine" ? "everyone" : "mine",
+  );
   const { user } = useAuth();
   const mediaItems = ownMedia;
   const isLoading = ownLoading;
