@@ -2,7 +2,8 @@ import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
+import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -189,6 +190,18 @@ const OraclePage = () => {
   const [agents, setAgents] = useState<ChatAgent[]>(DEFAULT_AGENTS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  // ── COUNCIL MODE ──
+  // Every AI agent (Nova, Lyra, Sage, Kai) answers here inside the one Oracle
+  // chat, reads the others, debates, and the Oracle delivers one final answer.
+  // Replaces the old separate Agents / Companion / Tutor tabs.
+  const [councilMode, setCouncilMode] = useState<boolean>(() => {
+    try {
+      if (typeof window === "undefined") return false;
+      if (new URLSearchParams(window.location.search).get("council") === "1") return true;
+      return localStorage.getItem("oracle-council-mode") === "1";
+    } catch { return false; }
+  });
+  const [councilBusy, setCouncilBusy] = useState(false);
   const [showDoctor, setShowDoctor] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
@@ -1701,6 +1714,70 @@ const OraclePage = () => {
     }
   };
 
+  // ============ COUNCIL ROUND ============
+  // Runs every agent on the same question inside this one chat: each answers,
+  // each critiques the others, then the Oracle gives the single best answer.
+  const runCouncil = async (text: string) => {
+    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+    const thinkingId = `council-thinking-${Date.now()}`;
+    setShowChat(true);
+    setCouncilBusy(true);
+    setMessages(prev => [...prev, userMsg, {
+      id: thinkingId, role: "assistant", sender: "The Council", emoji: "🜂", color: "#FFD700",
+      content: "_Nova, Lyra, Sage and Kai are all thinking about this together..._",
+    }]);
+
+    const historyText = messages.slice(-6).map(m => `${m.sender}: ${m.content}`).join("\n").slice(0, 4000);
+
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-council`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+        body: JSON.stringify({ question: text, history: historyText, oracleName, debate: true }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setMessages(prev => prev.filter(m => m.id !== thinkingId));
+        if (resp.status === 402) {
+          notifyWalletInsufficient({ service: "Oracle Council" });
+          return;
+        }
+        toast.error(data?.message || "The council could not meet just now.");
+        return;
+      }
+
+      const panel: Array<{ id: string; name: string; emoji: string; color: string; answer: string; rebuttal: string }> =
+        Array.isArray(data.panel) ? data.panel : [];
+
+      setMessages(prev => prev.filter(m => m.id !== thinkingId));
+
+      for (const p of panel) {
+        const body = p.rebuttal ? `${p.answer}\n\n${p.rebuttal}` : p.answer;
+        setMessages(prev => [...prev, {
+          id: `council-${p.id}-${Date.now()}`, role: "assistant",
+          sender: p.name, emoji: p.emoji, color: p.color, content: body,
+        }]);
+        await new Promise(r => setTimeout(r, 180));
+      }
+
+      const finalText: string = (data.answer || "").trim();
+      if (finalText) {
+        setMessages(prev => [...prev, {
+          id: `council-final-${Date.now()}`, role: "assistant", sender: oracleName,
+          emoji: oracleAvatar ? "👤" : "🔮", color: "#9b87f5", content: finalText,
+          avatar_url: oracleAvatar?.image_url || undefined,
+        }]);
+        if (!isMuted) speakAsAgent(finalText, oracleName);
+      }
+    } catch (e) {
+      console.error("council error", e);
+      setMessages(prev => prev.filter(m => m.id !== thinkingId));
+      toast.error("The council could not be reached. Try again.");
+    } finally {
+      setCouncilBusy(false);
+    }
+  };
+
   // ============ SEND MESSAGE ============
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -1760,6 +1837,16 @@ const OraclePage = () => {
       const consumed = await handleSetupReply(text);
       if (consumed) return;
     }
+
+    // ── COUNCIL INTERCEPT ──
+    // With council mode on, the whole agent panel answers here instead of the
+    // Oracle answering alone.
+    if (councilMode && !isIntroTrigger && !councilBusy) {
+      await runCouncil(text);
+      return;
+    }
+
+
 
     // ── TRUNCATION DETECTOR ──
     // If the message looks cut off ("udio on my device"), surface a quick
@@ -3197,6 +3284,21 @@ const OraclePage = () => {
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
           <OracleImageComposer />
+          <button
+            type="button"
+            onClick={() => {
+              const next = !councilMode;
+              setCouncilMode(next);
+              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
+              toast(next
+                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
+                : "Council off — it's just me answering now.");
+            }}
+            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
+            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
+          >
+            <Gavel className="w-5 h-5" />
+          </button>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}

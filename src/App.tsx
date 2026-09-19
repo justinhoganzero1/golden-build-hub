@@ -329,7 +329,8 @@ const App = () => (
                   <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-assistant" element={<RequireAuth><ErrorBoundary pageName="Personal Assistant"><PersonalAssistantPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/ai-tutor" element={<RequireAuth><ErrorBoundary pageName="AI Tutor"><AITutorPage /></ErrorBoundary></RequireAuth>} />
+                  {/* Every AI agent now lives inside the one Oracle chat (council mode). */}
+                  <Route path="/ai-tutor" element={<Navigate to="/oracle?council=1" replace />} />
                   
                   <Route path="/interpreter" element={<RequireAuth><ErrorBoundary pageName="Interpreter"><InterpreterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/inventor" element={<RequireAuth><ErrorBoundary pageName="Inventor"><InventorPage /></ErrorBoundary></RequireAuth>} />
@@ -378,7 +379,7 @@ const App = () => (
                   <Route path="/admin/inbox" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Inbox"><AdminInboxPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/inbox" element={<RequireAuth><ErrorBoundary pageName="My Inbox"><InboxPage /></ErrorBoundary></RequireAuth>} />
 
-                  <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/ai-companion" element={<Navigate to="/oracle?council=1" replace />} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
                   <Route path="/terms-of-service" element={<ErrorBoundary pageName="Terms of Service"><TermsOfServicePage /></ErrorBoundary>} />
@@ -458,8 +459,8 @@ const App = () => (
                   <Route path="/library/public" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="/public-library" element={<ErrorBoundary pageName="Public Library"><PublicLibraryPage /></ErrorBoundary>} />
                   <Route path="/purchase-success" element={<RequireAuth><ErrorBoundary pageName="Purchase Success"><ShopPurchaseSuccessPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/agents" element={<RequireAuth><ErrorBoundary pageName="Agents Hub"><AgentsHubPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/agents/:agentId" element={<RequireAuth><ErrorBoundary pageName="Agent Chat"><AgentChatPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/agents" element={<Navigate to="/oracle?council=1" replace />} />
+                  <Route path="/agents/:agentId" element={<Navigate to="/oracle?council=1" replace />} />
                   <Route path="/get-api-key/:provider" element={<RequireAuth><ErrorBoundary pageName="Get API Key"><GetApiKeyWizardPage /></ErrorBoundary></RequireAuth>} />
 
                   <Route path="*" element={<NotFound />} />
