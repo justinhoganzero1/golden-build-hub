@@ -302,7 +302,7 @@ const MediaLibraryPage = () => {
               My Library
             </h1>
             <p className="text-muted-foreground text-xs">
-              {`${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
+              {`${filtered.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
             </p>
           </div>
           <button onClick={handleWipeAll}
