@@ -12,7 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useUserMedia } from "@/hooks/useUserAvatars";
+import { useUserMedia, useMediaThumbnails } from "@/hooks/useUserAvatars";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
@@ -73,7 +75,12 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
 }
 
 const MediaLibraryPage = () => {
-  const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia();
+  const { isAdmin } = useIsAdmin();
+  const [scope, setScope] = useState<"mine" | "others" | "everyone">("mine");
+  const { data: ownMedia = [], isLoading: ownLoading } = useUserMedia(
+    isAdmin && scope !== "mine" ? "everyone" : "mine",
+  );
+  const { user } = useAuth();
   const mediaItems = ownMedia;
   const isLoading = ownLoading;
 
@@ -151,32 +158,44 @@ const MediaLibraryPage = () => {
   }, [qc]);
 
   /* ── Counts per collection ── */
+  const scopedItems = useMemo(
+    () => (scope === "others" ? mediaItems.filter((m: any) => m.user_id !== user?.id) : mediaItems),
+    [mediaItems, scope, user?.id],
+  );
   const collectionCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: mediaItems.length };
-    mediaItems.forEach((m: any) => {
+    const counts: Record<string, number> = { all: scopedItems.length };
+    scopedItems.forEach((m: any) => {
       const key = getCollectionKey(m.source_page, m.media_type, m.metadata);
       counts[key] = (counts[key] || 0) + 1;
     });
     return counts;
-  }, [mediaItems]);
+  }, [scopedItems]);
 
   /* ── Filtering ── */
   const filtered = useMemo(() => {
     return mediaItems.filter((m: any) => {
+      if (scope === "others" && m.user_id === user?.id) return false;
       if (activeCollection !== "all" && getCollectionKey(m.source_page, m.media_type, m.metadata) !== activeCollection) return false;
       if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
       if (search && !(m.title || "").toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [mediaItems, activeCollection, typeFilter, search]);
+  }, [mediaItems, activeCollection, typeFilter, search, scope, user?.id]);
 
   /* ── Pagination: 20 tiles per page (previews only render when in view) ── */
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  useEffect(() => { setPage(1); }, [activeCollection, typeFilter, search, view]);
+  useEffect(() => { setPage(1); }, [activeCollection, typeFilter, search, view, scope]);
   useEffect(() => { if (page > pageCount) setPage(1); }, [page, pageCount]);
-  const paged = useMemo(
+  const pagedRows = useMemo(
     () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [filtered, page],
+  );
+  // Thumbnails are fetched only for the 20 rows on screen — stored previews can
+  // be megabytes each, so they must never travel with the whole list.
+  const { data: thumbMap = {} } = useMediaThumbnails(pagedRows.map((m: any) => m.id));
+  const paged = useMemo(
+    () => pagedRows.map((m: any) => ({ ...m, thumbnail_url: thumbMap[m.id] ?? null })),
+    [pagedRows, thumbMap],
   );
 
 
@@ -287,7 +306,7 @@ const MediaLibraryPage = () => {
               My Library
             </h1>
             <p className="text-muted-foreground text-xs">
-              {`${mediaItems.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
+              {`${filtered.length} creations across ${Object.keys(collectionCounts).length - 1} collections`}
             </p>
           </div>
           <button onClick={handleWipeAll}
@@ -306,6 +325,29 @@ const MediaLibraryPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Owner-only: whose creations to show ── */}
+      {isAdmin && (
+        <div className="px-4 mb-3 flex flex-wrap gap-1.5">
+          {([
+            { key: "mine", label: "My creations" },
+            { key: "others", label: "Members' creations" },
+            { key: "everyone", label: "Everyone" },
+          ] as const).map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setScope(s.key)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                scope === s.key
+                  ? "text-primary border-primary/50 bg-primary/10 font-semibold"
+                  : "text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Search ── */}
       <div className="px-4 mb-3">

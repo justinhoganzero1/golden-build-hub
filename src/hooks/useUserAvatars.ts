@@ -116,26 +116,31 @@ export function useSaveMedia() {
   });
 }
 
-export function useUserMedia() {
+export function useUserMedia(scope: "mine" | "everyone" = "mine") {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["user-media", user?.id],
+    queryKey: ["user-media", user?.id, scope],
     queryFn: async () => {
       if (!user) return [];
-      // Never fetch embedded data URLs or full metadata for the grid. This
-      // library currently contains over 1 GB of generated media; selecting `*`
-      // makes the entire library time out. Page through lightweight rows and
-      // fetch the full record only when an item is opened.
+      // Never fetch embedded data URLs, thumbnails or metadata for the grid.
+      // Some rows store multi-megabyte base64 previews in `thumbnail_url`, so a
+      // whole-library list used to weigh ~30 MB and simply never finished
+      // loading. The list keeps only tiny scalar columns; thumbnails are
+      // fetched one page at a time (useMediaThumbnails) and the full record is
+      // fetched when an item is opened.
       const pageSize = 500;
       const rows: any[] = [];
       for (let from = 0; ; from += pageSize) {
-        const { data, error } = await supabase
+        let q = supabase
           .from("user_media")
-          .select("id,user_id,media_type,title,thumbnail_url,source_page,is_public,shop_enabled,shop_price_cents,created_at,updated_at")
-          .eq("user_id", user.id)
+          .select("id,user_id,media_type,title,source_page,is_public,shop_enabled,shop_price_cents,created_at,updated_at")
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
+        // "everyone" relies on the owner-only RLS policy (is_owner()); for any
+        // other account it simply returns their own rows anyway.
+        if (scope === "mine") q = q.eq("user_id", user.id);
+        const { data, error } = await q;
         if (error) throw error;
         const page = data || [];
         rows.push(...page);
@@ -144,5 +149,30 @@ export function useUserMedia() {
       return rows;
     },
     enabled: !!user,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Thumbnails for just the rows currently on screen. Kept out of the list query
+ * because stored previews can be megabytes each.
+ */
+export function useMediaThumbnails(ids: string[]) {
+  const key = [...ids].sort().join(",");
+  return useQuery({
+    queryKey: ["user-media-thumbs", key],
+    queryFn: async () => {
+      if (ids.length === 0) return {} as Record<string, string | null>;
+      const { data, error } = await supabase
+        .from("user_media")
+        .select("id,thumbnail_url")
+        .in("id", ids);
+      if (error) throw error;
+      const map: Record<string, string | null> = {};
+      (data || []).forEach((r: any) => { map[r.id] = r.thumbnail_url; });
+      return map;
+    },
+    enabled: ids.length > 0,
+    staleTime: 60_000,
   });
 }
