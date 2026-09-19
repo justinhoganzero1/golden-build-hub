@@ -379,7 +379,7 @@ const App = () => (
                   <Route path="/admin/inbox" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Inbox"><AdminInboxPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/inbox" element={<RequireAuth><ErrorBoundary pageName="My Inbox"><InboxPage /></ErrorBoundary></RequireAuth>} />
 
-                  <Route path="/ai-companion" element={<RequireAuth><ErrorBoundary pageName="AI Companion"><AICompanionPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/ai-companion" element={<Navigate to="/oracle?council=1" replace />} />
                   <Route path="/avatar-gallery" element={<RequireAuth><ErrorBoundary pageName="Avatar Gallery"><AvatarGalleryPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/privacy-policy" element={<ErrorBoundary pageName="Privacy Policy"><PrivacyPolicyPage /></ErrorBoundary>} />
                   <Route path="/terms-of-service" element={<ErrorBoundary pageName="Terms of Service"><TermsOfServicePage /></ErrorBoundary>} />
