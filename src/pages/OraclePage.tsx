@@ -189,6 +189,18 @@ const OraclePage = () => {
   const [agents, setAgents] = useState<ChatAgent[]>(DEFAULT_AGENTS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  // ── COUNCIL MODE ──
+  // Every AI agent (Nova, Lyra, Sage, Kai) answers here inside the one Oracle
+  // chat, reads the others, debates, and the Oracle delivers one final answer.
+  // Replaces the old separate Agents / Companion / Tutor tabs.
+  const [councilMode, setCouncilMode] = useState<boolean>(() => {
+    try {
+      if (typeof window === "undefined") return false;
+      if (new URLSearchParams(window.location.search).get("council") === "1") return true;
+      return localStorage.getItem("oracle-council-mode") === "1";
+    } catch { return false; }
+  });
+  const [councilBusy, setCouncilBusy] = useState(false);
   const [showDoctor, setShowDoctor] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
