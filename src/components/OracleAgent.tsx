@@ -21,6 +21,7 @@ import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { useDraggable } from "@/hooks/useDraggable";
 import { runFullDiagnostic, type DoctorReport } from "@/lib/systemDoctor";
+import { runOracleMarkers } from "@/lib/oracleControl";
 
 type TaskKind = "image" | "video" | "text" | "research" | "diagnose" | "phoenix";
 type Job = {
@@ -230,7 +231,10 @@ export default function OracleAgent() {
             } catch {}
           }
         }
-        const done: Job = { ...j, status: "done", resultText: acc.trim() || "(no reply)" };
+        // Execute any app-control markers the Oracle emitted, then show the
+        // cleaned reply. This is what lets the chat box actually drive the app.
+        const cleaned = runOracleMarkers(acc.trim());
+        const done: Job = { ...j, status: "done", resultText: cleaned || "(no reply)" };
         setJob(done);
         await maybeSave(done);
       }

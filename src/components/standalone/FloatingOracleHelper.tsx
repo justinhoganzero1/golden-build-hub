@@ -9,6 +9,7 @@ import { useMute } from "@/contexts/MuteContext";
 import { cleanTextForSpeech } from "@/lib/utils";
 import { useDraggable } from "@/hooks/useDraggable";
 import { toast } from "sonner";
+import { runOracleMarkers } from "@/lib/oracleControl";
 
 /**
  * Floating Master Oracle for standalone apps.
@@ -216,7 +217,13 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
           }
         }
       }
-      if (acc) speak(acc);
+      if (acc) {
+        // Run any app-control markers (navigate / click / fill / scroll) so the
+        // Oracle can actually operate the app from this chat box too.
+        const cleaned = runOracleMarkers(acc);
+        setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cleaned } : m)));
+        speak(cleaned);
+      }
     } catch {
       setMessages((p) => [...p, { role: "assistant", content: "I'm having trouble connecting right now. Try again in a moment." }]);
     } finally {
