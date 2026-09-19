@@ -1713,6 +1713,70 @@ const OraclePage = () => {
     }
   };
 
+  // ============ COUNCIL ROUND ============
+  // Runs every agent on the same question inside this one chat: each answers,
+  // each critiques the others, then the Oracle gives the single best answer.
+  const runCouncil = async (text: string) => {
+    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text };
+    const thinkingId = `council-thinking-${Date.now()}`;
+    setShowChat(true);
+    setCouncilBusy(true);
+    setMessages(prev => [...prev, userMsg, {
+      id: thinkingId, role: "assistant", sender: "The Council", emoji: "🜂", color: "#FFD700",
+      content: "_Nova, Lyra, Sage and Kai are all thinking about this together..._",
+    }]);
+
+    const historyText = messages.slice(-6).map(m => `${m.sender}: ${m.content}`).join("\n").slice(0, 4000);
+
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-council`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+        body: JSON.stringify({ question: text, history: historyText, oracleName, debate: true }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setMessages(prev => prev.filter(m => m.id !== thinkingId));
+        if (resp.status === 402) {
+          notifyWalletInsufficient({ service: "Oracle Council" });
+          return;
+        }
+        toast.error(data?.message || "The council could not meet just now.");
+        return;
+      }
+
+      const panel: Array<{ id: string; name: string; emoji: string; color: string; answer: string; rebuttal: string }> =
+        Array.isArray(data.panel) ? data.panel : [];
+
+      setMessages(prev => prev.filter(m => m.id !== thinkingId));
+
+      for (const p of panel) {
+        const body = p.rebuttal ? `${p.answer}\n\n${p.rebuttal}` : p.answer;
+        setMessages(prev => [...prev, {
+          id: `council-${p.id}-${Date.now()}`, role: "assistant",
+          sender: p.name, emoji: p.emoji, color: p.color, content: body,
+        }]);
+        await new Promise(r => setTimeout(r, 180));
+      }
+
+      const finalText: string = (data.answer || "").trim();
+      if (finalText) {
+        setMessages(prev => [...prev, {
+          id: `council-final-${Date.now()}`, role: "assistant", sender: oracleName,
+          emoji: oracleAvatar ? "👤" : "🔮", color: "#9b87f5", content: finalText,
+          avatar_url: oracleAvatar?.image_url || undefined,
+        }]);
+        if (!isMuted) speakAsAgent(finalText, oracleName);
+      }
+    } catch (e) {
+      console.error("council error", e);
+      setMessages(prev => prev.filter(m => m.id !== thinkingId));
+      toast.error("The council could not be reached. Try again.");
+    } finally {
+      setCouncilBusy(false);
+    }
+  };
+
   // ============ SEND MESSAGE ============
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
