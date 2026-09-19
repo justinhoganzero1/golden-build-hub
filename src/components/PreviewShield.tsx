@@ -22,7 +22,10 @@ const PreviewShield = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (loading || isAdmin || user || !isPreview) return;
+    // Shield every signed-out visitor — Lovable preview AND the live public
+    // site. Signed-in members and the owner are never shielded.
+    void isPreview;
+    if (loading || isAdmin || user) return;
 
     let warned = 0;
     const warn = (msg: string) => {
