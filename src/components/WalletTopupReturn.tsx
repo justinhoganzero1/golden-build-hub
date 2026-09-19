@@ -44,6 +44,7 @@ const WalletTopupReturn = () => {
     };
 
     let cancelled = false;
+    let settled = false;
     const toastId = toast.loading("Adding your credit…");
 
     (async () => {
