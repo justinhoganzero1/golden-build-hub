@@ -116,11 +116,11 @@ export function useSaveMedia() {
   });
 }
 
-export function useUserMedia() {
+export function useUserMedia(scope: "mine" | "everyone" = "mine") {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["user-media", user?.id],
+    queryKey: ["user-media", user?.id, scope],
     queryFn: async () => {
       if (!user) return [];
       // Never fetch embedded data URLs or full metadata for the grid. This
