@@ -3284,6 +3284,21 @@ const OraclePage = () => {
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
           <OracleImageComposer />
+          <button
+            type="button"
+            onClick={() => {
+              const next = !councilMode;
+              setCouncilMode(next);
+              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
+              toast(next
+                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
+                : "Council off — it's just me answering now.");
+            }}
+            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
+            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
+          >
+            <Gavel className="w-5 h-5" />
+          </button>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
