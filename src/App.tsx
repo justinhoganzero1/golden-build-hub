@@ -329,7 +329,8 @@ const App = () => (
                   <Route path="/creator" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/studio" element={<RequireAuth><ErrorBoundary pageName="Creator Studio"><CreatorStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-assistant" element={<RequireAuth><ErrorBoundary pageName="Personal Assistant"><PersonalAssistantPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/ai-tutor" element={<RequireAuth><ErrorBoundary pageName="AI Tutor"><AITutorPage /></ErrorBoundary></RequireAuth>} />
+                  {/* Every AI agent now lives inside the one Oracle chat (council mode). */}
+                  <Route path="/ai-tutor" element={<Navigate to="/oracle?council=1" replace />} />
                   
                   <Route path="/interpreter" element={<RequireAuth><ErrorBoundary pageName="Interpreter"><InterpreterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/inventor" element={<RequireAuth><ErrorBoundary pageName="Inventor"><InventorPage /></ErrorBoundary></RequireAuth>} />
