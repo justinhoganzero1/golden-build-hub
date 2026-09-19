@@ -1837,6 +1837,16 @@ const OraclePage = () => {
       if (consumed) return;
     }
 
+    // ── COUNCIL INTERCEPT ──
+    // With council mode on, the whole agent panel answers here instead of the
+    // Oracle answering alone.
+    if (councilMode && !isIntroTrigger && !councilBusy) {
+      await runCouncil(text);
+      return;
+    }
+
+
+
     // ── TRUNCATION DETECTOR ──
     // If the message looks cut off ("udio on my device"), surface a quick
     // clarifier instead of forwarding garbage to the model.
