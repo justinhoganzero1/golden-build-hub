@@ -322,6 +322,29 @@ const MediaLibraryPage = () => {
         </div>
       </div>
 
+      {/* ── Owner-only: whose creations to show ── */}
+      {isAdmin && (
+        <div className="px-4 mb-3 flex flex-wrap gap-1.5">
+          {([
+            { key: "mine", label: "My creations" },
+            { key: "others", label: "Members' creations" },
+            { key: "everyone", label: "Everyone" },
+          ] as const).map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setScope(s.key)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                scope === s.key
+                  ? "text-primary border-primary/50 bg-primary/10 font-semibold"
+                  : "text-muted-foreground border-border hover:border-primary/40"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Search ── */}
       <div className="px-4 mb-3">
         <div className="relative">
