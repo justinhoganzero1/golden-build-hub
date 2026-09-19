@@ -124,7 +124,8 @@ serve(async (req) => {
                   balance_cents: 0,
                 }),
                 { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-              );
+                );
+              }
             }
 
             // Wallet has credit: every message is paid for from it.
