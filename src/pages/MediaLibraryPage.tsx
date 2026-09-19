@@ -169,7 +169,7 @@ const MediaLibraryPage = () => {
       counts[key] = (counts[key] || 0) + 1;
     });
     return counts;
-  }, [mediaItems]);
+  }, [scopedItems]);
 
   /* ── Filtering ── */
   const filtered = useMemo(() => {
