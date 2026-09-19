@@ -47,11 +47,8 @@ const groups: TileGroup[] = [
     defaultOpen: true,
     tiles: [
       { label: "Oracle AI", icon: <MessageCircle className="w-6 h-6" />, path: "/oracle" },
-      { label: "Nova (GPT)", icon: <Sparkles className="w-6 h-6" />, path: "/agents/nova" },
-      { label: "Lyra (Gemini)", icon: <Star className="w-6 h-6" />, path: "/agents/lyra" },
-      { label: "Companion", icon: <Heart className="w-6 h-6" />, path: "/ai-companion" },
-      { label: "Assistant", icon: <Sparkles className="w-6 h-6" />, path: "/personal-assistant" },
-      { label: "AI Tutor", icon: <GraduationCap className="w-6 h-6" />, path: "/ai-tutor" },
+      { label: "AI Council", icon: <Sparkles className="w-6 h-6" />, path: "/oracle?council=1" },
+      { label: "Assistant", icon: <Star className="w-6 h-6" />, path: "/personal-assistant" },
       { label: "Interpreter", icon: <Globe className="w-6 h-6" />, path: "/interpreter" },
       { label: "Live Vision", icon: <Eye className="w-6 h-6" />, path: "/live-vision" },
     ],
