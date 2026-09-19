@@ -111,10 +111,10 @@ serve(async (req) => {
                   over: false,
                   bypassed: false,
                 };
-                // Free message — skip the wallet charge entirely.
-                return await runChat();
-              }
-              return new Response(
+                // Free message — skip the wallet charge entirely and fall
+                // through to the normal chat flow below.
+              } else {
+                return new Response(
                 JSON.stringify({
                   error: "insufficient_coins",
                   reason: "free_daily_used",
