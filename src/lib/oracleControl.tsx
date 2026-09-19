@@ -172,7 +172,33 @@ export function dispatchOracleCommand(cmd: OracleCommand) {
 
 /** Strip oracle control markers from a text response so they don't show in chat. */
 export function stripOracleMarkers(text: string): string {
-  return text.replace(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi, "").trim();
+  return text
+    .replace(/\[\[\s*navigate\s*:\s*[^\]]+\]\]/gi, "")
+    .replace(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi, "")
+    .trim();
+}
+
+/**
+ * Execute EVERY control marker found in an Oracle reply, in order, and return
+ * the reply with the markers removed. This is what gives the Oracle real power
+ * over the app from ANY chat box in the product — not just the /oracle page.
+ */
+export function runOracleMarkers(text: string): string {
+  if (!text) return "";
+  const markers = text.match(/\[\[[^\]]+\]\]/g) || [];
+  let delay = 0;
+  for (const raw of markers) {
+    // [[NAVIGATE:/path]] is the legacy form used by the chat system prompt.
+    const legacyNav = raw.match(/\[\[\s*navigate\s*:\s*(\/[^\]\s]+)\s*\]\]/i);
+    const cmd: OracleCommand | null = legacyNav
+      ? { kind: "nav", path: legacyNav[1], label: legacyNav[1] }
+      : resolveOracleCommand(raw);
+    if (!cmd) continue;
+    // Chain them so a nav settles before the next click/fill runs.
+    window.setTimeout(() => dispatchOracleCommand(cmd), delay);
+    delay += cmd.kind === "nav" ? 700 : 250;
+  }
+  return stripOracleMarkers(text);
 }
 
 function findElement(selector: string): HTMLElement | null {
