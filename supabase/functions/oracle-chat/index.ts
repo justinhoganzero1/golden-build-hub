@@ -80,7 +80,54 @@ serve(async (req) => {
           } catch (_) { /* treat as no key */ }
 
           if (!isAdmin && !serverSubscribed && !trialActive && !hasOwnKey) {
-            // Trial over: every message is paid for from the user's own wallet.
+            // Trial over. Members with an empty wallet keep the small free
+            // membership allowance (enforced in the DB by enforce_ai_limit on
+            // the 'free' tier). Only once that daily allowance is used up — or
+            // when they actually hold credit — does the wallet pay.
+            let walletCents = 0;
+            try {
+              const { data: bal } = await admin
+                .from("wallet_balances")
+                .select("balance_cents")
+                .eq("user_id", userId)
+                .maybeSingle();
+              walletCents = bal?.balance_cents ?? 0;
+            } catch (_) { /* treat as empty wallet */ }
+
+            if (walletCents <= 0) {
+              const { data: limitRows, error: limitErr } = await admin.rpc("enforce_ai_limit", {
+                _user_id: userId,
+                _service: "chat",
+                _est_cost: 0,
+              });
+              const row = (limitRows || [])[0] as
+                | { allowed: boolean; requests_today: number; limit_requests: number }
+                | undefined;
+              if (!limitErr && row?.allowed) {
+                usageInfo = {
+                  count: row.requests_today,
+                  limit: row.limit_requests,
+                  remaining: Math.max(0, row.limit_requests - row.requests_today),
+                  over: false,
+                  bypassed: false,
+                };
+                // Free message — skip the wallet charge entirely.
+                return await runChat();
+              }
+              return new Response(
+                JSON.stringify({
+                  error: "insufficient_coins",
+                  reason: "free_daily_used",
+                  message:
+                    "You've used today's free messages. Add credit to keep chatting now, or come back tomorrow for more free ones.",
+                  needed_cents: 1,
+                  balance_cents: 0,
+                }),
+                { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+              );
+            }
+
+            // Wallet has credit: every message is paid for from it.
             try {
               await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
