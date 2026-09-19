@@ -44,6 +44,7 @@ const WalletTopupReturn = () => {
     };
 
     let cancelled = false;
+    let settled = false;
     const toastId = toast.loading("Adding your credit…");
 
     (async () => {
@@ -52,7 +53,8 @@ const WalletTopupReturn = () => {
         await new Promise((r) => setTimeout(r, 1000));
         const now = await readBalance();
         if (now > start) {
-          toast.success(`Credit added — $${(now / 100).toFixed(2)} ready to use.`, { id: toastId });
+          settled = true;
+          toast.success(`Credit added — $${(now / 100).toFixed(2)} ready to use.`, { id: toastId, duration: 8000 });
           window.dispatchEvent(new CustomEvent(WALLET_TOPPED_UP_EVENT, { detail: { balanceCents: now } }));
           clean();
           running.current = false;
@@ -60,7 +62,8 @@ const WalletTopupReturn = () => {
         }
       }
       if (!cancelled) {
-        toast.success("Payment received — your credit will appear in a moment.", { id: toastId });
+        settled = true;
+        toast.success("Payment received — your credit will appear in a moment.", { id: toastId, duration: 8000 });
         clean();
         running.current = false;
       }
@@ -68,7 +71,9 @@ const WalletTopupReturn = () => {
 
     return () => {
       cancelled = true;
-      toast.dismiss(toastId);
+      // Only clear the spinner if the payment never resolved — dismissing here
+      // after success would wipe the confirmation the moment the URL is cleaned.
+      if (!settled) toast.dismiss(toastId);
     };
   }, [params, user, setParams]);
 
