@@ -53,7 +53,7 @@ export default function CoverStudio({
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
-  const [exportBusy, setExportBusy] = useState<"download" | "share" | null>(null);
+  const [exportBusy, setExportBusy] = useState<"front" | "rear" | "download" | "share" | null>(null);
   const [printPreviews, setPrintPreviews] = useState<{ cover?: string; back?: string }>({});
   const layout = useMemo<BakeTextOptions["layout"]>(() => {
     if (design?.layout) return design.layout;
@@ -93,6 +93,48 @@ export default function CoverStudio({
     return new File([blob], name, { type: "image/jpeg" });
   };
 
+  const safeTitle = (title || "book").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  const buildCoverFile = async (slot: "cover" | "back") => {
+    const artwork = slot === "cover" ? coverImage : backImage;
+    if (!artwork) throw new Error(`${slot === "cover" ? "Front" : "Rear"} cover has not been built yet`);
+    const resolvedArtwork = await resolveStorageUrl(artwork, 3600);
+    const flattened = await bakeCoverText(resolvedArtwork, {
+      title,
+      author,
+      genre,
+      width: 1875,
+      height: 2775,
+      layout,
+      design,
+      slot,
+      ...(slot === "back" ? { blurb } : {}),
+    });
+    return dataUrlToFile(flattened, `${safeTitle}-kindle-${slot === "cover" ? "front-cover" : "rear-cover"}-300dpi.jpg`);
+  };
+
+  const saveFile = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.name;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  };
+
+  const downloadSingleCover = async (slot: "cover" | "back") => {
+    const busyKey = slot === "cover" ? "front" : "rear";
+    setExportBusy(busyKey);
+    try {
+      saveFile(await buildCoverFile(slot));
+      toast.success(`${slot === "cover" ? "Front" : "Rear"} cover downloaded for Kindle`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cover download failed");
+    } finally {
+      setExportBusy(null);
+    }
+  };
+
   const buildRetailFiles = async () => {
     if (!coverImage || !backImage) throw new Error("Build both covers first");
     const common = { title, author, genre, width: 1875, height: 2775, layout, design } as const;
@@ -105,10 +147,9 @@ export default function CoverStudio({
       bakeCoverText(resolvedCover, { ...common, slot: "cover" }),
       bakeCoverText(resolvedBack, { ...common, slot: "back", blurb }),
     ]);
-    const safe = (title || "book").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     return Promise.all([
-      dataUrlToFile(front, `${safe}-front-print-6x9-bleed.jpg`),
-      dataUrlToFile(back, `${safe}-back-print-6x9-bleed.jpg`),
+      dataUrlToFile(front, `${safeTitle}-front-print-6x9-bleed.jpg`),
+      dataUrlToFile(back, `${safeTitle}-back-print-6x9-bleed.jpg`),
     ]);
   };
 
@@ -116,14 +157,7 @@ export default function CoverStudio({
     setExportBusy("download");
     try {
       const files = await buildRetailFiles();
-      files.forEach(file => {
-        const url = URL.createObjectURL(file);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = file.name;
-        anchor.click();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-      });
+      files.forEach(saveFile);
       toast.success("Print-ready front and rear covers downloaded");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Cover export failed");
@@ -234,6 +268,19 @@ export default function CoverStudio({
                 )}
 
               </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void downloadSingleCover(slot)}
+                disabled={anyBusy || !!exportBusy || !url}
+                className="w-full rounded-none h-11 text-[11px] font-bold border-x-0 border-b-0"
+              >
+                {exportBusy === (slot === "cover" ? "front" : "rear")
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Download className="w-3.5 h-3.5" />}
+                Download {slot === "cover" ? "front" : "rear"} cover for Kindle
+              </Button>
 
               <Button
                 type="button"
