@@ -90,8 +90,13 @@ Deno.serve(async (req) => {
     }
 
     if (!result.ok) {
-      const msg = (result.out as any)?.message ?? "Amazon delivery failed.";
-      return json({ error: msg }, 502);
+      const raw = String((result.out as any)?.message ?? "Amazon delivery failed.");
+      const notVerified =
+        /not verified|verify a domain|only send testing emails|own email address/i.test(raw);
+      const msg = notVerified
+        ? "Kindle delivery isn't switched on yet: our sending address (oracle-lunar.online) still needs to be verified for email. Until then, use Download EPUB and drop it into the Kindle app — your cover and illustrations are all inside."
+        : raw;
+      return json({ error: msg, detail: raw }, 502);
     }
 
     return json({
