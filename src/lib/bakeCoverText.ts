@@ -203,6 +203,23 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): st
   return out;
 }
 
+/**
+ * Break a book title into natural display lines: any parenthetical tag
+ * (e.g. "(OZZY STYLE)") always sits on a line of its own, and a subtitle
+ * after a dash starts a new line.
+ */
+function layoutTitle(text: string): string {
+  return text
+    .replace(/\s*(\([^)]*\))\s*/g, "\n$1\n")
+    .replace(/\s+[—–]\s+/g, "\n")
+    .replace(/\s+-\s+/g, "\n")
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+
 /** Shrink font size until the wrapped text fits the given box. */
 function fitLines(
   ctx: CanvasRenderingContext2D,
