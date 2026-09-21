@@ -7,9 +7,34 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PRIMARY_FROM = "Oracle Lunar Books <kindle@notify.oracle-lunar.online>";
+const PREFERRED_DOMAINS = ["notify.oracle-lunar.online", "oracle-lunar.online"];
+const MAILBOX = "kindle";
 
 const senderAddress = (from: string) => from.match(/<([^>]+)>/)?.[1] ?? from;
+
+/** Ask Resend which of our domains are actually verified, and build the From. */
+const resolveSender = async (apiKey: string) => {
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const out = await res.json().catch(() => ({}));
+    const list: any[] = Array.isArray(out?.data) ? out.data : [];
+    const verified = list.filter((d) => String(d?.status).toLowerCase() === "verified").map((d) => String(d.name));
+    const pick =
+      PREFERRED_DOMAINS.find((d) => verified.includes(d)) ??
+      verified.find((d) => d.endsWith("oracle-lunar.online")) ??
+      verified[0];
+    return {
+      domain: pick ?? null,
+      verified,
+      all: list.map((d) => ({ name: String(d?.name), status: String(d?.status) })),
+    };
+  } catch {
+    return { domain: null, verified: [] as string[], all: [] as { name: string; status: string }[] };
+  }
+};
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
