@@ -192,12 +192,12 @@ const BookPage = () => {
             <CopyField label="Description" value={book.blurb} hint="KDP → Description (4,000 char limit)" />
             <CopyField
               label="Keywords"
-              value="scam thriller,revenge thriller,australian action,cybercrime,vigilante justice,action adventure,con artist"
+              value={keywordSuggestions(book.genre, book.title, book.blurb).join(",")}
               hint="KDP → 7 keyword boxes (one per comma)"
             />
             <CopyField
               label="Categories"
-              value={"Fiction > Thrillers > Crime\nFiction > Action & Adventure"}
+              value={categorySuggestions(book.genre).join("\n")}
               hint="KDP → Categories (choose two)"
             />
             <CopyField
