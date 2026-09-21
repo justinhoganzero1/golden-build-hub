@@ -16,6 +16,8 @@ import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StoryShareDialog from "@/components/story/StoryShareDialog";
 import SendToKindleDialog from "@/components/story/SendToKindleDialog";
+import KdpPublishPanel from "@/components/story/KdpPublishPanel";
+
 import PaywallGate, { hasAccess } from "@/components/PaywallGate";
 import { useSubscription } from "@/hooks/useSubscription";
 import ReactMarkdown from "react-markdown";
@@ -1763,6 +1765,8 @@ Rules: the three title-gradient colours must read as one confident, high-contras
    *  Barnes & Noble, Draft2Digital, Smashwords, IngramSpark. */
   const [epubBusy, setEpubBusy] = useState(false);
   const [kindleOpen, setKindleOpen] = useState(false);
+  const [kdpOpen, setKdpOpen] = useState(false);
+
   // === Compliance kit: provenance + disclosures + authorship log (privacy-scrubbed) ===
   const disclosureFacts = (opts: { voice?: boolean } = {}): DisclosureFacts => ({
     title: scrubIdentifiers(story.title || "Untitled"),
