@@ -2655,7 +2655,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                   title="Reads each chapter and seats its existing pictures at the moments they depict — no new images, no charge"
                 >
                   {placeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                  {placeBusy ? "Reading the story…" : "Magical AI Place Images — FREE"}
+                  {placeBusy || bulkBusy ? "Reading the story…" : "Magical AI — read book, draw & place images"}
                 </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
