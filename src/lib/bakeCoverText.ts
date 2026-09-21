@@ -324,7 +324,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     // in the upper two-thirds; title + author sit in the lower band.
     scrim(ctx, W, H * 0.52, H * 0.48, "bottom");
 
-    const t = fitLines(ctx, title, inner * 0.94, H * 0.22, W * 0.145, identity.displayWeight, identity.display, 1.02);
+    const t = fitLines(ctx, layoutTitle(title), inner * 0.94, H * 0.22, W * 0.145, identity.displayWeight, identity.display, 1.02);
     const titleBlock = t.lines.length * t.lineHeight;
     const authorSize = W * 0.052;
     const genreSize = W * 0.024;
@@ -403,7 +403,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     scrim(ctx, W, 0, H * 0.24, "top");
 
     let y = H * 0.05;
-    const t = fitLines(ctx, title, inner, H * 0.12, W * 0.09, identity.displayWeight, identity.display, 1.05);
+    const t = fitLines(ctx, layoutTitle(title), inner, H * 0.12, W * 0.09, identity.displayWeight, identity.display, 1.05);
     const track = t.fontSize * identity.tracking;
     ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
     t.lines.forEach((line, i) => {
