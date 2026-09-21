@@ -53,7 +53,11 @@ Deno.serve(async (req) => {
     const kindleEmail = String(body.kindleEmail ?? "").trim().toLowerCase();
     const title = String(body.title ?? "Untitled Story").slice(0, 200);
     const filename = String(body.filename ?? "story.epub").slice(0, 120).replace(/[^\w.\-]+/g, "-");
-    const fileBase64 = String(body.fileBase64 ?? "");
+    // Reference the string directly — copying a multi-MB base64 payload is what
+    // tips the worker over its memory limit.
+    const fileBase64 = typeof body.fileBase64 === "string" ? body.fileBase64 : "";
+    body.fileBase64 = undefined;
+
 
     if (!/^[^\s@]+@(kindle\.com|free\.kindle\.com)$/.test(kindleEmail)) {
       return json({ error: "That doesn't look like a Kindle address. It must end in @kindle.com." }, 400);
