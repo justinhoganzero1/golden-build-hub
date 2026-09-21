@@ -1364,6 +1364,51 @@ export type Database = {
         }
         Relationships: []
       }
+      kindle_deliveries: {
+        Row: {
+          created_at: string
+          failure_reason: string | null
+          file_size_bytes: number
+          filename: string
+          id: string
+          kindle_email: string
+          provider_message_id: string | null
+          sender_email: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failure_reason?: string | null
+          file_size_bytes: number
+          filename: string
+          id?: string
+          kindle_email: string
+          provider_message_id?: string | null
+          sender_email: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failure_reason?: string | null
+          file_size_bytes?: number
+          filename?: string
+          id?: string
+          kindle_email?: string
+          provider_message_id?: string | null
+          sender_email?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_magnet_uses: {
         Row: {
           converted_to_signup: boolean | null
