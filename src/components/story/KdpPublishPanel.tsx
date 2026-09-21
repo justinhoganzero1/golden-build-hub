@@ -103,25 +103,45 @@ const KdpPublishPanel = ({
   const [sender, setSender] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
-  // Load saved fields, defaulting from the story itself.
+  // Load saved fields, defaulting from the story itself. Fields that mirror the
+  // story (title/author/description) always follow the live book unless the
+  // author deliberately typed something different into the panel.
   useEffect(() => {
     if (!open) return;
-    let saved: Partial<KdpFields> = {};
+    let saved: Partial<KdpFields> & { _seed?: Partial<KdpFields> } = {};
     try { saved = JSON.parse(localStorage.getItem(storeKey(storyId)) || "{}"); } catch {}
-    setKdp({
-      ...emptyKdp(),
+    const seed = saved._seed ?? {};
+    const live = {
       title: title || "",
       author: author || "",
       description: (blurb || premise || "").trim(),
-      ...saved,
+    };
+    const pick = (key: keyof typeof live) => {
+      const savedValue = saved[key];
+      if (typeof savedValue !== "string") return live[key];
+      // Untouched since it was last seeded → follow the story.
+      return savedValue === (seed[key] ?? "") ? live[key] : savedValue;
+    };
+    const { _seed: _drop, ...rest } = saved;
+    setKdp({
+      ...emptyKdp(),
+      ...rest,
+      title: pick("title"),
+      author: pick("author"),
+      description: pick("description"),
     });
   }, [open, storyId, title, author, blurb, premise]);
 
-  // Persist as the user edits.
+  // Persist as the user edits, along with the story values it was seeded from.
   useEffect(() => {
     if (!open) return;
-    try { localStorage.setItem(storeKey(storyId), JSON.stringify(kdp)); } catch {}
-  }, [kdp, open, storyId]);
+    const seed = {
+      title: title || "",
+      author: author || "",
+      description: (blurb || premise || "").trim(),
+    };
+    try { localStorage.setItem(storeKey(storyId), JSON.stringify({ ...kdp, _seed: seed })); } catch {}
+  }, [kdp, open, storyId, title, author, blurb, premise]);
 
   const checkSender = async () => {
     setChecking(true);
