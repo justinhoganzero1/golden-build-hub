@@ -66,29 +66,40 @@ Deno.serve(async (req) => {
       return json({ error: "Only EPUB files can be sent to Kindle." }, 400);
     }
     if (fileBase64.length < 100) return json({ error: "The book file was empty." }, 400);
-    // Amazon rejects personal documents over 50MB; base64 is ~1.37x raw size.
-    if (fileBase64.length > 50 * 1024 * 1024 * 1.4) {
-      return json({ error: "This book is over Amazon's 50MB personal-document limit." }, 400);
+    // Hard cap well under Amazon's 50MB: the edge worker holds several copies of
+    // the payload while serialising it for Resend, so bigger books kill it.
+    // 15MB of base64 is roughly an 11MB EPUB.
+    if (fileBase64.length > 15 * 1024 * 1024) {
+      return json({
+        error:
+          "This book is too large to email to Kindle (over ~11MB). Use Download EPUB and drop the file into the Kindle app — the cover and illustrations are all inside.",
+      }, 413);
     }
 
     const send = async (from: string) => {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from,
-          to: [kindleEmail],
-          // Amazon uses the subject as the document title hint.
-          subject: title,
-          text: `${title} — delivered by Oracle Lunar.`,
-          attachments: [{ filename, content: fileBase64 }],
-        }),
-      });
-      const out = await res.json().catch(() => ({}));
-      return { ok: res.ok, out };
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from,
+            to: [kindleEmail],
+            // Amazon uses the subject as the document title hint.
+            subject: title,
+            text: `${title} — delivered by Oracle Lunar.`,
+            attachments: [{ filename, content: fileBase64 }],
+          }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) console.error("send-to-kindle resend error", res.status, JSON.stringify(out).slice(0, 300));
+        return { ok: res.ok, out };
+      } catch (err) {
+        console.error("send-to-kindle send failed", (err as Error)?.message);
+        return { ok: false, out: { message: "Could not reach the email service." } };
+      }
     };
 
     let usedFrom = PRIMARY_FROM;
