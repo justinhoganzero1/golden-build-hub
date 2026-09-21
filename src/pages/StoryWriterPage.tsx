@@ -2293,6 +2293,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 {isAdmin && <span className="ml-2 text-amber-400 font-semibold">· ADMIN UNLIMITED</span>}
               </p>
             </div>
+            {savingId && (
+              <button
+                onClick={() => openSequelFor(savingId)}
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-semibold"
+                aria-label="Write a sequel to this story"
+                title="Write a sequel"
+              >
+                <BookPlus className="w-4 h-4" /> Sequel
+              </button>
+            )}
             <button
               onClick={() => setShareOpen(true)}
               className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
@@ -2305,7 +2315,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
         {/* Browse ALL my stories — searchable + paginated */}
         <div className="px-4 py-3 border-b border-border">
-          <StoryLibraryBrowser onOpen={loadSaved} currentId={savingId} />
+          <StoryLibraryBrowser onOpen={loadSaved} onSequel={openSequelFor} currentId={savingId} />
           {openingStoryId && (
             <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
