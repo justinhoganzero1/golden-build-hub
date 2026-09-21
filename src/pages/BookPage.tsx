@@ -26,6 +26,56 @@ interface BookDoc {
   chapters: BookChapter[];
 }
 
+const GENRE_CATEGORIES: Record<string, string[]> = {
+  thriller: ["Fiction > Thrillers > Crime", "Fiction > Action & Adventure"],
+  crime: ["Fiction > Mystery & Detective", "Fiction > Thrillers > Crime"],
+  mystery: ["Fiction > Mystery & Detective", "Fiction > Thrillers > Suspense"],
+  romance: ["Fiction > Romance > Contemporary", "Fiction > Women's Fiction"],
+  fantasy: ["Fiction > Fantasy > Epic", "Fiction > Action & Adventure"],
+  "science fiction": ["Fiction > Science Fiction > Adventure", "Fiction > Action & Adventure"],
+  horror: ["Fiction > Horror", "Fiction > Thrillers > Supernatural"],
+  children: ["Juvenile Fiction > Action & Adventure", "Juvenile Fiction > Readers > Beginner"],
+  "young adult": ["Young Adult Fiction > Action & Adventure", "Young Adult Fiction > Coming of Age"],
+  historical: ["Fiction > Historical", "Fiction > Literary"],
+  adventure: ["Fiction > Action & Adventure", "Fiction > Thrillers > Suspense"],
+  comedy: ["Fiction > Humorous > General", "Fiction > Literary"],
+  "non-fiction": ["Nonfiction > Biography & Memoir", "Nonfiction > Self-Help"],
+};
+
+const categorySuggestions = (genre: string) => {
+  const key = (genre || "").trim().toLowerCase();
+  const match = Object.keys(GENRE_CATEGORIES).find((g) => key.includes(g));
+  return match ? GENRE_CATEGORIES[match] : ["Fiction > General", "Fiction > Literary"];
+};
+
+const STOP_WORDS = new Set([
+  "the","and","for","with","that","this","from","into","your","they","their","them","have","has","had","was","were",
+  "when","what","will","would","been","then","than","there","here","after","before","over","under","about","just",
+  "out","off","but","not","are","you","his","her","she","him","its","it's","one","all","who","how","why","can",
+]);
+
+/** Build seven Amazon keyword phrases from the book's own genre, title and blurb. */
+const keywordSuggestions = (genre: string, title: string, blurb: string) => {
+  const g = (genre || "fiction").trim().toLowerCase();
+  const out: string[] = [g, `${g} novel`, `${g} book`];
+  const words = `${title} ${blurb}`
+    .toLowerCase()
+    .replace(/[^a-z' ]+/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !STOP_WORDS.has(w));
+  const counts = new Map<string, number>();
+  words.forEach((w) => counts.set(w, (counts.get(w) ?? 0) + 1));
+  [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .forEach(([w]) => {
+      const phrase = `${w} ${g}`;
+      if (!out.includes(phrase) && out.length < 7) out.push(phrase);
+    });
+  while (out.length < 7) out.push(`best ${g} ${out.length}`.trim());
+  return out.slice(0, 7);
+};
+
 const CopyField = ({ label, value, hint }: { label: string; value: string; hint?: string }) => {
   const [done, setDone] = useState(false);
   const copy = async () => {
