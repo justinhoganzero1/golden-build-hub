@@ -1,6 +1,5 @@
 // Emails a finished EPUB straight to a reader's @kindle.com address using
 // Amazon's "Send to Kindle" personal-document email service.
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,13 +30,19 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "Sign in to send to Kindle." }, 401);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr || !userData?.user) return json({ error: "Sign in to send to Kindle." }, 401);
+    // Lightweight auth check over REST — importing the full client alongside a
+    // multi-megabyte attachment pushes the worker past its memory limit.
+    const userRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      },
+    });
+    if (!userRes.ok) {
+      await userRes.body?.cancel();
+      return json({ error: "Sign in to send to Kindle." }, 401);
+    }
+    await userRes.json().catch(() => null);
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
@@ -48,7 +53,11 @@ Deno.serve(async (req) => {
     const kindleEmail = String(body.kindleEmail ?? "").trim().toLowerCase();
     const title = String(body.title ?? "Untitled Story").slice(0, 200);
     const filename = String(body.filename ?? "story.epub").slice(0, 120).replace(/[^\w.\-]+/g, "-");
-    const fileBase64 = String(body.fileBase64 ?? "");
+    // Reference the string directly — copying a multi-MB base64 payload is what
+    // tips the worker over its memory limit.
+    const fileBase64 = typeof body.fileBase64 === "string" ? body.fileBase64 : "";
+    body.fileBase64 = undefined;
+
 
     if (!/^[^\s@]+@(kindle\.com|free\.kindle\.com)$/.test(kindleEmail)) {
       return json({ error: "That doesn't look like a Kindle address. It must end in @kindle.com." }, 400);
@@ -57,29 +66,40 @@ Deno.serve(async (req) => {
       return json({ error: "Only EPUB files can be sent to Kindle." }, 400);
     }
     if (fileBase64.length < 100) return json({ error: "The book file was empty." }, 400);
-    // Amazon rejects personal documents over 50MB; base64 is ~1.37x raw size.
-    if (fileBase64.length > 50 * 1024 * 1024 * 1.4) {
-      return json({ error: "This book is over Amazon's 50MB personal-document limit." }, 400);
+    // Hard cap well under Amazon's 50MB: the edge worker holds several copies of
+    // the payload while serialising it for Resend, so bigger books kill it.
+    // 15MB of base64 is roughly an 11MB EPUB.
+    if (fileBase64.length > 15 * 1024 * 1024) {
+      return json({
+        error:
+          "This book is too large to email to Kindle (over ~11MB). Use Download EPUB and drop the file into the Kindle app — the cover and illustrations are all inside.",
+      }, 413);
     }
 
     const send = async (from: string) => {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from,
-          to: [kindleEmail],
-          // Amazon uses the subject as the document title hint.
-          subject: title,
-          text: `${title} — delivered by Oracle Lunar.`,
-          attachments: [{ filename, content: fileBase64 }],
-        }),
-      });
-      const out = await res.json().catch(() => ({}));
-      return { ok: res.ok, out };
+      try {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from,
+            to: [kindleEmail],
+            // Amazon uses the subject as the document title hint.
+            subject: title,
+            text: `${title} — delivered by Oracle Lunar.`,
+            attachments: [{ filename, content: fileBase64 }],
+          }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) console.error("send-to-kindle resend error", res.status, JSON.stringify(out).slice(0, 300));
+        return { ok: res.ok, out };
+      } catch (err) {
+        console.error("send-to-kindle send failed", (err as Error)?.message);
+        return { ok: false, out: { message: "Could not reach the email service." } };
+      }
     };
 
     let usedFrom = PRIMARY_FROM;

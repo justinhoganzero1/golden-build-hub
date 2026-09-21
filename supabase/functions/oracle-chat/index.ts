@@ -94,6 +94,7 @@ serve(async (req) => {
               walletCents = bal?.balance_cents ?? 0;
             } catch (_) { /* treat as empty wallet */ }
 
+            let freeMessageGranted = false;
             if (walletCents <= 0) {
               const { data: limitRows, error: limitErr } = await admin.rpc("enforce_ai_limit", {
                 _user_id: userId,
@@ -113,6 +114,7 @@ serve(async (req) => {
                 };
                 // Free message — skip the wallet charge entirely and fall
                 // through to the normal chat flow below.
+                freeMessageGranted = true;
               } else {
                 return new Response(
                 JSON.stringify({
@@ -129,7 +131,8 @@ serve(async (req) => {
             }
 
             // Wallet has credit: every message is paid for from it.
-            try {
+            // A granted free daily message is never charged.
+            if (!freeMessageGranted) try {
               await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
                 model: "google/gemini-2.5-flash",
