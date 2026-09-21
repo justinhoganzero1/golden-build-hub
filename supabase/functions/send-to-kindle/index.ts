@@ -30,13 +30,19 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) return json({ error: "Sign in to send to Kindle." }, 401);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr || !userData?.user) return json({ error: "Sign in to send to Kindle." }, 401);
+    // Lightweight auth check over REST — importing the full client alongside a
+    // multi-megabyte attachment pushes the worker past its memory limit.
+    const userRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      },
+    });
+    if (!userRes.ok) {
+      await userRes.body?.cancel();
+      return json({ error: "Sign in to send to Kindle." }, 401);
+    }
+    await userRes.json().catch(() => null);
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
