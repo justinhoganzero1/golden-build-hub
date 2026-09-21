@@ -198,16 +198,25 @@ export default function CoverStudio({
     setExportBusy("share");
     try {
       const files = await buildRetailFiles();
-      if (navigator.canShare?.({ files })) {
-        await navigator.share({ files, title: `${title} covers`, text: "Print-ready front and rear book covers" });
-      } else {
-        throw new Error("File sharing is unavailable here — use Download instead");
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      const canShareFiles = !!nav.share && !!nav.canShare?.({ files });
+      if (canShareFiles) {
+        try {
+          await nav.share({ files, title: `${title} covers`, text: "Print-ready front and rear book covers" });
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          console.error("[CoverStudio] share failed", err);
+        }
       }
+      // No share sheet (most desktop browsers) — hand over the real files instead.
+      files.forEach(saveFile);
+      toast.success("Your device can't share files here — both covers were downloaded instead");
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
       toast.error(error instanceof Error ? error.message : "Cover sharing failed");
     } finally { setExportBusy(null); }
   };
+
 
 
   return (
