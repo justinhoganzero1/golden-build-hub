@@ -2603,12 +2603,12 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 <Button
                   type="button"
                   onClick={placeExistingIllustrations}
-                  disabled={!story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
+                  disabled={placeBusy || !story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
                   className="h-9 px-4 font-black italic"
-                  title="Places existing images inside the story without generating or charging for new images"
+                  title="Reads each chapter and seats its existing pictures at the moments they depict — no new images, no charge"
                 >
-                  <Wand2 className="w-4 h-4" />
-                  Magical AI Place Images — FREE
+                  {placeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  {placeBusy ? "Reading the story…" : "Magical AI Place Images — FREE"}
                 </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
