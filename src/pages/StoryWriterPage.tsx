@@ -2294,6 +2294,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
               </p>
             </div>
             {savingId && (
+              <a
+                href={`/book/${savingId}`}
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-semibold"
+                aria-label="Open the book page for this story"
+                title="Book page (contents, summaries, KDP details)"
+              >
+                <BookMarked className="w-4 h-4" /> Book page
+              </a>
+            )}
+            {savingId && (
               <button
                 onClick={() => openSequelFor(savingId)}
                 className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-semibold"
