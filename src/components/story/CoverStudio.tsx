@@ -53,7 +53,7 @@ export default function CoverStudio({
 }: CoverStudioProps) {
   const anyBusy = !!busy || !!swarmBusy;
   const ready = storyWordCount > 200;
-  const [exportBusy, setExportBusy] = useState<"front" | "rear" | "download" | "share" | null>(null);
+  const [exportBusy, setExportBusy] = useState<"front" | "rear" | "frontPdf" | "rearPdf" | "download" | "share" | null>(null);
   const [printPreviews, setPrintPreviews] = useState<{ cover?: string; back?: string }>({});
   const layout = useMemo<BakeTextOptions["layout"]>(() => {
     if (design?.layout) return design.layout;
@@ -95,11 +95,11 @@ export default function CoverStudio({
 
   const safeTitle = (title || "book").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  const buildCoverFile = async (slot: "cover" | "back") => {
+  const buildFlattenedCover = async (slot: "cover" | "back") => {
     const artwork = slot === "cover" ? coverImage : backImage;
     if (!artwork) throw new Error(`${slot === "cover" ? "Front" : "Rear"} cover has not been built yet`);
     const resolvedArtwork = await resolveStorageUrl(artwork, 3600);
-    const flattened = await bakeCoverText(resolvedArtwork, {
+    return bakeCoverText(resolvedArtwork, {
       title,
       author,
       genre,
@@ -110,7 +110,24 @@ export default function CoverStudio({
       slot,
       ...(slot === "back" ? { blurb } : {}),
     });
+  };
+
+  const buildCoverFile = async (slot: "cover" | "back") => {
+    const flattened = await buildFlattenedCover(slot);
     return dataUrlToFile(flattened, `${safeTitle}-kindle-${slot === "cover" ? "front-cover" : "rear-cover"}-300dpi.jpg`);
+  };
+
+  const buildCoverPdf = async (slot: "cover" | "back") => {
+    const flattened = await buildFlattenedCover(slot);
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: [6.25, 9.25], compress: true });
+    pdf.addImage(flattened, "JPEG", 0, 0, 6.25, 9.25, undefined, "FAST");
+    const blob = pdf.output("blob");
+    return new File(
+      [blob],
+      `${safeTitle}-kindle-${slot === "cover" ? "front-cover" : "rear-cover"}-300dpi.pdf`,
+      { type: "application/pdf" },
+    );
   };
 
   const saveFile = (file: File) => {
@@ -130,6 +147,19 @@ export default function CoverStudio({
       toast.success(`${slot === "cover" ? "Front" : "Rear"} cover downloaded for Kindle`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Cover download failed");
+    } finally {
+      setExportBusy(null);
+    }
+  };
+
+  const downloadSingleCoverPdf = async (slot: "cover" | "back") => {
+    const busyKey = slot === "cover" ? "frontPdf" : "rearPdf";
+    setExportBusy(busyKey);
+    try {
+      saveFile(await buildCoverPdf(slot));
+      toast.success(`${slot === "cover" ? "Front" : "Rear"} cover PDF downloaded for Kindle`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cover PDF download failed");
     } finally {
       setExportBusy(null);
     }
@@ -284,6 +314,19 @@ export default function CoverStudio({
 
               <Button
                 type="button"
+                variant="outline"
+                onClick={() => void downloadSingleCoverPdf(slot)}
+                disabled={anyBusy || !!exportBusy || !url}
+                className="w-full rounded-none h-11 text-[11px] font-bold border-x-0 border-b-0"
+              >
+                {exportBusy === (slot === "cover" ? "frontPdf" : "rearPdf")
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Download className="w-3.5 h-3.5" />}
+                Download {slot === "cover" ? "front" : "rear"} cover PDF
+              </Button>
+
+              <Button
+                type="button"
                 variant="ghost"
                 onClick={() => onGenerateSlot(slot)}
                 disabled={anyBusy}
@@ -346,7 +389,7 @@ export default function CoverStudio({
           </Button>
         </div>
         <p className="text-[10px] text-center text-muted-foreground">
-          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG. The preview is the exact flattened print file; author credit placement adapts to each book.
+          6 × 9 inch trim, 0.125 inch bleed, 300 DPI JPEG or PDF. The preview is the exact flattened print file; author credit placement adapts to each book.
         </p>
       </div>
     </section>
