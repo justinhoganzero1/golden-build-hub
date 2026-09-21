@@ -7,9 +7,34 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PRIMARY_FROM = "Oracle Lunar Books <kindle@notify.oracle-lunar.online>";
+const PREFERRED_DOMAINS = ["notify.oracle-lunar.online", "oracle-lunar.online"];
+const MAILBOX = "kindle";
 
 const senderAddress = (from: string) => from.match(/<([^>]+)>/)?.[1] ?? from;
+
+/** Ask Resend which of our domains are actually verified, and build the From. */
+const resolveSender = async (apiKey: string) => {
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    const out = await res.json().catch(() => ({}));
+    const list: any[] = Array.isArray(out?.data) ? out.data : [];
+    const verified = list.filter((d) => String(d?.status).toLowerCase() === "verified").map((d) => String(d.name));
+    const pick =
+      PREFERRED_DOMAINS.find((d) => verified.includes(d)) ??
+      verified.find((d) => d.endsWith("oracle-lunar.online")) ??
+      verified[0];
+    return {
+      domain: pick ?? null,
+      verified,
+      all: list.map((d) => ({ name: String(d?.name), status: String(d?.status) })),
+    };
+  } catch {
+    return { domain: null, verified: [] as string[], all: [] as { name: string; status: string }[] };
+  }
+};
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -45,9 +70,22 @@ Deno.serve(async (req) => {
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
-      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string }
+      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; probe?: boolean }
       | null;
     if (!body) return json({ error: "Invalid request body." }, 400);
+
+    const senderInfo = await resolveSender(RESEND_API_KEY);
+    const senderEmail = senderInfo.domain ? `${MAILBOX}@${senderInfo.domain}` : null;
+
+    // Probe mode: the dialog asks which sender address to show the reader.
+    if (body.probe) {
+      return json({
+        ready: !!senderEmail,
+        sender: senderEmail,
+        domains: senderInfo.all,
+      });
+    }
+
 
     const kindleEmail = String(body.kindleEmail ?? "").trim().toLowerCase();
     const title = String(body.title ?? "Untitled Story").slice(0, 200);
@@ -101,15 +139,25 @@ Deno.serve(async (req) => {
       }
     };
 
-    const usedFrom = PRIMARY_FROM;
-    const result = await send(PRIMARY_FROM);
+    if (!senderEmail) {
+      const names = senderInfo.all.map((d) => `${d.name} (${d.status})`).join(", ") || "none added";
+      console.error("send-to-kindle: no verified sending domain", names);
+      return json({
+        error:
+          "Kindle delivery can't send yet — no verified sending address is available. Use Download EPUB and drop it into the Kindle app; the cover and illustrations are all inside.",
+        detail: `Resend domains: ${names}`,
+      }, 502);
+    }
+
+    const usedFrom = `Oracle Lunar Books <${senderEmail}>`;
+    const result = await send(usedFrom);
 
     if (!result.ok) {
       const raw = String((result.out as any)?.message ?? "Amazon delivery failed.");
       const notVerified =
         /not verified|verify a domain|only send testing emails|own email address/i.test(raw);
       const msg = notVerified
-          ? "Kindle delivery isn't switched on yet: our sending address (notify.oracle-lunar.online) still needs to be verified for email. Until then, use Download EPUB and upload it through Send to Kindle — your cover and illustrations are all inside."
+          ? `Kindle delivery isn't switched on yet: our sending address (${senderEmail}) still needs to be verified for email. Until then, use Download EPUB and upload it through Send to Kindle — your cover and illustrations are all inside.`
         : raw;
       return json({ error: msg, detail: raw }, 502);
     }
@@ -117,6 +165,7 @@ Deno.serve(async (req) => {
     return json({
       sent: true,
       sender: senderAddress(usedFrom),
+
       kindleEmail,
       message: `Sent to ${kindleEmail}. It appears on your Kindle in a few minutes.`,
     });

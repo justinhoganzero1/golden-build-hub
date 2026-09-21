@@ -73,7 +73,16 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       setApproved(localStorage.getItem(APPROVED_KEY) === "1");
     } catch {}
     setSentTo(null);
+    // Ask the server which sending address is actually live, so the address the
+    // reader approves at Amazon always matches the one the book arrives from.
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("send-to-kindle", { body: { probe: true } });
+        if ((data as any)?.sender) setSender((data as any).sender);
+      } catch {}
+    })();
   }, [open]);
+
 
   const emailValid = useMemo(
     () => /^[^\s@]+@(kindle\.com|free\.kindle\.com)$/i.test(kindleEmail.trim()),
