@@ -1,3 +1,4 @@
+import { validateForKindle } from "@/lib/epubValidation";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ type DeliveryStatus = "queued" | "delivered_to_mail_server" | "delayed" | "bounc
 
 const deliveryCopy: Record<DeliveryStatus, string> = {
   queued: "Queued with the email service. Amazon has not accepted it yet.",
-  delivered_to_mail_server: "Amazon's mail server accepted the email. Kindle conversion can still take several minutes.",
+  delivered_to_mail_server: "Amazon accepted the email, but this does not prove the book reached your Kindle. Conversion may take several minutes; check Library → Docs.",
   delayed: "The email service is still retrying delivery to Amazon.",
   bounced: "Amazon rejected the email. Check the approved sender and Kindle address, then retry.",
   failed: "Delivery failed before Amazon accepted the email. Retry or use Send to Kindle web.",
@@ -198,8 +199,8 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
             Send “{title}” to your Kindle
           </DialogTitle>
           <DialogDescription>
-            Follow the three steps. Once they're done, one tap delivers the finished book
-            straight into your Kindle library — no cables, no uploading, no computer.
+            Follow the three steps to send the finished book to Amazon for Kindle conversion.
+            Only seeing it in Library → Docs confirms delivery.
           </DialogDescription>
         </DialogHeader>
 
@@ -263,8 +264,8 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
         <Step
           n={3}
           done={!!sentTo}
-          title="Tap send — we do the rest"
-          bubble="We build the Kindle-formatted EPUB (cover, chapters, table of contents) and email it to Amazon for you."
+          title="Tap send — then confirm it appears"
+          bubble="We build and send the EPUB. Amazon processes personal documents separately, so check Library → Docs after sending."
         >
           <Button className="w-full" onClick={sendNow} disabled={busy !== null || !emailValid || !approved}>
             {busy === "send" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BookMarked className="w-4 h-4 mr-2" />}

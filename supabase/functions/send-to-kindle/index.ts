@@ -169,7 +169,11 @@ Deno.serve(async (req) => {
             // Amazon uses the subject as the document title hint.
             subject: title,
             text: `${title} — delivered by Oracle Lunar.`,
-            attachments: [{ filename, content: fileBase64 }],
+            attachments: [{
+              filename,
+              content: fileBase64,
+              content_type: "application/epub+zip",
+            }],
           }),
         });
         const out = await res.json().catch(() => ({}));
