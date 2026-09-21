@@ -139,15 +139,25 @@ Deno.serve(async (req) => {
       }
     };
 
-    const usedFrom = PRIMARY_FROM;
-    const result = await send(PRIMARY_FROM);
+    if (!senderEmail) {
+      const names = senderInfo.all.map((d) => `${d.name} (${d.status})`).join(", ") || "none added";
+      console.error("send-to-kindle: no verified sending domain", names);
+      return json({
+        error:
+          "Kindle delivery can't send yet — no verified sending address is available. Use Download EPUB and drop it into the Kindle app; the cover and illustrations are all inside.",
+        detail: `Resend domains: ${names}`,
+      }, 502);
+    }
+
+    const usedFrom = `Oracle Lunar Books <${senderEmail}>`;
+    const result = await send(usedFrom);
 
     if (!result.ok) {
       const raw = String((result.out as any)?.message ?? "Amazon delivery failed.");
       const notVerified =
         /not verified|verify a domain|only send testing emails|own email address/i.test(raw);
       const msg = notVerified
-          ? "Kindle delivery isn't switched on yet: our sending address (notify.oracle-lunar.online) still needs to be verified for email. Until then, use Download EPUB and upload it through Send to Kindle — your cover and illustrations are all inside."
+          ? `Kindle delivery isn't switched on yet: our sending address (${senderEmail}) still needs to be verified for email. Until then, use Download EPUB and upload it through Send to Kindle — your cover and illustrations are all inside.`
         : raw;
       return json({ error: msg, detail: raw }, 502);
     }
@@ -155,6 +165,7 @@ Deno.serve(async (req) => {
     return json({
       sent: true,
       sender: senderAddress(usedFrom),
+
       kindleEmail,
       message: `Sent to ${kindleEmail}. It appears on your Kindle in a few minutes.`,
     });
