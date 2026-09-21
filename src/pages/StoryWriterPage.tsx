@@ -652,11 +652,21 @@ const StoryWriterPage = () => {
     setPlaceBusy(true);
     const anchorMap = new Map<number, number[]>();
     let aiMatched = 0;
+    let alreadySeated = 0;
     try {
       for (const { c, i } of targets) {
         const paragraphs = (c.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
         const count = c.images!.length;
         if (!paragraphs.length) continue;
+
+        // Already seated at real paragraph positions — leave it alone, no AI call,
+        // so pressing this again never redraws or re-charges.
+        const seated = c.imageAnchors || [];
+        if (
+          seated.length === count &&
+          seated.every(a => Number.isInteger(a) && a >= 1 && a <= paragraphs.length)
+        ) { alreadySeated += 1; continue; }
+
 
         let anchors: number[] | null = null;
         try {
@@ -699,9 +709,13 @@ Return ONLY a JSON array of ${count} integer paragraph numbers, e.g. [4, 17, 33]
       }),
     }));
     setReadMode(true);
-    toast.success(
-      `${placed} illustration${placed === 1 ? "" : "s"} seated at their story moments (${aiMatched}/${targets.length} chapters matched by AI) — no images generated, no charge.`,
-    );
+    if (!placed && alreadySeated) {
+      toast.success(`Every picture is already in its right place (${alreadySeated} chapters) — nothing redrawn, nothing charged.`);
+    } else {
+      toast.success(
+        `${placed} illustration${placed === 1 ? "" : "s"} seated at their story moments (${aiMatched} chapter${aiMatched === 1 ? "" : "s"} matched by AI, ${alreadySeated} already in place) — existing pictures reused, nothing redrawn.`,
+      );
+    }
   };
 
   /**
