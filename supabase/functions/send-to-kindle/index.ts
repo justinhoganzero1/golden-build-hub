@@ -7,8 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PRIMARY_FROM = Deno.env.get("KINDLE_FROM_EMAIL") || "Oracle Lunar Books <kindle@oracle-lunar.online>";
-const FALLBACK_FROM = "Oracle Lunar Books <onboarding@resend.dev>";
+const PRIMARY_FROM = "Oracle Lunar Books <kindle@notify.oracle-lunar.online>";
 
 const senderAddress = (from: string) => from.match(/<([^>]+)>/)?.[1] ?? from;
 
@@ -102,19 +101,15 @@ Deno.serve(async (req) => {
       }
     };
 
-    let usedFrom = PRIMARY_FROM;
-    let result = await send(PRIMARY_FROM);
-    if (!result.ok && PRIMARY_FROM !== FALLBACK_FROM) {
-      usedFrom = FALLBACK_FROM;
-      result = await send(FALLBACK_FROM);
-    }
+    const usedFrom = PRIMARY_FROM;
+    const result = await send(PRIMARY_FROM);
 
     if (!result.ok) {
       const raw = String((result.out as any)?.message ?? "Amazon delivery failed.");
       const notVerified =
         /not verified|verify a domain|only send testing emails|own email address/i.test(raw);
       const msg = notVerified
-        ? "Kindle delivery isn't switched on yet: our sending address (oracle-lunar.online) still needs to be verified for email. Until then, use Download EPUB and drop it into the Kindle app — your cover and illustrations are all inside."
+          ? "Kindle delivery isn't switched on yet: our sending address (notify.oracle-lunar.online) still needs to be verified for email. Until then, use Download EPUB and upload it through Send to Kindle — your cover and illustrations are all inside."
         : raw;
       return json({ error: msg, detail: raw }, 502);
     }
