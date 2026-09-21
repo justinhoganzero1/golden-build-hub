@@ -3157,11 +3157,19 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             <BookMarked className="w-4 h-4" />
             Send this book to my Kindle — guided, one tap
           </button>
+          <button
+            onClick={() => setKdpOpen(true)}
+            className="mt-2 w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
+          >
+            <BookMarked className="w-4 h-4" />
+            Publish on Kindle — every Amazon field, checked and ready
+          </button>
           <p className="pt-1 text-[10px] text-muted-foreground">
             Step-by-step bubbles walk you through it once, then Oracle Lunar emails the finished
             Kindle EPUB into your library automatically.
           </p>
         </div>
+
 
         {/* Retailer-ready exports */}
         <div className="px-4 pt-4 grid grid-cols-2 gap-2">
@@ -3283,6 +3291,23 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           title={story.title || "Untitled Story"}
           buildEpub={() => exportEpub({ returnFile: true })}
         />
+
+        <KdpPublishPanel
+          open={kdpOpen}
+          onOpenChange={setKdpOpen}
+          storyId={savingId ?? undefined}
+          title={story.title}
+          author={story.author}
+          genre={story.genre}
+          blurb={story.blurb}
+          premise={story.premise}
+          chapters={story.chapters}
+          hasCover={!!story.coverImage}
+          hasBackCover={!!story.backImage}
+          onDownloadEpub={() => void exportEpub()}
+          onSendToKindle={() => { setKdpOpen(false); setKindleOpen(true); }}
+        />
+
 
         <StoryShareDialog
           open={shareOpen}
