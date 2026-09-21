@@ -9,8 +9,9 @@ import { toast } from "sonner";
 import {
   BookOpen, Sparkles, Save, Wand2, Plus, Trash2, Download,
   Share2, FileText, Loader2, ChevronLeft, Crown, Lock, Image as ImageIcon, X,
-  Headphones, BookMarked, RefreshCw,
+  Headphones, BookMarked, RefreshCw, BookPlus,
 } from "lucide-react";
+import SequelDialog from "@/components/story/SequelDialog";
 import JSZip from "jszip";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import StoryShareDialog from "@/components/story/StoryShareDialog";
@@ -2187,6 +2188,93 @@ Rules: the three title-gradient colours must read as one confident, high-contras
     navigate(`/story-writer?id=${id}`);
   };
 
+  // ── Sequel builder ────────────────────────────────────────────────
+  const [sequelSource, setSequelSource] = useState<{ id: string; title: string } | null>(null);
+  const [sequelBusy, setSequelBusy] = useState(false);
+
+  const openSequelFor = async (id: string) => {
+    try {
+      const { data, error } = await supabase.rpc("get_story_writer_document" as any, { _story_id: id } as any);
+      if (error) throw error;
+      setSequelSource({ id, title: (data as any)?.title || "Untitled Story" });
+    } catch (e: any) {
+      toast.error(e?.message || "Story could not be opened");
+    }
+  };
+
+  const nextNumeralTitle = (title: string): string => {
+    const m = title.match(/^(.*?)(?:\s+—\s+.*)?\s+(II|III|IV|V|VI|VII|VIII|IX|X)$/);
+    const order = ["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+    if (m) {
+      const idx = order.indexOf(m[2]);
+      const next = order[Math.min(idx + 1, order.length - 1)];
+      return `${m[1].trim()} ${next}`;
+    }
+    return `${title.trim()} II`;
+  };
+
+  const createSequel = async (notes: string) => {
+    if (!sequelSource || !user) return;
+    setSequelBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("get_story_writer_document" as any, { _story_id: sequelSource.id } as any);
+      if (error) throw error;
+      const src = data as any;
+      const srcTitle: string = src?.title || sequelSource.title;
+      const wordCount = Array.isArray(src?.chapters)
+        ? src.chapters.reduce((n: number, c: any) => n + String(c?.content || "").split(/\s+/).filter(Boolean).length, 0)
+        : 0;
+      const direction = notes || "Continue the saga with higher stakes.";
+      const premise =
+        `SEQUEL to "${srcTitle}" (${wordCount.toLocaleString()} words). ` +
+        `Original premise: ${src?.premise || "—"}\n\n` +
+        `Sequel direction (must follow): ${direction}\n\n` +
+        `CONTINUITY LAW: keep the same hero, recurring characters, world, voice and tone as the original. ` +
+        `Escalate everything — a bigger enemy, deadlier stakes, and a cliffhanger at the end of every chapter. ` +
+        `This book must be LONGER than the original ${wordCount.toLocaleString()} words.`;
+
+      const metadata = {
+        author: src?.author || story.author,
+        authorName: src?.author || story.author,
+        genre: src?.genre || story.genre,
+        premise,
+        blurb: "",
+        prelude: "",
+        dedication: "",
+        chapters: [{ title: "Chapter 1", content: "" }],
+        wordCount: 0,
+        published: false,
+        admin_library_visible: true,
+        kind: "story_doc",
+        library_kind: "story",
+        sequel_of: sequelSource.id,
+        prequel_title: srcTitle,
+        sequel_direction: direction,
+      };
+
+      const id = await saveToLibrary({
+        media_type: "document",
+        title: nextNumeralTitle(srcTitle),
+        url: `oracle-lunar://story/${crypto.randomUUID()}`,
+        source_page: "story-writer",
+        metadata,
+      });
+      if (!id) throw new Error("Sequel could not be saved to your Library");
+      const { error: updErr } = await supabase.from("user_media").update({ media_type: "story" } as any).eq("id", id);
+      if (updErr) throw updErr;
+
+      toast.success(`Sequel created — continuing “${srcTitle}”`);
+      setSequelSource(null);
+      qc.invalidateQueries({ queryKey: ["story-library-browser"] });
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      navigate(`/story-writer?id=${id}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Sequel could not be created");
+    } finally {
+      setSequelBusy(false);
+    }
+  };
+
   return (
     <PaywallGate requiredTier="starter" featureName="Story Writer Studio">
       <SEO title="AI Story Writer — Long-Form Story Generator | Oracle Lunar" description="Generate long-form AI stories, novels and scripts with Oracle Lunar." path="/story-writer" />
@@ -2205,6 +2293,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 {isAdmin && <span className="ml-2 text-amber-400 font-semibold">· ADMIN UNLIMITED</span>}
               </p>
             </div>
+            {savingId && (
+              <button
+                onClick={() => openSequelFor(savingId)}
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-[11px] font-semibold"
+                aria-label="Write a sequel to this story"
+                title="Write a sequel"
+              >
+                <BookPlus className="w-4 h-4" /> Sequel
+              </button>
+            )}
             <button
               onClick={() => setShareOpen(true)}
               className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
@@ -2217,7 +2315,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
         {/* Browse ALL my stories — searchable + paginated */}
         <div className="px-4 py-3 border-b border-border">
-          <StoryLibraryBrowser onOpen={loadSaved} currentId={savingId} />
+          <StoryLibraryBrowser onOpen={loadSaved} onSequel={openSequelFor} currentId={savingId} />
           {openingStoryId && (
             <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -3208,6 +3306,14 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           busy={regenBusy}
           onCancel={() => { if (!regenBusy) setRegenOpen(false); }}
           onConfirm={(plan) => { void regenerateEntireStory(plan); }}
+        />
+
+        <SequelDialog
+          open={!!sequelSource}
+          sourceTitle={sequelSource?.title || ""}
+          busy={sequelBusy}
+          onClose={() => setSequelSource(null)}
+          onConfirm={(notes) => { void createSequel(notes); }}
         />
       </div>
 
