@@ -12,7 +12,7 @@ const KINDLE_EMAIL_KEY = "oracle.kindle.email";
 const APPROVED_KEY = "oracle.kindle.approved";
 const KINDLE_SETTINGS_URL = "https://www.amazon.com.au/hz/mycd/myx#/home/settings/pdoc";
 const SEND_TO_KINDLE_WEB = "https://www.amazon.com.au/sendtokindle";
-const DEFAULT_SENDER = "kindle@oracle-lunar.online";
+const DEFAULT_SENDER = "kindle@notify.oracle-lunar.online";
 
 interface Props {
   open: boolean;
