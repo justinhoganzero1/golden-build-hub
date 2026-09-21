@@ -7,7 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PREFERRED_DOMAINS = ["notify.oracle-lunar.online", "oracle-lunar.online"];
+const PREFERRED_DOMAINS = [
+  "kindle.oracle-lunar.online",
+  "books.oracle-lunar.online",
+  "oracle-lunar.online",
+  "notify.oracle-lunar.online",
+];
 const MAILBOX = "kindle";
 
 const senderAddress = (from: string) => from.match(/<([^>]+)>/)?.[1] ?? from;
