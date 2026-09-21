@@ -7,45 +7,61 @@ export interface ValidationResult {
 }
 
 /**
- * Validates a story against Kindle/KDP requirements before EPUB generation.
+ * Audit a story for Kindle compatibility.
+ * Checks against Amazon KDP and "Send to Kindle" requirements.
  */
 export const validateForKindle = (story: StoryFileSource): ValidationResult => {
   const errors: string[] = [];
-  const warnings: string[];
-  warnings = [];
+  const warnings: string[] = [];
 
-  if (!story.title?.trim()) errors.push("Story title is required.");
-  if (!story.chapters || story.chapters.filter(c => c.content?.trim()).length === 0) {
-    errors.push("Story must have at least one non-empty chapter.");
+  // 1. Mandatory Metadata
+  if (!story.title?.trim()) {
+    errors.push("Missing book title.");
+  }
+  if (!story.author?.trim()) {
+    warnings.push("No author name provided. Kindle will show 'Anonymous'.");
   }
 
-  // Kindle specific checks
-  const chapters = story.chapters || [];
-  
-  // Check for potentially huge images
-  let totalImageSizeEstimate = 0;
-  const imageLimit = 5 * 1024 * 1024; // 5MB recommendation for Kindle images
-  
-  const checkImage = (dataUrl: string | undefined, context: string) => {
+  // 2. Content Structure
+  const activeChapters = story.chapters?.filter(c => c.content?.trim()) || [];
+  if (activeChapters.length === 0) {
+    errors.push("The book must have at least one chapter with text.");
+  }
+
+  // 3. Image Constraints
+  // Amazon KDP recommendation: max 5MB per image.
+  // Send to Kindle (Email): 50MB total limit, but our edge function caps at ~11MB (15MB base64).
+  const INDIVIDUAL_IMAGE_LIMIT = 5 * 1024 * 1024; 
+  const EDGE_FUNCTION_LIMIT = 11 * 1024 * 1024; // Roughly 15MB base64
+  const SEND_TO_KINDLE_LIMIT = 50 * 1024 * 1024;
+
+  let totalSizeEstimate = 0;
+  let oversizedImages = 0;
+
+  const checkImage = (dataUrl: string | undefined, label: string) => {
     if (!dataUrl || !dataUrl.startsWith("data:")) return;
-    // Base64 size estimate: length * 0.75
-    const size = dataUrl.length * 0.75;
-    totalImageSizeEstimate += size;
-    if (size > imageLimit) {
-      warnings.push(`${context} image is very large (${(size / (1024 * 1024)).toFixed(1)}MB). Kindle conversion may fail or look poor.`);
+    const size = Math.floor(dataUrl.length * 0.75);
+    totalSizeEstimate += size;
+    if (size > INDIVIDUAL_IMAGE_LIMIT) {
+      oversizedImages++;
+      warnings.push(`${label} image is very large (${(size / (1024 * 1024)).toFixed(1)}MB). Kindle conversion might fail.`);
     }
   };
 
   checkImage(story.coverImage, "Cover");
-  chapters.forEach((c, i) => {
-    (c.images || []).forEach((img, k) => {
+  activeChapters.forEach((ch, i) => {
+    (ch.images || []).forEach((img, k) => {
       checkImage(img, `Chapter ${i + 1} image ${k + 1}`);
     });
   });
 
-  // Total estimate for Send to Kindle (50MB limit)
-  if (totalImageSizeEstimate > 45 * 1024 * 1024) {
-    errors.push("Total book size is likely to exceed Amazon's 50MB Send to Kindle limit.");
+  // 4. Payload Size Alerts
+  if (totalSizeEstimate > EDGE_FUNCTION_LIMIT) {
+    warnings.push(`This book is large (${(totalSizeEstimate / (1024 * 1024)).toFixed(1)}MB). Auto-delivery to Kindle might fail due to email limits. If it fails, use 'Download EPUB' and upload it manually.`);
+  }
+  
+  if (totalSizeEstimate > SEND_TO_KINDLE_LIMIT) {
+    errors.push(`Book size (${(totalSizeEstimate / (1024 * 1024)).toFixed(1)}MB) exceeds Amazon's 50MB Send to Kindle limit.`);
   }
 
   return {
