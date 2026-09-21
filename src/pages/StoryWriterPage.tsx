@@ -623,11 +623,31 @@ const StoryWriterPage = () => {
    * exact story beats they depict — no new images are generated.
    */
   const placeExistingIllustrations = async () => {
-    if (placeBusy) return;
-    const targets = story.chapters
-      .map((c, i) => ({ c, i }))
-      .filter(({ c }) => (c.images?.length || 0) > 0 && (c.content || "").trim().length > 0);
-    if (!targets.length) { toast.error("No pictures saved in this story yet."); return; }
+    if (placeBusy || bulkBusy || imgBusy || chapterSetBusy !== null) return;
+    const written = story.chapters.map((c, i) => ({ c, i })).filter(({ c }) => (c.content || "").trim().length > 0);
+    const targets = written.filter(({ c }) => (c.images?.length || 0) > 0);
+    const missing = written.filter(({ c }) => !(c.images?.length || 0));
+    if (!written.length) { toast.error("No written chapters in this story yet."); return; }
+
+    // Chapters with no artwork at all: read them and draw the right picture for
+    // the right moment, so the whole book ends up illustrated in place.
+    let drawn = 0;
+    if (missing.length && confirm(
+      `${missing.length} chapter${missing.length === 1 ? " has" : "s have"} no picture yet. Read ${missing.length === 1 ? "it" : "them"} and draw the matching scene now? (New pictures use credit; seating existing pictures is free.)`,
+    )) {
+      setBulkBusy(true);
+      try {
+        for (const { i } of missing) {
+          toast.info(`Reading chapter ${i + 1} and drawing its scene…`, { id: "magic-illustrate" });
+          drawn += await illustrateChapterSet(i, 1);
+        }
+        toast.success(`${drawn} new picture${drawn === 1 ? "" : "s"} drawn from the story and placed in position.`, { id: "magic-illustrate" });
+      } finally {
+        setBulkBusy(false);
+      }
+    }
+    if (!targets.length) { if (!drawn) toast.error("No pictures saved in this story yet."); return; }
+
 
     setPlaceBusy(true);
     const anchorMap = new Map<number, number[]>();
@@ -906,21 +926,48 @@ Return ONLY a JSON array of ${count} integer paragraph numbers, e.g. [4, 17, 33]
   ): Promise<number> => {
     const ch = story.chapters[idx];
     if (!ch) return 0;
+    const paragraphs = (ch.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+    const paraCount = paragraphs.length;
     let beats = chapterBeats(ch.content, count);
+    // Anchors chosen by the AI alongside each brief, so the picture that is drawn
+    // is the picture that sits at that exact paragraph.
+    let planAnchors: number[] | null = null;
     try {
+      const numbered = paragraphs
+        .map((p, i) => `[${i + 1}] ${p.replace(/\s+/g, " ").slice(0, 300)}`)
+        .join("\n")
+        .slice(0, 16000);
       const teamPlan = await callAI(
-        `You are a three-person publishing illustration team: STORY EDITOR chooses the ${count} most explanatory moments; CINEMATOGRAPHER ensures complete uncropped people and readable environments; CONTINUITY EDITOR checks cast, wardrobe, spelling and forbids visible text. Choose exactly ${count} distinct images. Every image is a FULL-PAGE single-scene plate — never a split scene, mosaic or panel grid. Output exactly ${count} numbered lines, each a concise image brief.`,
-        `BOOK: ${story.title}\nCHAPTER: ${ch.title}\nTEXT:\n${(ch.content || "").slice(0, 12000)}`,
+        `You are a three-person publishing illustration team: STORY EDITOR chooses the ${count} most explanatory moments; CINEMATOGRAPHER ensures complete uncropped people and readable environments; CONTINUITY EDITOR checks cast, wardrobe and forbids visible text. Every image is a FULL-PAGE single-scene plate — never a split scene, mosaic or panel grid.
+The chapter's paragraphs are numbered. For each image, pick the paragraph it depicts and write a brief describing ONLY what is visible in that exact moment (who is present, wardrobe, location, action, light, weather, time of day).
+Return ONLY a JSON array of exactly ${count} objects in ascending paragraph order, each {"paragraph": <1-${paraCount}>, "brief": "..."} . No prose, no code fences.`,
+        `BOOK: ${story.title}\nGENRE: ${story.genre}\nCHAPTER: ${ch.title}\nNUMBERED PARAGRAPHS:\n${numbered}`,
+        { maxTokens: 2000 },
       );
-      const planned = teamPlan.split("\n").map(line => line.replace(/^\s*\d+[.)-]?\s*/, "").trim()).filter(Boolean).slice(0, count);
-      if (planned.length === count) beats = planned;
-      setIllustrationTeamNotes(planned);
+      const parsed = JSON.parse(
+        (teamPlan || "").replace(/```[a-z]*|```/g, "").match(/\[[\s\S]*\]/)?.[0] || "null",
+      );
+      if (Array.isArray(parsed) && parsed.length >= count) {
+        const rows = parsed
+          .slice(0, count)
+          .map((r: { paragraph?: unknown; brief?: unknown }) => ({
+            paragraph: Math.min(paraCount, Math.max(1, Math.round(Number(r?.paragraph)) || 0)),
+            brief: String(r?.brief || "").trim(),
+          }))
+          .filter(r => r.brief && Number.isFinite(r.paragraph))
+          .sort((a, b) => a.paragraph - b.paragraph);
+        if (rows.length === count) {
+          beats = rows.map(r => `${r.brief}\n\nSOURCE PARAGRAPH (${r.paragraph}): ${paragraphs[r.paragraph - 1]}`);
+          planAnchors = rows.map(r => r.paragraph);
+          setIllustrationTeamNotes(rows.map(r => r.brief));
+        }
+      }
     } catch { /* narrative beat fallback remains usable */ }
-    // Where each image belongs in the chapter, in reading order.
-    const paraCount = (ch.content || "").split(/\n{2,}/).filter(p => p.trim()).length;
     let ok = 0;
     for (let b = 0; b < count; b++) {
-      const anchor = Math.min(paraCount, Math.round(((b + 1) / (count + 1)) * paraCount));
+      const anchor = planAnchors
+        ? planAnchors[b]
+        : Math.min(paraCount, Math.round(((b + 1) / (count + 1)) * paraCount));
       const done = await generateStoryImage(
         { kind: "chapter", index: idx },
         undefined,
@@ -2608,7 +2655,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                   title="Reads each chapter and seats its existing pictures at the moments they depict — no new images, no charge"
                 >
                   {placeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-                  {placeBusy ? "Reading the story…" : "Magical AI Place Images — FREE"}
+                  {placeBusy || bulkBusy ? "Reading the story…" : "Magical AI — read book, draw & place images"}
                 </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
