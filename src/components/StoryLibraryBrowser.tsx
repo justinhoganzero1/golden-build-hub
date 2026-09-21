@@ -5,11 +5,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   BookOpen, Search, Loader2, ChevronDown, ChevronUp,
-  Trash2, Copy, ArrowUpDown, Image as ImageIcon,
+  Trash2, Copy, ArrowUpDown, Image as ImageIcon, BookPlus,
 } from "lucide-react";
 
 interface Props {
   onOpen: (id: string) => void;
+  onSequel?: (id: string) => void;
   currentId?: string | null;
 }
 
@@ -17,7 +18,7 @@ const PAGE_SIZE = 20;
 
 type SortKey = "updated" | "title" | "chapters";
 
-const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
+const StoryLibraryBrowser = ({ onOpen, onSequel, currentId }: Props) => {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -206,6 +207,17 @@ const StoryLibraryBrowser = ({ onOpen, currentId }: Props) => {
                       <div className="text-[10px] text-muted-foreground">Saved · {fmtDate(it.updated_at)}</div>
                     </button>
                     <div className="flex flex-col">
+                      {onSequel && (
+                        <button
+                          onClick={() => onSequel(it.id)}
+                          disabled={busy}
+                          className="flex-1 px-2 text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-40"
+                          aria-label="Write a sequel to this story"
+                          title="Write a sequel"
+                        >
+                          <BookPlus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDuplicate(it.id)}
                         disabled={busy}
