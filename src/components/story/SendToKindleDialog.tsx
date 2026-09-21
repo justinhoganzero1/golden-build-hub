@@ -1,3 +1,4 @@
+import { validateForKindle } from "@/lib/epubValidation";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
