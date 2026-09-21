@@ -709,9 +709,13 @@ Return ONLY a JSON array of ${count} integer paragraph numbers, e.g. [4, 17, 33]
       }),
     }));
     setReadMode(true);
-    toast.success(
-      `${placed} illustration${placed === 1 ? "" : "s"} seated at their story moments (${aiMatched}/${targets.length} chapters matched by AI) — no images generated, no charge.`,
-    );
+    if (!placed && alreadySeated) {
+      toast.success(`Every picture is already in its right place (${alreadySeated} chapters) — nothing redrawn, nothing charged.`);
+    } else {
+      toast.success(
+        `${placed} illustration${placed === 1 ? "" : "s"} seated at their story moments (${aiMatched} chapter${aiMatched === 1 ? "" : "s"} matched by AI, ${alreadySeated} already in place) — existing pictures reused, nothing redrawn.`,
+      );
+    }
   };
 
   /**
