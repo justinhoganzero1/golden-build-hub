@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "Golden Build Hub"
+const SITE_NAME = "Oracle Lunar"
 const SENDER_DOMAIN = "notify.oracle-lunar.online"
 const ROOT_DOMAIN = "oracle-lunar.online"
 const FROM_DOMAIN = "oracle-lunar.online" // Domain shown in From address (may be root or sender subdomain)
