@@ -1,6 +1,5 @@
 // Emails a finished EPUB straight to a reader's @kindle.com address using
 // Amazon's "Send to Kindle" personal-document email service.
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
