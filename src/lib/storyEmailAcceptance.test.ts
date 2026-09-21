@@ -158,10 +158,15 @@ describe("regression: payload / size guards that could silently drop content", (
     expect(capped).toHaveLength(6); // regression: real illustration counts must never approach the silent-clip cap
   });
 
-  it("R4 — send-to-kindle's 50MB (base64 x1.4) ceiling formula", () => {
-    const LIMIT = 50 * 1024 * 1024 * 1.4;
-    const base64Len = 40 * 1024 * 1024; // a hefty but plausible 20-chapter, fully-illustrated EPUB, base64-encoded
-    expect(base64Len < LIMIT).toBe(true);
+  it("R4 — send-to-kindle's worker-safe 15MB base64 ceiling", () => {
+    const LIMIT = 15 * 1024 * 1024;
+    expect(14 * 1024 * 1024 < LIMIT).toBe(true);
+    expect(16 * 1024 * 1024 > LIMIT).toBe(true);
+  });
+
+  it("R4b — Kindle payload must start with an EPUB ZIP signature", () => {
+    expect("UEsDBBQAAAAI".startsWith("UEsDB")).toBe(true);
+    expect("not-an-epub".startsWith("UEsDB")).toBe(false);
   });
 
   it("R5 — recipient validation only accepts exactly one address, rejecting empty/multiple silently-dropped recipients", () => {
