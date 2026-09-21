@@ -131,7 +131,8 @@ serve(async (req) => {
             }
 
             // Wallet has credit: every message is paid for from it.
-            try {
+            // A granted free daily message is never charged.
+            if (!freeMessageGranted) try {
               await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
                 model: "google/gemini-2.5-flash",
