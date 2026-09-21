@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.get_book_page(uuid) FROM anon;

@@ -70,6 +70,7 @@ const loaders = {
   "/pos-learn": () => import("./pages/POSLearnPage"),
   "/story-writer": () => import("./pages/StoryWriterPage"),
   "/stories/:slug": () => import("./pages/StoryPublicPage"),
+  "/book/:id": () => import("./pages/BookPage"),
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
@@ -195,6 +196,7 @@ const AppBuilderPage = lazy(loaders["/app-builder"]);
 const POSLearnPage = lazy(loaders["/pos-learn"]);
 const StoryWriterPage = lazy(loaders["/story-writer"]);
 const StoryPublicPage = lazy(loaders["/stories/:slug"]);
+const BookPage = lazy(loaders["/book/:id"]);
 const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
@@ -358,6 +360,7 @@ const App = () => (
                   <Route path="/pos-learn" element={<RequireAuth><ErrorBoundary pageName="POS Learn"><POSLearnPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/story-writer" element={<RequireAuth><ErrorBoundary pageName="Story Writer"><StoryWriterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/stories/:slug" element={<ErrorBoundary pageName="Public Story"><StoryPublicPage /></ErrorBoundary>} />
+                  <Route path="/book/:id" element={<RequireAuth><ErrorBoundary pageName="Book Page"><BookPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />

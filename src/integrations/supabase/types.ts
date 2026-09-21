@@ -4069,6 +4069,7 @@ export type Database = {
           tier: string
         }[]
       }
+      get_book_page: { Args: { _story_id: string }; Returns: Json }
       get_story_writer_document: { Args: { _story_id: string }; Returns: Json }
       get_story_writer_images: { Args: { _story_id: string }; Returns: Json }
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
