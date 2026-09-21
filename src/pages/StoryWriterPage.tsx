@@ -3307,6 +3307,14 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           onCancel={() => { if (!regenBusy) setRegenOpen(false); }}
           onConfirm={(plan) => { void regenerateEntireStory(plan); }}
         />
+
+        <SequelDialog
+          open={!!sequelSource}
+          sourceTitle={sequelSource?.title || ""}
+          busy={sequelBusy}
+          onClose={() => setSequelSource(null)}
+          onConfirm={(notes) => { void createSequel(notes); }}
+        />
       </div>
 
     </PaywallGate>
