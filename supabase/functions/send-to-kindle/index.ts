@@ -126,7 +126,14 @@ Deno.serve(async (req) => {
     }
 
 
-    const kindleEmail = String(body.kindleEmail ?? "").trim().toLowerCase();
+    // Amazon's Kindle addresses carry mixed case in the local part
+    // (justin_hogan_ZCdqC5@kindle.com). Lower-casing the whole thing can make
+    // Amazon drop the message silently, so only the domain is normalised.
+    const rawKindleEmail = String(body.kindleEmail ?? "").trim();
+    const atIdx = rawKindleEmail.lastIndexOf("@");
+    const kindleEmail = atIdx > 0
+      ? `${rawKindleEmail.slice(0, atIdx)}@${rawKindleEmail.slice(atIdx + 1).toLowerCase()}`
+      : rawKindleEmail;
     const title = String(body.title ?? "Untitled Story").slice(0, 200);
     const filename = String(body.filename ?? "story.epub").slice(0, 120).replace(/[^\w.\-]+/g, "-");
     // Reference the string directly — copying a multi-MB base64 payload is what
