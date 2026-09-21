@@ -114,6 +114,7 @@ serve(async (req) => {
                 };
                 // Free message — skip the wallet charge entirely and fall
                 // through to the normal chat flow below.
+                freeMessageGranted = true;
               } else {
                 return new Response(
                 JSON.stringify({
