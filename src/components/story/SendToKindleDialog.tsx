@@ -12,7 +12,17 @@ const KINDLE_EMAIL_KEY = "oracle.kindle.email";
 const APPROVED_KEY = "oracle.kindle.approved";
 const KINDLE_SETTINGS_URL = "https://www.amazon.com.au/hz/mycd/myx#/home/settings/pdoc";
 const SEND_TO_KINDLE_WEB = "https://www.amazon.com.au/sendtokindle";
-const DEFAULT_SENDER = "kindle@notify.oracle-lunar.online";
+const DEFAULT_SENDER = "kindle@kindle.oracle-lunar.online";
+
+type DeliveryStatus = "queued" | "delivered_to_mail_server" | "delayed" | "bounced" | "failed";
+
+const deliveryCopy: Record<DeliveryStatus, string> = {
+  queued: "Queued with the email service. Amazon has not accepted it yet.",
+  delivered_to_mail_server: "Amazon's mail server accepted the email. Kindle conversion can still take several minutes.",
+  delayed: "The email service is still retrying delivery to Amazon.",
+  bounced: "Amazon rejected the email. Check the approved sender and Kindle address, then retry.",
+  failed: "Delivery failed before Amazon accepted the email. Retry or use Send to Kindle web.",
+};
 
 interface Props {
   open: boolean;
@@ -63,6 +73,8 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
   const [approved, setApproved] = useState(false);
   const [busy, setBusy] = useState<"send" | "download" | "share" | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [deliveryId, setDeliveryId] = useState<string | null>(null);
+  const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatus | null>(null);
   const [copied, setCopied] = useState(false);
   const [sender, setSender] = useState(DEFAULT_SENDER);
 
@@ -73,6 +85,8 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       setApproved(localStorage.getItem(APPROVED_KEY) === "1");
     } catch {}
     setSentTo(null);
+    setDeliveryId(null);
+    setDeliveryStatus(null);
     // Ask the server which sending address is actually live, so the address the
     // reader approves at Amazon always matches the one the book arrives from.
     (async () => {
@@ -82,6 +96,18 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       } catch {}
     })();
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !deliveryId || !deliveryStatus || ["bounced", "failed"].includes(deliveryStatus)) return;
+    const check = async () => {
+      const { data } = await supabase.functions.invoke("send-to-kindle", { body: { deliveryId } });
+      const status = (data as any)?.status as DeliveryStatus | undefined;
+      if (status && status in deliveryCopy) setDeliveryStatus(status);
+    };
+    void check();
+    const timer = window.setInterval(check, 5000);
+    return () => window.clearInterval(timer);
+  }, [open, deliveryId, deliveryStatus]);
 
 
   const emailValid = useMemo(
@@ -113,9 +139,12 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);
       if ((data as any)?.sender) setSender((data as any).sender);
+      if (!(data as any)?.deliveryId) throw new Error("No delivery tracking reference was returned.");
       try { localStorage.setItem(KINDLE_EMAIL_KEY, kindleEmail.trim()); } catch {}
       setSentTo(kindleEmail.trim());
-      toast.success(`Sent — “${title}” lands on your Kindle in a few minutes.`);
+      setDeliveryId((data as any).deliveryId);
+      setDeliveryStatus(((data as any).status ?? "queued") as DeliveryStatus);
+      toast.success(`Queued — tracking Amazon's acceptance of “${title}”.`);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't send to Kindle.");
     } finally {
@@ -245,9 +274,13 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
             <p className="text-[11px] text-muted-foreground">Tick step 1 once you've approved our address.</p>
           )}
           {sentTo && (
-            <p className="text-xs text-primary font-semibold">
-              ✅ Delivered to {sentTo}. Open your Kindle and sync — it appears within a few minutes.
-            </p>
+            <div className="space-y-2 text-xs">
+              <p className="font-semibold text-foreground">Sending to {sentTo}</p>
+              <p className={deliveryStatus === "bounced" || deliveryStatus === "failed" ? "text-destructive" : "text-primary"}>
+                {deliveryStatus ? deliveryCopy[deliveryStatus] : "Checking delivery…"}
+              </p>
+              {deliveryId && <p className="text-[10px] text-muted-foreground">Tracking reference: {deliveryId.slice(0, 8)}</p>}
+            </div>
           )}
         </Step>
 
