@@ -623,11 +623,31 @@ const StoryWriterPage = () => {
    * exact story beats they depict — no new images are generated.
    */
   const placeExistingIllustrations = async () => {
-    if (placeBusy) return;
-    const targets = story.chapters
-      .map((c, i) => ({ c, i }))
-      .filter(({ c }) => (c.images?.length || 0) > 0 && (c.content || "").trim().length > 0);
-    if (!targets.length) { toast.error("No pictures saved in this story yet."); return; }
+    if (placeBusy || bulkBusy || imgBusy || chapterSetBusy !== null) return;
+    const written = story.chapters.map((c, i) => ({ c, i })).filter(({ c }) => (c.content || "").trim().length > 0);
+    const targets = written.filter(({ c }) => (c.images?.length || 0) > 0);
+    const missing = written.filter(({ c }) => !(c.images?.length || 0));
+    if (!written.length) { toast.error("No written chapters in this story yet."); return; }
+
+    // Chapters with no artwork at all: read them and draw the right picture for
+    // the right moment, so the whole book ends up illustrated in place.
+    let drawn = 0;
+    if (missing.length && confirm(
+      `${missing.length} chapter${missing.length === 1 ? " has" : "s have"} no picture yet. Read ${missing.length === 1 ? "it" : "them"} and draw the matching scene now? (New pictures use credit; seating existing pictures is free.)`,
+    )) {
+      setBulkBusy(true);
+      try {
+        for (const { i } of missing) {
+          toast.info(`Reading chapter ${i + 1} and drawing its scene…`, { id: "magic-illustrate" });
+          drawn += await illustrateChapterSet(i, 1);
+        }
+        toast.success(`${drawn} new picture${drawn === 1 ? "" : "s"} drawn from the story and placed in position.`, { id: "magic-illustrate" });
+      } finally {
+        setBulkBusy(false);
+      }
+    }
+    if (!targets.length) { if (!drawn) toast.error("No pictures saved in this story yet."); return; }
+
 
     setPlaceBusy(true);
     const anchorMap = new Map<number, number[]>();
