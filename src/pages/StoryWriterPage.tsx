@@ -594,45 +594,94 @@ const StoryWriterPage = () => {
    * distributed story beats, so plates follow relevant prose instead of piling
    * up at the end of a chapter.
    */
-  const placeExistingIllustrations = () => {
+  const [placeBusy, setPlaceBusy] = useState(false);
+
+  /** Heuristic fallback — even spread nudged toward visual paragraphs. */
+  const heuristicAnchors = (paragraphs: string[], count: number): number[] => {
+    const used = new Set<number>();
+    return Array.from({ length: count }, (_, imageIndex) => {
+      const target = Math.max(1, Math.round(((imageIndex + 1) / (count + 1)) * paragraphs.length));
+      const radius = Math.max(2, Math.ceil(paragraphs.length / Math.max(4, count * 2)));
+      let bestBoundary = target;
+      let bestScore = Number.NEGATIVE_INFINITY;
+      for (let boundary = Math.max(1, target - radius); boundary <= Math.min(paragraphs.length, target + radius); boundary++) {
+        if (used.has(boundary)) continue;
+        const paragraph = paragraphs[boundary - 1];
+        const visualWords = paragraph.match(/\b(saw|looked|stood|walked|ran|turned|opened|entered|street|room|building|car|light|dark|fire|explosion|blood|face|eyes|door|window|night|sky|crowd|weapon|gun|smoke|shadow|wearing|dressed)\b/gi)?.length || 0;
+        const dialoguePenalty = (paragraph.match(/[“”"]/g)?.length || 0) > 4 ? 2 : 0;
+        const distancePenalty = Math.abs(boundary - target) * 0.35;
+        const score = visualWords * 2 + Math.min(paragraph.length / 180, 3) - dialoguePenalty - distancePenalty;
+        if (score > bestScore) { bestScore = score; bestBoundary = boundary; }
+      }
+      used.add(bestBoundary);
+      return bestBoundary;
+    }).sort((a, b) => a - b);
+  };
+
+  /**
+   * Reads each chapter with AI and seats the pictures it already has at the
+   * exact story beats they depict — no new images are generated.
+   */
+  const placeExistingIllustrations = async () => {
+    if (placeBusy) return;
+    const targets = story.chapters
+      .map((c, i) => ({ c, i }))
+      .filter(({ c }) => (c.images?.length || 0) > 0 && (c.content || "").trim().length > 0);
+    if (!targets.length) { toast.error("No pictures saved in this story yet."); return; }
+
+    setPlaceBusy(true);
+    const anchorMap = new Map<number, number[]>();
+    let aiMatched = 0;
+    try {
+      for (const { c, i } of targets) {
+        const paragraphs = (c.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+        const count = c.images!.length;
+        if (!paragraphs.length) continue;
+
+        let anchors: number[] | null = null;
+        try {
+          const numbered = paragraphs
+            .map((p, idx) => `[${idx + 1}] ${p.replace(/\s+/g, " ").slice(0, 320)}`)
+            .join("\n");
+          const raw = await callAI(
+            `You are a book illustration editor. You are given the numbered paragraphs of one chapter.
+Choose the ${count} strongest visual story beat${count === 1 ? "" : "s"} — the moments a full-page illustration should sit immediately AFTER.
+Rules: pick paragraphs that describe visible action, setting or a dramatic turn; avoid pure dialogue; spread them through the chapter; never repeat a number; keep them in ascending order.
+Return ONLY a JSON array of ${count} integer paragraph numbers, e.g. [4, 17, 33]. No words, no fences.`,
+            `CHAPTER "${c.title || `Chapter ${i + 1}`}" (${paragraphs.length} paragraphs):\n${numbered}`,
+            { maxTokens: 300 },
+          );
+          const parsed = JSON.parse((raw || "").replace(/```[a-z]*|```/g, "").match(/\[[\s\S]*?\]/)?.[0] || "null");
+          if (Array.isArray(parsed)) {
+            const clean = Array.from(new Set(
+              parsed
+                .map((n: unknown) => Math.round(Number(n)))
+                .filter(n => Number.isFinite(n) && n >= 1 && n <= paragraphs.length),
+            )).sort((a, b) => a - b);
+            if (clean.length === count) { anchors = clean; aiMatched += 1; }
+          }
+        } catch { /* fall back below */ }
+
+        anchorMap.set(i, anchors || heuristicAnchors(paragraphs, count));
+      }
+    } finally {
+      setPlaceBusy(false);
+    }
+
     let placed = 0;
     setStory(current => ({
       ...current,
-      chapters: current.chapters.map(chapter => {
-        const images = chapter.images || [];
-        const paragraphs = (chapter.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
-        if (!images.length || !paragraphs.length) return chapter;
-
-        const used = new Set<number>();
-        const anchors = images.map((_, imageIndex) => {
-          const target = Math.max(1, Math.round(((imageIndex + 1) / (images.length + 1)) * paragraphs.length));
-          const radius = Math.max(2, Math.ceil(paragraphs.length / Math.max(4, images.length * 2)));
-          let bestBoundary = target;
-          let bestScore = Number.NEGATIVE_INFINITY;
-
-          for (let boundary = Math.max(1, target - radius); boundary <= Math.min(paragraphs.length, target + radius); boundary++) {
-            if (used.has(boundary)) continue;
-            const paragraph = paragraphs[boundary - 1];
-            const visualWords = paragraph.match(/\b(saw|looked|stood|walked|ran|turned|opened|entered|street|room|building|car|light|dark|fire|explosion|blood|face|eyes|door|window|night|sky|crowd|weapon|gun|smoke|shadow|wearing|dressed)\b/gi)?.length || 0;
-            const dialoguePenalty = (paragraph.match(/[“”"]/g)?.length || 0) > 4 ? 2 : 0;
-            const distancePenalty = Math.abs(boundary - target) * 0.35;
-            const score = visualWords * 2 + Math.min(paragraph.length / 180, 3) - dialoguePenalty - distancePenalty;
-            if (score > bestScore) {
-              bestScore = score;
-              bestBoundary = boundary;
-            }
-          }
-
-          used.add(bestBoundary);
-          placed += 1;
-          return bestBoundary;
-        }).sort((a, b) => a - b);
-
+      chapters: current.chapters.map((chapter, i) => {
+        const anchors = anchorMap.get(i);
+        if (!anchors) return chapter;
+        placed += anchors.length;
         return { ...chapter, imageAnchors: anchors };
       }),
     }));
     setReadMode(true);
-    toast.success(`${placed} existing illustration${placed === 1 ? "" : "s"} placed inside the story — no images generated and no AI charge.`);
+    toast.success(
+      `${placed} illustration${placed === 1 ? "" : "s"} seated at their story moments (${aiMatched}/${targets.length} chapters matched by AI) — no images generated, no charge.`,
+    );
   };
 
   /**
@@ -2554,12 +2603,12 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 <Button
                   type="button"
                   onClick={placeExistingIllustrations}
-                  disabled={!story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
+                  disabled={placeBusy || !story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
                   className="h-9 px-4 font-black italic"
-                  title="Places existing images inside the story without generating or charging for new images"
+                  title="Reads each chapter and seats its existing pictures at the moments they depict — no new images, no charge"
                 >
-                  <Wand2 className="w-4 h-4" />
-                  Magical AI Place Images — FREE
+                  {placeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  {placeBusy ? "Reading the story…" : "Magical AI Place Images — FREE"}
                 </Button>
                 <button
                   onClick={() => setRegenOpen(true)}
