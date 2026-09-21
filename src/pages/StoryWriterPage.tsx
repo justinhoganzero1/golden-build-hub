@@ -652,11 +652,21 @@ const StoryWriterPage = () => {
     setPlaceBusy(true);
     const anchorMap = new Map<number, number[]>();
     let aiMatched = 0;
+    let alreadySeated = 0;
     try {
       for (const { c, i } of targets) {
         const paragraphs = (c.content || "").split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
         const count = c.images!.length;
         if (!paragraphs.length) continue;
+
+        // Already seated at real paragraph positions — leave it alone, no AI call,
+        // so pressing this again never redraws or re-charges.
+        const seated = c.imageAnchors || [];
+        if (
+          seated.length === count &&
+          seated.every(a => Number.isInteger(a) && a >= 1 && a <= paragraphs.length)
+        ) { alreadySeated += 1; continue; }
+
 
         let anchors: number[] | null = null;
         try {
