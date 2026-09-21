@@ -1,50 +1,31 @@
 project_id = "tpkpfkcnqdyrzpqdoqnp"
 
-[functions.portal-tutor]
-verify_jwt = false
-
-# Twilio voice webhooks — must be public (Twilio doesn't send a JWT).
-[functions.oracle-call-inbound]
-verify_jwt = false
-
-[functions.oracle-call-gather]
-verify_jwt = false
-
-# /oracle-call-reply and /oracle-call-outbound have a public ?mode=twiml branch
-# but also handle authenticated user requests; they validate JWTs in code.
-[functions.oracle-call-reply]
-verify_jwt = false
-
-[functions.oracle-call-outbound]
-verify_jwt = false
-
-# Stripe Connect storefront — public so anonymous buyers can list & checkout.
-# connect-products validates auth in-code for the "create" action.
-[functions.connect-products]
-verify_jwt = false
-
-[functions.connect-checkout]
-verify_jwt = false
-
-# Stripe webhook — verified via Stripe signature, must be public.
-[functions.stripe-webhook]
-verify_jwt = false
-
-# Cron-triggered workers — invoked by pg_cron via service-role auth.
-[functions.movie-render-worker]
-verify_jwt = false
-
-[functions.movie-failure-notify]
-verify_jwt = false
-
-# Living GIF worker — cron-driven, no JWT (uses service-role auth in code).
-[functions.living-gif-worker]
-verify_jwt = false
-
-# Owner-only revenue panel — validates JWT + admin role in code.
-[functions.stripe-revenue]
-verify_jwt = false
-
-# Public AI ingest manifest — crawlers cannot send a JWT.
-[functions.ai-ingest]
-verify_jwt = false
+[functions]
+  [functions.ai-ingest]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.connect-checkout]
+    verify_jwt = false
+  [functions.connect-products]
+    verify_jwt = false
+  [functions.living-gif-worker]
+    verify_jwt = false
+  [functions.movie-failure-notify]
+    verify_jwt = false
+  [functions.movie-render-worker]
+    verify_jwt = false
+  [functions.oracle-call-gather]
+    verify_jwt = false
+  [functions.oracle-call-inbound]
+    verify_jwt = false
+  [functions.oracle-call-outbound]
+    verify_jwt = false
+  [functions.oracle-call-reply]
+    verify_jwt = false
+  [functions.portal-tutor]
+    verify_jwt = false
+  [functions.stripe-revenue]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
