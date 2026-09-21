@@ -70,9 +70,22 @@ Deno.serve(async (req) => {
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
-      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string }
+      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; probe?: boolean }
       | null;
     if (!body) return json({ error: "Invalid request body." }, 400);
+
+    const senderInfo = await resolveSender(RESEND_API_KEY);
+    const senderEmail = senderInfo.domain ? `${MAILBOX}@${senderInfo.domain}` : null;
+
+    // Probe mode: the dialog asks which sender address to show the reader.
+    if (body.probe) {
+      return json({
+        ready: !!senderEmail,
+        sender: senderEmail,
+        domains: senderInfo.all,
+      });
+    }
+
 
     const kindleEmail = String(body.kindleEmail ?? "").trim().toLowerCase();
     const title = String(body.title ?? "Untitled Story").slice(0, 200);
