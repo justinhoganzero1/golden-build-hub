@@ -94,6 +94,7 @@ serve(async (req) => {
               walletCents = bal?.balance_cents ?? 0;
             } catch (_) { /* treat as empty wallet */ }
 
+            let freeMessageGranted = false;
             if (walletCents <= 0) {
               const { data: limitRows, error: limitErr } = await admin.rpc("enforce_ai_limit", {
                 _user_id: userId,
