@@ -22,6 +22,9 @@ export const narrateChunk = async (
   text: string,
   opts: { voiceId?: string; modelId?: string; outputFormat?: string; settings?: Record<string, unknown> } = {},
 ): Promise<Uint8Array> => {
+  if (!(await hasUserSession())) {
+    throw new NarrationError("Please sign in to narrate — narration needs your account.");
+  }
   const token = await getEdgeAuthToken();
   let res: Response;
   try {
