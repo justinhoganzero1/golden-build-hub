@@ -19,6 +19,8 @@ export interface RegenPlan {
   changes: string[];
   notes: string;
   regenerateImages: boolean;
+  kindleReady: boolean;
+  kindleNotes: string;
 }
 
 type Stage = "changes" | "warn1" | "warn2" | "warn3" | "images" | "plan" | "final";
@@ -169,6 +171,8 @@ const RegenerateStoryWizard = ({
   const [selected, setSelected] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [rewriteNeeded, setRewriteNeeded] = useState(false);
+  const [kindleReady, setKindleReady] = useState(false);
+  const [kindleNotes, setKindleNotes] = useState("");
   const [regenerateImages, setRegenerateImages] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
 
@@ -178,6 +182,8 @@ const RegenerateStoryWizard = ({
       setSelected([]);
       setNotes("");
       setRewriteNeeded(false);
+      setKindleReady(false);
+      setKindleNotes("");
       setRegenerateImages(true);
     }
   }, [open]);
