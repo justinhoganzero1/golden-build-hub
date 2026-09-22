@@ -1,7 +1,7 @@
 // Story narration → real MP3 files (single-track or per-chapter ZIP).
 // Shared by the Story Writer audiobook exporter and the share dialog so the
 // audio a user sends is a real, playable file.
-import { getEdgeAuthToken } from "@/lib/edgeAuth";
+import { getEdgeAuthToken, hasUserSession } from "@/lib/edgeAuth";
 import type { StoryFileSource } from "@/lib/storyFiles";
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
