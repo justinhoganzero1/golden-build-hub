@@ -1306,7 +1306,9 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
   ): Promise<string> => {
 
     const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
-Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}`;
+Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}
+
+${KINDLE_RULES}`;
 
     const userPrompt = `STORY TITLE: ${story.title}
 GENRE: ${story.genre}
