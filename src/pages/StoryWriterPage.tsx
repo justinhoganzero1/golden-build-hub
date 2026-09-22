@@ -1101,12 +1101,25 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
     (story.backImage ? 1 : 0) +
     story.chapters.reduce((n, c) => n + (c.images?.length || 0), 0);
 
+  const KINDLE_RULES = `KINDLE/KDP READINESS RULES — the output MUST satisfy every one of these, as Amazon's reviewer will check them:
+1. Every chapter is a COMPLETE, self-contained scene or arc: no placeholders, no "to be continued", no meta commentary, no filler paragraphs, no repeated sentences or recycled descriptions.
+2. Prose is polished: correct grammar and spelling, consistent character names, consistent tense and point of view, no continuity errors between chapters.
+3. Chapters are of a similar professional length and pacing; each opens strongly and ends with a purposeful beat.
+4. Content complies with Amazon KDP content guidelines: no instructions for real-world illegal activity, real people depicted respectfully as fictional characters, no hate content, explicit material handled with literary restraint, no external links or promotions inside the text.
+5. Language is publication-clean: no AI-sounding boilerplate ("in the world of...", "as our story concludes..."), no bullet lists inside narrative, headings limited to the chapter title.
+6. The final chapter gives a satisfying, resolved ending — no loose threads a reviewer would flag.
+7. Dialogue and narration are audiobook-friendly: readable aloud, natural speech rhythms.
+8. Any instruction from the author below overrides style choices but never the compliance rules above.`;
+
   const regenerateEntireStory = async (plan: RegenPlan) => {
     if (regenBusy) return;
     setRegenBusy(true);
     const changeBrief = [
       plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
       plan.notes ? `EXTRA INSTRUCTIONS FROM THE AUTHOR:\n${plan.notes}` : "",
+      plan.kindleReady
+        ? `KINDLE-READY REWRITE MODE.\n${KINDLE_RULES}\n\nAUTHOR'S KINDLE DETAIL (must be addressed in full):\n${plan.kindleNotes}`
+        : "",
     ].filter(Boolean).join("\n\n");
 
     try {
