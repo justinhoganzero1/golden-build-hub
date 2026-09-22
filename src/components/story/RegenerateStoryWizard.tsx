@@ -334,6 +334,38 @@ const RegenerateStoryWizard = ({
                   />
                 </div>
               )}
+              <label
+                htmlFor="kindle-ready"
+                className="flex items-start gap-3 rounded-xl border border-primary/60 bg-primary/10 p-3 cursor-pointer"
+              >
+                <Checkbox
+                  id="kindle-ready"
+                  checked={kindleReady}
+                  onCheckedChange={(checked) => setKindleReady(checked === true)}
+                  aria-describedby="kindle-ready-help"
+                />
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-bold text-foreground">AI rewrite with detail — fully cleared and ready for Kindle</span>
+                  <span id="kindle-ready-help" className="block text-xs text-muted-foreground">
+                    Tick this to have the AI rewrite the whole book so it meets every Amazon Kindle rule: complete, polished chapters, clean formatting, KDP content-guideline compliance, consistent titles, no placeholders, no repeated filler — reviewed and cleared, ready to publish.
+                  </span>
+                </span>
+              </label>
+              {kindleReady && (
+                <div className="space-y-1.5">
+                  <label htmlFor="kindle-notes" className="block text-xs font-semibold text-primary">
+                    Kindle rewrite detail — what must this rewrite fix?
+                  </label>
+                  <textarea
+                    id="kindle-notes"
+                    value={kindleNotes}
+                    onChange={(e) => setKindleNotes(e.target.value)}
+                    rows={4}
+                    placeholder="e.g. flesh out thin scenes, fix the ending, keep the outback voice, remove repeated lines, make every chapter a similar length, anything Amazon flagged."
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-y"
+                  />
+                </div>
+              )}
               <div className="space-y-3">
                 {REGEN_QUESTIONS.map((g) => (
                   <div key={g.group} className="rounded-xl border border-border bg-background/50 p-3">
@@ -369,7 +401,7 @@ const RegenerateStoryWizard = ({
               </div>
               <button
                 onClick={() => setStage("warn1")}
-                disabled={!rewriteNeeded || !notes.trim()}
+                disabled={!((rewriteNeeded && notes.trim()) || (kindleReady && kindleNotes.trim()))}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm"
               >
                 Continue →
