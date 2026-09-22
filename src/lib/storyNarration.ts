@@ -10,6 +10,7 @@ export class NarrationError extends Error {}
 
 const FRIENDLY: Record<string, string> = {
   TTS_UNAVAILABLE: "Voice narration isn't configured yet — add an ElevenLabs key in Settings → Connectors.",
+  AUTH_REQUIRED: "Please sign in again — your session expired before narration could start.",
   TTS_FAILED: "ElevenLabs rejected the narration request (key invalid, out of credits, or voice unavailable).",
   NETWORK_ERROR: "Couldn't reach the voice service. Check your connection and try again.",
   NO_AUDIO: "The voice service returned no audio. Try again in a moment.",
