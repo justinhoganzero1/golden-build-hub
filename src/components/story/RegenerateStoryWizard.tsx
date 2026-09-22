@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Loader2, Mic, MicOff, RefreshCw, Volume2, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 /**
  * Regenerate-Entire-Story wizard.
@@ -167,6 +168,7 @@ const RegenerateStoryWizard = ({
   const [stage, setStage] = useState<Stage>("changes");
   const [selected, setSelected] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [rewriteNeeded, setRewriteNeeded] = useState(false);
   const [regenerateImages, setRegenerateImages] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
 
@@ -175,6 +177,7 @@ const RegenerateStoryWizard = ({
       setStage("changes");
       setSelected([]);
       setNotes("");
+      setRewriteNeeded(false);
       setRegenerateImages(true);
     }
   }, [open]);
@@ -281,6 +284,38 @@ const RegenerateStoryWizard = ({
                   Tick anything you like — or tick nothing and just talk to the AI in the box below. {ALL_QUESTIONS.length} quick questions, no writing required.
                 </p>
               </div>
+              <label
+                htmlFor="rewrite-needed"
+                className="flex items-start gap-3 rounded-xl border border-border bg-background/50 p-3 cursor-pointer"
+              >
+                <Checkbox
+                  id="rewrite-needed"
+                  checked={rewriteNeeded}
+                  onCheckedChange={(checked) => setRewriteNeeded(checked === true)}
+                  aria-describedby="rewrite-needed-help"
+                />
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-bold text-foreground">A rewrite is needed</span>
+                  <span id="rewrite-needed-help" className="block text-xs text-muted-foreground">
+                    Tick this box, then describe exactly what must be rewritten.
+                  </span>
+                </span>
+              </label>
+              {rewriteNeeded && (
+                <div className="space-y-1.5">
+                  <label htmlFor="rewrite-instructions" className="block text-xs font-semibold text-primary">
+                    What is needed for the rewrite?
+                  </label>
+                  <textarea
+                    id="rewrite-instructions"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="Enter every change needed, such as scenes to fix, characters to change, missing details, tone, pacing, or the ending."
+                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-y"
+                  />
+                </div>
+              )}
               <div className="space-y-3">
                 {REGEN_QUESTIONS.map((g) => (
                   <div key={g.group} className="rounded-xl border border-border bg-background/50 p-3">
@@ -314,15 +349,9 @@ const RegenerateStoryWizard = ({
                   </div>
                 ))}
               </div>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="Anything else? Tell the AI in plain English — e.g. 'make it set in Brisbane and give Alex a sister'."
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground resize-none"
-              />
               <button
                 onClick={() => setStage("warn1")}
+                disabled={!rewriteNeeded || !notes.trim()}
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm"
               >
                 Continue →
