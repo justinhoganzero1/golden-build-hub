@@ -6,10 +6,23 @@ import { supabase } from "@/integrations/supabase/client";
 let cached: string | null = null;
 
 export async function getEdgeAuthToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
+  // Refresh a token that is missing or about to expire, otherwise paid
+  // endpoints reject the call with auth_required.
+  const expiresAt = (session?.expires_at ?? 0) * 1000;
+  if (session && expiresAt && expiresAt - Date.now() < 60_000) {
+    const { data } = await supabase.auth.refreshSession();
+    if (data.session) session = data.session;
+  }
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   cached = token;
   return token;
+}
+
+/** True when we have a real signed-in user token (not the public anon key). */
+export async function hasUserSession(): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return !!session?.access_token;
 }
 
 export function getEdgeAuthTokenSync(): string {
