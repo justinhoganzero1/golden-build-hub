@@ -1,7 +1,7 @@
 // Story narration → real MP3 files (single-track or per-chapter ZIP).
 // Shared by the Story Writer audiobook exporter and the share dialog so the
 // audio a user sends is a real, playable file.
-import { getEdgeAuthToken } from "@/lib/edgeAuth";
+import { getEdgeAuthToken, hasUserSession } from "@/lib/edgeAuth";
 import type { StoryFileSource } from "@/lib/storyFiles";
 
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
@@ -10,6 +10,7 @@ export class NarrationError extends Error {}
 
 const FRIENDLY: Record<string, string> = {
   TTS_UNAVAILABLE: "Voice narration isn't configured yet — add an ElevenLabs key in Settings → Connectors.",
+  AUTH_REQUIRED: "Please sign in again — your session expired before narration could start.",
   TTS_FAILED: "ElevenLabs rejected the narration request (key invalid, out of credits, or voice unavailable).",
   NETWORK_ERROR: "Couldn't reach the voice service. Check your connection and try again.",
   NO_AUDIO: "The voice service returned no audio. Try again in a moment.",
@@ -22,6 +23,9 @@ export const narrateChunk = async (
   text: string,
   opts: { voiceId?: string; modelId?: string; outputFormat?: string; settings?: Record<string, unknown> } = {},
 ): Promise<Uint8Array> => {
+  if (!(await hasUserSession())) {
+    throw new NarrationError("Please sign in to narrate — narration needs your account.");
+  }
   const token = await getEdgeAuthToken();
   let res: Response;
   try {
