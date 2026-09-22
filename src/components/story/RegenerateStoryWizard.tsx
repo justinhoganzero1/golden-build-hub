@@ -192,8 +192,14 @@ const RegenerateStoryWizard = ({
     setSelected((s) => (s.includes(q) ? s.filter((x) => x !== q) : [...s, q]));
 
   const plan: RegenPlan = useMemo(
-    () => ({ changes: selected, notes: notes.trim(), regenerateImages }),
-    [selected, notes, regenerateImages],
+    () => ({
+      changes: selected,
+      notes: notes.trim(),
+      regenerateImages,
+      kindleReady,
+      kindleNotes: kindleNotes.trim(),
+    }),
+    [selected, notes, regenerateImages, kindleReady, kindleNotes],
   );
 
   const confirmCopy: Record<string, { title: string; body: string; yes: string }> = {
@@ -247,6 +253,12 @@ const RegenerateStoryWizard = ({
     `Rewrite all ${chapterCount} chapter${chapterCount === 1 ? "" : "s"} of your book from the top.`,
     ...(selected.length ? selected.map((s) => `Apply: ${s}`) : ["No specific changes ticked — improve the writing while keeping the story."]),
     ...(notes ? [`Your extra instructions: "${notes}"`] : []),
+    ...(kindleReady
+      ? [
+          `Kindle-ready rewrite mode: every chapter rewritten to pass Amazon KDP's full review checklist.`,
+          ...(kindleNotes ? [`Your Kindle detail: "${kindleNotes}"`] : []),
+        ]
+      : []),
     regenerateImages
       ? `Regenerate every illustration (${imageCount} existing image${imageCount === 1 ? "" : "s"} will be replaced with fresh, all-different artwork).`
       : `Keep your current ${imageCount} illustration${imageCount === 1 ? "" : "s"} exactly as they are.`,
