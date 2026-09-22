@@ -1163,7 +1163,7 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
         }
       }
 
-      toast.success("Your entire story has been regenerated.", { id: "regen-progress" });
+      toast.success(plan.kindleReady ? "Your book has been rewritten and cleared for Kindle — every Kindle rule applied." : "Your entire story has been regenerated.", { id: "regen-progress" });
       setRegenOpen(false);
     } catch (e: any) {
       if (e?.message !== "blocked") toast.error("Rewrite failed: " + (e?.message || "unknown"));
