@@ -1965,12 +1965,21 @@ Rules: the three title-gradient colours must read as one confident, high-contras
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const narrateChunk = async (text: string): Promise<Uint8Array | null> => {
-    try {
-      return await narrateOneChunk(text);
-    } catch (e: any) {
-      throw new Error(e?.message || "Narration failed");
+    let lastErr: any;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await narrateOneChunk(text);
+      } catch (e: any) {
+        lastErr = e;
+        const msg = String(e?.message || "");
+        // Don't burn retries on problems retrying can't fix
+        if (/sign in|trial|credit|top up|balance/i.test(msg)) break;
+        await new Promise((r) => setTimeout(r, attempt * 1500));
+      }
     }
+    throw new Error(lastErr?.message || "Narration failed");
   };
+
 
 
   const exportAudiobook = async () => {
