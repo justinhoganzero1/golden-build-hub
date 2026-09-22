@@ -347,51 +347,101 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     storyTitle?: string,
   ) => {
     setPlanning(true);
-    const toastId = toast.loading("Oracle is building your entire storyboard from the story…");
+    const toastId = toast.loading("Oracle is reading the whole story…");
     try {
-      const targetScenes = Math.max(8, Math.min(20, frames.length ? frames.length * 2 : 12));
-      const resp = await fetch(SCENE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({
-          script: storyScript.slice(0, 24000),
-          intent:
-            `${storyIntent}\n\n[STORY WRITER HANDOFF] Adapt this story into a cinematic film. Keep character, wardrobe and lighting continuity across every scene. Write spoken narration for every scene so the film plays start-to-finish with no gaps.`,
-          targetDurationSec: targetScenes * 6,
-        }),
-      });
-      if (!resp.ok) {
-        toast.error("Auto-storyboard failed — tap Generate Scenes to retry", { id: toastId });
-        return;
+      // A full book is far longer than one planning call can handle. Split the
+      // WHOLE script into ordered parts and plan every part, so the finished
+      // storyboard covers the story beginning to end instead of chapter one.
+      const full = storyScript.trim();
+      const PART_CHARS = 14000;
+      const parts: string[] = [];
+      if (full.length <= PART_CHARS) {
+        parts.push(full);
+      } else {
+        // Split on paragraph boundaries so no sentence is cut in half.
+        const paras = full.split(/\n{2,}/);
+        let buf = "";
+        for (const p of paras) {
+          if (buf && (buf.length + p.length + 2) > PART_CHARS) { parts.push(buf); buf = ""; }
+          buf = buf ? `${buf}\n\n${p}` : p;
+          while (buf.length > PART_CHARS * 1.5) { parts.push(buf.slice(0, PART_CHARS)); buf = buf.slice(PART_CHARS); }
+        }
+        if (buf.trim()) parts.push(buf);
       }
-      const data = await resp.json();
-      const incoming: Scene[] = (data.scenes || []).slice(0, targetScenes).map((s: any, i: number) => ({
-        id: uid(),
-        caption: s.caption,
-        photo_prompt: s.photo_prompt,
-        motion: (s.motion || "ken-burns") as Motion,
-        duration_sec: CLIP_SECONDS,
-        narration: s.narration || s.caption,
-        speaker: s.speaker || "narrator",
-        voice_style: s.voice_style || "narrator-male-warm",
-        sfx_prompt: s.sfx_hint || s.sfx_prompt || "",
-        music_prompt: s.music_prompt || `Cinematic underscore for: ${s.caption}`,
-        music_volume: 0.25,
-        // Re-use the story's own cover / chapter artwork where we have it
-        image_url: frames[i],
-      }));
-      if (!incoming.length) {
+      const usableParts = parts.slice(0, 24); // safety ceiling
+
+      const collected: Scene[] = [];
+      let planTitle = "";
+      let planMusic = "";
+
+      for (let p = 0; p < usableParts.length; p++) {
+        const part = usableParts[p];
+        const targetScenes = Math.max(4, Math.min(16, Math.round(part.length / 1200)));
+        toast.loading(
+          usableParts.length > 1
+            ? `Storyboarding part ${p + 1} of ${usableParts.length}… (${collected.length} scenes so far)`
+            : "Oracle is building your storyboard…",
+          { id: toastId },
+        );
+        const resp = await fetch(SCENE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: AUTH },
+          body: JSON.stringify({
+            script: part,
+            intent:
+              `${storyIntent}\n\n[STORY WRITER HANDOFF] Adapt this story into a cinematic film. This is PART ${p + 1} OF ${usableParts.length} of the same continuous story — continue the film, never restart it and never re-tell earlier events. Keep character, wardrobe and lighting continuity across every scene. Write spoken narration for every scene so the film plays start-to-finish with no gaps.`,
+            targetDurationSec: targetScenes * 6,
+          }),
+        });
+        if (!resp.ok) {
+          if (collected.length) break; // keep what we already have
+          toast.error("Auto-storyboard failed — tap Generate Scenes to retry", { id: toastId });
+          return;
+        }
+        const data = await resp.json();
+        if (!planTitle) planTitle = data.title || "";
+        if (!planMusic) planMusic = data.music_prompt || "";
+        for (const s of (data.scenes || []).slice(0, targetScenes)) {
+          collected.push({
+            id: uid(),
+            caption: s.caption,
+            photo_prompt: s.photo_prompt,
+            motion: (s.motion || "ken-burns") as Motion,
+            duration_sec: CLIP_SECONDS,
+            narration: s.narration || s.caption,
+            speaker: s.speaker || "narrator",
+            voice_style: s.voice_style || "narrator-male-warm",
+            sfx_prompt: s.sfx_hint || s.sfx_prompt || "",
+            music_prompt: s.music_prompt || `Cinematic underscore for: ${s.caption}`,
+            music_volume: 0.25,
+          });
+        }
+      }
+
+      if (!collected.length) {
         toast.error("Auto-storyboard returned nothing — tap Generate Scenes", { id: toastId });
         return;
       }
-      setTitle(prev => prev || storyTitle || data.title || "Untitled Movie");
+
+      // Spread the story's own artwork evenly across the WHOLE film instead of
+      // stacking every picture at the start.
+      if (frames.length) {
+        const step = collected.length / frames.length;
+        frames.forEach((url, i) => {
+          const idx = Math.min(collected.length - 1, Math.floor(i * step));
+          if (!collected[idx].image_url) collected[idx].image_url = url;
+        });
+      }
+
+      setTitle(prev => prev || storyTitle || planTitle || "Untitled Movie");
       setMusicPrompt(
-        data.music_prompt || `Cinematic score matching: ${(storyIntent || storyTitle || "").slice(0, 200)}`,
+        planMusic || `Cinematic score matching: ${(storyIntent || storyTitle || "").slice(0, 200)}`,
       );
-      setScenes(incoming);
+      setScenes(collected);
       setBlocksProduced(1);
+      const mins = Math.round((collected.length * CLIP_SECONDS) / 60);
       toast.success(
-        `Storyboard ready — ${incoming.length} scenes, narration and score prompt all written.`,
+        `Whole story storyboarded — ${collected.length} scenes (~${mins} min), narration and score written.`,
         { id: toastId },
       );
     } catch (e) {
@@ -401,6 +451,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       setPlanning(false);
     }
   };
+
 
   // Hydrate from Oracle Movie Director (sessionStorage handoff)
   useEffect(() => {
