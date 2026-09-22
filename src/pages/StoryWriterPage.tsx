@@ -1306,7 +1306,9 @@ Return ONLY the corrected text, with no commentary, no preamble and no markdown 
   ): Promise<string> => {
 
     const baseSystem = `You are a master ${story.genre} novelist writing a full-length book chapter.
-Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}`;
+Write a COMPLETE chapter of AT LEAST ${targetWords.toLocaleString()} words — rich prose, vivid sensory detail, full scenes with dialogue, internal thought, action, subplot and pacing. Do NOT summarize. Do NOT use bullet points. Do NOT include outlines or author notes. Write only the chapter prose. You may include the chapter title as the first line. Keep writing — never stop early.${styleRule()}
+
+${KINDLE_RULES}`;
 
     const userPrompt = `STORY TITLE: ${story.title}
 GENRE: ${story.genre}
@@ -1613,7 +1615,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
     }
     try {
       const text = await callAI(
-        `You are a story architect. Produce a clean chapter-by-chapter outline (5-8 chapters) for a ${story.genre} story. Each chapter on its own line as: "Chapter N — Title: one-sentence beat". No prose, just the list.`,
+        `You are a story architect. Produce a clean chapter-by-chapter outline (5-8 chapters) for a ${story.genre} story. Each chapter on its own line as: "Chapter N — Title: one-sentence beat". No prose, just the list. The arc must be complete and resolved by the final chapter, and must comply with Amazon KDP content guidelines (no real-world illegal instruction, no hate content, real people only as respectfully drawn fiction).`,
         `Title: ${story.title}\nPremise: ${story.premise}`
       );
       const lines = text.split("\n").map(l => l.trim()).filter(l => /^chapter\s+\d/i.test(l));
