@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     const requestedDur = Math.max(0.1, Math.min(60, Number(target_duration_minutes) || 0.15));
     const quality = String(quality_tier || "hd");
-    const isFreeTier = !isAdmin && !isFreeForLife && userTier === "free";
+    const isFreeTier = false; // no free clips — every render is paid
 
     // ===== FREE TIER: only 1 clip ever, fixed 8 seconds, SD only =====
     if (isFreeTier) {
