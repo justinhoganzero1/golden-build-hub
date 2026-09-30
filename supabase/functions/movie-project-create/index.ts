@@ -48,16 +48,8 @@ Deno.serve(async (req) => {
     let isFreeForLife = false;
     if (isAdmin) {
       userTier = "lifetime";
-    } else {
-      const { data: rewards } = await supabase.from("reward_grants")
-        .select("reward_type, reason").eq("user_id", user.id).eq("active", true)
-        .gt("expires_at", new Date().toISOString()).limit(5);
-      if (rewards?.length) {
-        userTier = "monthly";
-        isFreeForLife = rewards.some((r: any) => r.reward_type === "free_for_life" || r.reason === "free_for_life");
-        if (isFreeForLife) userTier = "lifetime";
-      }
     }
+    // Pay-per-use: reward grants no longer unlock free renders.
 
     const requestedDur = Math.max(0.1, Math.min(60, Number(target_duration_minutes) || 0.15));
     const quality = String(quality_tier || "hd");
