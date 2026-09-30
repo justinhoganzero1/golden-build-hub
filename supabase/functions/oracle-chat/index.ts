@@ -83,8 +83,12 @@ serve(async (req) => {
           }
         }
       } catch (e) {
-        console.warn("Usage tracking skipped:", e);
+        console.error("Billing check failed:", e);
+        return new Response(JSON.stringify({ error: "billing_unavailable" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "auth_required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // 🛡️ JAILBREAK GUARD — 3 strikes then auto-delete account
