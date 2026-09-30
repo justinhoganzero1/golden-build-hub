@@ -401,7 +401,13 @@ const RegenerateStoryWizard = ({
               </div>
               <button
                 onClick={() => setStage("warn1")}
-                disabled={!((rewriteNeeded && notes.trim()) || (kindleReady && kindleNotes.trim()))}
+                disabled={
+                  !(
+                    selected.length > 0 ||
+                    (rewriteNeeded && notes.trim()) ||
+                    (kindleReady && kindleNotes.trim())
+                  )
+                }
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-bold text-sm"
               >
                 Continue →

@@ -16,11 +16,13 @@ Deno.serve(async (req) => {
   try {
     const auth = await requireUser(req);
     if (auth.response) {
-      // Never hard-fail the UI on a missing/expired session: signal the client
-      // to sign in / use browser speech instead of throwing a 401 at the page.
+      // Return a real 401 so callers branching on resp.ok treat it as an
+      // error (Movie Studio shows a toast, Live Vision falls back to browser
+      // speech, story narration prompts sign-in) instead of saving the JSON
+      // error body as a silent/corrupt audio clip.
       return new Response(
         JSON.stringify({ error: "AUTH_REQUIRED", fallback: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
     const __rl = await enforceRateLimit(req, auth.user, "elevenlabs-tts");
