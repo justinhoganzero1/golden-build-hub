@@ -1,5 +1,6 @@
 // Returns a single-use ElevenLabs realtime STT token for the browser.
 // Token expires after 15 minutes; only issued to authenticated users.
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
@@ -16,6 +17,14 @@ Deno.serve(async (req) => {
     const limited = await enforceRateLimit(req, auth.user, "elevenlabs-stt-token", { limit: 30, windowSeconds: 60 });
     if (limited) return limited;
 
+    if ((auth.user.email ?? "").toLowerCase() !== "justinbretthogan@gmail.com") {
+      try {
+        await chargeAI(auth.user.id, "speech-to-text", 2, { provider: "elevenlabs", model: "scribe_realtime" });
+      } catch (err) {
+        if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
+        throw err;
+      }
+    }
     const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
     if (!apiKey) throw new Error("ELEVENLABS_API_KEY not configured");
 

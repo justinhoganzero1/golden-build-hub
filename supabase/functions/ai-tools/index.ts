@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
@@ -57,6 +59,21 @@ serve(async (req) => {
         status: guard.deleted ? 410 : 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Pay-per-use: every call is charged to the member's own wallet (owner exempt).
+    if (userEmail?.toLowerCase() !== ADMIN_EMAIL) {
+      const m = String(modelOverride || "");
+      const cost = /gpt-5|openai/.test(m) ? PROVIDER_RATES.lovable_ai_gpt5_per_call
+        : /pro/.test(m) ? PROVIDER_RATES.lovable_ai_gemini_pro_per_call
+        : PROVIDER_RATES.lovable_ai_gemini_flash_per_call;
+      const longJob = typeof maxTokens === "number" && maxTokens > 4000 ? Math.ceil(maxTokens / 4000) : 1;
+      try {
+        await chargeAI(auth.user.id, "ai-tools", cost * longJob, { provider: "lovable_ai", model: m || "google/gemini-3-flash-preview", type });
+      } catch (err) {
+        if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
+        throw err;
+      }
     }
 
     const systemPrompts: Record<string, string> = {

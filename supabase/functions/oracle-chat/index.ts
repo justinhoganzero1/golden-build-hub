@@ -43,32 +43,9 @@ serve(async (req) => {
         userEmail = userData?.user?.email ?? null;
 
         if (userId) {
-          // Bypass: admin
+          // Pay-per-use: only the owner (admin) or a member using their own
+          // provider key skips the wallet. No trial, no free daily allowance.
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-
-          // Bypass: server-verified active reward grant (free_for_life / unlimited_ai
-          // / lifetime / tier3_trial). NEVER trust client-supplied isSubscribed.
-          let serverSubscribed = false;
-          try {
-            const { data: grantRows } = await admin
-              .from("reward_grants")
-              .select("reward_type, reason, expires_at, active")
-              .eq("user_id", userId)
-              .eq("active", true)
-              .gt("expires_at", new Date().toISOString())
-              .limit(5);
-            serverSubscribed = !!(grantRows || []).some((g: any) =>
-              ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
-              g.reason === "free_for_life"
-            );
-          } catch (_) { /* fall through to limit enforcement */ }
-
-          // ── TRIAL ENFORCEMENT ──
-          // The free daily allowance exists ONLY inside the 7-day trial window.
-          // After that the user must either have loaded their own provider key
-          // (user_ai_keys) or have coins in their wallet — otherwise no AI runs.
-          const createdAt = userData?.user?.created_at ? new Date(userData.user.created_at).getTime() : Date.now();
-          const trialActive = Date.now() - createdAt < TRIAL_DAYS * 24 * 60 * 60 * 1000;
           let hasOwnKey = false;
           try {
             const { data: keyRow } = await admin
@@ -79,60 +56,8 @@ serve(async (req) => {
             hasOwnKey = !!(keyRow?.openai_key || keyRow?.gemini_key);
           } catch (_) { /* treat as no key */ }
 
-          if (!isAdmin && !serverSubscribed && !trialActive && !hasOwnKey) {
-            // Trial over. Members with an empty wallet keep the small free
-            // membership allowance (enforced in the DB by enforce_ai_limit on
-            // the 'free' tier). Only once that daily allowance is used up — or
-            // when they actually hold credit — does the wallet pay.
-            let walletCents = 0;
+          if (!isAdmin && !hasOwnKey) {
             try {
-              const { data: bal } = await admin
-                .from("wallet_balances")
-                .select("balance_cents")
-                .eq("user_id", userId)
-                .maybeSingle();
-              walletCents = bal?.balance_cents ?? 0;
-            } catch (_) { /* treat as empty wallet */ }
-
-            let freeMessageGranted = false;
-            if (walletCents <= 0) {
-              const { data: limitRows, error: limitErr } = await admin.rpc("enforce_ai_limit", {
-                _user_id: userId,
-                _service: "chat",
-                _est_cost: 0,
-              });
-              const row = (limitRows || [])[0] as
-                | { allowed: boolean; requests_today: number; limit_requests: number }
-                | undefined;
-              if (!limitErr && row?.allowed) {
-                usageInfo = {
-                  count: row.requests_today,
-                  limit: row.limit_requests,
-                  remaining: Math.max(0, row.limit_requests - row.requests_today),
-                  over: false,
-                  bypassed: false,
-                };
-                // Free message — skip the wallet charge entirely and fall
-                // through to the normal chat flow below.
-                freeMessageGranted = true;
-              } else {
-                return new Response(
-                JSON.stringify({
-                  error: "insufficient_coins",
-                  reason: "free_daily_used",
-                  message:
-                    "You've used today's free messages. Add credit to keep chatting now, or come back tomorrow for more free ones.",
-                  needed_cents: 1,
-                  balance_cents: 0,
-                }),
-                { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-                );
-              }
-            }
-
-            // Wallet has credit: every message is paid for from it.
-            // A granted free daily message is never charged.
-            if (!freeMessageGranted) try {
               await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
                 model: "google/gemini-2.5-flash",
@@ -143,8 +68,8 @@ serve(async (req) => {
                 return new Response(
                   JSON.stringify({
                     error: "insufficient_coins",
-                    reason: "trial_ended",
-                    message: "Your free trial has ended. Top up your wallet or add your own API key to keep chatting with the Oracle.",
+                    reason: "wallet_empty",
+                    message: "Add credit to your wallet to chat with the Oracle.",
                     needed_cents: err.needed_cents,
                     balance_cents: err.balance_cents,
                   }),
@@ -153,39 +78,17 @@ serve(async (req) => {
               }
               throw err;
             }
-          } else if (!isAdmin && !serverSubscribed) {
-            // Atomically increment + read count
-            const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
-              _user_id: userId,
-              _limit: FREE_DAILY_LIMIT,
-            });
-            if (!rpcErr && rpcData && rpcData.length > 0) {
-              const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
-              usageInfo = {
-                count: row.new_count,
-                limit: row.daily_limit,
-                remaining: Math.max(0, row.daily_limit - row.new_count),
-                over: row.over_limit,
-                bypassed: false,
-              };
-              if (row.over_limit) {
-                return new Response(
-                  JSON.stringify({
-                    error: "free_limit_reached",
-                    message: `You've reached today's free chat limit (${FREE_DAILY_LIMIT} messages). Upgrade for unlimited Oracle chat.`,
-                    usage: usageInfo,
-                  }),
-                  { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-              }
-            }
           } else {
             usageInfo.bypassed = true;
           }
         }
       } catch (e) {
-        console.warn("Usage tracking skipped:", e);
+        console.error("Billing check failed:", e);
+        return new Response(JSON.stringify({ error: "billing_unavailable" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "auth_required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // 🛡️ JAILBREAK GUARD — 3 strikes then auto-delete account

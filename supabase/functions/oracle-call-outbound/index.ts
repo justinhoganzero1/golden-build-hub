@@ -3,6 +3,7 @@
 // using TTS, listens for a reply, then routes that reply back through the same
 // gather → mute → user-reply flow (so the user can keep talking through Oracle).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,6 +107,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Pre-pay a 5-minute AI call (voice + AI) from the member's own wallet;
+    // Twilio hard-stops the call at 5 minutes so nothing overruns.
+    try {
+      await chargeAI(userId, "ai-outbound-call", 5 * 6, { provider: "twilio+lovable_ai", minutes: 5 });
+    } catch (err) {
+      if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
+      throw err;
+    }
+
     // Pre-create the session so we can pass its ID to TwiML
     const { data: session, error: sessErr } = await admin
       .from("call_sessions")
@@ -141,6 +151,7 @@ Deno.serve(async (req) => {
         From: settings.twilio_number,
         Url: `${OUTBOUND_TWIML_URL}&sid=${session.id}`,
         Method: "POST",
+        TimeLimit: "300",
       }),
     });
     const data = await r.json();

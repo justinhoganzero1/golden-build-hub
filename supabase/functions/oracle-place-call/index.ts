@@ -3,6 +3,7 @@
 // Charges the user's wallet at Twilio cost + 50% service fee.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,6 +111,18 @@ Deno.serve(async (req) => {
       }, 402);
     }
 
+    // Pre-pay call minutes from the member's own wallet (max 10). The call is
+    // hard-capped to the paid minutes so the owner never covers overrun.
+    const paidMinutes = Math.max(1, Math.min(10, Math.floor(balance / Math.ceil(totalCpm * 1.2))));
+    try {
+      await chargeAI(user.id, "phone-call", totalCpm * paidMinutes, { provider: "twilio", destination_tier: tier, minutes: paidMinutes });
+    } catch (err) {
+      if (err instanceof InsufficientCoinsError) {
+        return json({ error: "insufficient_coins", needed_cents: err.needed_cents, balance_cents: err.balance_cents }, 402);
+      }
+      throw err;
+    }
+
     // Place outbound call via Twilio gateway
     const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -123,7 +136,7 @@ Deno.serve(async (req) => {
     // TwiML: dial the destination, then connect to user.
     // Every interpolated value is E.164-validated above AND XML-escaped here so
     // no user input can break out of the markup and inject extra TwiML verbs.
-    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial callerId="${xmlEscape(TWILIO_FROM)}"><Number>${xmlEscape(destination)}</Number></Dial></Response>`;
+    const twiml = `<Response><Say voice="alice">Connecting you to your assistant call.</Say><Dial timeLimit="${paidMinutes * 60}" callerId="${xmlEscape(TWILIO_FROM)}"><Number>${xmlEscape(destination)}</Number></Dial></Response>`;
 
 
     const callRes = await fetch(`${GATEWAY_URL}/Calls.json`, {
