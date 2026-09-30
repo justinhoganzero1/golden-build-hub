@@ -45,8 +45,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !claims?.claims?.sub) {
+    const { data: uData, error: claimsErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    const claims = { claims: { sub: uData?.user?.id } };
+    if (claimsErr || !claims.claims.sub) {
       return new Response(JSON.stringify({ error: "Invalid session. Please sign in again." }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
