@@ -2,6 +2,8 @@
 // Two agents: "nova" (GPT-5.5, sharp/analytical) and "lyra" (Gemini 3.5 Flash, warm/creative).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
@@ -109,43 +111,23 @@ serve(async (req) => {
           // When user brings their own key, they pay their provider directly — no gating.
           if (!userKey) {
             const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-            let serverSubscribed = false;
-            try {
-              const { data: grantRows } = await admin
-                .from("reward_grants")
-                .select("reward_type, reason, expires_at, active")
-                .eq("user_id", userId)
-                .eq("active", true)
-                .gt("expires_at", new Date().toISOString())
-                .limit(5);
-              serverSubscribed = !!(grantRows || []).some((g: any) =>
-                ["free_for_life", "unlimited_ai", "lifetime", "tier3_trial"].includes(g.reward_type) ||
-                g.reason === "free_for_life"
-              );
-            } catch (_) { /* fall through */ }
-
-            if (!isAdmin && !serverSubscribed) {
-              const { data: rpcData, error: rpcErr } = await admin.rpc("increment_oracle_usage", {
-                _user_id: userId,
-                _limit: FREE_DAILY_LIMIT,
-              });
-              if (!rpcErr && rpcData && rpcData.length > 0) {
-                const row = rpcData[0] as { new_count: number; over_limit: boolean; daily_limit: number };
-                if (row.over_limit) {
-                  return new Response(JSON.stringify({
-                    error: "free_limit_reached",
-                    message: `Daily free agent limit reached (${FREE_DAILY_LIMIT}). Add your own ${cfg.providerName} API key in Agent Settings for unlimited use on your own account.`,
-                  }), {
-                    status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-                  });
-                }
+            if (!isAdmin) {
+              try {
+                await chargeAI(userId, "agent-chat", PROVIDER_RATES.lovable_ai_gpt5_per_call, { provider: "lovable_ai", model: String(cfg.providerName) });
+              } catch (err) {
+                if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
+                throw err;
               }
             }
           }
         }
       } catch (e) {
-        console.warn("Auth check skipped:", e);
+        console.error("Billing check failed:", e);
+        return new Response(JSON.stringify({ error: "billing_unavailable" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+    }
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "auth_required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Jailbreak guard on latest user message
