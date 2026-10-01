@@ -8,6 +8,14 @@ import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 
+// Simple human check for sign-up: a random maths question. No external
+// service or keys needed — bots that auto-fill forms trip on this.
+const newHumanCheck = () => {
+  const a = 2 + Math.floor(Math.random() * 8); // 2-9
+  const b = 1 + Math.floor(Math.random() * 8); // 1-8
+  return { a, b, answer: a + b };
+};
+
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -23,6 +31,8 @@ const SignInPage = () => {
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
+  const [humanCheck, setHumanCheck] = useState(newHumanCheck);
+  const [humanAnswer, setHumanAnswer] = useState("");
 
   // Preview auto-redirect removed: RequireAuth no longer bypasses on preview
   // hosts, so navigating unauthenticated users to /dashboard produced an
