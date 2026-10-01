@@ -120,6 +120,16 @@ const WalletPage = () => {
             );
           })}
         </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 mt-5 space-y-2">
+          <h2 className="text-sm font-bold text-foreground">What uses coins</h2>
+          <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+            <li>Oracle AI chat replies, voice, images, video, narration and phone calls.</li>
+            <li>You pay the real service cost plus 20%. Nothing else.</li>
+            <li>Free tools (planners, trackers, diary, calendar, games) never use coins.</li>
+          </ul>
+          <a href="/get-started" className="inline-block text-xs font-semibold text-primary underline">New here? See the step-by-step guide</a>
+        </div>
       </div>
     </div>
   );

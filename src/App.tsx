@@ -75,6 +75,7 @@ const loaders = {
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
+  "/get-started": () => import("./pages/GetStartedPage"),
   "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
@@ -202,6 +203,7 @@ const BookPage = lazy(loaders["/book/:id"]);
 const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
+const GetStartedPage = lazy(loaders["/get-started"]);
 const CreditDashboardPage = lazy(loaders["/credit"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
@@ -367,6 +369,7 @@ const App = () => (
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/get-started" element={<RequireAuth><ErrorBoundary pageName="Get Started"><GetStartedPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/credit" element={<RequireAuth><ErrorBoundary pageName="Credit Dashboard"><CreditDashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/consent" element={<ErrorBoundary pageName="Consent"><ConsentPage /></ErrorBoundary>} />
