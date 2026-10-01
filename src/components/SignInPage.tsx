@@ -115,21 +115,10 @@ const SignInPage = () => {
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
-          email, password, options: { emailRedirectTo: emailReturnUrl },
+          email, password, options: { emailRedirectTo: emailReturnUrl, data: { date_of_birth: dob } },
         });
         if (error) throw error;
-        // Persist DOB to profiles (server-side trigger re-validates 16+)
-        if (signUpData.user) {
-          const { error: profileError } = await supabase.from("profiles").insert({
-            user_id: signUpData.user.id,
-            date_of_birth: dob,
-          });
-          if (profileError) {
-            // If under-age trigger blocks, sign them out and stop
-            await supabase.auth.signOut();
-            throw new Error(profileError.message);
-          }
-        }
+        // Profile (with DOB) is created server-side by the signup trigger.
         if (signUpData.session) {
           try {
             await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
