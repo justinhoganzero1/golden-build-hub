@@ -237,6 +237,10 @@ export default function CoverStudio({
           rear blurb, then builds the front and back together. Artwork stays text-free; editable
           book text is added only in the preview and exports.
         </p>
+        <label className="flex items-center gap-2 pt-1 text-xs text-foreground cursor-pointer">
+          <input type="checkbox" checked={letterPlates} onChange={toggleLetterPlates} />
+          Light grey behind each title letter
+        </label>
       </header>
 
       {!ready && (
