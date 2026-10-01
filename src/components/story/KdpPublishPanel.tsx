@@ -29,11 +29,27 @@ export interface KdpFields {
   adultContent: "no" | "yes";
 }
 
-const emptyKdp = (): KdpFields => ({
+const genreDefaults = (genre = "") => {
+  const g = genre.toLowerCase();
+  if (/sci|space|alien|tech/.test(g)) return {
+    keywords: ["sci-fi action comedy", "alien invasion novel", "funny science fiction", "Australian humour", "AI and drones", "first contact adventure", "mates save the world"],
+    category1: "Fiction › Science Fiction › Humorous",
+    category2: "Fiction › Science Fiction › Alien Invasion",
+  };
+  if (/fantasy|magic/.test(g)) return {
+    keywords: ["epic fantasy", "magic adventure", "", "", "", "", ""],
+    category1: "Fiction › Fantasy › Epic", category2: "Fiction › Fantasy › Action & Adventure",
+  };
+  return {
+    keywords: ["", "", "", "", "", "", ""],
+    category1: "Fiction › Thrillers › Crime", category2: "Fiction › Action & Adventure",
+  };
+};
+
+const emptyKdp = (genre = ""): KdpFields => ({
   title: "", subtitle: "", seriesName: "", seriesNumber: "", author: "",
-  description: "", keywords: ["", "", "", "", "", "", ""],
-  category1: "Fiction › Thrillers › Crime",
-  category2: "Fiction › Action & Adventure",
+  description: "",
+  ...genreDefaults(genre),
   language: "English", isbn: "", price: "5.99", royalty: "70", adultContent: "no",
 });
 
@@ -94,6 +110,44 @@ const Row = ({
   );
 };
 
+const KDP_STEPS: { title: string; body: string; link?: { label: string; url: string } }[] = [
+  { title: "Create your free KDP account", body: "Sign in with your normal Amazon account (or make one). Accept the KDP terms.", link: { label: "Open kdp.amazon.com", url: "https://kdp.amazon.com" } },
+  { title: "Finish tax and payment details", body: "Amazon won't pay royalties until this is done. Australians choose 'non-US person' and add bank details.", link: { label: "Open tax details", url: KDP_TAX_URL } },
+  { title: "Start a new Kindle eBook", body: "On your Bookshelf tap '+ Create' then 'Kindle eBook'.", link: { label: "Open Bookshelf", url: KDP_DETAILS_URL } },
+  { title: "Page 1 — Details", body: "Paste title, subtitle, author, description, keywords and categories using the copy buttons above. Answer 'No' to AI-generated images question only if true — if Oracle helped write or draw it, tick the AI content box honestly." },
+  { title: "Page 2 — Content", body: "Upload the EPUB you downloaded above as the manuscript, then upload your front cover image. Click 'Launch Previewer' and flip through every page." },
+  { title: "Page 3 — Rights & pricing", body: "Choose 'All territories', the 70% royalty, and the price above. KDP Select is optional." },
+  { title: "Press 'Publish your Kindle eBook'", body: "Amazon reviews it — usually within 72 hours. You'll get an email, and only then is there a real Kindle store page." },
+];
+
+const KdpSubmitGuide = () => {
+  const key = "oracle.kdp.steps";
+  const [done, setDone] = useState<boolean[]>(() => {
+    try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
+  });
+  const toggle = (i: number) => {
+    const next = [...done]; next[i] = !next[i]; setDone(next);
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+  };
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+      <p className="text-xs font-bold">Upload to Amazon — step by step</p>
+      {KDP_STEPS.map((s, i) => (
+        <div key={s.title} className="flex gap-2 text-[11px]">
+          <input type="checkbox" className="mt-0.5" checked={!!done[i]} onChange={() => toggle(i)} aria-label={`Mark step ${i + 1} done`} />
+          <div className="flex-1">
+            <p className={`font-semibold ${done[i] ? "line-through text-muted-foreground" : ""}`}>{i + 1}. {s.title}</p>
+            <p className="text-muted-foreground">{s.body}</p>
+            {s.link && (
+              <button className="text-primary underline" onClick={() => window.open(s.link!.url, "_blank", "noopener,noreferrer")}>{s.link.label}</button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const KdpPublishPanel = ({
   open, onOpenChange, storyId, title, author, genre, blurb, premise,
   chapters, hasCover, hasBackCover, onDownloadEpub, onSendToKindle,
@@ -124,13 +178,13 @@ const KdpPublishPanel = ({
     };
     const { _seed: _drop, ...rest } = saved;
     setKdp({
-      ...emptyKdp(),
+      ...emptyKdp(genre),
       ...rest,
       title: pick("title"),
       author: pick("author"),
       description: pick("description"),
     });
-  }, [open, storyId, title, author, blurb, premise]);
+  }, [open, storyId, title, author, blurb, premise, genre]);
 
   // Persist as the user edits, along with the story values it was seeded from.
   useEffect(() => {
@@ -175,7 +229,6 @@ const KdpPublishPanel = ({
     { ok: hasBackCover, label: "Back cover artwork ready" },
     { ok: chapters.length > 0 && chapters.every((c) => c.content.trim().length > 200), label: "Every chapter has text" },
     { ok: words > 2500, label: `Manuscript length (${words.toLocaleString()} words)` },
-    { ok: illustrations > 0, label: `Illustrations embedded (${illustrations})` },
     { ok: !!Number(kdp.price) && Number(kdp.price) >= 2.99 && Number(kdp.price) <= 9.99, label: "Price inside the 70% royalty band ($2.99–$9.99)" },
   ];
   const failing = checks.filter((c) => !c.ok);
@@ -326,6 +379,8 @@ const KdpPublishPanel = ({
             <Send className="w-4 h-4 mr-2" /> Send this book to my Kindle
           </Button>
         </div>
+
+        <KdpSubmitGuide />
 
         <p className="text-[10px] text-muted-foreground">
           Amazon has no upload service for other apps to use — the final publish step is always their own
