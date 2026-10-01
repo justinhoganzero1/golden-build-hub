@@ -157,6 +157,12 @@ const BookPage = () => {
   const { id } = useParams<{ id: string }>();
   const [book, setBook] = useState<BookDoc | null>(null);
   const [loading, setLoading] = useState(true);
+  const [amazonUrl, setAmazonUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!id) return;
+    (supabase as any).from("book_amazon_links").select("amazon_url").eq("story_id", id).maybeSingle()
+      .then(({ data }: any) => setAmazonUrl(data?.amazon_url ?? null));
+  }, [id]);
 
   useEffect(() => {
     let alive = true;
@@ -217,6 +223,14 @@ const BookPage = () => {
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Story Writer
         </Link>
+
+        {amazonUrl && (
+          <a href={amazonUrl} target="_blank" rel="noreferrer"
+            className="inline-flex mb-6 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            Buy on Amazon
+          </a>
+        )}
+        <Link to="/my-amazon-books" className="ml-3 text-xs text-muted-foreground underline">Add Amazon link</Link>
 
         <header className="mb-8">
           <p className="text-xs uppercase tracking-widest text-primary mb-2">{book.genre}</p>
