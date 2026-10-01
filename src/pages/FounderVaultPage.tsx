@@ -59,6 +59,12 @@ const FounderVaultPage = () => {
           </div>
         )}
 
+        <Link to="/founder-seats" className="block rounded-2xl border border-border bg-card p-4 hover:border-primary/50">
+          <Crown className="w-5 h-5 text-primary mb-1" />
+          <p className="font-bold text-foreground">Founder Seats market</p>
+          <p className="text-xs text-muted-foreground">See seats left, or sell your seat (you keep 80%).</p>
+        </Link>
+
         <Link to="/free-zone" className="block rounded-2xl border border-border bg-card p-4 hover:border-primary/50">
           <Gamepad2 className="w-5 h-5 text-primary mb-1" />
           <p className="font-bold text-foreground">Free Zone</p>
