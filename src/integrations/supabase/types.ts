@@ -3500,6 +3500,7 @@ export type Database = {
           id: string
           language: string
           missed_call_sms: string
+          owner_user_id: string | null
           singleton: boolean
           system_prompt: string
           twilio_phone_number: string | null
@@ -3523,6 +3524,7 @@ export type Database = {
           id?: string
           language?: string
           missed_call_sms?: string
+          owner_user_id?: string | null
           singleton?: boolean
           system_prompt?: string
           twilio_phone_number?: string | null
@@ -3546,6 +3548,7 @@ export type Database = {
           id?: string
           language?: string
           missed_call_sms?: string
+          owner_user_id?: string | null
           singleton?: boolean
           system_prompt?: string
           twilio_phone_number?: string | null
@@ -3556,6 +3559,7 @@ export type Database = {
       }
       voice_call_logs: {
         Row: {
+          billed_minutes: number
           call_sid: string | null
           contact_id: string | null
           created_at: string
@@ -3567,6 +3571,7 @@ export type Database = {
           intent: string | null
           metadata: Json
           outcome: string | null
+          owner_user_id: string | null
           recording_url: string | null
           started_at: string
           status: string
@@ -3575,6 +3580,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billed_minutes?: number
           call_sid?: string | null
           contact_id?: string | null
           created_at?: string
@@ -3586,6 +3592,7 @@ export type Database = {
           intent?: string | null
           metadata?: Json
           outcome?: string | null
+          owner_user_id?: string | null
           recording_url?: string | null
           started_at?: string
           status?: string
@@ -3594,6 +3601,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billed_minutes?: number
           call_sid?: string | null
           contact_id?: string | null
           created_at?: string
@@ -3605,6 +3613,7 @@ export type Database = {
           intent?: string | null
           metadata?: Json
           outcome?: string | null
+          owner_user_id?: string | null
           recording_url?: string | null
           started_at?: string
           status?: string

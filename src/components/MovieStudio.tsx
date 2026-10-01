@@ -736,7 +736,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         body: JSON.stringify({ text, voiceId }),
       });
       if (!resp.ok) {
-        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        if (resp.status === 401) toast.error("Your sign-in has expired — narration was NOT generated. Sign in again, then retry.", { id: "tts-auth-expired", duration: 10000 });
+        else if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
         else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
         else toast.error("Voice generation failed");
         return null;
@@ -918,7 +919,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         body: JSON.stringify({ text, voiceId: resolveVoiceId(scene) }),
       });
       if (!resp.ok) {
-        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        if (resp.status === 401) toast.error("Your sign-in has expired — narration was NOT generated. Sign in again, then retry.", { id: "tts-auth-expired", duration: 10000 });
+        else if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
         else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
         else toast.error("Voice generation failed");
         setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingAudio: false } : s));
@@ -948,7 +950,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         body: JSON.stringify({ text, voiceId }),
       });
       if (!resp.ok) {
-        if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
+        if (resp.status === 401) toast.error("Your sign-in has expired — narration was NOT generated. Sign in again, then retry.", { id: "tts-auth-expired", duration: 10000 });
+        else if (resp.status === 402) { setCreditsLow(true); toast.error("Voice credits exhausted."); }
         else if (resp.status === 429) toast.error("Voice rate limit. Wait and retry.");
         else toast.error("Dub failed");
         return;
