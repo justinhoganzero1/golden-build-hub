@@ -1656,3 +1656,11 @@ img, video {
 .holo-card {
   contain: layout paint style;
 }
+
+/* Member gold theme — toggled from the Member Vault */
+.theme-gold {
+  --primary: 45 100% 55%;
+  --primary-foreground: 30 30% 8%;
+  --ring: 45 100% 55%;
+  --accent: 40 85% 45%;
+}
