@@ -13,3 +13,8 @@
 - [x] Free Zone: 8 games + 4 planners/trackers (keep growing toward 50)
 - [ ] Real $1 founder test — needs Juzzy's card (agent can't pay)
 - [ ] Creators Shop founder-seat resale via Stripe with 20% fee
+- [x] Creators Shop fee now 20% (creator keeps 80%)
+- [x] Founder Seats market: seats left, A$1 new seat, resale with 20% fee, auto seat transfer
+- [x] In-app gift message for free-for-life members (Zero Protocol + Kindle guide)
+- [ ] Zero Protocol public link — Juzzy must tap Publish in Story Writer
+- [ ] KDP 7 steps on Juzzy's Amazon account — only Juzzy can sign in

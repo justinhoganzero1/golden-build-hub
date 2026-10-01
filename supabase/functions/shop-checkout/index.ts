@@ -58,7 +58,7 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: buyer.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    const platformFee = Math.ceil(item.shop_price_cents * 0.30);
+    const platformFee = Math.ceil(item.shop_price_cents * 0.20);
     const creatorPayout = item.shop_price_cents - platformFee;
 
     // Find creator's Stripe Connect account (optional — enables direct payout)

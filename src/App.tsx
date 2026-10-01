@@ -79,6 +79,7 @@ const loaders = {
   "/my-account": () => import("./pages/MemberDashboardPage"),
   "/founder-vault": () => import("./pages/FounderVaultPage"),
   "/free-zone": () => import("./pages/FreeZonePage"),
+  "/founder-seats": () => import("./pages/FounderSeatsPage"),
   "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
@@ -164,7 +165,7 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 // Root route: signed-in users see the Dashboard (full app); visitors see the public website.
 // Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
 // The public marketing website is still reachable at /website.
-const RootRoute = () => <><DashboardPage /><FounderBubble /></>;
+const RootRoute = () => <><DashboardPage /><FounderBubble /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></>;
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
@@ -210,6 +211,8 @@ const GetStartedPage = lazy(loaders["/get-started"]);
 const MemberDashboardPage = lazy(loaders["/my-account"]);
 const FounderVaultPage = lazy(loaders["/founder-vault"]);
 const FreeZonePage = lazy(loaders["/free-zone"]);
+const FounderSeatsPage = lazy(loaders["/founder-seats"]);
+const FreeForLifeNotice = lazy(() => import("@/components/FreeForLifeNotice"));
 const CreditDashboardPage = lazy(loaders["/credit"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
@@ -321,7 +324,7 @@ const App = () => (
                   <Route path="/" element={<RequireAuth><ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary></RequireAuth>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><FounderBubble /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><FounderBubble /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
                   <Route path="/membership" element={<RequireAuth><ErrorBoundary pageName="Membership"><MembershipPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
@@ -377,6 +380,7 @@ const App = () => (
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/my-account" element={<RequireAuth freeAccess><ErrorBoundary pageName="My Account"><MemberDashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/founder-vault" element={<RequireAuth freeAccess><ErrorBoundary pageName="Member Vault"><FounderVaultPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/founder-seats" element={<RequireAuth freeAccess><ErrorBoundary pageName="Founder Seats"><FounderSeatsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/free-zone" element={<RequireAuth><ErrorBoundary pageName="Free Zone"><FreeZonePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/get-started" element={<RequireAuth><ErrorBoundary pageName="Get Started"><GetStartedPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />

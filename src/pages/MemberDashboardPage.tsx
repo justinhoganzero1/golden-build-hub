@@ -57,6 +57,11 @@ const MemberDashboardPage = () => {
             <p className="font-bold text-foreground">Member Vault</p>
             <p className="text-xs text-muted-foreground">{isPaid ? "Your badge, gold theme and rewards." : "Become a member to unlock."}</p>
           </Link>
+          <Link to="/founder-seats" className="rounded-2xl border border-border bg-card p-4 hover:border-primary/50">
+            <Gem className="w-5 h-5 text-primary mb-2" />
+            <p className="font-bold text-foreground">Founder Seats</p>
+            <p className="text-xs text-muted-foreground">Buy a A$1 seat or a resale seat.</p>
+          </Link>
           <Link to="/free-zone" className="rounded-2xl border border-border bg-card p-4 hover:border-primary/50">
             <Gamepad2 className="w-5 h-5 text-primary mb-2" />
             <p className="font-bold text-foreground">Free Zone</p>

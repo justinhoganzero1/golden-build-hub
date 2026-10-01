@@ -112,7 +112,7 @@ const PublicLibraryPage = () => {
             <p className="text-muted-foreground">
               All items here were marked <span className="text-foreground font-medium">public</span> by their creator.
               Anyone can view; <span className="text-foreground font-medium">signed-in users can download</span> for free, or
-              <span className="text-foreground font-medium"> buy</span> shop items (creators keep 70%).
+              <span className="text-foreground font-medium"> buy</span> shop items (creators keep 80%).
             </p>
           </div>
         </div>

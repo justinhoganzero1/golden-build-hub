@@ -1115,6 +1115,42 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_seat_listings: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          founder_number: number
+          id: string
+          price_cents: number
+          seller_id: string
+          sold_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          founder_number: number
+          id?: string
+          price_cents: number
+          seller_id: string
+          sold_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          founder_number?: number
+          id?: string
+          price_cents?: number
+          seller_id?: string
+          sold_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       founder_transfers: {
         Row: {
           completed_at: string | null
