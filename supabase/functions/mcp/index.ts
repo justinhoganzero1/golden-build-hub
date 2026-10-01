@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@3.0.4";
 
 // src/lib/mcp/tools/whoami.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool } from "npm:@lovable.dev/mcp-js@3.0.4";
 
 // src/lib/mcp/lib/errors.ts
 function mcpError(code, message, details) {
@@ -69,8 +69,8 @@ var whoami_default = defineTool({
 });
 
 // src/lib/mcp/tools/list-diary-entries.ts
-import { createClient } from "npm:@supabase/supabase-js@2.58.0";
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.117.2";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@3.0.4";
 import { z } from "npm:zod@^4.6.5";
 function userClient(ctx) {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
@@ -99,8 +99,8 @@ var list_diary_entries_default = defineTool2({
 });
 
 // src/lib/mcp/tools/create-diary-entry.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@2.58.0";
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.117.2";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@3.0.4";
 import { z as z2 } from "npm:zod@^4.6.5";
 function userClient2(ctx) {
   return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
@@ -147,8 +147,8 @@ var create_diary_entry_default = defineTool3({
 });
 
 // src/lib/mcp/tools/get-wallet-balance.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@2.58.0";
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.117.2";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@3.0.4";
 function userClient3(ctx) {
   return createClient3(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
     global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
@@ -175,8 +175,8 @@ var get_wallet_balance_default = defineTool4({
 });
 
 // src/lib/mcp/tools/list-calendar-events.ts
-import { createClient as createClient4 } from "npm:@supabase/supabase-js@2.58.0";
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.117.2";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@3.0.4";
 import { z as z3 } from "npm:zod@^4.6.5";
 function userClient4(ctx) {
   return createClient4(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
@@ -231,5 +231,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.24.0/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@3.0.4/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));
