@@ -6,6 +6,8 @@
 // Twilio Voice Webhook URL (POST): /functions/v1/voice-receptionist-incoming
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -20,6 +22,38 @@ const xml = (body: string) =>
 const escapeXml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+
+// Speak with the line owner's ElevenLabs voice (billed to the owner), falling back to Twilio's voice.
+async function speakXml(supabase: any, cfg: any, text: string, callSid: string): Promise<string> {
+  const clean = (text || "").trim();
+  if (!clean) return "";
+  if (ELEVENLABS_API_KEY && cfg?.owner_user_id) {
+    try {
+      const cents = Math.max(1, Math.ceil((clean.length / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
+      const auth = await authorizeAI(cfg.owner_user_id, `vr-tts:${callSid}:${crypto.randomUUID()}`, "voice-receptionist-tts", "elevenlabs", "eleven_turbo_v2_5", cents, { call_sid: callSid });
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${cfg.voice_id || "JBFqnCBsd6RMkjVDRZzb"}?output_format=mp3_22050_32`, {
+        method: "POST",
+        headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean, model_id: "eleven_turbo_v2_5" }),
+      });
+      if (!r.ok) { await cancelAI(auth.transaction_id, `elevenlabs_${r.status}`); throw new Error("tts " + r.status); }
+      const bytes = new Uint8Array(await r.arrayBuffer());
+      const path = `${cfg.owner_user_id}/${callSid}/${crypto.randomUUID()}.mp3`;
+      const up = await supabase.storage.from("voice-receptionist-audio").upload(path, bytes, { contentType: "audio/mpeg" });
+      if (up.error) { await cancelAI(auth.transaction_id, "upload_failed"); throw up.error; }
+      const { data: signed } = await supabase.storage.from("voice-receptionist-audio").createSignedUrl(path, 3600);
+      await settleAI(auth.transaction_id, cents, undefined, [{ unit_type: "character", quantity: clean.length }]);
+      if (signed?.signedUrl) return `<Play>${escapeXml(signed.signedUrl)}</Play>`;
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) throw e;
+      console.error("receptionist tts fallback", e);
+    }
+  }
+  return `${await speakXml(supabase, cfg, clean, callSid)}`;
+}
+
+const OFFLINE = `<Response><Say voice="Polly.Joanna">This line is currently unavailable. Please try again later.</Say><Hangup/></Response>`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok");
@@ -40,6 +74,7 @@ Deno.serve(async (req) => {
     const { data: cfg } = await supabase.from("voice_agent_config").select("*").limit(1).maybeSingle();
     const { data: kb } = await supabase.from("voice_knowledge_items").select("question,answer").eq("active", true).order("priority", { ascending: false }).limit(50);
 
+    if (cfg?.enabled && !cfg.owner_user_id) return xml(OFFLINE);
     if (!cfg?.enabled) {
       return xml(`<Response><Say voice="Polly.Joanna">This line is currently offline. Please try again later.</Say><Hangup/></Response>`);
     }
@@ -58,7 +93,7 @@ Deno.serve(async (req) => {
       }
       await supabase.from("voice_call_logs").upsert({
         call_sid: callSid, from_number: from, to_number: to,
-        direction: "inbound", status: "in-progress", contact_id: contactId,
+        direction: "inbound", status: "in-progress", contact_id: contactId, owner_user_id: cfg.owner_user_id,
       }, { onConflict: "call_sid" });
       if (contactId) {
         await supabase.from("crm_activities").insert({
@@ -72,7 +107,7 @@ Deno.serve(async (req) => {
       const next = `${url.origin}${url.pathname}?turn=1`;
       return xml(`<Response>
         <Gather input="speech" timeout="5" speechTimeout="auto" action="${escapeXml(next)}" method="POST">
-          <Say voice="Polly.Joanna">${escapeXml(cfg.greeting)}</Say>
+          ${await speakXml(supabase, cfg, cfg.greeting, callSid)}
         </Gather>
         <Say voice="Polly.Joanna">I didn't catch that. Please call back when you're ready.</Say>
         <Hangup/>
@@ -91,6 +126,15 @@ Deno.serve(async (req) => {
       ...transcript.map((t) => ({ role: t.role === "user" ? "user" : "assistant", content: t.text })),
     ];
 
+    // Bill the AI turn to the line owner's wallet (cost + 20%).
+    let aiHold: string | null = null;
+    try {
+      const h = await authorizeAI(cfg.owner_user_id, `vr-ai:${callSid}:${turn}`, "voice-receptionist-ai", "lovable", "google/gemini-2.5-flash", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, { call_sid: callSid });
+      aiHold = h.transaction_id;
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return xml(OFFLINE);
+      throw e;
+    }
     let aiReply = "Let me transfer you to a person.";
     let intent: any = { intent: "handoff", summary: "AI error" };
     try {
@@ -110,7 +154,10 @@ Deno.serve(async (req) => {
         aiReply = raw.trim();
         intent = { intent: "info", summary: aiReply.slice(0, 120) };
       }
+      if (aiHold) await settleAI(aiHold, PROVIDER_RATES.lovable_ai_gemini_flash_per_call, undefined, [{ unit_type: "request", quantity: 1 }]).catch(() => {});
+      aiHold = null;
     } catch (e) { console.error("AI fail", e); }
+    if (aiHold) await cancelAI(aiHold, "ai_failed").catch(() => {});
 
     transcript.push({ role: "assistant", text: aiReply });
     await supabase.from("voice_call_logs").update({
@@ -123,7 +170,7 @@ Deno.serve(async (req) => {
 
     if (shouldHandoff && cfg.handoff_number) {
       return xml(`<Response>
-        <Say voice="Polly.Joanna">${escapeXml(aiReply || "Transferring you now.")}</Say>
+        ${await speakXml(supabase, cfg, aiReply || "Transferring you now.", callSid)}
         <Dial timeout="20">${escapeXml(cfg.handoff_number)}</Dial>
         <Say voice="Polly.Joanna">Sorry, no one's available. We'll text you shortly.</Say>
         <Hangup/>
@@ -159,12 +206,13 @@ Deno.serve(async (req) => {
     const next = `${url.origin}${url.pathname}?turn=${turn + 1}`;
     return xml(`<Response>
       <Gather input="speech" timeout="5" speechTimeout="auto" action="${escapeXml(next)}" method="POST">
-        <Say voice="Polly.Joanna">${escapeXml(aiReply)}</Say>
+        ${await speakXml(supabase, cfg, aiReply, callSid)}
       </Gather>
       <Say voice="Polly.Joanna">Still there? Goodbye for now.</Say>
       <Hangup/>
     </Response>`);
   } catch (e) {
+    if (e instanceof InsufficientCoinsError) return xml(OFFLINE);
     console.error("voice-incoming error", e);
     return xml(`<Response><Say>System error. Goodbye.</Say><Hangup/></Response>`);
   }
