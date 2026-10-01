@@ -324,6 +324,7 @@ const FreeZonePage = () => {
             <div>
               <h1 className="text-2xl font-bold text-primary">Free Zone</h1>
               <p className="text-sm text-muted-foreground">Everything here is free forever — no coins, no AI. Saved on your device.</p>
+              <a href="/module-shop" className="inline-block mt-2 text-sm font-semibold text-primary underline">Module Shop — make, share or sell your own games & trackers →</a>
             </div>
             {(["game", "tool"] as const).map((k) => (
               <section key={k} className="space-y-2">

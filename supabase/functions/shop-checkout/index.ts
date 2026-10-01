@@ -20,7 +20,7 @@ serve(async (req) => {
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY missing");
 
     const { item_id, item_kind } = await req.json();
-    if (!item_id || !["media", "gif", "movie", "realm"].includes(item_kind))
+    if (!item_id || !["media", "gif", "movie", "realm", "module"].includes(item_kind))
       throw new Error("Invalid item");
 
     const supabase = createClient(
@@ -40,6 +40,7 @@ serve(async (req) => {
       item_kind === "media" ? "user_media"
       : item_kind === "gif" ? "living_gifs"
       : item_kind === "realm" ? "user_realms"
+      : item_kind === "module" ? "creator_modules"
       : "movie_projects";
     const { data: item, error: itemErr } = await supabase
       .from(table)
@@ -147,8 +148,8 @@ serve(async (req) => {
         creator_id: item.user_id,
         buyer_id: buyer.id,
       },
-      success_url: `${origin}/purchase-success?purchase_id=${purchase.id}&item_kind=${item_kind}&item_id=${item_id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/library/public?purchase=cancel&item_id=${item_id}`,
+      success_url: item_kind === "module" ? `${origin}/module-shop?bought=${item_id}&session_id={CHECKOUT_SESSION_ID}` : `${origin}/purchase-success?purchase_id=${purchase.id}&item_kind=${item_kind}&item_id=${item_id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: item_kind === "module" ? `${origin}/module-shop?purchase=cancel` : `${origin}/library/public?purchase=cancel&item_id=${item_id}`,
     });
 
     await supabase

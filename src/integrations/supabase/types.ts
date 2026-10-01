@@ -872,6 +872,51 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_modules: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string
+          download_count: number
+          id: string
+          is_public: boolean
+          kind: string
+          shop_enabled: boolean
+          shop_price_cents: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string
+          download_count?: number
+          id?: string
+          is_public?: boolean
+          kind: string
+          shop_enabled?: boolean
+          shop_price_cents?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string
+          download_count?: number
+          id?: string
+          is_public?: boolean
+          kind?: string
+          shop_enabled?: boolean
+          shop_price_cents?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       crm_activities: {
         Row: {
           activity_type: string
@@ -4300,6 +4345,19 @@ export type Database = {
       library_media_type_from_url: {
         Args: { _field?: string; _url: string }
         Returns: string
+      }
+      list_module_shop: {
+        Args: never
+        Returns: {
+          description: string
+          download_count: number
+          id: string
+          kind: string
+          owned: boolean
+          shop_price_cents: number
+          title: string
+          user_id: string
+        }[]
       }
       living_gifs_privileged_unchanged: {
         Args: { _new: Database["public"]["Tables"]["living_gifs"]["Row"] }
