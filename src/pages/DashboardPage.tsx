@@ -24,6 +24,7 @@ import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
 import UserConnectorsPanel from "@/components/UserConnectorsPanel";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AppTile {
   label: string;
@@ -109,6 +110,7 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
+  const [seatsLeft, setSeatsLeft] = useState<number | null>(null);
   const { isAdmin: isAdminRaw, loading: adminLoading } = useIsAdmin();
   const isPreview = usePreviewMode();
   // Admin flag is already locked server-side to the owner email
@@ -125,6 +127,10 @@ const DashboardPage = () => {
     // Default: expand ALL groups so users see every app upfront.
     return Object.fromEntries(groups.map(g => [g.id, true]));
   });
+
+  useEffect(() => {
+    supabase.rpc("public_founder_seats_left" as any).then(({ data }) => setSeatsLeft(typeof data === "number" ? data : null));
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openMap)); } catch {}
@@ -245,29 +251,30 @@ const DashboardPage = () => {
       </div>
 
       {!user && (
-        <div className="mx-4 mb-4 rounded-2xl p-[2px] bg-gradient-to-r from-amber-400 via-primary to-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.45)] animate-pulse">
-          <div className="rounded-2xl bg-background/95 backdrop-blur p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+        <div className="rounded-2xl p-[2px] bg-gradient-to-r from-sky-400 via-founder to-sky-400 shadow-[0_0_40px_rgba(56,169,233,0.55)]">
+          <div className="rounded-2xl bg-gradient-to-r from-sky-500 via-founder to-sky-500 p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="flex-1 text-center sm:text-left">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-1">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 mb-1">
                 ✨ Unlock the full Oracle Lunar
               </div>
-              <h2 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-primary to-amber-300 bg-clip-text text-transparent">
-                Become a Member or Sign In
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                Become a Founding Member or Sign In
               </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                One free go on everything for visitors · Members get 4K, exports, wallet & coins.
+              <p className="text-xs sm:text-sm text-white/90 mt-1">
+                {seatsLeft !== null ? `Only ${seatsLeft} of 500 founding seats left · ` : ""}
+                One free go on everything for visitors · Members get 4K, exports, wallet &amp; coins.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
                 onClick={() => navigate("/sign-in?mode=signup")}
-                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-gradient-to-r from-amber-500 to-primary text-black shadow-[0_0_24px_rgba(245,158,11,0.6)] hover:scale-105 transition-transform"
+                className="px-6 py-3 rounded-xl font-black text-sm uppercase tracking-wider bg-white text-sky-700 shadow-[0_0_24px_rgba(255,255,255,0.5)] hover:scale-105 transition-transform"
               >
-                🚀 Become a Member
+                🚀 Become a Founding Member
               </button>
               <button
                 onClick={() => navigate("/sign-in")}
-                className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-background border-2 border-primary/60 text-primary hover:bg-primary/10 transition"
+                className="px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider bg-transparent border-2 border-white/80 text-white hover:bg-white/10 transition"
               >
                 Sign In
               </button>

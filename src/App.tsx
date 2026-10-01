@@ -28,7 +28,6 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
 import OracleAgent from "@/components/OracleAgent";
 import PaywallGate from "@/components/PaywallGate";
-import FounderBubble from "@/components/FounderBubble";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 import PreviewShield from "@/components/PreviewShield";
 
@@ -165,7 +164,7 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 // Root route: signed-in users see the Dashboard (full app); visitors see the public website.
 // Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
 // The public marketing website is still reachable at /website.
-const RootRoute = () => <><DashboardPage /><FounderBubble /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></>;
+const RootRoute = () => <><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></>;
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
@@ -324,7 +323,7 @@ const App = () => (
                   <Route path="/" element={<RequireAuth><ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary></RequireAuth>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><FounderBubble /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
+                  <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
                   <Route path="/membership" element={<RequireAuth><ErrorBoundary pageName="Membership"><MembershipPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
