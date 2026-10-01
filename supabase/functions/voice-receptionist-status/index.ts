@@ -1,6 +1,8 @@
 // Twilio statusCallback — detects missed calls and fires text-back SMS + drip.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
+import { chargeAI } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -41,6 +43,25 @@ Deno.serve(async (req) => {
       recording_url: recordingUrl, ended_at: new Date().toISOString(),
     }, { onConflict: "call_sid" });
 
+    // Bill call minutes (inbound Twilio rate + 20%) to the line owner, once per call.
+    if (duration > 0 && ["completed", "busy", "no-answer", "failed", "canceled"].includes(callStatus)) {
+      const { data: row } = await supabase.from("voice_call_logs").select("owner_user_id, billed_minutes").eq("call_sid", callSid).maybeSingle();
+      let owner = row?.owner_user_id;
+      if (!owner) {
+        const { data: c } = await supabase.from("voice_agent_config").select("owner_user_id").limit(1).maybeSingle();
+        owner = c?.owner_user_id;
+      }
+      const minutes = Math.ceil(duration / 60);
+      const toBill = minutes - (row?.billed_minutes ?? 0);
+      if (owner && toBill > 0) {
+        try {
+          await chargeAI(owner, "voice-receptionist-minutes", toBill * PROVIDER_RATES.twilio_voice_per_min_inbound,
+            { request_key: `vr-min:${callSid}`, provider: "twilio", model: "voice-inbound", call_sid: callSid, minutes: toBill });
+        } catch (e) { console.error("minute billing failed", callSid, e); }
+        await supabase.from("voice_call_logs").update({ billed_minutes: minutes, owner_user_id: owner }).eq("call_sid", callSid);
+      }
+    }
+
     const missed = ["no-answer", "busy", "failed", "canceled"].includes(callStatus) ||
       (callStatus === "completed" && duration < 5);
 
@@ -59,6 +80,10 @@ Deno.serve(async (req) => {
 
       const fromNumber = cfg.twilio_phone_number || to;
       const ok = await sendSms(from, fromNumber, cfg.missed_call_sms);
+      if (ok && cfg.owner_user_id) {
+        await chargeAI(cfg.owner_user_id, "voice-receptionist-sms", PROVIDER_RATES.twilio_sms_per_segment,
+          { request_key: `vr-sms:${callSid}`, provider: "twilio", model: "sms", call_sid: callSid }).catch((e) => console.error("sms billing", e));
+      }
 
       if (contactId) {
         await supabase.from("crm_activities").insert({

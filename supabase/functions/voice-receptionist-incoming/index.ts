@@ -50,7 +50,7 @@ async function speakXml(supabase: any, cfg: any, text: string, callSid: string):
       console.error("receptionist tts fallback", e);
     }
   }
-  return `${await speakXml(supabase, cfg, clean, callSid)}`;
+  return `<Say voice="Polly.Joanna">${escapeXml(clean)}</Say>`;
 }
 
 const OFFLINE = `<Response><Say voice="Polly.Joanna">This line is currently unavailable. Please try again later.</Say><Hangup/></Response>`;
@@ -193,13 +193,13 @@ Deno.serve(async (req) => {
         });
       }
       return xml(`<Response>
-        <Say voice="Polly.Joanna">${escapeXml(aiReply)} I'll text you a booking link now. Goodbye!</Say>
+        ${await speakXml(supabase, cfg, `${aiReply} I'll text you a booking link now. Goodbye!`, callSid)}
         <Hangup/>
       </Response>`);
     }
 
     if (intent.intent === "end" || turn >= 8) {
-      return xml(`<Response><Say voice="Polly.Joanna">${escapeXml(aiReply)} Thanks for calling.</Say><Hangup/></Response>`);
+      return xml(`<Response>${await speakXml(supabase, cfg, `${aiReply} Thanks for calling.`, callSid)}<Hangup/></Response>`);
     }
 
     // Continue gathering
