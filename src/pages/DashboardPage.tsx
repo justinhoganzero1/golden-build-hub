@@ -128,6 +128,10 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
+    supabase.rpc("public_founder_seats_left" as any).then(({ data }) => setSeatsLeft(typeof data === "number" ? data : null));
+  }, []);
+
+  useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(openMap)); } catch {}
   }, [openMap]);
 
