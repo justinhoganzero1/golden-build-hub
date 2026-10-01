@@ -43,9 +43,17 @@ const SignInPage = () => {
     // force them into the owner dashboard when they didn't ask for somewhere
     // specific (i.e. arrived at /sign-in with no redirect).
     const cameFromOwnerLink = isOwnerAccess; // explicit ?redirect=/owner-dashboard
+    // Brand-new signups land straight on the Founder Seats page so they can
+    // buy their A$1 seat first (unless they asked for a specific page).
+    const justSignedUp = sessionStorage.getItem("oracle-just-signed-up") === "1";
+    if (justSignedUp) sessionStorage.removeItem("oracle-just-signed-up");
     let nextPath: string;
     if (!isOwner) {
-      nextPath = requestedAdmin ? "/dashboard" : redirectPath;
+      if (justSignedUp && !requestedAdmin && redirectPath === "/dashboard") {
+        nextPath = "/founder-seats";
+      } else {
+        nextPath = requestedAdmin ? "/dashboard" : redirectPath;
+      }
     } else {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
     }
@@ -110,8 +118,9 @@ const SignInPage = () => {
             await supabase.functions.invoke("grant-signup-reward", { body: { referralCode: refCode } });
             localStorage.removeItem("oracle-lunar-ref-code");
           } catch {}
+          sessionStorage.setItem("oracle-just-signed-up", "1");
           void trackAiDiscovery("signup");
-          toast.success("Welcome aboard! Taking you into your portal… 🎉");
+          toast.success("Welcome aboard! Claim your Founder seat… 🎉");
         } else {
           if (refCode) localStorage.setItem("oracle-lunar-ref-code", refCode);
           void trackAiDiscovery("signup");
