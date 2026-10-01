@@ -105,6 +105,13 @@ const SignInPage = () => {
           toast.error("You must be at least 16 years old to use Oracle Lunar.");
           return;
         }
+        // Human check — must answer the maths question correctly
+        if (parseInt(humanAnswer.trim(), 10) !== humanCheck.answer) {
+          toast.error("Human check failed — please answer the maths question.");
+          setHumanCheck(newHumanCheck());
+          setHumanAnswer("");
+          return;
+        }
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
         const emailReturnUrl = `${PUBLIC_ORIGIN}/sign-in?redirect=${encodeURIComponent(redirectPath)}`;
         const { data: signUpData, error } = await supabase.auth.signUp({
@@ -283,6 +290,36 @@ const SignInPage = () => {
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 Oracle Lunar is restricted to users aged 16 and over.
               </p>
+            </div>
+          )}
+
+          {isSignUp && !isOwnerAccess && (
+            <div>
+              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
+                Human check <span className="text-primary">(prove you're not a robot)</span>
+              </label>
+              <div
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+                style={{
+                  background: "hsl(0 0% 4% / 0.7)",
+                  border: "1px solid hsl(160 84% 39% / 0.4)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                <Shield className="w-4 h-4 text-primary/80" />
+                <span className="text-sm text-foreground font-semibold whitespace-nowrap">
+                  What is {humanCheck.a} + {humanCheck.b}?
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="?"
+                  value={humanAnswer}
+                  onChange={(e) => setHumanAnswer(e.target.value)}
+                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none w-16 text-sm text-center"
+                  required
+                />
+              </div>
             </div>
           )}
 
