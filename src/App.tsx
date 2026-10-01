@@ -76,6 +76,9 @@ const loaders = {
   "/profile": () => import("./pages/ProfilePage"),
   "/wallet": () => import("./pages/WalletPage"),
   "/get-started": () => import("./pages/GetStartedPage"),
+  "/my-account": () => import("./pages/MemberDashboardPage"),
+  "/founder-vault": () => import("./pages/FounderVaultPage"),
+  "/free-zone": () => import("./pages/FreeZonePage"),
   "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
@@ -204,6 +207,9 @@ const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
 const GetStartedPage = lazy(loaders["/get-started"]);
+const MemberDashboardPage = lazy(loaders["/my-account"]);
+const FounderVaultPage = lazy(loaders["/founder-vault"]);
+const FreeZonePage = lazy(loaders["/free-zone"]);
 const CreditDashboardPage = lazy(loaders["/credit"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
@@ -369,6 +375,9 @@ const App = () => (
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/my-account" element={<RequireAuth freeAccess><ErrorBoundary pageName="My Account"><MemberDashboardPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/founder-vault" element={<RequireAuth freeAccess><ErrorBoundary pageName="Member Vault"><FounderVaultPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/free-zone" element={<RequireAuth><ErrorBoundary pageName="Free Zone"><FreeZonePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/get-started" element={<RequireAuth><ErrorBoundary pageName="Get Started"><GetStartedPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/credit" element={<RequireAuth><ErrorBoundary pageName="Credit Dashboard"><CreditDashboardPage /></ErrorBoundary></RequireAuth>} />

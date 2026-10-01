@@ -8,3 +8,8 @@
 - [ ] Grey shading behind pink cover letters — pink text is part of the cover picture; needs a cover remake (costs AI credits) — awaiting OK
 - [ ] 50 free games + free planners/trackers
 - [ ] Creator Shop selling of free creations with 20% fee to Oracle Lunar
+- [x] Founder gold badge, Member Vault, gold theme
+- [x] My Account page (coins, top-up history, buy button)
+- [x] Free Zone: 8 games + 4 planners/trackers (keep growing toward 50)
+- [ ] Real $1 founder test — needs Juzzy's card (agent can't pay)
+- [ ] Creators Shop founder-seat resale via Stripe with 20% fee

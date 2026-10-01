@@ -1,4 +1,6 @@
 import { createRoot } from "react-dom/client";
+import { applyGoldTheme, goldThemeOn } from "@/lib/goldTheme";
+applyGoldTheme(goldThemeOn());
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
