@@ -251,7 +251,6 @@ const DashboardPage = () => {
       </div>
 
       {!user && (
-        <div className="mx-4 mb-4 rounded-2xl p-[2px] bg-gradient-to-r from-amber-400 via-primary to-amber-400 shadow-[0_0_40px_rgba(245,158,11,0.45)] animate-pulse">
         <div className="rounded-2xl p-[2px] bg-gradient-to-r from-sky-400 via-founder to-sky-400 shadow-[0_0_40px_rgba(56,169,233,0.55)]">
           <div className="rounded-2xl bg-gradient-to-r from-sky-500 via-founder to-sky-500 p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="flex-1 text-center sm:text-left">
