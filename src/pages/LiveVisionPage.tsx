@@ -175,6 +175,13 @@ const LiveVisionPage = () => {
         audio.onended = () => URL.revokeObjectURL(url);
         return;
       }
+      if (r.status === 401) {
+        toast.warning("Your sign-in has expired — Oracle voice is off. Sign in again to restore it. Using your device voice for now.", { id: "tts-auth-expired", duration: 8000 });
+      } else if (r.status === 402) {
+        toast.warning("Wallet empty — Oracle voice paused. Using your device voice for now.", { id: "tts-credit", duration: 6000 });
+      } else {
+        toast.warning("Oracle voice failed — using your device voice instead.", { id: "tts-failed" });
+      }
     } catch {}
     // fallback
     const u = new SpeechSynthesisUtterance(clean);
