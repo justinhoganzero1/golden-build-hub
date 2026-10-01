@@ -25,7 +25,7 @@
     "@elevenlabs/react": "^1.1.1",
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/cloud-auth-js": "^1.1.1",
-    "@lovable.dev/mcp-js": "^3.0.4",
+    "@lovable.dev/mcp-js": "0.24.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -111,9 +111,20 @@
   },
   "overrides": {
     "tar": "^7.5.21",
-    "brace-expansion": "^5.0.9",
+    "brace-expansion": "^5.0.12",
     "minimatch": "^10.2.6",
-    "@xmldom/xmldom": "^0.9.10",
-    "glob": "^13.0.6"
+    "@xmldom/xmldom": "^0.9.12",
+    "glob": "^13.0.6",
+    "fast-uri": "^3.1.8",
+    "ip-address": "^10.8.0",
+    "lodash": "^4.17.24",
+    "uuid": "^11.1.1",
+    "hono": "^4.13.5",
+    "@hono/node-server": "^1.19.15",
+    "ajv": "^8.17.1",
+    "esbuild": "^0.25.0",
+    "qs": "^6.16.0",
+    "fflate": "^0.8.3",
+    "dompurify": "^3.4.13"
   }
 }
