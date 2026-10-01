@@ -7,7 +7,7 @@
 - [ ] Email to free-for-life members — blocked: app emails can't send bulk announcements
 - [x] Grey plate behind each cover title letter (switch in cover studio, on for Zero Protocol)
 - [ ] 50 free games + free planners/trackers
-- [ ] Creator Shop selling of free creations with 20% fee to Oracle Lunar
+- [x] Creator Shop selling of member creations with 20% fee
 - [x] Founder gold badge, Member Vault, gold theme
 - [x] My Account page (coins, top-up history, buy button)
 - [x] Free Zone: 8 games + 4 planners/trackers (keep growing toward 50)
@@ -20,4 +20,4 @@
 - [ ] KDP 7 steps on Juzzy's Amazon account — only Juzzy can sign in
 - [x] My books on Amazon page (ISBN/ASIN/link) + Buy on Amazon button on book pages
 - [ ] Stronger human check (Cloudflare Turnstile) — needs Juzzy's free Cloudflare keys
-- [ ] Selling free games/trackers modules in Creators Shop with 20% fee
+- [x] Module Shop: members make/sell quiz games & trackers, 80/20 split
