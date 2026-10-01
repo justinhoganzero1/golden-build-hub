@@ -109,6 +109,7 @@ const DashboardPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [shareOpen, setShareOpen] = useState(false);
+  const [seatsLeft, setSeatsLeft] = useState<number | null>(null);
   const { isAdmin: isAdminRaw, loading: adminLoading } = useIsAdmin();
   const isPreview = usePreviewMode();
   // Admin flag is already locked server-side to the owner email
