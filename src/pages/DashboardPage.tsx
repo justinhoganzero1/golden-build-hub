@@ -24,6 +24,7 @@ import MonthlyAwardsShowcase from "@/components/MonthlyAwardsShowcase";
 import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
 import UserConnectorsPanel from "@/components/UserConnectorsPanel";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AppTile {
   label: string;
