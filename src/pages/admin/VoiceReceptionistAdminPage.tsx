@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Trash2, Plus, Phone, RefreshCw } from "lucide-react";
+import WalletBalanceBadge from "@/components/WalletBalanceBadge";
 
 const SUPABASE_PROJECT_ID = "tpkpfkcnqdyrzpqdoqnp";
 const fnUrl = (name: string) => `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/${name}`;
@@ -137,6 +138,7 @@ const VoiceReceptionistAdminPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <WalletBalanceBadge />
             <Switch checked={cfg.enabled} onCheckedChange={(v) => setCfg({ ...cfg, enabled: v })} />
             <Button onClick={saveCfg} disabled={saving}>{saving ? "Saving…" : "Save All Settings"}</Button>
             <Button variant="outline" size="icon" onClick={loadAll}><RefreshCw className="h-4 w-4" /></Button>

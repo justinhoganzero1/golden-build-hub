@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { ensureCredit } from "@/lib/walletGate";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -1113,6 +1114,7 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
 
   const regenerateEntireStory = async (plan: RegenPlan) => {
     if (regenBusy) return;
+    if (!(await ensureCredit(100, "story-rewrite"))) return;
     setRegenBusy(true);
     const changeBrief = [
       plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
@@ -1999,6 +2001,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
   const exportAudiobook = async () => {
     if (!user) { toast.error("Sign in to build audiobook"); return; }
+    if (!(await ensureCredit(500, "audiobook-narration"))) return;
     if (!story.chapters.some(c => c.content.trim())) {
       toast.error("Write at least one chapter first."); return;
     }

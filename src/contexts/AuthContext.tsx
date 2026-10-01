@@ -92,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session.user);
         ensureOwnAccount(session.user.id);
+        import("@/lib/walletGate").then((m) => m.confirmTopupFromUrl()).catch(() => {});
       }
       // No anonymous fallback — visitors must hit /sign-in to either log in
       // or join. This is intentional: every action should be tied to a
