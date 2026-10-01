@@ -111,6 +111,13 @@ const TermsOfServicePage = () => (
         </section>
 
         <section>
+          <h2 className="text-lg font-semibold text-primary mb-2">Membership, Free Trial and Founder Seats</h2>
+          <p>New members get a 3-day free trial of features that carry no running cost. Paid AI, voice, image and video actions are always charged to the member's own wallet credit, including during the trial. After the trial, continued use requires an active Monthly Membership (A$19.99 per month, cancel any time) or a Founder seat.</p>
+          <p className="mt-2">Founder seats are limited to 500 in total and will never be offered again once taken. A Founder seat is a one-off A$1 purchase giving lifetime membership, a numbered seat, a Founder badge and Founder-only features. A Founder may transfer or sell their seat to another registered member at any time; on transfer, the seller permanently loses the seat, number, badge and all Founder features. Any price agreed between the two parties is a private arrangement between them.</p>
+          <p className="mt-2">A Founder seat is a membership benefit only. It is not an investment, share, security or financial product, carries no ownership in Oracle Lunar, and no promise or representation is made that it will hold or increase in value.</p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-semibold text-primary mb-2">13. Changes to Terms</h2>
           <p>We reserve the right to modify these Terms at any time. Continued use of the App after changes constitutes acceptance. Material changes will be notified within the App.</p>
         </section>

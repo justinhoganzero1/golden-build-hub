@@ -19,6 +19,8 @@ All colors MUST be HSL.
 
     --primary: 45 100% 50%;
     --primary-foreground: 0 0% 3%;
+    --founder: 205 90% 62%;
+    --founder-foreground: 0 0% 100%;
 
     --secondary: 0 0% 12%;
     --secondary-foreground: 45 100% 50%;
