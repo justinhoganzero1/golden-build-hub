@@ -192,6 +192,24 @@ Deno.serve(async (req) => {
 
         if (purchaseType === "coin_topup") {
           await grantCoinTopup(session, event.id);
+        } else if (purchaseType === "founder_seat_resale" && meta.listing_id && meta.seller_id && meta.buyer_id) {
+          // Founder seat resale — move the seat to the buyer exactly once.
+          const { data: claimed } = await supabase
+            .from("founder_seat_listings")
+            .update({ status: "sold", buyer_id: meta.buyer_id, sold_at: new Date().toISOString() })
+            .eq("id", meta.listing_id)
+            .eq("status", "active")
+            .select("id")
+            .maybeSingle();
+          if (claimed) {
+            const { data: num, error: tErr } = await supabase.rpc("transfer_founder_seat", {
+              _from: meta.seller_id, _to: meta.buyer_id,
+            });
+            if (tErr) log("SEAT TRANSFER FAILED — needs refund/manual fix", { listing: meta.listing_id, err: tErr.message });
+            else log("founder seat transferred", { listing: meta.listing_id, seat: num });
+          } else {
+            log("seat listing already handled", { listing: meta.listing_id });
+          }
         } else if (purchaseId) {
           // Shop purchase — mark paid + bump creator download count
           const { data: existing } = await supabase
