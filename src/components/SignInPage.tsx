@@ -8,6 +8,14 @@ import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 
+// Simple human check for sign-up: a random maths question. No external
+// service or keys needed — bots that auto-fill forms trip on this.
+const newHumanCheck = () => {
+  const a = 2 + Math.floor(Math.random() * 8); // 2-9
+  const b = 1 + Math.floor(Math.random() * 8); // 1-8
+  return { a, b, answer: a + b };
+};
+
 const SignInPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -23,6 +31,8 @@ const SignInPage = () => {
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
+  const [humanCheck, setHumanCheck] = useState(newHumanCheck);
+  const [humanAnswer, setHumanAnswer] = useState("");
 
   // Preview auto-redirect removed: RequireAuth no longer bypasses on preview
   // hosts, so navigating unauthenticated users to /dashboard produced an
@@ -93,6 +103,13 @@ const SignInPage = () => {
         const sixteenYearsAgo = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
         if (dobDate > sixteenYearsAgo) {
           toast.error("You must be at least 16 years old to use Oracle Lunar.");
+          return;
+        }
+        // Human check — must answer the maths question correctly
+        if (parseInt(humanAnswer.trim(), 10) !== humanCheck.answer) {
+          toast.error("Human check failed — please answer the maths question.");
+          setHumanCheck(newHumanCheck());
+          setHumanAnswer("");
           return;
         }
         const refCode = searchParams.get("ref") || localStorage.getItem("oracle-lunar-ref-code") || null;
@@ -273,6 +290,36 @@ const SignInPage = () => {
               <p className="text-[10px] text-muted-foreground mt-1.5">
                 Oracle Lunar is restricted to users aged 16 and over.
               </p>
+            </div>
+          )}
+
+          {isSignUp && !isOwnerAccess && (
+            <div>
+              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
+                Human check <span className="text-primary">(prove you're not a robot)</span>
+              </label>
+              <div
+                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+                style={{
+                  background: "hsl(0 0% 4% / 0.7)",
+                  border: "1px solid hsl(160 84% 39% / 0.4)",
+                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                <Shield className="w-4 h-4 text-primary/80" />
+                <span className="text-sm text-foreground font-semibold whitespace-nowrap">
+                  What is {humanCheck.a} + {humanCheck.b}?
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="?"
+                  value={humanAnswer}
+                  onChange={(e) => setHumanAnswer(e.target.value)}
+                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none w-16 text-sm text-center"
+                  required
+                />
+              </div>
             </div>
           )}
 
