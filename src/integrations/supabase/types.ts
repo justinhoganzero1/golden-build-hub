@@ -1115,6 +1115,36 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_transfers: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          founder_number: number
+          from_user: string
+          id: string
+          status: string
+          to_user: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          founder_number: number
+          from_user: string
+          id?: string
+          status?: string
+          to_user: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          founder_number?: number
+          from_user?: string
+          id?: string
+          status?: string
+          to_user?: string
+        }
+        Relationships: []
+      }
       global_sound_signatures: {
         Row: {
           action: string
@@ -1597,6 +1627,45 @@ export type Database = {
           revenue_cents?: number
           severity?: string
           threshold_pct?: number
+        }
+        Relationships: []
+      }
+      memberships: {
+        Row: {
+          created_at: string
+          founder_number: number | null
+          kind: string
+          monthly_active_until: string | null
+          stripe_customer_id: string | null
+          stripe_founder_session_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          founder_number?: number | null
+          kind?: string
+          monthly_active_until?: string | null
+          stripe_customer_id?: string | null
+          stripe_founder_session_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          founder_number?: number | null
+          kind?: string
+          monthly_active_until?: string | null
+          stripe_customer_id?: string | null
+          stripe_founder_session_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -4080,6 +4149,10 @@ export type Database = {
         Args: { _days?: number; _threshold_pct?: number }
         Returns: string
       }
+      claim_founder_seat: {
+        Args: { _session_id: string; _user_id: string }
+        Returns: number
+      }
       claim_next_living_gif: {
         Args: { _worker_id: string }
         Returns: {
@@ -4195,6 +4268,7 @@ export type Database = {
           service: string
         }[]
       }
+      public_founder_seats_left: { Args: never; Returns: number }
       recalc_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
@@ -4238,6 +4312,10 @@ export type Database = {
           source: string
           status: string
         }[]
+      }
+      transfer_founder_seat: {
+        Args: { _from: string; _to: string }
+        Returns: number
       }
       user_usage_breakdown: {
         Args: { _days?: number; _limit?: number }
