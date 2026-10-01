@@ -82,7 +82,7 @@ serve(async (req) => {
             is_anonymous: String(isAnon),
           }
         : undefined,
-      success_url: `${origin}${isCoinTopup ? safeReturn : "/wallet"}?coins=success`,
+      success_url: `${origin}${isCoinTopup ? safeReturn : "/wallet"}?coins=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${isCoinTopup ? safeReturn : "/wallet"}?coins=canceled`,
     });
 

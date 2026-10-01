@@ -38,6 +38,9 @@ const WalletPage = () => {
 
   useEffect(() => {
     loadWallet();
+    const h = () => loadWallet();
+    window.addEventListener("wallet:updated", h);
+    return () => window.removeEventListener("wallet:updated", h);
   }, [user]);
 
   const buyCoins = async (dollars: number) => {
