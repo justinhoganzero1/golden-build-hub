@@ -629,6 +629,42 @@ export type Database = {
           },
         ]
       }
+      book_amazon_links: {
+        Row: {
+          amazon_url: string | null
+          asin: string | null
+          created_at: string
+          id: string
+          isbn: string | null
+          marketplace: string | null
+          story_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amazon_url?: string | null
+          asin?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          marketplace?: string | null
+          story_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amazon_url?: string | null
+          asin?: string | null
+          created_at?: string
+          id?: string
+          isbn?: string | null
+          marketplace?: string | null
+          story_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           category: string | null
