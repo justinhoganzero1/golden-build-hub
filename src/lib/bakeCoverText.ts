@@ -20,6 +20,8 @@ export interface BakeTextOptions {
   layout?: "masthead" | "title-author" | "cinematic" | "editorial";
   /** Explicit design decision made by the cover design agent. */
   design?: CoverDesign;
+  /** Draw a light grey plate behind each title letter. */
+  letterPlates?: boolean;
 }
 
 /** What the DESIGN DIRECTOR agent returns and the compositor obeys. */
@@ -34,6 +36,8 @@ export type CoverDesign = {
   accent?: string;
   /** Optional extra letter-spacing on the title, fraction of font size. */
   tracking?: number;
+  /** Light grey plate behind each title letter. */
+  letterPlates?: boolean;
 }
 
 export const COVER_IDENTITY_KEYS = [
@@ -349,6 +353,23 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     ctx.font = `${identity.displayWeight} ${t.fontSize}px ${identity.display}`;
     t.lines.forEach((line, i) => {
       const ly = titleY + i * t.lineHeight;
+
+      if (opts.letterPlates ?? opts.design?.letterPlates) {
+        // Light grey plate behind every single title letter.
+        ctx.save();
+        ctx.fillStyle = "rgba(210,210,214,0.82)";
+        const padX = t.fontSize * 0.06, padY = t.fontSize * 0.04;
+        drawTracked(ctx, line, W / 2, ly, track || 0.0001, (s, x, y2) => {
+          if (!s.trim()) return;
+          const w = ctx.measureText(s).width;
+          const r = t.fontSize * 0.08;
+          ctx.beginPath();
+          ctx.roundRect(x - padX, y2 - padY, w + padX * 2, t.fontSize * 0.98 + padY * 2, r);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
 
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,0.9)";

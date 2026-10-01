@@ -5,7 +5,7 @@
 - [ ] Final Amazon upload — Juzzy must press Publish on Amazon himself (Amazon has no upload API)
 - [ ] Zero Protocol free-read link — Juzzy taps Publish in Story Writer to create it
 - [ ] Email to free-for-life members — blocked: app emails can't send bulk announcements
-- [ ] Grey shading behind pink cover letters — pink text is part of the cover picture; needs a cover remake (costs AI credits) — awaiting OK
+- [x] Grey plate behind each cover title letter (switch in cover studio, on for Zero Protocol)
 - [ ] 50 free games + free planners/trackers
 - [ ] Creator Shop selling of free creations with 20% fee to Oracle Lunar
 - [x] Founder gold badge, Member Vault, gold theme
@@ -18,3 +18,6 @@
 - [x] In-app gift message for free-for-life members (Zero Protocol + Kindle guide)
 - [ ] Zero Protocol public link — Juzzy must tap Publish in Story Writer
 - [ ] KDP 7 steps on Juzzy's Amazon account — only Juzzy can sign in
+- [x] My books on Amazon page (ISBN/ASIN/link) + Buy on Amazon button on book pages
+- [ ] Stronger human check (Cloudflare Turnstile) — needs Juzzy's free Cloudflare keys
+- [ ] Selling free games/trackers modules in Creators Shop with 20% fee
