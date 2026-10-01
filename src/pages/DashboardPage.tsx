@@ -262,7 +262,7 @@ const DashboardPage = () => {
               </h2>
               <p className="text-xs sm:text-sm text-white/90 mt-1">
                 {seatsLeft !== null ? `Only ${seatsLeft} of 500 founding seats left · ` : ""}
-                One free go on everything for visitors · Members get 4K, exports, wallet &amp; coins.
+                Members get 4K, exports, wallet &amp; coins.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
