@@ -79,6 +79,7 @@ const loaders = {
   "/my-account": () => import("./pages/MemberDashboardPage"),
   "/founder-vault": () => import("./pages/FounderVaultPage"),
   "/free-zone": () => import("./pages/FreeZonePage"),
+  "/founder-seats": () => import("./pages/FounderSeatsPage"),
   "/credit": () => import("./pages/CreditDashboardPage"),
   "/consent": () => import("./pages/ConsentPage"),
   "/owner-dashboard": () => import("./pages/OwnerDashboardPage"),
@@ -210,6 +211,8 @@ const GetStartedPage = lazy(loaders["/get-started"]);
 const MemberDashboardPage = lazy(loaders["/my-account"]);
 const FounderVaultPage = lazy(loaders["/founder-vault"]);
 const FreeZonePage = lazy(loaders["/free-zone"]);
+const FounderSeatsPage = lazy(loaders["/founder-seats"]);
+const FreeForLifeNotice = lazy(() => import("@/components/FreeForLifeNotice"));
 const CreditDashboardPage = lazy(loaders["/credit"]);
 const ConsentPage = lazy(loaders["/consent"]);
 const OwnerDashboardPage = lazy(loaders["/owner-dashboard"]);
@@ -377,6 +380,7 @@ const App = () => (
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/my-account" element={<RequireAuth freeAccess><ErrorBoundary pageName="My Account"><MemberDashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/founder-vault" element={<RequireAuth freeAccess><ErrorBoundary pageName="Member Vault"><FounderVaultPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/founder-seats" element={<RequireAuth freeAccess><ErrorBoundary pageName="Founder Seats"><FounderSeatsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/free-zone" element={<RequireAuth><ErrorBoundary pageName="Free Zone"><FreeZonePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/get-started" element={<RequireAuth><ErrorBoundary pageName="Get Started"><GetStartedPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/wallet" element={<RequireAuth><ErrorBoundary pageName="Wallet"><WalletPage /></ErrorBoundary></RequireAuth>} />
