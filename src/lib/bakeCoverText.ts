@@ -36,6 +36,8 @@ export type CoverDesign = {
   accent?: string;
   /** Optional extra letter-spacing on the title, fraction of font size. */
   tracking?: number;
+  /** Light grey plate behind each title letter. */
+  letterPlates?: boolean;
 }
 
 export const COVER_IDENTITY_KEYS = [
@@ -352,7 +354,7 @@ export async function bakeCoverText(artworkUrl: string, opts: BakeTextOptions): 
     t.lines.forEach((line, i) => {
       const ly = titleY + i * t.lineHeight;
 
-      if (opts.letterPlates) {
+      if (opts.letterPlates ?? opts.design?.letterPlates) {
         // Light grey plate behind every single title letter.
         ctx.save();
         ctx.fillStyle = "rgba(210,210,214,0.82)";

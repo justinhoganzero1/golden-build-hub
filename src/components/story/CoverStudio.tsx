@@ -62,6 +62,12 @@ export default function CoverStudio({
     return choices[seed % choices.length];
   }, [title, genre, design?.layout]);
   const designKey = JSON.stringify(design ?? {});
+  const platesKey = `oracle.coverPlates.${title}`;
+  const [letterPlates, setLetterPlates] = useState<boolean>(() => {
+    const v = typeof localStorage !== "undefined" ? localStorage.getItem(platesKey) : null;
+    return v === null ? /^zero protocol/i.test(title) : v === "1";
+  });
+  const toggleLetterPlates = () => setLetterPlates(p => { localStorage.setItem(platesKey, p ? "0" : "1"); return !p; });
   const coverTheme = useMemo(() => {
     const themes = ["electric", "coral", "violet", "emerald", "sunset"];
     const seed = `${title}|${genre}`.split("").reduce((n, char) => ((n * 33) + char.charCodeAt(0)) >>> 0, 11);
@@ -72,7 +78,7 @@ export default function CoverStudio({
   // No editor labels, controls, placeholders or concept notes sit over the art.
   useEffect(() => {
     let active = true;
-    const common = { title, author, genre, width: 1875, height: 2775, layout, design } as const;
+    const common = { title, author, genre, width: 1875, height: 2775, layout, design, letterPlates } as const;
     Promise.all([
       coverImage ? resolveStorageUrl(coverImage, 3600) : Promise.resolve(undefined),
       backImage ? resolveStorageUrl(backImage, 3600) : Promise.resolve(undefined),
@@ -86,7 +92,7 @@ export default function CoverStudio({
     });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, author, genre, blurb, coverImage, backImage, layout, designKey]);
+  }, [title, author, genre, blurb, coverImage, backImage, layout, designKey, letterPlates]);
 
   const dataUrlToFile = async (dataUrl: string, name: string) => {
     const blob = await (await fetch(dataUrl)).blob();
@@ -107,6 +113,7 @@ export default function CoverStudio({
       height: 2775,
       layout,
       design,
+      letterPlates,
       slot,
       ...(slot === "back" ? { blurb } : {}),
     });
@@ -167,7 +174,7 @@ export default function CoverStudio({
 
   const buildRetailFiles = async () => {
     if (!coverImage || !backImage) throw new Error("Build both covers first");
-    const common = { title, author, genre, width: 1875, height: 2775, layout, design } as const;
+    const common = { title, author, genre, width: 1875, height: 2775, layout, design, letterPlates } as const;
 
     const [resolvedCover, resolvedBack] = await Promise.all([
       resolveStorageUrl(coverImage, 3600),
