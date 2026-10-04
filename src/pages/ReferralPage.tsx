@@ -37,15 +37,24 @@ const ReferralPage = () => {
     loadReferrals();
   };
 
+  // Always share the real domain — never a preview/editor host.
+  const inviteUrl = `https://www.oracle-lunar.online/?ref=${referralCode}`;
+  const inviteText = `I'm using Oracle Lunar — an AI best friend app with free games, planners and a voice Oracle. Try 3 days free with my code ${referralCode}:`;
   const shareLink = () => {
-    const url = `${window.location.origin}/?ref=${referralCode}`;
     if (navigator.share) {
-      navigator.share({ title: "Join Oracle Lunar!", text: `Use my code ${referralCode} to get started!`, url });
+      navigator.share({ title: "Join Oracle Lunar!", text: inviteText, url: inviteUrl });
     } else {
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(`${inviteText} ${inviteUrl}`);
       toast.success("Share link copied!");
     }
   };
+  const enc = encodeURIComponent;
+  const socialLinks = [
+    { name: "WhatsApp", href: `https://wa.me/?text=${enc(`${inviteText} ${inviteUrl}`)}` },
+    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${enc(inviteUrl)}` },
+    { name: "X", href: `https://twitter.com/intent/tweet?text=${enc(inviteText)}&url=${enc(inviteUrl)}` },
+    { name: "SMS", href: `sms:?&body=${enc(`${inviteText} ${inviteUrl}`)}` },
+  ];
 
   const joined = referrals.filter(r => r.status === "joined").length;
   const paid = referrals.filter(r => r.status === "paid").length;
@@ -119,6 +128,14 @@ const ReferralPage = () => {
             <button onClick={shareLink} className="w-full py-4 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2">
               <Share2 className="w-5 h-5" /> Share Link
             </button>
+            <div className="grid grid-cols-4 gap-2">
+              {socialLinks.map(s => (
+                <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer"
+                  className="py-3 bg-card border border-border rounded-xl text-xs font-medium text-foreground text-center hover:border-primary">
+                  {s.name}
+                </a>
+              ))}
+            </div>
           </div>
         )}
 
