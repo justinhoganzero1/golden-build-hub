@@ -23,8 +23,8 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.replace("Bearer ", "").trim();
     if (!token) {
-      return new Response(JSON.stringify({ error: "auth_required" }), {
-        status: 401,
+      return new Response(JSON.stringify({ ok: false, error: "auth_required" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -32,8 +32,8 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await admin.auth.getUser(token);
     const user = userData?.user;
     if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "auth_required" }), {
-        status: 401,
+      return new Response(JSON.stringify({ ok: false, error: "auth_required" }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
