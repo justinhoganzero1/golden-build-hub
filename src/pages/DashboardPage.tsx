@@ -261,7 +261,7 @@ const DashboardPage = () => {
                 Become a Founding Member or Sign In
               </h2>
               <p className="text-xs sm:text-sm text-white/90 mt-1">
-                {seatsLeft !== null ? `Only ${seatsLeft} of 500 founding seats left · ` : ""}
+                {seatsLeft !== null ? `Only ${Math.max(0, seatsLeft - 4)} of 500 founding seats left · ` : ""}
                 Members get 4K, exports, wallet &amp; coins.
               </p>
             </div>
