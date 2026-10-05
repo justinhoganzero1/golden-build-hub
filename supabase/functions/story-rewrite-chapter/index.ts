@@ -149,11 +149,18 @@ Write the complete replacement chapter now. Aim for 3,200–3,800 words and neve
     const stream = new ReadableStream({
       async start(controller) {
         let text = "";
+        let pending = "";
         try {
           for await (const delta of result.textStream) {
             text += delta;
-            controller.enqueue(encoder.encode(`${JSON.stringify({ type: "delta", delta })}\n`));
+            pending += delta;
+            if (pending.length >= 2_000) {
+              controller.enqueue(encoder.encode(`${JSON.stringify({ type: "delta", delta: pending })}\n`));
+              pending = "";
+            }
           }
+
+          if (pending) controller.enqueue(encoder.encode(`${JSON.stringify({ type: "delta", delta: pending })}\n`));
 
           text = cleanProse(text);
           const words = countWords(text);
