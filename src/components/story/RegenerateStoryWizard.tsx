@@ -10,20 +10,18 @@ import { Checkbox } from "@/components/ui/checkbox";
  *   2. "warn1"    — Are you sure?
  *   3. "warn2"    — Are you REALLY sure?
  *   4. "warn3"    — Last chance to back out
- *   5. "images"   — Regenerate every illustration, or keep the current ones?
- *   6. "plan"     — AI shows exactly what it is about to do
- *   7. "final"    — Second/final warning right before it runs
+ *   5. "plan"     — AI shows exactly what it is about to do
+ *   6. "final"    — Second/final warning right before it runs
  */
 
 export interface RegenPlan {
   changes: string[];
   notes: string;
-  regenerateImages: boolean;
   kindleReady: boolean;
   kindleNotes: string;
 }
 
-type Stage = "changes" | "warn1" | "warn2" | "warn3" | "images" | "plan" | "final";
+type Stage = "changes" | "warn1" | "warn2" | "warn3" | "plan" | "final";
 
 export const REGEN_QUESTIONS: { group: string; items: string[] }[] = [
   {
@@ -104,7 +102,7 @@ export const REGEN_QUESTIONS: { group: string; items: string[] }[] = [
       "Fix all spelling and grammar",
       "Remove repetition and filler",
       "Make every chapter a similar strong quality",
-      "Keep chapters 20,000+ words each",
+      "Keep every chapter complete and at or below 4,000 words",
       "Make it audiobook friendly (clean, readable aloud)",
       "Keep it family friendly",
       "Allow mature themes",
@@ -173,7 +171,6 @@ const RegenerateStoryWizard = ({
   const [rewriteNeeded, setRewriteNeeded] = useState(false);
   const [kindleReady, setKindleReady] = useState(false);
   const [kindleNotes, setKindleNotes] = useState("");
-  const [regenerateImages, setRegenerateImages] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
 
   useEffect(() => {
@@ -184,7 +181,6 @@ const RegenerateStoryWizard = ({
       setRewriteNeeded(false);
       setKindleReady(false);
       setKindleNotes("");
-      setRegenerateImages(true);
     }
   }, [open]);
 
@@ -195,11 +191,10 @@ const RegenerateStoryWizard = ({
     () => ({
       changes: selected,
       notes: notes.trim(),
-      regenerateImages,
       kindleReady,
       kindleNotes: kindleNotes.trim(),
     }),
-    [selected, notes, regenerateImages, kindleReady, kindleNotes],
+    [selected, notes, kindleReady, kindleNotes],
   );
 
   const confirmCopy: Record<string, { title: string; body: string; yes: string }> = {
@@ -227,7 +222,7 @@ const RegenerateStoryWizard = ({
 
   const advance = () => {
     setStage((s) =>
-      s === "warn1" ? "warn2" : s === "warn2" ? "warn3" : s === "warn3" ? "images" : "plan",
+      s === "warn1" ? "warn2" : s === "warn2" ? "warn3" : s === "warn3" ? "plan" : "plan",
     );
   };
 
@@ -243,7 +238,6 @@ const RegenerateStoryWizard = ({
     if (!open || !voiceOn) return;
     const copy = confirmCopy[stage];
     if (copy) speak(`${copy.title}. ${copy.body}. Say yes or no.`);
-    if (stage === "images") speak("Would you like me to regenerate all illustrations as well, or keep the same images?");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, open, voiceOn]);
 
@@ -251,6 +245,8 @@ const RegenerateStoryWizard = ({
 
   const planLines = [
     `Rewrite all ${chapterCount} chapter${chapterCount === 1 ? "" : "s"} of your book from the top.`,
+    "Keep every rewritten chapter complete and at or below 4,000 words.",
+    "Keep the saved original unchanged unless every rewritten chapter passes validation.",
     ...(selected.length ? selected.map((s) => `Apply: ${s}`) : ["No specific changes ticked — improve the writing while keeping the story."]),
     ...(notes ? [`Your extra instructions: "${notes}"`] : []),
     ...(kindleReady
@@ -259,9 +255,7 @@ const RegenerateStoryWizard = ({
           ...(kindleNotes ? [`Your Kindle detail: "${kindleNotes}"`] : []),
         ]
       : []),
-    regenerateImages
-      ? `Regenerate every illustration (${imageCount} existing image${imageCount === 1 ? "" : "s"} will be replaced with fresh, all-different artwork).`
-      : `Keep your current ${imageCount} illustration${imageCount === 1 ? "" : "s"} exactly as they are.`,
+    `Keep your current ${imageCount} illustration${imageCount === 1 ? "" : "s"}, cover and back cover exactly as they are.`,
   ];
 
   return (
@@ -440,37 +434,6 @@ const RegenerateStoryWizard = ({
                 >
                   {busy && <Loader2 className="w-4 h-4 animate-spin" />}
                   {confirmCopy[stage].yes}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {stage === "images" && (
-            <div className="space-y-4 py-2">
-              <p className="text-lg font-black italic text-foreground text-center">
-                Would you like all the illustrations regenerated too?
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                You currently have {imageCount} image{imageCount === 1 ? "" : "s"} in this book.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <button
-                  onClick={() => { setRegenerateImages(true); setStage("plan"); }}
-                  className="p-4 rounded-xl border border-primary bg-primary/15 text-left"
-                >
-                  <p className="font-bold text-foreground text-sm">Yes — regenerate every image</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Fresh, all-different artwork matched to the new text. Takes longer.
-                  </p>
-                </button>
-                <button
-                  onClick={() => { setRegenerateImages(false); setStage("plan"); }}
-                  className="p-4 rounded-xl border border-border bg-background text-left"
-                >
-                  <p className="font-bold text-foreground text-sm">No — keep my current images</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Only the words are rewritten. Much faster.
-                  </p>
                 </button>
               </div>
             </div>

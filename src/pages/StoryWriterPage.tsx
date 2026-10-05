@@ -44,6 +44,12 @@ import { buildEpubBlob, type StoryFileSource } from "@/lib/storyFiles";
 import { validateForKindle } from "@/lib/epubValidation";
 import { narrateChunk as narrateOneChunk } from "@/lib/storyNarration";
 import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
+import {
+  buildRewriteContinuity,
+  countStoryWords,
+  STORY_CHAPTER_MAX_WORDS,
+  validateRewrittenBook,
+} from "@/lib/storyRewrite";
 
 
 
@@ -121,6 +127,8 @@ const StoryWriterPage = () => {
   const [openingStoryId, setOpeningStoryId] = useState<string | null>(null);
   const skipAutosaveForLoadedStoryRef = useRef<string | null>(null);
   const [chapterGuidance, setChapterGuidance] = useState("");
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
   // Workflow stage after a chapter is generated:
   // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
   // 'editing' = collecting edit instructions; 'askNext' = ask for next chapter guidance.
@@ -287,7 +295,7 @@ const StoryWriterPage = () => {
   // admin library pipeline picks it up.
   useEffect(() => {
     if (!user) return;
-    if (!hasMeta) return;
+    if (!hasMeta || regenBusy) return;
     if (skipAutosaveForLoadedStoryRef.current && skipAutosaveForLoadedStoryRef.current === savingId) {
       skipAutosaveForLoadedStoryRef.current = null;
       return;
@@ -345,7 +353,7 @@ const StoryWriterPage = () => {
     }, 1200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story, user, savingId, hasMeta]);
+  }, [story, user, savingId, hasMeta, regenBusy]);
 
   const totalWords = useMemo(
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
@@ -1094,9 +1102,6 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
   };
 
   // === Regenerate the ENTIRE story (guided wizard: 50 questions + triple warnings) ===
-  const [regenOpen, setRegenOpen] = useState(false);
-  const [regenBusy, setRegenBusy] = useState(false);
-
   const totalImageCount = () =>
     (story.coverImage ? 1 : 0) +
     (story.backImage ? 1 : 0) +
@@ -1114,7 +1119,11 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
 
   const regenerateEntireStory = async (plan: RegenPlan) => {
     if (regenBusy) return;
-    if (!(await ensureCredit(100, "story-rewrite"))) return;
+    if (!savingId) {
+      toast.error("Wait for the book to finish saving, then start the rewrite again.");
+      return;
+    }
+    if (!(await ensureCredit(108, "story-rewrite"))) return;
     setRegenBusy(true);
     const changeBrief = [
       plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
@@ -1125,47 +1134,87 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
     ].filter(Boolean).join("\n\n");
 
     try {
-      toast.info(`Rewriting all ${story.chapters.length} chapters — this takes a while. Keep this tab open.`);
-      const rewritten: string[] = [];
+      toast.info(`Rewriting all ${story.chapters.length} chapters — the original stays safe until every chapter passes.`);
+      const originalChapters = story.chapters.map((chapter) => ({
+        ...chapter,
+        images: chapter.images ? [...chapter.images] : undefined,
+        imageAnchors: chapter.imageAnchors ? [...chapter.imageAnchors] : undefined,
+        imageHolo: chapter.imageHolo ? [...chapter.imageHolo] : undefined,
+      }));
+      const rewritten: StoryChapter[] = [];
       for (let i = 0; i < story.chapters.length; i++) {
-        const ch = story.chapters[i];
-        const target = targetWordsFor(i);
-        const prevContext = rewritten
-          .map((t, j) => `${story.chapters[j].title}:\n${t.slice(0, 800)}`)
-          .join("\n\n");
+        const ch = originalChapters[i];
         toast.info(`Rewriting ${ch.title || `Chapter ${i + 1}`} (${i + 1}/${story.chapters.length})…`, { id: "regen-progress" });
-        const text = await generateLongChapter(
-          ch.title || `Chapter ${i + 1}`,
-          `${changeBrief}\n\nORIGINAL CHAPTER (rewrite it, applying the changes above):\n${(ch.content || "").slice(0, 12000)}`,
-          prevContext,
-          target,
-          (w) => toast.info(`Chapter ${i + 1}: ${w.toLocaleString()} / ${target.toLocaleString()} words`, { id: "regen-progress" }),
-          (partial) => setStory(s => {
-            const next = [...s.chapters];
-            next[i] = { ...next[i], content: partial };
-            return { ...s, chapters: next };
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/story-rewrite-chapter`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getEdgeAuthTokenSync()}`,
+          },
+          body: JSON.stringify({
+            storyId: savingId,
+            chapterIndex: i,
+            previousContext: buildRewriteContinuity(rewritten),
+            rewriteInstructions: changeBrief,
           }),
-        );
-
-        rewritten[i] = text;
-        setStory(s => {
-          const next = [...s.chapters];
-          next[i] = { ...next[i], content: text, ...(plan.regenerateImages ? { images: [] } : {}) };
-          return { ...s, chapters: next };
         });
-      }
-
-      if (plan.regenerateImages) {
-        setStory(s => ({ ...s, coverImage: undefined, backImage: undefined }));
-        toast.info("Now regenerating all artwork…", { id: "regen-progress" });
-        await generateStoryImage("cover");
-        await generateStoryImage("back");
-        for (let i = 0; i < story.chapters.length; i++) {
-          await illustrateChapterSet(i);
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.message || result.error || `Chapter ${i + 1} failed`);
         }
+        if (!response.body) throw new Error(`Chapter ${i + 1} returned no text`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let result: Record<string, any> | null = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          buffer += decoder.decode(value, { stream: !done });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            if (event.type === "done") result = event;
+            if (event.type === "error") throw new Error(event.message || event.error || `Chapter ${i + 1} failed`);
+          }
+          if (done) break;
+        }
+        if (buffer.trim()) {
+          const event = JSON.parse(buffer);
+          if (event.type === "done") result = event;
+          if (event.type === "error") throw new Error(event.message || event.error || `Chapter ${i + 1} failed`);
+        }
+        const content = typeof result?.content === "string" ? result.content.trim() : "";
+        const words = countStoryWords(content);
+        if (!content || words > STORY_CHAPTER_MAX_WORDS) {
+          throw new Error(`${ch.title || `Chapter ${i + 1}`} failed the 4,000-word check`);
+        }
+        rewritten.push({
+          ...ch,
+          content,
+        });
+        toast.info(`Chapter ${i + 1} passed — ${words.toLocaleString()} words`, { id: "regen-progress" });
       }
 
-      toast.success(plan.kindleReady ? "Your book has been rewritten and cleared for Kindle — every Kindle rule applied." : "Your entire story has been regenerated.", { id: "regen-progress" });
+      const validationErrors = validateRewrittenBook(originalChapters, rewritten);
+      if (validationErrors.length) {
+        throw new Error(`${validationErrors[0]} The original book was not changed.`);
+      }
+
+      const { error: saveError } = await supabase.rpc("save_story_writer_document" as any, {
+        _story_id: savingId,
+        _title: story.title,
+        _metadata: { chapters: rewritten },
+      } as any);
+      if (saveError) throw saveError;
+
+      setStory((current) => ({ ...current, chapters: rewritten }));
+      qc.invalidateQueries({ queryKey: ["story-writer-library"] });
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+
+      toast.success(`All ${rewritten.length} chapters passed and replaced the saved manuscript. Every chapter is 4,000 words or fewer.`, { id: "regen-progress" });
       setRegenOpen(false);
     } catch (e: any) {
       if (e?.message !== "blocked") toast.error("Rewrite failed: " + (e?.message || "unknown"));
