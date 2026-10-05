@@ -10,9 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
  *   2. "warn1"    — Are you sure?
  *   3. "warn2"    — Are you REALLY sure?
  *   4. "warn3"    — Last chance to back out
- *   5. "images"   — Regenerate every illustration, or keep the current ones?
- *   6. "plan"     — AI shows exactly what it is about to do
- *   7. "final"    — Second/final warning right before it runs
+ *   5. "plan"     — AI shows exactly what it is about to do
+ *   6. "final"    — Second/final warning right before it runs
  */
 
 export interface RegenPlan {
@@ -227,7 +226,7 @@ const RegenerateStoryWizard = ({
 
   const advance = () => {
     setStage((s) =>
-      s === "warn1" ? "warn2" : s === "warn2" ? "warn3" : s === "warn3" ? "images" : "plan",
+      s === "warn1" ? "warn2" : s === "warn2" ? "warn3" : s === "warn3" ? "plan" : "plan",
     );
   };
 
@@ -243,7 +242,6 @@ const RegenerateStoryWizard = ({
     if (!open || !voiceOn) return;
     const copy = confirmCopy[stage];
     if (copy) speak(`${copy.title}. ${copy.body}. Say yes or no.`);
-    if (stage === "images") speak("Would you like me to regenerate all illustrations as well, or keep the same images?");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, open, voiceOn]);
 
@@ -261,9 +259,7 @@ const RegenerateStoryWizard = ({
           ...(kindleNotes ? [`Your Kindle detail: "${kindleNotes}"`] : []),
         ]
       : []),
-    regenerateImages
-      ? `Regenerate every illustration (${imageCount} existing image${imageCount === 1 ? "" : "s"} will be replaced with fresh, all-different artwork).`
-      : `Keep your current ${imageCount} illustration${imageCount === 1 ? "" : "s"} exactly as they are.`,
+    `Keep your current ${imageCount} illustration${imageCount === 1 ? "" : "s"}, cover and back cover exactly as they are.`,
   ];
 
   return (

@@ -146,27 +146,29 @@ Write the complete replacement chapter now. Aim for 3,200–3,800 words and neve
     ]);
     const text = cleanProse(await result.text);
     const words = countWords(text);
-    const providerResponse = await result.response;
+    const runId = runIdFetch.getRunId();
+    const providerHeaders = runId ? { "X-Lovable-AIG-Run-ID": runId } : undefined;
+
+    if (billingTransactionId) {
+      await settleAI(
+        billingTransactionId,
+        PROVIDER_RATES.lovable_ai_gpt5_per_call,
+        runId,
+        [{ unit_type: "request", quantity: 1 }],
+        { story_id: parsed.storyId, chapter_index: parsed.chapterIndex, input_words: sourceWords, output_words: words },
+      );
+      billingTransactionId = undefined;
+    }
 
     if (!text || words < MIN_CHAPTER_WORDS || words > MAX_CHAPTER_WORDS) {
       return json({
         error: "chapter_validation_failed",
         message: `The rewrite returned ${words.toLocaleString()} words; the safe range is ${MIN_CHAPTER_WORDS.toLocaleString()}–${MAX_CHAPTER_WORDS.toLocaleString()}. The saved book was not changed.`,
         wordCount: words,
-      }, 422, providerResponse.headers);
+      }, 422, providerHeaders);
     }
 
-    if (billingTransactionId) {
-      await settleAI(
-        billingTransactionId,
-        PROVIDER_RATES.lovable_ai_gpt5_per_call,
-        runIdFetch.getRunId(),
-        [{ unit_type: "request", quantity: 1 }],
-        { story_id: parsed.storyId, chapter_index: parsed.chapterIndex, input_words: sourceWords, output_words: words },
-      );
-    }
-
-    return json({ chapterIndex: parsed.chapterIndex, title, content: text, wordCount: words }, 200, providerResponse.headers);
+    return json({ chapterIndex: parsed.chapterIndex, title, content: text, wordCount: words }, 200, providerHeaders);
   } catch (error) {
     if (billingTransactionId) await cancelAI(billingTransactionId, "rewrite_failed").catch(() => undefined);
     if (error instanceof DOMException && error.name === "AbortError") return json({ error: "cancelled" }, 499);

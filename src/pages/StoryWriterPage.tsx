@@ -127,6 +127,8 @@ const StoryWriterPage = () => {
   const [openingStoryId, setOpeningStoryId] = useState<string | null>(null);
   const skipAutosaveForLoadedStoryRef = useRef<string | null>(null);
   const [chapterGuidance, setChapterGuidance] = useState("");
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
   // Workflow stage after a chapter is generated:
   // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
   // 'editing' = collecting edit instructions; 'askNext' = ask for next chapter guidance.
@@ -1100,9 +1102,6 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
   };
 
   // === Regenerate the ENTIRE story (guided wizard: 50 questions + triple warnings) ===
-  const [regenOpen, setRegenOpen] = useState(false);
-  const [regenBusy, setRegenBusy] = useState(false);
-
   const totalImageCount = () =>
     (story.coverImage ? 1 : 0) +
     (story.backImage ? 1 : 0) +
@@ -1124,7 +1123,7 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
       toast.error("Wait for the book to finish saving, then start the rewrite again.");
       return;
     }
-    if (!(await ensureCredit(90, "story-rewrite"))) return;
+    if (!(await ensureCredit(108, "story-rewrite"))) return;
     setRegenBusy(true);
     const changeBrief = [
       plan.changes.length ? `REQUESTED CHANGES:\n- ${plan.changes.join("\n- ")}` : "",
@@ -1169,7 +1168,6 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
         rewritten.push({
           ...ch,
           content,
-          ...(plan.regenerateImages ? { images: [], imageAnchors: [], imageHolo: [] } : {}),
         });
         toast.info(`Chapter ${i + 1} passed — ${words.toLocaleString()} words`, { id: "regen-progress" });
       }
