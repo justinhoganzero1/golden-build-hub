@@ -1,6 +1,7 @@
-import { createClient, corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod";
-import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { authorizeAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse, settleAI } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { requireUser, enforceRateLimit, OWNER_EMAIL } from "../_shared/requireAuth.ts";
 import { createOpenAIResponsesCall } from "../_shared/openai-responses.ts";
@@ -88,6 +89,25 @@ Deno.serve(async (req) => {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) return json({ error: "ai_not_configured" }, 500);
 
+  let billingTransactionId: string | undefined;
+  if (auth.user.email?.toLowerCase() !== OWNER_EMAIL) {
+    try {
+      const authorization = await authorizeAI(
+        auth.user.id,
+        `story-rewrite:${parsed.storyId}:${parsed.chapterIndex}:${crypto.randomUUID()}`,
+        "story-rewrite-chapter",
+        "lovable_ai",
+        MODEL,
+        PROVIDER_RATES.lovable_ai_gpt5_per_call,
+        { story_id: parsed.storyId, chapter_index: parsed.chapterIndex, input_words: sourceWords },
+      );
+      billingTransactionId = authorization.transaction_id;
+    } catch (error) {
+      if (error instanceof InsufficientCoinsError) return insufficientCoinsResponse(error, corsHeaders);
+      throw error;
+    }
+  }
+
   const system = `You are the senior novelist and continuity editor inside Oracle Lunar.
 Rewrite one complete chapter of an existing action-comedy science-fiction novel.
 
@@ -136,24 +156,19 @@ Write the complete replacement chapter now. Aim for 3,200–3,800 words and neve
       }, 422, providerResponse.headers);
     }
 
-    if (auth.user.email?.toLowerCase() !== OWNER_EMAIL) {
-      try {
-        await chargeAI(auth.user.id, "story-rewrite-chapter", PROVIDER_RATES.lovable_ai_gpt5_per_call, {
-          provider: "lovable_ai",
-          model: MODEL,
-          story_id: parsed.storyId,
-          chapter_index: parsed.chapterIndex,
-          input_words: sourceWords,
-          output_words: words,
-        });
-      } catch (error) {
-        if (error instanceof InsufficientCoinsError) return insufficientCoinsResponse(error, corsHeaders);
-        throw error;
-      }
+    if (billingTransactionId) {
+      await settleAI(
+        billingTransactionId,
+        PROVIDER_RATES.lovable_ai_gpt5_per_call,
+        runIdFetch.getRunId(),
+        [{ unit_type: "request", quantity: 1 }],
+        { story_id: parsed.storyId, chapter_index: parsed.chapterIndex, input_words: sourceWords, output_words: words },
+      );
     }
 
     return json({ chapterIndex: parsed.chapterIndex, title, content: text, wordCount: words }, 200, providerResponse.headers);
   } catch (error) {
+    if (billingTransactionId) await cancelAI(billingTransactionId, "rewrite_failed").catch(() => undefined);
     if (error instanceof DOMException && error.name === "AbortError") return json({ error: "cancelled" }, 499);
     const status = typeof error === "object" && error !== null && "statusCode" in error
       ? Number((error as { statusCode?: unknown }).statusCode)

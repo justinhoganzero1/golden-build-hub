@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Rewrite Zero Protocol completely: all saved chapters at or below 4,000 words, atomic replacement, clean ElevenLabs manuscript
 - [x] Kindle panel: step-by-step KDP account + upload guide, sci-fi details for Zero Protocol
 - [x] Wallet: balance, top-up prices, real card payment, what uses coins
 - [x] Get Started page for new members

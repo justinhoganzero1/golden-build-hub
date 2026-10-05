@@ -104,7 +104,7 @@ export const REGEN_QUESTIONS: { group: string; items: string[] }[] = [
       "Fix all spelling and grammar",
       "Remove repetition and filler",
       "Make every chapter a similar strong quality",
-      "Keep chapters 20,000+ words each",
+      "Keep every chapter complete and at or below 4,000 words",
       "Make it audiobook friendly (clean, readable aloud)",
       "Keep it family friendly",
       "Allow mature themes",
@@ -251,6 +251,8 @@ const RegenerateStoryWizard = ({
 
   const planLines = [
     `Rewrite all ${chapterCount} chapter${chapterCount === 1 ? "" : "s"} of your book from the top.`,
+    "Keep every rewritten chapter complete and at or below 4,000 words.",
+    "Keep the saved original unchanged unless every rewritten chapter passes validation.",
     ...(selected.length ? selected.map((s) => `Apply: ${s}`) : ["No specific changes ticked — improve the writing while keeping the story."]),
     ...(notes ? [`Your extra instructions: "${notes}"`] : []),
     ...(kindleReady
