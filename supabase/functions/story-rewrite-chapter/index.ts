@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod";
 import { authorizeAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse, settleAI } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
@@ -10,6 +9,11 @@ import { getLovableAiGatewayResponseHeaders } from "../_shared/ai-run-id.ts";
 const MODEL = "openai/gpt-6-astra";
 const MAX_CHAPTER_WORDS = 4000;
 const MIN_CHAPTER_WORDS = 1200;
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const RequestSchema = z.object({
   storyId: z.string().uuid(),
