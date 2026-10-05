@@ -8,7 +8,7 @@ import { getLovableAiGatewayResponseHeaders } from "../_shared/ai-run-id.ts";
 
 const MODEL = "openai/gpt-6-astra";
 const MAX_CHAPTER_WORDS = 4000;
-const MIN_CHAPTER_WORDS = 1200;
+const MIN_CHAPTER_WORDS = 1000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,7 +141,7 @@ ${instructions || "Rewrite and fully polish the complete chapter while preservin
 ORIGINAL CHAPTER — preserve all essential story events while rewriting the prose:
 ${original}
 
-Write the complete replacement chapter now. Aim for 3,200–3,800 words and never exceed 4,000 words.`;
+Write the complete replacement chapter now. Aim for 1,800–2,200 words. Finish the chapter within that range and never exceed 4,000 words.`;
 
   try {
     const { result, runIdFetch } = createOpenAIResponsesCall(req, apiKey, system, user);

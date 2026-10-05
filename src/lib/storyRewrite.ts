@@ -1,6 +1,6 @@
 export const STORY_CHAPTER_MAX_WORDS = 4000;
-export const STORY_CHAPTER_MIN_WORDS = 1200;
-export const STORY_CHAPTER_TARGET_WORDS = 3600;
+export const STORY_CHAPTER_MIN_WORDS = 1000;
+export const STORY_CHAPTER_TARGET_WORDS = 2000;
 
 export interface RewrittenChapterLike {
   title: string;
