@@ -144,10 +144,7 @@ ${original}
 Write the complete replacement chapter now. Aim for 3,200–3,800 words and never exceed 4,000 words.`;
 
   try {
-    const { result, runIdFetch } = createOpenAIResponsesCall(req, apiKey, [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ]);
+    const { result, runIdFetch } = createOpenAIResponsesCall(req, apiKey, system, user);
     const text = cleanProse(await result.text);
     const words = countWords(text);
     const runId = runIdFetch.getRunId();
