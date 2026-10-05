@@ -17,12 +17,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 export interface RegenPlan {
   changes: string[];
   notes: string;
-  regenerateImages: boolean;
   kindleReady: boolean;
   kindleNotes: string;
 }
 
-type Stage = "changes" | "warn1" | "warn2" | "warn3" | "images" | "plan" | "final";
+type Stage = "changes" | "warn1" | "warn2" | "warn3" | "plan" | "final";
 
 export const REGEN_QUESTIONS: { group: string; items: string[] }[] = [
   {
@@ -172,7 +171,6 @@ const RegenerateStoryWizard = ({
   const [rewriteNeeded, setRewriteNeeded] = useState(false);
   const [kindleReady, setKindleReady] = useState(false);
   const [kindleNotes, setKindleNotes] = useState("");
-  const [regenerateImages, setRegenerateImages] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
 
   useEffect(() => {
@@ -183,7 +181,6 @@ const RegenerateStoryWizard = ({
       setRewriteNeeded(false);
       setKindleReady(false);
       setKindleNotes("");
-      setRegenerateImages(true);
     }
   }, [open]);
 
@@ -194,11 +191,10 @@ const RegenerateStoryWizard = ({
     () => ({
       changes: selected,
       notes: notes.trim(),
-      regenerateImages,
       kindleReady,
       kindleNotes: kindleNotes.trim(),
     }),
-    [selected, notes, regenerateImages, kindleReady, kindleNotes],
+    [selected, notes, kindleReady, kindleNotes],
   );
 
   const confirmCopy: Record<string, { title: string; body: string; yes: string }> = {
@@ -438,37 +434,6 @@ const RegenerateStoryWizard = ({
                 >
                   {busy && <Loader2 className="w-4 h-4 animate-spin" />}
                   {confirmCopy[stage].yes}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {stage === "images" && (
-            <div className="space-y-4 py-2">
-              <p className="text-lg font-black italic text-foreground text-center">
-                Would you like all the illustrations regenerated too?
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                You currently have {imageCount} image{imageCount === 1 ? "" : "s"} in this book.
-              </p>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <button
-                  onClick={() => { setRegenerateImages(true); setStage("plan"); }}
-                  className="p-4 rounded-xl border border-primary bg-primary/15 text-left"
-                >
-                  <p className="font-bold text-foreground text-sm">Yes — regenerate every image</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Fresh, all-different artwork matched to the new text. Takes longer.
-                  </p>
-                </button>
-                <button
-                  onClick={() => { setRegenerateImages(false); setStage("plan"); }}
-                  className="p-4 rounded-xl border border-border bg-background text-left"
-                >
-                  <p className="font-bold text-foreground text-sm">No — keep my current images</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Only the words are rewritten. Much faster.
-                  </p>
                 </button>
               </div>
             </div>
