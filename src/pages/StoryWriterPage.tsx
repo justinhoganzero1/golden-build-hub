@@ -1158,9 +1158,34 @@ Return ONLY a JSON array of exactly ${count} objects in ascending paragraph orde
             rewriteInstructions: changeBrief,
           }),
         });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.message || result.error || `Chapter ${i + 1} failed`);
-        const content = typeof result.content === "string" ? result.content.trim() : "";
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.message || result.error || `Chapter ${i + 1} failed`);
+        }
+        if (!response.body) throw new Error(`Chapter ${i + 1} returned no text`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let result: Record<string, any> | null = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          buffer += decoder.decode(value, { stream: !done });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            if (event.type === "done") result = event;
+            if (event.type === "error") throw new Error(event.message || event.error || `Chapter ${i + 1} failed`);
+          }
+          if (done) break;
+        }
+        if (buffer.trim()) {
+          const event = JSON.parse(buffer);
+          if (event.type === "done") result = event;
+          if (event.type === "error") throw new Error(event.message || event.error || `Chapter ${i + 1} failed`);
+        }
+        const content = typeof result?.content === "string" ? result.content.trim() : "";
         const words = countStoryWords(content);
         if (!content || words > STORY_CHAPTER_MAX_WORDS) {
           throw new Error(`${ch.title || `Chapter ${i + 1}`} failed the 4,000-word check`);
