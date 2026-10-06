@@ -72,6 +72,7 @@ const loaders = {
   "/stories/:slug": () => import("./pages/StoryPublicPage"),
   "/book/:id": () => import("./pages/BookPage"),
   "/my-amazon-books": () => import("./pages/MyAmazonBooksPage"),
+  "/read": () => import("./pages/BookReaderPage"),
   "/module-shop": () => import("./pages/ModuleShopPage"),
   "/settings": () => import("./pages/SettingsPage"),
   "/profile": () => import("./pages/ProfilePage"),
@@ -206,6 +207,7 @@ const StoryWriterPage = lazy(loaders["/story-writer"]);
 const StoryPublicPage = lazy(loaders["/stories/:slug"]);
 const BookPage = lazy(loaders["/book/:id"]);
 const MyAmazonBooksPage = lazy(loaders["/my-amazon-books"]);
+const BookReaderPage = lazy(loaders["/read"]);
 const ModuleShopPage = lazy(loaders["/module-shop"]);
 const SettingsPage = lazy(loaders["/settings"]);
 const ProfilePage = lazy(loaders["/profile"]);
@@ -379,6 +381,7 @@ const App = () => (
                   <Route path="/stories/:slug" element={<ErrorBoundary pageName="Public Story"><StoryPublicPage /></ErrorBoundary>} />
                   <Route path="/module-shop" element={<RequireAuth freeAccess><ErrorBoundary pageName="Module Shop"><ModuleShopPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/my-amazon-books" element={<RequireAuth><ErrorBoundary pageName="My Amazon Books"><MyAmazonBooksPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/read/:bookId/:chapter?" element={<RequireAuth><ErrorBoundary pageName="Book Reader"><BookReaderPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/book/:id" element={<RequireAuth><ErrorBoundary pageName="Book Page"><BookPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
