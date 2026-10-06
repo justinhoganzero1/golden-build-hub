@@ -35,7 +35,7 @@ serve(async (req) => {
     const agentModel: string | null =
       agent && typeof agent.model === "string" && agent.model in ALLOWED_MODELS ? agent.model : null;
     const agentName = agentModel && typeof agent?.name === "string" ? agent.name.slice(0, 40) : "";
-    const agentPersona = agentModel && typeof agent?.personality === "string" ? agent.personality.slice(0, 600) : "";
+    const agentPersona = agentModel && typeof agent?.personality === "string" ? agent.personality.slice(0, 1500) : "";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 

@@ -210,13 +210,117 @@ var list_calendar_events_default = defineTool5({
   }
 });
 
+// src/lib/mcp/tools/books.ts
+import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.117.2";
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { z as z4 } from "npm:zod@^4.6.5";
+function userClient5(ctx) {
+  return createClient5(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+    global: { headers: { Authorization: `Bearer ${ctx.getToken()}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+}
+var words = (s) => s.trim() ? s.trim().split(/\s+/).length : 0;
+async function loadDoc(ctx, bookId) {
+  const { data, error } = await userClient5(ctx).rpc("get_story_writer_document", { _story_id: bookId });
+  if (error) throw error;
+  const doc = data ?? {};
+  return { title: doc.title ?? "", metadata: doc.metadata ?? {}, chapters: doc.metadata?.chapters ?? [] };
+}
+var listBooksTool = defineTool6({
+  name: "list_books",
+  title: "List my books",
+  description: "List the signed-in user's Story Writer books with id, title, chapter count and word count.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async (_a, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const { data, error } = await userClient5(ctx).from("user_media").select("id, title, metadata, updated_at").eq("user_id", ctx.getUserId()).eq("media_type", "story").order("updated_at", { ascending: false }).limit(50);
+      if (error) return fromPostgrestError(error);
+      const books = (data ?? []).map((r) => {
+        const ch = r.metadata?.chapters ?? [];
+        return {
+          id: r.id,
+          title: r.title ?? "Untitled",
+          chapters: ch.length,
+          words: ch.reduce((n, c) => n + words(c.content ?? ""), 0),
+          updated_at: r.updated_at
+        };
+      });
+      return mcpOk({ books });
+    } catch (err) {
+      return fromUnknown(err);
+    }
+  }
+});
+var getBookChaptersTool = defineTool6({
+  name: "get_book_chapters",
+  title: "Read book chapters",
+  description: "Read the full text of a range of chapters (1-based, up to 5 at a time) from one of the user's books.",
+  inputSchema: {
+    book_id: z4.string().uuid().describe("Book id from list_books."),
+    from_chapter: z4.number().int().min(1).default(1).describe("First chapter number."),
+    count: z4.number().int().min(1).max(5).default(3).describe("How many chapters to return (max 5).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ book_id, from_chapter, count }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const doc = await loadDoc(ctx, book_id);
+      const slice = doc.chapters.slice(from_chapter - 1, from_chapter - 1 + count).map((c, i) => ({
+        number: from_chapter + i,
+        title: c.title ?? "",
+        words: words(c.content ?? ""),
+        content: c.content ?? ""
+      }));
+      return mcpOk({ book_title: doc.title, total_chapters: doc.chapters.length, chapters: slice });
+    } catch (err) {
+      return fromUnknown(err);
+    }
+  }
+});
+var saveBookChapterTool = defineTool6({
+  name: "save_book_chapter",
+  title: "Save a book chapter",
+  description: "Replace an existing chapter's title and text, or add a new chapter at the end (chapter_number = total + 1). Existing pictures on that chapter are kept.",
+  inputSchema: {
+    book_id: z4.string().uuid().describe("Book id from list_books."),
+    chapter_number: z4.number().int().min(1).describe("Chapter to replace, or total+1 to add a new one."),
+    title: z4.string().trim().min(1).max(200).describe("Chapter title."),
+    content: z4.string().trim().min(50).describe("Full chapter text.")
+  },
+  annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ book_id, chapter_number, title, content }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated();
+    try {
+      const doc = await loadDoc(ctx, book_id);
+      const chapters = [...doc.chapters];
+      if (chapter_number > chapters.length + 1) {
+        return mcpOk({ saved: false, message: `Book has ${chapters.length} chapters; use ${chapters.length + 1} to add a new one.` });
+      }
+      const prev = chapters[chapter_number - 1];
+      chapters[chapter_number - 1] = { ...prev ?? {}, title, content };
+      const { error } = await userClient5(ctx).rpc("save_story_writer_document", {
+        _story_id: book_id,
+        _title: doc.title,
+        _metadata: { ...doc.metadata, chapters }
+      });
+      if (error) return fromPostgrestError(error);
+      return mcpOk({ saved: true, chapter_number, words: words(content), total_chapters: chapters.length });
+    } catch (err) {
+      return fromUnknown(err);
+    }
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "tpkpfkcnqdyrzpqdoqnp";
 var mcp_default = defineMcp({
   name: "oracle-lunar-mcp",
   title: "Oracle Lunar",
-  version: "0.1.0",
-  instructions: "Tools for the signed-in Oracle Lunar user. Read and write their Life Diary, view calendar events, and check their wallet balance. All tools run as the connected user under RLS.",
+  version: "0.2.0",
+  instructions: "Tools for the signed-in Oracle Lunar user. Read and write their Life Diary, view calendar events, check their wallet balance, and read/write their Story Writer books (list_books, get_book_chapters, save_book_chapter \u2014 read chapters in small batches). All tools run as the connected user under RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
@@ -226,7 +330,10 @@ var mcp_default = defineMcp({
     list_diary_entries_default,
     create_diary_entry_default,
     get_wallet_balance_default,
-    list_calendar_events_default
+    list_calendar_events_default,
+    listBooksTool,
+    getBookChaptersTool,
+    saveBookChapterTool
   ]
 });
 

@@ -37,9 +37,9 @@ export default function MyAgentsSection() {
               <p className="text-[10px] text-muted-foreground truncate">{m?.label ?? a.model}{a.personality ? ` · ${a.personality}` : ""}</p>
             </div>
             <button onClick={() => { setActiveAgentId(a.id); toast.success(`${a.name} is now active in chat`); }} className="text-[11px] text-primary underline">Use</button>
-            <button aria-label={`Delete ${a.name}`} onClick={() => update(agents.filter((x) => x.id !== a.id))} className="text-muted-foreground hover:text-destructive">
+            {!a.id.startsWith("builtin:") && <button aria-label={`Delete ${a.name}`} onClick={() => update(agents.filter((x) => x.id !== a.id))} className="text-muted-foreground hover:text-destructive">
               <Trash2 className="w-4 h-4" />
-            </button>
+            </button>}
           </div>
         );
       })}

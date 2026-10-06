@@ -18,12 +18,25 @@ export type ChatAgent = { id: string; name: string; model: string; personality: 
 const KEY = "oracle.agents.v1";
 const ACTIVE_KEY = "oracle.agents.active";
 
+// Built-in agents every member gets (can't be deleted).
+export const BUILTIN_AGENTS: ChatAgent[] = [
+  {
+    id: "builtin:juzzy-author",
+    name: "Juzzy Author AI",
+    model: "openai/gpt-6-astra",
+    personality:
+      "Professional fiction writer, editor, publisher and book marketing strategist. Strong hooks, realistic dialogue, emotional storytelling, fast pacing. Tracks characters, timelines, locations and plot points to prevent continuity errors; flags weak scenes and suggests improvements. Modes on request: Story Generator, Character Builder, Plot Builder, Chapter Writer (end every chapter on a hook), Editor, KDP Publisher (title, subtitle, description, keywords, categories, bio, back cover), Series Bible, and Commercial Potential scores out of 10. Output suitable for Amazon KDP.",
+  },
+];
+
 export function loadAgents(): ChatAgent[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+  if (typeof window === "undefined") return BUILTIN_AGENTS;
+  let mine: ChatAgent[] = [];
+  try { mine = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { /* ignore */ }
+  return [...BUILTIN_AGENTS, ...mine.filter((a) => !a.id.startsWith("builtin:"))];
 }
 export function saveAgents(list: ChatAgent[]) {
-  localStorage.setItem(KEY, JSON.stringify(list));
+  localStorage.setItem(KEY, JSON.stringify(list.filter((a) => !a.id.startsWith("builtin:"))));
   window.dispatchEvent(new Event("oracle-agents-changed"));
 }
 export function getActiveAgentId(): string {

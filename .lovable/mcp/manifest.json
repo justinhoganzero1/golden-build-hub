@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "oracle-lunar-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "Oracle Lunar"
     },
     "tools": [
@@ -144,6 +144,109 @@
               "maximum": 100
             }
           }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_books",
+        "title": "List my books",
+        "description": "List the signed-in user's Story Writer books with id, title, chapter count and word count.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_book_chapters",
+        "title": "Read book chapters",
+        "description": "Read the full text of a range of chapters (1-based, up to 5 at a time) from one of the user's books.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "book_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Book id from list_books."
+            },
+            "from_chapter": {
+              "default": 1,
+              "description": "First chapter number.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "count": {
+              "default": 3,
+              "description": "How many chapters to return (max 5).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "book_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_book_chapter",
+        "title": "Save a book chapter",
+        "description": "Replace an existing chapter's title and text, or add a new chapter at the end (chapter_number = total + 1). Existing pictures on that chapter are kept.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "book_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Book id from list_books."
+            },
+            "chapter_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "Chapter to replace, or total+1 to add a new one."
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Chapter title."
+            },
+            "content": {
+              "type": "string",
+              "minLength": 50,
+              "description": "Full chapter text."
+            }
+          },
+          "required": [
+            "book_id",
+            "chapter_number",
+            "title",
+            "content"
+          ]
         },
         "outputSchema": null
       }
