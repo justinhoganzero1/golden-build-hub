@@ -224,8 +224,8 @@ var words = (s) => s.trim() ? s.trim().split(/\s+/).length : 0;
 async function loadDoc(ctx, bookId) {
   const { data, error } = await userClient5(ctx).rpc("get_story_writer_document", { _story_id: bookId });
   if (error) throw error;
-  const doc = data ?? {};
-  return { title: doc.title ?? "", metadata: doc.metadata ?? {}, chapters: doc.metadata?.chapters ?? [] };
+  const { id: _id, ...doc } = data ?? {};
+  return { title: doc.title ?? "", metadata: doc, chapters: doc.chapters ?? [] };
 }
 var listBooksTool = defineTool6({
   name: "list_books",
