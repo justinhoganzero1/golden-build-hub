@@ -55,3 +55,26 @@ export function getActiveAgent(): ChatAgent | null {
   }
   return loadAgents().find((a) => a.id === id) ?? null;
 }
+
+// ── Per-agent stats (this device). Cost is an estimate of what a member pays:
+// provider cost per reply for the AI's tier + the 20% margin, in AUD cents.
+const STATS_KEY = "oracle.agents.stats.v1";
+const TIER_CENTS: Record<ChatModel["cost"], number> = { low: 1, mid: 3, high: 5 };
+export type AgentStat = { replies: number; words: number; centsEst: number };
+
+export function loadAgentStats(): Record<string, AgentStat> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(STATS_KEY) || "{}"); } catch { return {}; }
+}
+export function recordAgentReply(agent: ChatAgent | null, text: string) {
+  const key = agent?.id ?? "auto";
+  const tier = CHAT_MODELS.find((m) => m.id === agent?.model)?.cost ?? "low";
+  const stats = loadAgentStats();
+  const s = stats[key] ?? { replies: 0, words: 0, centsEst: 0 };
+  s.replies += 1;
+  s.words += text.trim().split(/\s+/).length;
+  s.centsEst += TIER_CENTS[tier] * 1.2;
+  stats[key] = s;
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  window.dispatchEvent(new Event("oracle-agents-changed"));
+}

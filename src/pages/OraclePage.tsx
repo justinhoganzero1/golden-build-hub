@@ -2388,6 +2388,8 @@ const OraclePage = () => {
         }
       }
 
+      if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
+
       // Parse and save memories from Oracle response
       const memoryMatches = oracleContent.matchAll(/\[\[MEMORY:(\w+):(.+?)\]\]/g);
       for (const match of memoryMatches) {
