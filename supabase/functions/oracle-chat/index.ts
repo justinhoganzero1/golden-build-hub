@@ -604,11 +604,18 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
+      body: JSON.stringify(agentModel ? {
+        model: agentModel,
+        messages: [
+          { role: "system", content: personalitySystem + (agentName ? `\n\nFor this chat you are the member's custom agent "${agentName}".${agentPersona ? ` Personality set by the member: ${agentPersona}` : ""} Stay within all rules above.` : "") },
+          ...messages,
+        ],
+        stream: true,
+        ...(agentModel === "openai/gpt-6-astra" || agentModel === "openai/gpt-6-luna" ? { reasoning_effort: "low" } : {}),
+        ...(agentModel.startsWith("openai/gpt-5.6") ? { reasoning_effort: "none" } : {}),
+        ...(agentModel.startsWith("google/") ? { max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 900 } : {}),
+      } : {
         // Multi-agent auto-router (same Lovable AI Gateway, different specialist):
-        //   - Owner: gemini-2.5-flash for headroom on R-rated dev work.
-        //   - "Deep" prompts (long, reasoning, advice, code, life decisions) → gemini-2.5-pro.
-        //   - Everything else (casual, fast chat) → gemini-2.5-flash-lite.
         model: (() => {
           if (userEmail?.toLowerCase() === ADMIN_EMAIL) return "google/gemini-2.5-flash";
           const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
@@ -624,7 +631,6 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
           ...messages,
         ],
         stream: true,
-        // SPEED: cap output so Oracle doesn't ramble — owner gets more room for R-rated / dev work.
         max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 700,
       }),
     });
