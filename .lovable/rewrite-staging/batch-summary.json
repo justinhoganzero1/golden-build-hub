@@ -1,0 +1,78 @@
+{
+  "complete": false,
+  "files": 0,
+  "errors": [
+    {
+      "chapter": 1,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 2,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 5,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 4,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 6,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 3,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 7,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 11,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 9,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 8,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 13,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 10,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 14,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 12,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 17,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 16,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 18,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    },
+    {
+      "chapter": 15,
+      "error": "The rewrite returned 0 words; the safe range is 1,000\u20134,000. The saved book was not changed."
+    }
+  ]
+}
