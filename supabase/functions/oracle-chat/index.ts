@@ -20,7 +20,22 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar } = await req.json();
+    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent } = await req.json();
+    // Member-chosen AI brain (must match src/lib/chatAgents.ts). Cost tier → provider cents.
+    const ALLOWED_MODELS: Record<string, number> = {
+      "openai/gpt-6-astra": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "openai/gpt-6-luna": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "openai/gpt-5.6-sol": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "openai/gpt-5.6-terra": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "openai/chat-latest": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "google/gemini-3.1-pro-preview": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "google/gemini-3.8-flash": PROVIDER_RATES.lovable_ai_gemini_flash_per_call,
+      "google/gemini-3.1-flash-lite": PROVIDER_RATES.lovable_ai_gemini_flash_per_call,
+    };
+    const agentModel: string | null =
+      agent && typeof agent.model === "string" && agent.model in ALLOWED_MODELS ? agent.model : null;
+    const agentName = agentModel && typeof agent?.name === "string" ? agent.name.slice(0, 40) : "";
+    const agentPersona = agentModel && typeof agent?.personality === "string" ? agent.personality.slice(0, 600) : "";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -58,9 +73,9 @@ serve(async (req) => {
 
           if (!isAdmin && !hasOwnKey) {
             try {
-              await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+              await chargeAI(userId, "oracle-chat", agentModel ? ALLOWED_MODELS[agentModel] : PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
-                model: "google/gemini-2.5-flash",
+                model: agentModel ?? "google/gemini-2.5-flash",
               });
               usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
             } catch (err) {
