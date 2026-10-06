@@ -20,7 +20,22 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar } = await req.json();
+    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent } = await req.json();
+    // Member-chosen AI brain (must match src/lib/chatAgents.ts). Cost tier → provider cents.
+    const ALLOWED_MODELS: Record<string, number> = {
+      "openai/gpt-6-astra": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "openai/gpt-6-luna": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "openai/gpt-5.6-sol": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "openai/gpt-5.6-terra": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "openai/chat-latest": PROVIDER_RATES.lovable_ai_gemini_pro_per_call,
+      "google/gemini-3.1-pro-preview": PROVIDER_RATES.lovable_ai_gpt5_per_call,
+      "google/gemini-3.8-flash": PROVIDER_RATES.lovable_ai_gemini_flash_per_call,
+      "google/gemini-3.1-flash-lite": PROVIDER_RATES.lovable_ai_gemini_flash_per_call,
+    };
+    const agentModel: string | null =
+      agent && typeof agent.model === "string" && agent.model in ALLOWED_MODELS ? agent.model : null;
+    const agentName = agentModel && typeof agent?.name === "string" ? agent.name.slice(0, 40) : "";
+    const agentPersona = agentModel && typeof agent?.personality === "string" ? agent.personality.slice(0, 600) : "";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -58,9 +73,9 @@ serve(async (req) => {
 
           if (!isAdmin && !hasOwnKey) {
             try {
-              await chargeAI(userId, "oracle-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+              await chargeAI(userId, "oracle-chat", agentModel ? ALLOWED_MODELS[agentModel] : PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
-                model: "google/gemini-2.5-flash",
+                model: agentModel ?? "google/gemini-2.5-flash",
               });
               usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
             } catch (err) {
@@ -589,11 +604,18 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
+      body: JSON.stringify(agentModel ? {
+        model: agentModel,
+        messages: [
+          { role: "system", content: personalitySystem + (agentName ? `\n\nFor this chat you are the member's custom agent "${agentName}".${agentPersona ? ` Personality set by the member: ${agentPersona}` : ""} Stay within all rules above.` : "") },
+          ...messages,
+        ],
+        stream: true,
+        ...(agentModel === "openai/gpt-6-astra" || agentModel === "openai/gpt-6-luna" ? { reasoning_effort: "low" } : {}),
+        ...(agentModel.startsWith("openai/gpt-5.6") ? { reasoning_effort: "none" } : {}),
+        ...(agentModel.startsWith("google/") ? { max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 900 } : {}),
+      } : {
         // Multi-agent auto-router (same Lovable AI Gateway, different specialist):
-        //   - Owner: gemini-2.5-flash for headroom on R-rated dev work.
-        //   - "Deep" prompts (long, reasoning, advice, code, life decisions) → gemini-2.5-pro.
-        //   - Everything else (casual, fast chat) → gemini-2.5-flash-lite.
         model: (() => {
           if (userEmail?.toLowerCase() === ADMIN_EMAIL) return "google/gemini-2.5-flash";
           const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
@@ -609,7 +631,6 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
           ...messages,
         ],
         stream: true,
-        // SPEED: cap output so Oracle doesn't ramble — owner gets more room for R-rated / dev work.
         max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 700,
       }),
     });

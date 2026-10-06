@@ -13,6 +13,7 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import LivingAvatar from "@/components/LivingAvatar";
 import { useSaveMedia } from "@/hooks/useUserAvatars";
 import { moderatePrompt } from "@/lib/contentSafety";
+import MyAgentsSection from "@/components/MyAgentsSection";
 
 const STYLES = [
   { value: "realistic-portrait", label: "Realistic" },
@@ -148,6 +149,9 @@ const ProfilePage = () => {
             <p className="text-[11px] text-muted-foreground">Your private wallet, documents and secure files</p>
           </div>
         </Link>
+
+        <MyAgentsSection />
+
 
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">

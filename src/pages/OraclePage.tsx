@@ -60,6 +60,8 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 ];
 
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
+import AgentPicker from "@/components/AgentPicker";
+import { getActiveAgent } from "@/lib/chatAgents";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
@@ -2248,6 +2250,7 @@ const OraclePage = () => {
             voice_style: oracleAvatar.voice_style,
             personality: oracleAvatar.personality,
           } : null,
+          agent: (() => { const a = getActiveAgent(); return a ? { model: a.model, name: a.name, personality: a.personality } : null; })(),
         }),
         signal: controller.signal,
       });
@@ -2873,6 +2876,7 @@ const OraclePage = () => {
       path="/oracle"
     />
     <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#0a0a0a" }}>
+      <AgentPicker />
       {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
       {explosionActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none" style={{ animation: "explosion-flash 2.2s ease-out forwards" }}>
