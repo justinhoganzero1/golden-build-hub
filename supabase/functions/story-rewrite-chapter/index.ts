@@ -196,8 +196,17 @@ Write the complete replacement chapter now. Aim for 1,800–2,200 words. Finish 
         } catch (streamError) {
           if (billingTransactionId) await cancelAI(billingTransactionId, "rewrite_failed").catch(() => undefined);
           billingTransactionId = undefined;
-          const message = streamError instanceof Error ? streamError.message : "AI rewrite failed";
-          controller.enqueue(encoder.encode(`${JSON.stringify({ type: "error", error: "rewrite_failed", message })}\n`));
+          const status = typeof streamError === "object" && streamError !== null && "statusCode" in streamError
+            ? Number((streamError as { statusCode?: unknown }).statusCode)
+            : 500;
+          const message = status === 402
+            ? "Not enough Oracle Lunar AI credit is available to continue this rewrite. Add AI credit, then start the rewrite again; the saved book has not changed."
+            : streamError instanceof Error ? streamError.message : "AI rewrite failed";
+          controller.enqueue(encoder.encode(`${JSON.stringify({
+            type: "error",
+            error: status === 402 ? "payment_required" : "rewrite_failed",
+            message,
+          })}\n`));
         } finally {
           controller.close();
         }
