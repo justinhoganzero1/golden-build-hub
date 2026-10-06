@@ -16,8 +16,9 @@ const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 async function loadDoc(ctx: ToolContext, bookId: string) {
   const { data, error } = await userClient(ctx).rpc("get_story_writer_document", { _story_id: bookId });
   if (error) throw error;
-  const doc = (data ?? {}) as { title?: string; metadata?: { chapters?: Chapter[] } & Record<string, unknown> };
-  return { title: doc.title ?? "", metadata: doc.metadata ?? {}, chapters: doc.metadata?.chapters ?? [] };
+  // The RPC returns the book's saved fields at the top level (title, chapters, blurb, ...).
+  const { id: _id, ...doc } = (data ?? {}) as { id?: string; title?: string; chapters?: Chapter[] } & Record<string, unknown>;
+  return { title: doc.title ?? "", metadata: doc as Record<string, unknown>, chapters: doc.chapters ?? [] };
 }
 
 export const listBooksTool = defineTool({

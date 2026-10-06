@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bot, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CHAT_MODELS, loadAgents, saveAgents, setActiveAgentId, type ChatAgent } from "@/lib/chatAgents";
+import { CHAT_MODELS, loadAgents, saveAgents, setActiveAgentId, loadAgentStats, type ChatAgent } from "@/lib/chatAgents";
 
 export default function MyAgentsSection() {
   const [agents, setAgents] = useState<ChatAgent[]>(loadAgents());
   const [name, setName] = useState("");
   const [model, setModel] = useState(CHAT_MODELS[0].id);
   const [personality, setPersonality] = useState("");
+
+  const [stats, setStats] = useState(loadAgentStats());
+  useEffect(() => {
+    const h = () => setStats(loadAgentStats());
+    window.addEventListener("oracle-agents-changed", h);
+    return () => window.removeEventListener("oracle-agents-changed", h);
+  }, []);
+  const statName = (key: string) =>
+    key === "auto" ? "Oracle (auto)"
+      : key.startsWith("model:") ? (CHAT_MODELS.find((m) => m.id === key.slice(6))?.label ?? key)
+      : (agents.find((a) => a.id === key)?.name ?? "Deleted agent");
+  const statRows = Object.entries(stats).sort((a, b) => b[1].replies - a[1].replies);
 
   const update = (list: ChatAgent[]) => { setAgents(list); saveAgents(list); };
   const add = () => {
@@ -43,6 +55,28 @@ export default function MyAgentsSection() {
           </div>
         );
       })}
+
+      <div className="mt-3 mb-3 rounded-xl border border-border bg-background/60 p-3">
+        <p className="text-xs font-semibold text-foreground mb-2">Agent stats (this device)</p>
+        {statRows.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">No replies yet — chat with an agent in the Oracle chat.</p>
+        ) : (
+          <table className="w-full text-[11px]">
+            <thead><tr className="text-muted-foreground text-left"><th className="font-normal">Agent</th><th className="font-normal text-right">Replies</th><th className="font-normal text-right">Avg words</th><th className="font-normal text-right">Est. cost</th></tr></thead>
+            <tbody>
+              {statRows.map(([k, s]) => (
+                <tr key={k} className="text-foreground">
+                  <td className="truncate max-w-[120px] py-0.5">{statName(k)}</td>
+                  <td className="text-right">{s.replies}</td>
+                  <td className="text-right">{Math.round(s.words / Math.max(1, s.replies))}</td>
+                  <td className="text-right">A${(s.centsEst / 100).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <p className="text-[10px] text-muted-foreground mt-2">Cost is an estimate of what a member pays (AI cost + 20%). Your owner account isn't charged.</p>
+      </div>
 
       <div className="grid gap-2 mt-2">
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name (e.g. Coach Max)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />

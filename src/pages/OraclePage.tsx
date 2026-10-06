@@ -61,7 +61,7 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 import AgentPicker from "@/components/AgentPicker";
-import { getActiveAgent } from "@/lib/chatAgents";
+import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
@@ -2387,6 +2387,8 @@ const OraclePage = () => {
           }
         }
       }
+
+      if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
 
       // Parse and save memories from Oracle response
       const memoryMatches = oracleContent.matchAll(/\[\[MEMORY:(\w+):(.+?)\]\]/g);
