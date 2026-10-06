@@ -19,9 +19,9 @@ export default function BookReaderPage() {
     supabase.rpc("get_story_writer_document", { _story_id: bookId }).then(({ data, error }) => {
       if (!live) return;
       if (error) return setError("This book couldn't be opened. Make sure you're signed in to the account that owns it.");
-      const d = (data ?? {}) as { title?: string; metadata?: { chapters?: Chapter[] } };
+      const d = (data ?? {}) as { title?: string; chapters?: Chapter[]; metadata?: { chapters?: Chapter[] } };
       setTitle(d.title ?? "Untitled");
-      setChapters(d.metadata?.chapters ?? []);
+      setChapters(d.chapters ?? d.metadata?.chapters ?? []);
     });
     return () => { live = false; };
   }, [bookId]);
