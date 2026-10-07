@@ -13,7 +13,6 @@ const EXTRA: { title: string; tagline: string; path: string; group: string }[] =
   { title: "Module Shop", tagline: "Member-made games and trackers", path: "/module-shop", group: "Create" },
   { title: "Movie Studio Pro", tagline: "Make videos and films", path: "/movie-studio-pro", group: "Create" },
   { title: "Living GIF Studio", tagline: "Bring pictures to life", path: "/living-gif-studio", group: "Create" },
-  { title: "YouTube Show Studio", tagline: "Build a full episode", path: "/youtube-show-studio", group: "Create" },
   { title: "Avatar Generator", tagline: "Make your own avatars", path: "/avatar-generator", group: "Create" },
   { title: "Voice Studio", tagline: "Voices and voice cloning", path: "/voice-studio", group: "Create" },
   { title: "Free Zone", tagline: "Free games, planners and trackers", path: "/free-zone", group: "Free" },
