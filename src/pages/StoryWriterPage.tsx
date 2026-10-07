@@ -44,6 +44,7 @@ import { buildEpubBlob, type StoryFileSource } from "@/lib/storyFiles";
 import { validateForKindle } from "@/lib/epubValidation";
 import { narrateChunk as narrateOneChunk } from "@/lib/storyNarration";
 import { COVER_IDENTITY_KEYS, type CoverDesign } from "@/lib/bakeCoverText";
+import StoryAgentPanel from "@/components/story/StoryAgentPanel";
 import {
   buildRewriteContinuity,
   countStoryWords,
@@ -3401,6 +3402,16 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         />
       </div>
 
+      <StoryAgentPanel
+        bookId={story.id}
+        bookTitle={story.title}
+        genre={story.genre}
+        premise={story.premise}
+        chapterNumber={activeChapter + 1}
+        totalChapters={story.chapters.length}
+        chapterTitle={story.chapters[activeChapter]?.title ?? ""}
+        chapterText={story.chapters[activeChapter]?.content ?? ""}
+      />
     </PaywallGate>
   );
 };
