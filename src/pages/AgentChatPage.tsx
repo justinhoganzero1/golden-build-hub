@@ -67,6 +67,7 @@ const AgentChatPage = () => {
   useEffect(() => {
     if (storageKey && messages.length > 0) {
       try { localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50))); } catch { /* ignore */ }
+      void saveChat(`agent.${agentId}`, messages);
     }
   }, [messages, storageKey]);
 
@@ -75,6 +76,12 @@ const AgentChatPage = () => {
   }, [messages, loading]);
 
   useEffect(() => { inputRef.current?.focus(); }, [agentId]);
+
+  // Pull this conversation from the member's account so it follows them between devices.
+  useEffect(() => {
+    if (!agentId) return;
+    void loadCloudChat<Msg>(`agent.${agentId}`).then((m) => { if (m && m.length) setMessages(m); });
+  }, [agentId]);
 
   if (!agent) return <Navigate to="/agents" replace />;
 
@@ -143,6 +150,7 @@ const AgentChatPage = () => {
   const reset = () => {
     setMessages([]);
     if (storageKey) { try { localStorage.removeItem(storageKey); } catch { /* ignore */ } }
+    void clearChat(`agent.${agentId}`);
     inputRef.current?.focus();
   };
 

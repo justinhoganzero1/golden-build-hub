@@ -4,7 +4,7 @@ import { Bot, Send, X, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import ThinkingIndicator from "@/components/ThinkingIndicator";
-import { CHAT_MODELS, loadAgents, recordAgentReply, type ChatAgent } from "@/lib/chatAgents";
+import { CHAT_MODELS, loadAgents, recordAgentReply, syncAgentsFromCloud, loadLocalChat, loadCloudChat, saveChat, clearChat, type ChatAgent } from "@/lib/chatAgents";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 const AGENT_KEY = "oracle.story.agent";
@@ -33,17 +33,19 @@ export default function StoryAgentPanel(p: Props) {
   const agents = loadAgents();
   const [agentId, setAgentId] = useState(() => localStorage.getItem(AGENT_KEY) || "builtin:juzzy-author");
   const agent: ChatAgent = agents.find((a) => a.id === agentId) ?? agents[0];
-  const memKey = `oracle.story.chat.${p.bookId || "draft"}.${agent.id}`;
+  const memKey = `story.${p.bookId || "draft"}.${agent.id}`;
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { void syncAgentsFromCloud(); }, []);
   useEffect(() => {
-    try { setMsgs(JSON.parse(localStorage.getItem(memKey) || "[]")); } catch { setMsgs([]); }
+    setMsgs(loadLocalChat<Msg>(memKey));
+    void loadCloudChat<Msg>(memKey).then((m) => { if (m) setMsgs(m); });
   }, [memKey]);
   useEffect(() => {
-    if (msgs.length && !busy) localStorage.setItem(memKey, JSON.stringify(msgs.slice(-40)));
+    if (msgs.length && !busy) void saveChat(memKey, msgs);
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, busy, memKey]);
 
@@ -121,7 +123,7 @@ export default function StoryAgentPanel(p: Props) {
             {agents.map((a) => <option key={a.id} value={a.id}>{a.name} · {CHAT_MODELS.find((m) => m.id === a.model)?.label ?? ""}</option>)}
           </select>
         </div>
-        <button onClick={() => { setMsgs([]); localStorage.removeItem(memKey); }} aria-label="New conversation" className="p-1.5 text-muted-foreground hover:text-foreground"><RotateCcw className="w-4 h-4" /></button>
+        <button onClick={() => { setMsgs([]); void clearChat(memKey); }} aria-label="New conversation" className="p-1.5 text-muted-foreground hover:text-foreground"><RotateCcw className="w-4 h-4" /></button>
         <button onClick={() => setOpen(false)} aria-label="Close" className="p-1.5 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
       </div>
       <p className="px-3 py-1 text-[10px] text-muted-foreground border-b border-border truncate">
