@@ -79,6 +79,8 @@ const loaders = {
   "/wallet": () => import("./pages/WalletPage"),
   "/get-started": () => import("./pages/GetStartedPage"),
   "/my-account": () => import("./pages/MemberDashboardPage"),
+  "/author-dashboard": () => import("./pages/AuthorDashboardPage"),
+  "/my-apps": () => import("./pages/MyAppsPage"),
   "/founder-vault": () => import("./pages/FounderVaultPage"),
   "/free-zone": () => import("./pages/FreeZonePage"),
   "/founder-seats": () => import("./pages/FounderSeatsPage"),
@@ -214,6 +216,8 @@ const ProfilePage = lazy(loaders["/profile"]);
 const WalletPage = lazy(loaders["/wallet"]);
 const GetStartedPage = lazy(loaders["/get-started"]);
 const MemberDashboardPage = lazy(loaders["/my-account"]);
+const AuthorDashboardPage = lazy(loaders["/author-dashboard"]);
+const MyAppsPage = lazy(loaders["/my-apps"]);
 const FounderVaultPage = lazy(loaders["/founder-vault"]);
 const FreeZonePage = lazy(loaders["/free-zone"]);
 const FounderSeatsPage = lazy(loaders["/founder-seats"]);
@@ -386,6 +390,8 @@ const App = () => (
                   <Route path="/settings" element={<RequireAuth><ErrorBoundary pageName="Settings"><SettingsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/audio-filter" element={<RequireAuth><ErrorBoundary pageName="Audio Filter"><AudioFilterPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/profile" element={<RequireAuth><ErrorBoundary pageName="Profile"><ProfilePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/author-dashboard" element={<RequireAuth><ErrorBoundary pageName="Author Dashboard"><AuthorDashboardPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/my-apps" element={<RequireAuth freeAccess><ErrorBoundary pageName="My Apps"><MyAppsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/my-account" element={<RequireAuth freeAccess><ErrorBoundary pageName="My Account"><MemberDashboardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/founder-vault" element={<RequireAuth freeAccess><ErrorBoundary pageName="Member Vault"><FounderVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/founder-seats" element={<RequireAuth freeAccess><ErrorBoundary pageName="Founder Seats"><FounderSeatsPage /></ErrorBoundary></RequireAuth>} />
