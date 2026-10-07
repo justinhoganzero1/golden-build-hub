@@ -61,6 +61,7 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 import AgentPicker from "@/components/AgentPicker";
+import ThinkingIndicator from "@/components/ThinkingIndicator";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
@@ -2957,7 +2958,7 @@ const OraclePage = () => {
           <button onClick={() => setShowFriendPanel(!showFriendPanel)} className="p-2 rounded-full border border-[#FFAA00]/30 bg-black/50 backdrop-blur relative">
             <Users className="w-5 h-5 text-[#FFAA00]" />
             {activeAgents.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 text-[9px] text-white flex items-center justify-center font-bold">{activeAgents.length}</span>
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center font-bold">{activeAgents.length}</span>
             )}
           </button>
         </div>
@@ -3083,7 +3084,6 @@ const OraclePage = () => {
                       <p className="text-xs text-white font-medium truncate">{a.name}</p>
                       <p className="text-[9px] text-gray-500 truncate">{a.voice_style}</p>
                     </div>
-                    <div className={`w-2 h-2 rounded-full ${a.active ? "bg-green-500" : "bg-gray-600"}`} />
                   </button>
                 ))}
               </div>
@@ -3270,6 +3270,7 @@ const OraclePage = () => {
             {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
+        <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
             {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
@@ -3372,9 +3373,6 @@ const OraclePage = () => {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${debateActive ? "bg-orange-500 animate-pulse" : isSpeaking ? "bg-[#FFAA00] animate-pulse" : "bg-green-500"}`} />
-          <span className="text-xs text-gray-400">{debateActive ? "DEBATING" : isSpeaking ? "SPEAKING" : "READY"}</span>
-          <span className="text-xs text-gray-600">|</span>
           <span className="text-xs text-[#FFAA00]">{oracleName} + {activeAgents.length} agents</span>
         </div>
       </div>

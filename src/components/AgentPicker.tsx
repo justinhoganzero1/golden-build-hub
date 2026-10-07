@@ -14,6 +14,7 @@ export default function AgentPicker() {
   return (
     <div className="fixed top-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-full border border-primary/40 bg-background/80 backdrop-blur px-3 py-1.5">
       <Bot className="w-4 h-4 text-primary shrink-0" />
+      <span className="text-[10px] text-muted-foreground hidden sm:inline">Current Agent</span>
       <select
         aria-label="Choose AI agent"
         value={active}
