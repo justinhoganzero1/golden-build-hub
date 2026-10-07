@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Info } from "lucide-react";
+import { Bot, Info, GripVertical } from "lucide-react";
 import { CHAT_MODELS, loadAgents, getActiveAgentId, setActiveAgentId, getActiveAgent, type ChatAgent } from "@/lib/chatAgents";
 
 const COST_LABEL = { low: "Low cost per reply", mid: "Medium cost per reply", high: "Higher cost per reply" } as const;
