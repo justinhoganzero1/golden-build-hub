@@ -45,13 +45,23 @@ export async function syncAgentsFromCloud(): Promise<void> {
     supabase.from("user_agents").select("id,name,model,personality").order("created_at"),
     supabase.from("agent_stats").select("agent_key,replies,words,cents_est"),
   ]);
+  const localMine: ChatAgent[] = (() => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } })();
+  if (rows && rows.length === 0 && localMine.length) {
+    // First sync on this account: upload agents made on this device instead of wiping them.
+    await pushAgents(localMine.map((a) => (/^[0-9a-f-]{36}$/i.test(a.id) ? a : { ...a, id: crypto.randomUUID() })));
+    return syncAgentsFromCloud();
+  }
   if (rows) {
     const mine: ChatAgent[] = rows.map((r) => ({
       id: r.id, name: r.name, model: r.model, personality: r.personality ?? "",
     }));
     localStorage.setItem(KEY, JSON.stringify(mine));
   }
-  if (stats) {
+  if (stats && stats.length === 0) {
+    const local = loadAgentStats();
+    const entries = Object.entries(local);
+    if (entries.length) await supabase.from("agent_stats").upsert(entries.map(([k, v]) => ({ user_id: id, agent_key: k, replies: v.replies, words: v.words, cents_est: v.centsEst })));
+  } else if (stats) {
     const map: Record<string, AgentStat> = {};
     for (const s of stats) map[s.agent_key] = { replies: s.replies, words: s.words, centsEst: Number(s.cents_est) };
     localStorage.setItem(STATS_KEY, JSON.stringify(map));
