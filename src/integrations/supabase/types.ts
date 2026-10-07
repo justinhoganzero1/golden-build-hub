@@ -134,6 +134,27 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_chats: {
+        Row: {
+          messages: Json
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          messages?: Json
+          scope: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          messages?: Json
+          scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_controls: {
         Row: {
           agents_enabled: boolean
@@ -161,6 +182,33 @@ export type Database = {
           max_spend_per_invocation_cents?: number
           paused_reason?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      agent_stats: {
+        Row: {
+          agent_key: string
+          cents_est: number
+          replies: number
+          updated_at: string
+          user_id: string
+          words: number
+        }
+        Insert: {
+          agent_key: string
+          cents_est?: number
+          replies?: number
+          updated_at?: string
+          user_id?: string
+          words?: number
+        }
+        Update: {
+          agent_key?: string
+          cents_est?: number
+          replies?: number
+          updated_at?: string
+          user_id?: string
+          words?: number
         }
         Relationships: []
       }
@@ -660,6 +708,33 @@ export type Database = {
           isbn?: string | null
           marketplace?: string | null
           story_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      book_goals: {
+        Row: {
+          current_score: number | null
+          notes: string
+          story_id: string
+          target_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_score?: number | null
+          notes?: string
+          story_id: string
+          target_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          current_score?: number | null
+          notes?: string
+          story_id?: string
+          target_score?: number
           updated_at?: string
           user_id?: string
         }
@@ -3199,6 +3274,36 @@ export type Database = {
           id?: string
           last_promo_shown_at?: string | null
           promo_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_agents: {
+        Row: {
+          created_at: string
+          id: string
+          model: string
+          name: string
+          personality: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model: string
+          name: string
+          personality?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string
+          name?: string
+          personality?: string
           updated_at?: string
           user_id?: string
         }
