@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bot, Info, GripVertical } from "lucide-react";
-import { CHAT_MODELS, loadAgents, getActiveAgentId, setActiveAgentId, getActiveAgent, type ChatAgent } from "@/lib/chatAgents";
+import { CHAT_MODELS, loadAgents, getActiveAgentId, setActiveAgentId, getActiveAgent, type ChatAgent , syncAgentsFromCloud } from "@/lib/chatAgents";
 
 const COST_LABEL = { low: "Low cost per reply", mid: "Medium cost per reply", high: "Higher cost per reply" } as const;
 
@@ -9,6 +9,7 @@ export default function AgentPicker() {
   const [agents, setAgents] = useState<ChatAgent[]>(loadAgents());
   const [active, setActive] = useState(getActiveAgentId());
   const [showInfo, setShowInfo] = useState(false);
+  useEffect(() => { void syncAgentsFromCloud(); }, []);
   useEffect(() => {
     const h = () => { setAgents(loadAgents()); setActive(getActiveAgentId()); };
     window.addEventListener("oracle-agents-changed", h);

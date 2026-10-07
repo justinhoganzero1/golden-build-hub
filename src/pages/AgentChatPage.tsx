@@ -8,6 +8,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import AgentKeyPanel from "@/components/AgentKeyPanel";
 import ThinkingIndicator from "@/components/ThinkingIndicator";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import { saveChat, loadCloudChat, clearChat } from "@/lib/chatAgents";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
