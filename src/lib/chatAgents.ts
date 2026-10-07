@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 // Member-made AI agents. Saved in this browser; each picks one AI brain.
 // The model list must match ALLOWED_MODELS in supabase/functions/oracle-chat.
 export type ChatModel = { id: string; label: string; maker: string; note: string; cost: "low" | "mid" | "high" };
@@ -29,6 +30,58 @@ export const BUILTIN_AGENTS: ChatAgent[] = [
   },
 ];
 
+// ── Cloud sync (so agents, stats and chats follow the member between devices)
+
+async function uid(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+/** Pull this member's agents + stats from the cloud into the local cache. */
+export async function syncAgentsFromCloud(): Promise<void> {
+  const id = await uid();
+  if (!id) return;
+  const [{ data: rows }, { data: stats }] = await Promise.all([
+    supabase.from("user_agents").select("id,name,model,personality").order("created_at"),
+    supabase.from("agent_stats").select("agent_key,replies,words,cents_est"),
+  ]);
+  const localMine: ChatAgent[] = (() => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } })();
+  if (rows && rows.length === 0 && localMine.length) {
+    // First sync on this account: upload agents made on this device instead of wiping them.
+    await pushAgents(localMine.map((a) => (/^[0-9a-f-]{36}$/i.test(a.id) ? a : { ...a, id: crypto.randomUUID() })));
+    return syncAgentsFromCloud();
+  }
+  if (rows) {
+    const mine: ChatAgent[] = rows.map((r) => ({
+      id: r.id, name: r.name, model: r.model, personality: r.personality ?? "",
+    }));
+    localStorage.setItem(KEY, JSON.stringify(mine));
+  }
+  if (stats && stats.length === 0) {
+    const local = loadAgentStats();
+    const entries = Object.entries(local);
+    if (entries.length) await supabase.from("agent_stats").upsert(entries.map(([k, v]) => ({ user_id: id, agent_key: k, replies: v.replies, words: v.words, cents_est: v.centsEst })));
+  } else if (stats) {
+    const map: Record<string, AgentStat> = {};
+    for (const s of stats) map[s.agent_key] = { replies: s.replies, words: s.words, centsEst: Number(s.cents_est) };
+    localStorage.setItem(STATS_KEY, JSON.stringify(map));
+  }
+  window.dispatchEvent(new Event("oracle-agents-changed"));
+}
+
+async function pushAgents(list: ChatAgent[]) {
+  const id = await uid();
+  if (!id) return;
+  const mine = list.filter((a) => !a.id.startsWith("builtin:"));
+  const ids = mine.map((a) => a.id);
+  await supabase.from("user_agents").upsert(
+    mine.map((a) => ({ id: a.id, user_id: id, name: a.name, model: a.model, personality: a.personality, updated_at: new Date().toISOString() })),
+  );
+  let del = supabase.from("user_agents").delete().eq("user_id", id);
+  if (ids.length) del = del.not("id", "in", `(${ids.join(",")})`);
+  await del;
+}
+
 export function loadAgents(): ChatAgent[] {
   if (typeof window === "undefined") return BUILTIN_AGENTS;
   let mine: ChatAgent[] = [];
@@ -38,6 +91,7 @@ export function loadAgents(): ChatAgent[] {
 export function saveAgents(list: ChatAgent[]) {
   localStorage.setItem(KEY, JSON.stringify(list.filter((a) => !a.id.startsWith("builtin:"))));
   window.dispatchEvent(new Event("oracle-agents-changed"));
+  void pushAgents(list);
 }
 export function getActiveAgentId(): string {
   return (typeof window !== "undefined" && localStorage.getItem(ACTIVE_KEY)) || "auto";
@@ -76,5 +130,34 @@ export function recordAgentReply(agent: ChatAgent | null, text: string) {
   s.centsEst += TIER_CENTS[tier] * 1.2;
   stats[key] = s;
   localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  void (async () => {
+    const id = await uid();
+    if (id) await supabase.from("agent_stats").upsert({ user_id: id, agent_key: key, replies: s.replies, words: s.words, cents_est: s.centsEst, updated_at: new Date().toISOString() });
+  })();
   window.dispatchEvent(new Event("oracle-agents-changed"));
+}
+
+// ── Chat history that follows the member between devices.
+export function loadLocalChat<T>(scope: string): T[] {
+  try { return JSON.parse(localStorage.getItem(`oracle.chat.${scope}`) || "[]"); } catch { return []; }
+}
+export async function loadCloudChat<T>(scope: string): Promise<T[] | null> {
+  if (!(await uid())) return null;
+  const { data } = await supabase.from("agent_chats").select("messages").eq("scope", scope).maybeSingle();
+  if (!data) return null;
+  const msgs = (data.messages as unknown as T[]) ?? [];
+  localStorage.setItem(`oracle.chat.${scope}`, JSON.stringify(msgs));
+  return msgs;
+}
+export async function saveChat<T>(scope: string, msgs: T[]): Promise<void> {
+  const trimmed = msgs.slice(-50);
+  localStorage.setItem(`oracle.chat.${scope}`, JSON.stringify(trimmed));
+  const id = await uid();
+  if (!id) return;
+  await supabase.from("agent_chats").upsert({ user_id: id, scope, messages: trimmed as never, updated_at: new Date().toISOString() });
+}
+export async function clearChat(scope: string): Promise<void> {
+  localStorage.removeItem(`oracle.chat.${scope}`);
+  const id = await uid();
+  if (id) await supabase.from("agent_chats").delete().eq("user_id", id).eq("scope", scope);
 }

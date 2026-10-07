@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bot, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { CHAT_MODELS, loadAgents, saveAgents, setActiveAgentId, loadAgentStats, type ChatAgent } from "@/lib/chatAgents";
+import { CHAT_MODELS, loadAgents, saveAgents, setActiveAgentId, loadAgentStats, type ChatAgent , syncAgentsFromCloud } from "@/lib/chatAgents";
 
 export default function MyAgentsSection() {
   const [agents, setAgents] = useState<ChatAgent[]>(loadAgents());
@@ -10,8 +10,9 @@ export default function MyAgentsSection() {
   const [personality, setPersonality] = useState("");
 
   const [stats, setStats] = useState(loadAgentStats());
+  useEffect(() => { void syncAgentsFromCloud(); }, []);
   useEffect(() => {
-    const h = () => setStats(loadAgentStats());
+    const h = () => { setStats(loadAgentStats()); setAgents(loadAgents()); };
     window.addEventListener("oracle-agents-changed", h);
     return () => window.removeEventListener("oracle-agents-changed", h);
   }, []);

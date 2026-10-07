@@ -22,3 +22,7 @@
 - [x] My books on Amazon page (ISBN/ASIN/link) + Buy on Amazon button on book pages
 - [ ] Stronger human check (Cloudflare Turnstile) — needs Juzzy's free Cloudflare keys
 - [x] Module Shop: members make/sell quiz games & trackers, 80/20 split
+- [x] Agents, agent stats and agent chats saved to the member's account (follow between devices)
+- [x] Author Dashboard (/author-dashboard) with bestseller goal tracker
+- [x] My Apps page (/my-apps)
+- [ ] Chat360 connector end-to-end — only Juzzy can sign in and tap Allow inside Chat360
