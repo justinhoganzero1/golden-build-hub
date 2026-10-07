@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import AgentKeyPanel from "@/components/AgentKeyPanel";
+import ThinkingIndicator from "@/components/ThinkingIndicator";
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -205,6 +206,7 @@ const AgentChatPage = () => {
       </div>
 
       <div className="border-t border-border/50 p-3 max-w-3xl mx-auto w-full">
+        <ThinkingIndicator active={loading} />
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}

@@ -1664,3 +1664,18 @@ img, video {
   --ring: 45 100% 55%;
   --accent: 40 85% 45%;
 }
+
+/* Orange "AI working" indicator — only visible while a reply is generating. */
+:root { --thinking: 25 95% 53%; }
+.thinking-pill {
+  color: hsl(var(--thinking));
+  background: hsl(var(--thinking) / 0.12);
+  border: 1px solid hsl(var(--thinking) / 0.5);
+  animation: thinking-pulse 1.4s ease-in-out infinite;
+}
+.thinking-dot { background: hsl(var(--thinking)); box-shadow: 0 0 8px hsl(var(--thinking)); }
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 hsl(var(--thinking) / 0.35); }
+  50% { opacity: 0.75; box-shadow: 0 0 0 6px hsl(var(--thinking) / 0); }
+}
+@media (prefers-reduced-motion: reduce) { .thinking-pill { animation: none; } }
