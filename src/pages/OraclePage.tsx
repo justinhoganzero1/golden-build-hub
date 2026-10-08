@@ -3271,7 +3271,7 @@ const OraclePage = () => {
           </div>
         )}
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
-        <div data-testid="oracle-composer" className="rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
+        <div data-testid="oracle-composer" className="relative rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
           <AgentPicker />
           <textarea
             value={input}
