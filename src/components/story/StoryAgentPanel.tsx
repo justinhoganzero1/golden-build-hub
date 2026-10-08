@@ -28,7 +28,7 @@ const QUICK = [
   "Suggest a stronger ending hook for this chapter.",
 ];
 
-const POS_KEY = "oracle.story.agent.pos";
+const POS_KEY = "oracle.story.agent.pos.v2";
 
 export default function StoryAgentPanel(p: Props) {
   const [open, setOpen] = useState(false);
