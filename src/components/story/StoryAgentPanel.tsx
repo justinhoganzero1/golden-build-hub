@@ -28,6 +28,8 @@ const QUICK = [
   "Suggest a stronger ending hook for this chapter.",
 ];
 
+const POS_KEY = "oracle.story.agent.pos";
+
 export default function StoryAgentPanel(p: Props) {
   const [open, setOpen] = useState(false);
   const agents = loadAgents();
@@ -38,6 +40,15 @@ export default function StoryAgentPanel(p: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  // Draggable pill position (closed state only)
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(POS_KEY) || "null");
+      if (s && typeof s.x === "number" && typeof s.y === "number") return s;
+    } catch { /* ignore */ }
+    return { x: 16, y: 80 };
+  });
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
 
   useEffect(() => { void syncAgentsFromCloud(); }, []);
   useEffect(() => {
