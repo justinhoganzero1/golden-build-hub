@@ -28,7 +28,7 @@ const QUICK = [
   "Suggest a stronger ending hook for this chapter.",
 ];
 
-const POS_KEY = "oracle.story.agent.pos";
+const POS_KEY = "oracle.story.agent.pos.v2";
 
 export default function StoryAgentPanel(p: Props) {
   const [open, setOpen] = useState(false);
@@ -46,7 +46,7 @@ export default function StoryAgentPanel(p: Props) {
       const s = JSON.parse(localStorage.getItem(POS_KEY) || "null");
       if (s && typeof s.x === "number" && typeof s.y === "number") return s;
     } catch { /* ignore */ }
-    return { x: 16, y: 80 };
+    return { x: 16, y: 120 };
   });
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
 
@@ -74,8 +74,9 @@ export default function StoryAgentPanel(p: Props) {
     const dy = e.clientY - d.startY;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
-    const w = e.currentTarget.offsetWidth || 100;
+    const w = e.currentTarget.offsetWidth || 44;
     const h = e.currentTarget.offsetHeight || 44;
+
     // Pill is anchored by right/bottom offsets, so dragging right/down shrinks them
     const x = Math.min(Math.max(d.origX - dx, 8), window.innerWidth - w - 8);
     const y = Math.min(Math.max(d.origY - dy, 8), window.innerHeight - h - 8);
@@ -150,11 +151,12 @@ export default function StoryAgentPanel(p: Props) {
         onPointerCancel={onDragEnd}
         aria-label="Open author agent" title="Author agent — drag to move"
         style={{ right: pos.x, left: "auto", bottom: pos.y, top: "auto", touchAction: "none" }}
-        className="fixed z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold select-none cursor-grab active:cursor-grabbing">
-        <Bot className="w-5 h-5" /> Agent
+        className="fixed z-40 flex items-center justify-center h-11 w-11 rounded-full bg-accent-blue text-primary-foreground shadow-[0_0_22px_hsl(var(--accent-blue-glow)/0.45)] select-none cursor-grab active:cursor-grabbing">
+        <Bot className="w-5 h-5" />
       </button>
     );
   }
+
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 sm:inset-auto sm:right-4 sm:bottom-4 sm:w-[420px] h-[75vh] sm:h-[600px] flex flex-col rounded-t-2xl sm:rounded-2xl border border-primary/40 bg-background shadow-2xl">
