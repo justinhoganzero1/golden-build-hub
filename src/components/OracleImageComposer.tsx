@@ -146,7 +146,8 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
         type="button"
         onClick={() => setOpen(true)}
         title="Create image with details"
-        className="p-2 rounded-full bg-[#FFAA00]/20 hover:bg-[#FFAA00]/40 transition-colors"
+        aria-label="Create image with details"
+        className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-[#FFAA00]/20 hover:bg-[#FFAA00]/40 transition-colors"
       >
         <ImagePlus className="w-5 h-5 text-[#FFAA00]" />
       </button>
