@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Consolidate Oracle into one chat; place equal-size speaker/tools in the composer; pale-blue upward expanding menus; verify signed-in controls.
 - [ ] Rewrite Zero Protocol completely: rewrite controls and atomic safety are built; all 18 chapters and the clean ElevenLabs manuscript are blocked because the workspace has 0 spendable AI credits. The saved 59,510-word original is unchanged.
 - [x] Kindle panel: step-by-step KDP account + upload guide, sci-fi details for Zero Protocol
 - [x] Wallet: balance, top-up prices, real card payment, what uses coins
