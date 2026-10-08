@@ -46,7 +46,7 @@ export default function StoryAgentPanel(p: Props) {
       const s = JSON.parse(localStorage.getItem(POS_KEY) || "null");
       if (s && typeof s.x === "number" && typeof s.y === "number") return s;
     } catch { /* ignore */ }
-    return { x: 16, y: 80 };
+    return { x: 16, y: 120 };
   });
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
 
