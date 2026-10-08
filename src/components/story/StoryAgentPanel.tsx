@@ -28,6 +28,8 @@ const QUICK = [
   "Suggest a stronger ending hook for this chapter.",
 ];
 
+const POS_KEY = "oracle.story.agent.pos";
+
 export default function StoryAgentPanel(p: Props) {
   const [open, setOpen] = useState(false);
   const agents = loadAgents();
@@ -38,6 +40,15 @@ export default function StoryAgentPanel(p: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  // Draggable pill position (closed state only)
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(POS_KEY) || "null");
+      if (s && typeof s.x === "number" && typeof s.y === "number") return s;
+    } catch { /* ignore */ }
+    return { x: 16, y: 80 };
+  });
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
 
   useEffect(() => { void syncAgentsFromCloud(); }, []);
   useEffect(() => {
@@ -50,6 +61,33 @@ export default function StoryAgentPanel(p: Props) {
   }, [msgs, busy, memKey]);
 
   const pickAgent = (id: string) => { setAgentId(id); localStorage.setItem(AGENT_KEY, id); };
+
+  // Drag-to-move for the closed pill (tap still opens the chat)
+  const onDragStart = (e: React.PointerEvent<HTMLButtonElement>) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDragMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
+    if (!d.moved) return;
+    const w = e.currentTarget.offsetWidth || 100;
+    const h = e.currentTarget.offsetHeight || 44;
+    // Pill is anchored by right/bottom offsets, so dragging right/down shrinks them
+    const x = Math.min(Math.max(d.origX - dx, 8), window.innerWidth - w - 8);
+    const y = Math.min(Math.max(d.origY - dy, 8), window.innerHeight - h - 8);
+    setPos({ x, y });
+  };
+  const onDragEnd = () => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    if (!d.moved) { setOpen(true); return; }
+    setPos((cur) => { localStorage.setItem(POS_KEY, JSON.stringify(cur)); return cur; });
+  };
 
   const send = async (text: string) => {
     const t = text.trim();
@@ -105,8 +143,14 @@ export default function StoryAgentPanel(p: Props) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} aria-label="Open author agent" title="Author agent"
-        className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold">
+      <button
+        onPointerDown={onDragStart}
+        onPointerMove={onDragMove}
+        onPointerUp={onDragEnd}
+        onPointerCancel={onDragEnd}
+        aria-label="Open author agent" title="Author agent — drag to move"
+        style={{ right: pos.x, left: "auto", bottom: pos.y, top: "auto", touchAction: "none" }}
+        className="fixed z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold select-none cursor-grab active:cursor-grabbing">
         <Bot className="w-5 h-5" /> Agent
       </button>
     );
