@@ -96,7 +96,10 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
           <div
             role="text"
             aria-label="Oracle Lunar"
-            className="text-4xl sm:text-7xl font-black tracking-[0.22em] leading-none"
+            className="font-black leading-none whitespace-nowrap"
+            // Scales to the viewport so the wordmark never spills off-screen
+            // eslint-disable-next-line react/style-prop-object
+            data-wordmark
             style={{
               fontFamily: "'Cinzel','Trajan Pro',Georgia,serif",
               backgroundImage:
