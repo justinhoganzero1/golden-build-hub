@@ -74,8 +74,9 @@ export default function StoryAgentPanel(p: Props) {
     const dy = e.clientY - d.startY;
     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
     if (!d.moved) return;
-    const w = e.currentTarget.offsetWidth || 100;
+    const w = e.currentTarget.offsetWidth || 44;
     const h = e.currentTarget.offsetHeight || 44;
+
     // Pill is anchored by right/bottom offsets, so dragging right/down shrinks them
     const x = Math.min(Math.max(d.origX - dx, 8), window.innerWidth - w - 8);
     const y = Math.min(Math.max(d.origY - dy, 8), window.innerHeight - h - 8);
