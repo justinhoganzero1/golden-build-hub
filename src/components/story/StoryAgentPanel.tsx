@@ -148,7 +148,7 @@ export default function StoryAgentPanel(p: Props) {
         onPointerUp={onDragEnd}
         onPointerCancel={onDragEnd}
         aria-label="Open author agent" title="Author agent — drag to move"
-        style={{ right: "auto", left: pos.x, top: "auto", bottom: pos.y, touchAction: "none" }}
+        style={{ right: pos.x, left: "auto", bottom: pos.y, top: "auto", touchAction: "none" }}
         className="fixed z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold select-none cursor-grab active:cursor-grabbing">
         <Bot className="w-5 h-5" /> Agent
       </button>
