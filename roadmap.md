@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Fix critical publishing security findings, rescan, then republish.
-- [ ] 360 Copilot connector: needs the exact service link and Juzzy's approval; chapter 25 awaits his title/text; verify covers and pictures before/after saving.
+- [ ] Republish — awaiting Juzzy's choice whether to address critical security findings first.
+- [ ] Chat30 connector: awaiting exact service link and chapter 25 content; verify covers and pictures before/after saving.
 - [x] Consolidate Oracle into one chat; equal-size speaker/tools inside composer; pale-blue upward expanding choices. Verified 393px viewport, tool navigation, canonical route, and no runtime errors; paid operations not tested.
 - [ ] Rewrite Zero Protocol completely: rewrite controls and atomic safety are built; all 18 chapters and the clean ElevenLabs manuscript are blocked because the workspace has 0 spendable AI credits. The saved 59,510-word original is unchanged.
 - [x] Kindle panel: step-by-step KDP account + upload guide, sci-fi details for Zero Protocol
