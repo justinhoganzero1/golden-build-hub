@@ -294,20 +294,17 @@ var saveBookChapterTool = defineTool6({
   handler: async ({ book_id, chapter_number, title, content }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
-      const doc = await loadDoc(ctx, book_id);
-      const chapters = [...doc.chapters];
-      if (chapter_number > chapters.length + 1) {
-        return mcpOk({ saved: false, message: `Book has ${chapters.length} chapters; use ${chapters.length + 1} to add a new one.` });
-      }
-      const prev = chapters[chapter_number - 1];
-      chapters[chapter_number - 1] = { ...prev ?? {}, title, content };
-      const { error } = await userClient5(ctx).rpc("save_story_writer_document", {
+      const { data, error } = await userClient5(ctx).rpc("save_story_chapter_text", {
         _story_id: book_id,
-        _title: doc.title,
-        _metadata: { ...doc.metadata, chapters }
+        _chapter_number: chapter_number,
+        _title: title,
+        _content: content
       });
-      if (error) return fromPostgrestError(error);
-      return mcpOk({ saved: true, chapter_number, words: words(content), total_chapters: chapters.length });
+      if (error) {
+        if (/use \d+ to add a new one/.test(error.message)) return mcpOk({ saved: false, message: error.message });
+        return fromPostgrestError(error);
+      }
+      return mcpOk({ saved: true, chapter_number, words: words(content), total_chapters: Number(data) });
     } catch (err) {
       return fromUnknown(err);
     }
