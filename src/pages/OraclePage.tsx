@@ -24,6 +24,7 @@ import { saveOracleTextTurn } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { resolveOracleCommand, dispatchOracleCommand, stripOracleMarkers } from "@/lib/oracleControl";
 import OracleImageComposer from "@/components/OracleImageComposer";
+import OracleToolsMenu from "@/components/oracle/OracleToolsMenu";
 import SwarmAgentsButton from "@/components/oracle/SwarmAgentsButton";
 
 interface Message {
@@ -3269,43 +3270,9 @@ const OraclePage = () => {
             {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
-        <AgentPicker />
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
-        <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
-          <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
-            {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
-          </button>
-          <input
-            ref={uploadInputRef}
-            type="file"
-            accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv"
-            className="hidden"
-            onChange={handleUpload}
-          />
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={uploading}
-            title="Attach photo or file"
-            className="p-2 rounded-full bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-50 transition-colors"
-          >
-            <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
-          </button>
-          <OracleImageComposer />
-          <button
-            type="button"
-            onClick={() => {
-              const next = !councilMode;
-              setCouncilMode(next);
-              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
-              toast(next
-                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
-                : "Council off — it's just me answering now.");
-            }}
-            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
-            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
-          >
-            <Gavel className="w-5 h-5" />
-          </button>
+        <div data-testid="oracle-composer" className="relative rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
+          <AgentPicker />
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -3327,12 +3294,59 @@ const OraclePage = () => {
               }
             }}
             placeholder={`Speak, type, paste, or attach for ${oracleName}...`}
-            rows={1}
+            rows={2}
             spellCheck
             autoCapitalize="sentences"
-            className="flex-1 bg-transparent text-white text-sm placeholder:text-gray-500 outline-none resize-none max-h-32 py-1.5 select-text"
+            className="w-full min-w-0 bg-transparent text-[#dbeeff] text-sm placeholder:text-sky-100/60 outline-none resize-none max-h-32 py-1.5 select-text"
             style={{ userSelect: "text", WebkitUserSelect: "text" }}
           />
+
+          <div className="flex items-center gap-2 px-1">
+          <button onClick={toggleMic} aria-label="Toggle Oracle microphone" className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
+            {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
+          </button>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <button
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={uploading}
+            title="Attach photo or file"
+            aria-label="Attach photo or file" className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-50 transition-colors"
+          >
+            <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
+          </button>
+          <OracleImageComposer />
+          <button onClick={toggleMute} aria-label={isMuted ? "Unmute Oracle speaker" : "Mute Oracle speaker"} className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full border transition-all ${isMuted ? "border-red-500/40 bg-red-600/20" : "border-green-500/40 bg-green-600/20"}`}>
+            {isMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
+          </button>
+          <OracleToolsMenu>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !councilMode;
+              setCouncilMode(next);
+              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
+              toast(next
+                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
+                : "Council off — it's just me answering now.");
+            }}
+            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
+            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
+          >
+            <Gavel className="w-5 h-5" />
+          </button>
+          <SwarmAgentsButton
+            currentInput={input}
+            onResult={(markdown) =>
+              setMessages(prev => [...prev, { id: `swarm-${Date.now()}`, role: "assistant", sender: `${oracleName} Swarm`, emoji: "🐝", color: "#FFD700", content: markdown } as any])
+            }
+          />
+          </OracleToolsMenu>
           <button
             type="button"
             onClick={async () => {
@@ -3344,28 +3358,20 @@ const OraclePage = () => {
               }
             }}
             title="Paste from clipboard"
-            className="p-2 rounded-full bg-purple-500/20 hover:bg-purple-500/40 transition-colors text-purple-300 text-[10px] font-semibold"
+            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-purple-500/20 hover:bg-purple-500/40 transition-colors text-[#dbeeff] text-[10px] font-semibold"
           >
             Paste
           </button>
-          <button onClick={() => sendMessage(input)} disabled={!input.trim()} className="p-2 rounded-full bg-[#FFAA00] disabled:opacity-30">
+          <button aria-label="Send message" onClick={() => sendMessage(input)} disabled={!input.trim()} className="h-9 w-9 ml-auto shrink-0 flex items-center justify-center rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
           </button>
+          </div>
         </div>
       </div>
 
       {/* Status bar */}
       <div className="flex flex-col items-center pb-3 gap-2 z-10" style={{ background: "#0a0a0a" }}>
         <div className="flex items-center gap-3">
-          <button onClick={toggleMute} className={`p-2 rounded-full border transition-all ${isMuted ? "border-red-500/40 bg-red-600/20" : "border-green-500/40 bg-green-600/20"}`}>
-            {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-green-400" />}
-          </button>
-          <SwarmAgentsButton
-            currentInput={input}
-            onResult={(markdown) =>
-              setMessages(prev => [...prev, { id: `swarm-${Date.now()}`, role: "assistant", sender: `${oracleName} Swarm`, emoji: "🐝", color: "#FFD700", content: markdown } as any])
-            }
-          />
           {activeAgents.length >= 2 && (
             <button onClick={() => setShowDebate(p => !p)} className={`px-2 py-1 rounded-full border text-[9px] font-medium transition-all ${showDebate ? "border-orange-500/40 bg-orange-600/20 text-orange-300" : "border-gray-700 bg-gray-800/50 text-gray-500"}`}>
               {showDebate ? "🔥 Debates On" : "Debates Off"}
