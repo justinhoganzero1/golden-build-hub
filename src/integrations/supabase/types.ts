@@ -4672,6 +4672,15 @@ export type Database = {
         }
         Returns: string
       }
+      save_story_chapter_text: {
+        Args: {
+          _chapter_number: number
+          _content: string
+          _story_id: string
+          _title: string
+        }
+        Returns: number
+      }
       save_story_writer_document: {
         Args: { _metadata: Json; _story_id: string; _title: string }
         Returns: string

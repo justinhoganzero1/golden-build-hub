@@ -8,6 +8,13 @@
       "when": 1791369308778,
       "tag": "0000_cloud_agents_chats_goals",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791421263092,
+      "tag": "0001_save_story_chapter_text",
+      "breakpoints": true
     }
   ]
 }
