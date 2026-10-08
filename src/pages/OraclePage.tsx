@@ -2879,7 +2879,6 @@ const OraclePage = () => {
       path="/oracle"
     />
     <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#0a0a0a" }}>
-      <AgentPicker />
       {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
       {explosionActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none" style={{ animation: "explosion-flash 2.2s ease-out forwards" }}>
@@ -3270,6 +3269,7 @@ const OraclePage = () => {
             {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
+        <AgentPicker />
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur">
           <button onClick={toggleMic} className={`p-2 rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
