@@ -97,11 +97,11 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
             role="text"
             aria-label="Oracle Lunar"
             className="font-black leading-none whitespace-nowrap"
-            // Scales to the viewport so the wordmark never spills off-screen
-            // eslint-disable-next-line react/style-prop-object
-            data-wordmark
             style={{
               fontFamily: "'Cinzel','Trajan Pro',Georgia,serif",
+              // Scales with the screen so the wordmark never spills off the sides
+              fontSize: "clamp(1.5rem, 8.5vw, 4.5rem)",
+              letterSpacing: "clamp(0.08em, 1.2vw, 0.22em)",
               backgroundImage:
                 "linear-gradient(180deg, hsl(48 100% 88%) 0%, hsl(45 100% 62%) 45%, hsl(38 100% 38%) 100%)",
               WebkitBackgroundClip: "text",
