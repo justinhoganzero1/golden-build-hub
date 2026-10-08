@@ -62,6 +62,32 @@ export default function StoryAgentPanel(p: Props) {
 
   const pickAgent = (id: string) => { setAgentId(id); localStorage.setItem(AGENT_KEY, id); };
 
+  // Drag-to-move for the closed pill (tap still opens the chat)
+  const onDragStart = (e: React.PointerEvent<HTMLButtonElement>) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDragMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.moved = true;
+    if (!d.moved) return;
+    const w = e.currentTarget.offsetWidth || 100;
+    const h = e.currentTarget.offsetHeight || 44;
+    const x = Math.min(Math.max(dx + d.origX, 8), window.innerWidth - w - 8);
+    const y = Math.min(Math.max(dy + d.origY, 8), window.innerHeight - h - 8);
+    setPos({ x, y });
+  };
+  const onDragEnd = () => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    if (!d.moved) { setOpen(true); return; }
+    setPos((cur) => { localStorage.setItem(POS_KEY, JSON.stringify(cur)); return cur; });
+  };
+
   const send = async (text: string) => {
     const t = text.trim();
     if (!t || busy) return;
@@ -116,8 +142,14 @@ export default function StoryAgentPanel(p: Props) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} aria-label="Open author agent" title="Author agent"
-        className="fixed bottom-20 right-4 z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold">
+      <button
+        onPointerDown={onDragStart}
+        onPointerMove={onDragMove}
+        onPointerUp={onDragEnd}
+        onPointerCancel={onDragEnd}
+        aria-label="Open author agent" title="Author agent — drag to move"
+        style={{ right: "auto", left: pos.x, top: "auto", bottom: pos.y, touchAction: "none" }}
+        className="fixed z-40 flex items-center gap-1.5 h-11 rounded-full bg-primary text-primary-foreground shadow-lg px-3 text-xs font-semibold select-none cursor-grab active:cursor-grabbing">
         <Bot className="w-5 h-5" /> Agent
       </button>
     );
