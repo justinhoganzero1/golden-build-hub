@@ -76,8 +76,9 @@ export default function StoryAgentPanel(p: Props) {
     if (!d.moved) return;
     const w = e.currentTarget.offsetWidth || 100;
     const h = e.currentTarget.offsetHeight || 44;
-    const x = Math.min(Math.max(dx + d.origX, 8), window.innerWidth - w - 8);
-    const y = Math.min(Math.max(dy + d.origY, 8), window.innerHeight - h - 8);
+    // Pill is anchored by right/bottom offsets, so dragging right/down shrinks them
+    const x = Math.min(Math.max(d.origX - dx, 8), window.innerWidth - w - 8);
+    const y = Math.min(Math.max(d.origY - dy, 8), window.innerHeight - h - 8);
     setPos({ x, y });
   };
   const onDragEnd = () => {
