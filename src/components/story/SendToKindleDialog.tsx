@@ -156,9 +156,18 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
     try {
       const file = await buildEpub();
       if (!file) return;
-      const fileBase64 = await toBase64(file);
+      // Upload the book to private storage; the server hands the email service a
+      // short-lived link, so even big illustrated books send reliably.
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Sign in to send to Kindle.");
+      const safeName = file.name.replace(/[^\w.\-]+/g, "-");
+      const storagePath = `${u.user.id}/${Date.now()}-${safeName}`;
+      const up = await supabase.storage.from("kindle-outbox").upload(storagePath, file, {
+        contentType: "application/epub+zip", upsert: false,
+      });
+      if (up.error) throw new Error("Couldn't upload the book: " + up.error.message);
       const { data, error } = await supabase.functions.invoke("send-to-kindle", {
-        body: { kindleEmail: kindleEmail.trim(), filename: file.name, title, fileBase64 },
+        body: { kindleEmail: kindleEmail.trim(), filename: safeName, title, storagePath },
       });
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);

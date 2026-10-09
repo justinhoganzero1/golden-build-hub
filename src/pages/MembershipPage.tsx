@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership, membershipActive } from "@/hooks/useMembership";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Crown, Sparkles } from "lucide-react";
+import { Crown, Sparkles, Lock, Unlock } from "lucide-react";
+
+const UPGRADE_FROM_KEY = "oracle.upgradeFrom";
 
 const MembershipPage = () => {
   const { user } = useAuth();
   const { membership, exempt, refresh } = useMembership();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const upgradeFrom = (location.state as any)?.upgradeFrom as string | undefined;
+  useEffect(() => {
+    if (upgradeFrom) try { sessionStorage.setItem(UPGRADE_FROM_KEY, upgradeFrom); } catch {}
+  }, [upgradeFrom]);
   const [left, setLeft] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [toEmail, setToEmail] = useState("");
@@ -32,7 +39,12 @@ const MembershipPage = () => {
           : "Payment still processing — refresh in a moment.");
       } else if (data.kind === "founder") {
         toast.success(`Welcome, Founding Member #${data.founder_number}!`);
-      } else toast.success("Membership active — welcome!");
+      } else {
+        toast.success("Full app unlocked — welcome!");
+        let back: string | null = null;
+        try { back = sessionStorage.getItem(UPGRADE_FROM_KEY); sessionStorage.removeItem(UPGRADE_FROM_KEY); } catch {}
+        if (back) setTimeout(() => navigate(back!, { replace: true }), 800);
+      }
       setParams({}, { replace: true });
       window.dispatchEvent(new Event("membership:updated"));
       refresh();
@@ -108,6 +120,27 @@ const MembershipPage = () => {
                 {membership?.kind === "monthly" && active ? "Active" : busy === "monthly" ? "Opening…" : "Join monthly"}
               </Button>
             </div>
+          </div>
+        )}
+
+        {membership?.founder_number && !(membership.monthly_active_until && new Date(membership.monthly_active_until).getTime() > Date.now()) && (
+          <div className="rounded-2xl border-2 border-primary p-6 space-y-4 bg-card">
+            {upgradeFrom && (
+              <p className="flex items-center gap-2 text-sm font-medium text-primary">
+                <Lock className="w-4 h-4" /> That page is part of the full app. Upgrade to open it.
+              </p>
+            )}
+            <div className="flex items-center gap-2 font-bold text-lg"><Unlock className="w-5 h-5 text-primary" /> Unlock the full app</div>
+            <p className="text-4xl font-bold">$19.99 <span className="text-base font-normal text-muted-foreground">AUD / month</span></p>
+            <ul className="text-sm space-y-1 text-muted-foreground">
+              <li>• Opens every page: video, voice, photo studio, app builder and more</li>
+              <li>• You keep your Founder seat #{membership.founder_number} and gold badge</li>
+              <li>• Cancel any time — you drop back to your Founder pages</li>
+              <li>• AI, voice and images are still paid from your wallet credit</li>
+            </ul>
+            <Button onClick={() => checkout("monthly")} disabled={!!busy} className="w-full">
+              {busy === "monthly" ? "Opening…" : "Upgrade to the full app"}
+            </Button>
           </div>
         )}
 
