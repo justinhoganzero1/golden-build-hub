@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
-      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; probe?: boolean; deliveryId?: string }
+      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; storagePath?: string; probe?: boolean; deliveryId?: string }
       | null;
     if (!body) return json({ error: "Invalid request body." }, 400);
 
@@ -148,18 +148,48 @@ Deno.serve(async (req) => {
     if (!filename.toLowerCase().endsWith(".epub")) {
       return json({ error: "Only EPUB files can be sent to Kindle." }, 400);
     }
+    // Large books: the browser uploads the EPUB to private storage and the email
+    // service fetches it from a short-lived link, so this worker never holds the
+    // whole book in memory.
+    const storagePath = typeof body.storagePath === "string" ? body.storagePath : "";
+    let attachment: Record<string, string>;
+    let fileSizeBytes = 0;
+    if (storagePath) {
+      if (!storagePath.startsWith(`${user.id}/`) || storagePath.includes("..") || !storagePath.toLowerCase().endsWith(".epub")) {
+        return json({ error: "Invalid book file reference." }, 400);
+      }
+      const base = Deno.env.get("SUPABASE_URL");
+      const encoded = storagePath.split("/").map(encodeURIComponent).join("/");
+      const signRes = await fetch(`${base}/storage/v1/object/sign/kindle-outbox/${encoded}`, {
+        method: "POST", headers: serviceHeaders, body: JSON.stringify({ expiresIn: 3600 }),
+      });
+      const signed = await signRes.json().catch(() => ({}));
+      if (!signRes.ok || !signed?.signedURL) return json({ error: "The uploaded book file could not be found. Try again." }, 400);
+      const fileUrl = `${base}/storage/v1${signed.signedURL}`;
+      const head = await fetch(fileUrl, { headers: { Range: "bytes=0-3" } });
+      const sig = new Uint8Array(await head.arrayBuffer());
+      const total = Number((head.headers.get("content-range") ?? "").split("/")[1] ?? 0);
+      if (sig[0] !== 0x50 || sig[1] !== 0x4b) {
+        return json({ error: "The EPUB is damaged or incomplete. Rebuild the book and try again." }, 400);
+      }
+      if (total > 38 * 1024 * 1024) {
+        return json({ error: "This book is too large to email to Kindle. Use Download EPUB and Send to Kindle web instead." }, 413);
+      }
+      fileSizeBytes = total;
+      attachment = { filename, path: fileUrl, content_type: "application/epub+zip" };
+    } else {
     if (fileBase64.length < 100) return json({ error: "The book file was empty." }, 400);
     if (!fileBase64.startsWith("UEsDB") || !/^[A-Za-z0-9+/=]+$/.test(fileBase64)) {
       return json({ error: "The EPUB is damaged or incomplete. Rebuild the book and try again." }, 400);
     }
-    // Hard cap well under Amazon's 50MB: the edge worker holds several copies of
-    // the payload while serialising it for Resend, so bigger books kill it.
-    // 15MB of base64 is roughly an 11MB EPUB.
     if (fileBase64.length > BASE64_LIMIT) {
       return json({
         error:
           "This book is too large to email to Kindle (over ~11MB). Use Download EPUB and drop the file into the Kindle app — the cover and illustrations are all inside.",
       }, 413);
+    }
+    fileSizeBytes = Math.floor(fileBase64.length * 0.75);
+    attachment = { filename, content: fileBase64, content_type: "application/epub+zip" };
     }
 
     const send = async (from: string) => {
@@ -176,11 +206,7 @@ Deno.serve(async (req) => {
             // Amazon uses the subject as the document title hint.
             subject: title,
             text: `${title} — delivered by Oracle Lunar.`,
-            attachments: [{
-              filename,
-              content: fileBase64,
-              content_type: "application/epub+zip",
-            }],
+            attachments: [attachment],
           }),
         });
         const out = await res.json().catch(() => ({}));
@@ -217,7 +243,6 @@ Deno.serve(async (req) => {
 
     const providerMessageId = String((result.out as any)?.id ?? "");
     if (!providerMessageId) return json({ error: "The email service did not return a tracking reference. Nothing was marked delivered." }, 502);
-    const fileSizeBytes = Math.floor(fileBase64.length * 0.75);
     const recordRes = await fetch(databaseUrl, {
       method: "POST",
       headers: { ...serviceHeaders, Prefer: "return=representation" },
