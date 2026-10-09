@@ -88,6 +88,25 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
     setSentTo(null);
     setDeliveryId(null);
     setDeliveryStatus(null);
+    // Fill in the Kindle address from the last successful send so the reader
+    // doesn't have to retype it on a new device.
+    (async () => {
+      try {
+        const { data } = await (supabase as any)
+          .from("kindle_deliveries")
+          .select("kindle_email,status")
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const last = Array.isArray(data) ? data[0] : null;
+        if (last?.kindle_email) {
+          setKindleEmail((cur) => cur || last.kindle_email);
+          if (last.status === "delivered_to_mail_server") {
+            setApproved(true);
+            try { localStorage.setItem(APPROVED_KEY, "1"); } catch {}
+          }
+        }
+      } catch {}
+    })();
     // Ask the server which sending address is actually live, so the address the
     // reader approves at Amazon always matches the one the book arrives from.
     (async () => {
@@ -128,7 +147,11 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
   };
 
   const sendNow = async () => {
-    if (!emailValid) { toast.error("Enter your @kindle.com address first."); return; }
+    if (!emailValid) { toast.error("Step 2: type your @kindle.com address first."); return; }
+    if (!approved) {
+      setApproved(true);
+      try { localStorage.setItem(APPROVED_KEY, "1"); } catch {}
+    }
     setBusy("send");
     try {
       const file = await buildEpub();
@@ -267,12 +290,12 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
           title="Tap send — then confirm it appears"
           bubble="We build and send the EPUB. Amazon processes personal documents separately, so check Library → Docs after sending."
         >
-          <Button className="w-full" onClick={sendNow} disabled={busy !== null || !emailValid || !approved}>
+          <Button className="w-full" onClick={sendNow} disabled={busy !== null}>
             {busy === "send" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <BookMarked className="w-4 h-4 mr-2" />}
             {busy === "send" ? "Delivering to Kindle…" : "Send this book to my Kindle now"}
           </Button>
           {!approved && (
-            <p className="text-[11px] text-muted-foreground">Tick step 1 once you've approved our address.</p>
+            <p className="text-[11px] text-muted-foreground">Make sure you've added our address in step 1, or Amazon will ignore the book.</p>
           )}
           {sentTo && (
             <div className="space-y-2 text-xs">
