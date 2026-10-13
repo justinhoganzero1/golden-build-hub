@@ -165,7 +165,7 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       const up = await supabase.storage.from("kindle-outbox").upload(storagePath, file, {
         contentType: "application/epub+zip", upsert: false,
       });
-      if (up.error) throw new Error("Couldn't upload the book: " + up.error.message);
+      if (up.error) throw new Error(`Couldn't upload the book (${(file.size / 1048576).toFixed(1)}MB): ` + up.error.message);
       const { data, error } = await supabase.functions.invoke("send-to-kindle", {
         body: { kindleEmail: kindleEmail.trim(), filename: safeName, title, storagePath },
       });
