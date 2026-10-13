@@ -36,7 +36,7 @@ const shrinkForEbook = async (img: ImgBytes): Promise<ImgBytes> => {
   if (img.mime === "image/svg+xml" || typeof createImageBitmap !== "function" || typeof document === "undefined") return img;
   if (img.bytes.length < 400 * 1024) return img;
   try {
-    const bmp = await createImageBitmap(new Blob([img.bytes], { type: img.mime }));
+    const bmp = await createImageBitmap(new Blob([img.bytes as BlobPart], { type: img.mime }));
     const scale = Math.min(1, 2048 / Math.max(bmp.width, bmp.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(bmp.width * scale);
