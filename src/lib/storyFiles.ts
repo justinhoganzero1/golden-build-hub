@@ -28,7 +28,39 @@ export const slugifyStory = (s: string) =>
 const xmlEscape = (s: string) =>
   (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const dataUrlToBytes = async (src: string): Promise<{ bytes: Uint8Array; mime: string; ext: string } | null> => {
+type ImgBytes = { bytes: Uint8Array; mime: string; ext: string };
+
+/** Shrink huge illustrations to Kindle-friendly JPEGs (max 2048px, ~85%), so a
+ *  fully illustrated book stays well under Amazon's email size limit. */
+const shrinkForEbook = async (img: ImgBytes): Promise<ImgBytes> => {
+  if (img.mime === "image/svg+xml" || typeof createImageBitmap !== "function" || typeof document === "undefined") return img;
+  if (img.bytes.length < 400 * 1024) return img;
+  try {
+    const bmp = await createImageBitmap(new Blob([img.bytes], { type: img.mime }));
+    const scale = Math.min(1, 2048 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return img;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close?.();
+    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    if (!blob || blob.size >= img.bytes.length) return img;
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), mime: "image/jpeg", ext: "jpg" };
+  } catch {
+    return img;
+  }
+};
+
+const dataUrlToBytes = async (src: string): Promise<ImgBytes | null> => {
+  const raw = await dataUrlToBytesRaw(src);
+  return raw ? shrinkForEbook(raw) : null;
+};
+
+const dataUrlToBytesRaw = async (src: string): Promise<ImgBytes | null> => {
   if (!src) return null;
   try {
     const m = src.match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
