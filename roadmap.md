@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Restore Oracle speaker playback and microphone access; verify signed-in controls and permission handling.
+- [x] Oracle voice controls: speaker test, tap-only microphone activation, reusable buffered reply playback, and immediate hard mute. Signed-in controls and microphone permission verified; actual audible output and live speech transcription remain unverified in the headless browser.
 - [x] Rectify mandatory 20% billing margin: verified the 68 historical below-floor rows belong only to the exempt owner; future member writes are guarded, exact-price tests pass, and signed-in diagnostics reports zero member failures. Financial history and wallet balances unchanged.
 - [ ] Require each new member's own GitHub connection during signup — blocked: no GitHub App User Connector client is configured in this workspace; existing GitHub/code sync does not establish this.
 - [ ] Prevent member AI from spending owner workspace credits — separate provider billing is required; wallet reimbursement and GitHub connection alone do not isolate provider billing.
