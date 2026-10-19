@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { useScribe } from "@elevenlabs/react";
 import { useMute } from "@/contexts/MuteContext";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAvatars, useSaveMedia, useCreateAvatar, type UserAvatar } from "@/hooks/useUserAvatars";
@@ -179,7 +180,7 @@ function wantsComputerOperatorMode(text: string): boolean {
 const OraclePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMuted, toggleMute } = useMute();
+  const { isMuted, setMuted } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
   const { data: oracleMemories = [] } = useOracleMemories();
   const saveMemory = useSaveOracleMemory();
@@ -678,6 +679,30 @@ const OraclePage = () => {
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mutedRef = useRef(isMuted);
+  mutedRef.current = isMuted;
+  const enableVoiceOutput = () => {
+    mutedRef.current = false;
+    setMuted(false);
+    // Unlock the same media element that will play replies, within the tap.
+    const audio = playbackAudioRef.current ?? new Audio();
+    playbackAudioRef.current = audio;
+    audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    void audio.play().catch(() => {});
+  };
+  const testSpeaker = () => {
+    cancelCurrentSpeech();
+    speechQueueRef.current = [];
+    enableVoiceOutput();
+    if (!window.speechSynthesis) {
+      toast.error("This browser cannot play the voice check.");
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance("Hello Juzzy. Your speaker is on. Tap the microphone to talk to Oracle.");
+    utterance.onerror = () => toast.error("Sound could not start. Check your device volume and tap again.");
+    window.speechSynthesis.speak(utterance);
+  };
   // Monotonically-increasing token. Each new utterance bumps it; any in-flight
   // ElevenLabs stream / browser TTS that sees a stale token aborts immediately.
   // This is the single source of truth that prevents two voices overlapping.
@@ -789,17 +814,16 @@ const OraclePage = () => {
               },
         }),
       });
-      if (!response.ok || !response.body) return false;
+      if (!response.ok || !response.body || !isLive() || mutedRef.current) return false;
       const contentType = response.headers.get("Content-Type") || "";
       if (contentType.includes("application/json")) return false;
 
       // === STREAMING PLAYBACK via MediaSource ===
       // Start playing the first MP3 frames the moment they arrive instead of
       // waiting for the entire blob. Cuts time-to-first-sound by 1-3 seconds.
-      const mediaSourceSupported =
-        typeof window !== "undefined" &&
-        "MediaSource" in window &&
-        (window as any).MediaSource.isTypeSupported?.("audio/mpeg");
+      // Buffered playback avoids stalled MediaSource queues and surfaces
+      // autoplay rejection so the browser voice fallback can run immediately.
+      const mediaSourceSupported = false;
 
       if (mediaSourceSupported) {
         const mediaSource = new MediaSource();
@@ -908,7 +932,10 @@ const OraclePage = () => {
       const audioBlob = await response.blob();
       if (!audioBlob.type.includes("audio") || audioBlob.size < 100) return false;
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
+      if (!isLive() || mutedRef.current) { URL.revokeObjectURL(audioUrl); return false; }
+      const audio = playbackAudioRef.current ?? new Audio();
+      playbackAudioRef.current = audio;
+      audio.src = audioUrl;
       currentAudioRef.current = audio;
       audio.volume = 0.95;
       audio.playbackRate = 1.0;
@@ -1097,8 +1124,11 @@ const OraclePage = () => {
   }, []);
 
   useEffect(() => {
-    if (isMuted) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
-  }, [isMuted]);
+      if (isMuted) {
+        speechQueueRef.current = [];
+        cancelCurrentSpeech();
+      }
+  }, [isMuted, cancelCurrentSpeech]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -1583,60 +1613,8 @@ const OraclePage = () => {
 
 
 
-  // Auto-prompt for microphone permission as soon as Oracle page opens, so the
-  // user gets the browser's native "Allow microphone?" dialog without having
-  // to find and tap the mic button first. Runs once per session.
-  const micAutoPromptRef = useRef(false);
-  useEffect(() => {
-    if (micAutoPromptRef.current) return;
-    micAutoPromptRef.current = true;
-    if (typeof window === "undefined") return;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast.error("Microphone API not available. Use Chrome, Edge or Safari over HTTPS.");
-      return;
-    }
-    const t = setTimeout(async () => {
-      try {
-        const perm: any = await (navigator as any).permissions?.query?.({ name: "microphone" as PermissionName }).catch(() => null);
-        if (perm?.state === "granted") {
-          setMicPermissionError(null);
-          setMicPermGranted(true);
-          startAlwaysListening();
-          return;
-        }
-        if (perm?.state === "denied") {
-          const msg = "Microphone is blocked. Click the 🔒 lock icon in your browser address bar → set Microphone to Allow → reload the page.";
-          setMicPermissionError(msg);
-          toast.error(msg, { duration: 9000 });
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
-        stream.getTracks().forEach((tr) => tr.stop());
-        setMicPermissionError(null);
-        setMicPermGranted(true);
-        startAlwaysListening();
-        toast.success("Microphone ready — Oracle is listening.");
-      } catch (err: any) {
-        console.error("[oracle] mic auto-prompt failed", err);
-        if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
-          const msg = "Microphone was blocked. Click the 🔒 in your address bar → Allow Microphone → reload.";
-          setMicPermissionError(msg);
-          toast.error(msg, { duration: 9000 });
-        } else if (err?.name === "NotFoundError") {
-          const msg = "No microphone detected on this laptop. Check Windows Sound settings → Input devices.";
-          setMicPermissionError(msg);
-          toast.error(msg);
-        } else {
-          const msg = "Tap the mic button to enable voice: " + (err?.message || err?.name || "unknown error");
-          setMicPermissionError(msg);
-          toast.error(msg);
-        }
-      }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [startAlwaysListening]);
+  // Activate the microphone only after an explicit composer tap.
+
 
   // Auto-greet on every open — varies the greeting so it's never the same twice in a row
   const greetTriggeredRef = useRef(false);
@@ -1709,6 +1687,7 @@ const OraclePage = () => {
       return;
     }
 
+    enableVoiceOutput();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -3274,20 +3253,20 @@ const OraclePage = () => {
           <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-white">Enable microphone</div>
-                <div className="text-xs text-gray-300">
-                  Oracle needs one click from you to trigger your laptop's mic permission.
-                </div>
+                <div className="text-sm font-semibold text-foreground">Voice chat</div>
                 {micPermissionError && (
                   <div className="text-xs text-red-300 mt-1">{micPermissionError}</div>
                 )}
               </div>
-              <button
+              <Button variant="outline" size="sm" onClick={testSpeaker}>
+                <Volume2 /> Test speaker
+              </Button>
+              <Button
                 onClick={toggleMic}
-                className="px-4 py-2 rounded-full bg-[#FFAA00] text-black text-sm font-semibold"
+                size="sm"
               >
-                Allow mic
-              </button>
+                <Mic /> Allow mic
+              </Button>
             </div>
           </div>
         )}
@@ -3328,9 +3307,9 @@ const OraclePage = () => {
           />
 
           <div className="flex items-center gap-2 px-1">
-          <button onClick={toggleMic} aria-label="Toggle Oracle microphone" className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full ${isListening ? "bg-green-600/80" : micPermGranted ? "bg-green-600/30" : "bg-transparent"}`}>
-            {isListening ? <Mic className="w-5 h-5 text-white animate-pulse" /> : <Mic className="w-5 h-5 text-[#FFAA00]" />}
-          </button>
+          <Button variant="ghost" size="icon" onClick={toggleMic} title={isListening ? "Turn microphone off" : "Talk to Oracle"} aria-label="Toggle Oracle microphone" aria-pressed={isListening} className={`h-9 w-9 shrink-0 rounded-full ${isListening ? "bg-[hsl(var(--status-active)/0.3)] text-[hsl(var(--status-active))]" : "bg-primary/15 text-primary"}`}>
+            <Mic className={isListening ? "animate-pulse" : ""} />
+          </Button>
           <input
             ref={uploadInputRef}
             type="file"
@@ -3347,9 +3326,12 @@ const OraclePage = () => {
             <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
           </button>
           <OracleImageComposer />
-          <button onClick={toggleMute} aria-label={isMuted ? "Unmute Oracle speaker" : "Mute Oracle speaker"} className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full border transition-all ${isMuted ? "border-red-500/40 bg-red-600/20" : "border-green-500/40 bg-green-600/20"}`}>
-            {isMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => {
+            if (isMuted) testSpeaker();
+            else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); }
+          }} title={isMuted ? "Enable Oracle speaker" : "Mute Oracle speaker"} aria-label={isMuted ? "Unmute Oracle speaker" : "Mute Oracle speaker"} aria-pressed={!isMuted} className={`h-9 w-9 shrink-0 rounded-full border ${isMuted ? "border-destructive/40 bg-destructive/20 text-destructive" : "border-[hsl(var(--status-active)/0.4)] bg-[hsl(var(--status-active)/0.2)] text-[hsl(var(--status-active))]"}`}>
+            {isMuted ? <VolumeX /> : <Volume2 />}
+          </Button>
           <OracleToolsMenu>
           <button
             type="button"
