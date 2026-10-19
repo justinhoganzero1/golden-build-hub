@@ -44,5 +44,5 @@
 - [ ] Seven reliability/security layers paused at Juzzy's request to prioritize billing: drafts, manual recovery, owner alerts, daily checks, operation claims and worker gates added; remaining work includes secure machine scheduler credentials (existing anonymous worker schedules are now rejected), atomic movie payment handoff and broader paid-flow validation.
 - [ ] Keep this work result-focused; investigate workable alternatives and report only verified outcomes and necessary blockers.
 
-- [ ] WorkCover business plan: verified TAFE course research + premium presentation with video and voice narration (waiting on Juzzy details)
+- [x] WorkCover proposal PDF + narrated trumpet video delivered (laptop quote placeholder left for Juzzy)
 - [ ] WorkCover QLD app redesign showcase (concept based on public user complaints) for case manager to forward to IT
