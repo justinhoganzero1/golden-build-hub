@@ -1,4 +1,7 @@
 # Roadmap
+- [ ] Verify published sign-in/lifetime restrictions with an authorised test-member session; owner session alone cannot establish member access.
+- [ ] Verify Oracle real-model advice and speaker flow, and monthly-member wallet actions with a real authorised member; preserve paid-action security and avoid payment replay.
+- [ ] Publish connector updates and complete Chat360 books → chapters 1–3 → chapter 25 save with artwork integrity checks; external authorisation and chapter content required.
 - [ ] Extend the independent WorkCover showcase with clickable AI case tracking, evidence double-checking and human-reviewed anomaly warnings; retain documented old-app functions with beginner-friendly one-question steps, verify and save to Library. Official WorkCover integration requires their permission.
 - [ ] Target three-second Oracle response lag: bound premium voice waits, use device speech for actual generated text on delays, inspect proxy/fallback paths, and measure signed-in first audible answer without false guarantees.
 - [x] Fix Oracle chat 401 and speech 150-second timeout: refreshed member token required, stale speech cancelled, billable startup removed, and billing/provider waits bounded. Signed-in real chat and TTS returned 200 on two checks (8.33s and 11.16s), without runtime errors; injected 401 and 504 responses preserve the draft and leave the composer usable. TTS deployed and regression tests pass. Frontend still needs publishing; actual device audibility remains unverified.
