@@ -786,8 +786,10 @@ const OraclePage = () => {
 
       // Always favor the saved Oracle voice configuration so playback stays
       // consistent and we never slip into a different-sounding fallback voice.
+      // Same saved voice, but always on the low-latency speech engine so
+      // Oracle starts talking well inside the three-second target.
       const savedModelId = (masterSettings?.model_id as string | undefined) || undefined;
-      const modelId = savedModelId;
+      const modelId = savedModelId && /flash|turbo/i.test(savedModelId) ? savedModelId : "eleven_flash_v2_5";
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
@@ -796,8 +798,8 @@ const OraclePage = () => {
         body: JSON.stringify({
           text: prepared,
           voiceId: masterVoiceId,
-          fast: false,
-          outputFormat: "mp3_44100_64",
+          fast: true,
+          outputFormat: "mp3_22050_32",
           modelId,
           settings: hasCustomMaster
             ? {
@@ -2125,6 +2127,7 @@ const OraclePage = () => {
             personality: oracleAvatar.personality,
           } : null,
           agent: (() => { const a = getActiveAgent(); return a ? { model: a.model, name: a.name, personality: a.personality } : null; })(),
+          voice: isListeningRef.current,
         }),
         signal: controller.signal,
       });

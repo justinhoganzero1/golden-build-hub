@@ -62,7 +62,7 @@ serve(async (req) => {
           // provider key skips the wallet. No trial, no free daily allowance.
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
           let hasOwnKey = false;
-          try {
+          if (!isAdmin) try {
             const { data: keyRow } = await admin
               .from("user_ai_keys")
               .select("openai_key, gemini_key")
