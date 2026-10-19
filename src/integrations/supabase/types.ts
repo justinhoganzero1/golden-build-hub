@@ -1358,6 +1358,27 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_payment_fulfillments: {
+        Row: {
+          created_at: string
+          founder_number: number | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          founder_number?: number | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          founder_number?: number | null
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       founder_seat_listings: {
         Row: {
           buyer_id: string | null
