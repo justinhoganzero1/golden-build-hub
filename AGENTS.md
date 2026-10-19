@@ -18,3 +18,4 @@
 - Daily monitoring performs SQL-only integrity checks and records deduplicated owner incidents; endpoint preflight checks are availability evidence, never proof of paid flows.
 - Enforce the billing margin on database writes as well as pricing helpers; exempt only protected owner roles in compliance reports and preserve historical financial records.
 - Long-running text generation uses the Lovable AI Gateway Responses API through shared server-only helpers, because credentials and prompts must never reach the browser.- Member AI agents, agent stats and chat histories live in the backend (user_agents, agent_stats, agent_chats) with localStorage only as a cache, so they follow the member across devices.
+- Oracle live web answers go through oracle-research via a [[WEB: query]] reply marker and render cited sources; unsourced answers are labelled unverified so Oracle never presents invented facts.
