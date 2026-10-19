@@ -49,3 +49,4 @@
 - [ ] Strengthen WorkCover showcase with Justin's proposal, verified course schedule, narration/video and a downloadable working version; official WorkCover system access is not available.
 - [ ] Republish faster Oracle voice and measure whether signed-in playback meets three seconds; do not claim target achieved without measurement.
 - [ ] Check and save WorkCover deliverables in Justin's Oracle Lunar Library; verify account read-back.
+- [ ] Priority: fix unresolved critical payment findings and verify protections before any further publishing.
