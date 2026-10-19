@@ -25,8 +25,7 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    const __rl = await enforceRateLimit(req, auth.user, "elevenlabs-tts");
-    if (__rl) return __rl;
+    const __t0 = Date.now();
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
@@ -80,7 +79,17 @@ Deno.serve(async (req) => {
     const cost = Math.max(1, Math.ceil((chars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
     const metadata = { provider: "elevenlabs", model: selectedModel, characters: chars, voice_id: selectedVoice };
     // Fail closed before incurring provider costs. Never replay uncertain billing.
-    const authorization = await authorizeAI(auth.user.id, `elevenlabs-tts:${crypto.randomUUID()}`, "elevenlabs-tts", "elevenlabs", selectedModel, cost, metadata, AbortSignal.timeout(12_000));
+    // Rate limit and fund reservation run together (both are fast DB checks);
+    // a rate-limited request releases its reservation before any provider call.
+    const [__rl, authorization] = await Promise.all([
+      enforceRateLimit(req, auth.user, "elevenlabs-tts"),
+      authorizeAI(auth.user.id, `elevenlabs-tts:${crypto.randomUUID()}`, "elevenlabs-tts", "elevenlabs", selectedModel, cost, metadata, AbortSignal.timeout(12_000)),
+    ]);
+    if (__rl) {
+      await cancelAI(authorization.transaction_id, "rate_limited", AbortSignal.timeout(5_000)).catch(() => {});
+      return __rl;
+    }
+    const __tAuth = Date.now();
     let response: Response;
     try {
       response = await fetch(
@@ -127,6 +136,7 @@ Deno.serve(async (req) => {
       );
     }
 
+    const __tProvider = Date.now();
     // Meter and bill the characters this user actually synthesised.
     try {
       await settleAI(authorization.transaction_id, cost, response.headers.get("request-id") ?? undefined,
@@ -145,6 +155,8 @@ Deno.serve(async (req) => {
         ...corsHeaders,
         "Content-Type": "audio/mpeg",
         "Cache-Control": "no-cache",
+        "Server-Timing": `reserve;dur=${__tAuth - __t0}, provider;dur=${__tProvider - __tAuth}, settle;dur=${Date.now() - __tProvider}`,
+        "Access-Control-Expose-Headers": "Server-Timing",
       },
     });
 
