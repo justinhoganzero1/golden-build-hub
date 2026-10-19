@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -21,7 +22,8 @@ serve(async (req) => {
   try {
     const { product } = await req.json();
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing Authorization header");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
@@ -59,7 +61,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: statusFor(error),
     });
   }
 });

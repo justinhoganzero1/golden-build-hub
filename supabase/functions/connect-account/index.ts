@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // =============================================================================
 // connect-account
 // -----------------------------------------------------------------------------
@@ -169,7 +170,7 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error);
     log("ERROR", { message });
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+      status: statusFor(error),
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

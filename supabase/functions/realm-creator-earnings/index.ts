@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // =============================================================================
 // realm-creator-earnings
 // -----------------------------------------------------------------------------
@@ -145,7 +146,7 @@ Deno.serve(async (req) => {
       payouts,
     });
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: (e as Error).message }, statusFor(e));
   }
 });
 

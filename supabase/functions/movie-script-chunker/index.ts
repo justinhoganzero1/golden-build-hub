@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // Splits a long-form movie brief into individual scenes + locks character bible.
 // Uses Lovable AI Gemini Pro for script + scene breakdown, then writes movie_scenes + movie_character_bible.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -200,7 +201,7 @@ Return JSON of shape:
   } catch (e) {
     console.error("[script-chunker]", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: statusFor(e),
     });
   }
 });
