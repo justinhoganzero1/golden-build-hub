@@ -45,3 +45,4 @@
 - [ ] Keep this work result-focused; investigate workable alternatives and report only verified outcomes and necessary blockers.
 
 - [ ] WorkCover business plan: verified TAFE course research + premium presentation with video and voice narration (waiting on Juzzy details)
+- [ ] WorkCover QLD app redesign showcase (concept based on public user complaints) for case manager to forward to IT
