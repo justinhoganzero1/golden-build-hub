@@ -39,6 +39,7 @@ export function validateCoinPayment(s: PaidSession, userId: string): number {
 }
 export function validateAppPayment(s: PaidSession, userId: string, appKey: string) {
   const p = APP_PAYMENTS[appKey];
+  if (s.metadata?.purchase_type && s.metadata.purchase_type !== "app_unlock") throw new Error("not an app payment");
   if (!p || s.metadata?.user_id !== userId || s.metadata?.app_key !== appKey) throw new Error("app payment mismatch");
   assertPaid(s, p.amount_cents);
 }

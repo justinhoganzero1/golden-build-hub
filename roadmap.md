@@ -50,4 +50,4 @@
 - [ ] Republish faster Oracle voice and measure whether signed-in playback meets three seconds; do not claim target achieved without measurement.
 - [x] Saved eight WorkCover deliverables in Justin's private Oracle Lunar Library; all eight visible signed-in, every storage download hash matched, and the proposal downloaded through the Library button.
 - [ ] Priority: fix unresolved critical payment findings and verify protections before any further publishing.
-- [ ] Verify member accounts are persisted in the database and repair any missing account records without inventing users.
+- [x] Verified 23 real accounts, 23 memberships and 23 profiles; repaired one missing profile without inventing personal data or creating users.
