@@ -3,6 +3,8 @@ import { applyGoldTheme, goldThemeOn } from "@/lib/goldTheme";
 applyGoldTheme(goldThemeOn());
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
+import ErrorBoundary from "./components/ErrorBoundary";
+import RecoveryMonitor from "./components/RecoveryMonitor";
 import "./index.css";
 import { installWalletInterceptor } from "./lib/walletInterceptor";
 
@@ -73,8 +75,9 @@ try {
   }
 } catch {}
 
-createRoot(document.getElementById("root")!).render(
-  <HelmetProvider>
-    <App />
-  </HelmetProvider>
+const root = document.getElementById("root");
+if (root) createRoot(root).render(
+  <ErrorBoundary pageName="App shell">
+    <HelmetProvider><App /><RecoveryMonitor /></HelmetProvider>
+  </ErrorBoundary>
 );

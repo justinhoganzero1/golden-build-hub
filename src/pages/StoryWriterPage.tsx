@@ -1,5 +1,6 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
+import { saveBookDraft, loadBookDraft } from "@/lib/bookDrafts";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,9 +127,36 @@ const StoryWriterPage = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const [openingStoryId, setOpeningStoryId] = useState<string | null>(null);
   const skipAutosaveForLoadedStoryRef = useRef<string | null>(null);
-  const [chapterGuidance, setChapterGuidance] = useState("");
+  const [recoveredBook, setRecoveredBook] = useState<StoryDoc | null>(null);
+  const [saveStatus, setSaveStatus] = useState("Not saved yet");
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
+  const bookDraftScope = params.get("id") || savingId || "new";
+  const draftScopeReady = useRef<string | null>(null);
+  useEffect(() => {
+    draftScopeReady.current = null;
+    setRecoveredBook(null);
+    if (!user?.id) return;
+    let alive = true;
+    const key = `${user.id}:${bookDraftScope}`;
+    void loadBookDraft<StoryDoc>(user.id, bookDraftScope).then(draft => {
+      if (!alive) return;
+      if (draft?.chapters?.length) setRecoveredBook(draft);
+      draftScopeReady.current = key;
+    }).catch(() => { if (alive) draftScopeReady.current = key; });
+    return () => { alive = false; };
+  }, [user?.id, bookDraftScope]);
+  useEffect(() => {
+    if (!user?.id || openingStoryId || recoveredBook || regenBusy) return;
+    if (draftScopeReady.current !== `${user.id}:${bookDraftScope}`) return;
+    const timer = setTimeout(() => {
+      void saveBookDraft(user.id, bookDraftScope, story).catch(() => {
+        setSaveStatus("Device backup unavailable — keep this page open");
+      });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [user?.id, bookDraftScope, story, openingStoryId, recoveredBook, regenBusy]);
+  const [chapterGuidance, setChapterGuidance] = useState("");
   // Workflow stage after a chapter is generated:
   // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
   // 'editing' = collecting edit instructions; 'askNext' = ask for next chapter guidance.
@@ -295,12 +323,13 @@ const StoryWriterPage = () => {
   // admin library pipeline picks it up.
   useEffect(() => {
     if (!user) return;
-    if (!hasMeta || regenBusy) return;
+    if (!hasMeta || regenBusy || openingStoryId || recoveredBook) return;
     if (skipAutosaveForLoadedStoryRef.current && skipAutosaveForLoadedStoryRef.current === savingId) {
       skipAutosaveForLoadedStoryRef.current = null;
       return;
     }
     const handle = setTimeout(async () => {
+      setSaveStatus("Saving…");
       try {
         const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
         const metadata = {
@@ -346,14 +375,16 @@ const StoryWriterPage = () => {
         qc.invalidateQueries({ queryKey: ["story-writer-library"] });
         qc.invalidateQueries({ queryKey: ["user-media"] });
         qc.invalidateQueries({ queryKey: ["all-user-media"] });
+        setSaveStatus("Saved to your Library");
       } catch (e) {
         console.error("auto-save error", e);
+        setSaveStatus("Account save paused — device backup retained");
         toast.error("Story auto-save paused — your draft remains on this device.");
       }
     }, 1200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story, user, savingId, hasMeta, regenBusy]);
+  }, [story, user, savingId, hasMeta, regenBusy, openingStoryId, recoveredBook]);
 
   const totalWords = useMemo(
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
@@ -2338,7 +2369,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
               <h1 className="text-xl font-bold text-primary">Story Writer Studio</h1>
               <p className="text-[11px] text-muted-foreground">
                 {totalWords.toLocaleString()} words · {story.chapters.length} chapter
-                {story.chapters.length === 1 ? "" : "s"} · Auto-saved to your Library
+                {story.chapters.length === 1 ? "" : "s"} · {saveStatus}
                 {isAdmin && <span className="ml-2 text-amber-400 font-semibold">· ADMIN UNLIMITED</span>}
               </p>
             </div>
@@ -2373,6 +2404,13 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         </div>
 
         {/* Browse ALL my stories — searchable + paginated */}
+        {recoveredBook && (
+          <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3" role="status">
+            <p className="text-sm text-foreground">A device draft is available: {recoveredBook.title || "New book"}</p>
+            <Button size="sm" onClick={() => { setStory(recoveredBook); setRecoveredBook(null); }}>Restore draft</Button>
+            <Button size="sm" variant="outline" onClick={() => setRecoveredBook(null)}>Keep account version</Button>
+          </div>
+        )}
         <div className="px-4 py-3 border-b border-border">
           <StoryLibraryBrowser onOpen={loadSaved} onSequel={openSequelFor} currentId={savingId} />
           {openingStoryId && (

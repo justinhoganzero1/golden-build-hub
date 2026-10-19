@@ -1,5 +1,6 @@
 // Emails a finished EPUB straight to a reader's @kindle.com address using
 // Amazon's "Send to Kindle" personal-document email service.
+import { claimOperation } from "../_shared/operationClaim.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
 
     // ---- input validation ----
     const body = await req.json().catch(() => null) as
-      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; storagePath?: string; probe?: boolean; deliveryId?: string }
+      | { kindleEmail?: string; filename?: string; title?: string; fileBase64?: string; storagePath?: string; probe?: boolean; deliveryId?: string; requestKey?: string }
       | null;
     if (!body) return json({ error: "Invalid request body." }, 400);
 
@@ -229,6 +230,13 @@ Deno.serve(async (req) => {
     }
 
     const usedFrom = `Oracle Lunar Books <${KINDLE_SENDER}>`;
+    const requestKey = body.requestKey;
+    if (typeof requestKey !== "string" || !/^[0-9a-f-]{36}$/i.test(requestKey)) return json({ error: "A delivery request reference is required." }, 400);
+    const claim = await claimOperation(user.id, "kindle-send", requestKey);
+    if (claim.duplicate) {
+      if (claim.state === "confirmed") return json(claim.result);
+      return json({ error: "This send already started. Review delivery history before sending again.", requestKey }, 409);
+    }
     const result = await send(usedFrom);
 
     if (!result.ok) {
@@ -253,6 +261,7 @@ Deno.serve(async (req) => {
         kindle_email: kindleEmail,
         sender_email: KINDLE_SENDER,
         file_size_bytes: fileSizeBytes,
+        request_key: requestKey,
         provider_message_id: providerMessageId,
         status: "queued",
       }),
@@ -265,7 +274,7 @@ Deno.serve(async (req) => {
     }
     console.log(JSON.stringify({ event: "kindle_queued", deliveryId, providerMessageId, userId: user.id, sender: KINDLE_SENDER, kindleEmail, filename, fileSizeBytes }));
 
-    return json({
+    const confirmed = {
       queued: true,
       deliveryId,
       status: "queued",
@@ -273,7 +282,9 @@ Deno.serve(async (req) => {
       sender: KINDLE_SENDER,
       kindleEmail,
       message: `Queued for ${kindleEmail}. This does not yet confirm Amazon accepted the book.`,
-    });
+    };
+    await claim.finish("confirmed", confirmed);
+    return json(confirmed);
   } catch (e) {
     return json({ error: (e as Error)?.message ?? "Unexpected error" }, 500);
   }

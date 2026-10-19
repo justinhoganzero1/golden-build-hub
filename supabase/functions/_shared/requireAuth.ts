@@ -106,8 +106,7 @@ export async function requireOwner(req: Request): Promise<AuthResult> {
   const r = await requireUser(req);
   if (r.response) return r;
 
-  // Primary check: the admin ROLE in public.user_roles (server-side, tamper-proof).
-  // The historical owner email stays only as a fallback so access never breaks.
+  // Privileges must come from protected roles, never an email fallback.
   let hasAdminRole = false;
   try {
     const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -115,9 +114,9 @@ export async function requireOwner(req: Request): Promise<AuthResult> {
     });
     const { data } = await svc.rpc("has_role", { _user_id: r.user.id, _role: "admin" });
     hasAdminRole = data === true;
-  } catch (_) { /* fall back to email check */ }
+  } catch (_) { /* fail closed */ }
 
-  if (!hasAdminRole && (r.user.email || "").toLowerCase().trim() !== OWNER_EMAIL) {
+  if (!hasAdminRole) {
     await auditLog({
       user_id: r.user.id,
       email: r.user.email,
@@ -149,7 +148,7 @@ export async function enforceRateLimit(
   // down to service_role only at the database level.
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!SUPABASE_URL || !SERVICE_KEY) return undefined;
+  if (!SUPABASE_URL || !SERVICE_KEY) return unauthorized("safety_check_unavailable", 503);
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   try {
@@ -159,8 +158,9 @@ export async function enforceRateLimit(
       _limit: limit,
       _window_seconds: windowSeconds,
     });
-    if (error) return undefined; // fail-open: don't lock users out on infra error
+    if (error) return unauthorized("safety_check_unavailable", 503);
     const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.allowed !== "boolean") return unauthorized("safety_check_unavailable", 503);
     if (row && row.allowed === false) {
       await auditLog({
         user_id: user.id,
@@ -177,7 +177,7 @@ export async function enforceRateLimit(
       });
     }
   } catch {
-    // fail-open on unexpected error
+    return unauthorized("safety_check_unavailable", 503);
   }
   return undefined;
 }

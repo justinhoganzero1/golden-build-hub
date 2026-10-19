@@ -35,4 +35,5 @@
 - [ ] Twilio Auth Token — Juzzy must enter it (not saved; phone calls are refused without it).
 - [ ] Twilio texts — Twilio blocks changing text settings remotely for this number's region; Juzzy sets SMS webhook in Twilio Console.
 - [ ] Social posting keys (X, Instagram, IndexNow) — need Juzzy's accounts.
-- [ ] "45 fallbacks / zero fault" request — awaiting Juzzy clarification of what to back up.
+- [ ] Implement seven reliability layers and security counterparts: safe AI recovery, duplicate-payment protection, call safety, screen recovery, durable drafts, owner alerts and daily non-billable checks; validate and report remaining limits.
+- [ ] Keep this work result-focused; investigate workable alternatives and report only verified outcomes and necessary blockers.

@@ -1,0 +1,40 @@
+CREATE TABLE public.system_health_reports (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), created_at timestamptz NOT NULL DEFAULT now(), source text NOT NULL, checks jsonb NOT NULL DEFAULT '[]'::jsonb);
+GRANT SELECT ON public.system_health_reports TO authenticated;
+GRANT ALL ON public.system_health_reports TO service_role;
+ALTER TABLE public.system_health_reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY owner_read_health ON public.system_health_reports FOR SELECT TO authenticated USING (public.has_role(auth.uid(),'admin'));
+CREATE TABLE public.system_incidents (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), incident_key text NOT NULL, severity text NOT NULL, summary text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), acknowledged_at timestamptz);
+GRANT SELECT, UPDATE ON public.system_incidents TO authenticated;
+GRANT ALL ON public.system_incidents TO service_role;
+ALTER TABLE public.system_incidents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY owner_read_incidents ON public.system_incidents FOR SELECT TO authenticated USING (public.has_role(auth.uid(),'admin'));
+CREATE POLICY owner_acknowledge_incidents ON public.system_incidents FOR UPDATE TO authenticated USING (public.has_role(auth.uid(),'admin')) WITH CHECK (public.has_role(auth.uid(),'admin'));
+CREATE UNIQUE INDEX system_incidents_open_key ON public.system_incidents(incident_key) WHERE acknowledged_at IS NULL;
+ALTER TABLE public.kindle_deliveries ADD COLUMN IF NOT EXISTS request_key text;
+CREATE UNIQUE INDEX kindle_delivery_request_key ON public.kindle_deliveries(user_id,request_key) WHERE request_key IS NOT NULL;
+REVOKE INSERT ON public.kindle_deliveries FROM authenticated;
+CREATE OR REPLACE FUNCTION public.run_daily_safety_check() RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,pg_catalog AS $$
+DECLARE checks jsonb := '[]'; n bigint; report_id uuid; c record;
+BEGIN
+ SELECT count(*) INTO n FROM pg_class t JOIN pg_namespace s ON s.oid=t.relnamespace WHERE s.nspname='public' AND t.relkind='r' AND NOT t.relrowsecurity;
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Public table row security','status',CASE WHEN n=0 THEN 'pass' ELSE 'fail' END,'count',n));
+ SELECT count(*) INTO n FROM public.billing_transactions WHERE transaction_type='usage' AND status='settled' AND provider_cost_micros>0 AND platform_fee_micros < ceil(provider_cost_micros*0.20);
+ checks := checks || jsonb_build_array(jsonb_build_object('name','20 percent billing margin','status',CASE WHEN n=0 THEN 'pass' ELSE 'fail' END,'count',n));
+ SELECT count(*) INTO n FROM public.billing_holds WHERE status='held' AND expires_at<now();
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Expired billing reservations need review','status',CASE WHEN n=0 THEN 'pass' ELSE 'warn' END,'count',n));
+ SELECT count(*) INTO n FROM public.kindle_deliveries WHERE status IN ('preparing','queued','delayed') AND created_at<now()-interval '1 day';
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Kindle delivery needs review','status',CASE WHEN n=0 THEN 'pass' ELSE 'warn' END,'count',n));
+ SELECT count(*) INTO n FROM public.call_sessions WHERE direction='outbound' AND twilio_call_sid IS NULL AND created_at<now()-interval '1 hour' AND ended_at IS NULL;
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Unconfirmed outbound calls','status',CASE WHEN n=0 THEN 'pass' ELSE 'warn' END,'count',n));
+ SELECT count(*) INTO n FROM public.movie_render_jobs WHERE status='running' AND updated_at<now()-interval '1 day';
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Stalled movie jobs','status',CASE WHEN n=0 THEN 'pass' ELSE 'warn' END,'count',n));
+ SELECT count(*) INTO n FROM public.stripe_event_log WHERE status IN ('error','failed') AND created_at>now()-interval '1 day';
+ checks := checks || jsonb_build_array(jsonb_build_object('name','Payment processing failures','status',CASE WHEN n=0 THEN 'pass' ELSE 'warn' END,'count',n));
+ INSERT INTO public.system_health_reports(source,checks) VALUES('daily-database',checks) RETURNING id INTO report_id;
+ FOR c IN SELECT value FROM jsonb_array_elements(checks) WHERE value->>'status'<>'pass' LOOP
+  INSERT INTO public.system_incidents(incident_key,severity,summary) VALUES('daily:'||(c.value->>'name'),c.value->>'status',(c.value->>'name')||': '||(c.value->>'count')) ON CONFLICT (incident_key) WHERE acknowledged_at IS NULL DO NOTHING;
+ END LOOP;
+ RETURN report_id;
+END; $$;
+REVOKE ALL ON FUNCTION public.run_daily_safety_check() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.run_daily_safety_check() TO service_role;

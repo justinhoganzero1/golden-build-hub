@@ -1,4 +1,5 @@
 import { validateForKindle } from "@/lib/epubValidation";
+import { readDraft, writeDraft } from "@/lib/recovery";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -160,6 +161,10 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       // short-lived link, so even big illustrated books send reliably.
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Sign in to send to Kindle.");
+      const scope = `kindle-send:${title}:${kindleEmail.trim()}`;
+      const prior = readDraft<{ requestKey: string }>(u.user.id, scope);
+      const requestKey = prior?.requestKey ?? crypto.randomUUID();
+      if (!writeDraft(u.user.id, scope, { requestKey })) throw new Error("Delivery recovery could not be saved. No email was sent.");
       const safeName = file.name.replace(/[^\w.\-]+/g, "-");
       const storagePath = `${u.user.id}/${Date.now()}-${safeName}`;
       const up = await supabase.storage.from("kindle-outbox").upload(storagePath, file, {
@@ -167,9 +172,9 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       });
       if (up.error) throw new Error(`Couldn't upload the book (${(file.size / 1048576).toFixed(1)}MB): ` + up.error.message);
       const { data, error } = await supabase.functions.invoke("send-to-kindle", {
-        body: { kindleEmail: kindleEmail.trim(), filename: safeName, title, storagePath },
+        body: { kindleEmail: kindleEmail.trim(), filename: safeName, title, storagePath, requestKey },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error("Delivery could not be confirmed. Review delivery history before sending again.");
       if ((data as any)?.error) throw new Error((data as any).error);
       if ((data as any)?.sender) setSender((data as any).sender);
       if (!(data as any)?.deliveryId) throw new Error("No delivery tracking reference was returned.");

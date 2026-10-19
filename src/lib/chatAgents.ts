@@ -154,7 +154,8 @@ export async function saveChat<T>(scope: string, msgs: T[]): Promise<void> {
   localStorage.setItem(`oracle.chat.${scope}`, JSON.stringify(trimmed));
   const id = await uid();
   if (!id) return;
-  await supabase.from("agent_chats").upsert({ user_id: id, scope, messages: trimmed as never, updated_at: new Date().toISOString() });
+  const { error } = await supabase.from("agent_chats").upsert({ user_id: id, scope, messages: trimmed as never, updated_at: new Date().toISOString() });
+  if (error) window.dispatchEvent(new CustomEvent("oracle:sync-failed", { detail: { scope } }));
 }
 export async function clearChat(scope: string): Promise<void> {
   localStorage.removeItem(`oracle.chat.${scope}`);
