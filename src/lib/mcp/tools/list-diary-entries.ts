@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { fromPostgrestError, fromUnknown, mcpOk, notAuthenticated } from "../lib/errors";
 
 function userClient(ctx: ToolContext) {
@@ -18,7 +18,8 @@ export default defineTool({
     limit: z.number().int().min(1).max(50).default(20).describe("Maximum number of entries to return."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
+  handler: async (args, ctx) => {
+    const { limit } = z.object({ limit: z.number().int().min(1).max(50).default(20) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       const { data, error } = await userClient(ctx)

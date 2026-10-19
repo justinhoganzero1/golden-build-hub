@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { defineTool, type ToolContext } from "@lovable.dev/mcp-js";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { fromPostgrestError, fromUnknown, mcpOk, notAuthenticated } from "../lib/errors";
 
 function userClient(ctx: ToolContext) {
@@ -65,7 +65,8 @@ export const getBookChaptersTool = defineTool({
     count: z.number().int().min(1).max(5).default(3).describe("How many chapters to return (max 5)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ book_id, from_chapter, count }, ctx) => {
+  handler: async (args, ctx) => {
+    const { book_id, from_chapter, count } = z.object({ book_id: z.string().uuid(), from_chapter: z.number().int().min(1).default(1), count: z.number().int().min(1).max(5).default(3) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       const doc = await loadDoc(ctx, book_id);
@@ -94,7 +95,8 @@ export const saveBookChapterTool = defineTool({
     content: z.string().trim().min(50).describe("Full chapter text."),
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ book_id, chapter_number, title, content }, ctx) => {
+  handler: async (args, ctx) => {
+    const { book_id, chapter_number, title, content } = z.object({ book_id: z.string().uuid(), chapter_number: z.number().int().min(1), title: z.string().trim().min(1).max(200), content: z.string().trim().min(50) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       // Server-side save that changes only this chapter's title and text,

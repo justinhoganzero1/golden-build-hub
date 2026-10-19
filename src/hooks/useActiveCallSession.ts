@@ -70,13 +70,6 @@ export async function submitCallReply(sessionId: string, reply: string) {
   const { data: sess } = await supabase.auth.getSession();
   const token = sess.session?.access_token;
   if (!token) throw new Error("Not signed in");
-  const userId = sess.session?.user.id;
-  if (!userId) throw new Error("Not signed in");
-  const scope = `outbound-call:${to}:${intent}`;
-  const prior = readDraft<{ requestKey: string }>(userId, scope);
-  if (prior) throw new Error("This call was already requested. Review call history before requesting it again.");
-  const requestKey = crypto.randomUUID();
-  if (!writeDraft(userId, scope, { requestKey })) throw new Error("Call recovery unavailable. No call was placed.");
   const r = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-call-reply`,
     {
@@ -98,6 +91,14 @@ export async function placeOutboundCall(to: string, intent: string) {
   const { data: sess } = await supabase.auth.getSession();
   const token = sess.session?.access_token;
   if (!token) throw new Error("Not signed in");
+  const userId = sess.session?.user.id;
+  if (!userId) throw new Error("Not signed in");
+  const scope = `outbound-call:${to}:${intent}`;
+  const prior = readDraft<{ requestKey: string }>(userId, scope);
+  if (prior) throw new Error("This call was already requested. Review call history before requesting it again.");
+  const requestKey = crypto.randomUUID();
+  if (!writeDraft(userId, scope, { requestKey })) throw new Error("Call recovery unavailable. No call was placed.");
+
   const r = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-call-outbound`,
     {
