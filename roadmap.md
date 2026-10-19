@@ -35,3 +35,4 @@
 - [ ] Twilio Auth Token — Juzzy must enter it (not saved; phone calls are refused without it).
 - [ ] Twilio texts — Twilio blocks changing text settings remotely for this number's region; Juzzy sets SMS webhook in Twilio Console.
 - [ ] Social posting keys (X, Instagram, IndexNow) — need Juzzy's accounts.
+- [ ] "45 fallbacks / zero fault" request — awaiting Juzzy clarification of what to back up.
