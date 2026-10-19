@@ -3,6 +3,7 @@
 // misconfigured. Idempotent: the same session can never be credited twice.
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { validateCoinPayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,9 @@ Deno.serve(async (req) => {
     if (meta.purchase_type !== "coin_topup" || meta.user_id !== u.user.id) return json({ error: "not your top-up" }, 403);
     if (s.payment_status !== "paid") return json({ credited: false, status: s.payment_status });
 
-    const walletCents = Math.round(Number(meta.wallet_cents ?? 0));
+    let walletCents: number;
+    try { walletCents = validateCoinPayment(s, u.user.id); }
+    catch { return json({ error: "top-up payment mismatch" }, 403); }
     const { data, error } = await admin.rpc("billing_credit_stripe_topup", {
       _user_id: u.user.id,
       _stripe_event_id: `verify:${s.id}`,
