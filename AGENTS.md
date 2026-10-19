@@ -1,5 +1,5 @@
 # Project Rules
-- Library cards show readable titles outside previews and lazily inspect visible app content in script-disabled, network-blocked frames; this makes saved creations identifiable without executing untrusted apps or loading the entire library.
+- Library cards show readable titles outside large previews and lazily inspect visible apps and saved HTML documents in script-disabled, network-blocked frames; read only a bounded opening-page prefix from private storage so embedded videos do not load the entire library.
 - Preview URLs and hostnames never bypass RequireAuth or membership access; missing membership fails closed while account-management pages remain accessible, preventing public feature exposure.
 - The independent WorkCover showcase uses fictional records and deterministic evidence checks, with human review before decisions; this avoids pretending to connect to official systems or deploying automated fraud verdicts.
 - Resolve private storage URLs when opening Library items and before downloads; store permanent object references so saved files remain accessible after signed links expire.
