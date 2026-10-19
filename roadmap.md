@@ -55,3 +55,4 @@
 - [x] Saved eight WorkCover deliverables in Justin's private Oracle Lunar Library; all eight visible signed-in, every storage download hash matched, and the proposal downloaded through the Library button.
 - [ ] Priority: finish critical payment/security verification before further publishing. Deployed strict wallet pack limits, paid-only webhook handling, app/movie purchase bindings and founder replay ledger; 14 regression tests pass, invalid pack/signature rejected live. Remaining: founder resale atomic fulfillment, worker/email access controls and real paid-flow/replay checks.
 - [x] Verified 23 real accounts, 23 memberships and 23 profiles; repaired one missing profile without inventing personal data or creating users.
+- [ ] Oracle golden rule: Oracle controls the entire app, uses full memory, fastest and most fail-safe (needs scoping with Juzzy)
