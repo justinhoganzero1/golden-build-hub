@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { sendLibraryItemToMovieMaker } from "@/lib/movieHandoff";
 
 import UniversalBackButton from "@/components/UniversalBackButton";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,10 @@ const MediaLibraryPage = () => {
   const [savingShare, setSavingShare] = useState(false);
   const [priceInput, setPriceInput] = useState<string>("");
   const [page, setPage] = useState(1);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const revealResults = () => {
+    requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ block: "start", behavior: "instant" }));
+  };
 
   // Sync price input with selected item
   useEffect(() => {
@@ -325,10 +329,10 @@ const MediaLibraryPage = () => {
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             <Globe2 className="w-4 h-4 text-primary" />
           </Link>
-          <button onClick={() => setView(view === "grid" ? "list" : "grid")}
+          <Button variant="outline" size="icon" aria-label={view === "grid" ? "Show list" : "Show grid"} onClick={() => { setView(view === "grid" ? "list" : "grid"); revealResults(); }}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -380,8 +384,8 @@ const MediaLibraryPage = () => {
               const isActive = activeCollection === col.key;
               const ColIcon = col.icon;
               return (
-                <button key={col.key} onClick={() => setActiveCollection(col.key)}
-                  className={`holo-tile relative rounded-2xl p-3 text-left ${
+                <Button variant="ghost" key={col.key} aria-pressed={isActive} onClick={() => { setActiveCollection(col.key); setTypeFilter("all"); setSearch(""); revealResults(); }}
+                  className={`holo-tile relative h-auto justify-start whitespace-normal rounded-2xl p-3 text-left ${
                     isActive
                         ? "ring-1 ring-primary/50 shadow-lg shadow-primary/10 scale-[1.02]"
                       : ""
@@ -402,7 +406,7 @@ const MediaLibraryPage = () => {
                       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                     </div>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -415,7 +419,7 @@ const MediaLibraryPage = () => {
           {TYPE_FILTERS.map(f => {
             const FIcon = f.icon;
             return (
-              <button key={f.key} onClick={() => setTypeFilter(f.key)}
+              <Button variant="ghost" key={f.key} aria-pressed={typeFilter === f.key} onClick={() => { setTypeFilter(f.key); revealResults(); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all ${
                   typeFilter === f.key
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
@@ -423,14 +427,14 @@ const MediaLibraryPage = () => {
                 }`}>
                 <FIcon className="w-3 h-3" />
                 {f.label}
-              </button>
+              </Button>
             );
           })}
         </div>
       </div>
 
       {/* ── Recent strip (only on "All") ── */}
-      {activeCollection === "all" && recentItems.length > 0 && !search && (
+      {activeCollection === "all" && typeFilter === "all" && recentItems.length > 0 && !search && (
         <div className="px-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-3.5 h-3.5 text-primary" />
@@ -466,7 +470,10 @@ const MediaLibraryPage = () => {
       )}
 
       {/* ── Content Grid / List ── */}
-      <div className="px-4">
+      <div ref={resultsRef} role="region" aria-label="Library results" className="px-4 scroll-mt-4">
+        <p role="status" className="text-sm font-semibold text-foreground mb-3">
+          {activeCol.label} · {typeFilter === "all" ? "All Types" : TYPE_FILTERS.find(f => f.key === typeFilter)?.label} · {filtered.length} items
+        </p>
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -618,7 +625,7 @@ const MediaLibraryPage = () => {
 
       {/* ── Detail dialog ── */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-[95vw] rounded-2xl border-border bg-card">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{selected?.title || "Creation"}</DialogTitle>
           </DialogHeader>
