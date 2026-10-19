@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ authorizeAI: vi.fn(), settleAI: vi.fn(), cancelAI: vi.fn() }));
