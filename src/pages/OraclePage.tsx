@@ -1,4 +1,4 @@
-import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
+import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
@@ -703,8 +703,11 @@ const OraclePage = () => {
   // ElevenLabs stream / browser TTS that sees a stale token aborts immediately.
   // This is the single source of truth that prevents two voices overlapping.
   const speechTokenRef = useRef(0);
+  const speechRequestRef = useRef<AbortController | null>(null);
   const cancelCurrentSpeech = useCallback(() => {
     speechTokenRef.current += 1;
+    speechRequestRef.current?.abort();
+    speechRequestRef.current = null;
     try { window.speechSynthesis?.cancel(); } catch {}
     try {
       const a = currentAudioRef.current;
@@ -752,6 +755,9 @@ const OraclePage = () => {
   // Premium ElevenLabs TTS for the Oracle — uses the EXACT voice + settings
   // the user tuned in Voice Studio so the Oracle sounds identical to the preview.
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
+    const controller = new AbortController();
+    speechRequestRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
@@ -785,7 +791,8 @@ const OraclePage = () => {
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await getEdgeAuthToken()}` },
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await requireEdgeAuthToken()}` },
+        signal: controller.signal,
         body: JSON.stringify({
           text: prepared,
           voiceId: masterVoiceId,

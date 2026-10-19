@@ -5,14 +5,30 @@ import { supabase } from "@/integrations/supabase/client";
 
 let cached: string | null = null;
 
+export class EdgeSessionRequiredError extends Error {
+  constructor() {
+    super("Please sign in again. Your message is still here.");
+    this.name = "EdgeSessionRequiredError";
+  }
+}
+
+/** Paid endpoints must never receive the public key as a substitute for a session. */
+export async function requireEdgeAuthToken(): Promise<string> {
+  const token = await getEdgeAuthToken();
+  if (!token || token === import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
+    throw new EdgeSessionRequiredError();
+  }
+  return token;
+}
+
 export async function getEdgeAuthToken(): Promise<string> {
   let { data: { session } } = await supabase.auth.getSession();
   // Refresh a token that is missing or about to expire, otherwise paid
   // endpoints reject the call with auth_required.
   const expiresAt = (session?.expires_at ?? 0) * 1000;
   if (session && expiresAt && expiresAt - Date.now() < 60_000) {
-    const { data } = await supabase.auth.refreshSession();
-    if (data.session) session = data.session;
+    const { data, error } = await supabase.auth.refreshSession();
+    session = error ? null : data.session;
   }
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   cached = token;
