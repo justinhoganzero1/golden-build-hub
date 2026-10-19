@@ -57,3 +57,5 @@
 - [x] Verified 23 real accounts, 23 memberships and 23 profiles; repaired one missing profile without inventing personal data or creating users.
 - [ ] Oracle golden rule: Oracle controls the entire app, uses full memory, fastest and most fail-safe (needs scoping with Juzzy)
 - [ ] Oracle wonderland: web search (built, testing), picture-rich answers (built), runs any app (control bus exists), remembers everything (Library recall still to add)
+
+- [ ] Polished gold emails to Amy (Option A Monarch, Option B TAFE) with clickable WorkCover app, saved to Library
