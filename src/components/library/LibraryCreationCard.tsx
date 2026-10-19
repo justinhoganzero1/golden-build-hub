@@ -25,7 +25,7 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
   }, []);
   const isApp = item.media_type === "app";
   const { data: detail } = useQuery({
-    queryKey: ["library-card-app", item.id],
+    queryKey: ["library-card-app", item.id, item.updated_at],
     enabled: visible && isApp,
     staleTime: 300_000,
     queryFn: async () => {
@@ -35,7 +35,17 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
     },
   });
   const metadata = (detail?.metadata || {}) as Record<string, any>;
-  const rawHtml = typeof detail?.url === "string" && /^\s*</.test(detail.url) ? detail.url : metadata.html || metadata.code;
+  let storedHtml = detail?.url || "";
+  if (/^data:text\/html[;,]/i.test(storedHtml)) {
+    try {
+      const comma = storedHtml.indexOf(",");
+      const payload = storedHtml.slice(comma + 1);
+      storedHtml = storedHtml.slice(0, comma).includes(";base64")
+        ? new TextDecoder().decode(Uint8Array.from(atob(payload), char => char.charCodeAt(0)))
+        : decodeURIComponent(payload);
+    } catch { storedHtml = ""; }
+  }
+  const rawHtml = /^\s*</.test(storedHtml) ? storedHtml : metadata.html || metadata.code;
   const html = typeof rawHtml === "string" ? rawHtml : "";
   const document = html ? new DOMParser().parseFromString(html, "text/html") : null;
   const appName = metadata.app_name || metadata.appName || document?.querySelector("title")?.textContent || document?.querySelector("h1")?.textContent;
