@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // generate-living-gif (queue-and-return)
 //
 // Switched to async pipeline. This function:
@@ -134,7 +135,7 @@ serve(async (req) => {
       }
     } catch { /* ignore */ }
     return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
+      status: statusFor(e),
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

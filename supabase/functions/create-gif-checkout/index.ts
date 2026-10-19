@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // Living GIF $4 one-time Stripe checkout
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
@@ -118,7 +119,7 @@ serve(async (req) => {
     const msg = e instanceof Error ? e.message : String(e);
     log("ERROR", { msg });
     return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
+      status: statusFor(e),
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

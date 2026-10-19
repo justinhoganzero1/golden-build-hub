@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -52,7 +53,7 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: statusFor(error),
     });
   }
 });

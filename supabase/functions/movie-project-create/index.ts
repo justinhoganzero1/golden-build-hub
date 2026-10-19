@@ -1,3 +1,4 @@
+import { statusFor } from "../_shared/errorStatus.ts";
 // Creates a new movie_projects row, validates tier limits, charges wallet UPFRONT for the
 // estimated cost (atomic deduction), then triggers the script chunker.
 // Slideshow edition: free users get exactly ONE 8-second clip, ever. Everything else is paywalled.
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[project-create]", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: statusFor(e),
     });
   }
 });
