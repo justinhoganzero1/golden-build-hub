@@ -59,6 +59,7 @@ const LibraryTileFace = ({
   useEffect(() => {
     let cancelled = false;
     if (!visible) return;
+    setFailed(false);
 
     const run = async () => {
       let source = src || null;
@@ -95,7 +96,7 @@ const LibraryTileFace = ({
     return () => { cancelled = true; };
   }, [visible, src, size, mediaId, canBackfill]);
 
-  if ((!src && !(mediaId && canBackfill)) || failed) return <>{fallback}</>;
+  if ((!src && !(mediaId && canBackfill)) || failed) return <div ref={ref} className={`w-full h-full ${className}`}>{fallback}</div>;
 
 
   return (
