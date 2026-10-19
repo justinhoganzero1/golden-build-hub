@@ -487,6 +487,7 @@ const MediaLibraryPage = () => {
           </div>
           {(search || typeFilter !== "all") && <Button variant="outline" onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear</Button>}
           {activeCollection !== "all" && <Button variant="outline" onClick={() => { setActiveCollection("all"); setSearch(""); setTypeFilter("all"); }}>All collections</Button>}
+          <Button variant="outline" aria-pressed={showOlder} onClick={() => setShowOlder(v => !v)}>{showOlder ? "Newest only" : "Show old versions"}</Button>
         </div>
         <p role="status" className="text-sm font-semibold text-foreground mb-3">
           {activeCol.label} · {typeFilter === "all" ? "All Types" : TYPE_FILTERS.find(f => f.key === typeFilter)?.label} · {filtered.length} items
