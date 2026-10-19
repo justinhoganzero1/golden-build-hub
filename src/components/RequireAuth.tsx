@@ -1,8 +1,8 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePreviewMode } from "@/hooks/usePreviewMode";
 import { useMembership } from "@/hooks/useMembership";
+import { memberPageAccess } from '@/lib/memberPageAccess';
 
 /**
  * Full lockdown: every app page needs a signed-in account.
@@ -42,10 +42,7 @@ const Spinner = () => (
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const isPreview = usePreviewMode();
   const { membership, exempt, active, loading: mLoading } = useMembership();
-
-  if (isPreview) return <>{children}</>;
 
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
@@ -59,7 +56,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const monthly = !!membership?.monthly_active_until &&
     new Date(membership.monthly_active_until).getTime() > Date.now();
   const founderOnly = !!membership?.founder_number && !monthly;
-  if (founderOnly && !match(FOUNDER_ALLOWED, path)) {
+  if (memberPageAccess({ signedIn: true, owner: exempt, active, founder: founderOnly, monthly, path }) === 'upgrade') {
     return <Navigate to="/membership" state={{ upgradeFrom: path }} replace />;
   }
   return <>{children}</>;
