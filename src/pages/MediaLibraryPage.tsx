@@ -3,7 +3,8 @@ import SEO from "@/components/SEO";
 import LibraryTileFace from "@/components/library/LibraryTileFace";
 import LibraryCreationCard, { readableLibraryTitle } from "@/components/library/LibraryCreationCard";
 import ResilientVideo from "@/components/ResilientVideo";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { matchesLibrarySearch } from "@/lib/librarySearch";
 import { sendLibraryItemToMovieMaker } from "@/lib/movieHandoff";
 
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -32,6 +33,7 @@ const COLLECTIONS = [
   { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
   { key: "teleport",      label: "Teleport ✨",                               icon: Sparkles },
   { key: "apps",          label: "Apps",                                      icon: Globe },
+  { key: "workcover",     label: "WorkCover",                                 icon: FolderOpen },
   { key: "stories",       label: "Stories & Books",                           icon: BookOpen },
   { key: "ai-tutor",      label: "AI Tutor",                                  icon: FileText },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
@@ -61,6 +63,7 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   if (metadata?.favourite === true || (sourcePage || "").toLowerCase() === "favourite-music") return "favourite-music";
   if (!sourcePage) return "other";
   const s = sourcePage.toLowerCase();
+  if (s.includes("workcover")) return "workcover";
   if (s === "teleport" || s.includes("teleport")) return "teleport";
   if (s.includes("avatar")) return "avatar";
   if (s.includes("photo")) return "photography";
@@ -89,11 +92,12 @@ const MediaLibraryPage = () => {
 
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [activeCollection, setActiveCollection] = useState("all");
+  const [activeCollection, setActiveCollection] = useState(searchParams.get("collection") || "all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [selected, setSelected] = useState<any>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<any>(null);
@@ -185,7 +189,7 @@ const MediaLibraryPage = () => {
       if (scope === "others" && m.user_id === user?.id) return false;
       if (activeCollection !== "all" && getCollectionKey(m.source_page, m.media_type, m.metadata) !== activeCollection) return false;
       if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
-      if (search && !(m.title || "").toLowerCase().includes(search.toLowerCase())) return false;
+      if (!matchesLibrarySearch(m.title, search, m.source_page || "")) return false;
       return true;
     });
   }, [mediaItems, activeCollection, typeFilter, search, scope, user?.id]);
@@ -472,6 +476,14 @@ const MediaLibraryPage = () => {
 
       {/* ── Content Grid / List ── */}
       <div ref={resultsRef} role="region" aria-label="Library results" className="px-4 scroll-mt-4">
+        <div className="sticky top-0 z-20 bg-background py-3 mb-3 flex gap-2 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input aria-label={`Search ${activeCol.label}`} placeholder={`Search ${activeCol.label}…`} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          {(search || typeFilter !== "all") && <Button variant="outline" onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear</Button>}
+          {activeCollection !== "all" && <Button variant="outline" onClick={() => { setActiveCollection("all"); setSearch(""); setTypeFilter("all"); }}>All collections</Button>}
+        </div>
         <p role="status" className="text-sm font-semibold text-foreground mb-3">
           {activeCol.label} · {typeFilter === "all" ? "All Types" : TYPE_FILTERS.find(f => f.key === typeFilter)?.label} · {filtered.length} items
         </p>
