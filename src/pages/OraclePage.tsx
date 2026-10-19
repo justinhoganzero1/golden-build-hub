@@ -1613,60 +1613,8 @@ const OraclePage = () => {
 
 
 
-  // Auto-prompt for microphone permission as soon as Oracle page opens, so the
-  // user gets the browser's native "Allow microphone?" dialog without having
-  // to find and tap the mic button first. Runs once per session.
-  const micAutoPromptRef = useRef(false);
-  useEffect(() => {
-    if (micAutoPromptRef.current) return;
-    micAutoPromptRef.current = true;
-    if (typeof window === "undefined") return;
-    if (!navigator.mediaDevices?.getUserMedia) {
-      toast.error("Microphone API not available. Use Chrome, Edge or Safari over HTTPS.");
-      return;
-    }
-    const t = setTimeout(async () => {
-      try {
-        const perm: any = await (navigator as any).permissions?.query?.({ name: "microphone" as PermissionName }).catch(() => null);
-        if (perm?.state === "granted") {
-          setMicPermissionError(null);
-          setMicPermGranted(true);
-          startAlwaysListening();
-          return;
-        }
-        if (perm?.state === "denied") {
-          const msg = "Microphone is blocked. Click the 🔒 lock icon in your browser address bar → set Microphone to Allow → reload the page.";
-          setMicPermissionError(msg);
-          toast.error(msg, { duration: 9000 });
-          return;
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
-        stream.getTracks().forEach((tr) => tr.stop());
-        setMicPermissionError(null);
-        setMicPermGranted(true);
-        startAlwaysListening();
-        toast.success("Microphone ready — Oracle is listening.");
-      } catch (err: any) {
-        console.error("[oracle] mic auto-prompt failed", err);
-        if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
-          const msg = "Microphone was blocked. Click the 🔒 in your address bar → Allow Microphone → reload.";
-          setMicPermissionError(msg);
-          toast.error(msg, { duration: 9000 });
-        } else if (err?.name === "NotFoundError") {
-          const msg = "No microphone detected on this laptop. Check Windows Sound settings → Input devices.";
-          setMicPermissionError(msg);
-          toast.error(msg);
-        } else {
-          const msg = "Tap the mic button to enable voice: " + (err?.message || err?.name || "unknown error");
-          setMicPermissionError(msg);
-          toast.error(msg);
-        }
-      }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [startAlwaysListening]);
+  // Activate the microphone only after an explicit composer tap.
+
 
   // Auto-greet on every open — varies the greeting so it's never the same twice in a row
   const greetTriggeredRef = useRef(false);
