@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // Hourly sweep: notifies users about (a) failed projects and (b) newly-completed projects.
 // Inserts an in-app inbox row + sends a Resend email. Marks notified flag so we don't double-notify.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";

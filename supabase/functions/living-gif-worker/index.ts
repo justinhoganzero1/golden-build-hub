@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // living-gif-worker
 //
 // Cron-driven (every minute) + on-demand worker that progresses one GIF per tick.

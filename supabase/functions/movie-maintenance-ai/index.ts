@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // Self-healing maintenance worker for the Movie Studio pipeline.
 // Runs every minute via pg_cron. Detects bottlenecks, stalls, orphan jobs,
 // and auto-rectifies by re-queueing, re-kicking the chunker, releasing locks,

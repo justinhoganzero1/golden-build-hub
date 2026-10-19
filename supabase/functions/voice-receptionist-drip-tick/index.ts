@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // Cron tick — sends scheduled follow-ups (SMS, email, or task notification).
 // Run every 5 minutes via Supabase cron or external scheduler.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
