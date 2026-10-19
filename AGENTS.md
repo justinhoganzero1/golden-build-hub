@@ -1,4 +1,5 @@
 # Project Rules
+- Resolve private storage URLs when opening Library items and before downloads; store permanent object references so saved files remain accessible after signed links expire.
 - Oracle paid requests require refreshed member tokens, never a public-key fallback; speech fetches are cancellable and startup must not synthesize billable warmups, to avoid stale authentication and unnecessary wallet contention.
 - TTS reserves funds before synthesis and settles before releasing audio, with bounded billing/provider waits and no retry of uncertain payments; failures must never deliver unbilled provider audio.
 - Oracle voice activation requires an explicit composer gesture and reuses its playback element; this respects microphone consent and mobile autoplay restrictions.
