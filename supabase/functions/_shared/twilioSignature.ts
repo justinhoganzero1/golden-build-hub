@@ -64,11 +64,6 @@ export async function verifyTwilioRequest(
     params = {};
   }
 
-  if (tokens.length === 0) {
-    console.error("[twilio] no Twilio signing secret configured — rejecting webhook");
-    return { response: forbidden() };
-  }
-
   const signature = req.headers.get("x-twilio-signature") || "";
   if (!signature) return { response: forbidden() };
 
@@ -88,8 +83,37 @@ export async function verifyTwilioRequest(
     }
   }
 
-  console.warn("[twilio] signature mismatch — rejecting webhook");
+  // No Auth Token saved (or mismatch): ask Twilio itself, through the
+  // connected account, whether this call/message really exists and matches.
+  if (await confirmWithTwilio(params)) return { params };
+
+  console.warn("[twilio] could not verify webhook — rejecting");
   return { response: forbidden() };
+}
+
+async function confirmWithTwilio(p: Record<string, string>): Promise<boolean> {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  const twilioKey = Deno.env.get("TWILIO_API_KEY");
+  if (!lovableKey || !twilioKey) return false;
+  const callSid = p.CallSid, msgSid = p.MessageSid || p.SmsSid;
+  let path: string;
+  if (callSid && /^CA[0-9a-f]{32}$/i.test(callSid)) path = `/Calls/${callSid}.json`;
+  else if (msgSid && /^(SM|MM)[0-9a-f]{32}$/i.test(msgSid)) path = `/Messages/${msgSid}.json`;
+  else return false;
+  try {
+    const r = await fetch(`https://connector-gateway.lovable.dev/twilio${path}`, {
+      headers: { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": twilioKey },
+    });
+    if (!r.ok) { console.warn(`[twilio] lookup ${r.status}`); return false; }
+    const d = await r.json();
+    if (p.AccountSid && d.account_sid && d.account_sid !== p.AccountSid) return false;
+    if (p.From && d.from && d.from !== p.From) return false;
+    if (p.To && d.to && d.to !== p.To) return false;
+    return true;
+  } catch (e) {
+    console.warn("[twilio] lookup failed", e);
+    return false;
+  }
 }
 
 
