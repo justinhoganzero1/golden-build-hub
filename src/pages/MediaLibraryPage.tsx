@@ -2,6 +2,7 @@ import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2
 import SEO from "@/components/SEO";
 import LibraryTileFace from "@/components/library/LibraryTileFace";
 import LibraryCreationCard, { readableLibraryTitle } from "@/components/library/LibraryCreationCard";
+import LibraryAppViewer, { isLibraryApp } from "@/components/library/LibraryAppViewer";
 import ResilientVideo from "@/components/ResilientVideo";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { matchesLibrarySearch } from "@/lib/librarySearch";
@@ -569,11 +570,18 @@ const MediaLibraryPage = () => {
 
       {/* ── Detail dialog ── */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border-border bg-card">
+        <DialogContent className={isLibraryApp(selected) ? "w-screen max-w-none h-[100dvh] max-h-[100dvh] p-0 gap-0 rounded-none border-0 bg-background flex flex-col" : "w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border-border bg-card"}>
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold">{selected?.title || "Creation"}</DialogTitle>
+            <DialogTitle className={isLibraryApp(selected) ? "text-base font-semibold px-4 pt-4 pr-12" : "text-base font-semibold"}>{readableLibraryTitle(selected?.title) || "Creation"}</DialogTitle>
           </DialogHeader>
-          {selected && (
+          {selected && isLibraryApp(selected) && <>
+            <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-border">
+              <Button variant="outline" onClick={() => setSelected(null)}><ArrowRight className="h-4 w-4 rotate-180 mr-2" />Back to Library</Button>
+              <Button variant="outline" onClick={handleDownloadSelected}><Download className="h-4 w-4 mr-2" />Download app</Button>
+            </div>
+            <LibraryAppViewer item={selected} />
+          </>}
+          {selected && !isLibraryApp(selected) && (
             <div className="space-y-4 mt-2">
               <div className="aspect-video bg-secondary rounded-2xl flex items-center justify-center overflow-hidden border border-border">
                 {isImageLike(selected) ? (
