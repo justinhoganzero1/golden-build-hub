@@ -48,5 +48,5 @@
 - [x] WorkCover QLD Worker Assist redesign: clickable demo (HTML) + design pack PDF delivered
 - [ ] Strengthen WorkCover showcase with Justin's proposal, verified course schedule, narration/video and a downloadable working version; official WorkCover system access is not available.
 - [ ] Republish faster Oracle voice and measure whether signed-in playback meets three seconds; do not claim target achieved without measurement.
-- [ ] Check and save WorkCover deliverables in Justin's Oracle Lunar Library; verify account read-back.
+- [ ] Immediate priority: save every WorkCover deliverable in Justin's Oracle Lunar Library and verify visible entries plus working downloads, not Files-only storage.
 - [ ] Priority: fix unresolved critical payment findings and verify protections before any further publishing.
