@@ -21,25 +21,27 @@ export function useMembership() {
   const { user } = useAuth();
   const [membership, setMembership] = useState<Membership | null>(null);
   const [exempt, setExempt] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
 
   const refresh = useCallback(async () => {
-    if (!user) { setMembership(null); setLoading(false); return; }
+    if (!user) { setMembership(null); setExempt(false); setLoadedFor(null); return; }
     const [{ data: m }, { data: admin }] = await Promise.all([
       supabase.from("memberships" as any).select("kind,trial_ends_at,founder_number,monthly_active_until").eq("user_id", user.id).maybeSingle(),
       supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
     ]);
     setMembership((m as any) ?? null);
     setExempt(!!admin);
-    setLoading(false);
+    setLoadedFor(user.id);
   }, [user]);
 
-  useEffect(() => { setLoading(true); refresh(); }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
     const h = () => refresh();
     window.addEventListener("membership:updated", h);
     return () => window.removeEventListener("membership:updated", h);
   }, [refresh]);
 
+  // Still loading until the result belongs to the current user, so a fresh sign-in never sees stale "no membership".
+  const loading = loadedFor !== (user?.id ?? null);
   return { membership, exempt, loading, active: exempt || membershipActive(membership), refresh };
 }
