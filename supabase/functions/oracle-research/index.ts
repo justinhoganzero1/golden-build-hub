@@ -44,7 +44,7 @@ serve(async (req) => {
           }),
         });
         const fd = await fr.json().catch(() => ({}));
-        const arr = fd?.data || fd?.web?.results || [];
+        const arr = Array.isArray(fd?.data) ? fd.data : (fd?.data?.web || fd?.web?.results || []);
         sources = (Array.isArray(arr) ? arr : []).slice(0, 5).map((s: any) => ({
           url: s.url, title: s.title, description: s.description,
           markdown: (s.markdown || "").slice(0, 4000),
