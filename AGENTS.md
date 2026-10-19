@@ -1,4 +1,5 @@
 # Project Rules
+- The independent WorkCover showcase uses fictional records and deterministic evidence checks, with human review before decisions; this avoids pretending to connect to official systems or deploying automated fraud verdicts.
 - Resolve private storage URLs when opening Library items and before downloads; store permanent object references so saved files remain accessible after signed links expire.
 - Bind paid fulfillment to server-owned prices, user and exact purchase; keep consumed founder sessions in a separate ledger so transfers cannot allow payment replay.
 - Oracle paid requests require refreshed member tokens, never a public-key fallback; speech fetches are cancellable and startup must not synthesize billable warmups, to avoid stale authentication and unnecessary wallet contention.
