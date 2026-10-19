@@ -57,6 +57,8 @@ export const PROVIDER_RATES = {
 
   // Lovable AI Gateway — bill at least 1¢ per call so we never go negative
   lovable_ai_gemini_flash_per_call: 1,
+  // Firecrawl search + scrape of up to 5 pages (~5–10 credits)
+  firecrawl_search_5_pages: 2,
   lovable_ai_gemini_pro_per_call: 3,
   lovable_ai_gpt5_per_call: 5,
   lovable_ai_image_gen_per_image: 4,
