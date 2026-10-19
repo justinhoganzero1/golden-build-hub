@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Priority: rectify mandatory 20% billing margin; inspect the 68 historical shortfalls, enforce future charges, and verify without inventing retrospective payments.
+- [x] Rectify mandatory 20% billing margin: verified the 68 historical below-floor rows belong only to the exempt owner; future member writes are guarded, exact-price tests pass, and signed-in diagnostics reports zero member failures. Financial history and wallet balances unchanged.
 - [ ] Require each new member's own GitHub connection during signup — blocked: no GitHub App User Connector client is configured in this workspace; existing GitHub/code sync does not establish this.
 - [ ] Prevent member AI from spending owner workspace credits — separate provider billing is required; wallet reimbursement and GitHub connection alone do not isolate provider billing.
 - [ ] Republish — awaiting Juzzy's choice whether to address critical security findings first.
@@ -36,5 +36,5 @@
 - [ ] Twilio Auth Token — Juzzy must enter it (not saved; phone calls are refused without it).
 - [ ] Twilio texts — Twilio blocks changing text settings remotely for this number's region; Juzzy sets SMS webhook in Twilio Console.
 - [ ] Social posting keys (X, Instagram, IndexNow) — need Juzzy's accounts.
-- [ ] Implement seven reliability layers and security counterparts: safe AI recovery, duplicate-payment protection, call safety, screen recovery, durable drafts, owner alerts and daily non-billable checks; validate and report remaining limits.
+- [ ] Seven reliability/security layers paused at Juzzy's request to prioritize billing: drafts, manual recovery, owner alerts, daily checks, operation claims and worker gates added; remaining work includes secure machine scheduler credentials (existing anonymous worker schedules are now rejected), atomic movie payment handoff and broader paid-flow validation.
 - [ ] Keep this work result-focused; investigate workable alternatives and report only verified outcomes and necessary blockers.
