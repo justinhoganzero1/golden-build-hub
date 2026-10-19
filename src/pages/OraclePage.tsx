@@ -1534,6 +1534,8 @@ const OraclePage = () => {
     const greeting = greetings[idx];
 
     const t = setTimeout(() => {
+      // A delayed welcome must not cut into a reply already requested.
+      if (isLoadingRef.current || latestHeardTextRef.current.trim()) return;
       // Push greeting directly as an assistant message + speak it
       setMessages((prev) => [...prev, { role: "assistant", content: greeting } as any]);
       try { speakAsAgent(greeting, oracleName); } catch {}
@@ -2085,7 +2087,7 @@ const OraclePage = () => {
 
     // ── Outbound phone calling is currently vaulted (Twilio disabled) ──
 
-    window.speechSynthesis.cancel();
+    cancelCurrentSpeech();
     setIsSpeaking(false);
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
@@ -2270,6 +2272,8 @@ const OraclePage = () => {
         }
       }
 
+      // A short answer without punctuation should not wait for downstream tools.
+      if (!finalOnlyMode) flushSpeakableSentences(true);
       if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
 
       // Parse and save memories from Oracle response
