@@ -1,4 +1,5 @@
 # Project Rules
+- Preview URLs and hostnames never bypass RequireAuth or membership access; missing membership fails closed while account-management pages remain accessible, preventing public feature exposure.
 - The independent WorkCover showcase uses fictional records and deterministic evidence checks, with human review before decisions; this avoids pretending to connect to official systems or deploying automated fraud verdicts.
 - Resolve private storage URLs when opening Library items and before downloads; store permanent object references so saved files remain accessible after signed links expire.
 - Bind paid fulfillment to server-owned prices, user and exact purchase; keep consumed founder sessions in a separate ledger so transfers cannot allow payment replay.

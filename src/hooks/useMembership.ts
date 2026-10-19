@@ -10,7 +10,7 @@ export interface Membership {
 }
 
 export function membershipActive(m: Membership | null): boolean {
-  if (!m) return true; // row not loaded/missing: never lock out by mistake
+  if (!m) return false; // Missing membership is not proof of access; account pages remain available.
   const now = Date.now();
   if (m.founder_number) return true;
   if (m.monthly_active_until && new Date(m.monthly_active_until).getTime() > now) return true;
