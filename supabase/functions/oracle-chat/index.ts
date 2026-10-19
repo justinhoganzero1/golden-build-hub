@@ -20,7 +20,8 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent } = await req.json();
+    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice } = await req.json();
+    const isVoiceTurn = voice === true;
     // Member-chosen AI brain (must match src/lib/chatAgents.ts). Cost tier → provider cents.
     const ALLOWED_MODELS: Record<string, number> = {
       "openai/gpt-6-astra": PROVIDER_RATES.lovable_ai_gpt5_per_call,
@@ -62,7 +63,7 @@ serve(async (req) => {
           // provider key skips the wallet. No trial, no free daily allowance.
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
           let hasOwnKey = false;
-          try {
+          if (!isAdmin) try {
             const { data: keyRow } = await admin
               .from("user_ai_keys")
               .select("openai_key, gemini_key")
