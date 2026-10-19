@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Require each new member's own GitHub connection during signup — blocked: no GitHub App User Connector client is configured in this workspace; existing GitHub/code sync does not establish this.
+- [ ] Prevent member AI from spending owner workspace credits — separate provider billing is required; wallet reimbursement and GitHub connection alone do not isolate provider billing.
 - [ ] Republish — awaiting Juzzy's choice whether to address critical security findings first.
 - [ ] Chat30 connector: awaiting exact service link and chapter 25 content; verify covers and pictures before/after saving.
 - [x] Consolidate Oracle into one chat; equal-size speaker/tools inside composer; pale-blue upward expanding choices. Verified 393px viewport, tool navigation, canonical route, and no runtime errors; paid operations not tested.
