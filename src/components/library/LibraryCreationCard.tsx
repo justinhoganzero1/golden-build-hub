@@ -4,6 +4,7 @@ import { FileText, Globe, Image, Music, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import LibraryTileFace from "./LibraryTileFace";
+import { parseStorageUrl } from "@/lib/signedStorageUrl";
 
 export function readableLibraryTitle(title: string | null | undefined) {
   return (title || "Untitled creation").replace(/\.(html?|pdf|zip|webm|mp4|epub|txt)$/i, "").replace(/_/g, " ").replace(/\bv(\d+)\b/gi, "version $1").trim();
@@ -23,7 +24,7 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const isApp = item.media_type === "app";
+  const isApp = item.media_type === "app" || /\.html?$/i.test(item.title || "");
   const { data: detail } = useQuery({
     queryKey: ["library-card-app", item.id, item.updated_at],
     enabled: visible && isApp,
@@ -31,7 +32,31 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
     queryFn: async () => {
       const { data, error } = await supabase.from("user_media").select("url,metadata").eq("id", item.id).single();
       if (error) throw error;
-      return data;
+      let html = "";
+      const stored = parseStorageUrl(data.url);
+      if (stored && isApp) {
+        const { data: signed, error: signingError } = await supabase.storage.from(stored.bucket).createSignedUrl(stored.path, 3600);
+        if (signingError || !signed?.signedUrl) throw signingError || new Error("Preview unavailable");
+        const response = await fetch(signed.signedUrl, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) throw new Error("Preview unavailable");
+        // Only read the opening page, not embedded full videos or entire books.
+        const reader = response.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let bytes = 0;
+          try {
+            while (bytes < 512_000) {
+              const chunk = await reader.read();
+              if (chunk.done) break;
+              const remaining = 512_000 - bytes;
+              html += decoder.decode(chunk.value.subarray(0, remaining), { stream: true });
+              bytes += chunk.value.length;
+            }
+            html += decoder.decode();
+          } finally { await reader.cancel(); }
+        }
+      }
+      return { ...data, html };
     },
   });
   const metadata = (detail?.metadata || {}) as Record<string, any>;
@@ -45,23 +70,23 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
         : decodeURIComponent(payload);
     } catch { storedHtml = ""; }
   }
-  const rawHtml = /^\s*</.test(storedHtml) ? storedHtml : metadata.html || metadata.code;
+  const rawHtml = detail?.html || (/^\s*</.test(storedHtml) ? storedHtml : metadata.html || metadata.code);
   const html = typeof rawHtml === "string" ? rawHtml : "";
   const document = html ? new DOMParser().parseFromString(html, "text/html") : null;
   const appName = metadata.app_name || metadata.appName || document?.querySelector("title")?.textContent || document?.querySelector("h1")?.textContent;
-  const title = readableLibraryTitle(isApp && appName ? appName : item.title);
+  const title = readableLibraryTitle(item.media_type === "app" && appName ? appName : item.title);
   const imageLike = ["image", "gif"].includes(item.media_type);
   const video = item.media_type === "video";
   const thumb = item.thumbnail_url || metadata.thumbnail || metadata.screenshot || metadata.cover;
   const Icon = imageLike ? Image : isApp ? Globe : item.media_type === "audio" ? Music : FileText;
   const kind = isApp ? "App" : imageLike ? "Image" : video ? "Video" : item.media_type === "audio" ? "Audio" : item.media_type === "story" ? "Book" : item.media_type === "text" ? "Saved conversation" : "Document";
-  const previewHtml = html ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:;">${html}` : "";
+  const previewHtml = html ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:;">${html}<style>html{scrollbar-width:none}body{animation:none!important}*[style*="opacity: 0"]{opacity:1!important}</style>` : "";
   return (
     <div ref={ref} className="min-w-0">
       <Button variant="ghost" onClick={onOpen} disabled={busy} aria-label={`Open ${title}`} className="group w-full h-full flex flex-col items-stretch justify-start p-0 whitespace-normal overflow-hidden rounded-lg border border-border bg-card text-left hover:bg-card hover:border-primary">
-        <div className="relative w-full aspect-[16/10] overflow-hidden bg-muted shrink-0">
+        <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted shrink-0">
           {imageLike || thumb ? (
-            <LibraryTileFace src={thumb} alt={title} size={320} mediaId={item.id} canBackfill={imageLike} fallback={<div className="h-full flex items-center justify-center"><Icon className="h-12 w-12 text-muted-foreground" /></div>} />
+            <LibraryTileFace src={thumb} alt={title} size={640} mediaId={item.id} canBackfill={imageLike} fallback={<div className="h-full flex items-center justify-center"><Icon className="h-12 w-12 text-muted-foreground" /></div>} />
           ) : isApp && previewHtml ? (
             <iframe title={`${title} preview`} sandbox="" srcDoc={previewHtml} tabIndex={-1} className="w-full h-full border-0 pointer-events-none" />
           ) : (

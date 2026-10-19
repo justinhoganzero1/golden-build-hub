@@ -504,7 +504,7 @@ const MediaLibraryPage = () => {
             </p>
           </div>
         ) : view === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {paged.map((m: any) => {
               const collection = COLLECTIONS.find(c => c.key === getCollectionKey(m.source_page, m.media_type, m.metadata))?.label || "Other";
               return <LibraryCreationCard key={m.id} item={m} collection={collection} busy={openingId === m.id} onOpen={() => void openItem(m)} />;
