@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { coinPackCents } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,16 +24,18 @@ serve(async (req) => {
     const { priceId, mode, coinPackDollars, returnTo } = await req.json();
     // Only allow same-origin relative paths back into the app.
     const safeReturn = typeof returnTo === "string" && /^\/[A-Za-z0-9\-_/]*$/.test(returnTo) ? returnTo : "/wallet";
-    const dollars = Number(coinPackDollars ?? 0);
-    if (!priceId && (!Number.isFinite(dollars) || dollars <= 0)) {
-      throw new Error("coinPackDollars or priceId is required");
-    }
+    if (priceId) return new Response(JSON.stringify({ error: "Use the dedicated product checkout" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let walletCents: number;
+    try { walletCents = coinPackCents(coinPackDollars); }
+    catch { return new Response(JSON.stringify({ error: "invalid coin pack" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
+    const dollars = walletCents / 100;
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return new Response(JSON.stringify({ error: "auth_required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user) throw new Error("User not authenticated");
+    if (!user?.email || user.is_anonymous) return new Response(JSON.stringify({ error: "auth_required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Anonymous Supabase users have no email — Stripe Checkout will collect it.
     const isAnon = !user.email || (user as any).is_anonymous === true;
@@ -78,7 +81,7 @@ serve(async (req) => {
             purchase_type: "coin_topup",
             user_id: user.id,
             coin_pack_dollars: String(dollars),
-            wallet_cents: String(Math.round(dollars * 100)),
+            wallet_cents: String(walletCents),
             visitor_multiplier: String(visitorMultiplier),
             is_anonymous: String(isAnon),
           }
