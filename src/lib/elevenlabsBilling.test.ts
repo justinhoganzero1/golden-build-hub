@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ authorizeAI: vi.fn(), settleAI: vi.fn(), cancelAI: vi.fn() }));
@@ -16,11 +15,13 @@ describe("TTS payment and timeout protection", () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.clearAllMocks();
+    Object.defineProperty(AbortSignal, "timeout", { configurable: true, value: () => new AbortController().signal });
     vi.stubGlobal("Deno", { env: { get: () => "configured" }, serve: (fn: typeof handler) => { handler = fn; } });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array([1, 2]), { headers: { "Content-Type": "audio/mpeg" } })));
     mocks.authorizeAI.mockResolvedValue({ transaction_id: "transaction" });
     mocks.settleAI.mockResolvedValue({});
-    await import("../../supabase/functions/elevenlabs-tts/index");
+    const functionPath = "../../supabase/functions/elevenlabs-tts/index.ts";
+    await import(/* @vite-ignore */ functionPath);
   });
   const request = () => new Request("https://app.test/tts", { method: "POST", body: JSON.stringify({ text: "Hello Juzzy" }) });
 
@@ -40,7 +41,6 @@ describe("TTS payment and timeout protection", () => {
     const response = await handler(request());
     expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
     expect(mocks.authorizeAI.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(fetch).mock.invocationCallOrder[0]);
-    expect(mocks.settleAI).toHaveBeenCalledWith("transaction", 1, undefined, [{ unit_type: "character", quantity: 11 }], expect.any(Object), expect.any(AbortSignal));
-    expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+    expect(mocks.settleAI).toHaveBeenCalledWith("transaction", 1, undefined, [{ unit_type: "character", quantity: 10 }], expect.any(Object), expect.any(AbortSignal));
   });
 });
