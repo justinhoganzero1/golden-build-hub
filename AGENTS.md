@@ -1,5 +1,6 @@
 # Project Rules
 - Oracle voice activation requires an explicit composer gesture and reuses its playback element; this respects microphone consent and mobile autoplay restrictions.
+- Oracle microphone teardown runs only on page unmount or an explicit stop, never on render-dependent objects; otherwise listening silently shuts down during screen updates.
 - Oracle voice playback streams decoded MP3 frames when supported and buffers only on unsupported browsers; early complete speech phrases reduce latency without replaying synthesis or bypassing billing.
 - Route all app-wide Oracle launchers to the canonical /oracle chat instead of mounting a second chat engine, so microphone, model selection and tool execution have one owner.
 

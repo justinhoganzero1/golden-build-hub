@@ -488,12 +488,6 @@ const OraclePage = () => {
     }, delay);
   }, [flushCapturedVoiceText]);
 
-  // Old realtime token/scribe path disabled — Oracle now uses one direct browser mic pipeline only.
-  const scribe = {
-    connect: async () => {},
-    disconnect: async () => {},
-  } as any;
-
   const startAlwaysListeningRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -1389,10 +1383,9 @@ const OraclePage = () => {
       alwaysListenRef.current = false;
       scribeModeRef.current = false;
       if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
-      try { scribe.disconnect(); } catch {}
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
-  }, [scribe]);
+  }, []);
 
   // First-visit auto-introduction — Oracle introduces itself + capabilities ONCE
   // ─────────────────────────────────────────────────────────────
@@ -1535,7 +1528,7 @@ const OraclePage = () => {
 
     const t = setTimeout(() => {
       // A delayed welcome must not cut into a reply already requested.
-      if (isLoadingRef.current || latestHeardTextRef.current.trim()) return;
+      if (alwaysListenRef.current || isLoadingRef.current || latestHeardTextRef.current.trim()) return;
       // Push greeting directly as an assistant message + speak it
       setMessages((prev) => [...prev, { role: "assistant", content: greeting } as any]);
       try { speakAsAgent(greeting, oracleName); } catch {}
