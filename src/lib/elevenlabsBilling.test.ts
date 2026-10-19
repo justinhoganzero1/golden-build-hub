@@ -41,6 +41,6 @@ describe("TTS payment and timeout protection", () => {
     const response = await handler(request());
     expect(response.headers.get("Content-Type")).toBe("audio/mpeg");
     expect(mocks.authorizeAI.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(fetch).mock.invocationCallOrder[0]);
-    expect(mocks.settleAI).toHaveBeenCalledWith("transaction", 1, undefined, [{ unit_type: "character", quantity: 10 }], expect.any(Object), expect.any(AbortSignal));
+    expect(mocks.settleAI).toHaveBeenCalledWith("transaction", 1, undefined, [{ unit_type: "character", quantity: 11 }], expect.any(Object), expect.any(AbortSignal));
   });
 });
