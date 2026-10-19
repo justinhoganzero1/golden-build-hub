@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // Self-healing maintenance worker for the Movie Studio pipeline.
 // Runs every minute via pg_cron. Detects bottlenecks, stalls, orphan jobs,
 // and auto-rectifies by re-queueing, re-kicking the chunker, releasing locks,
@@ -69,6 +70,8 @@ Deno.serve(async (req) => {
   }
 
   const actions: HealAction[] = [];
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   const now = Date.now();
   const ISO = (ms: number) => new Date(ms).toISOString();
 

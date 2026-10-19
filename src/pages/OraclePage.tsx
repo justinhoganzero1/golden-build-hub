@@ -1,4 +1,5 @@
 import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
+import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
@@ -189,6 +190,26 @@ const OraclePage = () => {
   const { subscribed, tier, loading: subLoading } = useSubscription();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [recoveryUser, setRecoveryUser] = useState<string | null>(null);
+  const draftWarning = useRef(false);
+  useEffect(() => {
+    setMessages([]);
+    setInput("");
+    if (!user?.id) { setRecoveryUser(null); return; }
+    const draft = readDraft<{ messages: Message[]; input: string }>(user.id, "oracle-main");
+    if (draft && Array.isArray(draft.messages)) {
+      setMessages(draft.messages);
+      setInput(typeof draft.input === "string" ? draft.input : "");
+    }
+    setRecoveryUser(user.id);
+  }, [user?.id]);
+  useEffect(() => {
+    if (!user?.id || recoveryUser !== user.id) return;
+    if (!writeDraft(user.id, "oracle-main", { messages: messages.slice(-50), input }) && !draftWarning.current) {
+      draftWarning.current = true;
+      toast.error("Device storage is full. Keep this chat open until your work is saved.");
+    }
+  }, [user?.id, recoveryUser, messages, input]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [agents, setAgents] = useState<ChatAgent[]>(DEFAULT_AGENTS);
@@ -2280,7 +2301,7 @@ const OraclePage = () => {
           setIsLoading(false);
           return;
         }
-        toast.error(err.error || "Something went wrong");
+        toast.error(recoveryFor(oracleResp.status).message);
         setIsLoading(false);
         return;
       }
@@ -2367,6 +2388,11 @@ const OraclePage = () => {
             if (jsonStr === "[DONE]") break;
             try {
               const parsed = JSON.parse(jsonStr);
+              if (parsed.error) {
+                controller.abort();
+                toast.error("The reply stopped. Your partial answer is retained; no paid retry was made.");
+                return;
+              }
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 oracleContent += content;

@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // Cron-driven worker. Pulled by pg_cron every minute. Claims one job, runs it, updates state.
 // Job types: video | audio | upscale_4k | upscale_8k | stitch | thumbnail | trailer
 //
@@ -87,6 +88,8 @@ async function forgetProvider(...keys: string[]) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   try {
     TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
     let processed = 0;

@@ -25,7 +25,8 @@ export default defineTool({
     category: z.string().optional(),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async (input, ctx) => {
+  handler: async (args, ctx) => {
+    const input = z.object({ title: z.string().trim().min(1), content: z.string().trim().min(1), mood: z.string().optional(), entry_date: z.string().optional(), tags: z.array(z.string()).optional(), category: z.string().optional() }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     if (input.entry_date && !DATE_RE.test(input.entry_date)) {
       return mcpError("invalid_input", "entry_date must be an ISO date in YYYY-MM-DD format.");

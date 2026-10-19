@@ -106,11 +106,12 @@ async function checkLocalStorage(): Promise<CheckResult> {
         const raw = localStorage.getItem(k);
         if (!raw) continue;
         if (raw.startsWith("{") || raw.startsWith("[")) {
-          try { JSON.parse(raw); } catch { localStorage.removeItem(k); pruned++; }
+          // Never delete a member's draft during a diagnostic check.
+          try { JSON.parse(raw); } catch { pruned++; }
         }
       }
       if (pruned > 0) {
-        return { status: "repaired" as CheckStatus, detail: `Pruned ${pruned} corrupt entries`, repairAction: "localStorage.prune" };
+        return { status: "warn" as CheckStatus, detail: `${pruned} unreadable entries preserved for recovery` };
       }
       return { status: "ok" as CheckStatus, detail: `${keys.length} keys, all valid` };
     } catch (e: any) {

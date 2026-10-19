@@ -1,3 +1,4 @@
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 // living-gif-worker
 //
 // Cron-driven (every minute) + on-demand worker that progresses one GIF per tick.
@@ -343,6 +344,8 @@ async function processOne(): Promise<{ processed: boolean; result?: unknown }> {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   try {
     const results: unknown[] = [];
     for (let i = 0; i < 3; i++) {

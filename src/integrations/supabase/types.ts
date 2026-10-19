@@ -1682,6 +1682,7 @@ export type Database = {
           id: string
           kindle_email: string
           provider_message_id: string | null
+          request_key: string | null
           sender_email: string
           status: string
           title: string
@@ -1696,6 +1697,7 @@ export type Database = {
           id?: string
           kindle_email: string
           provider_message_id?: string | null
+          request_key?: string | null
           sender_email: string
           status?: string
           title: string
@@ -1710,6 +1712,7 @@ export type Database = {
           id?: string
           kindle_email?: string
           provider_message_id?: string | null
+          request_key?: string | null
           sender_email?: string
           status?: string
           title?: string
@@ -2409,6 +2412,39 @@ export type Database = {
           opened_at?: string | null
           source?: string
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      operation_claims: {
+        Row: {
+          created_at: string
+          id: string
+          request_key: string
+          result: Json
+          service: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_key: string
+          result?: Json
+          service: string
+          state?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_key?: string
+          result?: Json
+          service?: string
+          state?: string
           updated_at?: string
           user_id?: string
         }
@@ -3187,6 +3223,54 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      system_health_reports: {
+        Row: {
+          checks: Json
+          created_at: string
+          id: string
+          source: string
+        }
+        Insert: {
+          checks?: Json
+          created_at?: string
+          id?: string
+          source: string
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          id?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      system_incidents: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          id: string
+          incident_key: string
+          severity: string
+          summary: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          incident_key: string
+          severity: string
+          summary: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          incident_key?: string
+          severity?: string
+          summary?: string
         }
         Relationships: []
       }
@@ -4435,6 +4519,17 @@ export type Database = {
         }[]
       }
       billing_expire_stale_holds: { Args: never; Returns: number }
+      billing_margin_valid: {
+        Args: {
+          _cost: number
+          _fee: number
+          _kind: string
+          _owner: boolean
+          _status: string
+          _total: number
+        }
+        Returns: boolean
+      }
       billing_refund: {
         Args: {
           _reason: string
@@ -4510,6 +4605,10 @@ export type Database = {
           scene_id: string
           user_id: string
         }[]
+      }
+      claim_paid_operation: {
+        Args: { _request_key: string; _service: string; _user_id: string }
+        Returns: Json
       }
       count_user_jailbreak_attempts: {
         Args: { _user_id: string }
@@ -4647,6 +4746,7 @@ export type Database = {
       }
       resolve_ai_tier: { Args: { _user_id: string }; Returns: string }
       retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
+      run_daily_safety_check: { Args: never; Returns: string }
       save_library_item: {
         Args: {
           _is_public?: boolean

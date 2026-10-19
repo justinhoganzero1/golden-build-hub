@@ -3,7 +3,9 @@
 // using TTS, listens for a reply, then routes that reply back through the same
 // gather → mute → user-reply flow (so the user can keep talking through Oracle).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { claimOperation } from "../_shared/operationClaim.ts";
+import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +28,8 @@ Deno.serve(async (req) => {
 
   // ── TwiML mode: Twilio fetches this once the callee answers ──
   if (url.searchParams.get("mode") === "twiml") {
+    const verified = await verifyTwilioRequest(req);
+    if (verified.response) return verified.response;
     const sessionId = url.searchParams.get("sid");
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -75,7 +79,8 @@ Deno.serve(async (req) => {
       });
     }
     const userId = userData.user.id;
-    const { to, intent } = await req.json();
+    const { to, intent, requestKey } = await req.json();
+    if (typeof requestKey !== "string" || !/^[0-9a-f-]{36}$/i.test(requestKey)) return new Response(JSON.stringify({ error: "request_reference_required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     if (!to || !/^\+[1-9]\d{6,14}$/.test(to)) {
       return new Response(JSON.stringify({ error: "Valid E.164 number required (e.g. +14155550123)" }), {
@@ -107,10 +112,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Pre-pay a 5-minute AI call (voice + AI) from the member's own wallet;
-    // Twilio hard-stops the call at 5 minutes so nothing overruns.
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
+    if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !Deno.env.get("TWILIO_AUTH_TOKEN")) {
+      return new Response(JSON.stringify({ error: "Calling is unavailable. No wallet charge was made." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const claim = await claimOperation(userId, "outbound-call", requestKey);
+    if (claim.duplicate) return new Response(JSON.stringify(claim.state === "confirmed" ? claim.result : { error: "Call already requested. Review call history; do not repeat it." }), { status: claim.state === "confirmed" ? 200 : 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: isOwner, error: roleError } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (roleError) throw new Error("Access check unavailable");
+    // Reserve the existing five-minute allowance; no charge for a definite rejection.
+    let transactionId: string | null = null;
     try {
-      await chargeAI(userId, "ai-outbound-call", 5 * 6, { provider: "twilio+lovable_ai", minutes: 5 });
+      if (isOwner !== true) {
+        const authorization = await authorizeAI(userId, `call:${requestKey}`, "ai-outbound-call", "twilio+lovable_ai", "call", 5 * 6, { minutes: 5, request_key: requestKey });
+        transactionId = authorization.transaction_id;
+      }
     } catch (err) {
       if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
       throw err;
@@ -128,17 +145,13 @@ Deno.serve(async (req) => {
       })
       .select("id")
       .single();
-    if (sessErr || !session) throw sessErr || new Error("Failed to create session");
+    if (sessErr || !session) {
+      if (transactionId) await cancelAI(transactionId, "session_not_created");
+      throw sessErr || new Error("Failed to create session");
+    }
+    await claim.finish("prepared", { session_id: session.id, transaction_id: transactionId });
 
     // Place the call
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
-    if (!LOVABLE_API_KEY || !TWILIO_API_KEY) {
-      return new Response(JSON.stringify({ error: "Telephony not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     const r = await fetch(`https://connector-gateway.lovable.dev/twilio/Calls.json`, {
       method: "POST",
       headers: {
@@ -156,13 +169,21 @@ Deno.serve(async (req) => {
     });
     const data = await r.json();
     if (!r.ok) {
+      // A 5xx/timeout can be ambiguous: keep its reservation and prevent replay.
+      if (r.status >= 400 && r.status < 500 && transactionId) await cancelAI(transactionId, "provider_rejected");
+      await claim.finish(r.status < 500 ? "rejected" : "uncertain", { session_id: session.id, transaction_id: transactionId });
       console.error("Twilio outbound failed", r.status, data);
       return new Response(JSON.stringify({ error: "Failed to place call", detail: data }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    await admin.from("call_sessions").update({ twilio_call_sid: data.sid, status: "connected" }).eq("id", session.id);
+    if (typeof data.sid !== "string" || !data.sid.startsWith("CA")) throw new Error("Call outcome could not be confirmed; do not repeat it");
+    const { error: saveError } = await admin.from("call_sessions").update({ twilio_call_sid: data.sid, status: "connected" }).eq("id", session.id);
+    if (saveError) throw new Error("Call accepted but history save failed; do not repeat it");
+    // Preserve the existing capped call allowance; later actual-cost reconciliation is separate.
+    if (transactionId) await settleAI(transactionId, 5 * 6, data.sid, [], { capped_allowance: true });
+    await claim.finish("confirmed", { success: true, session_id: session.id, sid: data.sid });
 
     return new Response(JSON.stringify({ success: true, session_id: session.id, sid: data.sid }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

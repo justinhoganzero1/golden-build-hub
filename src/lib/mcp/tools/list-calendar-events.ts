@@ -21,7 +21,8 @@ export default defineTool({
     limit: z.number().int().min(1).max(100).default(25),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ from_date, limit }, ctx) => {
+  handler: async (args, ctx) => {
+    const { from_date, limit } = z.object({ from_date: z.string().optional(), limit: z.number().int().min(1).max(100).default(25) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     if (from_date && !DATE_RE.test(from_date)) {
       return mcpError("invalid_input", "from_date must be an ISO date in YYYY-MM-DD format.");

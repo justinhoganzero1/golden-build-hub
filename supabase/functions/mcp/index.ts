@@ -86,7 +86,8 @@ var list_diary_entries_default = defineTool2({
     limit: z.number().int().min(1).max(50).default(20).describe("Maximum number of entries to return.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
+  handler: async (args, ctx) => {
+    const { limit } = z.object({ limit: z.number().int().min(1).max(50).default(20) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       const { data, error } = await userClient(ctx).from("diary_entries").select("id, entry_date, title, content, mood, tags, category, created_at").order("entry_date", { ascending: false }).limit(limit);
@@ -122,7 +123,8 @@ var create_diary_entry_default = defineTool3({
     category: z2.string().optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async (input, ctx) => {
+  handler: async (args, ctx) => {
+    const input = z2.object({ title: z2.string().trim().min(1), content: z2.string().trim().min(1), mood: z2.string().optional(), entry_date: z2.string().optional(), tags: z2.array(z2.string()).optional(), category: z2.string().optional() }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     if (input.entry_date && !DATE_RE.test(input.entry_date)) {
       return mcpError("invalid_input", "entry_date must be an ISO date in YYYY-MM-DD format.");
@@ -194,7 +196,8 @@ var list_calendar_events_default = defineTool5({
     limit: z3.number().int().min(1).max(100).default(25)
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ from_date, limit }, ctx) => {
+  handler: async (args, ctx) => {
+    const { from_date, limit } = z3.object({ from_date: z3.string().optional(), limit: z3.number().int().min(1).max(100).default(25) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     if (from_date && !DATE_RE2.test(from_date)) {
       return mcpError("invalid_input", "from_date must be an ISO date in YYYY-MM-DD format.");
@@ -264,7 +267,8 @@ var getBookChaptersTool = defineTool6({
     count: z4.number().int().min(1).max(5).default(3).describe("How many chapters to return (max 5).")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ book_id, from_chapter, count }, ctx) => {
+  handler: async (args, ctx) => {
+    const { book_id, from_chapter, count } = z4.object({ book_id: z4.string().uuid(), from_chapter: z4.number().int().min(1).default(1), count: z4.number().int().min(1).max(5).default(3) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       const doc = await loadDoc(ctx, book_id);
@@ -291,7 +295,8 @@ var saveBookChapterTool = defineTool6({
     content: z4.string().trim().min(50).describe("Full chapter text.")
   },
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ book_id, chapter_number, title, content }, ctx) => {
+  handler: async (args, ctx) => {
+    const { book_id, chapter_number, title, content } = z4.object({ book_id: z4.string().uuid(), chapter_number: z4.number().int().min(1), title: z4.string().trim().min(1).max(200), content: z4.string().trim().min(50) }).parse(args);
     if (!ctx.isAuthenticated()) return notAuthenticated();
     try {
       const { data, error } = await userClient5(ctx).rpc("save_story_chapter_text", {
