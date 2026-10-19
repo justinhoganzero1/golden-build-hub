@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ authorizeAI: vi.fn(), settleAI: vi.fn(), cancelAI: vi.fn() }));
-vi.mock("../_shared/requireAuth.ts", () => ({
+vi.mock("../../supabase/functions/_shared/requireAuth.ts", () => ({
   requireUser: vi.fn(async () => ({ user: { id: "member", email: null } })),
   enforceRateLimit: vi.fn(async () => undefined),
 }));
-vi.mock("../_shared/wallet.ts", () => ({
+vi.mock("../../supabase/functions/_shared/wallet.ts", () => ({
   ...mocks, InsufficientCoinsError: class extends Error {}, insufficientCoinsResponse: vi.fn(),
 }));
-vi.mock("../_shared/pricing.ts", () => ({ PROVIDER_RATES: { elevenlabs_tts_per_1000_chars: 30 } }));
+vi.mock("../../supabase/functions/_shared/pricing.ts", () => ({ PROVIDER_RATES: { elevenlabs_tts_per_1000_chars: 30 } }));
 
 let handler: (request: Request) => Promise<Response>;
 describe("TTS payment and timeout protection", () => {
@@ -19,7 +19,7 @@ describe("TTS payment and timeout protection", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array([1, 2]), { headers: { "Content-Type": "audio/mpeg" } })));
     mocks.authorizeAI.mockResolvedValue({ transaction_id: "transaction" });
     mocks.settleAI.mockResolvedValue({});
-    await import("./index");
+    await import("../../supabase/functions/elevenlabs-tts/index");
   });
   const request = () => new Request("https://app.test/tts", { method: "POST", body: JSON.stringify({ text: "Hello Juzzy" }) });
 
