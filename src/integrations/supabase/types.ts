@@ -4519,6 +4519,17 @@ export type Database = {
         }[]
       }
       billing_expire_stale_holds: { Args: never; Returns: number }
+      billing_margin_valid: {
+        Args: {
+          _cost: number
+          _fee: number
+          _kind: string
+          _owner: boolean
+          _status: string
+          _total: number
+        }
+        Returns: boolean
+      }
       billing_refund: {
         Args: {
           _reason: string

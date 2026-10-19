@@ -43,6 +43,13 @@
       "when": 1792408908916,
       "tag": "0005_durable_side_effect_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792409500608,
+      "tag": "0006_enforce_twenty_percent_billing_floor",
+      "breakpoints": true
     }
   ]
 }
