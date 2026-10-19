@@ -1,4 +1,6 @@
 import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
+import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
+import { playOracleAudio } from "@/lib/oracleAudioPlayback";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
@@ -479,7 +481,7 @@ const OraclePage = () => {
     handleCapturedVoiceText(text);
   }, [handleCapturedVoiceText]);
 
-  const scheduleCapturedVoiceFlush = useCallback((delay = 1100) => {
+  const scheduleCapturedVoiceFlush = useCallback((delay = VOICE_FINAL_PAUSE_MS) => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => {
       flushCapturedVoiceText();
@@ -794,6 +796,7 @@ const OraclePage = () => {
           text: prepared,
           voiceId: masterVoiceId,
           fast: false,
+          outputFormat: "mp3_44100_64",
           modelId,
           settings: hasCustomMaster
             ? {
@@ -818,136 +821,14 @@ const OraclePage = () => {
       const contentType = response.headers.get("Content-Type") || "";
       if (contentType.includes("application/json")) return false;
 
-      // === STREAMING PLAYBACK via MediaSource ===
-      // Start playing the first MP3 frames the moment they arrive instead of
-      // waiting for the entire blob. Cuts time-to-first-sound by 1-3 seconds.
-      // Buffered playback avoids stalled MediaSource queues and surfaces
-      // autoplay rejection so the browser voice fallback can run immediately.
-      const mediaSourceSupported = false;
-
-      if (mediaSourceSupported) {
-        const mediaSource = new MediaSource();
-        const audio = new Audio();
-        audio.src = URL.createObjectURL(mediaSource);
-        currentAudioRef.current = audio;
-        audio.volume = 0.95;
-        audio.playbackRate = 1.0;
-        // Smoother playback: let the browser buffer ahead instead of starving.
-        audio.preload = "auto";
-
-        const sourceBuffer = await new Promise<SourceBuffer>((resolve, reject) => {
-          mediaSource.addEventListener(
-            "sourceopen",
-            () => {
-              try { resolve(mediaSource.addSourceBuffer("audio/mpeg")); }
-              catch (e) { reject(e); }
-            },
-            { once: true }
-          );
-        });
-
-        const reader = response.body.getReader();
-        const queue: Uint8Array[] = [];
-        let streamDone = false;
-        let started = false;
-        let bytesBuffered = 0;
-        // Pre-buffer threshold (~96KB ≈ ~2s of 192kbps MP3) — larger buffer
-        // eliminates the "robotic / stuttering" voice caused by underrunning
-        // the MediaSource buffer on the very first frames over slow networks.
-        const PREBUFFER_BYTES = 96 * 1024;
-
-        const pump = () => {
-          if (sourceBuffer.updating || queue.length === 0) return;
-          const chunk = queue.shift()!;
-          try { sourceBuffer.appendBuffer(chunk as BufferSource); } catch {}
-        };
-        sourceBuffer.addEventListener("updateend", () => {
-          if (queue.length) pump();
-          else if (streamDone && mediaSource.readyState === "open") {
-            try { mediaSource.endOfStream(); } catch {}
-          }
-        });
-
-        const tryStart = () => {
-          if (started) return;
-          if (!isLive()) return; // a newer utterance superseded us
-          if (bytesBuffered < PREBUFFER_BYTES && !streamDone) return;
-          started = true;
-          setIsSpeaking(true);
-          audio.play().catch(() => {});
-        };
-
-        (async () => {
-          try {
-            while (true) {
-              if (!isLive()) { try { reader.cancel(); } catch {} break; }
-              const { done, value } = await reader.read();
-              if (done) {
-                streamDone = true;
-                tryStart();
-                if (!sourceBuffer.updating && queue.length === 0) {
-                  try { mediaSource.endOfStream(); } catch {}
-                }
-                break;
-              }
-              if (value) {
-                queue.push(value);
-                bytesBuffered += value.byteLength;
-                if (!sourceBuffer.updating) pump();
-                tryStart();
-              }
-            }
-          } catch (e) { console.warn("TTS stream read error", e); }
-        })();
-
-        // Safety timer: if `ended` never fires (stalled MediaSource), bail
-        // after a generous timeout so the queue keeps flowing.
-        await new Promise<void>((resolve) => {
-          let resolved = false;
-          const finish = () => { if (!resolved) { resolved = true; resolve(); } };
-          audio.onended = finish;
-          audio.onerror = finish;
-          // Fallback: when stream is fully done AND audio reports it has
-          // played past its buffered end, finish. ALSO bail instantly if a
-          // newer utterance has taken over (token mismatch).
-          const watchdog = setInterval(() => {
-            if (!isLive()) { clearInterval(watchdog); finish(); return; }
-            if (!streamDone) return;
-            if (audio.ended || audio.paused && audio.currentTime > 0 && audio.currentTime >= (audio.duration || Infinity) - 0.05) {
-              clearInterval(watchdog);
-              finish();
-            }
-          }, 250);
-          // Hard timeout: 60s for any single utterance.
-          setTimeout(() => { clearInterval(watchdog); finish(); }, 60000);
-        });
-        try { audio.pause(); } catch {}
-        setIsSpeaking(false);
-        currentAudioRef.current = null;
-        try { URL.revokeObjectURL(audio.src); } catch {}
-        return true;
-      }
-
-      // Fallback (Safari iOS etc): blob playback
-      const audioBlob = await response.blob();
-      if (!audioBlob.type.includes("audio") || audioBlob.size < 100) return false;
-      const audioUrl = URL.createObjectURL(audioBlob);
-      if (!isLive() || mutedRef.current) { URL.revokeObjectURL(audioUrl); return false; }
       const audio = playbackAudioRef.current ?? new Audio();
       playbackAudioRef.current = audio;
-      audio.src = audioUrl;
       currentAudioRef.current = audio;
       audio.volume = 0.95;
       audio.playbackRate = 1.0;
-      setIsSpeaking(true);
-      try { await audio.play(); } catch { URL.revokeObjectURL(audioUrl); setIsSpeaking(false); return false; }
-      await new Promise<void>((resolve) => {
-        audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
-      });
-      setIsSpeaking(false);
-      currentAudioRef.current = null;
-      return true;
+      const played = await playOracleAudio(audio, response, () => isLive() && !mutedRef.current, setIsSpeaking);
+      if (currentAudioRef.current === audio) currentAudioRef.current = null;
+      return played;
     } catch (err) {
       console.warn("Premium TTS error:", err);
       setIsSpeaking(false);
@@ -1458,19 +1339,19 @@ const OraclePage = () => {
         finalTranscriptRef.current = mergeCapturedTranscript(finalTranscriptRef.current, final);
         latestHeardTextRef.current = finalTranscriptRef.current;
         setInput(finalTranscriptRef.current);
-        // Auto-send 2 seconds after the user finishes speaking.
-        scheduleCapturedVoiceFlush(2000);
+        // Debounce a confirmed transcript briefly; interim speech gets a longer pause.
+        scheduleCapturedVoiceFlush(VOICE_FINAL_PAUSE_MS);
       } else if (interim.trim()) {
-        scheduleCapturedVoiceFlush(2200);
+        scheduleCapturedVoiceFlush(VOICE_INTERIM_PAUSE_MS);
       }
     };
 
     recognition.onspeechend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(VOICE_FINAL_PAUSE_MS);
     };
 
     recognition.onsoundend = () => {
-      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(2000);
+      if (latestHeardTextRef.current) scheduleCapturedVoiceFlush(VOICE_FINAL_PAUSE_MS);
     };
 
     recognition.onerror = (e: any) => {
@@ -1653,6 +1534,8 @@ const OraclePage = () => {
     const greeting = greetings[idx];
 
     const t = setTimeout(() => {
+      // A delayed welcome must not cut into a reply already requested.
+      if (isLoadingRef.current || latestHeardTextRef.current.trim()) return;
       // Push greeting directly as an assistant message + speak it
       setMessages((prev) => [...prev, { role: "assistant", content: greeting } as any]);
       try { speakAsAgent(greeting, oracleName); } catch {}
@@ -2204,7 +2087,7 @@ const OraclePage = () => {
 
     // ── Outbound phone calling is currently vaulted (Twilio disabled) ──
 
-    window.speechSynthesis.cancel();
+    cancelCurrentSpeech();
     setIsSpeaking(false);
     setShowChat(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
@@ -2327,18 +2210,12 @@ const OraclePage = () => {
       const flushSpeakableSentences = (final = false) => {
         if (isMuted) return;
         const pending = oracleContent.slice(spokenUpTo);
-        // Match complete sentences ending in . ! ? or newline
-        const sentenceRegex = /[^.!?\n]+[.!?\n]+/g;
-        let lastEnd = 0;
-        const toSpeak: string[] = [];
-        let m: RegExpExecArray | null;
-        while ((m = sentenceRegex.exec(pending)) !== null) {
-          toSpeak.push(m[0]);
-          lastEnd = m.index + m[0].length;
-        }
-        if (toSpeak.length) {
+        // Start with a complete sentence or natural clause, not the full reply.
+        // Strip complete markers first while leaving incomplete markers protected.
+        const lastEnd = takeSpeakablePrefix(pending);
+        if (lastEnd > 0) {
           spokenUpTo += lastEnd;
-          const chunk = stripMarkersForSpeech(toSpeak.join(" ")).trim();
+          const chunk = stripMarkersForSpeech(pending.slice(0, lastEnd)).trim();
           if (chunk) speakAsAgent(chunk, oracleName);
         }
         if (final) {
@@ -2395,6 +2272,8 @@ const OraclePage = () => {
         }
       }
 
+      // A short answer without punctuation should not wait for downstream tools.
+      if (!finalOnlyMode) flushSpeakableSentences(true);
       if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
 
       // Parse and save memories from Oracle response
@@ -3272,7 +3151,7 @@ const OraclePage = () => {
         )}
         {isListening && (
           <div className={`mb-2 text-center text-[11px] font-medium ${wakeActive ? "text-emerald-300" : "text-amber-300"}`}>
-            {wakeActive ? "● Mic on — speak naturally. Auto-sends 2s after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
+            {wakeActive ? "● Mic on — speak naturally. Replies after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
