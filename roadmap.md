@@ -45,4 +45,4 @@
 - [ ] Keep this work result-focused; investigate workable alternatives and report only verified outcomes and necessary blockers.
 
 - [x] WorkCover proposal PDF + narrated trumpet video delivered (laptop quote placeholder left for Juzzy)
-- [ ] WorkCover QLD app redesign showcase (concept based on public user complaints) for case manager to forward to IT
+- [x] WorkCover QLD Worker Assist redesign: clickable demo (HTML) + design pack PDF delivered
