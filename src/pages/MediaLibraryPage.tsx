@@ -5,7 +5,7 @@ import LibraryCreationCard, { readableLibraryTitle } from "@/components/library/
 import LibraryAppViewer, { isLibraryApp } from "@/components/library/LibraryAppViewer";
 import ResilientVideo from "@/components/ResilientVideo";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { matchesLibrarySearch } from "@/lib/librarySearch";
+import { keepNewestVersions, matchesLibrarySearch } from "@/lib/librarySearch";
 import { sendLibraryItemToMovieMaker } from "@/lib/movieHandoff";
 
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -106,6 +106,8 @@ const MediaLibraryPage = () => {
   const [savingShare, setSavingShare] = useState(false);
   const [priceInput, setPriceInput] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [showOlder, setShowOlder] = useState(false);
+  const [showAllApps, setShowAllApps] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const revealResults = () => {
     requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ block: "start", behavior: "instant" }));
@@ -186,14 +188,15 @@ const MediaLibraryPage = () => {
 
   /* ── Filtering ── */
   const filtered = useMemo(() => {
-    return mediaItems.filter((m: any) => {
+    const matches = mediaItems.filter((m: any) => {
       if (scope === "others" && m.user_id === user?.id) return false;
       if (activeCollection !== "all" && getCollectionKey(m.source_page, m.media_type, m.metadata) !== activeCollection) return false;
       if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
       if (!matchesLibrarySearch(m.title, search, m.source_page || "")) return false;
       return true;
     });
-  }, [mediaItems, activeCollection, typeFilter, search, scope, user?.id]);
+    return showOlder ? matches : keepNewestVersions(matches);
+  }, [mediaItems, activeCollection, typeFilter, search, scope, user?.id, showOlder]);
 
   /* ── Pagination: 20 tiles per page (previews only render when in view) ── */
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -213,10 +216,11 @@ const MediaLibraryPage = () => {
 
 
 
-  /* ── Recent & starred ── */
-  const recentItems = useMemo(() => {
-    return [...mediaItems].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6);
-  }, [mediaItems]);
+  /* ── Main apps: newest version of each of my apps ── */
+  const mainApps = useMemo(() => {
+    const mine = mediaItems.filter((m: any) => isLibraryApp(m) && (!user?.id || m.user_id === user.id));
+    return keepNewestVersions(mine).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [mediaItems, user?.id]);
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <Image className="w-5 h-5 text-primary" />;
@@ -439,29 +443,28 @@ const MediaLibraryPage = () => {
         </div>
       </div>
 
-      {/* ── Recent strip (only on "All") ── */}
-      {activeCollection === "all" && typeFilter === "all" && recentItems.length > 0 && !search && (
-        <div className="px-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-semibold text-foreground">Recent Creations</span>
+      {/* ── Main Apps showcase (only on "All") ── */}
+      {activeCollection === "all" && typeFilter === "all" && mainApps.length > 0 && !search && (
+        <section aria-label="My main apps" className="px-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="w-5 h-5 text-primary" />
+            <h2 className="text-lg font-bold text-foreground">My Main Apps</h2>
+            <span className="text-xs text-muted-foreground">newest version of each</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {recentItems.map((m: any) => (
-              <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
-                className="flex-shrink-0 w-44 h-28 rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all bg-card">
-                {isImageLike(m) || isVideoLike(m) ? (
-                  <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m)} />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    {getMediaIcon(m.media_type)}
-                    <p className="text-sm text-foreground line-clamp-3 w-full text-center px-2">{readableLibraryTitle(m.title)}</p>
-                  </div>
-                )}
-              </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {mainApps.slice(0, showAllApps ? undefined : 6).map((m: any) => (
+              <div key={m.id}>
+                <LibraryCreationCard item={m} collection="Main app" busy={openingId === m.id} onOpen={() => void openItem(m)} />
+                {m.olderVersions?.length > 0 && <p className="text-xs text-muted-foreground mt-1 px-1">{m.olderVersions.length} older version{m.olderVersions.length > 1 ? "s" : ""} filed away</p>}
+              </div>
             ))}
           </div>
-        </div>
+          {mainApps.length > 6 && (
+            <Button variant="outline" className="w-full mt-3" onClick={() => setShowAllApps(v => !v)}>
+              {showAllApps ? "Show fewer apps" : `Show all ${mainApps.length} apps`}
+            </Button>
+          )}
+        </section>
       )}
 
       {/* ── Active collection header ── */}
