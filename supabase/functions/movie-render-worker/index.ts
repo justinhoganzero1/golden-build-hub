@@ -87,6 +87,8 @@ async function forgetProvider(...keys: string[]) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   try {
     TICK_DEADLINE = Date.now() + TICK_BUDGET_MS;
     let processed = 0;

@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { requireUser } from "../_shared/requireAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,8 @@ const log = (s: string, d?: any) => console.log(`[REFERRAL-REWARDS] ${s}${d ? " 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const access = await requireUser(req);
+  if (access.response) return access.response;
 
   try {
     const supabase = createClient(
@@ -32,6 +35,7 @@ serve(async (req) => {
       .from("referrals")
       .select("id, referrer_id, referred_email, granted_to_user_id, friend_subscribed_at, status, reward_granted_at")
       .in("status", ["joined", "paid"])
+      .eq("referrer_id", access.user.id)
       .is("reward_granted_at", null);
     if (error) throw error;
 

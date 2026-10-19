@@ -9,6 +9,8 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

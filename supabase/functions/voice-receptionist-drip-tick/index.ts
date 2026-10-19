@@ -15,6 +15,8 @@ const cors = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const now = new Date().toISOString();
   const { data: due } = await supabase.from("crm_followups").select("*, crm_contacts(phone,email,name)")

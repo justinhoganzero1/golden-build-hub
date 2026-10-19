@@ -69,6 +69,8 @@ Deno.serve(async (req) => {
   }
 
   const actions: HealAction[] = [];
+  const accessFailure = await requireInternalOrOwner(req);
+  if (accessFailure) return accessFailure;
   const now = Date.now();
   const ISO = (ms: number) => new Date(ms).toISOString();
 
