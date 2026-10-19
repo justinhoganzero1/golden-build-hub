@@ -2132,6 +2132,11 @@ const OraclePage = () => {
 
       if (!oracleResp.ok) {
         const err = await oracleResp.json().catch(() => ({ error: "Request failed" }));
+        if (oracleResp.status === 401) {
+          setInput(text);
+          toast.error("Please sign in again. Your message is still here.");
+          return;
+        }
         // Server-enforced free daily limit reached
         if (oracleResp.status === 402 && err?.error === "free_limit_reached") {
           if (err.usage) {
