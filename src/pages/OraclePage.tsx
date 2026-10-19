@@ -818,6 +818,7 @@ const OraclePage = () => {
               },
         }),
       });
+      window.clearTimeout(timeout);
       if (!response.ok || !response.body || !isLive() || mutedRef.current) return false;
       const contentType = response.headers.get("Content-Type") || "";
       if (contentType.includes("application/json")) return false;
@@ -834,6 +835,9 @@ const OraclePage = () => {
       console.warn("Premium TTS error:", err);
       setIsSpeaking(false);
       return false;
+    } finally {
+      window.clearTimeout(timeout);
+      if (speechRequestRef.current === controller) speechRequestRef.current = null;
     }
   }, []);
 
@@ -989,20 +993,6 @@ const OraclePage = () => {
   useEffect(() => {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
-    // first real Oracle response speaks back in <1s.
-    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "EXAVITQu4vr4xnSDxMaL";
-    getEdgeAuthToken().then((tok) => {
-      fetch(ELEVENLABS_TTS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${tok}`,
-        },
-        body: JSON.stringify({ text: ".", fast: true, voiceId: prewarmVoiceId }),
-      }).catch(() => {});
-    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -2115,8 +2105,7 @@ const OraclePage = () => {
       // CRITICAL: send the signed-in user's JWT so the edge function can
       // identify them. Falling back to the publishable key makes the server
       // treat them as an anonymous public visitor and switch into Sales mode.
-      const { data: { session: oracleSession } } = await supabase.auth.getSession();
-      const oracleAuthToken = oracleSession?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const oracleAuthToken = await requireEdgeAuthToken();
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${oracleAuthToken}` },
@@ -2751,6 +2740,7 @@ const OraclePage = () => {
       }
     } catch (e: any) {
       if (e?.name === "AbortError") {}
+      else if (e instanceof EdgeSessionRequiredError) { setInput(text); toast.error(e.message); }
       else { console.error(e); toast.error("Failed to connect to Oracle AI"); }
     } finally { setIsLoading(false); abortRef.current = null; }
   };

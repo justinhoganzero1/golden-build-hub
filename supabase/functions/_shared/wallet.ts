@@ -41,8 +41,11 @@ export interface UsageEvent {
   metadata?: Record<string, unknown>;
 }
 
-function serviceClient() {
-  return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+function serviceClient(signal?: AbortSignal) {
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { persistSession: false },
+    ...(signal ? { global: { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }) } } : {}),
+  });
 }
 
 function centsToMicros(cents: number): number {
@@ -63,9 +66,10 @@ export async function authorizeAI(
   model: string,
   estimatedProviderCostCents: number,
   metadata: Record<string, unknown> = {},
+  signal?: AbortSignal,
 ): Promise<BillingAuthorization> {
   const estimatedMicros = centsToMicros(estimatedProviderCostCents);
-  const { data, error } = await serviceClient().rpc("billing_authorize", {
+  const { data, error } = await serviceClient(signal).rpc("billing_authorize", {
     _user_id: userId,
     _request_key: requestKey,
     _service: service,
@@ -94,8 +98,9 @@ export async function settleAI(
   providerRequestId?: string,
   usage: UsageEvent[] = [],
   metadata: Record<string, unknown> = {},
+  signal?: AbortSignal,
 ): Promise<{ total_billed_cents: number; new_balance_cents: number; platform_fee_micros: number }> {
-  const { data, error } = await serviceClient().rpc("billing_settle", {
+  const { data, error } = await serviceClient(signal).rpc("billing_settle", {
     _transaction_id: transactionId,
     _actual_provider_cost_micros: centsToMicros(actualProviderCostCents),
     _provider_request_id: providerRequestId ?? null,
@@ -109,8 +114,8 @@ export async function settleAI(
 }
 
 /** Release a hold when provider work fails before settlement. */
-export async function cancelAI(transactionId: string, reason = "provider_failed"): Promise<void> {
-  const { error } = await serviceClient().rpc("billing_cancel", {
+export async function cancelAI(transactionId: string, reason = "provider_failed", signal?: AbortSignal): Promise<void> {
+  const { error } = await serviceClient(signal).rpc("billing_cancel", {
     _transaction_id: transactionId,
     _reason: reason,
   });

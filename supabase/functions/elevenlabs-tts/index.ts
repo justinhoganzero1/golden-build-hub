@@ -1,5 +1,5 @@
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
-import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 
@@ -76,12 +76,18 @@ Deno.serve(async (req) => {
       speed: settings?.speed ?? 0.92,
     };
 
+    const chars = normalizedText.substring(0, 5000).length;
+    const cost = Math.max(1, Math.ceil((chars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
+    const metadata = { provider: "elevenlabs", model: selectedModel, characters: chars, voice_id: selectedVoice };
+    // Fail closed before incurring provider costs. Never replay uncertain billing.
+    const authorization = await authorizeAI(auth.user.id, `elevenlabs-tts:${crypto.randomUUID()}`, "elevenlabs-tts", "elevenlabs", selectedModel, cost, metadata, AbortSignal.timeout(12_000));
     let response: Response;
     try {
       response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}/stream?output_format=${selectedFormat}&optimize_streaming_latency=4`,
         {
           method: "POST",
+          signal: AbortSignal.timeout(20_000),
           headers: {
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json",
@@ -94,6 +100,7 @@ Deno.serve(async (req) => {
         }
       );
     } catch (netErr) {
+      await cancelAI(authorization.transaction_id, "provider_network_error", AbortSignal.timeout(5_000));
       console.error("ElevenLabs network error:", netErr);
       return new Response(
         JSON.stringify({ error: "NETWORK_ERROR", fallback: true }),
@@ -102,6 +109,7 @@ Deno.serve(async (req) => {
     }
 
     if (!response.ok) {
+      await cancelAI(authorization.transaction_id, "provider_rejected", AbortSignal.timeout(5_000));
       const err = await response.text();
       console.error("ElevenLabs error:", response.status, err);
       // Always return a soft fallback — never crash the client
@@ -112,6 +120,7 @@ Deno.serve(async (req) => {
     }
 
     if (!response.body) {
+      await cancelAI(authorization.transaction_id, "no_audio", AbortSignal.timeout(5_000));
       return new Response(
         JSON.stringify({ error: "NO_AUDIO", fallback: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -120,17 +129,14 @@ Deno.serve(async (req) => {
 
     // Meter and bill the characters this user actually synthesised.
     try {
-      const chars = normalizedText.substring(0, 5000).length;
-      const cost = Math.max(1, Math.ceil((chars / 1000) * PROVIDER_RATES.elevenlabs_tts_per_1000_chars));
-      await chargeAI(auth.user.id, "elevenlabs-tts", cost, {
-        provider: "elevenlabs",
-        model: selectedModel,
-        characters: chars,
-        voice_id: selectedVoice,
-      });
+      await settleAI(authorization.transaction_id, cost, response.headers.get("request-id") ?? undefined,
+        [{ unit_type: "character", quantity: chars }], metadata, AbortSignal.timeout(12_000));
     } catch (billErr) {
       if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
       console.error("elevenlabs-tts billing error:", billErr);
+      await response.body.cancel().catch(() => {});
+      return new Response(JSON.stringify({ error: "billing_unavailable", fallback: true }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(response.body, {
@@ -143,6 +149,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
+    if (error instanceof InsufficientCoinsError) return insufficientCoinsResponse(error, corsHeaders);
     console.error("TTS error:", error);
     return new Response(
       JSON.stringify({ error: "INTERNAL_ERROR", fallback: true }),
