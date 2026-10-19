@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Priority: rectify mandatory 20% billing margin; inspect the 68 historical shortfalls, enforce future charges, and verify without inventing retrospective payments.
 - [ ] Require each new member's own GitHub connection during signup — blocked: no GitHub App User Connector client is configured in this workspace; existing GitHub/code sync does not establish this.
 - [ ] Prevent member AI from spending owner workspace credits — separate provider billing is required; wallet reimbursement and GitHub connection alone do not isolate provider billing.
 - [ ] Republish — awaiting Juzzy's choice whether to address critical security findings first.
