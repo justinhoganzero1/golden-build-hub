@@ -129,6 +129,7 @@ const StoryWriterPage = () => {
   const skipAutosaveForLoadedStoryRef = useRef<string | null>(null);
   const [recoveredBook, setRecoveredBook] = useState<StoryDoc | null>(null);
   const [saveStatus, setSaveStatus] = useState("Not saved yet");
+  const [restoreNeedsConfirmation, setRestoreNeedsConfirmation] = useState(false);
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const bookDraftScope = params.get("id") || savingId || "new";
@@ -323,7 +324,7 @@ const StoryWriterPage = () => {
   // admin library pipeline picks it up.
   useEffect(() => {
     if (!user) return;
-    if (!hasMeta || regenBusy || openingStoryId || recoveredBook) return;
+    if (!hasMeta || regenBusy || openingStoryId || recoveredBook || restoreNeedsConfirmation) return;
     if (skipAutosaveForLoadedStoryRef.current && skipAutosaveForLoadedStoryRef.current === savingId) {
       skipAutosaveForLoadedStoryRef.current = null;
       return;
@@ -384,7 +385,7 @@ const StoryWriterPage = () => {
     }, 1200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story, user, savingId, hasMeta, regenBusy, openingStoryId, recoveredBook]);
+  }, [story, user, savingId, hasMeta, regenBusy, openingStoryId, recoveredBook, restoreNeedsConfirmation]);
 
   const totalWords = useMemo(
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
@@ -2407,11 +2408,12 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         {recoveredBook && (
           <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3" role="status">
             <p className="text-sm text-foreground">A device draft is available: {recoveredBook.title || "New book"}</p>
-            <Button size="sm" onClick={() => { setStory(recoveredBook); setRecoveredBook(null); }}>Restore draft</Button>
+            <Button size="sm" onClick={() => { setRestoreNeedsConfirmation(true); setStory(recoveredBook); setRecoveredBook(null); }}>Restore to editor</Button>
             <Button size="sm" variant="outline" onClick={() => setRecoveredBook(null)}>Keep account version</Button>
           </div>
         )}
         <div className="px-4 py-3 border-b border-border">
+          {restoreNeedsConfirmation && <div className="flex flex-wrap items-center gap-3 mb-3" role="status"><p className="text-sm text-foreground">Restored draft is in the editor. Account copy is unchanged.</p><Button size="sm" onClick={() => setRestoreNeedsConfirmation(false)}>Save restored version to account</Button></div>}
           <StoryLibraryBrowser onOpen={loadSaved} onSequel={openSequelFor} currentId={savingId} />
           {openingStoryId && (
             <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
