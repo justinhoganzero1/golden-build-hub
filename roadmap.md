@@ -46,3 +46,4 @@
 
 - [x] WorkCover proposal PDF + narrated trumpet video delivered (laptop quote placeholder left for Juzzy)
 - [x] WorkCover QLD Worker Assist redesign: clickable demo (HTML) + design pack PDF delivered
+- [ ] Strengthen WorkCover showcase with Justin's proposal, verified course schedule, narration/video and a downloadable working version; official WorkCover system access is not available.
