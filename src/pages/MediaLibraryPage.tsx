@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { resolveStorageUrl } from "@/lib/signedStorageUrl";
+import { Button } from "@/components/ui/button";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
@@ -138,7 +140,8 @@ const MediaLibraryPage = () => {
         .eq("id", item.id)
         .single();
       if (error) throw error;
-      setSelected(data);
+      const resolvedUrl = data.media_type === "text" ? data.url : await resolveStorageUrl(data.url);
+      setSelected({ ...data, url: resolvedUrl });
     } catch (e: any) {
       toast.error(e?.message || "Could not open this creation.");
     } finally {
@@ -239,7 +242,10 @@ const MediaLibraryPage = () => {
         a.remove();
         URL.revokeObjectURL(blobUrl);
       } else {
-        await downloadFileFromUrl(selected.url, selected.title || "media");
+        const url = await resolveStorageUrl(selected.url);
+        const result = await downloadFileFromUrl(url, selected.metadata?.filename || selected.title || "media");
+        if (result === "failed") throw new Error("Download failed");
+        if (result === "opened") { toast.info("File opened for saving"); return; }
       }
       toast.success("Downloaded!");
     } catch (error) {
@@ -626,6 +632,14 @@ const MediaLibraryPage = () => {
                 ) : selected.media_type === "text" ? (
                   <div className="w-full h-full overflow-auto p-4 text-left text-xs leading-relaxed text-foreground whitespace-pre-wrap">
                     {selected.url}
+                  </div>
+                ) : selected.media_type === "document" ? (
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-primary mx-auto mb-2" />
+                    <p className="text-sm text-foreground">{selected.metadata?.filename || selected.title}</p>
+                    <Button variant="outline" className="mt-3" onClick={() => window.open(selected.url, "_blank", "noopener,noreferrer")}>
+                      <Eye className="w-4 h-4 mr-2" /> Open file
+                    </Button>
                   </div>
                 ) : (
                   <div className="text-center">

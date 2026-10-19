@@ -3,6 +3,7 @@
 // Body: { session_id: string, project_id: string }
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { validateMoviePayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,19 +41,22 @@ Deno.serve(async (req) => {
     const { data: project } = await supabase.from("movie_projects")
       .select("*").eq("id", project_id).maybeSingle();
     if (!project || project.user_id !== user.id) return json({ error: "project not found" }, 404);
+    try { validateMoviePayment(session, project); }
+    catch { return json({ error: "movie payment mismatch" }, 403); }
 
     // Idempotent
     if (project.payment_status === "paid") {
       return json({ paid: true, already: true, project_id });
     }
 
-    await supabase.from("movie_projects").update({
+    const { error: paymentError } = await supabase.from("movie_projects").update({
       payment_status: "paid",
       paid_at: new Date().toISOString(),
       stripe_payment_intent: session.payment_intent as string,
       user_paid_cents: session.amount_total ?? 0,
       status: "chunking",
-    }).eq("id", project_id);
+    }).eq("id", project_id).eq("stripe_session_id", session.id);
+    if (paymentError) throw paymentError;
 
     // Kick off chunker which will create scenes + queue render jobs
     EdgeRuntime.waitUntil((async () => {

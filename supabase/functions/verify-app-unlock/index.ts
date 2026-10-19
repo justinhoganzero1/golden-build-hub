@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { APP_PAYMENTS, validateAppPayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const APP_KEYS = new Set(["app_wrapper", "app_maker", "movie_studio"]);
+const APP_KEYS = new Set(Object.keys(APP_PAYMENTS));
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -45,7 +46,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (session.metadata?.user_id && session.metadata.user_id !== user.id) {
+    try { validateAppPayment(session, user.id, app_key); }
+    catch {
       return new Response(JSON.stringify({ unlocked: false, reason: "User mismatch" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,7 +61,7 @@ serve(async (req) => {
     );
     const amount = session.amount_total ?? 0;
     const pi = typeof session.payment_intent === "string" ? session.payment_intent : null;
-    await service.from("app_unlocks").upsert(
+    const { error: unlockError } = await service.from("app_unlocks").upsert(
       {
         user_id: user.id,
         app_key,
@@ -70,6 +72,7 @@ serve(async (req) => {
       },
       { onConflict: "user_id,app_key" }
     );
+    if (unlockError) throw unlockError;
 
     return new Response(JSON.stringify({ unlocked: true }), {
       status: 200,

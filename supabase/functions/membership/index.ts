@@ -64,11 +64,13 @@ Deno.serve(async (req) => {
       if (s.metadata?.user_id !== user.id) return json({ error: "not yours" }, 403);
       if (s.payment_status !== "paid") return json({ ok: false, status: s.payment_status });
       if (s.metadata?.purchase_type === "membership_founder") {
+        if (s.status !== "complete" || s.mode !== "payment" || s.currency !== "aud" || s.amount_total !== 100) return json({ error: "founder payment mismatch" }, 403);
         const { data: num, error } = await admin.rpc("claim_founder_seat", { _user_id: user.id, _session_id: s.id });
+        if (error?.message.includes("already consumed")) return json({ ok: false, error: "founder_payment_already_consumed" }, 409);
         if (error) throw error;
         if (!num) {
           // Seats ran out between checkout and payment: refund.
-          if (typeof s.payment_intent === "string") await stripe.refunds.create({ payment_intent: s.payment_intent });
+          if (typeof s.payment_intent === "string") await stripe.refunds.create({ payment_intent: s.payment_intent }, { idempotencyKey: `founder-sold-out:${s.id}` });
           return json({ ok: false, error: "founder_seats_gone_refunded" });
         }
         return json({ ok: true, kind: "founder", founder_number: num });
