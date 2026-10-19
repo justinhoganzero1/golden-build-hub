@@ -68,6 +68,7 @@ const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracl
 import AgentPicker from "@/components/AgentPicker";
 import ThinkingIndicator from "@/components/ThinkingIndicator";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
+import { formatWebAnswer } from "@/lib/oracleWeb";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
@@ -2309,11 +2310,31 @@ const OraclePage = () => {
         }
       }
 
+      // ── Live web research: [[WEB: query]] → cited answer with pictures ──
+      const webMatch = oracleContent.match(/\[\[WEB:([\s\S]+?)\]\]/i);
+      if (webMatch) {
+        const query = webMatch[1].trim().slice(0, 300);
+        const webId = `web-${Date.now()}`;
+        setMessages(prev => [...prev, { id: webId, role: "assistant", sender: oracleName, emoji: "🌐", color: "#38bdf8", content: `🌐 *Searching the web for “${query}”…*` }]);
+        (async () => {
+          try {
+            const { data, error } = await supabase.functions.invoke("oracle-research", { body: { query } });
+            if (error || !data?.answer) throw error || new Error("no answer");
+            const content = formatWebAnswer(data.answer, data.sources || []);
+            setMessages(prev => prev.map(m => m.id === webId ? { ...m, content } : m));
+          } catch (e: any) {
+            const msg = /402|insufficient/i.test(String(e?.message || e?.context?.status)) ? "Your wallet needs a top-up for web searches." : "The web search didn't come back. Tap send again to retry.";
+            setMessages(prev => prev.map(m => m.id === webId ? { ...m, content: `🌐 ${msg}` } : m));
+          }
+        })();
+      }
+
       // Strip memory/trial/creation/control markers from displayed content
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
         .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
+        .replace(/\[\[WEB:[\s\S]+?\]\]/gi, "")
         .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
         .replace(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi, "")
         .trim();
@@ -3103,7 +3124,7 @@ const OraclePage = () => {
                 style={msg.sender !== "user" ? { backgroundColor: msg.color + "15", border: `1px solid ${msg.color}30`, color: "#e5e5e5" } : undefined}>
                 {msg.sender !== "user" && <p className="text-[9px] font-bold mb-0.5" style={{ color: msg.color }}>{msg.sender}</p>}
                 {msg.sender === "user" ? msg.content : (
-                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0 [&_img]:rounded-xl [&_img]:w-full [&_img]:max-h-56 [&_img]:object-cover [&_img]:my-2 [&_a]:text-primary"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                 )}
               </div>
             </div>

@@ -30,7 +30,8 @@ serve(async (req) => {
     const LOVABLE = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE) throw new Error("LOVABLE_API_KEY missing");
 
-    let sources: { url: string; title?: string; description?: string; markdown?: string }[] = [];
+    let sources: { url: string; title?: string; description?: string; markdown?: string; image?: string }[] = [];
+    let usedFirecrawl = false;
 
     if (FIRECRAWL) {
       try {
@@ -47,7 +48,9 @@ serve(async (req) => {
         sources = (Array.isArray(arr) ? arr : []).slice(0, 5).map((s: any) => ({
           url: s.url, title: s.title, description: s.description,
           markdown: (s.markdown || "").slice(0, 4000),
+          image: [s.metadata?.ogImage, s.metadata?.["og:image"], s.metadata?.image].find((v: unknown) => typeof v === "string" && /^https:\/\//.test(v)) as string | undefined,
         }));
+      usedFirecrawl = sources.length > 0;
       } catch (e) { console.warn("firecrawl failed", e); }
     }
 
@@ -72,7 +75,7 @@ serve(async (req) => {
 
     // Bill the user's own wallet only after the provider actually delivered.
     try {
-      await chargeAI(auth.user.id, "oracle-research", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
+      await chargeAI(auth.user.id, "oracle-research", PROVIDER_RATES.lovable_ai_gemini_flash_per_call + (usedFirecrawl ? PROVIDER_RATES.firecrawl_search_5_pages : 0), {
         provider: "lovable_ai",
         model: "google/gemini-2.5-flash",
       });
@@ -83,7 +86,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       answer,
-      sources: sources.map(({ url, title, description }) => ({ url, title, description })),
+      sources: sources.map(({ url, title, description, image }) => ({ url, title, description, image })),
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("oracle-research error", e);
