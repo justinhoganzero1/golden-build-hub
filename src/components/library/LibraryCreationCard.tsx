@@ -88,7 +88,7 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
           {imageLike || thumb ? (
             <LibraryTileFace src={thumb} alt={title} size={640} mediaId={item.id} canBackfill={imageLike} fallback={<div className="h-full flex items-center justify-center"><Icon className="h-12 w-12 text-muted-foreground" /></div>} />
           ) : isApp && previewHtml ? (
-            <iframe title={`${title} preview`} sandbox="" srcDoc={previewHtml} tabIndex={-1} className="w-full h-full border-0 pointer-events-none" />
+            <iframe title={`${title} preview`} sandbox="" srcDoc={previewHtml} tabIndex={-1} className="w-[200%] h-[200%] scale-50 origin-top-left border-0 pointer-events-none" />
           ) : (
             <div className="h-full flex flex-col items-center justify-center gap-3 px-4">
               <Icon className="h-10 w-10 text-primary" />
