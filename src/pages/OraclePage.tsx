@@ -2157,6 +2157,7 @@ const OraclePage = () => {
           setIsLoading(false);
           return;
         }
+        setInput(text);
         toast.error(recoveryFor(oracleResp.status).message);
         setIsLoading(false);
         return;
