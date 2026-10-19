@@ -6,7 +6,7 @@ import { useMembership, membershipActive } from "@/hooks/useMembership";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Crown, Sparkles, Lock, Unlock } from "lucide-react";
+import { Crown, Sparkles, Lock, Unlock, ArrowLeft, MessageCircle, Library, UserRound } from "lucide-react";
 
 const UPGRADE_FROM_KEY = "oracle.upgradeFrom";
 
@@ -43,7 +43,10 @@ const MembershipPage = () => {
         toast.success("Full app unlocked — welcome!");
         let back: string | null = null;
         try { back = sessionStorage.getItem(UPGRADE_FROM_KEY); sessionStorage.removeItem(UPGRADE_FROM_KEY); } catch {}
-        if (back) setTimeout(() => navigate(back!, { replace: true }), 800);
+        if (back) {
+          const destination = back;
+          setTimeout(() => navigate(destination, { replace: true }), 800);
+        }
       }
       setParams({}, { replace: true });
       window.dispatchEvent(new Event("membership:updated"));
@@ -76,8 +79,20 @@ const MembershipPage = () => {
     ? Math.max(0, Math.ceil((new Date(membership.trial_ends_at).getTime() - Date.now()) / 3600000)) : 0;
 
   return (
-    <div className="min-h-screen bg-background text-foreground px-4 py-10">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <nav aria-label="Membership navigation" className="sticky top-0 z-30 border-b border-border bg-background px-4 py-3">
+        <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2">
+          {active && (
+            <>
+              <Button asChild className="gap-2"><Link to="/dashboard"><ArrowLeft className="h-4 w-4 shrink-0" />Back to app</Link></Button>
+              <Button asChild variant="outline" className="gap-2"><Link to="/oracle"><MessageCircle className="h-4 w-4 shrink-0" />Oracle</Link></Button>
+              <Button asChild variant="outline" className="gap-2"><Link to="/media-library"><Library className="h-4 w-4 shrink-0" />My Library</Link></Button>
+            </>
+          )}
+          <Button asChild variant="outline" className="gap-2"><Link to="/my-account"><UserRound className="h-4 w-4 shrink-0" />My account</Link></Button>
+        </div>
+      </nav>
+      <div className="max-w-3xl mx-auto space-y-8 px-4 py-8">
         <header className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Oracle Lunar Membership</h1>
           {membership?.founder_number ? (
