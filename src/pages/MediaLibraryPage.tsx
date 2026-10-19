@@ -625,7 +625,7 @@ const MediaLibraryPage = () => {
 
       {/* ── Detail dialog ── */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-[95vw] rounded-2xl border-border bg-card">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl border-border bg-card">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">{selected?.title || "Creation"}</DialogTitle>
           </DialogHeader>
