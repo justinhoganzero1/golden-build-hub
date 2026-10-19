@@ -1,4 +1,4 @@
-import { getEdgeAuthTokenSync, getEdgeAuthToken } from "@/lib/edgeAuth";
+import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
@@ -703,8 +703,11 @@ const OraclePage = () => {
   // ElevenLabs stream / browser TTS that sees a stale token aborts immediately.
   // This is the single source of truth that prevents two voices overlapping.
   const speechTokenRef = useRef(0);
+  const speechRequestRef = useRef<AbortController | null>(null);
   const cancelCurrentSpeech = useCallback(() => {
     speechTokenRef.current += 1;
+    speechRequestRef.current?.abort();
+    speechRequestRef.current = null;
     try { window.speechSynthesis?.cancel(); } catch {}
     try {
       const a = currentAudioRef.current;
@@ -752,6 +755,9 @@ const OraclePage = () => {
   // Premium ElevenLabs TTS for the Oracle — uses the EXACT voice + settings
   // the user tuned in Voice Studio so the Oracle sounds identical to the preview.
   const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
+    const controller = new AbortController();
+    speechRequestRef.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
       // Read the master voice the user picked in Voice Studio (falls back to Sarah)
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
@@ -785,7 +791,8 @@ const OraclePage = () => {
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await getEdgeAuthToken()}` },
+        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await requireEdgeAuthToken()}` },
+        signal: controller.signal,
         body: JSON.stringify({
           text: prepared,
           voiceId: masterVoiceId,
@@ -811,6 +818,7 @@ const OraclePage = () => {
               },
         }),
       });
+      window.clearTimeout(timeout);
       if (!response.ok || !response.body || !isLive() || mutedRef.current) return false;
       const contentType = response.headers.get("Content-Type") || "";
       if (contentType.includes("application/json")) return false;
@@ -827,6 +835,9 @@ const OraclePage = () => {
       console.warn("Premium TTS error:", err);
       setIsSpeaking(false);
       return false;
+    } finally {
+      window.clearTimeout(timeout);
+      if (speechRequestRef.current === controller) speechRequestRef.current = null;
     }
   }, []);
 
@@ -982,20 +993,6 @@ const OraclePage = () => {
   useEffect(() => {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    // SPEED: pre-warm the ElevenLabs edge function (cold-start kill) so the
-    // first real Oracle response speaks back in <1s.
-    const prewarmVoiceId = (typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "EXAVITQu4vr4xnSDxMaL";
-    getEdgeAuthToken().then((tok) => {
-      fetch(ELEVENLABS_TTS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${tok}`,
-        },
-        body: JSON.stringify({ text: ".", fast: true, voiceId: prewarmVoiceId }),
-      }).catch(() => {});
-    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -2108,8 +2105,7 @@ const OraclePage = () => {
       // CRITICAL: send the signed-in user's JWT so the edge function can
       // identify them. Falling back to the publishable key makes the server
       // treat them as an anonymous public visitor and switch into Sales mode.
-      const { data: { session: oracleSession } } = await supabase.auth.getSession();
-      const oracleAuthToken = oracleSession?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const oracleAuthToken = await requireEdgeAuthToken();
       const oracleResp = await fetch(ORACLE_CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${oracleAuthToken}` },
@@ -2136,6 +2132,11 @@ const OraclePage = () => {
 
       if (!oracleResp.ok) {
         const err = await oracleResp.json().catch(() => ({ error: "Request failed" }));
+        if (oracleResp.status === 401) {
+          setInput(text);
+          toast.error("Please sign in again. Your message is still here.");
+          return;
+        }
         // Server-enforced free daily limit reached
         if (oracleResp.status === 402 && err?.error === "free_limit_reached") {
           if (err.usage) {
@@ -2156,6 +2157,7 @@ const OraclePage = () => {
           setIsLoading(false);
           return;
         }
+        setInput(text);
         toast.error(recoveryFor(oracleResp.status).message);
         setIsLoading(false);
         return;
@@ -2744,6 +2746,7 @@ const OraclePage = () => {
       }
     } catch (e: any) {
       if (e?.name === "AbortError") {}
+      else if (e instanceof EdgeSessionRequiredError) { setInput(text); toast.error(e.message); }
       else { console.error(e); toast.error("Failed to connect to Oracle AI"); }
     } finally { setIsLoading(false); abortRef.current = null; }
   };
