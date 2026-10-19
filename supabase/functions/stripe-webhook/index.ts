@@ -8,6 +8,7 @@
 // PUBLIC endpoint — verified via Stripe signature, no JWT.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { validateAppPayment, validateCoinPayment, validateMoviePayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,30 +61,34 @@ async function logEvent(row: {
   }
 }
 
-async function markMoviePaid(projectId: string, paymentIntent: string | null, amount: number | null) {
+async function markMoviePaid(session: Stripe.Checkout.Session) {
+  const projectId = session.metadata?.project_id;
+  if (!projectId) throw new Error("missing movie project");
   const { data: project } = await supabase
     .from("movie_projects")
-    .select("id, payment_status")
+    .select("id, user_id, payment_status, stripe_session_id, quality_tier")
     .eq("id", projectId)
     .maybeSingle();
   if (!project) {
     log("project not found", { projectId });
     return;
   }
+  validateMoviePayment(session, project);
   if (project.payment_status === "paid") {
     log("already paid", { projectId });
     return;
   }
-  await supabase
+  const { error: paymentError } = await supabase
     .from("movie_projects")
     .update({
       payment_status: "paid",
       paid_at: new Date().toISOString(),
-      stripe_payment_intent: paymentIntent,
-      user_paid_cents: amount ?? 0,
+      stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
+      user_paid_cents: session.amount_total ?? 0,
       status: "chunking",
     })
-    .eq("id", projectId);
+    .eq("id", projectId).eq("stripe_session_id", session.id);
+  if (paymentError) throw paymentError;
 
   // Kick chunker (service-role auth)
   try {
@@ -104,7 +109,7 @@ async function markMoviePaid(projectId: string, paymentIntent: string | null, am
 async function grantCoinTopup(session: Stripe.Checkout.Session, eventId: string) {
   const meta = session.metadata ?? {};
   const userId = meta.user_id;
-  const walletCents = Number(meta.wallet_cents ?? 0);
+  const walletCents = validateCoinPayment(session, userId || "");
   const grossCents = Number(session.amount_total ?? 0);
   if (!userId || !Number.isFinite(walletCents) || walletCents <= 0 || grossCents <= 0) {
     log("coin topup missing metadata", { session_id: session.id, userId, walletCents, grossCents });
@@ -181,8 +186,13 @@ Deno.serve(async (req) => {
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.payment_status !== "paid" || session.status !== "complete") {
+          log("checkout awaiting confirmed payment", { session_id: session.id });
+          break;
+        }
         const meta = session.metadata ?? {};
         const projectId = meta.project_id;
         const appKey = meta.app_key;
@@ -214,11 +224,12 @@ Deno.serve(async (req) => {
           // Shop purchase — mark paid + bump creator download count
           const { data: existing } = await supabase
             .from("shop_purchases")
-            .select("id, status, item_kind, item_id")
+            .select("id, status, item_kind, item_id, buyer_id, stripe_session_id, amount_cents, currency")
             .eq("id", purchaseId)
             .maybeSingle();
+          if (existing && (existing.buyer_id !== meta.buyer_id || existing.stripe_session_id !== session.id || existing.amount_cents !== session.amount_total || existing.currency.toLowerCase() !== session.currency?.toLowerCase())) throw new Error("shop payment mismatch");
           if (existing && existing.status !== "paid") {
-            await supabase
+            const { error: purchaseError } = await supabase
               .from("shop_purchases")
               .update({
                 status: "paid",
@@ -226,6 +237,7 @@ Deno.serve(async (req) => {
                 stripe_payment_intent: (session.payment_intent as string) ?? null,
               })
               .eq("id", purchaseId);
+            if (purchaseError) throw purchaseError;
 
             // Bump download_count on the source item
             const table =
@@ -251,12 +263,9 @@ Deno.serve(async (req) => {
           }
         } else if (projectId) {
           // Movie one-off
-          await markMoviePaid(
-            projectId,
-            (session.payment_intent as string) ?? null,
-            session.amount_total ?? 0
-          );
+          await markMoviePaid(session);
         } else if (appKey && meta.user_id) {
+          validateAppPayment(session, meta.user_id, appKey);
           // App unlock — record idempotently
           const { data: existing } = await supabase
             .from("app_unlocks")
@@ -264,7 +273,7 @@ Deno.serve(async (req) => {
             .eq("stripe_session_id", session.id)
             .maybeSingle();
           if (!existing) {
-            await supabase.from("app_unlocks").insert({
+            const { error: unlockError } = await supabase.from("app_unlocks").insert({
               user_id: meta.user_id,
               app_key: appKey,
               amount_cents: session.amount_total ?? 0,
@@ -272,6 +281,7 @@ Deno.serve(async (req) => {
               stripe_session_id: session.id,
               stripe_payment_intent: (session.payment_intent as string) ?? null,
             });
+            if (unlockError) throw unlockError;
             log("app unlock recorded", { user_id: meta.user_id, app_key: appKey });
           }
         } else {
@@ -285,7 +295,9 @@ Deno.serve(async (req) => {
         const pi = event.data.object as Stripe.PaymentIntent;
         const projectId = (pi.metadata ?? {}).project_id;
         if (projectId) {
-          await markMoviePaid(projectId, pi.id, pi.amount_received ?? pi.amount ?? 0);
+          const sessions = await stripe.checkout.sessions.list({ payment_intent: pi.id, limit: 1 });
+          const session = sessions.data[0];
+          if (session?.payment_status === "paid") await markMoviePaid(session);
         }
         break;
       }
