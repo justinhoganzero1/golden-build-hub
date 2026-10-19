@@ -46,8 +46,8 @@
 
 - [x] WorkCover proposal PDF + narrated trumpet video delivered (laptop quote placeholder left for Juzzy)
 - [x] WorkCover QLD Worker Assist redesign: clickable demo (HTML) + design pack PDF delivered
-- [ ] Strengthen WorkCover showcase with Justin's proposal, verified course schedule, narration/video and a downloadable working version; official WorkCover system access is not available.
+- [x] Strengthened WorkCover showcase with Justin's proposal, verified course schedule, narration/video and working downloadable version; verified desktop/mobile demo and all five proposal pages. Official WorkCover system access is not available.
 - [ ] Republish faster Oracle voice and measure whether signed-in playback meets three seconds; do not claim target achieved without measurement.
 - [x] Saved eight WorkCover deliverables in Justin's private Oracle Lunar Library; all eight visible signed-in, every storage download hash matched, and the proposal downloaded through the Library button.
-- [ ] Priority: fix unresolved critical payment findings and verify protections before any further publishing.
+- [ ] Priority: finish critical payment/security verification before further publishing. Deployed strict wallet pack limits, paid-only webhook handling, app/movie purchase bindings and founder replay ledger; 14 regression tests pass, invalid pack/signature rejected live. Remaining: founder resale atomic fulfillment, worker/email access controls and real paid-flow/replay checks.
 - [x] Verified 23 real accounts, 23 memberships and 23 profiles; repaired one missing profile without inventing personal data or creating users.
