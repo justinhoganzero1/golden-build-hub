@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import SEO from "@/components/SEO";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { Button } from "@/components/ui/button";
-import { Coins, Loader2, RefreshCw, Clock, Wallet, Infinity as InfinityIcon } from "lucide-react";
+import { Coins, CreditCard, Loader2, RefreshCw, Clock, Wallet, Infinity as InfinityIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -75,6 +75,22 @@ const CreditDashboardPage = () => {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not open the payment page.");
       setBuying(false);
+    }
+  };
+
+  const changeCard = async () => {
+    setChangingCard(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal", {
+        body: { returnTo: "/credit" },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("Could not open your card settings.");
+      window.location.href = data.url as string;
+    } catch (err) {
+      // No saved card yet — checkout itself lets you enter any card.
+      toast.message(err instanceof Error ? err.message : "No saved card yet. You can add one during the $10 checkout.");
+      setChangingCard(false);
     }
   };
 
