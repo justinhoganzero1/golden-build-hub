@@ -40,9 +40,20 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     const origin = safeOrigin(req);
 
+    // Optional safe return path (only same-app absolute paths allowed).
+    let returnTo = "/subscribe";
+    try {
+      const body = await req.json();
+      if (body?.returnTo && typeof body.returnTo === "string" && body.returnTo.startsWith("/") && !body.returnTo.startsWith("//")) {
+        returnTo = body.returnTo;
+      }
+    } catch {
+      /* no body — keep default */
+    }
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${origin}/subscribe`,
+      return_url: `${origin}${returnTo}`,
     });
 
     return new Response(JSON.stringify({ url: portalSession.url }), {
