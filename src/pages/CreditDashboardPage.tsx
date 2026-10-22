@@ -170,6 +170,10 @@ const CreditDashboardPage = () => {
             {buying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Coins className="mr-2 h-4 w-4" />}
             Add $10 credit
           </Button>
+          <Button variant="outline" size="lg" onClick={() => void changeCard()} disabled={changingCard}>
+            {changingCard ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+            Change card
+          </Button>
           <button
             type="button"
             onClick={() => nav("/wallet")}
