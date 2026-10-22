@@ -59,3 +59,4 @@
 - [ ] Oracle wonderland: web search (built, testing), picture-rich answers (built), runs any app (control bus exists), remembers everything (Library recall still to add)
 
 - [ ] Polished gold emails to Amy (Option A Monarch, Option B TAFE) with clickable WorkCover app, saved to Library
+- [x] Change-card button on the credit page ($10 pack) — wired to Stripe customer portal
