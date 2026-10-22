@@ -27,6 +27,7 @@ const CreditDashboardPage = () => {
   const [unlimited, setUnlimited] = useState(false);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
+  const [changingCard, setChangingCard] = useState(false);
 
   const load = async () => {
     if (!user) return;
