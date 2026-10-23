@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Repair reopened-book saving: meaningful-draft comparison and separate recovery archive; signed-in test confirmed ignored prompt saves to device/account and survives refresh. Four draft tests and ten recovery tests pass; test books removed and original three books retained. Frontend publishing remains pending.
+- [x] Repair shared worker startup: pinned compatible CORS export, deployed all five importers, verified each boots and rejects invalid authentication with 401; scheduled movie/GIF/maintenance logs now show successful boots. Paid render completion was not tested.
 - [ ] Verify published lifetime restrictions with an authorised lifetime-member session — blocked: inspected membership rows contain trial accounts only, and no test account was selected. Removed public preview bypass; signed-out Oracle/Story Writer/App Builder redirect to sign-in; five access-rule tests pass.
 - [ ] Verify Oracle real-model advice and speaker flow, and monthly-member wallet actions with a real authorised member; preserve paid-action security and avoid payment replay.
 - [ ] Publish connector updates and complete Chat360 books → chapters 1–3 → chapter 25 save with artwork integrity checks; external authorisation and chapter content required.

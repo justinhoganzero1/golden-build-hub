@@ -1,5 +1,5 @@
 import { requireOwner } from "./requireAuth.ts";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.118.0/cors";
 
 /** Only trusted internal service requests or a verified owner can run global workers. */
 export async function requireInternalOrOwner(req: Request): Promise<Response | undefined> {
