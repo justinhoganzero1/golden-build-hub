@@ -62,3 +62,5 @@
 
 - [ ] Polished gold emails to Amy (Option A Monarch, Option B TAFE) with clickable WorkCover app, saved to Library
 - [x] Change-card button on the credit page ($10 pack) — wired to Stripe customer portal
+
+- [ ] Connect Oracle Lunar video maker to movie editing suite (waiting: Juzzy to name which video maker)
