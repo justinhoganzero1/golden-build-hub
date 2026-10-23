@@ -1,5 +1,21 @@
 /** IndexedDB keeps large illustrated manuscripts out of the small localStorage quota. */
 const DB = "oracle-member-drafts";
+type DraftBook = { title?: string; premise?: string; chapters?: { content?: string; images?: string[] }[]; coverImage?: string; backImage?: string };
+export function hasBookDraftContent(book: DraftBook): boolean {
+  return !!(book.title?.trim() || book.premise?.trim() || book.coverImage || book.backImage ||
+    book.chapters?.some(chapter => chapter.content?.trim() || chapter.images?.length));
+}
+/** Ignore absent/empty optional fields and object key order from the account loader. */
+export function sameBookDraft(left: unknown, right: unknown): boolean {
+  const normalize = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(normalize);
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value)
+      .filter(([key, entry]) => key !== "id" && entry !== undefined && entry !== "" && entry !== false && !(Array.isArray(entry) && !entry.length))
+      .sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => [key, normalize(entry)]));
+    return value;
+  };
+  return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right));
+}
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, 1);

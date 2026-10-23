@@ -1,6 +1,6 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import SEO from "@/components/SEO";
-import { saveBookDraft, loadBookDraft } from "@/lib/bookDrafts";
+import { saveBookDraft, loadBookDraft, hasBookDraftContent, sameBookDraft } from "@/lib/bookDrafts";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,30 +133,51 @@ const StoryWriterPage = () => {
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const bookDraftScope = params.get("id") || savingId || "new";
-  const draftScopeReady = useRef<string | null>(null);
+  const [draftScopeReady, setDraftScopeReady] = useState<string | null>(null);
+  const [draftCandidate, setDraftCandidate] = useState<StoryDoc | null>(null);
+  const currentDraftStory = useRef(story);
+  currentDraftStory.current = story;
   useEffect(() => {
-    draftScopeReady.current = null;
+    setDraftScopeReady(null);
+    setDraftCandidate(null);
     setRecoveredBook(null);
+    setRestoreNeedsConfirmation(false);
     if (!user?.id) return;
     let alive = true;
     const key = `${user.id}:${bookDraftScope}`;
-    void loadBookDraft<StoryDoc>(user.id, bookDraftScope).then(draft => {
+    void loadBookDraft<StoryDoc>(user.id, bookDraftScope).then(async draft => {
       if (!alive) return;
-      if (draft?.chapters?.length) setRecoveredBook(draft);
-      draftScopeReady.current = key;
-    }).catch(() => { if (alive) draftScopeReady.current = key; });
+      if (draft && hasBookDraftContent(draft)) {
+        // Preserve the offered copy separately; editing must never disable backups.
+        await saveBookDraft(user.id, `${bookDraftScope}:recovery`, draft);
+        if (!alive) return;
+        setDraftCandidate(draft);
+      }
+      setDraftScopeReady(key);
+    }).catch(() => { if (alive) setDraftScopeReady(key); });
     return () => { alive = false; };
   }, [user?.id, bookDraftScope]);
   useEffect(() => {
-    if (!user?.id || openingStoryId || recoveredBook || regenBusy) return;
-    if (draftScopeReady.current !== `${user.id}:${bookDraftScope}`) return;
-    const timer = setTimeout(() => {
-      void saveBookDraft(user.id, bookDraftScope, story).catch(() => {
+    if (!draftCandidate || openingStoryId || (params.get("id") && savingId !== params.get("id"))) return;
+    if (!sameBookDraft(draftCandidate, story)) setRecoveredBook(draftCandidate);
+    setDraftCandidate(null);
+  }, [draftCandidate, openingStoryId, savingId, params, story]);
+  useEffect(() => {
+    if (!user?.id || openingStoryId || regenBusy || draftCandidate) return;
+    if (params.get("id") && savingId !== params.get("id")) return;
+    if (draftScopeReady !== `${user.id}:${bookDraftScope}`) return;
+    const save = () => {
+      void saveBookDraft(user.id, bookDraftScope, currentDraftStory.current).catch(() => {
         setSaveStatus("Device backup unavailable — keep this page open");
       });
+    };
+    const timer = setTimeout(() => {
+      if (hasBookDraftContent(currentDraftStory.current)) save();
     }, 200);
-    return () => clearTimeout(timer);
-  }, [user?.id, bookDraftScope, story, openingStoryId, recoveredBook, regenBusy]);
+    const flush = () => { if (hasBookDraftContent(currentDraftStory.current)) save(); };
+    window.addEventListener("pagehide", flush);
+    return () => { clearTimeout(timer); window.removeEventListener("pagehide", flush); };
+  }, [user?.id, bookDraftScope, story, openingStoryId, draftScopeReady, draftCandidate, regenBusy, savingId, params]);
   const [chapterGuidance, setChapterGuidance] = useState("");
   // Workflow stage after a chapter is generated:
   // 'idle' = ready to generate; 'askEdit' = chapter done, ask to edit;
@@ -324,7 +345,9 @@ const StoryWriterPage = () => {
   // admin library pipeline picks it up.
   useEffect(() => {
     if (!user) return;
-    if (!hasMeta || regenBusy || openingStoryId || recoveredBook || restoreNeedsConfirmation) return;
+    if (!hasMeta || regenBusy || openingStoryId || restoreNeedsConfirmation || draftCandidate) return;
+    if (draftScopeReady !== `${user.id}:${bookDraftScope}`) return;
+    if (params.get("id") && savingId !== params.get("id")) return;
     if (skipAutosaveForLoadedStoryRef.current && skipAutosaveForLoadedStoryRef.current === savingId) {
       skipAutosaveForLoadedStoryRef.current = null;
       return;
@@ -385,7 +408,7 @@ const StoryWriterPage = () => {
     }, 1200);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [story, user, savingId, hasMeta, regenBusy, openingStoryId, recoveredBook, restoreNeedsConfirmation]);
+  }, [story, user, savingId, hasMeta, regenBusy, openingStoryId, restoreNeedsConfirmation, draftCandidate, draftScopeReady, bookDraftScope, params]);
 
   const totalWords = useMemo(
     () => story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0),
