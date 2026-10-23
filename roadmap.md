@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Repair reopened-book draft saving and verify ignored recovery prompts retain edits.
+- [ ] Repair shared worker startup dependency and deploy/check all five importers.
 - [ ] Verify published lifetime restrictions with an authorised lifetime-member session — blocked: inspected membership rows contain trial accounts only, and no test account was selected. Removed public preview bypass; signed-out Oracle/Story Writer/App Builder redirect to sign-in; five access-rule tests pass.
 - [ ] Verify Oracle real-model advice and speaker flow, and monthly-member wallet actions with a real authorised member; preserve paid-action security and avoid payment replay.
 - [ ] Publish connector updates and complete Chat360 books → chapters 1–3 → chapter 25 save with artwork integrity checks; external authorisation and chapter content required.
