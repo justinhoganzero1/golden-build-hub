@@ -2,6 +2,7 @@ import { resolveStorageUrl } from "./signedStorageUrl";
 
 export async function loadMovieVideo(url: string): Promise<HTMLVideoElement> {
   const video = document.createElement("video");
+  if (!video.canPlayType('video/mp4; codecs="avc1.64001f"')) throw new Error("This browser cannot decode MP4 video. Open the movie in a browser with MP4 playback support.");
   video.crossOrigin = "anonymous";
   video.playsInline = true;
   video.muted = true;

@@ -1904,7 +1904,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
             else { video.pause(); setPreviewSceneId(null); }
           };
           previewAnimRef.current = requestAnimationFrame(tick);
-        } catch { toast.error("Could not play the saved video clip"); }
+        } catch (error) { toast.error(error instanceof Error ? error.message : "Could not play the saved video clip"); }
       })();
       return;
     }
