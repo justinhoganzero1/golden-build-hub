@@ -21,3 +21,6 @@
 - Enforce the billing margin on database writes as well as pricing helpers; exempt only protected owner roles in compliance reports and preserve historical financial records.
 - Long-running text generation uses the Lovable AI Gateway Responses API through shared server-only helpers, because credentials and prompts must never reach the browser.- Member AI agents, agent stats and chat histories live in the backend (user_agents, agent_stats, agent_chats) with localStorage only as a cache, so they follow the member across devices.
 - Oracle live web answers go through oracle-research via a [[WEB: query]] reply marker and render cited sources; unsourced answers are labelled unverified so Oracle never presents invented facts.
+
+- The gemini-video compatibility endpoint uses server-only Gateway video SDK jobs and private media storage; resume saved jobs, never replay unknown generation. Member generation fails closed until verified monetary provider costing is available; owner exemption is checked using protected roles.
+- MovieStudio composites real video frames and native clip audio into export, retaining still animation only for scenes without a clip; all paid calls refresh member tokens at request time.

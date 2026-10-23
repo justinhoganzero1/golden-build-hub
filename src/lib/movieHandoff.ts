@@ -5,6 +5,7 @@ export interface MovieHandoffBrief {
   script: string;
   intent: string;
   frames?: string[];
+  scenes?: Array<{ caption: string; photo_prompt?: string; image_url?: string; video_url?: string; duration_sec: number }>;
   youtube: {
     title: string;
     description: string;
@@ -163,6 +164,7 @@ export const sendLibraryItemToMovieMaker = (
     script,
     intent: `Cinematic adaptation of "${item.title || "library item"}" from your Oracle Lunar library.`,
     frames,
+    scenes: item.media_type === "video" && item.url ? [{ caption: item.title || "Library video", video_url: item.url, duration_sec: Number(item.metadata?.seconds) || 5 }] : undefined,
     youtube: {
       title: item.title || "Oracle Lunar movie",
       description: script.slice(0, 400),

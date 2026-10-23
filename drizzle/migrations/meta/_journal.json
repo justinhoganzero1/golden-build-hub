@@ -64,6 +64,13 @@
       "when": 1792416957384,
       "tag": "0008_prevent_founder_payment_replay",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792743123693,
+      "tag": "0009_durable_member_video_jobs",
+      "breakpoints": true
     }
   ]
 }

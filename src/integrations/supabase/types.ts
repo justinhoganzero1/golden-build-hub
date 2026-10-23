@@ -1933,6 +1933,54 @@ export type Database = {
         }
         Relationships: []
       }
+      member_video_jobs: {
+        Row: {
+          billing_transaction_id: string | null
+          created_at: string
+          error_code: string | null
+          estimated_provider_cents: number
+          gateway_job_id: string | null
+          id: string
+          media_id: string | null
+          request_key: string
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          billing_transaction_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_provider_cents?: number
+          gateway_job_id?: string | null
+          id?: string
+          media_id?: string | null
+          request_key: string
+          source: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          billing_transaction_id?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_provider_cents?: number
+          gateway_job_id?: string | null
+          id?: string
+          media_id?: string | null
+          request_key?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           created_at: string

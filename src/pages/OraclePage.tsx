@@ -1,3 +1,4 @@
+import { generateMemberVideo } from "@/lib/videoGeneration";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
@@ -2574,18 +2575,12 @@ const OraclePage = () => {
               } catch (e) { console.error("GEN_VIDEO frame failed", e); }
               if (!imgUrl) { toast.error("Video generation failed — please try again"); return; }
               try {
-                const vr = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gemini-video`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
-                  body: JSON.stringify({ image_url: imgUrl, prompt, duration: 5, ratio: "16:9" }),
-                });
-                if (!vr.ok) throw new Error(await vr.text().catch(() => `HTTP ${vr.status}`));
-                const vdata = await vr.json();
+                const vdata = await generateMemberVideo({ image_url: imgUrl, prompt, duration: 5 });
                 const videoUrl = vdata?.video_url;
                 if (!videoUrl) throw new Error("no video_url");
                 let savedId: string | undefined;
                 try {
-                  const saved: any = await saveMedia.mutateAsync({
+                  const saved: any = vdata.media_id || await saveMedia.mutateAsync({
                     media_type: "video" as any,
                     title: `Video: ${prompt.slice(0, 60)}`,
                     url: videoUrl,

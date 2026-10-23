@@ -1,4 +1,6 @@
-import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
+import { requireEdgeAuthToken } from "@/lib/edgeAuth";
+import { generateMemberVideo, VideoPendingError } from "@/lib/videoGeneration";
+import { loadMovieVideo, drawMovieVideo } from "@/lib/movieVideoFrames";
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +33,7 @@ const GEN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-gen`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
 const SFX_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-sfx`;
 const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-music`;
-const AUTH = `Bearer ${getEdgeAuthTokenSync()}`;
+
 const CLIP_SECONDS = 20; // 20-second cinematic blocks per scene
 
 // Map AI voice_style → ElevenLabs voice IDs (from approved list)
@@ -98,6 +100,7 @@ interface Scene {
   // and is composited into export instead of the canvas Ken Burns.
   video_url?: string;
   generatingVideo?: boolean;
+  video_job_id?: string;
   // Audio
   narration?: string;
   speaker?: string;
@@ -385,7 +388,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         );
         const resp = await fetch(SCENE_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: AUTH },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
           body: JSON.stringify({
             script: part,
             intent:
@@ -472,6 +475,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           motion: (s.motion || "ken-burns") as Motion,
           duration_sec: s.duration_sec || CLIP_SECONDS,
           image_url: s.image_url,
+          video_url: s.video_url,
+          video_job_id: s.video_job_id,
           narration: s.narration,
           speaker: s.speaker,
           voice_style: s.voice_style,
@@ -611,7 +616,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         : intent;
       const resp = await fetch(SCENE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ script, intent: augmentedIntent, targetDurationSec: targetDuration }),
       });
       if (!resp.ok) {
@@ -697,7 +702,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       if (scene.image_url) body.inputImage = scene.image_url; // edit existing
       const resp = await fetch(GEN_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify(body),
       });
       if (!resp.ok) {
@@ -732,7 +737,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const resp = await fetch(TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ text, voiceId }),
       });
       if (!resp.ok) {
@@ -759,7 +764,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       const prompt = hostPortraitPrompt(host.name || "the host", host.title || "", look);
       const resp = await fetch(GEN_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt }),
       });
       if (!resp.ok) {
@@ -826,57 +831,35 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
 
   // ----- Generate REAL AI motion video for a scene -----
 
-  // Engine = "gemini" (free, default) or "runway" (premium quality, requires RUNWAY_API_KEY).
-  // Length = 5 or 10 seconds per scene (set on the scene card).
+  // Existing Runway remains explicit; the default uses resumable Omni jobs.
   const generateSceneVideo = async (sceneId: string) => {
     const scene = scenes.find(s => s.id === sceneId);
-    if (!scene?.image_url) { toast.error("Generate the scene photo first"); return; }
+    if (!scene?.image_url && !scene?.video_job_id) { toast.error("Generate the scene photo first"); return; }
     const engine = scene.video_engine || "gemini";
-    const seconds = (scene.video_seconds || 5) as 5 | 10;
-    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: true } : s));
-    const motionPrompt = `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim();
+    const seconds = scene.video_seconds || 5;
+    updateScene(sceneId, { generatingVideo: true });
     try {
-      const path = engine === "runway" ? "runway-image-to-video" : "gemini-video";
-      const ratio = engine === "runway" ? "1280:768" : "16:9";
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
-        body: JSON.stringify({
-          image_url: scene.image_url,
-          prompt: motionPrompt,
-          duration: seconds,
-          ratio,
-        }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        if (data.error === "RUNWAY_API_KEY missing") {
-          toast.error("Add a RUNWAY_API_KEY in project secrets to enable Runway. Switch to Gemini engine for free video.", { duration: 6000 });
-        } else if (resp.status === 402) {
-          toast.error("AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage.");
-        } else if (resp.status === 429) {
-          toast.error("Too many video requests — wait a moment and try again.");
-        } else {
-          toast.error(data.error || "Video generation failed");
-        }
-        setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
-        return;
+      let result: { video_url: string; job_id?: string; media_id?: string; seconds?: number };
+      const prompt = `${scene.caption}. ${scene.character_action || ""} ${scene.character_emotion || ""}`.trim();
+      if (engine === "runway") {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/runway-image-to-video`, {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
+          body: JSON.stringify({ image_url: scene.image_url, prompt, duration: seconds, ratio: "1280:768" }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || "Runway unavailable");
+        result = data;
+      } else {
+        result = await generateMemberVideo({ image_url: scene.image_url, prompt, duration: seconds, job_id: scene.video_job_id });
       }
-      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, video_url: data.video_url, generatingVideo: false } : s));
-      if (user && data.video_url) saveMedia.mutate({
-        media_type: "video",
-        title: `Movie clip [${engine}] - ${scene.caption.slice(0, 40)}`,
-        url: data.video_url,
-        source_page: "movie-studio",
-        metadata: { sceneId, source: engine, seconds },
-      });
-      toast.success(`${engine === "runway" ? "Runway" : "Gemini"} video clip generated (${seconds}s)`);
-    } catch (e) {
-      console.error(e); toast.error("Video generation failed");
-      setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, generatingVideo: false } : s));
+      updateScene(sceneId, { video_url: result.video_url, video_job_id: undefined, generatingVideo: false, duration_sec: result.seconds || seconds });
+      if (user && !result.media_id) saveMedia.mutate({ media_type: "video", title: `Movie clip — ${scene.caption.slice(0, 40)}`, url: result.video_url, source_page: "movie-studio", metadata: { sceneId, source: engine, seconds } });
+      toast.success("Real video saved and added to your movie");
+    } catch (error) {
+      updateScene(sceneId, { generatingVideo: false, ...(error instanceof VideoPendingError ? { video_job_id: error.jobId } : {}) });
+      toast.error(error instanceof Error ? error.message : "Video generation unavailable");
     }
   };
-
 
   const generateAll = async () => {
     const pending = scenes.filter(s => !s.image_url).map(s => s.id);
@@ -915,7 +898,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const resp = await fetch(TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ text, voiceId: resolveVoiceId(scene) }),
       });
       if (!resp.ok) {
@@ -946,7 +929,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const resp = await fetch(TTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ text, voiceId }),
       });
       if (!resp.ok) {
@@ -998,7 +981,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const resp = await fetch(SFX_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt: promptText, duration_seconds: CLIP_SECONDS, prompt_influence: 0.5 }),
       });
       if (!resp.ok) {
@@ -1042,7 +1025,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt, duration_seconds: CLIP_SECONDS + 4 }),
       });
       if (!resp.ok) {
@@ -1100,7 +1083,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       const totalSecs = Math.max(10, scenes.length * CLIP_SECONDS);
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt: text, duration_seconds: totalSecs }),
       });
       if (!resp.ok) {
@@ -1137,7 +1120,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       ).join("\n");
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({
           type: "assistant",
           prompt: `You are a film-score team with four roles: COMPOSER creates memorable original motifs; MUSIC EDITOR maps intensity to every scene; DIALOGUE MIXER keeps the score gentle under speech; QUALITY JUDGE rejects repetitive or tonally wrong cues. Design an original, copyright-safe, upbeat comic-action adventure score with bright 1980s synth-funk propulsion, heroic brass-and-snare rescue energy, nimble masked-swashbuckler guitar colours, and suspense that rises only where the story rises. Do not name or imitate any existing film, television theme, artist or song. Return exactly one numbered line per scene in this format: N. <instrumental generation prompt including BPM, instruments, mood, intensity 1-10, transition and NO vocals>.\n\nMOVIE: ${title || "Untitled movie"}\nINTENT: ${intent}\nSCENES:\n${sceneList}`,
@@ -1214,7 +1197,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       const prompt = INTRO_STYLE_PROMPTS[introStyle];
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt, duration_seconds: 10 }),
       });
       if (!resp.ok) {
@@ -1246,7 +1229,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       const prompt = `Short, warm, conclusive cinematic outro sting for the end of a movie. Gentle strings and a final resolving chord with a soft timpani hit. 4 seconds. "The End" feel for "${title || "this movie"}"`;
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt, duration_seconds: 10 }),
       });
       if (!resp.ok) {
@@ -1279,7 +1262,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       const prompt = `Upbeat, exciting, energetic cinematic theme soundtrack, driving rhythm, uplifting orchestral and modern hybrid score, adventurous and triumphant, perfect as the main theme for a movie titled "${title || "this movie"}". Keep energy high throughout.`;
       const resp = await fetch(MUSIC_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({ prompt, duration_seconds: totalSecs }),
       });
       if (!resp.ok) {
@@ -1409,7 +1392,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     if (scenes.length === 0) { toast.error("Plan a movie first"); return; }
     setGeneratingTrailer(true);
     try {
-      const candidates = scenes.filter(s => s.image_url);
+      const candidates = scenes.filter(s => s.image_url || s.video_url);
       if (candidates.length === 0) {
         toast.error("Generate at least one scene photo before building a trailer");
         return;
@@ -1575,7 +1558,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       ).join("\n");
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: AUTH },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${await requireEdgeAuthToken()}` },
         body: JSON.stringify({
           type: "assistant",
           prompt: `You are a film sound designer. For each scene below return exactly one line:\nN | <short sound effect description> | <seconds into the scene the effect hits> | <volume 0.1-1.0>\nKeep the effect under the dialogue, never louder than 0.8 when there is narration, and vary the timestamps so hits land on the story beat.\n\nSCENES:\n${sceneList}`,
@@ -1904,7 +1887,27 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
 
   // ----- Preview a scene (Ken-Burns animation in canvas) -----
   const previewScene = (scene: Scene) => {
-    if (!scene.image_url) return;
+    if (!scene.image_url && !scene.video_url) return;
+    if (scene.video_url) {
+      void (async () => {
+        try {
+          const video = await loadMovieVideo(scene.video_url || "");
+          const canvas = previewCanvasRef.current;
+          const ctx = canvas?.getContext("2d");
+          if (!canvas || !ctx) return;
+          setPreviewSceneId(scene.id);
+          await video.play();
+          const start = performance.now();
+          const tick = (now: number) => {
+            drawMovieVideo(ctx, video, canvas.width, canvas.height);
+            if (!video.ended && now - start < scene.duration_sec * 1000) previewAnimRef.current = requestAnimationFrame(tick);
+            else { video.pause(); setPreviewSceneId(null); }
+          };
+          previewAnimRef.current = requestAnimationFrame(tick);
+        } catch (error) { toast.error(error instanceof Error ? error.message : "Could not play the saved video clip"); }
+      })();
+      return;
+    }
     setPreviewSceneId(scene.id);
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -1934,7 +1937,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   // in the preview canvas (silent, visual only). Confirms scenes are joined into
   // one continuous movie before exporting.
   const previewFullMovie = async () => {
-    const ready = scenes.filter(s => s.image_url);
+    const ready = scenes.filter(s => s.image_url || s.video_url);
     if (ready.length === 0) { toast.error("Generate at least one scene photo first"); return; }
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -1943,8 +1946,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     try {
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
-        i.onload = () => res(i); i.onerror = rej; i.src = s.image_url!;
+        i.onload = () => res(i); i.onerror = rej; i.src = s.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9'/%3E";
       })));
+      const videos = await Promise.all(ready.map(s => s.video_url ? loadMovieVideo(s.video_url) : null));
       let cancelled = false;
       const cancelCheck = () => { if (previewAnimRef.current === -1) cancelled = true; };
       previewAnimRef.current = 1;
@@ -1952,18 +1956,22 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         if (cancelled) break;
         const scene = ready[idx];
         const img = imgs[idx];
+        const video = videos[idx];
+        if (video) { video.currentTime = 0; await video.play(); }
         const dur = Math.max(2000, scene.duration_sec * 1000);
         const start = performance.now();
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             cancelCheck(); if (cancelled) { resolve(); return; }
             const p = Math.min(1, (now - start) / dur);
-            drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
+            if (video) drawMovieVideo(ctx, video, canvas.width, canvas.height);
+            else drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
             if (p < 1) previewAnimRef.current = requestAnimationFrame(tick);
             else resolve();
           };
           previewAnimRef.current = requestAnimationFrame(tick);
         });
+        video?.pause();
         if (cancelled) break;
         if (idx < ready.length - 1) {
           const next = ready[idx + 1];
@@ -1997,7 +2005,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
 
   // ----- Export full movie as WebM (with AI voice audio muxed in) -----
   const exportMovie = async () => {
-    const ready = scenes.filter(s => s.image_url);
+    const ready = scenes.filter(s => s.image_url || s.video_url);
     if (ready.length === 0) { toast.error("Generate at least one scene photo"); return; }
     if (ready.length !== scenes.length) {
       if (!confirm(`${scenes.length - ready.length} scene(s) missing photos. Export only the ${ready.length} ready ones?`)) return;
@@ -2157,8 +2165,15 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       // Preload scene images first so we can intercut intro
       const imgs = await Promise.all(ready.map(s => new Promise<HTMLImageElement>((res, rej) => {
         const i = new Image(); i.crossOrigin = "anonymous";
-        i.onload = () => res(i); i.onerror = rej; i.src = s.image_url!;
+        i.onload = () => res(i); i.onerror = rej; i.src = s.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='9'/%3E";
       })));
+
+      const videos = await Promise.all(ready.map(s => s.video_url ? loadMovieVideo(s.video_url) : null));
+      for (const video of videos) {
+        if (!video) continue;
+        audioCtx.createMediaElementSource(video).connect(audioDest);
+        video.muted = false;
+      }
 
       // ===== INTRO TITLE CARD (4s) with intro fanfare =====
       if (introBuf || title) {
@@ -2204,6 +2219,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       for (let idx = 0; idx < ready.length; idx++) {
         const scene = ready[idx];
         const img = imgs[idx];
+        const video = videos[idx];
+        if (video) { video.currentTime = 0; await video.play(); }
         const dur = scene.duration_sec * 1000;
 
         // Schedule this scene's narration (full volume)
@@ -2293,7 +2310,8 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
         await new Promise<void>(resolve => {
           const tick = (now: number) => {
             const p = Math.min(1, (now - start) / dur);
-            drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
+            if (video) drawMovieVideo(ctx, video, canvas.width, canvas.height);
+            else drawMotionFrame(ctx, img, canvas.width, canvas.height, scene.motion, p);
 
             // ----- Movie Host overlay (lip-synced talking head) -----
             const tSec = (now - start) / 1000;
@@ -2383,6 +2401,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           requestAnimationFrame(tick);
         });
 
+        video?.pause();
         // ----- Cinematic transition into next scene (~700ms) -----
         if (idx < ready.length - 1) {
           const nextScene = ready[idx + 1];
@@ -2490,6 +2509,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       }
 
 
+      for (const video of videos) video?.pause();
       recorder.stop();
       const blob = await finished;
       try { musicSource?.stop(); } catch {}
@@ -2552,7 +2572,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
       }
       setRenderReport(buildRenderReport({
         errors: [e instanceof Error ? e.message : "Export failed"],
-        usedScenes: scenes.filter(s => s.image_url),
+        usedScenes: scenes.filter(s => s.image_url || s.video_url),
       }));
     } finally { setExporting(false); }
 
@@ -2989,7 +3009,9 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                 <div key={s.id} className="border border-border rounded-lg p-3 bg-card">
                   <div className="flex gap-3">
                     <div className="w-24 h-24 rounded-md bg-muted flex-shrink-0 overflow-hidden relative">
-                      {s.image_url ? (
+                      {s.video_url ? (
+                        <video src={s.video_url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                      ) : s.image_url ? (
                         <img src={s.image_url} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -3005,7 +3027,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-primary">Scene {idx + 1}</span>
-                        <span className="text-[10px] text-muted-foreground">{s.motion} · 6s · 4K</span>
+                        <span className="text-[10px] text-muted-foreground">{s.video_url ? "Real video" : s.motion} · {s.duration_sec}s</span>
                       </div>
                       <Input value={s.caption} onChange={e => updateScene(s.id, { caption: e.target.value })}
                         className="h-7 text-xs" placeholder="Caption" />
@@ -3024,7 +3046,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                           disabled={!s.image_url || s.generatingVideo}
                           title={`Turn this image into a real moving video clip (${s.video_engine || "gemini"} · ${s.video_seconds || 5}s)`}
                         >
-                          🎬 {s.generatingVideo ? "Animating…" : s.video_url ? "Re-animate" : "Real video"}
+                          🎬 {s.generatingVideo ? "Animating…" : s.video_job_id ? "Resume video" : s.video_url ? "Re-animate" : "Real video"}
                         </Button>
                         <select
                           value={s.video_engine || "gemini"}
@@ -3033,7 +3055,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                           title="Video engine"
                           disabled={s.generatingVideo}
                         >
-                          <option value="gemini">Gemini (free)</option>
+                          <option value="gemini">Gemini Omni</option>
                           <option value="runway">Runway (premium)</option>
                         </select>
                         <select
@@ -3053,7 +3075,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                           <Upload className="w-3 h-3 mr-1" /> Upload
                         </Button>
                         <Button onClick={() => previewScene(s)} size="sm" variant="outline" className="h-7 text-xs"
-                          disabled={!s.image_url}>
+                          disabled={!s.image_url && !s.video_url}>
                           <Play className="w-3 h-3 mr-1" /> Preview
                         </Button>
                         <Button onClick={() => setEditingSceneId(editingSceneId === s.id ? null : s.id)}
