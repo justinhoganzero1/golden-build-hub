@@ -1,179 +1,109 @@
-// Gemini Video — free image-to-video via Lovable AI Gateway (Veo / Gemini Video).
-// Input:  { image_url: string, prompt?: string, duration?: 5 | 10, ratio?: "16:9" | "9:16" }
-// Output: { video_url: string }
-//
-// Uses LOVABLE_API_KEY (auto-provisioned). No external secret required.
-// Polls the long-running operation until the MP4 is available.
-
+// Compatibility endpoint for Oracle and Movie Studio. Jobs resume without resubmission.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.99.3/cors";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { generateVideo, getVideo, downloadVideo, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.9";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
-import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
-import { PROVIDER_RATES } from "../_shared/pricing.ts";
-
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const json = (b: unknown, s = 200) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-// Allow-list of hosts the function may fetch from server-side.
-// Blocks SSRF against private/internal/metadata endpoints by only permitting
-// trusted CDN/storage origins. Use data: URIs for arbitrary client uploads.
-const ALLOWED_IMAGE_HOSTS = new Set<string>([
-  "supabase.co", "supabase.in",
-  "googleusercontent.com", "googleapis.com",
-  "lovableproject.com", "lovable.app", "lovable.dev",
-  "cdn.lovable.dev", "assets.lovable.dev",
-  "cloudinary.com", "imgix.net", "cloudfront.net",
-  "amazonaws.com",
-]);
-
-function isHostAllowed(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-  for (const suffix of ALLOWED_IMAGE_HOSTS) {
-    if (h === suffix || h.endsWith("." + suffix)) return true;
-  }
-  return false;
-}
-
-async function fetchAsBase64(url: string): Promise<{ data: string; mime: string }> {
+import { VIDEO_MODEL, videoDuration, parseVideoJob } from "../_shared/videoContract.ts";
+import { z } from "npm:zod@3.25.76";
+const bodySchema = z.object({ job_id: z.string().uuid().optional(), request_key: z.string().uuid().optional(), image_url: z.string().max(12000000).optional(), prompt: z.string().max(4096).default("Cinematic motion, natural subject movement"), duration: z.number().int().min(3).max(10).optional(), ratio: z.enum(["16:9", "9:16"]).optional() });
+const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+async function imageInput(url: string) {
   if (url.startsWith("data:")) {
-    const m = url.match(/^data:([^;]+);base64,(.*)$/);
-    if (!m) throw new Error("Invalid data URL");
-    return { mime: m[1], data: m[2] };
+    const match = url.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+    if (!match) throw new Error("Invalid source image");
+    return { type: "image" as const, mime_type: match[1], data: match[2] };
   }
-  let parsed: URL;
-  try { parsed = new URL(url); } catch { throw new Error("Invalid image URL"); }
-  if (parsed.protocol !== "https:") throw new Error("Only https:// URLs are allowed");
-  if (!isHostAllowed(parsed.hostname)) throw new Error("Image host not allowed");
-  const r = await fetch(parsed.toString(), { redirect: "error" });
-  if (!r.ok) throw new Error(`Image fetch ${r.status}`);
-  const mime = r.headers.get("content-type") || "image/png";
-  if (!mime.startsWith("image/")) throw new Error("Fetched resource is not an image");
-  const buf = new Uint8Array(await r.arrayBuffer());
-  let bin = "";
-  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-  return { mime, data: btoa(bin) };
+  const parsed = new URL(url);
+  const storageHost = new URL(Deno.env.get("SUPABASE_URL")!).hostname;
+  if (parsed.protocol !== "https:" || parsed.hostname !== storageHost) throw new Error("Use a saved Library image or upload a source image");
+  const result = await fetch(parsed, { redirect: "error" });
+  if (!result.ok) throw new Error("Source image unavailable");
+  const mime = (result.headers.get("content-type") || "").split(";")[0];
+  if (!["image/png", "image/jpeg", "image/webp"].includes(mime)) throw new Error("Unsupported source image");
+  const bytes = new Uint8Array(await result.arrayBuffer());
+  if (bytes.length > 8000000) throw new Error("Source image too large");
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return { type: "image" as const, mime_type: mime, data: btoa(binary) };
 }
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  let hold: { transaction_id: string } | null = null;
-  let settled = false;
-  let estimate = 0;
-
+serve(async req => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  let localJobId: string | undefined;
+  let submitted = false;
+  const client = db();
   try {
     const auth = await requireUser(req);
     if (auth.response) return auth.response;
-    const __rl = await enforceRateLimit(req, auth.user, "gemini-video");
-    if (__rl) return __rl;
-
-    const { image_url, prompt = "", duration = 5, ratio = "16:9" } =
-      await req.json() as { image_url?: string; prompt?: string; duration?: 5 | 10; ratio?: "16:9" | "9:16" };
-
-    if (!image_url) return json({ error: "image_url required" }, 400);
-
-    const KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!KEY) return json({ error: "LOVABLE_API_KEY missing" }, 500);
-
-    // Two-phase billing: hold the funds before we burn provider compute.
-    const seconds = duration === 10 ? 10 : 5;
-    estimate = seconds * PROVIDER_RATES.veo_video_per_second;
-    try {
-      hold = await authorizeAI(auth.user.id, `gemini-video:${crypto.randomUUID()}`, "gemini-video", "lovable-ai", "veo-3.0-generate-001", estimate, {
-        provider: "lovable-ai",
-        model: "veo-3.0-generate-001",
-        seconds,
-        ratio,
-      });
-    } catch (billErr) {
-      if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
-      throw billErr;
+    const body = bodySchema.safeParse(await req.json());
+    if (!body.success) return json({ error: "Invalid video request" }, 400);
+    const input = body.data;
+    const { data: owner, error: roleError } = await client.rpc("has_role", { _user_id: auth.user.id, _role: "admin" });
+    if (roleError || !owner) return json({ error: "video_pricing_unverified", message: "Member video generation is paused until the new provider’s real cost can be verified. Your wallet has not been charged." }, 503);
+    const rateLimit = await enforceRateLimit(req, auth.user, "gemini-video");
+    if (rateLimit) return rateLimit;
+    let query = client.from("member_video_jobs").select("*").eq("user_id", auth.user.id);
+    query = input.job_id ? query.eq("id", input.job_id) : query.eq("request_key", input.request_key || crypto.randomUUID());
+    let { data: saved, error } = await query.maybeSingle();
+    if (error) throw error;
+    if (input.job_id && !saved) return json({ error: "Video job not found" }, 404);
+    if (!saved) {
+      const seconds = videoDuration(input.duration);
+      const image = input.image_url ? await imageInput(input.image_url) : undefined;
+      const requestId = input.request_key || crypto.randomUUID();
+      const { data: created, error: insertError } = await client.from("member_video_jobs").insert({ id: requestId, user_id: auth.user.id, request_key: requestId, source: "gemini-video", status: "starting" }).select("*").single();
+      if (insertError) return json({ error: "Video request already started. Resume its saved job." }, 409);
+      saved = created;
+      localJobId = saved.id;
+      submitted = true;
+      const remote = await generateVideo({ model: VIDEO_MODEL, input: image ? [{ type: "text", text: input.prompt }, image] : input.prompt, response_format: { type: "video", duration: `${seconds}s`, resolution: "720p" } }, { runId: saved.id });
+      const update = await client.from("member_video_jobs").update({ gateway_job_id: remote.id, status: remote.status, updated_at: new Date().toISOString() }).eq("id", saved.id);
+      if (update.error) throw update.error;
+      saved.gateway_job_id = remote.id;
+      saved.status = remote.status;
     }
-
-
-    // Encode source image
-    const { data: imgB64, mime } = await fetchAsBase64(image_url);
-
-    // Use Lovable AI Gateway → Gemini Video (Veo). Endpoint mirrors Google's predictLongRunning.
-    const submit = await fetch("https://ai.gateway.lovable.dev/v1beta/models/veo-3.0-generate-001:predictLongRunning", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        instances: [{
-          prompt: (prompt || "Cinematic motion, smooth camera movement").slice(0, 480),
-          image: { bytesBase64Encoded: imgB64, mimeType: mime },
-        }],
-        parameters: {
-          aspectRatio: ratio,
-          durationSeconds: duration,
-          personGeneration: "allow_all",
-          sampleCount: 1,
-        },
-      }),
-    });
-
-    if (!submit.ok) {
-      const t = await submit.text();
-      console.error("gemini-video submit failed", submit.status, t);
-      if (submit.status === 429) return json({ error: "Rate limit. Try again shortly." }, 429);
-      if (submit.status === 402) return json({ error: "AI credits exhausted. Add credits in Lovable → Settings → Workspace → Usage." }, 402);
-      return json({ error: `Gemini Video submit ${submit.status}: ${t.slice(0, 300)}` }, 502);
+    localJobId = saved.id;
+    if (saved.status === "completed" && saved.video_url) {
+      const path = `${auth.user.id}/generated/${saved.id}.mp4`;
+      const { data: signed, error: signError } = await client.storage.from("movies").createSignedUrl(path, 3600);
+      if (signError) throw signError;
+      return json({ job_id: saved.id, status: "completed", video_url: signed.signedUrl, media_id: saved.media_id });
     }
-    const sj = await submit.json();
-    const opName: string | undefined = sj.name;
-    if (!opName) return json({ error: "No operation name from Gemini Video", raw: sj }, 502);
-
-    // Poll for completion (up to ~3 min)
-    const start = Date.now();
-    while (Date.now() - start < 180_000) {
-      await new Promise(r => setTimeout(r, 5000));
-      const op = await fetch(`https://ai.gateway.lovable.dev/v1beta/${opName}`, {
-        headers: { Authorization: `Bearer ${KEY}` },
-      });
-      if (!op.ok) continue;
-      const oj = await op.json();
-      if (oj.done) {
-        const vids = oj.response?.generatedVideos || oj.response?.videos || [];
-        const first = vids[0];
-        const url: string | undefined =
-          first?.video?.uri || first?.uri || first?.video?.url || first?.url;
-        if (!url) return json({ error: "Gemini Video returned no URL", raw: oj }, 502);
-        // The Veo URL requires the API key as a query param to download. Pass it through verbatim
-        // — front-end uses it inside <video src=...> which won't work for protected URLs. So we
-        // proxy-fetch and return a base64 data URL OR just return the signed URL when public.
-        // Simplest: fetch and return as data URL (small clips).
-        try {
-          const dl = await fetch(url.includes("?") ? `${url}&key=${KEY}` : `${url}?key=${KEY}`);
-          if (dl.ok) {
-            const buf = new Uint8Array(await dl.arrayBuffer());
-            let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-            const dataUrl = `data:video/mp4;base64,${btoa(bin)}`;
-            if (hold) { await settleAI(hold.transaction_id, estimate); settled = true; }
-            return json({ video_url: dataUrl });
-          }
-        } catch (_) { /* fall through */ }
-        if (hold) { await settleAI(hold.transaction_id, estimate); settled = true; }
-        return json({ video_url: url });
-      }
-      if (oj.error) return json({ error: oj.error.message || "Gemini Video failed" }, 502);
+    if (!saved.gateway_job_id) return json({ job_id: saved.id, status: saved.status }, 202);
+    const remote = parseVideoJob(await getVideo(saved.gateway_job_id));
+    if (remote.status === "failed") {
+      await client.from("member_video_jobs").update({ status: "failed", error_code: "provider_failed" }).eq("id", saved.id);
+      return json({ job_id: saved.id, error: "Video generation failed; no member wallet charged" }, 502);
     }
-    return json({ error: "Gemini Video timed out" }, 504);
-  } catch (e) {
-    console.error("gemini-video error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown" }, 500);
-  } finally {
-    // Any path that did not settle releases the hold — the user is never charged
-    // for compute they did not receive.
-    if (hold && !settled) {
-      try { await cancelAI(hold.transaction_id, "provider_failed"); } catch (_) { /* best effort */ }
+    if (remote.status !== "completed") {
+      await client.from("member_video_jobs").update({ status: remote.status, updated_at: new Date().toISOString() }).eq("id", saved.id);
+      return json({ job_id: saved.id, status: remote.status }, 202);
     }
+    const download = await downloadVideo(remote.id);
+    const blob = await download.blob();
+    const path = `${auth.user.id}/generated/${saved.id}.mp4`;
+    const uploaded = await client.storage.from("movies").upload(path, blob, { contentType: "video/mp4", upsert: true });
+    if (uploaded.error) throw uploaded.error;
+    const storageUrl = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/movies/${path}`;
+    let mediaId = saved.media_id;
+    if (!mediaId) {
+      const { data: media, error: mediaError } = await client.from("user_media").insert({ user_id: auth.user.id, media_type: "video", title: "Oracle Lunar generated video", url: storageUrl, source_page: "oracle-video", metadata: { model: VIDEO_MODEL, video_job_id: saved.id, seconds: remote.seconds } }).select("id").single();
+      if (mediaError) throw mediaError;
+      mediaId = media.id;
+    }
+    const final = await client.from("member_video_jobs").update({ status: "completed", media_id: mediaId, video_url: storageUrl, updated_at: new Date().toISOString() }).eq("id", saved.id);
+    if (final.error) throw final.error;
+    const { data: signed, error: signError } = await client.storage.from("movies").createSignedUrl(path, 3600);
+    if (signError) throw signError;
+    return json({ job_id: saved.id, status: "completed", video_url: signed.signedUrl, media_id: mediaId, seconds: remote.seconds });
+  } catch (error) {
+    if (submitted && localJobId) {
+      const gatewayId = error instanceof GatewayError ? error.ids?.jobId : undefined;
+      await client.from("member_video_jobs").update({ status: "unknown", ...(gatewayId ? { gateway_job_id: gatewayId } : {}), error_code: error instanceof GatewayError ? error.code : "application_error" }).eq("id", localJobId);
+    }
+    if (error instanceof GatewayError) return json({ error: error.code, job_id: localJobId, message: error.outcome === "unknown" ? "Your video may still be rendering. Resume the saved job; do not start another." : "Video provider unavailable. No member wallet charged." }, error.httpStatus && error.httpStatus >= 400 ? error.httpStatus : 502);
+    console.error("video operation failed", localJobId, error instanceof Error ? error.name : "unknown");
+    return json({ error: "Video could not finish. Your saved job is preserved.", job_id: localJobId }, 500);
   }
 });
-

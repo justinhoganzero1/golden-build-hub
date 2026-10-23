@@ -197,10 +197,9 @@ Rules:
 
   const sendToMovieStudio = () => {
     if (!state.script.trim()) { toast.error("Generate or paste a script first"); return; }
-    // MovieStudio reads from localStorage seed
+    // MovieStudio consumes its shared one-shot brief
     try {
-      localStorage.setItem("movie_studio_seed_script", state.script);
-      localStorage.setItem("movie_studio_seed_intent", `YouTube show: ${state.showTitle || state.topic}`);
+      sessionStorage.setItem("oracle_movie_brief", JSON.stringify({ script: state.script, intent: `YouTube show: ${state.showTitle || state.topic}`, youtube: { title: state.showTitle || state.topic } }));
     } catch { /* ignore */ }
     setStudioOpen(true);
   };

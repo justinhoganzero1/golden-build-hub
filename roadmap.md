@@ -63,6 +63,8 @@
 - [ ] Polished gold emails to Amy (Option A Monarch, Option B TAFE) with clickable WorkCover app, saved to Library
 - [x] Change-card button on the credit page ($10 pack) — wired to Stripe customer portal
 
-- [ ] Connect Oracle Lunar video maker to movie editing suite (waiting: Juzzy to name which video maker)
+- [ ] Connect Oracle Lunar video maker to movie editing suite — Omni endpoint deployed with saved jobs; MovieStudio clips now load in previews/export and Library/YouTube handoffs repaired. End-to-end checks underway; member use blocked by unverified real provider cash cost, and separate worker/GIF paths still need safe billing integration.
 - [ ] Prepare separate Instagram release and whole-app buyer-enquiry campaigns; Australian creators and generated creator-style release video selected, research saved. Remaining: brand grounding, real app screenshots, script/stills approval and video; domain repair and Meta connection block paid launch, buyer terms/contact remain unresolved.
 - [ ] Add app-building service promotion and lifelike-to-AI presenter reveal to Instagram video; verify delivery scope and Oracle Lunar generation attribution before rendering approved wording.
+- [x] Checked oracle-lunar.online: provisioning_failed, TLS handshake fails; owner must Retry in domain settings. Domain not repaired.
+- [ ] Finish wiring and smoke-test all in-app video generation paths and editor handoff using the latest supported Lovable video generation; preserve authentication, wallet billing and existing working paths.
