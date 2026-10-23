@@ -64,3 +64,4 @@
 - [x] Change-card button on the credit page ($10 pack) — wired to Stripe customer portal
 
 - [ ] Connect Oracle Lunar video maker to movie editing suite (waiting: Juzzy to name which video maker)
+- [ ] Prepare separate Instagram release and whole-app buyer-enquiry campaigns; Australian creators and generated creator-style release video selected, research saved. Remaining: brand grounding, real app screenshots, script/stills approval and video; domain repair and Meta connection block paid launch, buyer terms/contact remain unresolved.
