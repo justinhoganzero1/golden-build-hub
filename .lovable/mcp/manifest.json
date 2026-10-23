@@ -42,17 +42,18 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "limit": {
-              "default": 20,
-              "description": "Maximum number of entries to return.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 50,
+              "default": 20,
+              "description": "Maximum number of entries to return."
             }
-          }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -66,7 +67,6 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "title": {
@@ -80,12 +80,12 @@
               "description": "Body text of the diary entry."
             },
             "mood": {
-              "description": "Optional mood label, e.g. 'calm', 'grateful'.",
-              "type": "string"
+              "type": "string",
+              "description": "Optional mood label, e.g. 'calm', 'grateful'."
             },
             "entry_date": {
-              "description": "YYYY-MM-DD date. Defaults to today.",
-              "type": "string"
+              "type": "string",
+              "description": "YYYY-MM-DD date. Defaults to today."
             },
             "tags": {
               "type": "array",
@@ -100,7 +100,9 @@
           "required": [
             "title",
             "content"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -130,20 +132,21 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "from_date": {
-              "description": "Inclusive YYYY-MM-DD start date. Defaults to today.",
-              "type": "string"
+              "type": "string",
+              "description": "Inclusive YYYY-MM-DD start date. Defaults to today."
             },
             "limit": {
-              "default": 25,
               "type": "integer",
               "minimum": 1,
-              "maximum": 100
+              "maximum": 100,
+              "default": 25
             }
-          }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -173,33 +176,32 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "book_id": {
               "type": "string",
               "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Book id from list_books."
             },
             "from_chapter": {
-              "default": 1,
-              "description": "First chapter number.",
               "type": "integer",
               "minimum": 1,
-              "maximum": 9007199254740991
+              "default": 1,
+              "description": "First chapter number."
             },
             "count": {
-              "default": 3,
-              "description": "How many chapters to return (max 5).",
               "type": "integer",
               "minimum": 1,
-              "maximum": 5
+              "maximum": 5,
+              "default": 3,
+              "description": "How many chapters to return (max 5)."
             }
           },
           "required": [
             "book_id"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -214,19 +216,16 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "book_id": {
               "type": "string",
               "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Book id from list_books."
             },
             "chapter_number": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 9007199254740991,
               "description": "Chapter to replace, or total+1 to add a new one."
             },
             "title": {
@@ -246,7 +245,9 @@
             "chapter_number",
             "title",
             "content"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       }
