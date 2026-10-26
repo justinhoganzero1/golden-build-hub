@@ -9,6 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { requireEdgeAuthToken } from "@/lib/edgeAuth";
 import { reviewWorkcoverDemo } from "@/lib/workcoverReview.js";
+import logoUrl from "@/assets/reimagined-insurance-logo.png";
 
 // Showcase only: every person, employer and record below is fictional.
 type Task = { id: string; title: string; owner: string; due: string; status: "open" | "done" };
@@ -146,7 +147,8 @@ export default function WorkCoverReimaginedPage() {
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
           <Link to="/dashboard" className="mr-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />App</Link>
-          <h1 className="mr-auto text-lg font-bold">Worker Assist <span className="text-primary">Reimagined</span></h1>
+          <img src={logoUrl} alt="Reimagined Insurance logo" width={32} height={32} className="h-8 w-8 rounded-md" />
+          <h1 className="mr-auto text-lg font-bold">Reimagined <span className="text-primary">Insurance</span></h1>
           <nav className="flex flex-wrap gap-1">
             <NavBtn id="dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavBtn id="cases" icon={Users} label="Cases" />
@@ -155,7 +157,7 @@ export default function WorkCoverReimaginedPage() {
           </nav>
         </div>
         <p className="border-t border-border bg-muted/40 px-4 py-1.5 text-center text-xs text-muted-foreground">
-          <Info className="mr-1 inline h-3 w-3" />Independent showcase with fictional records. Not connected to WorkCover Queensland systems. AI suggestions always go to a human for decision.
+          <Info className="mr-1 inline h-3 w-3" />Independent showcase with fictional records. Not connected to any real insurer or government system. AI suggestions always go to a human for decision.
         </p>
       </header>
 

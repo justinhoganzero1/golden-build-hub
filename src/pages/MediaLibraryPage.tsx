@@ -34,7 +34,7 @@ const COLLECTIONS = [
   { key: "photography",   label: "ORACLE LUNAR AI Photographic Masterpiece Studio", icon: Camera },
   { key: "teleport",      label: "Teleport ✨",                               icon: Sparkles },
   { key: "apps",          label: "Apps",                                      icon: Globe },
-  { key: "workcover",     label: "WorkCover",                                 icon: FolderOpen },
+  { key: "workcover",     label: "Reimagined Insurance",                      icon: FolderOpen },
   { key: "stories",       label: "Stories & Books",                           icon: BookOpen },
   { key: "ai-tutor",      label: "AI Tutor",                                  icon: FileText },
   { key: "ai-studio",     label: "AI Studio",                                icon: Sparkles },
