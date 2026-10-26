@@ -9,7 +9,8 @@ export const workspaceSchema = z.object({
   activity: z.array(z.object({ id: z.string(), text: z.string(), at: z.string() })),
   conversations: z.array(z.object({ id: z.string(), title: z.string(), messages: z.array(messageSchema) })),
   paymentReviews: z.array(z.string()),
-  drafts: z.array(z.object({ id: z.string(), claimId: z.string(), to: z.string(), text: z.string(), at: z.string() })).default([]),
+  drafts: z.array(z.object({ id: z.string(), claimId: z.string(), to: z.string(), cc: z.string().optional(), bcc: z.string().optional(), bookingId: z.string().optional(), text: z.string(), at: z.string() })).default([]),
+  bookings: z.array(z.object({ id: z.string(), claimId: z.string(), contactId: z.string(), type: z.string(), when: z.string(), at: z.string() })).default([]),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type Claim = Workspace['claims'][number];
@@ -29,7 +30,7 @@ export function freshWorkspace(): Workspace {
       { id: 'task-1', claimId: 'RI-1031', title: 'Request updated capacity certificate', done: false },
       { id: 'task-2', claimId: 'RI-1088', title: 'Review graduated return-to-work plan', done: false },
       { id: 'task-3', claimId: 'RI-1102', title: 'Confirm incident date with employer', done: false },
-    ], activity: [], conversations: [], paymentReviews: [], drafts: [],
+    ], activity: [], conversations: [], paymentReviews: [], drafts: [], bookings: [],
   };
 }
 export function evidenceFor(claim: Claim) {

@@ -50,3 +50,27 @@ export function prepareContactDraft(contact: Contact, claim: Claim, related: Rec
   };
   return `Prepared draft · not sent · human review required\n\nTo: ${contact.name} (${contact.role}, ${contact.org})\nVia: ${contact.prefers} · ${contact.prefers === 'Email' ? contact.email : contact.phone}\nRe: ${claim.name} · ${claim.id}\n\nHello ${contact.name.replace(/^Dr /, 'Dr ')},\n\n${ask[contact.role]}${flags.length ? `\n\nItems we noticed in the file:\n${flags.join('\n')}` : ''}\n\nKind regards,\nReimagined case team\n\nFictional example. Nothing has been sent.`;
 }
+
+export type BookingEmail = { to: string; cc: string; bcc: string; text: string };
+const addr = (c: Contact) => `${c.name} <${c.email}>`;
+export const workerEmail = (claim: Claim) => `${claim.name} <${claim.name.toLowerCase().replace(/[^a-z]+/g, '.')}@example.test>`;
+export const caseTeam = 'Reimagined case team <cases@example.test>';
+
+/** Booking trigger: builds every linked email (To/CC/BCC). Prepared only, never sent. */
+export function bookingEmails(claim: Claim, provider: Contact, type: string, when: string): BookingEmail[] {
+  const people = contacts.filter(c => c.claimId === claim.id);
+  const of = (...roles: ContactRole[]) => people.filter(c => roles.includes(c.role)).map(addr).join(', ');
+  const legal = of('Lawyer', 'Union rep');
+  const workplace = of('Employer', 'Supervisor');
+  const treating = people.filter(c => ['Doctor', 'Specialist', 'Physio', 'Rehab provider'].includes(c.role) && c.id !== provider.id).map(addr).join(', ');
+  const nice = new Date(when).toLocaleString('en-AU', { dateStyle: 'full', timeStyle: 'short' });
+  const head = 'Prepared email · not sent · human review required\n\n';
+  const foot = '\n\nKind regards,\nReimagined case team\n\nFictional example. Nothing has been sent.';
+  const out: BookingEmail[] = [
+    { to: addr(provider), cc: caseTeam, bcc: '', text: `${head}Subject: Booking confirmed — ${claim.name} (${claim.id})\n\nHello ${provider.name},\n\nThis confirms a ${type} for ${claim.name} on ${nice} at ${provider.org}.\nRecorded injury: ${claim.injury}. Current capacity: ${claim.capacity}.\nPlease send your report and any updated certificate after the appointment.${foot}` },
+    { to: workerEmail(claim), cc: caseTeam, bcc: legal, text: `${head}Subject: Your appointment is booked\n\nHi ${claim.name.split(' ')[0]},\n\nYour ${type} with ${provider.name} at ${provider.org} is booked for ${nice}.\nPhone ${provider.phone} if you need to change it. Travel costs may be claimable — keep your receipts.${foot}` },
+  ];
+  if (workplace) out.push({ to: of('Employer') || workplace, cc: of('Supervisor'), bcc: '', text: `${head}Subject: Appointment notice — ${claim.name} (${claim.id})\n\nHello,\n\n${claim.name} has a ${type} on ${nice}. Please allow time off for this appointment. No medical details are shared in this notice.${foot}` });
+  if (treating) out.push({ to: treating, cc: caseTeam, bcc: '', text: `${head}Subject: Care team update — ${claim.id}\n\nHello,\n\nFor your records: ${claim.name} has a ${type} with ${provider.name} on ${nice}. We will share the outcome once received.${foot}` });
+  return out;
+}
