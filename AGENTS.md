@@ -1,4 +1,5 @@
 # Project Rules
+- The independent Reimagined IT app owns its separate Auth client/storage key, restricted service-provisioned demo access and versioned fictional workspace; it never mounts Oracle providers or grants membership, and prepared examples never invoke paid AI or external actions.
 - Library cards show readable titles outside large previews and lazily inspect visible apps and saved HTML documents in script-disabled, network-blocked frames; read only a bounded opening-page prefix from private storage so embedded videos do not load the entire library.
 - Explicitly opened Library apps render in a full-screen isolated iframe with scripts enabled but no same-origin privilege or network requests; this makes saved HTML interactive without exposing account tokens, with a parent-owned Back to Library control.
 - Preview URLs and hostnames never bypass RequireAuth or membership access; missing membership fails closed while account-management pages remain accessible, preventing public feature exposure.

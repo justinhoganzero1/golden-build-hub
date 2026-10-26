@@ -30,6 +30,8 @@ import OracleAgent from "@/components/OracleAgent";
 import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 import PreviewShield from "@/components/PreviewShield";
+import { isReimaginedEntry } from "@/reimagined/model";
+const ReimaginedApp = lazy(() => import("@/reimagined/ReimaginedApp"));
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
 const loaders = {
@@ -301,11 +303,10 @@ const Loading = () => (
   </div>
 );
 
-// Temporary standalone demo: the reimagined.online domain shows ONLY the
-// Reimagined Insurance showcase — no Oracle Lunar branding, no sign-in.
-const REIMAGINED_HOST = typeof window !== "undefined" && window.location.hostname.includes("reimagined");
+// The restricted IT app has a separate session and no Oracle providers/chrome.
+const REIMAGINED_HOST = typeof window !== "undefined" && isReimaginedEntry(window.location.hostname, window.location.pathname);
 
-const App = () => (
+const OracleApp = () => (
   <ErrorBoundary pageName="App Root">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -522,5 +523,9 @@ const App = () => (
     </QueryClientProvider>
   </ErrorBoundary>
 );
+
+const App = () => REIMAGINED_HOST
+  ? <ErrorBoundary pageName="Reimagined Insurance"><Suspense fallback={<Loading />}><ReimaginedApp /></Suspense></ErrorBoundary>
+  : <OracleApp />;
 
 export default App;
