@@ -70,6 +70,9 @@ export const PROVIDER_RATES = {
   // Veo / Gemini Video generation — expensive, per second of output
   veo_video_per_second: 20,
 
+  // Lovable AI Gateway video (gemini-omni flash, 720p): 0.4 credits/sec × A$0.35/credit
+  lovable_ai_video_flash_per_second: 14,
+
   // Shotstack render — per second of finished video
   shotstack_render_per_second: 5,
 
