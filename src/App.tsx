@@ -102,6 +102,7 @@ const loaders = {
   "/claims-assistant": () => import("./pages/ClaimsAssistantPage"),
   "/personal-vault": () => import("./pages/PersonalVaultPage"),
   "/claims-app": () => import("./pages/ClaimsAppPage"),
+  "/workcover-reimagined": () => import("./pages/WorkCoverReimaginedPage"),
   "/movie-studio-pro": () => import("./pages/MovieStudioProPage"),
   "/immersive-movie-studio": () => import("./pages/ImmersiveMovieStudioPage"),
   "/realm-builder": () => import("./pages/RealmBuilderPage"),
@@ -249,6 +250,7 @@ const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
+const WorkCoverReimaginedPage = lazy(loaders["/workcover-reimagined"]);
 const MovieStudioProPage = lazy(loaders["/movie-studio-pro"]);
 const ImmersiveMovieStudioPage = lazy(loaders["/immersive-movie-studio"]);
 const RealmBuilderPage = lazy(loaders["/realm-builder"]);
@@ -436,6 +438,7 @@ const App = () => (
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="ORACLE LUNAR Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/workcover-reimagined" element={<RequireAuth><ErrorBoundary pageName="Worker Assist Reimagined"><WorkCoverReimaginedPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/movie-studio-pro" element={<RequireAuth><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/immersive-movie-studio" element={<RequireAuth><ErrorBoundary pageName="Immersive Movie Studio"><ImmersiveMovieStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/realm-builder" element={<RequireAuth><ErrorBoundary pageName="Realm Builder"><RealmBuilderPage /></ErrorBoundary></RequireAuth>} />
