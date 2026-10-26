@@ -11,6 +11,8 @@
 //  3. Whitelist the redirect URI: <site>/youtube-oauth-callback
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireUser } from "../_shared/requireAuth.ts";
+import { safeRedirectUri } from "../_shared/origin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +21,9 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const access = await requireUser(req);
+  if (access.response) return access.response;
 
   try {
     const body = await req.json();
@@ -50,7 +55,8 @@ serve(async (req) => {
           message: "One-click YouTube upload requires the project owner to connect a Google Cloud OAuth client. Use the download bundle instead.",
         });
       }
-      const redirect = body.redirect_uri;
+      const redirect = safeRedirectUri(body.redirect_uri, ["/youtube-oauth-callback"]);
+      if (!redirect) return json({ error: "redirect_uri must be this app's YouTube callback page" }, 400);
       const url = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirect,
@@ -66,7 +72,9 @@ serve(async (req) => {
       const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
       const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
       if (!clientId || !clientSecret) return json({ error: "Owner has not configured Google OAuth secrets" }, 400);
-      const { code, redirect_uri } = body;
+      const { code } = body;
+      const redirect_uri = safeRedirectUri(body.redirect_uri, ["/youtube-oauth-callback"]);
+      if (!redirect_uri || typeof code !== "string") return json({ error: "Invalid OAuth callback" }, 400);
       const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -88,7 +96,14 @@ serve(async (req) => {
       if (!video_url) return json({ error: "video_url required" }, 400);
 
       // Fetch the video bytes from the storage URL
-      const vidResp = await fetch(video_url);
+      // Only fetch videos saved in this app's own storage (no arbitrary outbound requests).
+      let source: URL;
+      try { source = new URL(String(video_url)); } catch { return json({ error: "Invalid video_url" }, 400); }
+      const storageHost = new URL(Deno.env.get("SUPABASE_URL")!).hostname;
+      if (source.protocol !== "https:" || source.hostname !== storageHost || !source.pathname.startsWith("/storage/v1/object/")) {
+        return json({ error: "Use a video saved in your Oracle Lunar library" }, 400);
+      }
+      const vidResp = await fetch(source, { redirect: "error" });
       if (!vidResp.ok) throw new Error(`Could not fetch video (${vidResp.status})`);
       const videoBytes = new Uint8Array(await vidResp.arrayBuffer());
 
