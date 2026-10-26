@@ -60,7 +60,9 @@ const clampFloat = (v: unknown, min: number, max: number, fallback: number): num
 const SAFE_FILTER = /^[A-Za-z0-9._\-@:/+ ]{0,128}$/;
 
 const csvEscape = (v: unknown): string => {
-  const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
+  let s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
+  // Neutralise spreadsheet formulas (=, +, -, @, tab, CR) so exported cells stay plain text.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

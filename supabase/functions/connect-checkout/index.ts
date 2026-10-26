@@ -1,4 +1,5 @@
 import { statusFor } from "../_shared/errorStatus.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 // =============================================================================
 // connect-checkout
 // -----------------------------------------------------------------------------
@@ -38,6 +39,12 @@ Deno.serve(async (req) => {
     if (!accountId.startsWith("acct_")) throw new Error("Invalid accountId");
     if (!priceId.startsWith("price_")) throw new Error("Invalid priceId");
 
+    {
+      // Only Oracle Lunar sellers who onboarded here can be used as a store.
+      const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+      const { data: seller } = await db.from("connect_accounts").select("stripe_account_id").eq("stripe_account_id", accountId).maybeSingle();
+      if (!seller) throw new Error("Store not found");
+    }
     // We need the unit amount to compute the application fee.
     const price = await stripe.prices.retrieve(priceId, {
       stripeAccount: accountId,

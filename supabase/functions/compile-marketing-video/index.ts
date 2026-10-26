@@ -89,7 +89,9 @@ Deno.serve(async (req) => {
       if (src.startsWith("http")) { hostedUrls.push(src); continue; }
       const m = src.match(/^data:(image\/[a-z+]+);base64,(.+)$/);
       if (!m) { hostedUrls.push(src); continue; }
-      const ext = m[1].split("/")[1].replace("+xml", "");
+      if (!["image/png", "image/jpeg", "image/webp"].includes(m[1])) throw new Error("Images must be PNG, JPEG or WebP.");
+      if (m[2].length > 8_000_000) throw new Error("Each image must be under about 6 MB.");
+      const ext = m[1].split("/")[1];
       const bin = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
       const path = `marketing-reels/${Date.now()}-${i}.${ext}`;
       const { error: upErr } = await supabase.storage
