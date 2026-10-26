@@ -438,7 +438,8 @@ const App = () => (
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/personal-vault" element={<RequireAuth><ErrorBoundary pageName="Personal Vault"><PersonalVaultPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/claims-app" element={<RequireAuth><ErrorBoundary pageName="ORACLE LUNAR Claims App"><ClaimsAppPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/workcover-reimagined" element={<RequireAuth><ErrorBoundary pageName="Worker Assist Reimagined"><WorkCoverReimaginedPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/reimagined-insurance" element={<RequireAuth><ErrorBoundary pageName="Reimagined Insurance"><WorkCoverReimaginedPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/workcover-reimagined" element={<Navigate to="/reimagined-insurance" replace />} />
                   <Route path="/movie-studio-pro" element={<RequireAuth><ErrorBoundary pageName="Movie Studio Pro"><MovieStudioProPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/immersive-movie-studio" element={<RequireAuth><ErrorBoundary pageName="Immersive Movie Studio"><ImmersiveMovieStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/realm-builder" element={<RequireAuth><ErrorBoundary pageName="Realm Builder"><RealmBuilderPage /></ErrorBoundary></RequireAuth>} />
