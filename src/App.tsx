@@ -301,6 +301,10 @@ const Loading = () => (
   </div>
 );
 
+// Temporary standalone demo: the reimagined.online domain shows ONLY the
+// Reimagined Insurance showcase — no Oracle Lunar branding, no sign-in.
+const REIMAGINED_HOST = typeof window !== "undefined" && window.location.hostname.includes("reimagined");
+
 const App = () => (
   <ErrorBoundary pageName="App Root">
     <QueryClientProvider client={queryClient}>
@@ -308,6 +312,9 @@ const App = () => (
         <MuteProvider>
           <TooltipProvider>
             <BrowserRouter>
+              {REIMAGINED_HOST ? (
+                <Suspense fallback={<Loading />}><ErrorBoundary pageName="Reimagined Insurance"><WorkCoverReimaginedPage /></ErrorBoundary></Suspense>
+              ) : (<>
               <SpeedAIController />
               <Toaster />
               <Sonner />
@@ -507,6 +514,7 @@ const App = () => (
                 </Routes>
               </Suspense>
               <Suspense fallback={null}><SiteFooter /></Suspense>
+              </>)}
             </BrowserRouter>
           </TooltipProvider>
         </MuteProvider>

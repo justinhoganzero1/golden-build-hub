@@ -106,6 +106,9 @@ export default function WorkCoverReimaginedPage() {
   const [newTask, setNewTask] = useState("");
   const [newNote, setNewNote] = useState("");
   const [workerMsg, setWorkerMsg] = useState("");
+  const [signedIn, setSignedIn] = useState(true);
+
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session)); }, []);
 
   useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(cases)); }, [cases]);
 
@@ -117,6 +120,7 @@ export default function WorkCoverReimaginedPage() {
   const update = (fn: (c: Case) => Case) => setCases((all) => all.map((c) => (c.id === selected.id ? fn(c) : c)));
 
   async function runAI(action: string, text?: string) {
+    if (!signedIn) { toast.error("AI is disabled in this public demo"); return; }
     const meta = AI_ACTIONS.find((a) => a.id === action);
     if ((meta?.needsText || action === "explain_alert") && !text?.trim()) { toast.error(meta?.hint ?? "Add some text first"); return; }
     setAiBusy(true); setAiAnswer(""); setTab("ai"); setView("cases");
@@ -215,7 +219,7 @@ export default function WorkCoverReimaginedPage() {
                 </select>
               </div>
               <div className="mb-4 flex flex-wrap gap-1 border-b border-border pb-2">
-                {([["overview", Info, "Overview"], ["tasks", ClipboardList, "Tasks"], ["docs", FileText, "Documents"], ["money", Wallet, "Payments"], ["ai", Sparkles, "AI assistant"]] as const).map(([id, Icon, l]) => (
+                {([["overview", Info, "Overview"], ["tasks", ClipboardList, "Tasks"], ["docs", FileText, "Documents"], ["money", Wallet, "Payments"], ...(signedIn ? [["ai", Sparkles, "AI assistant"] as const] : [])] as const).map(([id, Icon, l]) => (
                   <button key={id} onClick={() => setTab(id)} className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm ${tab === id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}><Icon className="h-4 w-4" />{l}</button>
                 ))}
               </div>
