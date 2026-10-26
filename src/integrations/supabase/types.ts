@@ -2833,6 +2833,63 @@ export type Database = {
         }
         Relationships: []
       }
+      reimagined_demo_access: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reimagined_login_limits: {
+        Row: {
+          attempts: number
+          ip_hash: string
+          window_start: string
+        }
+        Insert: {
+          attempts?: number
+          ip_hash: string
+          window_start?: string
+        }
+        Update: {
+          attempts?: number
+          ip_hash?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      reimagined_workspaces: {
+        Row: {
+          data: Json
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          data?: Json
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          data?: Json
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       reward_grants: {
         Row: {
           active: boolean
@@ -4874,6 +4931,7 @@ export type Database = {
         Args: { _project_id: string }
         Returns: undefined
       }
+      reimagined_login_allowed: { Args: { _ip_hash: string }; Returns: boolean }
       resolve_ai_tier: { Args: { _user_id: string }; Returns: string }
       retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
       run_daily_safety_check: { Args: never; Returns: string }

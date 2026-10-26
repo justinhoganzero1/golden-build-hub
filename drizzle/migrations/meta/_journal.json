@@ -85,6 +85,13 @@
       "when": 1793014828402,
       "tag": "0011_member_kindle_and_call_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793017014183,
+      "tag": "0012_reimagined_restricted_workspace",
+      "breakpoints": true
     }
   ]
 }
