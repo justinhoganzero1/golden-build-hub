@@ -34,3 +34,14 @@ it('contact drafts are never sent and older saved workspaces still load', () => 
   const { drafts, ...old } = w; void drafts;
   expect(workspaceSchema.parse(old).drafts).toEqual([]);
 });
+import { bookingEmails } from './records';
+it('booking trigger copies lawyer by BCC, supervisor by CC, and sends nothing', () => {
+  const w = freshWorkspace();
+  const sam = w.claims.find(c => c.id === 'RI-1088')!;
+  const doc = contacts.find(c => c.claimId === 'RI-1088' && c.role === 'Doctor')!;
+  const e = bookingEmails(sam, doc, 'Medical review', '2026-11-02T10:00');
+  expect(e.find(x => x.to.includes('sam.taylor'))!.bcc).toContain('Olivia Grant');
+  const alex = bookingEmails(w.claims[0], contacts.find(c => c.claimId === 'RI-1031' && c.role === 'Physio')!, 'Physio session', '2026-11-02T10:00');
+  expect(alex.find(x => x.to.includes('Karen Doyle'))!.cc).toContain('Tom Reid');
+  expect(e.every(x => x.text.includes('not sent'))).toBe(true);
+});
