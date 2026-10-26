@@ -2835,17 +2835,26 @@ export type Database = {
       }
       reimagined_demo_access: {
         Row: {
+          account_kind: string
+          assigned_claim_id: string | null
           created_at: string
+          demo_key: string
           enabled: boolean
           user_id: string
         }
         Insert: {
+          account_kind?: string
+          assigned_claim_id?: string | null
           created_at?: string
+          demo_key?: string
           enabled?: boolean
           user_id: string
         }
         Update: {
+          account_kind?: string
+          assigned_claim_id?: string | null
           created_at?: string
+          demo_key?: string
           enabled?: boolean
           user_id?: string
         }
@@ -2868,6 +2877,74 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      reimagined_worker_cases: {
+        Row: {
+          capacity: string
+          claim_id: string
+          employer: string
+          injury: string
+          next_step: string
+          stage: string
+          updated_at: string
+          worker_name: string
+          worker_user_id: string
+        }
+        Insert: {
+          capacity: string
+          claim_id: string
+          employer: string
+          injury: string
+          next_step?: string
+          stage?: string
+          updated_at?: string
+          worker_name: string
+          worker_user_id: string
+        }
+        Update: {
+          capacity?: string
+          claim_id?: string
+          employer?: string
+          injury?: string
+          next_step?: string
+          stage?: string
+          updated_at?: string
+          worker_name?: string
+          worker_user_id?: string
+        }
+        Relationships: []
+      }
+      reimagined_worker_messages: {
+        Row: {
+          claim_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          text: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          text: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reimagined_worker_messages_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "reimagined_worker_cases"
+            referencedColumns: ["claim_id"]
+          },
+        ]
       }
       reimagined_workspaces: {
         Row: {
@@ -4930,6 +5007,10 @@ export type Database = {
       recalc_project_progress: {
         Args: { _project_id: string }
         Returns: undefined
+      }
+      reimagined_can_access_claim: {
+        Args: { _claim_id: string }
+        Returns: boolean
       }
       reimagined_login_allowed: { Args: { _ip_hash: string }; Returns: boolean }
       resolve_ai_tier: { Args: { _user_id: string }; Returns: string }
