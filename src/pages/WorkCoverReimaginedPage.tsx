@@ -147,7 +147,7 @@ export default function WorkCoverReimaginedPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="reimagined-theme min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
           <Link to="/dashboard" className="mr-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />App</Link>
