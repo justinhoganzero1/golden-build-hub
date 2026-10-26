@@ -165,6 +165,12 @@ const SendToKindleDialog = ({ open, onOpenChange, buildEpub, title }: Props) => 
       const prior = readDraft<{ requestKey: string }>(u.user.id, scope);
       const requestKey = prior?.requestKey ?? crypto.randomUUID();
       if (!writeDraft(u.user.id, scope, { requestKey })) throw new Error("Delivery recovery could not be saved. No email was sent.");
+      // Books can only go to the member's own saved Kindle address.
+      const typed = kindleEmail.trim();
+      const at = typed.lastIndexOf("@");
+      const savedAddress = `${typed.slice(0, at)}@${typed.slice(at + 1).toLowerCase()}`;
+      const saved = await supabase.from("member_kindle_settings").upsert({ user_id: u.user.id, kindle_email: savedAddress, updated_at: new Date().toISOString() });
+      if (saved.error) throw new Error("Couldn't save your Kindle address. No email was sent.");
       const safeName = file.name.replace(/[^\w.\-]+/g, "-");
       const storagePath = `${u.user.id}/${Date.now()}-${safeName}`;
       const up = await supabase.storage.from("kindle-outbox").upload(storagePath, file, {

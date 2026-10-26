@@ -24,3 +24,4 @@
 
 - The gemini-video compatibility endpoint uses server-only Gateway video SDK jobs and private media storage; resume saved jobs, never replay unknown generation. Member generation fails closed until verified monetary provider costing is available; owner exemption is checked using protected roles.
 - MovieStudio composites real video frames and native clip audio into export, retaining still animation only for scenes without a clip; all paid calls refresh member tokens at request time.
+- Scheduled and database-triggered workers authenticate with the private scheduler token (service-only table, sent as x-internal-job-token) via requireInternalOrOwner, never the public anon key; memberships and wallet top-ups are fulfilled only by the signed Stripe webhook, and return pages just poll status.

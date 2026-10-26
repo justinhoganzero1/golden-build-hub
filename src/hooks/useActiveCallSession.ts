@@ -99,6 +99,14 @@ export async function placeOutboundCall(to: string, intent: string) {
   const requestKey = crypto.randomUUID();
   if (!writeDraft(userId, scope, { requestKey })) throw new Error("Call recovery unavailable. No call was placed.");
 
+  // Calls can only go to the member's saved contacts; ask before saving a new number.
+  const { data: contact } = await supabase.from("member_call_contacts").select("id").eq("user_id", userId).eq("phone", to).maybeSingle();
+  if (!contact) {
+    if (!window.confirm(`Save ${to} to your call contacts so Oracle can call it?`)) throw new Error("Call cancelled. Numbers must be saved to your contacts first.");
+    const saved = await supabase.from("member_call_contacts").insert({ user_id: userId, phone: to });
+    if (saved.error) throw new Error("Couldn't save that contact. No call was placed.");
+  }
+
   const r = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-call-outbound`,
     {

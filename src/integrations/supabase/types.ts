@@ -1951,6 +1951,48 @@ export type Database = {
         }
         Relationships: []
       }
+      member_call_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      member_kindle_settings: {
+        Row: {
+          kindle_email: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          kindle_email: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          kindle_email?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       member_video_jobs: {
         Row: {
           billing_transaction_id: string | null

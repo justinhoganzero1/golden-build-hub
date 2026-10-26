@@ -99,6 +99,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    // Members may only call numbers saved in their own call contacts.
+    const { data: contact } = await admin.from("member_call_contacts").select("id").eq("user_id", userId).eq("phone", to).maybeSingle();
+    if (!contact) {
+      return new Response(JSON.stringify({ error: "contact_required", message: "Save this number to your call contacts first." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { data: settings } = await admin
       .from("user_assistant_settings")
       .select("twilio_number, outbound_calls_enabled")

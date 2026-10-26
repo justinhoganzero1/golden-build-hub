@@ -78,6 +78,13 @@
       "when": 1793013857060,
       "tag": "0010_internal_job_token",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793014828402,
+      "tag": "0011_member_kindle_and_call_contacts",
+      "breakpoints": true
     }
   ]
 }

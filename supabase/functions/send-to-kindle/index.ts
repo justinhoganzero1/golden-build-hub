@@ -130,7 +130,11 @@ Deno.serve(async (req) => {
     // Amazon's Kindle addresses carry mixed case in the local part
     // (justin_hogan_ZCdqC5@kindle.com). Lower-casing the whole thing can make
     // Amazon drop the message silently, so only the domain is normalised.
-    const rawKindleEmail = String(body.kindleEmail ?? "").trim();
+    // Books only go to the member's own saved Kindle address, never a request-chosen one.
+    const savedRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/member_kindle_settings?user_id=eq.${user.id}&select=kindle_email`, { headers: serviceHeaders });
+    const savedRows = await savedRes.json().catch(() => []);
+    const rawKindleEmail = String(Array.isArray(savedRows) ? savedRows[0]?.kindle_email ?? "" : "").trim();
+    if (!rawKindleEmail) return json({ error: "Save your Kindle address first." }, 400);
     const atIdx = rawKindleEmail.lastIndexOf("@");
     const kindleEmail = atIdx > 0
       ? `${rawKindleEmail.slice(0, atIdx)}@${rawKindleEmail.slice(atIdx + 1).toLowerCase()}`
