@@ -63,28 +63,17 @@ Deno.serve(async (req) => {
       const s = await stripe.checkout.sessions.retrieve(sid);
       if (s.metadata?.user_id !== user.id) return json({ error: "not yours" }, 403);
       if (s.payment_status !== "paid") return json({ ok: false, status: s.payment_status });
+      // Read-only: memberships are granted only by the signed Stripe webhook.
+      const { data: m } = await admin.from("memberships").select("founder_number, monthly_active_until, stripe_subscription_id").eq("user_id", user.id).maybeSingle();
       if (s.metadata?.purchase_type === "membership_founder") {
-        if (s.status !== "complete" || s.mode !== "payment" || s.currency !== "aud" || s.amount_total !== 100) return json({ error: "founder payment mismatch" }, 403);
-        const { data: num, error } = await admin.rpc("claim_founder_seat", { _user_id: user.id, _session_id: s.id });
-        if (error?.message.includes("already consumed")) return json({ ok: false, error: "founder_payment_already_consumed" }, 409);
-        if (error) throw error;
-        if (!num) {
-          // Seats ran out between checkout and payment: refund.
-          if (typeof s.payment_intent === "string") await stripe.refunds.create({ payment_intent: s.payment_intent }, { idempotencyKey: `founder-sold-out:${s.id}` });
-          return json({ ok: false, error: "founder_seats_gone_refunded" });
-        }
-        return json({ ok: true, kind: "founder", founder_number: num });
+        const { data: f } = await admin.from("founder_payment_fulfillments").select("stripe_session_id").eq("stripe_session_id", s.id).maybeSingle();
+        if (f && m?.founder_number) return json({ ok: true, kind: "founder", founder_number: m.founder_number });
+        if (f && !m?.founder_number) return json({ ok: false, error: "founder_seats_gone_refunded" });
+        return json({ ok: false, pending: true });
       }
-      if (s.metadata?.purchase_type === "membership_monthly" && typeof s.subscription === "string") {
-        const sub = await stripe.subscriptions.retrieve(s.subscription);
-        const end = (sub as any).current_period_end ?? (sub.items.data[0] as any)?.current_period_end;
-        const until = new Date((end ?? Date.now() / 1000 + 31 * 86400) * 1000).toISOString();
-        await admin.from("memberships").upsert({
-          user_id: user.id, kind: "monthly", monthly_active_until: until,
-          stripe_customer_id: typeof s.customer === "string" ? s.customer : null,
-          stripe_subscription_id: sub.id, updated_at: new Date().toISOString(),
-        });
-        return json({ ok: true, kind: "monthly", until });
+      if (s.metadata?.purchase_type === "membership_monthly") {
+        if (m?.stripe_subscription_id && m.stripe_subscription_id === s.subscription && m.monthly_active_until) return json({ ok: true, kind: "monthly", until: m.monthly_active_until });
+        return json({ ok: false, pending: true });
       }
       return json({ error: "not a membership purchase" }, 400);
     }

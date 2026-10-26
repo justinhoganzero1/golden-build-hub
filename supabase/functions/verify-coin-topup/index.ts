@@ -1,9 +1,7 @@
 // Confirms a coin top-up directly with Stripe when the buyer returns from
-// checkout, and credits the wallet. Works even if the webhook is delayed or
-// misconfigured. Idempotent: the same session can never be credited twice.
+// checkout and reports whether the verified webhook has credited it yet.
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { validateCoinPayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,23 +32,10 @@ Deno.serve(async (req) => {
     if (meta.purchase_type !== "coin_topup" || meta.user_id !== u.user.id) return json({ error: "not your top-up" }, 403);
     if (s.payment_status !== "paid") return json({ credited: false, status: s.payment_status });
 
-    let walletCents: number;
-    try { walletCents = validateCoinPayment(s, u.user.id); }
-    catch { return json({ error: "top-up payment mismatch" }, 403); }
-    const { data, error } = await admin.rpc("billing_credit_stripe_topup", {
-      _user_id: u.user.id,
-      _stripe_event_id: `verify:${s.id}`,
-      _stripe_session_id: s.id,
-      _stripe_payment_intent: typeof s.payment_intent === "string" ? s.payment_intent : null,
-      _wallet_cents: walletCents,
-      _gross_cents: Math.round(Number(s.amount_total ?? 0)),
-      _currency: s.currency ?? "usd",
-      _metadata: { checkout_mode: s.mode, via: "return_verify" },
-    });
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
+    // Read-only: wallet credit is granted only by the signed Stripe webhook.
+    const { data: tx } = await admin.from("billing_transactions").select("id").eq("stripe_session_id", s.id).eq("user_id", u.user.id).limit(1).maybeSingle();
     const { data: bal } = await admin.from("wallet_balances").select("balance_cents").eq("user_id", u.user.id).maybeSingle();
-    return json({ credited: true, duplicate: !!row?.duplicate, balance_cents: bal?.balance_cents ?? 0 });
+    return json({ credited: !!tx, pending: !tx, balance_cents: bal?.balance_cents ?? 0 });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
