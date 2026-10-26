@@ -1652,6 +1652,24 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_job_tokens: {
+        Row: {
+          created_at: string
+          name: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          token?: string
+        }
+        Relationships: []
+      }
       investment_offers: {
         Row: {
           ai_notes: string | null
@@ -4732,6 +4750,7 @@ export type Database = {
           over_limit: boolean
         }[]
       }
+      internal_job_token: { Args: never; Returns: string }
       is_anon_visitor: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_owner_email_locked: { Args: never; Returns: boolean }

@@ -71,6 +71,13 @@
       "when": 1792743123693,
       "tag": "0009_durable_member_video_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793013857060,
+      "tag": "0010_internal_job_token",
+      "breakpoints": true
     }
   ]
 }
