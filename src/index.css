@@ -1925,9 +1925,11 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 .ri-app, .ri-worker-app { font-size: 16px; line-height: 1.6; }
 .ri-app button, .ri-login button, .ri-worker-app button { min-height: 44px; font-size: 15px; border-radius: 6px; white-space: normal; box-shadow: none !important; }
 .ri-app button:focus-visible, .ri-worker-app button:focus-visible, .ri-login button:focus-visible, .ri-source-link:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 3px; }
-.ri-sidebar { width: 260px; }
+.ri-sidebar { width: 260px; overflow-y: auto; }
 .ri-main { margin-left: 260px; width: calc(100% - 260px); }
 .ri-nav-item { min-height: 48px; font-size: 16px !important; }
+.ri-sidebar nav { flex-shrink: 0; }
+.ri-sidebar-bottom { flex-shrink: 0; padding-bottom: 16px; }
 .ri-eyebrow { font-size: 12px; }
 .ri-heading h1 { font-size: 34px; }
 .ri-heading p:not(.ri-eyebrow), .ri-claim-name small, .ri-task small, .ri-metric > span, .ri-claim-card p, .ri-connection p, .ri-ai-band p:not(.ri-eyebrow), .ri-evidence p { font-size: 15px; }
