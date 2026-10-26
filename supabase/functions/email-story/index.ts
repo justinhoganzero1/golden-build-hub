@@ -91,8 +91,10 @@ Deno.serve(async (req) => {
     if (recipients.length !== 1) return json({ error: "Enter one valid recipient email address." }, 400);
 
     const service = createClient(backendUrl, serviceKey, { auth: { persistSession: false } });
+    // Only stories saved in the member's own library can be emailed.
+    if (!incoming.storyId) return json({ error: "Save this story to your library first, then email it." }, 400);
     let body = incoming;
-    if (incoming.storyId) {
+    {
       const { data: item, error } = await service.from("user_media").select("user_id, title, metadata").eq("id", incoming.storyId).maybeSingle();
       if (error || !item || item.user_id !== userData.user.id) return json({ error: "Story not found in your library." }, 404);
       const metadata = (item.metadata && typeof item.metadata === "object" ? item.metadata : {}) as Record<string, unknown>;
@@ -154,7 +156,7 @@ Deno.serve(async (req) => {
     if (coverUrl) bookParts.push(`<img src="${esc(coverUrl)}" alt="${esc(title)} front cover" width="560" style="display:block;width:100%;max-width:560px;height:auto;margin:0 auto 24px"/>`);
     bookParts.push(`<h1 style="font-size:30px;margin:16px 0 4px;color:#111;text-align:center">${esc(title)}</h1>`);
     if (author) bookParts.push(`<p style="margin:0 0 20px;font-size:15px;color:#555;text-align:center">by ${esc(author)}</p>`);
-    if (body.message) bookParts.push(`<div style="margin:22px 0">${paras(String(body.message).slice(0, 5000))}</div>`);
+    if (body.message) bookParts.push(`<div style="margin:22px 0">${paras(String(body.message).slice(0, 500))}</div>`);
     if (dedication) bookParts.push(`<div style="font-style:italic;text-align:center;margin:24px 0">${paras(dedication)}</div>`);
     if (prelude) bookParts.push(`<hr style="border:none;border-top:1px solid #ddd;margin:30px 0"/><h2>Prelude</h2>${paras(prelude)}`);
 
