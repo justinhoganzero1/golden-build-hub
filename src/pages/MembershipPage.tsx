@@ -32,7 +32,13 @@ const MembershipPage = () => {
     const sid = params.get("session_id");
     if (!user || params.get("paid") !== "1" || !sid) return;
     (async () => {
-      const { data, error } = await supabase.functions.invoke("membership", { body: { action: "verify", sessionId: sid } });
+      // The verified Stripe notice grants membership; poll briefly until it lands.
+      let data: any = null; let error: unknown = null;
+      for (let i = 0; i < 10; i++) {
+        ({ data, error } = await supabase.functions.invoke("membership", { body: { action: "verify", sessionId: sid } }));
+        if (error || !data?.pending) break;
+        await new Promise((r) => setTimeout(r, 2000));
+      }
       if (error || !data?.ok) {
         toast.error(data?.error === "founder_seats_gone_refunded"
           ? "Sorry, the last seat was just taken — your $1 has been refunded."
