@@ -9,11 +9,12 @@ export const workspaceSchema = z.object({
   activity: z.array(z.object({ id: z.string(), text: z.string(), at: z.string() })),
   conversations: z.array(z.object({ id: z.string(), title: z.string(), messages: z.array(messageSchema) })),
   paymentReviews: z.array(z.string()),
+  drafts: z.array(z.object({ id: z.string(), claimId: z.string(), to: z.string(), text: z.string(), at: z.string() })).default([]),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type Claim = Workspace['claims'][number];
-export type View = 'Overview' | 'Claims' | 'Tasks' | 'Documents' | 'Recovery' | 'Payments' | 'AI Assistant' | 'Connections' | 'Activity' | 'Worker accounts';
-export const views: View[] = ['Overview', 'Claims', 'Tasks', 'Documents', 'Recovery', 'Payments', 'AI Assistant', 'Worker accounts', 'Connections', 'Activity'];
+export type View = 'Overview' | 'Claims' | 'Tasks' | 'Documents' | 'Recovery' | 'Payments' | 'AI Assistant' | 'Connections' | 'Activity' | 'Worker accounts' | 'Contacts' | 'Medical & reports';
+export const views: View[] = ['Overview', 'Claims', 'Tasks', 'Documents', 'Recovery', 'Payments', 'AI Assistant', 'Worker accounts', 'Contacts', 'Medical & reports', 'Connections', 'Activity'];
 export const uid = () => crypto.randomUUID();
 export function freshWorkspace(): Workspace {
   return {
@@ -28,7 +29,7 @@ export function freshWorkspace(): Workspace {
       { id: 'task-1', claimId: 'RI-1031', title: 'Request updated capacity certificate', done: false },
       { id: 'task-2', claimId: 'RI-1088', title: 'Review graduated return-to-work plan', done: false },
       { id: 'task-3', claimId: 'RI-1102', title: 'Confirm incident date with employer', done: false },
-    ], activity: [], conversations: [], paymentReviews: [],
+    ], activity: [], conversations: [], paymentReviews: [], drafts: [],
   };
 }
 export function evidenceFor(claim: Claim) {
