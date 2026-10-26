@@ -47,7 +47,8 @@ const accessibility: Improvement = {
   source: accessibilitySource, scope: 'Accessibility design guidance · not a reported insurer defect or a certified accessibility claim.',
 };
 export function improvementFor(view: View): Improvement {
-  if (view === 'Documents') return requests;
+  if (view === 'Documents' || view === 'Medical & reports') return requests;
+  if (view === 'Contacts') return communication;
   if (view === 'AI Assistant' || view === 'Activity') return communication;
   if (view === 'Connections' || view === 'Payments') return accessibility;
   return progress;

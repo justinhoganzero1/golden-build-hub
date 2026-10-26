@@ -23,4 +23,14 @@ it('standalone entry uses exact domain matching, not arbitrary host substrings',
   expect(isReimaginedEntry('fake-reimagined.example', '/oracle')).toBe(false);
   expect(isReimaginedEntry('oraclelunar.com', '/oracle')).toBe(false);
   expect(isReimaginedEntry('localhost', '/reimagined-it')).toBe(true);
+});import { contacts, records, prepareContactDraft } from './records';
+import { workspaceSchema } from './model';
+it('contact drafts are never sent and older saved workspaces still load', () => {
+  const w = freshWorkspace();
+  const doc = contacts.find(c => c.claimId === 'RI-1031' && c.role === 'Doctor')!;
+  const text = prepareContactDraft(doc, w.claims[0], records.filter(r => r.claimId === 'RI-1031'));
+  expect(text).toContain('not sent');
+  expect(text).toContain('Expired 14 Oct');
+  const { drafts, ...old } = w; void drafts;
+  expect(workspaceSchema.parse(old).drafts).toEqual([]);
 });
