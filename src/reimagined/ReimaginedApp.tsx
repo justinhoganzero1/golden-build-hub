@@ -1,0 +1,120 @@
+import { useEffect, useState } from 'react';
+import { ArrowRight, ArrowLeft, LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Plug, History, LogOut, Search, ShieldCheck, Info, Send, Plus, Check, Menu, X, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import logo from '@/assets/reimagined-insurance-logo.png';
+import { reimaginedClient as client } from './client';
+import { useWorkspace } from './useWorkspace';
+import { evidenceFor, logActivity, preparedReply, uid, views, type Claim, type View } from './model';
+
+const icons = [LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Plug, History];
+const connectionInfo = {
+  'Clinical documents': 'Proposed AI-driven link to a clinical document service: extract certificate dates and work capacity, then highlight missing or inconsistent evidence for a case manager. This evaluation uses a fictional document pack; no clinical system is connected.',
+  'Employer portal': 'Proposed AI-driven link to an employer portal: gather incident information and draft follow-up requests. Staff review every draft before sending. No employer portal is connected and nothing is sent from this workspace.',
+  'Recovery services': 'Proposed AI-driven link to rehabilitation services: compare an agreed recovery plan with current capacity and suggest review points. A clinician and case manager retain all medical and work-capacity decisions. No live provider is connected.',
+  'Payment system': 'Proposed link to an insurer payment system: reconcile approved schedules and flag mismatches for human review. This app never approves benefits or transfers funds; all amounts shown are fictional.',
+};
+function Brand() { return <div className="ri-brand"><img src={logo} alt="Reimagined shield" /><div><strong>Reimagined</strong><span>INSURANCE</span></div></div>; }
+function Status({ claim }: { claim: Claim }) { return <span className={`ri-status ri-status-${claim.status.toLowerCase()}`}>{claim.status}</span>; }
+
+export default function ReimaginedApp() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [signing, setSigning] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [view, setView] = useState<View>('Overview');
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [selectedId, setSelectedId] = useState('RI-1031');
+  const [detail, setDetail] = useState(false);
+  const [query, setQuery] = useState('');
+  const [note, setNote] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
+  const [question, setQuestion] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [popup, setPopup] = useState<{ title: string; text: string } | null>(null);
+  const { workspace: w, save, saving, error } = useWorkspace(userId);
+  useEffect(() => {
+    document.title = 'Reimagined Insurance | IT evaluation';
+    document.body.classList.add('reimagined-body');
+    let alive = true;
+    const check = async () => {
+      const { data } = await client.auth.getUser();
+      if (data.user) {
+        const access = await client.from('reimagined_demo_access').select('enabled').eq('user_id', data.user.id).maybeSingle();
+        if (alive) setUserId(access.data?.enabled ? data.user.id : null);
+      } else if (alive) setUserId(null);
+      if (alive) setChecking(false);
+    };
+    void check();
+    const { data: listener } = client.auth.onAuthStateChange(() => { setTimeout(() => { if (alive) void check(); }, 0); });
+    return () => { alive = false; listener.subscription.unsubscribe(); document.body.classList.remove('reimagined-body'); };
+  }, []);
+  async function signIn() {
+    setSigning(true); setAuthError('');
+    try {
+      const { data, error: invokeError } = await client.functions.invoke('reimagined-demo', { body: { action: 'login' } });
+      if (invokeError || !data?.access_token || !data?.refresh_token) throw new Error(data?.error || 'Demo sign-in is unavailable. Please try again.');
+      const installed = await client.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
+      if (installed.error) throw installed.error;
+    } catch (e) { setAuthError(e instanceof Error ? e.message : 'Unable to sign in.'); }
+    finally { setSigning(false); }
+  }
+  function navigate(next: View) { setView(next); setDetail(false); setMobileMenu(false); }
+  if (checking) return <main className="reimagined-theme ri-loading">Checking demo sign-in…</main>;
+  if (!userId) return <main className="reimagined-theme ri-login">
+    <header><Brand /><span className="ri-eyebrow">IT EVALUATION</span></header>
+    <section className="ri-login-content"><ShieldCheck className="ri-login-shield" /><p className="ri-eyebrow">A CONNECTED CLAIMS WORKSPACE</p><h1>Reimagined<br /><span>Insurance</span></h1><p className="ri-login-copy">Your evaluation workspace is ready.</p>
+      <div className="ri-login-account"><span className="ri-avatar">IT</span><div><strong>IT team demo account</strong><p>Shared fictional workspace · no signup</p></div><ShieldCheck className="text-primary" /></div>
+      <Button className="ri-primary ri-login-button" onClick={signIn} disabled={signing}>{signing ? 'Signing in…' : 'Demo sign in'}<ArrowRight /></Button>
+      {authError && <p role="alert" className="ri-error">{authError}</p>}
+      <p className="ri-disclaimer">Fictional records only. Prepared AI examples, not live AI.<br />Not connected to any real insurer or government system.</p>
+    </section><footer>REIMAGINED INSURANCE <span>Temporary IT evaluation</span></footer>
+  </main>;
+  const claim = w?.claims.find(c => c.id === selectedId) ?? w?.claims[0];
+  const conversation = w?.conversations.find(c => c.id === conversationId);
+  const explain = (title: keyof typeof connectionInfo) => setPopup({ title, text: connectionInfo[title] });
+  async function addNote() {
+    if (!w || !claim || !note.trim()) return;
+    const next = { ...w, claims: w.claims.map(c => c.id === claim.id ? { ...c, notes: [...c.notes, { id: uid(), text: note.trim().slice(0, 2000), at: new Date().toISOString() }] } : c) };
+    if (await save(logActivity(next, `Note saved to ${claim.id}`))) setNote('');
+  }
+  async function addTask(title = taskTitle) {
+    if (!w || !claim || !title.trim()) return;
+    const next = { ...w, tasks: [...w.tasks, { id: uid(), claimId: claim.id, title: title.trim().slice(0, 160), done: false }] };
+    if (await save(logActivity(next, `Task created for ${claim.id}`))) setTaskTitle('');
+  }
+  async function ask(text = question) {
+    if (!w || !claim || !text.trim()) return;
+    const id = conversationId || uid();
+    const previous = w.conversations.find(c => c.id === id);
+    const messages = [...(previous?.messages ?? []), { id: uid(), role: 'user' as const, text: text.trim().slice(0, 2000) }, { id: uid(), role: 'assistant' as const, text: preparedReply(text, claim, w) }];
+    const nextConversation = { id, title: previous?.title ?? text.trim().slice(0, 45), messages: messages.slice(-100) };
+    const next = { ...w, conversations: [nextConversation, ...w.conversations.filter(c => c.id !== id)].slice(0, 25) };
+    if (await save(logActivity(next, `Prepared AI example saved for ${claim.id}`))) { setConversationId(id); setQuestion(''); }
+  }
+  const filtered = w?.claims.filter(c => `${c.name} ${c.id} ${c.employer}`.toLowerCase().includes(query.toLowerCase())) ?? [];
+  return <div className="reimagined-theme ri-app">
+    <aside className={`ri-sidebar ${mobileMenu ? 'ri-sidebar-open' : ''}`}><Brand /><Button variant="ghost" className="ri-menu-close" size="icon" aria-label="Close navigation" onClick={() => setMobileMenu(false)}><X /></Button><p className="ri-eyebrow">CASE MANAGEMENT</p><nav>{views.map((v, i) => { const Icon = icons[i]; return <Button key={v} variant="ghost" className={`ri-nav-item ${view === v ? 'ri-nav-active' : ''}`} onClick={() => navigate(v)}><Icon />{v}{v === 'AI Assistant' && <span className="ri-dot" />}</Button>; })}</nav><div className="ri-sidebar-bottom"><ShieldCheck /><span>IT evaluation<br /><small>Fictional records only</small></span></div></aside>
+    <div className="ri-main"><header className="ri-topbar"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="ri-menu-toggle" aria-label="Open navigation" onClick={() => setMobileMenu(true)}><Menu /></Button><span>Workspace <ChevronRight className="inline h-3 w-3" /> <strong>{view}</strong></span></div><div className="flex items-center gap-3"><span className="ri-demo-label">DEMO</span><span className="ri-avatar ri-avatar-small">IT</span><Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={() => void client.auth.signOut({ scope: 'local' })}><LogOut /></Button></div></header>
+    <main className="ri-content"><div className="ri-heading"><div><p className="ri-eyebrow">REIMAGINED INSURANCE</p><h1>{detail && claim ? claim.name : view === 'Overview' ? 'A clearer picture of every claim.' : view}</h1><p>{detail && claim ? `${claim.id} · ${claim.employer}` : view === 'Overview' ? 'Claims, care and recovery. One connected workspace.' : 'IT team evaluation · shared fictional records'}</p></div><span className="ri-save-state">{saving ? 'Saving…' : w ? 'Saved workspace' : 'Loading…'}</span></div>
+    {error && <div role="alert" className="ri-error">{error}<Button variant="link" onClick={() => window.location.reload()}>Reload workspace</Button></div>}
+    {!w || !claim ? <p>Loading saved activity…</p> : <>
+    {view === 'Overview' && <><div className="ri-metrics">{[{ label: 'Active claims', value: w.claims.filter(c => c.status !== 'Closed').length, icon: Files, tone: 'primary' }, { label: 'Awaiting review', value: w.claims.filter(c => c.status === 'Review').length, icon: ShieldCheck, tone: 'gold' }, { label: 'Recovery plans', value: w.claims.filter(c => c.status === 'Recovery').length, icon: HeartPulse, tone: 'green' }, { label: 'Open tasks', value: w.tasks.filter(t => !t.done).length, icon: ListChecks, tone: 'coral' }].map(m => <article key={m.label} className={`ri-metric ri-tone-${m.tone}`}><m.icon /><span>{m.label}</span><strong>{m.value.toString().padStart(2, '0')}</strong><small>Fictional evaluation records</small></article>)}</div><div className="ri-section-title"><h2>Claim overview</h2><Button variant="link" onClick={() => navigate('Claims')}>All claims<ArrowRight /></Button></div><div className="ri-claim-list">{w.claims.slice(0, 4).map(c => <Button variant="ghost" className="ri-claim-row" key={c.id} onClick={() => { setSelectedId(c.id); setView('Claims'); setDetail(true); }}><span className="ri-avatar">{c.name.split(' ').map(n => n[0]).join('')}</span><span className="ri-claim-name"><strong>{c.name}</strong><small>{c.id} · {c.injury}</small></span><span className="ri-employer">{c.employer}</span><Status claim={c} /><ChevronRight /></Button>)}</div><section className="ri-ai-band"><Sparkles /><div><p className="ri-eyebrow">PREPARED AI EXAMPLES</p><h2>Insights with a human in control.</h2><p>Review a case summary, check evidence or prepare a follow-up.</p></div><Button className="ri-primary" onClick={() => navigate('AI Assistant')}>Open assistant<ArrowRight /></Button></section><div className="ri-section-title"><h2>Next actions</h2><Button variant="link" onClick={() => navigate('Tasks')}>Task board<ArrowRight /></Button></div>{w.tasks.filter(t => !t.done).slice(0, 3).map(t => <div className="ri-task" key={t.id}><ListChecks className="text-primary" /><div><strong>{t.title}</strong><small>{t.claimId} · Human review</small></div></div>)}</>}
+    {view === 'Claims' && !detail && <><div className="ri-search"><Search /><Input aria-label="Search claims" placeholder="Search name, claim ID or employer" value={query} onChange={e => setQuery(e.target.value)} /></div><div className="ri-claim-grid">{filtered.map(c => <article className="ri-claim-card" key={c.id}><div className="flex items-center justify-between"><span className="ri-eyebrow">{c.id}</span><Status claim={c} /></div><h2>{c.name}</h2><p>{c.employer}</p><dl><dt>Recorded injury</dt><dd>{c.injury}</dd><dt>Work capacity</dt><dd>{c.capacity}</dd></dl><Button variant="outline" className="ri-control" onClick={() => { setSelectedId(c.id); setDetail(true); }}>Open claim<ArrowRight /></Button></article>)}</div>{!filtered.length && <p>No matching claims.</p>}</>}
+    {view === 'Claims' && detail && <><Button variant="link" onClick={() => setDetail(false)}><ArrowLeft />All claims</Button><div className="ri-detail-columns"><section><h2>Case record</h2><dl className="ri-facts"><dt>Claim ID</dt><dd>{claim.id}</dd><dt>Recorded injury</dt><dd>{claim.injury}</dd><dt>Capacity</dt><dd>{claim.capacity}</dd><dt>Stage</dt><dd><Status claim={claim} /></dd></dl><label htmlFor="claim-stage">Update stage</label><select id="claim-stage" className="ri-select" value={claim.status} disabled={saving} onChange={e => { const status = e.target.value as Claim['status']; void save(logActivity({ ...w, claims: w.claims.map(c => c.id === claim.id ? { ...c, status } : c) }, `${claim.id} stage changed to ${status}`)); }}><option>Review</option><option>Recovery</option><option>Closed</option></select><p className="ri-disclaimer">Workflow stage only; not an eligibility or medical decision.</p><Button variant="outline" className="ri-control" onClick={() => { navigate('AI Assistant'); void ask('Summarise this claim'); }}><Sparkles />Prepared case summary</Button></section><section><h2>Case notes</h2>{claim.notes.length ? claim.notes.map(n => <div className="ri-note" key={n.id}><p>{n.text}</p><small>{new Date(n.at).toLocaleString('en-AU')}</small></div>) : <p className="text-muted-foreground">No case notes yet.</p>}<label htmlFor="case-note">New note</label><Textarea id="case-note" placeholder="Fictional case notes only" maxLength={2000} value={note} onChange={e => setNote(e.target.value)} /><Button className="ri-primary mt-3" disabled={saving || !note.trim()} onClick={() => void addNote()}><Plus />Save note</Button></section></div></>}
+    {view === 'Tasks' && <><div className="ri-task-compose"><label htmlFor="task-case">Claim</label><select id="task-case" className="ri-select" value={selectedId} onChange={e => setSelectedId(e.target.value)}>{w.claims.map(c => <option key={c.id} value={c.id}>{c.id} · {c.name}</option>)}</select><Input aria-label="New task" placeholder="Add a follow-up task" maxLength={160} value={taskTitle} onChange={e => setTaskTitle(e.target.value)} /><Button className="ri-primary" disabled={saving || !taskTitle.trim()} onClick={() => void addTask()}><Plus />Add task</Button></div>{w.tasks.map(t => <div className="ri-task" key={t.id}><Button variant="outline" size="icon" aria-label={`${t.done ? 'Reopen' : 'Complete'} ${t.title}`} className="ri-control shrink-0" disabled={saving} onClick={() => void save(logActivity({ ...w, tasks: w.tasks.map(x => x.id === t.id ? { ...x, done: !x.done } : x) }, `${t.done ? 'Reopened' : 'Completed'} task: ${t.title}`))}>{t.done && <Check />}</Button><div><strong className={t.done ? 'line-through text-muted-foreground' : ''}>{t.title}</strong><small>{t.claimId} · {t.done ? 'Completed' : 'Open'}</small></div></div>)}</>}
+    {(view === 'Documents' || view === 'Recovery' || view === 'Payments') && <><label htmlFor="selected-case">Selected claim</label><select id="selected-case" className="ri-select mb-6" value={selectedId} onChange={e => setSelectedId(e.target.value)}>{w.claims.map(c => <option key={c.id} value={c.id}>{c.id} · {c.name}</option>)}</select>
+      {view === 'Documents' && <><div className="ri-section-title"><h2>Fictional evidence pack</h2><Button variant="ghost" className="ri-control" onClick={() => explain('Clinical documents')}><Info />About this connection</Button></div>{['Capacity certificate', 'Worker statement', 'Employer incident report'].map((d, i) => <div className="ri-task" key={d}><FileText className="text-primary" /><div><strong>{d}</strong><small>{claim.id} · Fictional document</small></div><Button variant="link" onClick={() => setPopup({ title: d, text: `${claim.name} (${claim.id})\n\n${i === 0 ? `Recorded capacity: ${claim.capacity}. ${claim.id === 'RI-1031' ? 'Certificate period: 1–14 October. Plan period: 1–28 October.' : 'This example contains no verified medical information.'}` : i === 1 ? 'Fictional worker statement. Incident date: 2 October. Shoulder strain reported during lifting duties.' : 'Fictional employer report. Incident date: 3 October. Modified duties offered subject to current capacity.'}\n\nIllustrative evidence only; not an authentic medical or employer document.` })}>Read<ArrowRight /></Button></div>)}<h2 className="mt-8 mb-4">Prepared evidence checks</h2>{evidenceFor(claim).map(e => <article className="ri-evidence" key={e.title}><ShieldCheck /><div><strong>{e.title}</strong><p>{e.detail}</p></div><span className="ri-demo-label">{e.severity}</span></article>)}<Button className="ri-primary mt-4" disabled={saving || claim.reviewed} onClick={() => void save(logActivity({ ...w, claims: w.claims.map(c => c.id === claim.id ? { ...c, reviewed: true } : c) }, `Evidence pack marked reviewed: ${claim.id}`))}><Check />{claim.reviewed ? 'Marked reviewed' : 'Mark reviewed'}</Button></>}
+      {view === 'Recovery' && <><div className="ri-section-title"><h2>{claim.name} · recovery plan</h2><Button variant="ghost" className="ri-control" onClick={() => explain('Recovery services')}><Info />About this connection</Button></div><div className="ri-recovery-plan">{['Confirm current capacity', 'Agree modified duties', 'Review progress with worker', 'Human review before full duties'].map((s, i) => <div key={s}><span>{i + 1}</span><div><h3>{s}</h3><p>{i === 0 ? claim.capacity : 'Proposed step · requires case manager and clinician review'}</p></div></div>)}</div><Button className="ri-primary" disabled={saving} onClick={() => void addTask(`Review recovery plan for ${claim.name}`)}><Plus />Save recovery follow-up</Button></>}
+      {view === 'Payments' && <><div className="ri-section-title"><h2>Example payment schedule</h2><Button variant="ghost" className="ri-control" onClick={() => explain('Payment system')}><Info />About this connection</Button></div><p className="ri-disclaimer mb-6">Fictional amounts. No real payments, benefits or bank connection.</p>{[{ title: 'Weekly benefit example', amount: 'A$820.00' }, { title: 'Treatment invoice example', amount: 'A$145.00' }].map(p => <div className="ri-task" key={p.title}><CreditCard className="text-primary" /><div><strong>{p.title}</strong><small>{claim.id} · Awaiting human approval (simulation)</small></div><strong className="text-accent">{p.amount}</strong></div>)}<Button className="ri-primary mt-4" disabled={saving || w.paymentReviews.includes(claim.id)} onClick={() => void save(logActivity({ ...w, paymentReviews: [...w.paymentReviews, claim.id] }, `Fictional payment schedule reviewed: ${claim.id}; no payment made`))}><Check />{w.paymentReviews.includes(claim.id) ? 'Schedule reviewed' : 'Mark schedule reviewed'}</Button></>}
+    </>}
+    {view === 'AI Assistant' && <div className="ri-chat-layout"><aside className="ri-chat-history"><Button className="ri-control" variant="outline" onClick={() => setConversationId(null)}><Plus />New conversation</Button><h3>Saved conversations</h3>{w.conversations.length ? w.conversations.map(c => <Button key={c.id} variant="ghost" className={`ri-history-item ${conversationId === c.id ? 'ri-nav-active' : ''}`} onClick={() => setConversationId(c.id)}><History /><span>{c.title}</span></Button>) : <p>No saved conversations yet.</p>}</aside><section className="ri-chat"><div className="ri-chat-heading"><Sparkles /><div><h2>Reimagined Assistant</h2><p>Prepared examples · no live AI or charges</p></div><Button variant="ghost" size="icon" aria-label="About AI examples" onClick={() => setPopup({ title: 'Human-led AI evaluation', text: 'These are prepared, deterministic examples drawn from fictional records. A proposed live AI connection could summarise cases, extract document details and draft actions. Nothing here calls an AI provider, sends messages or makes official decisions. Saving a task or note always requires your explicit action.' })}><Info /></Button></div><select aria-label="AI selected claim" className="ri-select" value={selectedId} onChange={e => setSelectedId(e.target.value)}>{w.claims.map(c => <option key={c.id} value={c.id}>{c.id} · {c.name}</option>)}</select><div className="ri-messages">{conversation ? conversation.messages.map(m => <article className={`ri-message ri-message-${m.role}`} key={m.id}><span>{m.role === 'user' ? 'IT TEAM' : 'REIMAGINED · EXAMPLE'}</span><p>{m.text}</p></article>) : <div className="ri-chat-empty"><Sparkles /><h2>A second perspective.<br />You make the decisions.</h2><div className="ri-prompts">{['Summarise this claim', 'Check the evidence', 'What are the next steps?', 'Draft a worker email'].map(p => <Button variant="outline" className="ri-control" key={p} disabled={saving} onClick={() => void ask(p)}>{p}<ArrowRight /></Button>)}</div></div>}</div><form className="ri-composer" onSubmit={e => { e.preventDefault(); void ask(); }}><Textarea aria-label="Message Reimagined Assistant" placeholder="Ask for a prepared example…" maxLength={2000} value={question} onChange={e => setQuestion(e.target.value)} /><Button className="ri-primary" size="icon" aria-label="Send message" disabled={saving || !question.trim()} type="submit"><Send /></Button></form><div className="ri-chat-actions"><Button variant="link" disabled={saving || !conversation} onClick={() => { const last = conversation?.messages.filter(m => m.role === 'assistant').at(-1); if (last) { setNote(last.text); setView('Claims'); setDetail(true); } }}>Copy example to case-note draft</Button><Button variant="link" disabled={saving} onClick={() => void addTask(`Follow up on ${claim.id}: confirm capacity`)}>Save follow-up task</Button></div></section></div>}
+    {view === 'Connections' && <><p className="ri-disclaimer mb-6">Proposed integration map. No external service is connected.</p><div className="ri-claim-grid">{(Object.keys(connectionInfo) as Array<keyof typeof connectionInfo>).map((name, i) => <article className="ri-connection" key={name}><div className="flex justify-between"><Plug /><span className="ri-demo-label">PROPOSED</span></div><h2>{name}</h2><p>{['Certificate dates & capacity', 'Incident records & follow-ups', 'Recovery milestones & care', 'Schedules & reconciliation'][i]}</p><Button variant="outline" className="ri-control" onClick={() => explain(name)}><Info />Explore AI-driven link</Button></article>)}</div></>}
+    {view === 'Activity' && <>{w.activity.length ? w.activity.map(a => <div className="ri-task" key={a.id}><History className="text-primary" /><div><strong>{a.text}</strong><small>{new Date(a.at).toLocaleString('en-AU')} · Shared IT account</small></div></div>) : <p>No activity yet. Saved changes appear here.</p>}</>}
+    </>}
+    <footer className="ri-workspace-footer"><Brand /><p>Fictional evaluation workspace · prepared AI examples · human decisions only</p></footer></main></div>
+    <Dialog open={!!popup} onOpenChange={open => { if (!open) setPopup(null); }}><DialogContent className="reimagined-theme ri-popup"><DialogTitle>{popup?.title}</DialogTitle><DialogDescription className="whitespace-pre-wrap leading-relaxed">{popup?.text}</DialogDescription><Button className="ri-primary" onClick={() => setPopup(null)}>Back to workspace<ArrowRight /></Button></DialogContent></Dialog>
+  </div>;
+}
