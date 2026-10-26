@@ -147,12 +147,12 @@ export default function WorkCoverReimaginedPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="reimagined-theme min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3">
           <Link to="/dashboard" className="mr-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />App</Link>
-          <img src={logoUrl} alt="Reimagined Insurance logo" width={32} height={32} className="h-8 w-8 rounded-md" />
-          <h1 className="mr-auto text-lg font-bold">Reimagined <span className="text-primary">Insurance</span></h1>
+          <img src={logoUrl} alt="Reimagined Insurance logo" width={36} height={36} className="h-9 w-9 rounded-md" />
+          <h1 className="mr-auto text-lg font-bold"><span className="text-amber-400">Reimagined</span> <span className="text-primary">Insurance</span></h1>
           <nav className="flex flex-wrap gap-1">
             <NavBtn id="dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavBtn id="cases" icon={Users} label="Cases" />
@@ -161,7 +161,7 @@ export default function WorkCoverReimaginedPage() {
           </nav>
         </div>
         <p className="border-t border-border bg-muted/40 px-4 py-1.5 text-center text-xs text-muted-foreground">
-          <Info className="mr-1 inline h-3 w-3" />Independent showcase with fictional records. Not connected to any real insurer or government system. AI suggestions always go to a human for decision.
+          <Info className="mr-1 inline h-3 w-3 text-amber-400" />Independent showcase with fictional records. Not connected to any real insurer or government system. AI suggestions always go to a human for decision.
         </p>
       </header>
 
@@ -170,13 +170,13 @@ export default function WorkCoverReimaginedPage() {
           <section className="space-y-6">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {[
-                ["Open cases", cases.length],
-                ["Tasks overdue", cases.flatMap((c) => c.tasks).filter((t) => t.status === "open" && t.due < TODAY).length],
-                ["Items to review", allAlerts.length],
-                ["Back at work", cases.filter((c) => c.status === "Return to work").length],
-              ].map(([l, v]) => (
+                ["Open cases", cases.length, "text-primary"],
+                ["Tasks overdue", cases.flatMap((c) => c.tasks).filter((t) => t.status === "open" && t.due < TODAY).length, "text-red-400"],
+                ["Items to review", allAlerts.length, "text-amber-400"],
+                ["Back at work", cases.filter((c) => c.status === "Return to work").length, "text-emerald-400"],
+              ].map(([l, v, c]) => (
                 <div key={l as string} className="rounded-xl border border-border bg-card p-4">
-                  <p className="text-xs text-muted-foreground">{l}</p><p className="text-3xl font-bold text-primary">{v}</p>
+                  <p className="text-xs text-muted-foreground">{l}</p><p className={`text-3xl font-bold ${c}`}>{v}</p>
                 </div>
               ))}
             </div>

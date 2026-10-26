@@ -1679,3 +1679,24 @@ img, video {
   50% { opacity: 0.75; box-shadow: 0 0 0 6px hsl(var(--thinking) / 0); }
 }
 @media (prefers-reduced-motion: reduce) { .thinking-pill { animation: none; } }
+
+/* Reimagined Insurance demo — teal, gold & black palette, scoped to the showcase only */
+.reimagined-theme {
+  --background: 200 35% 4%;
+  --foreground: 180 25% 92%;
+  --card: 200 28% 8%;
+  --card-foreground: 180 25% 92%;
+  --popover: 200 28% 8%;
+  --popover-foreground: 180 25% 92%;
+  --primary: 174 85% 38%;
+  --primary-foreground: 200 35% 4%;
+  --secondary: 200 22% 13%;
+  --secondary-foreground: 45 100% 55%;
+  --muted: 200 20% 13%;
+  --muted-foreground: 185 15% 58%;
+  --accent: 45 100% 50%;
+  --accent-foreground: 200 35% 4%;
+  --border: 185 30% 17%;
+  --input: 200 20% 14%;
+  --ring: 174 85% 42%;
+}
