@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, ArrowLeft, LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Plug, History, LogOut, Search, ShieldCheck, Info, Send, Plus, Check, Menu, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Plug, History, LogOut, Search, ShieldCheck, Info, Send, Plus, Check, Menu, X, ChevronRight, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,8 +8,11 @@ import logo from '@/assets/reimagined-insurance-logo.png';
 import { reimaginedClient as client } from './client';
 import { useWorkspace } from './useWorkspace';
 import { evidenceFor, logActivity, preparedReply, uid, views, type Claim, type View } from './model';
+import { WorkerPortal } from './WorkerPortal';
+import { ImprovementDialog } from './ImprovementDialog';
+import { improvementFor, improvements, type Improvement } from './improvements';
 
-const icons = [LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Plug, History];
+const icons = [LayoutDashboard, Files, ListChecks, FileText, HeartPulse, CreditCard, Sparkles, Users, Plug, History];
 const connectionInfo = {
   'Clinical documents': 'Proposed AI-driven link to a clinical document service: extract certificate dates and work capacity, then highlight missing or inconsistent evidence for a case manager. This evaluation uses a fictional document pack; no clinical system is connected.',
   'Employer portal': 'Proposed AI-driven link to an employer portal: gather incident information and draft follow-up requests. Staff review every draft before sending. No employer portal is connected and nothing is sent from this workspace.',
@@ -21,6 +24,8 @@ function Status({ claim }: { claim: Claim }) { return <span className={`ri-statu
 
 export default function ReimaginedApp() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [accountKind, setAccountKind] = useState<'manager' | 'worker'>('manager');
+  const [demoAccount, setDemoAccount] = useState('manager');
   const [checking, setChecking] = useState(true);
   const [signing, setSigning] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -34,7 +39,8 @@ export default function ReimaginedApp() {
   const [question, setQuestion] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [popup, setPopup] = useState<{ title: string; text: string } | null>(null);
-  const { workspace: w, save, saving, error } = useWorkspace(userId);
+  const [improvement, setImprovement] = useState<Improvement | null>(null);
+  const { workspace: w, save, saving, error } = useWorkspace(accountKind === 'manager' ? userId : null);
   useEffect(() => {
     document.title = 'Reimagined Insurance | IT evaluation';
     document.body.classList.add('reimagined-body');
@@ -42,8 +48,8 @@ export default function ReimaginedApp() {
     const check = async () => {
       const { data } = await client.auth.getUser();
       if (data.user) {
-        const access = await client.from('reimagined_demo_access').select('enabled').eq('user_id', data.user.id).maybeSingle();
-        if (alive) setUserId(access.data?.enabled ? data.user.id : null);
+        const access = await client.from('reimagined_demo_access').select('enabled,account_kind').eq('user_id', data.user.id).maybeSingle();
+        if (alive) { setAccountKind(access.data?.account_kind === 'worker' ? 'worker' : 'manager'); setUserId(access.data?.enabled ? data.user.id : null); }
       } else if (alive) setUserId(null);
       if (alive) setChecking(false);
     };
@@ -54,7 +60,7 @@ export default function ReimaginedApp() {
   async function signIn() {
     setSigning(true); setAuthError('');
     try {
-      const { data, error: invokeError } = await client.functions.invoke('reimagined-demo', { body: { action: 'login' } });
+      const { data, error: invokeError } = await client.functions.invoke('reimagined-demo', { body: { action: 'login', account: demoAccount } });
       if (invokeError || !data?.access_token || !data?.refresh_token) throw new Error(data?.error || 'Demo sign-in is unavailable. Please try again.');
       const installed = await client.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
       if (installed.error) throw installed.error;
@@ -66,12 +72,14 @@ export default function ReimaginedApp() {
   if (!userId) return <main className="reimagined-theme ri-login">
     <header><Brand /><span className="ri-eyebrow">IT EVALUATION</span></header>
     <section className="ri-login-content"><ShieldCheck className="ri-login-shield" /><p className="ri-eyebrow">A CONNECTED CLAIMS WORKSPACE</p><h1>Reimagined<br /><span>Insurance</span></h1><p className="ri-login-copy">Your evaluation workspace is ready.</p>
-      <div className="ri-login-account"><span className="ri-avatar">IT</span><div><strong>IT team demo account</strong><p>Shared fictional workspace · no signup</p></div><ShieldCheck className="text-primary" /></div>
+      <div className="ri-login-account"><span className="ri-avatar">IT</span><div><strong>Choose an evaluation account</strong><p>Real sign-in · fictional records · no signup</p></div><ShieldCheck className="text-primary" /></div>
+      <label htmlFor="demo-account" className="ri-account-label">Demo account</label><select id="demo-account" className="ri-select ri-account-select" value={demoAccount} onChange={e => setDemoAccount(e.target.value)}><option value="manager">Account manager · IT team</option><option value="alex">Worker · Alex Morgan</option><option value="sam">Worker · Sam Taylor</option></select>
       <Button className="ri-primary ri-login-button" onClick={signIn} disabled={signing}>{signing ? 'Signing in…' : 'Demo sign in'}<ArrowRight /></Button>
       {authError && <p role="alert" className="ri-error">{authError}</p>}
       <p className="ri-disclaimer">Fictional records only. Prepared AI examples, not live AI.<br />Not connected to any real insurer or government system.</p>
     </section><footer>REIMAGINED INSURANCE <span>Temporary IT evaluation</span></footer>
   </main>;
+  if (accountKind === 'worker') return <div className="reimagined-theme ri-worker-app"><header className="ri-worker-header"><Brand /><div className="flex items-center gap-3"><span className="ri-demo-label">WORKER DEMO</span><Button variant="outline" className="ri-control" onClick={() => void client.auth.signOut({ scope: 'local' })}><LogOut />Sign out</Button></div></header><main className="ri-worker-content"><WorkerPortal userId={userId} onExplain={() => setImprovement(improvements[0])} /></main><footer className="ri-worker-footer"><Brand /><p>Fictional worker account · no real insurer connection</p></footer><ImprovementDialog item={improvement} close={() => setImprovement(null)} /></div>;
   const claim = w?.claims.find(c => c.id === selectedId) ?? w?.claims[0];
   const conversation = w?.conversations.find(c => c.id === conversationId);
   const explain = (title: keyof typeof connectionInfo) => setPopup({ title, text: connectionInfo[title] });
@@ -99,6 +107,7 @@ export default function ReimaginedApp() {
     <aside className={`ri-sidebar ${mobileMenu ? 'ri-sidebar-open' : ''}`}><Brand /><Button variant="ghost" className="ri-menu-close" size="icon" aria-label="Close navigation" onClick={() => setMobileMenu(false)}><X /></Button><p className="ri-eyebrow">CASE MANAGEMENT</p><nav>{views.map((v, i) => { const Icon = icons[i]; return <Button key={v} variant="ghost" className={`ri-nav-item ${view === v ? 'ri-nav-active' : ''}`} onClick={() => navigate(v)}><Icon />{v}{v === 'AI Assistant' && <span className="ri-dot" />}</Button>; })}</nav><div className="ri-sidebar-bottom"><ShieldCheck /><span>IT evaluation<br /><small>Fictional records only</small></span></div></aside>
     <div className="ri-main"><header className="ri-topbar"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" className="ri-menu-toggle" aria-label="Open navigation" onClick={() => setMobileMenu(true)}><Menu /></Button><span>Workspace <ChevronRight className="inline h-3 w-3" /> <strong>{view}</strong></span></div><div className="flex items-center gap-3"><span className="ri-demo-label">DEMO</span><span className="ri-avatar ri-avatar-small">IT</span><Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" onClick={() => void client.auth.signOut({ scope: 'local' })}><LogOut /></Button></div></header>
     <main className="ri-content"><div className="ri-heading"><div><p className="ri-eyebrow">REIMAGINED INSURANCE</p><h1>{detail && claim ? claim.name : view === 'Overview' ? 'A clearer picture of every claim.' : view}</h1><p>{detail && claim ? `${claim.id} · ${claim.employer}` : view === 'Overview' ? 'Claims, care and recovery. One connected workspace.' : 'IT team evaluation · shared fictional records'}</p></div><span className="ri-save-state">{saving ? 'Saving…' : w ? 'Saved workspace' : 'Loading…'}</span></div>
+    <section className="ri-why-band"><ShieldCheck /><div><strong>{improvementFor(view).title}</strong><p>Designed to address a reported issue or accessibility risk.</p></div><Button variant="outline" className="ri-control" onClick={() => setImprovement(improvementFor(view))}><Info />Why this helps</Button></section>
     {error && <div role="alert" className="ri-error">{error}<Button variant="link" onClick={() => window.location.reload()}>Reload workspace</Button></div>}
     {!w || !claim ? <p>Loading saved activity…</p> : <>
     {view === 'Overview' && <><div className="ri-metrics">{[{ label: 'Active claims', value: w.claims.filter(c => c.status !== 'Closed').length, icon: Files, tone: 'primary' }, { label: 'Awaiting review', value: w.claims.filter(c => c.status === 'Review').length, icon: ShieldCheck, tone: 'gold' }, { label: 'Recovery plans', value: w.claims.filter(c => c.status === 'Recovery').length, icon: HeartPulse, tone: 'green' }, { label: 'Open tasks', value: w.tasks.filter(t => !t.done).length, icon: ListChecks, tone: 'coral' }].map(m => <article key={m.label} className={`ri-metric ri-tone-${m.tone}`}><m.icon /><span>{m.label}</span><strong>{m.value.toString().padStart(2, '0')}</strong><small>Fictional evaluation records</small></article>)}</div><div className="ri-section-title"><h2>Claim overview</h2><Button variant="link" onClick={() => navigate('Claims')}>All claims<ArrowRight /></Button></div><div className="ri-claim-list">{w.claims.slice(0, 4).map(c => <Button variant="ghost" className="ri-claim-row" key={c.id} onClick={() => { setSelectedId(c.id); setView('Claims'); setDetail(true); }}><span className="ri-avatar">{c.name.split(' ').map(n => n[0]).join('')}</span><span className="ri-claim-name"><strong>{c.name}</strong><small>{c.id} · {c.injury}</small></span><span className="ri-employer">{c.employer}</span><Status claim={c} /><ChevronRight /></Button>)}</div><section className="ri-ai-band"><Sparkles /><div><p className="ri-eyebrow">PREPARED AI EXAMPLES</p><h2>Insights with a human in control.</h2><p>Review a case summary, check evidence or prepare a follow-up.</p></div><Button className="ri-primary" onClick={() => navigate('AI Assistant')}>Open assistant<ArrowRight /></Button></section><div className="ri-section-title"><h2>Next actions</h2><Button variant="link" onClick={() => navigate('Tasks')}>Task board<ArrowRight /></Button></div>{w.tasks.filter(t => !t.done).slice(0, 3).map(t => <div className="ri-task" key={t.id}><ListChecks className="text-primary" /><div><strong>{t.title}</strong><small>{t.claimId} · Human review</small></div></div>)}</>}
@@ -111,10 +120,12 @@ export default function ReimaginedApp() {
       {view === 'Payments' && <><div className="ri-section-title"><h2>Example payment schedule</h2><Button variant="ghost" className="ri-control" onClick={() => explain('Payment system')}><Info />About this connection</Button></div><p className="ri-disclaimer mb-6">Fictional amounts. No real payments, benefits or bank connection.</p>{[{ title: 'Weekly benefit example', amount: 'A$820.00' }, { title: 'Treatment invoice example', amount: 'A$145.00' }].map(p => <div className="ri-task" key={p.title}><CreditCard className="text-primary" /><div><strong>{p.title}</strong><small>{claim.id} · Awaiting human approval (simulation)</small></div><strong className="text-accent">{p.amount}</strong></div>)}<Button className="ri-primary mt-4" disabled={saving || w.paymentReviews.includes(claim.id)} onClick={() => void save(logActivity({ ...w, paymentReviews: [...w.paymentReviews, claim.id] }, `Fictional payment schedule reviewed: ${claim.id}; no payment made`))}><Check />{w.paymentReviews.includes(claim.id) ? 'Schedule reviewed' : 'Mark schedule reviewed'}</Button></>}
     </>}
     {view === 'AI Assistant' && <div className="ri-chat-layout"><aside className="ri-chat-history"><Button className="ri-control" variant="outline" onClick={() => setConversationId(null)}><Plus />New conversation</Button><h3>Saved conversations</h3>{w.conversations.length ? w.conversations.map(c => <Button key={c.id} variant="ghost" className={`ri-history-item ${conversationId === c.id ? 'ri-nav-active' : ''}`} onClick={() => setConversationId(c.id)}><History /><span>{c.title}</span></Button>) : <p>No saved conversations yet.</p>}</aside><section className="ri-chat"><div className="ri-chat-heading"><Sparkles /><div><h2>Reimagined Assistant</h2><p>Prepared examples · no live AI or charges</p></div><Button variant="ghost" size="icon" aria-label="About AI examples" onClick={() => setPopup({ title: 'Human-led AI evaluation', text: 'These are prepared, deterministic examples drawn from fictional records. A proposed live AI connection could summarise cases, extract document details and draft actions. Nothing here calls an AI provider, sends messages or makes official decisions. Saving a task or note always requires your explicit action.' })}><Info /></Button></div><select aria-label="AI selected claim" className="ri-select" value={selectedId} onChange={e => setSelectedId(e.target.value)}>{w.claims.map(c => <option key={c.id} value={c.id}>{c.id} · {c.name}</option>)}</select><div className="ri-messages">{conversation ? conversation.messages.map(m => <article className={`ri-message ri-message-${m.role}`} key={m.id}><span>{m.role === 'user' ? 'IT TEAM' : 'REIMAGINED · EXAMPLE'}</span><p>{m.text}</p></article>) : <div className="ri-chat-empty"><Sparkles /><h2>A second perspective.<br />You make the decisions.</h2><div className="ri-prompts">{['Summarise this claim', 'Check the evidence', 'What are the next steps?', 'Draft a worker email'].map(p => <Button variant="outline" className="ri-control" key={p} disabled={saving} onClick={() => void ask(p)}>{p}<ArrowRight /></Button>)}</div></div>}</div><form className="ri-composer" onSubmit={e => { e.preventDefault(); void ask(); }}><Textarea aria-label="Message Reimagined Assistant" placeholder="Ask for a prepared example…" maxLength={2000} value={question} onChange={e => setQuestion(e.target.value)} /><Button className="ri-primary" size="icon" aria-label="Send message" disabled={saving || !question.trim()} type="submit"><Send /></Button></form><div className="ri-chat-actions"><Button variant="link" disabled={saving || !conversation} onClick={() => { const last = conversation?.messages.filter(m => m.role === 'assistant').at(-1); if (last) { setNote(last.text); setView('Claims'); setDetail(true); } }}>Copy example to case-note draft</Button><Button variant="link" disabled={saving} onClick={() => void addTask(`Follow up on ${claim.id}: confirm capacity`)}>Save follow-up task</Button></div></section></div>}
-    {view === 'Connections' && <><p className="ri-disclaimer mb-6">Proposed integration map. No external service is connected.</p><div className="ri-claim-grid">{(Object.keys(connectionInfo) as Array<keyof typeof connectionInfo>).map((name, i) => <article className="ri-connection" key={name}><div className="flex justify-between"><Plug /><span className="ri-demo-label">PROPOSED</span></div><h2>{name}</h2><p>{['Certificate dates & capacity', 'Incident records & follow-ups', 'Recovery milestones & care', 'Schedules & reconciliation'][i]}</p><Button variant="outline" className="ri-control" onClick={() => explain(name)}><Info />Explore AI-driven link</Button></article>)}</div></>}
+    {view === 'Worker accounts' && <WorkerPortal userId={userId} manager onExplain={() => setImprovement(improvements[0])} />}
+    {view === 'Connections' && <><p className="ri-disclaimer mb-6">Proposed integration map. No external service is connected.</p><div className="ri-claim-grid">{(Object.keys(connectionInfo) as Array<keyof typeof connectionInfo>).map((name, i) => <article className="ri-connection" key={name}><div className="flex justify-between"><Plug /><span className="ri-demo-label">PROPOSED</span></div><h2>{name}</h2><p>{['Certificate dates & capacity', 'Incident records & follow-ups', 'Recovery milestones & care', 'Schedules & reconciliation'][i]}</p><Button variant="outline" className="ri-control" onClick={() => explain(name)}><Info />Explore AI-driven link</Button></article>)}</div><h2 className="mt-10 mb-6">Reported issues &amp; design responses</h2><div className="ri-claim-grid">{improvements.map(item => <article className="ri-connection" key={item.title}><ShieldCheck className="text-accent" /><h2>{item.title}</h2><p>{item.problem}</p><Button variant="outline" className="ri-control" onClick={() => setImprovement(item)}><Info />Read every detail</Button></article>)}</div></>}
     {view === 'Activity' && <>{w.activity.length ? w.activity.map(a => <div className="ri-task" key={a.id}><History className="text-primary" /><div><strong>{a.text}</strong><small>{new Date(a.at).toLocaleString('en-AU')} · Shared IT account</small></div></div>) : <p>No activity yet. Saved changes appear here.</p>}</>}
     </>}
     <footer className="ri-workspace-footer"><Brand /><p>Fictional evaluation workspace · prepared AI examples · human decisions only</p></footer></main></div>
     <Dialog open={!!popup} onOpenChange={open => { if (!open) setPopup(null); }}><DialogContent className="reimagined-theme ri-popup"><DialogTitle>{popup?.title}</DialogTitle><DialogDescription className="whitespace-pre-wrap leading-relaxed">{popup?.text}</DialogDescription><Button className="ri-primary" onClick={() => setPopup(null)}>Back to workspace<ArrowRight /></Button></DialogContent></Dialog>
+    <ImprovementDialog item={improvement} close={() => setImprovement(null)} />
   </div>;
 }

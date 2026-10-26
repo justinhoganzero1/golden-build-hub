@@ -12,8 +12,8 @@ export const workspaceSchema = z.object({
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
 export type Claim = Workspace['claims'][number];
-export type View = 'Overview' | 'Claims' | 'Tasks' | 'Documents' | 'Recovery' | 'Payments' | 'AI Assistant' | 'Connections' | 'Activity';
-export const views: View[] = ['Overview', 'Claims', 'Tasks', 'Documents', 'Recovery', 'Payments', 'AI Assistant', 'Connections', 'Activity'];
+export type View = 'Overview' | 'Claims' | 'Tasks' | 'Documents' | 'Recovery' | 'Payments' | 'AI Assistant' | 'Connections' | 'Activity' | 'Worker accounts';
+export const views: View[] = ['Overview', 'Claims', 'Tasks', 'Documents', 'Recovery', 'Payments', 'AI Assistant', 'Worker accounts', 'Connections', 'Activity'];
 export const uid = () => crypto.randomUUID();
 export function freshWorkspace(): Workspace {
   return {

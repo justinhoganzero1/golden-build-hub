@@ -92,6 +92,13 @@
       "when": 1793017014183,
       "tag": "0012_reimagined_restricted_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793017690132,
+      "tag": "0013_reimagined_worker_accounts",
+      "breakpoints": true
     }
   ]
 }

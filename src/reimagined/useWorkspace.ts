@@ -11,6 +11,7 @@ export function useWorkspace(userId: string | null) {
   useEffect(() => {
     let active = true;
     setWorkspace(null);
+    setError('');
     if (!userId) return;
     void (async () => {
       const result = await client.from('reimagined_workspaces').select('data,version').eq('user_id', userId).maybeSingle();
