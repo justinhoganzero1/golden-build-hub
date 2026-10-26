@@ -106,6 +106,9 @@ export default function WorkCoverReimaginedPage() {
   const [newTask, setNewTask] = useState("");
   const [newNote, setNewNote] = useState("");
   const [workerMsg, setWorkerMsg] = useState("");
+  const [signedIn, setSignedIn] = useState(true);
+
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session)); }, []);
 
   useEffect(() => { localStorage.setItem(STORE_KEY, JSON.stringify(cases)); }, [cases]);
 

@@ -514,6 +514,7 @@ const App = () => (
                 </Routes>
               </Suspense>
               <Suspense fallback={null}><SiteFooter /></Suspense>
+              </>)}
             </BrowserRouter>
           </TooltipProvider>
         </MuteProvider>
