@@ -123,6 +123,9 @@ Deno.serve(async (req) => {
       if (!url) return "";
       const ref = storageRef(url);
       if (ref) {
+        // Caller-supplied links may only reference the caller's own files; library stories were loaded server-side.
+        const ownsPath = ref.path.split("/")[0] === userData.user.id || ref.path.split("/")[1] === userData.user.id;
+        if (!incoming.storyId && !ownsPath) throw new Error("Book pictures must come from your own library.");
         const { data, error } = await service.storage.from(ref.bucket).createSignedUrl(ref.path, 60 * 60 * 24 * 30);
         if (error || !data?.signedUrl) throw new Error("Could not prepare a book illustration for email.");
         return data.signedUrl;

@@ -13,11 +13,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.0",
+    "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
     "@capacitor/cli": "^8.5.2",
-    "@capacitor/core": "^8.3.0",
+    "@capacitor/core": "^8.5.3",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/keyboard": "^8.0.2",
     "@capacitor/splash-screen": "^8.0.1",
@@ -128,6 +128,7 @@
     "@hono/node-server": "^1.19.15",
     "qs": "^6.16.0",
     "fflate": "^0.8.3",
-    "dompurify": "^3.4.13"
+    "dompurify": "^3.4.17",
+    "proxy-addr": "^2.0.8"
   }
 }

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { sanitizeMessages } from "../_shared/chatMessages.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
@@ -20,7 +21,8 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice } = await req.json();
+    const { messages: rawMessages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice } = await req.json();
+    const messages = sanitizeMessages(rawMessages);
     const isVoiceTurn = voice === true;
     // Member-chosen AI brain (must match src/lib/chatAgents.ts). Cost tier → provider cents.
     const ALLOWED_MODELS: Record<string, number> = {

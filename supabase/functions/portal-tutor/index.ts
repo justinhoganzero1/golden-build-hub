@@ -3,6 +3,7 @@
 // Also captures sales/contact inquiries to inquiry_leads for the admin dashboard.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sanitizeMessages } from "../_shared/chatMessages.ts";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
@@ -109,7 +110,8 @@ Deno.serve(async (req) => {
     const rl = await enforceRateLimit(req, auth.user, "portal-tutor");
     if (rl) return rl;
 
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
+    const messages = sanitizeMessages(rawMessages);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY missing" }), {

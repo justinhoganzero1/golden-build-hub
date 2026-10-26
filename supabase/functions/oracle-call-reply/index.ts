@@ -4,6 +4,7 @@
 // JWT-protected: only the authenticated user who owns the session can reply.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
+import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -28,6 +29,9 @@ Deno.serve(async (req) => {
 
   // ── TwiML mode: Twilio fetches this URL after we redirect the live call ──
   if (url.searchParams.get("mode") === "twiml") {
+    // Only Twilio (signed with our auth token) may read or update a call session here.
+    const verified = await verifyTwilioRequest(req);
+    if (verified.response) return verified.response;
     const sessionId = url.searchParams.get("sid");
     if (!sessionId) {
       return new Response(`<?xml version="1.0"?><Response><Say>Missing session.</Say><Hangup/></Response>`, {

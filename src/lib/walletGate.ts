@@ -30,8 +30,15 @@ export async function confirmTopupFromUrl() {
     if (p.get("coins") !== "success" || !sid) return;
     const key = `topup-verified-${sid}`;
     if (sessionStorage.getItem(key)) return;
-    const { data, error } = await supabase.functions.invoke("verify-coin-topup", { body: { sessionId: sid } });
-    if (error) throw error;
+    // The verified Stripe notice credits the wallet; poll briefly until it lands.
+    let data: any = null;
+    for (let i = 0; i < 10; i++) {
+      const res = await supabase.functions.invoke("verify-coin-topup", { body: { sessionId: sid } });
+      if (res.error) throw res.error;
+      data = res.data;
+      if (data?.credited) break;
+      await new Promise((r) => setTimeout(r, 2000));
+    }
     if (data?.credited) {
       sessionStorage.setItem(key, "1");
       toast.success("Payment received — your credit is in your wallet.");

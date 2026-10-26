@@ -40,6 +40,12 @@ Deno.serve(async (req) => {
       if (!accountId.startsWith("acct_")) {
         throw new Error("Invalid accountId");
       }
+      {
+        // Only Oracle Lunar sellers who onboarded here can be used as a store.
+        const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+        const { data: seller } = await db.from("connect_accounts").select("stripe_account_id").eq("stripe_account_id", accountId).maybeSingle();
+        if (!seller) throw new Error("Store not found");
+      }
       const products = await stripe.products.list(
         { limit: 20, active: true, expand: ["data.default_price"] },
         { stripeAccount: accountId } // Stripe-Account header → connected account

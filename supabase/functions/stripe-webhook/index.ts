@@ -200,7 +200,28 @@ Deno.serve(async (req) => {
 
         const purchaseId = meta.purchase_id;
 
-        if (purchaseType === "coin_topup") {
+        if (purchaseType === "membership_founder" && meta.user_id) {
+          if (session.mode !== "payment" || session.currency !== "aud" || session.amount_total !== 100) throw new Error("founder payment mismatch");
+          const { data: num, error: seatErr } = await supabase.rpc("claim_founder_seat", { _user_id: meta.user_id, _session_id: session.id });
+          if (seatErr?.message.includes("already consumed")) log("founder payment already consumed", { session_id: session.id });
+          else if (seatErr) throw seatErr;
+          else if (!num) {
+            if (typeof session.payment_intent === "string") await stripe.refunds.create({ payment_intent: session.payment_intent }, { idempotencyKey: `founder-sold-out:${session.id}` });
+            await supabase.from("founder_payment_fulfillments").insert({ stripe_session_id: session.id, user_id: meta.user_id, founder_number: null });
+            log("founder seats gone; refunded", { session_id: session.id });
+          } else log("founder seat granted", { user_id: meta.user_id, seat: num });
+        } else if (purchaseType === "membership_monthly" && meta.user_id && typeof session.subscription === "string") {
+          const sub = await stripe.subscriptions.retrieve(session.subscription);
+          const end = (sub as any).current_period_end ?? (sub.items.data[0] as any)?.current_period_end;
+          const until = new Date((end ?? Date.now() / 1000 + 31 * 86400) * 1000).toISOString();
+          const { error: memErr } = await supabase.from("memberships").upsert({
+            user_id: meta.user_id, kind: "monthly", monthly_active_until: until,
+            stripe_customer_id: typeof session.customer === "string" ? session.customer : null,
+            stripe_subscription_id: sub.id, updated_at: new Date().toISOString(),
+          });
+          if (memErr) throw memErr;
+          log("monthly membership granted", { user_id: meta.user_id });
+        } else if (purchaseType === "coin_topup") {
           await grantCoinTopup(session, event.id);
         } else if (purchaseType === "founder_seat_resale" && meta.listing_id && meta.seller_id && meta.buyer_id) {
           // Founder seat resale — move the seat to the buyer exactly once.

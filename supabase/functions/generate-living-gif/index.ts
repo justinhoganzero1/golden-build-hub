@@ -24,6 +24,7 @@ const log = (s: string, d?: unknown) =>
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let callerId: string | null = null;
   try {
     const supa = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -35,6 +36,7 @@ serve(async (req) => {
     const { data: ud } = await supa.auth.getUser(authHeader.replace("Bearer ", ""));
     if (!ud.user) throw new Error("Not authenticated");
     const user = ud.user;
+    callerId = user.id;
 
     const { gif_id, session_id, source_image_url } = await req.json();
     if (!gif_id) throw new Error("gif_id required");
@@ -127,11 +129,12 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
       const body = await req.clone().json().catch(() => ({}));
-      if (body.gif_id) {
+      // Only a signed-in caller's own GIF can be marked failed.
+      if (body.gif_id && callerId) {
         await supa.from("living_gifs").update({
           status: "failed",
           error_message: msg.slice(0, 500),
-        }).eq("id", body.gif_id);
+        }).eq("id", body.gif_id).eq("user_id", callerId);
       }
     } catch { /* ignore */ }
     return new Response(JSON.stringify({ error: msg }), {

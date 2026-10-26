@@ -1,6 +1,7 @@
 // Starts Google OAuth: returns an authorization URL the user is redirected to.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2.45.0';
+import { safeRedirectUri } from '../_shared/origin.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -20,9 +21,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const redirectUri: string = body.redirect_uri;
+    const redirectUri = safeRedirectUri(body.redirect_uri, ['/oauth/google/callback']);
     if (!redirectUri) {
-      return new Response(JSON.stringify({ error: 'redirect_uri required' }), {
+      return new Response(JSON.stringify({ error: 'redirect_uri must be this app\'s Google callback page' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

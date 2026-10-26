@@ -2,6 +2,7 @@
 // is logged with status 'error' or 'signature_failed'.
 // Triggered by a database AFTER INSERT trigger via pg_net.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,19 +11,31 @@ const corsHeaders = {
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
+const escapeHtml = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const denied = await requireInternalOrOwner(req);
+  if (denied) return denied;
 
   try {
     const body = await req.json().catch(() => ({} as any));
-    // Accept either {record: {...}} from pg_net trigger payload or direct fields
-    const rec = body.record ?? body;
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
+    );
+    // Only alert on rows that really exist in the event log; never trust request text.
+    const id = body.id ?? body.record?.id;
+    if (!id) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: rec } = await supabase.from("stripe_event_log").select("*").eq("id", id).maybeSingle();
+    if (!rec) return new Response(JSON.stringify({ error: "not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const status = rec.status;
-    const eventType = rec.event_type ?? "(unknown)";
-    const source = rec.source ?? "(unknown)";
-    const message = rec.message ?? "";
-    const stripeEventId = rec.stripe_event_id ?? null;
-    const createdAt = rec.created_at ?? new Date().toISOString();
+    const eventType = escapeHtml(rec.event_type ?? "(unknown)");
+    const source = escapeHtml(rec.source ?? "(unknown)");
+    const message = escapeHtml(String(rec.message ?? "").slice(0, 2000));
+    const stripeEventId = rec.stripe_event_id ? escapeHtml(rec.stripe_event_id) : null;
+    const createdAt = escapeHtml(rec.created_at ?? new Date().toISOString());
 
     if (status !== "error" && status !== "signature_failed") {
       return new Response(JSON.stringify({ skipped: true, status }), {
@@ -30,15 +43,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // De-dupe: don't re-alert for same stripe_event_id
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } }
-    );
-
     const sevEmoji = status === "signature_failed" ? "🔒" : "⚠️";
-    const subject = `${sevEmoji} Stripe ${status} — ${eventType}`;
+    const subject = `${sevEmoji} Stripe ${status} — ${rec.event_type ?? "(unknown)"}`.slice(0, 200);
     const lines = [
       `Status: ${status}`,
       `Source: ${source}`,
