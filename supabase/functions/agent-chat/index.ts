@@ -1,6 +1,7 @@
 // Multi-agent chat: streams from Lovable AI Gateway. Picks model by agent id.
 // Two agents: "nova" (GPT-5.5, sharp/analytical) and "lyra" (Gemini 3.5 Flash, warm/creative).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { sanitizeMessages } from "../_shared/chatMessages.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
@@ -64,7 +65,8 @@ serve(async (req) => {
     if (auth.response) return auth.response;
     const authedUser = auth.user;
 
-    const { agent, messages } = await req.json();
+    const { agent, messages: rawMessages } = await req.json();
+    const messages = sanitizeMessages(rawMessages);
     if (!agent || !(agent in AGENTS)) {
       return new Response(JSON.stringify({ error: "Unknown agent" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
