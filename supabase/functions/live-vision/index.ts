@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { promptData } from "../_shared/chatMessages.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,7 @@ serve(async (req) => {
     if (rl) return rl;
 
 
-    const { image, mode, target, history } = await req.json();
+    const { image, mode, target: rawTarget, history } = await req.json();
     // Validate image is a proper data URL with actual base64 payload
     if (!image || typeof image !== "string" || !/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]{100,}/.test(image)) {
       return new Response(JSON.stringify({ analysis: "QUIET", skipped: true }), {
@@ -30,7 +31,9 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const recent = Array.isArray(history) ? history.slice(-6).join(" | ") : "";
+    // Caller text is flattened and quoted as data, never as instructions.
+    const recent = Array.isArray(history) ? promptData(history.slice(-6).map((h) => promptData(h, 200)).join(" | "), 900) : "";
+    const target = promptData(rawTarget, 200);
 
     const systemPrompt = mode === "text"
       ? "You are an OCR expert. Extract and return ALL text visible in this image. Format it clearly. If no text is found, say 'No text detected.'"
