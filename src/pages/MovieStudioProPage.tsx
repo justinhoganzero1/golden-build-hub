@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PageShell from "@/components/PageShell";
 import MovieStudio from "@/components/MovieStudio";
+import RecentlyCreatedMovies from "@/components/movie/RecentlyCreatedMovies";
 import OracleMovieDirector, { type MovieDirectorResult } from "@/components/OracleMovieDirector";
 import MovieProjectDashboard from "@/components/MovieProjectDashboard";
 import StoryHandoffInbox from "@/components/StoryHandoffInbox";
@@ -87,6 +88,7 @@ const MovieStudioProPage = () => {
     />
     <PageShell title="🎬 Movie Studio Pro" subtitle="Full cinematic editor — script→scenes, VO, music, SFX, captions, HD export">
       <div className="movie-studio-blue-borders max-w-4xl mx-auto p-4 space-y-4">
+        <RecentlyCreatedMovies />
 
         {/* Wallet status */}
         <Card className="p-4 bg-gradient-to-br from-primary/10 via-card to-card border-primary/30">

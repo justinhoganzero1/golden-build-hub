@@ -21,6 +21,8 @@ import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import StoryboardTimeline, { DEFAULT_TIMELINE_MIX, layerAudible, type TimelineMix } from "@/components/movie/StoryboardTimeline";
 import SuperAIPanel, { type SuperAIActions, type PipelineStep, type PipelineStatus, type ExportSettings } from "@/components/movie/SuperAIPanel";
 import MovieHostPanel from "@/components/movie/MovieHostPanel";
+import RecentlyCreatedMovies from "@/components/movie/RecentlyCreatedMovies";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEFAULT_HOST, audioEnvelope, envelopeAt, drawTalkingHead, hostRect, hostPortraitPrompt,
   clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
@@ -177,6 +179,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   const [script, setScript] = useState("");
   const [intent, setIntent] = useState("");
   const [title, setTitle] = useState("");
+  const [studioTab, setStudioTab] = useState('editor');
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [planning, setPlanning] = useState(false);
   const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
@@ -2592,6 +2595,16 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           </DialogTitle>
         </DialogHeader>
 
+        <Tabs value={studioTab} onValueChange={setStudioTab}>
+          <TabsList className="w-full"><TabsTrigger value="editor" className="flex-1">Movie editor</TabsTrigger><TabsTrigger value="recent" className="flex-1">Recently created</TabsTrigger></TabsList>
+        </Tabs>
+        {studioTab === 'recent' && <RecentlyCreatedMovies onAdd={clip => {
+          setScenes(previous => [...previous, { id: uid(), caption: clip.title, photo_prompt: clip.title, motion: 'static', duration_sec: clip.duration, video_url: clip.url }]);
+          setStudioTab('editor');
+          toast.success('Saved movie added to timeline');
+        }} />}
+        <div hidden={studioTab !== 'editor'}>
+
         {/* Cinematic Clip Studio exemption notice — applies to ALL tiers including Lifetime */}
         <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
           <p>
@@ -3353,6 +3366,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
           }}
         />
 
+        </div>
       </DialogContent>
     </Dialog>
   );
