@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import adVideo from "@/assets/videos/oracle-lunar-ad-fast.mp4.asset.json";
+import adVideo from "@/assets/videos/oracle-lunar-ad-clear-audio.mp4.asset.json";
+import adWebm from "@/assets/videos/oracle-lunar-ad-clear-audio.webm.asset.json";
 
 const AD_URL = (adVideo as { url: string }).url;
 
@@ -20,12 +21,14 @@ export default function AdPage() {
 
       <div className="mt-6 w-full max-w-sm rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)]">
         <video
-          src={AD_URL}
           controls
           playsInline
           preload="metadata"
           className="w-full h-auto bg-black"
-        />
+        >
+          <source src={AD_URL} type="video/mp4" />
+          <source src={adWebm.url} type="video/webm" />
+        </video>
       </div>
 
       <Link
