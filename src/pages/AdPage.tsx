@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import adVideo from "@/assets/videos/oracle-lunar-ad.mp4.asset.json";
+import adVideo from "@/assets/videos/oracle-lunar-ad-fast.mp4.asset.json";
 
 const AD_URL = (adVideo as { url: string }).url;
 
