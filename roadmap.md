@@ -76,3 +76,4 @@
 - [ ] Add app-building service promotion and lifelike-to-AI presenter reveal to Instagram video; verify delivery scope and Oracle Lunar generation attribution before rendering approved wording.
 - [x] Checked oracle-lunar.online: provisioning_failed, TLS handshake fails; owner must Retry in domain settings. Domain not repaired.
 - [ ] Finish all in-app video paths: primary Omni endpoint and MovieStudio/Oracle/Library handoffs repaired and owner real generation verified; separate movie-project/GIF/Runway/Shotstack need verified cost/payment handling and credentials before real renders. No claim all paths work.
+- [x] Presenter feature ad with AI reveal, no subtitles (30s, 1080p)
