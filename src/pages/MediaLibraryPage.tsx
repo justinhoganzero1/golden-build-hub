@@ -100,6 +100,7 @@ const MediaLibraryPage = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [selected, setSelected] = useState<any>(null);
+  const openedLinkRef = useRef<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<any>(null);
   const [showCollections, setShowCollections] = useState(true);
@@ -160,6 +161,14 @@ const MediaLibraryPage = () => {
       setOpeningId(null);
     }
   };
+
+  // A linked creation loads only that signed-in account's record through RLS.
+  const linkedItemId = searchParams.get("item");
+  useEffect(() => {
+    if (!user?.id || !linkedItemId || openedLinkRef.current === `${user.id}:${linkedItemId}`) return;
+    openedLinkRef.current = `${user.id}:${linkedItemId}`;
+    void openItem({ id: linkedItemId });
+  }, [user?.id, linkedItemId]);
 
 
   // Auto-refresh whenever any module saves something to the library

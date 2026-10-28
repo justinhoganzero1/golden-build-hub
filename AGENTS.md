@@ -1,4 +1,5 @@
 # Project Rules
+- Canonical Oracle stages typed completed artifacts before a user-selected reveal; generation and Library-save confirmation are separate, and device speech routes through the existing queue without invoking paid TTS. Live-video services require separate verified pricing and authorization.
 - Movie Maker recent movies query only the signed-in account's saved video metadata; fetch and sign private media only on selection, and reuse Library records rather than duplicate storage.
 - Reimagined whole-caseload preparation is deterministic and bounded to 1,000 claims; manager-confirmed tasks/drafts use stable IDs and versioned saves, while synthetic scale exercises never create accounts or replace saved claims, preserving human decisions and demo isolation.
 - The independent Reimagined IT app owns separate Auth storage and protected manager/assigned-worker access; versioned manager drafts and worker case/messages are separate, worker RLS permits only assigned claims, and no demo account receives Oracle membership or paid AI/external actions. Detailed issue-response pop-ups separate sourced reports, demonstrated workflows and unproven outcomes.
