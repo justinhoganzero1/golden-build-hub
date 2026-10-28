@@ -829,10 +829,10 @@ const OraclePage = () => {
     speechRequestRef.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
-      // Preserve custom selections but replace the rejected male Charlie
-      // default with a premium female voice; an exact ad match is unverified.
+      // Do not substitute a different voice for the actual ad recording.
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
       const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null));
+      if (!masterVoiceId) return false;
       let masterSettings: Record<string, unknown> | null = null;
       try {
         const raw = storedMasterVoice?.settings
@@ -1000,7 +1000,7 @@ const OraclePage = () => {
   }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
-    if (isMuted || !text) return;
+    if (isMuted || !text || premiumVideoRef.current) return;
     speechQueueRef.current.push({ text, agentName });
     processSpeechQueue();
   }, [isMuted, processSpeechQueue, oracleName]);
@@ -1054,8 +1054,7 @@ const OraclePage = () => {
       const anyErr = e as { context?: { text?: () => Promise<string> }; message?: string };
       const detail = anyErr?.context?.text ? await anyErr.context.text().catch(() => "") : String(anyErr?.message || e);
       if (/402|insufficient|coins/i.test(detail)) toast.error("Not enough coins for a video reply — top up your wallet or turn video replies off.");
-      else toast.error("The video reply didn't finish — speaking it instead.");
-      try { speakAsAgent(spoken, oracleName); } catch { /* ignore */ }
+      else toast.error("The video reply didn't finish. Your answer is available in the conversation.");
     } finally {
       setVideoReplyPending(false);
     }

@@ -1,6 +1,7 @@
 # Roadmap
 - [ ] Enable generated lip-synced Oracle replies for Juzzy’s consenting account; verify account preference and real generated playback. Preserve member opt-in and billing; exact Charlie voice in generated video is unverified.
 - [ ] Address Juzzy’s reported male voice and missing lip-sync immediately; do not call generated audio the ad voice or claim playback without evidence.
+- [ ] Match the actual female voice at oraclelunar.com/ad, not any substitute voice — blocked: available original asset/production records do not identify a reusable voice. Removed guessed default and separate TTS in video-reply mode; eight tests pass. Exact match remains unresolved.
 - [x] Added reviewed silent moving office presenter loop, independent of device speech; natural English/Australian voice ranking, normal delivery speed and preserved punctuation added. 21 tests pass. Browser verifies real video playback; exact ad voice, audibility and live lip-sync remain unverified and require an available authorized voice/service, not automatic paid speech.
 - [x] Replaced cluttered Oracle controls with one avatar-led prompt window and settings dialog; preserved shared tool dispatch, saved chats, device speech and Reimagined isolation. Signed-in real chat, history, Story Writer return, one composer, phone/desktop and no browser errors verified. Removed noisy navigation transition. Not published.
 - [x] Oracle-first companion: consistent fictional presenter portrait in a futuristic office, device speech, compact controls and returnable existing-tool overlays without a second Oracle. Signed-out and signed-in entry, loaded Story Writer, Library, real chat, cited research, private title recall, completed image reveal and saved read-back verified. Feedback saved per account locally and passed as preference context. 33 tests pass; Reimagined unchanged. Not published; actual audibility unavailable in headless browser.
@@ -64,7 +65,7 @@
 - [x] My Apps page (/my-apps)
 - [ ] Chat360 connector end-to-end — only Juzzy can sign in and tap Allow inside Chat360
 - [x] Backend audit fixes: 15 wrong error labels fixed + verified, 4 database functions secured, Twilio number wired to receptionist for calls.
-- [x] Oracle premium voice as default, matched to the ad voice (Charlie, multilingual_v2, broadcast bitrate) — verified live: reply triggered premium call with ad voice/settings
+- [ ] Oracle premium voice exact ad match — earlier Charlie attribution was incorrect; request-payload checks did not establish an audible match. Await verified original voice source, never present Sarah or native generated audio as the exact ad voice.
 
 - [ ] Twilio Auth Token — Juzzy must enter it (not saved; phone calls are refused without it).
 - [ ] Twilio texts — Twilio blocks changing text settings remotely for this number's region; Juzzy sets SMS webhook in Twilio Console.
