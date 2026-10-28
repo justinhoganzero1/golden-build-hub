@@ -10,7 +10,7 @@ import { statusFor } from "../_shared/errorStatus.ts";
 // `living-gif-worker` edge function, kicked every minute by pg_cron.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -70,11 +70,11 @@ serve(async (req) => {
       });
     }
 
-    if (!isAdmin) {
+    if (!isAdmin && gif.status !== "paid") {
+      // Webhook normally marks the row paid; fall back to direct verification.
       if (!session_id) throw new Error("session_id required");
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-        apiVersion: "2025-08-27.basil",
-      });
+      const env: StripeEnv = session_id.startsWith("cs_test") ? "sandbox" : "live";
+      const stripe = createStripeClient(env);
       const session = await stripe.checkout.sessions.retrieve(session_id);
       if (session.payment_status !== "paid") {
         throw new Error(`Payment not complete: ${session.payment_status}`);

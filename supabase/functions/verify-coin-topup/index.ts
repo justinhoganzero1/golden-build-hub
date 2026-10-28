@@ -1,6 +1,6 @@
 // Confirms a coin top-up directly with Stripe when the buyer returns from
 // checkout and reports whether the verified webhook has credited it yet.
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -21,12 +21,13 @@ Deno.serve(async (req) => {
     const { data: u } = await admin.auth.getUser(token);
     if (!u?.user) return json({ error: "auth_required" }, 401);
 
-    const { sessionId } = await req.json().catch(() => ({}));
+    const { sessionId, environment } = await req.json().catch(() => ({}));
+    if (environment !== "sandbox" && environment !== "live") return json({ error: "invalid environment" }, 400);
     if (typeof sessionId !== "string" || !/^cs_[A-Za-z0-9_]{10,200}$/.test(sessionId)) {
       return json({ error: "invalid session" }, 400);
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+    const stripe = createStripeClient(environment as StripeEnv);
     const s = await stripe.checkout.sessions.retrieve(sessionId);
     const meta = s.metadata ?? {};
     if (meta.purchase_type !== "coin_topup" || meta.user_id !== u.user.id) return json({ error: "not your top-up" }, 403);
