@@ -1,16 +1,16 @@
 // Server-owned checkout prices and strict payment-to-purchase bindings.
 export const COIN_PACK_DOLLARS = [5, 10, 20, 50, 100] as const;
 export const MOVIE_PAYMENTS: Record<string, { price: string; amount_cents: number; label: string }> = {
-  sd: { price: "price_1TNob8LGip9LWuvpZsCHHeMU", amount_cents: 900, label: "SD Quality" },
-  hd: { price: "price_1TNobXLGip9LWuvp4XFCnQYf", amount_cents: 2900, label: "HD Quality" },
-  "4k": { price: "price_1TNobvLGip9LWuvp3hDSZO3I", amount_cents: 7900, label: "4K Quality" },
-  "4k_ultimate": { price: "price_1TNocFLGip9LWuvpIhVz42ra", amount_cents: 19900, label: "4K Ultimate" },
+  sd: { price: "movie_sd_once", amount_cents: 900, label: "SD Quality" },
+  hd: { price: "movie_hd_once", amount_cents: 2900, label: "HD Quality" },
+  "4k": { price: "movie_4k_once", amount_cents: 7900, label: "4K Quality" },
+  "4k_ultimate": { price: "movie_4k_ultimate_once", amount_cents: 19900, label: "4K Ultimate" },
 };
 export const APP_PAYMENTS: Record<string, { price: string; label: string; amount_cents: number }> = {
-  app_wrapper: { price: "price_1TNjKELGip9LWuvpgfyCXGKE", label: "App Wrapper", amount_cents: 500 },
-  app_maker: { price: "price_1TNjPQLGip9LWuvpXeNDys3j", label: "App Maker", amount_cents: 2000 },
-  movie_studio: { price: "price_1TNjPoLGip9LWuvpNSihLK7v", label: "Movie Studio Pro", amount_cents: 100 },
-  photo_templates: { price: "price_1TQcriLGip9LWuvpKFaAUlKx", label: "Unlimited Photo Templates", amount_cents: 100 },
+  app_wrapper: { price: "app_wrapper_once", label: "App Wrapper", amount_cents: 500 },
+  app_maker: { price: "app_maker_once", label: "App Maker", amount_cents: 2000 },
+  movie_studio: { price: "movie_studio_pro_once", label: "Movie Studio Pro", amount_cents: 100 },
+  photo_templates: { price: "photo_templates_once", label: "Unlimited Photo Templates", amount_cents: 100 },
 };
 export interface PaidSession {
   id: string;
