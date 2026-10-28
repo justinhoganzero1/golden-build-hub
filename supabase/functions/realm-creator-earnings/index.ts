@@ -6,7 +6,6 @@ import { statusFor } from "../_shared/errorStatus.ts";
 // available/pending balance and recent payouts. Read-only.
 // =============================================================================
 
-import Stripe from "https://esm.sh/stripe@18.5.0?target=deno";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -97,41 +96,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Stripe Connect balance + payouts (best-effort)
+    // Payouts now run through payout requests (Lovable-managed payments);
+    // there is no per-creator Stripe Connect balance anymore.
     let stripe_balance: any = null;
     let payouts: any[] = [];
     let stripe_account_id: string | null = null;
 
-    const { data: connect } = await admin
-      .from("connect_accounts")
-      .select("stripe_account_id")
+    const { data: payoutRows } = await admin
+      .from("payout_requests")
+      .select("id, amount_cents, method, status, created_at, processed_at")
       .eq("user_id", userId)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(10);
+    payouts = (payoutRows ?? []).map((p: any) => ({
+      id: p.id,
+      amount: p.amount_cents,
+      currency: "aud",
+      status: p.status,
+      arrival_date: p.processed_at ? Math.floor(new Date(p.processed_at).getTime() / 1000) : null,
+      method: p.method,
+      created: Math.floor(new Date(p.created_at).getTime() / 1000),
+    }));
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (connect?.stripe_account_id && stripeKey) {
-      stripe_account_id = connect.stripe_account_id;
-      try {
-        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-        const bal = await stripe.balance.retrieve({ stripeAccount: connect.stripe_account_id });
-        stripe_balance = {
-          available: (bal.available ?? []).map((b: any) => ({ amount: b.amount, currency: b.currency })),
-          pending: (bal.pending ?? []).map((b: any) => ({ amount: b.amount, currency: b.currency })),
-        };
-        const po = await stripe.payouts.list({ limit: 10 }, { stripeAccount: connect.stripe_account_id });
-        payouts = po.data.map((p: any) => ({
-          id: p.id,
-          amount: p.amount,
-          currency: p.currency,
-          status: p.status,
-          arrival_date: p.arrival_date,
-          method: p.method,
-          created: p.created,
-        }));
-      } catch (e) {
-        console.warn("stripe fetch failed", (e as Error).message);
-      }
-    }
+    const { data: availableCents } = await admin.rpc("seller_available_balance", { user_uuid: userId });
+    stripe_balance = { available: [{ amount: availableCents ?? 0, currency: "aud" }], pending: [] };
 
     return json({
       totals: {

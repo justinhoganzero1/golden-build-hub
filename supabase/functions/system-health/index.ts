@@ -19,7 +19,7 @@ Deno.serve(async req => {
     if (error) return json({ error: "safety_review_failed" }, 503);
     const { data: report, error: readError } = await db.from("system_health_reports").select("checks,created_at").eq("source", "daily-database").order("created_at", { ascending: false }).limit(1).single();
     if (readError) return json({ error: "report_unavailable" }, 503);
-    const configuration = ["RESEND_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "TWILIO_API_KEY", "TWILIO_AUTH_TOKEN", "LOVABLE_API_KEY"].map(name => ({ name: name.replaceAll("_", " "), status: Deno.env.get(name) ? "pass" : "warn", detail: Deno.env.get(name) ? "Configured; live operations not tested" : "Not configured" }));
+    const configuration = ["RESEND_API_KEY", "STRIPE_SANDBOX_API_KEY", "PAYMENTS_SANDBOX_WEBHOOK_SECRET", "STRIPE_LIVE_API_KEY", "PAYMENTS_LIVE_WEBHOOK_SECRET", "TWILIO_API_KEY", "TWILIO_AUTH_TOKEN", "LOVABLE_API_KEY"].map(name => ({ name: name.replaceAll("_", " "), status: Deno.env.get(name) ? "pass" : "warn", detail: Deno.env.get(name) ? "Configured; live operations not tested" : "Not configured" }));
     return json({ checks: [...report.checks, ...configuration], checkedAt: report.created_at, paidOperationsTested: false });
   } catch { return json({ error: "health_check_unavailable" }, 503); }
 });

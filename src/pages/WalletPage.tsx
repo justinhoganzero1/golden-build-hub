@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
-import { Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
+import { Banknote, Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,40 @@ const WalletPage = () => {
   const [balanceCents, setBalanceCents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState<number | null>(null);
+  const [earnings, setEarnings] = useState({ shopCents: 0, seatCents: 0, availableCents: 0 });
+  const [myPayouts, setMyPayouts] = useState<any[]>([]);
+  const [payoutMethod, setPayoutMethod] = useState("payid");
+  const [payoutDestination, setPayoutDestination] = useState("");
+  const [requestingPayout, setRequestingPayout] = useState(false);
+
+  const loadEarnings = async () => {
+    if (!user) return;
+    try {
+      const [{ data: bal }, { data: reqs }] = await Promise.all([
+        supabase.functions.invoke("payouts", { body: { action: "balance" } }),
+        supabase.functions.invoke("payouts", { body: { action: "my_requests" } }),
+      ]);
+      if (bal) setEarnings({ shopCents: bal.shopCents ?? 0, seatCents: bal.seatCents ?? 0, availableCents: bal.availableCents ?? 0 });
+      if (reqs?.requests) setMyPayouts(reqs.requests);
+    } catch { /* earnings section stays at zero */ }
+  };
+
+  const requestPayout = async () => {
+    setRequestingPayout(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("payouts", {
+        body: { action: "request", amountCents: earnings.availableCents, method: payoutMethod, destination: payoutDestination },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Could not request payout.");
+      toast.success("Payout requested! We'll review it shortly.");
+      setPayoutDestination("");
+      await loadEarnings();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not request payout.");
+    } finally {
+      setRequestingPayout(false);
+    }
+  };
 
   const coinBalance = useMemo(() => (balanceCents / 100) * COINS_PER_DOLLAR, [balanceCents]);
 
@@ -40,6 +74,7 @@ const WalletPage = () => {
 
   useEffect(() => {
     loadWallet();
+    loadEarnings();
     const h = () => loadWallet();
     window.addEventListener("wallet:updated", h);
     return () => window.removeEventListener("wallet:updated", h);
@@ -156,6 +191,73 @@ const WalletPage = () => {
               </button>
             );
           })}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 mt-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Banknote className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">Your seller earnings</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Money from your Creator Shop sales (your 70% share) and founder seat resales.
+          </p>
+          <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+            <div className="rounded-xl bg-muted/40 p-3">
+              <p className="text-sm font-bold text-foreground">${(earnings.shopCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Shop sales</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-3">
+              <p className="text-sm font-bold text-foreground">${(earnings.seatCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Seat resales</p>
+            </div>
+            <div className="rounded-xl bg-primary/10 border border-primary/20 p-3">
+              <p className="text-sm font-bold text-primary">${(earnings.availableCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Available</p>
+            </div>
+          </div>
+          {earnings.availableCents >= 500 ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <select
+                  value={payoutMethod}
+                  onChange={(e) => setPayoutMethod(e.target.value)}
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground"
+                >
+                  <option value="payid">PayID</option>
+                  <option value="bank">Bank account</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+                <input
+                  value={payoutDestination}
+                  onChange={(e) => setPayoutDestination(e.target.value)}
+                  placeholder={payoutMethod === "paypal" ? "Your PayPal email" : payoutMethod === "payid" ? "Your PayID (phone/email)" : "BSB + account number"}
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground"
+                />
+              </div>
+              <button
+                onClick={requestPayout}
+                disabled={requestingPayout}
+                className="w-full rounded-xl bg-primary text-primary-foreground text-xs font-bold py-2.5 disabled:opacity-60"
+              >
+                {requestingPayout ? "Requesting…" : `Request payout of $${(earnings.availableCents / 100).toFixed(2)}`}
+              </button>
+              <p className="text-[10px] text-muted-foreground">Payouts are reviewed and sent by the Oracle Lunar team, usually within a few business days.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">You need at least $5.00 in earnings to request a payout.</p>
+          )}
+          {myPayouts.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {myPayouts.slice(0, 5).map((p) => (
+                <div key={p.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>${(p.amount_cents / 100).toFixed(2)} via {p.method}</span>
+                  <span className={p.status === "paid" ? "text-primary font-semibold" : p.status === "rejected" ? "text-destructive" : ""}>
+                    {p.status === "paid" ? "Paid" : p.status === "rejected" ? "Declined" : "Waiting"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 mt-5 space-y-2">

@@ -1,66 +1,12 @@
-// Returns a chronological timeline of Stripe events for the current user's customer:
-// subscription created/updated/deleted, plan switches, invoice payments, etc.
+// Returns a chronological timeline of the current user's billing events,
+// built from the subscriptions table and billing_transactions (both kept
+// current by payments-webhook). No direct Stripe calls.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const RELEVANT_TYPES = new Set([
-  "customer.subscription.created",
-  "customer.subscription.updated",
-  "customer.subscription.deleted",
-  "customer.subscription.trial_will_end",
-  "customer.subscription.paused",
-  "customer.subscription.resumed",
-  "invoice.paid",
-  "invoice.payment_succeeded",
-  "invoice.payment_failed",
-  "checkout.session.completed",
-]);
-
-function summarize(ev: Stripe.Event): { title: string; detail: string; kind: string } {
-  const obj: any = ev.data.object;
-  const prev: any = (ev.data as any).previous_attributes ?? {};
-  switch (ev.type) {
-    case "customer.subscription.created":
-      return { kind: "created", title: "Subscription started", detail: `Status: ${obj.status}` };
-    case "customer.subscription.deleted":
-      return { kind: "canceled", title: "Subscription canceled", detail: `Ended ${new Date((obj.canceled_at ?? obj.ended_at ?? ev.created) * 1000).toLocaleDateString()}` };
-    case "customer.subscription.updated": {
-      if (prev.cancel_at_period_end === false && obj.cancel_at_period_end === true) {
-        return { kind: "cancel_scheduled", title: "Cancellation scheduled", detail: `Ends ${new Date(obj.current_period_end * 1000).toLocaleDateString()}` };
-      }
-      if (prev.cancel_at_period_end === true && obj.cancel_at_period_end === false) {
-        return { kind: "cancel_reverted", title: "Cancellation reverted", detail: "Subscription resumed" };
-      }
-      if (prev.items || prev.plan) {
-        return { kind: "plan_switch", title: "Plan changed", detail: `Now ${obj.status}` };
-      }
-      if (prev.status && prev.status !== obj.status) {
-        return { kind: "status_change", title: `Status: ${prev.status} → ${obj.status}`, detail: "" };
-      }
-      return { kind: "updated", title: "Subscription updated", detail: `Status: ${obj.status}` };
-    }
-    case "customer.subscription.trial_will_end":
-      return { kind: "trial_ending", title: "Trial ending soon", detail: `Trial ends ${new Date(obj.trial_end * 1000).toLocaleDateString()}` };
-    case "customer.subscription.paused":
-      return { kind: "paused", title: "Subscription paused", detail: "" };
-    case "customer.subscription.resumed":
-      return { kind: "resumed", title: "Subscription resumed", detail: "" };
-    case "invoice.paid":
-    case "invoice.payment_succeeded":
-      return { kind: "renewed", title: "Payment received", detail: `${(obj.amount_paid / 100).toFixed(2)} ${String(obj.currency).toUpperCase()}` };
-    case "invoice.payment_failed":
-      return { kind: "payment_failed", title: "Payment failed", detail: `Invoice ${obj.number ?? obj.id}` };
-    case "checkout.session.completed":
-      return { kind: "checkout", title: "Checkout completed", detail: obj.mode === "subscription" ? "New subscription" : "One-time payment" };
-    default:
-      return { kind: "other", title: ev.type, detail: "" };
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -76,40 +22,68 @@ Deno.serve(async (req) => {
     if (ce || !c?.claims?.sub) {
       return new Response(JSON.stringify({ error: "auth required" }), { status: 401, headers: corsHeaders });
     }
-    const email = c.claims.email as string | undefined;
-    if (!email) return new Response(JSON.stringify({ events: [], customer: null }), { headers: corsHeaders });
+    const userId = c.claims.sub as string;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ events: [], customer: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
+    );
+
+    const [{ data: subs }, { data: txns }] = await Promise.all([
+      admin
+        .from("subscriptions")
+        .select("stripe_subscription_id, price_id, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      admin
+        .from("billing_transactions")
+        .select("id, transaction_type, total_micros, currency, status, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+    const events: any[] = [];
+    for (const s of subs ?? []) {
+      events.push({
+        id: `sub-${s.stripe_subscription_id}`,
+        type: "customer.subscription.created",
+        kind: s.status === "canceled" ? "canceled" : "created",
+        title: s.status === "canceled" ? "Subscription canceled" : "Subscription started",
+        detail: `Plan: ${s.price_id} — status: ${s.status}`,
+        created: Math.floor(new Date(s.created_at).getTime() / 1000),
+        created_iso: s.created_at,
+      });
+      if (s.cancel_at_period_end && s.current_period_end) {
+        events.push({
+          id: `sub-cancel-${s.stripe_subscription_id}`,
+          type: "customer.subscription.updated",
+          kind: "cancel_scheduled",
+          title: "Cancellation scheduled",
+          detail: `Ends ${new Date(s.current_period_end).toLocaleDateString()}`,
+          created: Math.floor(new Date(s.updated_at).getTime() / 1000),
+          created_iso: s.updated_at,
+        });
+      }
+    }
+    for (const t of txns ?? []) {
+      if (t.status !== "settled") continue;
+      events.push({
+        id: `txn-${t.id}`,
+        type: "invoice.paid",
+        kind: "renewed",
+        title: t.transaction_type === "topup" ? "Coin top-up" : "Payment received",
+        detail: `${((t.total_micros ?? 0) / 1_000_000).toFixed(2)} ${String(t.currency ?? "AUD").toUpperCase()}`,
+        created: Math.floor(new Date(t.created_at).getTime() / 1000),
+        created_iso: t.created_at,
       });
     }
-    const customerId = customers.data[0].id;
-
-    // Stripe Events API filtered by customer
-    const events = await stripe.events.list({ limit: 100 });
-    const filtered: any[] = [];
-    for (const ev of events.data) {
-      if (!RELEVANT_TYPES.has(ev.type)) continue;
-      const obj: any = ev.data.object;
-      const cust = obj.customer ?? obj.customer_id ?? null;
-      if (cust !== customerId) continue;
-      const s = summarize(ev);
-      filtered.push({
-        id: ev.id,
-        type: ev.type,
-        kind: s.kind,
-        title: s.title,
-        detail: s.detail,
-        created: ev.created,
-        created_iso: new Date(ev.created * 1000).toISOString(),
-      });
-    }
+    events.sort((a, b) => b.created - a.created);
 
     return new Response(
-      JSON.stringify({ customer: { id: customerId, email }, events: filtered }),
+      JSON.stringify({ customer: { id: userId, email: c.claims.email }, events: events.slice(0, 100) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
