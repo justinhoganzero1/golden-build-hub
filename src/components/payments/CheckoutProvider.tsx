@@ -67,7 +67,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         body: { ...(req.body ?? {}), environment: getStripeEnvironment() },
       });
       if (error) throw new Error(error.message || "Checkout failed to start");
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) throw new Error(FRIENDLY_ERRORS[data.error] ?? data.error);
       req.onResponse?.(data ?? {});
       if (data?.already_unlocked || data?.admin_bypass) {
         // Nothing to pay — the caller's onResponse handles it.
