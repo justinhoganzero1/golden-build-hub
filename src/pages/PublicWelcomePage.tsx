@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
-import listeningClip from "@/assets/avatars/oracle-office-listening-silent.webm";
+import listeningClip from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClip from "@/assets/avatars/oracle-clip-greeting.webm";
 
 /**
