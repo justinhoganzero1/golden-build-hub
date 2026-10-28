@@ -24,7 +24,9 @@ const CUE_CLIPS: Record<Exclude<PresenterCue, null>, ClipPlan> = {
   done: { url: doneClipUrl, audible: true, loop: false },
 };
 const THINKING_CLIP: ClipPlan = { url: thinkingClipUrl, audible: true, loop: false };
-const TALKING_CLIP: ClipPlan = { url: talkingClipUrl, audible: false, loop: true };
+// Talking loop is no longer shown under device speech: unmatched mouth movement
+// looked like bad dubbing. She stays on the calm listening shot with a voice glow.
+void talkingClipUrl;
 
 /**
  * Listening angles rotate so she is not always the same shot. Each clip is one
@@ -86,9 +88,7 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         ? CUE_CLIPS[cue]
         : state === "thinking" && !thinkingPlayed
           ? THINKING_CLIP
-          : state === "speaking"
-            ? TALKING_CLIP
-            : { url: listeningUrl, audible: false, loop: true };
+          : { url: listeningUrl, audible: false, loop: true };
 
   // Audible clips need a play() attempt with sound; if the browser blocks
   // unmuted autoplay (no gesture yet), fall back to muted so she still moves.
@@ -126,6 +126,9 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
       />
     )}
     <div className="absolute inset-0 oracle-stage-shade" />
+    {state === "speaking" && !replyVideoUrl && !cue && (
+      <div aria-hidden data-testid="oracle-voice-glow" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 animate-pulse bg-gradient-to-t from-primary/30 to-transparent" />
+    )}
     <span className="sr-only">{plan && !failed ? "AI presenter using prerecorded footage" : "AI presenter portrait; video is not active"}</span>
   </div>;
 }
