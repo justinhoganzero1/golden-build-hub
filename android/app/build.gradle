@@ -4,7 +4,7 @@ android {
     namespace = "app.oraclelunar.ai"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.oraclelunar.ai"
+        applicationId "oraclelunar.com"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
