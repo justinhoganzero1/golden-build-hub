@@ -1988,7 +1988,7 @@ const OraclePage = () => {
             source_page: "app-builder",
             metadata: { kind: "app", prompt: fullPrompt, architecture: architecture.slice(0, 1500), built_by: "oracle-master" } as any,
           });
-          offerArtifact({ kind: "app", url: dataUrl, libraryId: typeof savedApp === "string" ? savedApp : savedApp?.id, deepPath: "/media-library" });
+          offerArtifact({ kind: "app", url: dataUrl, libraryId: savedApp || undefined, deepPath: savedApp ? `/media-library?item=${savedApp}` : "/media-library" });
         } catch (e) {
           console.error(e);
           toast.error("App build failed");
@@ -2071,7 +2071,7 @@ const OraclePage = () => {
           const blob = await r.blob();
           const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
           let savedId: string | undefined;
-          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = typeof saved === "string" ? saved : saved?.id; } catch { toast.error("Audio made, but Library save failed"); }
+          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved || undefined; } catch { toast.error("Audio made, but Library save failed"); }
           offerArtifact({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
         } catch (e) { console.error(e); toast.error("Sound effect generation failed"); }
       })();
@@ -2100,7 +2100,7 @@ const OraclePage = () => {
           const blob = await r.blob();
           const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
           let savedId: string | undefined;
-          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = typeof saved === "string" ? saved : saved?.id; } catch { toast.error("Audio made, but Library save failed"); }
+          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = saved || undefined; } catch { toast.error("Audio made, but Library save failed"); }
           offerArtifact({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
         } catch (e) { console.error(e); toast.error("Music generation failed"); }
       })();
