@@ -2810,7 +2810,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} />
+      <OraclePresenterStage userId={user?.id} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -2866,7 +2866,7 @@ const OraclePage = () => {
       </div>
       <Dialog open={voiceOptionsOpen} onOpenChange={setVoiceOptionsOpen}><DialogContent className="oracle-settings">
         <DialogTitle>Oracle settings</DialogTitle>
-        <DialogDescription>Reused AI footage; lips do not match new answers. Device voice varies by device. Premium speech and new AI creations use your wallet.</DialogDescription>
+        <DialogDescription>Reused AI footage; lips do not match new answers unless video replies are on. Device voice varies by device. Video replies film a real lip-synced answer per reply, billed per second from your wallet. Premium speech and new AI creations use your wallet.</DialogDescription>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={testSpeaker}><Volume2 />Test speaker</Button>
           <Button variant="outline" size="sm" onClick={toggleMic}><Mic />{isListening ? "Stop mic" : "Allow mic"}</Button>
