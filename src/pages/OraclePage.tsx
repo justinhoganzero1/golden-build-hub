@@ -3021,7 +3021,7 @@ const OraclePage = () => {
                 className={`oracle-presenter-frame relative w-[min(90vw,520px)] max-w-full h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
               >
                 {oracleAvatar?.image_url ? <LivingAvatar imageUrl={oracleAvatar.image_url} alt={oracleName} intensity="subtle" className="w-full h-full" /> :
-                  <img src={adPresenterPreview} data-original-asset={adPresenter.url} alt={oracleName} className="w-full h-full object-cover object-top" />}
+                  <img src={adPresenterPreview} data-original-asset={adPresenter.url} alt={oracleName} className="w-full h-full object-contain sm:object-cover" />}
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-md bg-background/90 px-3 py-2 text-foreground">
                   <div><p className="text-sm font-semibold">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
                   <Button variant="ghost" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
