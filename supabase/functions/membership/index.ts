@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
         if (m?.founder_number) return json({ error: "already_founder" }, 409);
       }
       const origin = safeOrigin(req);
-      const clientSecret = await createEmbeddedSession({
+      const { clientSecret, sessionId } = await createEmbeddedSession({
         env,
         userId: user.id,
         email: user.email ?? undefined,

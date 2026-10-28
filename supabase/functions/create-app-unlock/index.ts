@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     }
 
     const origin = safeOrigin(req);
-    const clientSecret = await createEmbeddedSession({
+    const { clientSecret, sessionId } = await createEmbeddedSession({
       env,
       userId: user.id,
       email: user.email,

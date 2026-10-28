@@ -145,7 +145,7 @@ export async function createEmbeddedSession(options: {
   priceLookupKey?: string;
   priceData?: { currency: string; unit_amount: number; name: string; description?: string };
   quantity?: number;
-}): Promise<string> {
+}): Promise<{ clientSecret: string; sessionId: string }> {
   const stripe = createStripeClient(options.env);
   const customerId = await resolveOrCreateCustomer(stripe, { email: options.email, userId: options.userId });
 
@@ -191,5 +191,5 @@ export async function createEmbeddedSession(options: {
   } as any);
 
   if (!session.client_secret) throw new Error("No client secret returned");
-  return session.client_secret;
+  return { clientSecret: session.client_secret, sessionId: session.id };
 }

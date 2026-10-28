@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     if (!isPartner && product !== "avatar") throw new Error("invalid product");
 
     const origin = safeOrigin(req);
-    const clientSecret = await createEmbeddedSession({
+    const { clientSecret, sessionId } = await createEmbeddedSession({
       env,
       userId: user.id,
       email: user.email,

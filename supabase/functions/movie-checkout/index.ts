@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     if (project.payment_status === "paid") return json({ error: "already paid" }, 400);
 
     const origin = safeOrigin(req);
-    const clientSecret = await createEmbeddedSession({
+    const { clientSecret, sessionId } = await createEmbeddedSession({
       env,
       userId: user.id,
       email: user.email,

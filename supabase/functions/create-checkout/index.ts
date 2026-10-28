@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     const coinsDelivered = (dollars * 5.37).toFixed(2);
     const origin = safeOrigin(req);
 
-    const clientSecret = await createEmbeddedSession({
+    const { clientSecret, sessionId } = await createEmbeddedSession({
       env,
       userId: user.id,
       email: user.email,
