@@ -47,7 +47,9 @@ export default function SubscriptionStatusPage() {
   const openPortal = async () => {
     setPortalLoading(true);
     try {
-      const { data: res, error } = await supabase.functions.invoke("customer-portal");
+      const { data: res, error } = await supabase.functions.invoke("customer-portal", {
+        body: { returnTo: "/subscription", environment: getStripeEnvironment() },
+      });
       if (error) throw error;
       const url = (res as { url?: string })?.url;
       if (url) window.open(url, "_blank");
