@@ -25,8 +25,6 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // EAGER import — must NEVER be lazy. A Suspense fallback during chunk reload
 // would unmount the persistent Oracle iframe and start a "second voice" on
 // remount, which is the bug we're killing for good.
-import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
-import OracleAgent from "@/components/OracleAgent";
 import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 import PreviewShield from "@/components/PreviewShield";
@@ -266,7 +264,6 @@ const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const AiSearchPage = lazy(() => import("./pages/AiSearchPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/AdminAiAnalyticsPage"));
 const AdminAiHealthPage = lazy(() => import("./pages/AdminAiHealthPage"));
-const OraclePreviewPage = lazy(() => import("./pages/OraclePreviewPage"));
 const AdPage = lazy(() => import("./pages/AdPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
