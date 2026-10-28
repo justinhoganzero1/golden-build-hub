@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Crown, Sparkles, Lock, Unlock, ArrowLeft, MessageCircle, Library, UserRound } from "lucide-react";
 import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 const UPGRADE_FROM_KEY = "oracle.upgradeFrom";
 
@@ -36,7 +37,7 @@ const MembershipPage = () => {
       // The verified Stripe notice grants membership; poll briefly until it lands.
       let data: any = null; let error: unknown = null;
       for (let i = 0; i < 10; i++) {
-        ({ data, error } = await supabase.functions.invoke("membership", { body: { action: "verify", sessionId: sid } }));
+        ({ data, error } = await supabase.functions.invoke("membership", { body: { action: "verify", sessionId: sid, environment: getStripeEnvironment() } }));
         if (error || !data?.pending) break;
         await new Promise((r) => setTimeout(r, 2000));
       }

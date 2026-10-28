@@ -3,6 +3,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 import { toast } from "sonner";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 export async function getWalletBalanceCents(userId: string): Promise<number> {
   const { data } = await supabase.from("wallet_balances").select("balance_cents").eq("user_id", userId).maybeSingle();
@@ -33,7 +34,7 @@ export async function confirmTopupFromUrl() {
     // The verified Stripe notice credits the wallet; poll briefly until it lands.
     let data: any = null;
     for (let i = 0; i < 10; i++) {
-      const res = await supabase.functions.invoke("verify-coin-topup", { body: { sessionId: sid } });
+      const res = await supabase.functions.invoke("verify-coin-topup", { body: { sessionId: sid, environment: getStripeEnvironment() } });
       if (res.error) throw res.error;
       data = res.data;
       if (data?.credited) break;
