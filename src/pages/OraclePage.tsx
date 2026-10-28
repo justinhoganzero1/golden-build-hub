@@ -27,7 +27,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
 import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
-import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
@@ -262,9 +262,21 @@ const OraclePage = () => {
   const portraitDataRef = useRef<string | null>(null);
   useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
   useEffect(() => {
-    if (!user?.id) return;
-    try { setPremiumVideo(localStorage.getItem(`oracle-video-replies:${user.id}`) === "on"); } catch { /* ignore */ }
-  }, [user?.id]);
+    if (!user?.id) { setPremiumVideo(false); premiumVideoRef.current = false; return; }
+    // Juzzy explicitly requested activation; migrate once without overwriting
+    // future opt-outs or activating billable replies for other accounts.
+    const authorizedDefault = user.email?.toLowerCase() === "justinbretthogan@gmail.com";
+    let next = authorizedDefault;
+    try {
+      const key = `oracle-video-replies:v2:${user.id}`;
+      const saved = localStorage.getItem(key);
+      const legacy = authorizedDefault ? null : localStorage.getItem(`oracle-video-replies:${user.id}`);
+      next = resolveVideoReplies(saved ?? legacy, authorizedDefault);
+      localStorage.setItem(key, next ? "on" : "off");
+    } catch { /* use the consenting account's default */ }
+    premiumVideoRef.current = next;
+    setPremiumVideo(next);
+  }, [user?.id, user?.email]);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
@@ -1023,13 +1035,13 @@ const OraclePage = () => {
         });
       }
       const prompt = `The woman looks at the camera and says exactly these words, with accurate natural lip-sync, in a warm Australian accent: "${spoken.replace(/"/g, "'")}" Keep her face, hair, clothing and the futuristic office identical. Locked camera, head and shoulders, single continuous shot, no scene cuts. No caption, no on-screen text.`;
-      const start = await supabase.functions.invoke("gemini-video", { body: { request_key: crypto.randomUUID(), image_url: portraitDataRef.current, prompt, duration, ratio: "9:16" } });
+      const start = await supabase.functions.invoke("gemini-video", { headers: { Authorization: `Bearer ${await requireEdgeAuthToken()}` }, body: { request_key: crypto.randomUUID(), image_url: portraitDataRef.current, prompt, duration, ratio: "9:16" } });
       if (start.error) throw start.error;
       const jobId = start.data?.job_id as string | undefined;
       if (!jobId) throw new Error("no job");
       for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 6000));
-        const poll = await supabase.functions.invoke("gemini-video", { body: { job_id: jobId } });
+        const poll = await supabase.functions.invoke("gemini-video", { headers: { Authorization: `Bearer ${await requireEdgeAuthToken()}` }, body: { job_id: jobId } });
         if (poll.error) throw poll.error;
         if (poll.data?.status === "completed" && poll.data?.video_url) {
           setReplyVideoUrl(poll.data.video_url as string);
@@ -2898,8 +2910,9 @@ const OraclePage = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Button variant={premiumVideo ? "default" : "outline"} size="sm" onClick={() => {
             const next = !premiumVideo;
+            premiumVideoRef.current = next;
             setPremiumVideo(next);
-            if (user?.id) localStorage.setItem(`oracle-video-replies:${user.id}`, next ? "on" : "off");
+            if (user?.id) localStorage.setItem(`oracle-video-replies:v2:${user.id}`, next ? "on" : "off");
             if (next) toast("Video replies on — each answer is filmed as a real lip-synced video, billed per second from your wallet.");
           }}><Clapperboard />Video replies {premiumVideo ? "on · pay-per-use" : "off"}</Button>
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer…</span>}
