@@ -2249,7 +2249,8 @@ const OraclePage = () => {
             .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
       const flushSpeakableSentences = (final = false) => {
-        if (isMuted) return;
+        // Premium video replies replace device speech: the filmed answer speaks instead.
+        if (isMuted || premiumVideoRef.current) return;
         const pending = oracleContent.slice(spokenUpTo);
         // Start with a complete sentence or natural clause, not the full reply.
         // Strip complete markers first while leaving incomplete markers protected.
@@ -2315,6 +2316,10 @@ const OraclePage = () => {
 
       // A short answer without punctuation should not wait for downstream tools.
       if (!finalOnlyMode) flushSpeakableSentences(true);
+      // Premium: film the presenter saying this reply with real lip-sync.
+      if (!finalOnlyMode && !isMuted && premiumVideoRef.current && oracleContent.trim()) {
+        void generateVideoReply(oracleContent);
+      }
       if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
 
       // Parse and save memories from Oracle response
