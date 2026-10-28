@@ -24,6 +24,7 @@ import SystemDoctorPanel from "@/components/SystemDoctorPanel";
 import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
 import LivingAvatar from "@/components/LivingAvatar";
 import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
+import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -3017,15 +3018,11 @@ const OraclePage = () => {
           ) : (
             <div className="flex flex-col items-center h-full w-full min-h-0 z-10">
               <div
-                className={`oracle-presenter-frame relative w-[min(90vw,520px)] h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
+                className={`oracle-presenter-frame relative w-[min(90vw,520px)] max-w-full h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
                 style={undefined}
               >
-                <LivingAvatar
-                  imageUrl={oracleAvatar?.image_url || adPresenter.url}
-                  alt={oracleName}
-                  intensity="subtle"
-                  className="w-full h-full"
-                />
+                {oracleAvatar?.image_url ? <LivingAvatar imageUrl={oracleAvatar.image_url} alt={oracleName} intensity="subtle" className="w-full h-full" /> :
+                  <img src={adPresenterPreview} data-original-asset={adPresenter.url} alt={oracleName} className="w-full h-full object-cover object-top" />}
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-md bg-background/90 px-3 py-2 text-foreground">
                   <div><p className="text-sm font-semibold">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
                   <Button variant="ghost" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
