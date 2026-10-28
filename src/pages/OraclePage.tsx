@@ -1443,8 +1443,8 @@ const OraclePage = () => {
     introTriggeredRef.current = true;
     // Kick off the naming setup question instead of the old generic intro.
     const t = setTimeout(() => {
-      sessionStorage.setItem(SETUP_KEY, "name");
-      const greet = "Hello — I'm your Oracle. Before we start, what would you like to call me? You can pick any name you like.";
+      sessionStorage.setItem(SETUP_KEY, "done");
+      const greet = "Hello — I'm your Oracle. What would you like to do today?";
       setShowChat(true);
       setMessages((prev) => [...prev, { id: `setup-${Date.now()}`, role: "assistant", sender: "Oracle", emoji: "🔮", color: "#FFD700", content: greet } as any]);
       try { speakAsAgent(greet, "Oracle"); } catch {}
@@ -1458,6 +1458,9 @@ const OraclePage = () => {
   const handleSetupReply = useCallback(async (rawText: string): Promise<boolean> => {
     const stage = getSetupStage();
     if (!stage || stage === "done") return false;
+    // Legacy setup must not rename the presenter or generate a new face from a normal request.
+    sessionStorage.setItem(SETUP_KEY, "done");
+    return false;
     const text = rawText.trim();
     if (!text) return false;
 
