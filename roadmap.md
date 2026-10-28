@@ -91,3 +91,4 @@
 - [x] Switch payments to Lovable built-in (seamless Stripe): enabled, 13 products created, all 9 checkouts + webhook rewired, $5 test purchase verified end-to-end (wallet credited)
 - [x] Audit gaps fixed: avatar, GIF and block purchases now fulfilled server-side by payments-webhook (app_unlocks / living_gifs.paid / movie_block_payments)
 - [ ] Go-live: Juzzy must claim the payments account in the Payments tab and finish live setup before real money works
+- [x] Seller payouts rebuilt: 70/30 shop split + seat resale earnings tracked, sellers request payout in Wallet, owner pays and marks done at /admin/payouts (money sent manually via PayID/bank/PayPal — Lovable payments has no direct-to-seller transfers)
