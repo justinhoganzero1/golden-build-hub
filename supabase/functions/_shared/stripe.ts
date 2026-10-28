@@ -96,3 +96,100 @@ export async function verifyWebhook(req: Request, env: StripeEnv): Promise<{ typ
 
   return JSON.parse(body);
 }
+
+// Look up an existing Customer by userId metadata (then by email), or
+// create one. Putting userId on the Customer object makes later reads
+// (portal, dashboards, subscriptions.search) resolvable.
+export async function resolveOrCreateCustomer(
+  stripe: ReturnType<typeof createStripeClient>,
+  options: { email?: string; userId?: string },
+): Promise<string> {
+  if (options.userId && !/^[a-zA-Z0-9_-]+$/.test(options.userId)) {
+    throw new Error("Invalid userId");
+  }
+  if (options.userId) {
+    const found = await stripe.customers.search({
+      query: `metadata['userId']:'${options.userId}'`,
+      limit: 1,
+    });
+    if (found.data.length) return found.data[0].id;
+  }
+  if (options.email) {
+    const existing = await stripe.customers.list({ email: options.email, limit: 1 });
+    if (existing.data.length) {
+      const customer = existing.data[0];
+      if (options.userId && customer.metadata?.userId !== options.userId) {
+        await stripe.customers.update(customer.id, {
+          metadata: { ...customer.metadata, userId: options.userId },
+        });
+      }
+      return customer.id;
+    }
+  }
+  const created = await stripe.customers.create({
+    ...(options.email && { email: options.email }),
+    ...(options.userId && { metadata: { userId: options.userId } }),
+  });
+  return created.id;
+}
+
+// Create an embedded-checkout session and return its client secret.
+// Resolves human-readable price IDs via lookup_keys when priceLookupKey is
+// given; otherwise uses inline priceData (dynamic amounts like coin packs).
+export async function createEmbeddedSession(options: {
+  env: StripeEnv;
+  userId: string;
+  email?: string;
+  returnUrl: string;
+  metadata: Record<string, string>;
+  priceLookupKey?: string;
+  priceData?: { currency: string; unit_amount: number; name: string; description?: string };
+  quantity?: number;
+}): Promise<string> {
+  const stripe = createStripeClient(options.env);
+  const customerId = await resolveOrCreateCustomer(stripe, { email: options.email, userId: options.userId });
+
+  let mode: "payment" | "subscription" = "payment";
+  let lineItem: any;
+  let productDescription: string | undefined;
+
+  if (options.priceLookupKey) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(options.priceLookupKey)) throw new Error("Invalid priceId");
+    const prices = await stripe.prices.list({ lookup_keys: [options.priceLookupKey] });
+    if (!prices.data.length) throw new Error("Price not found");
+    const stripePrice = prices.data[0];
+    mode = stripePrice.type === "recurring" ? "subscription" : "payment";
+    lineItem = { price: stripePrice.id, quantity: options.quantity || 1 };
+    if (mode === "payment") {
+      const productId = typeof stripePrice.product === "string" ? stripePrice.product : stripePrice.product.id;
+      const product = await stripe.products.retrieve(productId);
+      productDescription = product.name;
+    }
+  } else if (options.priceData) {
+    lineItem = {
+      price_data: {
+        currency: options.priceData.currency,
+        unit_amount: options.priceData.unit_amount,
+        product_data: { name: options.priceData.name, ...(options.priceData.description && { description: options.priceData.description }) },
+      },
+      quantity: options.quantity || 1,
+    };
+    productDescription = options.priceData.name;
+  } else {
+    throw new Error("priceLookupKey or priceData required");
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    line_items: [lineItem],
+    mode,
+    ui_mode: "embedded_page",
+    return_url: options.returnUrl,
+    customer: customerId,
+    ...(mode === "payment" && productDescription && { payment_intent_data: { description: productDescription } }),
+    metadata: options.metadata,
+    ...(mode === "subscription" && { subscription_data: { metadata: options.metadata } }),
+  } as any);
+
+  if (!session.client_secret) throw new Error("No client secret returned");
+  return session.client_secret;
+}
