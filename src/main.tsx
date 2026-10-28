@@ -11,6 +11,15 @@ import { installWalletInterceptor } from "./lib/walletInterceptor";
 // Any paid AI call that comes back 402 raises the "add $10 and keep going" modal.
 installWalletInterceptor();
 
+// A background paid call that runs out of credits (402) must never blank the screen.
+window.addEventListener("unhandledrejection", (event) => {
+  const msg = String((event.reason as { message?: string })?.message ?? event.reason ?? "");
+  if (/402|credits exhausted|add funds/i.test(msg)) {
+    event.preventDefault();
+    console.warn("Paid AI call declined (out of credits):", msg);
+  }
+});
+
 // Initialize Capacitor plugins when running as native app
 const initNative = async () => {
   try {
