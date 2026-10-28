@@ -166,10 +166,14 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: signed-in users see the Dashboard (full app); visitors see the public website.
-// Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
-// The public marketing website is still reachable at /website.
-const RootRoute = () => <Navigate to="/oracle" replace />;
+// Root route: signed-in users go straight to Oracle; signed-out visitors get
+// the public welcome page (Oracle video + pitch) instead of a bare sign-in wall.
+const PublicWelcomePage = lazy(() => import("./pages/PublicWelcomePage"));
+const RootRoute = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  return user ? <Navigate to="/oracle" replace /> : <PublicWelcomePage />;
+};
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
