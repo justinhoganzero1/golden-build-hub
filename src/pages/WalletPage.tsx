@@ -158,6 +158,73 @@ const WalletPage = () => {
           })}
         </div>
 
+        <div className="rounded-2xl border border-border bg-card p-5 mt-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Banknote className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">Your seller earnings</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Money from your Creator Shop sales (your 70% share) and founder seat resales.
+          </p>
+          <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+            <div className="rounded-xl bg-muted/40 p-3">
+              <p className="text-sm font-bold text-foreground">${(earnings.shopCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Shop sales</p>
+            </div>
+            <div className="rounded-xl bg-muted/40 p-3">
+              <p className="text-sm font-bold text-foreground">${(earnings.seatCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Seat resales</p>
+            </div>
+            <div className="rounded-xl bg-primary/10 border border-primary/20 p-3">
+              <p className="text-sm font-bold text-primary">${(earnings.availableCents / 100).toFixed(2)}</p>
+              <p className="text-[10px] text-muted-foreground">Available</p>
+            </div>
+          </div>
+          {earnings.availableCents >= 500 ? (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <select
+                  value={payoutMethod}
+                  onChange={(e) => setPayoutMethod(e.target.value)}
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground"
+                >
+                  <option value="payid">PayID</option>
+                  <option value="bank">Bank account</option>
+                  <option value="paypal">PayPal</option>
+                </select>
+                <input
+                  value={payoutDestination}
+                  onChange={(e) => setPayoutDestination(e.target.value)}
+                  placeholder={payoutMethod === "paypal" ? "Your PayPal email" : payoutMethod === "payid" ? "Your PayID (phone/email)" : "BSB + account number"}
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground"
+                />
+              </div>
+              <button
+                onClick={requestPayout}
+                disabled={requestingPayout}
+                className="w-full rounded-xl bg-primary text-primary-foreground text-xs font-bold py-2.5 disabled:opacity-60"
+              >
+                {requestingPayout ? "Requesting…" : `Request payout of $${(earnings.availableCents / 100).toFixed(2)}`}
+              </button>
+              <p className="text-[10px] text-muted-foreground">Payouts are reviewed and sent by the Oracle Lunar team, usually within a few business days.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">You need at least $5.00 in earnings to request a payout.</p>
+          )}
+          {myPayouts.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {myPayouts.slice(0, 5).map((p) => (
+                <div key={p.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>${(p.amount_cents / 100).toFixed(2)} via {p.method}</span>
+                  <span className={p.status === "paid" ? "text-primary font-semibold" : p.status === "rejected" ? "text-destructive" : ""}>
+                    {p.status === "paid" ? "Paid" : p.status === "rejected" ? "Declined" : "Waiting"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl border border-border bg-card p-5 mt-5 space-y-2">
           <h2 className="text-sm font-bold text-foreground">What uses coins</h2>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
