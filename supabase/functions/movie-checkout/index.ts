@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
 
     // Mark pending
     await supabase.from("movie_projects").update({
+      stripe_session_id: sessionId,
       payment_status: "pending",
       quality_tier,
       estimated_cost_cents: tier.amount_cents,
