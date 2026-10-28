@@ -1455,81 +1455,10 @@ const OraclePage = () => {
   // Handles a single setup reply from the user. Returns true if the message
   // was consumed by the setup flow (so sendMessage should NOT forward it to
   // the oracle-chat backend).
-  const handleSetupReply = useCallback(async (rawText: string): Promise<boolean> => {
-    const stage = getSetupStage();
-    if (!stage || stage === "done") return false;
-    // Legacy setup must not rename the presenter or generate a new face from a normal request.
+  const handleSetupReply = useCallback(async (_rawText: string): Promise<boolean> => {
     sessionStorage.setItem(SETUP_KEY, "done");
     return false;
-    const text = rawText.trim();
-    if (!text) return false;
-
-    // Echo the user's reply into the chat so it isn't lost.
-    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text } as any]);
-
-    if (stage === "name") {
-      // Extract a clean name (strip "call you", "your name is", quotes, trailing punctuation).
-      let name = text.replace(/^(please\s+)?(call\s+you|call\s+yourself|your\s+name\s+is|name\s+you|i\s+(?:will\s+)?call\s+you|let'?s\s+call\s+you|i\s+want\s+to\s+call\s+you)\s+/i, "");
-      name = name.replace(/^["'`]|["'`.!?,]+$/g, "").trim();
-      // Cap length, take first 3 words max.
-      name = name.split(/\s+/).slice(0, 3).join(" ").slice(0, 32);
-      if (!name) name = "Oracle";
-      setAgentName("Oracle", name);
-      sessionStorage.setItem(SETUP_KEY, "look");
-      const ack = `Beautiful — I'll go by ${name} from now on. Now describe how you'd like me to look: hair, eyes, vibe, art style — anything you can picture. I'll paint myself based on what you tell me.`;
-      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: name, emoji: "🔮", color: "#FFD700", content: ack } as any]);
-      try { speakAsAgent(ack, name); } catch {}
-      return true;
-    }
-
-    if (stage === "look") {
-      const description = text;
-      const myName = getDisplayName("Oracle");
-      sessionStorage.setItem(SETUP_KEY, "generating");
-      const ack = `Painting myself now — give me a moment.`;
-      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🎨", color: "#FFD700", content: ack } as any]);
-      try { speakAsAgent(ack, myName); } catch {}
-      try {
-        const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
-        const gen = await generateImage({ prompt, tier: "premium" });
-        const imgUrl = gen.url;
-        if (!imgUrl) throw new Error("no image");
-
-        // Save the new avatar to the DB so it persists across logins, and mark
-        // it as the master Oracle avatar.
-        const created = await createAvatar.mutateAsync({
-          name: myName,
-          purpose: "oracle",
-          voice_style: "warm and wise",
-          personality: description.slice(0, 240),
-          image_url: imgUrl,
-          art_style: "photorealistic",
-          description,
-          is_default: true,
-        });
-        setOracleMode("avatar", created.id);
-        setOracleModeState({ mode: "avatar", avatarId: created.id });
-        sessionStorage.setItem(SETUP_KEY, "done");
-        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
-        const done = `That's me. I'm ${myName} now — your Oracle. Whenever you want to talk, just speak. What would you like to do first?`;
-        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: done, avatar_url: imgUrl } as any]);
-        try { speakAsAgent(done, myName); } catch {}
-        toast.success(`${myName} is ready.`);
-      } catch (err) {
-        console.error("[oracle-setup] avatar generation failed", err);
-        sessionStorage.setItem(SETUP_KEY, "done");
-        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
-        const fallback = `I couldn't paint myself just now, but I'm still here. We can pick my look later from the Avatar gallery.`;
-        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: fallback } as any]);
-        try { speakAsAgent(fallback, myName); } catch {}
-      }
-      return true;
-    }
-
-    return false;
-  }, [createAvatar, speakAsAgent]);
-
-
+  }, []);
 
   // Activate the microphone only after an explicit composer tap.
 
