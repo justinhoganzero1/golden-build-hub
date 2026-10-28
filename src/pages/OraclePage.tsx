@@ -817,9 +817,10 @@ const OraclePage = () => {
     speechRequestRef.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
-      // Read the master voice the user picked in Voice Studio (falls back to Sarah)
+      // Read the master voice the user picked in Voice Studio (falls back to
+      // "Charlie" — the exact voice used in the Oracle Lunar ad)
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
-      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "EXAVITQu4vr4xnSDxMaL");
+      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "IKne3meq5aSn9XLyUdCD");
       let masterSettings: Record<string, unknown> | null = null;
       try {
         const raw = storedMasterVoice?.settings
@@ -870,12 +871,13 @@ const OraclePage = () => {
                 speed: masterSettings?.speed,
               }
             : {
-                // Defaults only when nothing was saved
-                stability: 0.35,
-                similarity_boost: 0.85,
-                style: 0.65,
+                // Defaults only when nothing was saved — matched to the ad's
+                // delivery: expressive but steady, unhurried pacing.
+                stability: 0.45,
+                similarity_boost: 0.9,
+                style: 0.55,
                 use_speaker_boost: true,
-                speed: 0.9,
+                speed: 0.92,
               },
         }),
       });
