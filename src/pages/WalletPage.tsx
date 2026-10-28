@@ -74,6 +74,7 @@ const WalletPage = () => {
 
   useEffect(() => {
     loadWallet();
+    loadEarnings();
     const h = () => loadWallet();
     window.addEventListener("wallet:updated", h);
     return () => window.removeEventListener("wallet:updated", h);
