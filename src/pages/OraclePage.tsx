@@ -33,6 +33,7 @@ import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
+import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
@@ -988,6 +989,62 @@ const OraclePage = () => {
     speechQueueRef.current.push({ text, agentName });
     processSpeechQueue();
   }, [isMuted, processSpeechQueue, oracleName]);
+
+  /**
+   * Premium video reply: film the presenter saying the actual answer with real
+   * lip-sync. Goes through the gemini-video function, which reserves wallet
+   * funds before any provider work, settles on completion and cancels on
+   * failure — so a failed video never bills the member. On any failure the
+   * reply falls back to device speech so it is still heard.
+   */
+  const generateVideoReply = useCallback(async (rawText: string) => {
+    const cleaned = rawText.replace(/\[\[[\s\S]+?\]\]/g, "").replace(/[*_#>`]/g, "").trim();
+    if (!cleaned) return;
+    // Keep the spoken reply inside one short clip: first two sentences, max 220 chars.
+    const sentences = cleaned.match(/[^.!?\n]+[.!?]+/g);
+    let spoken = sentences ? sentences.slice(0, 2).join(" ").trim() : cleaned;
+    if (spoken.length > 220) spoken = (spoken.slice(0, 220).replace(/\s+\S*$/, "") + ".");
+    if (!spoken) return;
+    const words = spoken.split(/\s+/).length;
+    const duration = Math.min(10, Math.max(3, Math.ceil(words / 2.2)));
+    setVideoReplyPending(true);
+    try {
+      if (!portraitDataRef.current) {
+        const res = await fetch(oraclePortraitUrl);
+        const blob = await res.blob();
+        portraitDataRef.current = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result as string);
+          fr.onerror = () => reject(new Error("portrait load failed"));
+          fr.readAsDataURL(blob);
+        });
+      }
+      const prompt = `The woman looks at the camera and says exactly these words, with accurate natural lip-sync, in a warm Australian accent: "${spoken.replace(/"/g, "'")}" Keep her face, hair, clothing and the futuristic office identical. Locked camera, head and shoulders, single continuous shot, no scene cuts. No caption, no on-screen text.`;
+      const start = await supabase.functions.invoke("gemini-video", { body: { request_key: crypto.randomUUID(), image_url: portraitDataRef.current, prompt, duration, ratio: "9:16" } });
+      if (start.error) throw start.error;
+      const jobId = start.data?.job_id as string | undefined;
+      if (!jobId) throw new Error("no job");
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 6000));
+        const poll = await supabase.functions.invoke("gemini-video", { body: { job_id: jobId } });
+        if (poll.error) throw poll.error;
+        if (poll.data?.status === "completed" && poll.data?.video_url) {
+          setReplyVideoUrl(poll.data.video_url as string);
+          return;
+        }
+        if (poll.data?.error) throw new Error(String(poll.data.error));
+      }
+      throw new Error("timeout");
+    } catch (e) {
+      const anyErr = e as { context?: { text?: () => Promise<string> }; message?: string };
+      const detail = anyErr?.context?.text ? await anyErr.context.text().catch(() => "") : String(anyErr?.message || e);
+      if (/402|insufficient|coins/i.test(detail)) toast.error("Not enough coins for a video reply — top up your wallet or turn video replies off.");
+      else toast.error("The video reply didn't finish — speaking it instead.");
+      try { speakAsAgent(spoken, oracleName); } catch { /* ignore */ }
+    } finally {
+      setVideoReplyPending(false);
+    }
+  }, [oracleName, speakAsAgent]);
 
   const offerArtifact = (opts: { kind: OracleArtifact["kind"]; url?: string; body?: string; deepPath: string; libraryId?: string; reused?: boolean; fallback?: boolean }) => {
     const libraryId = opts.libraryId;
