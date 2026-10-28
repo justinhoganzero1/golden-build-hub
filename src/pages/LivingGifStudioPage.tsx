@@ -126,35 +126,31 @@ const LivingGifStudioPage = () => {
     setBusy(true);
     try {
       const sourceImage = await imageToDataUri(picked.image_url);
-      const { data, error } = await supabase.functions.invoke("create-gif-checkout", {
+      await openCheckoutGlobal({
+        functionName: "create-gif-checkout",
         body: {
           source_avatar_id: pickedId === "master" ? null : pickedId,
           source_image_url: sourceImage,
           prompt: prompt.trim(),
           title: title.trim() || null,
         },
-      });
-      if (error) throw error;
-
-      // Admin bypass — generate directly, no Stripe
-      if (data?.admin_bypass && data?.gif_id) {
-        toast.success("Admin bypass — rendering free 4K GIF (~60–90s)…");
-        setVerifying(true);
-        const sourceImageUrl = typeof sourceImage === "string" ? sourceImage : picked.image_url;
-        const genErr = await startGeneration(data.gif_id, sourceImageUrl).catch((error) => error);
-        setVerifying(false);
-        if (genErr) throw genErr;
-        toast.success("Your Living GIF is ready! 🎬");
-        setPrompt("");
-        setTitle("");
-        refetch();
-        return;
-      }
-
-      await openCheckoutGlobal({
-        functionName: "create-gif-checkout",
-        body: { source_avatar_id: pickedId === "master" ? null : pickedId, source_image_url: typeof sourceImage === "string" ? sourceImage : picked.image_url, prompt, title },
         title: "Living GIF — $4",
+        onResponse: (data) => {
+          // Admin bypass — generate directly, no payment
+          if (data?.admin_bypass && data?.gif_id) {
+            void (async () => {
+              toast.success("Admin bypass — rendering free 4K GIF (~60–90s)…");
+              setVerifying(true);
+              const genErr = await startGeneration(data.gif_id as string, sourceImage).catch((error) => error);
+              setVerifying(false);
+              if (genErr) throw genErr;
+              toast.success("Your Living GIF is ready! 🎬");
+              setPrompt("");
+              setTitle("");
+              refetch();
+            })();
+          }
+        },
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
