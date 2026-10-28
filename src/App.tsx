@@ -25,8 +25,6 @@ const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // EAGER import — must NEVER be lazy. A Suspense fallback during chunk reload
 // would unmount the persistent Oracle iframe and start a "second voice" on
 // remount, which is the bug we're killing for good.
-import MasterOracleLauncher from "@/components/admin/MasterOracleLauncher";
-import OracleAgent from "@/components/OracleAgent";
 import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 import PreviewShield from "@/components/PreviewShield";
@@ -52,7 +50,6 @@ const loaders = {
   "/teleport": () => import("./pages/TeleportPage"),
   "/creator-studio": () => import("./pages/CreatorStudioPage"),
   "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
-  "/ai-tutor": () => import("./pages/AITutorPage"),
   "/interpreter": () => import("./pages/InterpreterPage"),
   "/inventor": () => import("./pages/InventorPage"),
   "/calendar": () => import("./pages/CalendarPage"),
@@ -93,7 +90,6 @@ const loaders = {
   "/admin/editor": () => import("./pages/AdminEditorPage"),
   "/voice-receptionist": () => import("./pages/VoiceReceptionistPage"),
   "/admin/voice-receptionist": () => import("./pages/admin/VoiceReceptionistAdminPage"),
-  "/ai-companion": () => import("./pages/AICompanionPage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
@@ -188,7 +184,6 @@ const PhotographyHubPage = lazy(loaders["/photography-hub"]);
 const TeleportPage = lazy(loaders["/teleport"]);
 const CreatorStudioPage = lazy(loaders["/creator-studio"]);
 const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
-const AITutorPage = lazy(loaders["/ai-tutor"]);
 const InterpreterPage = lazy(loaders["/interpreter"]);
 const InventorPage = lazy(loaders["/inventor"]);
 const CalendarPage = lazy(loaders["/calendar"]);
@@ -236,7 +231,6 @@ const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AdminAuthAuditPage = lazy(() => import("./pages/AdminAuthAuditPage"));
 const AdminBuildAABPage = lazy(() => import("./pages/AdminBuildAABPage"));
-const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
 const TermsOfServicePage = lazy(loaders["/terms-of-service"]);
@@ -266,7 +260,6 @@ const SeoLandingPage = lazy(() => import("./pages/SeoLandingPage"));
 const AiSearchPage = lazy(() => import("./pages/AiSearchPage"));
 const AdminAiAnalyticsPage = lazy(() => import("./pages/AdminAiAnalyticsPage"));
 const AdminAiHealthPage = lazy(() => import("./pages/AdminAiHealthPage"));
-const OraclePreviewPage = lazy(() => import("./pages/OraclePreviewPage"));
 const AdPage = lazy(() => import("./pages/AdPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
@@ -278,7 +271,6 @@ const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
 const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
-const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
 const GetApiKeyWizardPage = lazy(() => import("./pages/GetApiKeyWizardPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminInboxPage = lazy(() => import("./pages/AdminInboxPage"));
@@ -322,16 +314,12 @@ const OracleApp = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
-              {/* MasterOracleLauncher removed from center of screen —
-                  the Oracle chicklet on the dashboard already provides access. */}
-              {/* <MasterOracleLauncher /> */}
               <Suspense fallback={null}>
                 {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
                     they cover portal balloons. Re-add per-page if needed. */}
                 <PreviewModeBanner />
               </Suspense>
               <MasterMuteButton />
-              <OracleAgent />
               <OracleControlListener />
               <AdminFlagBootstrap />
               <InteractionAuthGate />
@@ -348,7 +336,7 @@ const OracleApp = () => (
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
                   <Route path="/membership" element={<RequireAuth><ErrorBoundary pageName="Membership"><MembershipPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
+                  <Route path="/oracle-preview" element={<Navigate to="/oracle" replace />} />
                   <Route path="/ad" element={<ErrorBoundary pageName="Ad"><AdPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />

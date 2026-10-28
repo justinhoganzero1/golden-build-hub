@@ -23,10 +23,10 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
   const isAdmin = user?.email === "justinbretthogan@gmail.com";
   // Fully interactive only when logged in AND a paying member (or admin)
   const isInteractive = !!user && (subscribed || isAdmin);
-  const previewRoute = !isInteractive && to === "/oracle" ? "/oracle-preview" : to;
+  // One canonical Oracle: previews always show the real /oracle page, never a legacy stand-in.
   const previewUrl = isInteractive
     ? to
-    : `${previewRoute}${previewRoute.includes("?") ? "&" : "?"}preview=1`;
+    : `${to}${to.includes("?") ? "&" : "?"}preview=1`;
 
   // Carry the feature path through sign-up / upgrade so the user lands directly
   // on the feature afterwards. Any per-feature paywall (Subscribe / app-unlock)
