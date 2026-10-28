@@ -29,18 +29,18 @@ export default function OracleToolsMenu({ children }: { children?: ReactNode }) 
   }, [open]);
   const filtered = tools.filter(t => t.label.toLowerCase().includes(query.toLowerCase()));
   return <div ref={container}>
-      <Button variant="outline" size="icon" onClick={() => setOpen(v => !v)} aria-expanded={open} aria-controls="oracle-tools-panel" aria-label="All Oracle tools" title="All Oracle tools" className="h-9 w-9 shrink-0 bg-background/80">
+      <Button type="button" variant="ghost" size="icon" onClick={() => setOpen(v => !v)} aria-expanded={open} aria-controls="oracle-tools-panel" aria-label="All Oracle tools" title="All Oracle tools" className="oracle-control">
         <LayoutGrid className="h-5 w-5" />
       </Button>
-    {open && <div id="oracle-tools-panel" role="dialog" aria-label="All Oracle tools" className="absolute bottom-full left-0 mb-3 z-50 w-[min(360px,calc(100vw-32px))] max-h-[min(480px,55dvh)] overflow-y-auto rounded-2xl border-sky-300/40 bg-[#091322] text-[#dbeeff] p-3 shadow-[0_0_24px_#38bdf833]">
+    {open && <div id="oracle-tools-panel" role="dialog" aria-label="All Oracle tools" className="absolute bottom-full left-0 mb-3 z-50 w-[min(360px,calc(100vw-32px))] max-h-[min(480px,55dvh)] overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground p-3 shadow-lg">
       <div className="flex items-center justify-between mb-2"><h2 className="text-sm font-semibold">All Oracle tools</h2><ChevronUp className="h-4 w-4" /></div>
       {children && <div className="flex flex-wrap items-center gap-2 mb-3">{children}</div>}
-      <label className="flex items-center gap-2 rounded-lg bg-sky-400/10 border border-sky-300/25 px-2 mb-2">
+      <label className="flex items-center gap-2 rounded-lg bg-muted border border-border px-2 mb-2">
         <Search className="w-4 h-4 shrink-0" />
-        <input aria-label="Search Oracle tools" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search tools…" className="w-full min-w-0 py-2 bg-transparent text-xs outline-none placeholder:text-sky-100/60" />
+        <input aria-label="Search Oracle tools" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search tools…" className="w-full min-w-0 py-2 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
       </label>
       <div className="grid grid-cols-2 gap-1.5">
-        {filtered.map(t => <Button variant="outline" key={t.path} onClick={() => { setOpen(false); navigate(t.path, { state: { oracleWorkspace: true } }); }} className="h-auto justify-start whitespace-normal text-left text-xs p-2.5">{t.label}</Button>)}
+        {filtered.map(t => <Button type="button" variant="outline" key={t.path} onClick={() => { setOpen(false); navigate(t.path, { state: { oracleWorkspace: true } }); }} className="h-auto min-h-11 rounded-md justify-start whitespace-normal text-left text-sm p-2.5">{t.label}</Button>)}
       </div>
       {!filtered.length && <p className="text-xs py-3">No tools found.</p>}
     </div>}
