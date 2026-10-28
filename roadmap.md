@@ -62,6 +62,8 @@
 - [x] My Apps page (/my-apps)
 - [ ] Chat360 connector end-to-end — only Juzzy can sign in and tap Allow inside Chat360
 - [x] Backend audit fixes: 15 wrong error labels fixed + verified, 4 database functions secured, Twilio number wired to receptionist for calls.
+- [ ] Oracle premium voice as default, matched to the ad voice (Charlie, multilingual_v2, broadcast bitrate) — code changed; verify sound in browser
+
 - [ ] Twilio Auth Token — Juzzy must enter it (not saved; phone calls are refused without it).
 - [ ] Twilio texts — Twilio blocks changing text settings remotely for this number's region; Juzzy sets SMS webhook in Twilio Console.
 - [ ] Social posting keys (X, Instagram, IndexNow) — need Juzzy's accounts.
