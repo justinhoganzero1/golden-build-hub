@@ -4,7 +4,7 @@ import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import listeningClip from "@/assets/avatars/oracle-office-listening-silent.webm.asset.json";
 
 // Advertising footage is deliberately not approved as conversational footage.
-const approvedClips: PresenterClip[] = [{ id: "office-listening-1", url: listeningClip.url, states: ["idle", "listening", "thinking", "speaking"], approved: true, silent: true }];
+const approvedClips: PresenterClip[] = [{ id: "office-listening-1", url: new URL(listeningClip.url, "https://oraclelunar.com").href, states: ["idle", "listening", "thinking", "speaking"], approved: true, silent: true }];
 export default function OraclePresenterStage({ state, image, userId }: { state: PresenterState; image?: string; userId?: string }) {
   const [clip, setClip] = useState<PresenterClip | null>(null);
   const recent = useRef<string[]>([]);
