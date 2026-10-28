@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import { getStripeEnvironment } from "@/lib/stripe";
 import OracleMoonHeader from "@/components/OracleMoonHeader";
 
 interface Plan { name: string; amount_cents: number; interval: string | null; product_id: string; price_id: string; }

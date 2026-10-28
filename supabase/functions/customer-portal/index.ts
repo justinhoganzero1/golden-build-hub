@@ -30,14 +30,10 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    const stripe = createStripeClient(environment);
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
-
-    const customerId = customers.data[0].id;
-    const origin = safeOrigin(req);
-
     // Optional safe return path (only same-app absolute paths allowed).
+    // Parse the body BEFORE creating the Stripe client: `environment` must be
+    // resolved before it is referenced, otherwise every request throws and
+    // the billing portal can never open.
     let returnTo = "/subscribe";
     let environment: StripeEnv = "sandbox";
     let envSeen = false;
@@ -54,6 +50,13 @@ serve(async (req) => {
       /* no body — keep default */
     }
     if (!envSeen) throw new Error("invalid environment");
+
+    const stripe = createStripeClient(environment);
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
+
+    const customerId = customers.data[0].id;
+    const origin = safeOrigin(req);
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,
