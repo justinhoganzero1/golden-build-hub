@@ -7,7 +7,7 @@ import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel, Clapperboard } from "lucide-react";
 import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
+import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
@@ -251,6 +252,19 @@ const OraclePage = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   // One-shot lip-synced presenter clips ("greeting" hello, "done" reveal).
   const [presenterCue, setPresenterCue] = useState<"greeting" | "done" | null>(null);
+  // Premium pay-per-use video replies: the presenter answers with a real
+  // lip-synced generated video instead of device speech. Billed per second
+  // from the member's wallet by the gemini-video function (owner exempt).
+  const [premiumVideo, setPremiumVideo] = useState(false);
+  const [replyVideoUrl, setReplyVideoUrl] = useState<string | null>(null);
+  const [videoReplyPending, setVideoReplyPending] = useState(false);
+  const premiumVideoRef = useRef(false);
+  const portraitDataRef = useRef<string | null>(null);
+  useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
+  useEffect(() => {
+    if (!user?.id) return;
+    try { setPremiumVideo(localStorage.getItem(`oracle-video-replies:${user.id}`) === "on"); } catch { /* ignore */ }
+  }, [user?.id]);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
@@ -975,6 +989,62 @@ const OraclePage = () => {
     speechQueueRef.current.push({ text, agentName });
     processSpeechQueue();
   }, [isMuted, processSpeechQueue, oracleName]);
+
+  /**
+   * Premium video reply: film the presenter saying the actual answer with real
+   * lip-sync. Goes through the gemini-video function, which reserves wallet
+   * funds before any provider work, settles on completion and cancels on
+   * failure — so a failed video never bills the member. On any failure the
+   * reply falls back to device speech so it is still heard.
+   */
+  const generateVideoReply = useCallback(async (rawText: string) => {
+    const cleaned = rawText.replace(/\[\[[\s\S]+?\]\]/g, "").replace(/[*_#>`]/g, "").trim();
+    if (!cleaned) return;
+    // Keep the spoken reply inside one short clip: first two sentences, max 220 chars.
+    const sentences = cleaned.match(/[^.!?\n]+[.!?]+/g);
+    let spoken = sentences ? sentences.slice(0, 2).join(" ").trim() : cleaned;
+    if (spoken.length > 220) spoken = (spoken.slice(0, 220).replace(/\s+\S*$/, "") + ".");
+    if (!spoken) return;
+    const words = spoken.split(/\s+/).length;
+    const duration = Math.min(10, Math.max(3, Math.ceil(words / 2.2)));
+    setVideoReplyPending(true);
+    try {
+      if (!portraitDataRef.current) {
+        const res = await fetch(oraclePortraitUrl);
+        const blob = await res.blob();
+        portraitDataRef.current = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result as string);
+          fr.onerror = () => reject(new Error("portrait load failed"));
+          fr.readAsDataURL(blob);
+        });
+      }
+      const prompt = `The woman looks at the camera and says exactly these words, with accurate natural lip-sync, in a warm Australian accent: "${spoken.replace(/"/g, "'")}" Keep her face, hair, clothing and the futuristic office identical. Locked camera, head and shoulders, single continuous shot, no scene cuts. No caption, no on-screen text.`;
+      const start = await supabase.functions.invoke("gemini-video", { body: { request_key: crypto.randomUUID(), image_url: portraitDataRef.current, prompt, duration, ratio: "9:16" } });
+      if (start.error) throw start.error;
+      const jobId = start.data?.job_id as string | undefined;
+      if (!jobId) throw new Error("no job");
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 6000));
+        const poll = await supabase.functions.invoke("gemini-video", { body: { job_id: jobId } });
+        if (poll.error) throw poll.error;
+        if (poll.data?.status === "completed" && poll.data?.video_url) {
+          setReplyVideoUrl(poll.data.video_url as string);
+          return;
+        }
+        if (poll.data?.error) throw new Error(String(poll.data.error));
+      }
+      throw new Error("timeout");
+    } catch (e) {
+      const anyErr = e as { context?: { text?: () => Promise<string> }; message?: string };
+      const detail = anyErr?.context?.text ? await anyErr.context.text().catch(() => "") : String(anyErr?.message || e);
+      if (/402|insufficient|coins/i.test(detail)) toast.error("Not enough coins for a video reply — top up your wallet or turn video replies off.");
+      else toast.error("The video reply didn't finish — speaking it instead.");
+      try { speakAsAgent(spoken, oracleName); } catch { /* ignore */ }
+    } finally {
+      setVideoReplyPending(false);
+    }
+  }, [oracleName, speakAsAgent]);
 
   const offerArtifact = (opts: { kind: OracleArtifact["kind"]; url?: string; body?: string; deepPath: string; libraryId?: string; reused?: boolean; fallback?: boolean }) => {
     const libraryId = opts.libraryId;
@@ -2179,7 +2249,8 @@ const OraclePage = () => {
             .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
       const flushSpeakableSentences = (final = false) => {
-        if (isMuted) return;
+        // Premium video replies replace device speech: the filmed answer speaks instead.
+        if (isMuted || premiumVideoRef.current) return;
         const pending = oracleContent.slice(spokenUpTo);
         // Start with a complete sentence or natural clause, not the full reply.
         // Strip complete markers first while leaving incomplete markers protected.
@@ -2245,6 +2316,10 @@ const OraclePage = () => {
 
       // A short answer without punctuation should not wait for downstream tools.
       if (!finalOnlyMode) flushSpeakableSentences(true);
+      // Premium: film the presenter saying this reply with real lip-sync.
+      if (!finalOnlyMode && !isMuted && premiumVideoRef.current && oracleContent.trim()) {
+        void generateVideoReply(oracleContent);
+      }
       if (oracleContent.trim()) recordAgentReply(getActiveAgent(), oracleContent);
 
       // Parse and save memories from Oracle response
@@ -2735,7 +2810,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} />
+      <OraclePresenterStage userId={user?.id} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -2791,7 +2866,7 @@ const OraclePage = () => {
       </div>
       <Dialog open={voiceOptionsOpen} onOpenChange={setVoiceOptionsOpen}><DialogContent className="oracle-settings">
         <DialogTitle>Oracle settings</DialogTitle>
-        <DialogDescription>Reused AI footage; lips do not match new answers. Device voice varies by device. Premium speech and new AI creations use your wallet.</DialogDescription>
+        <DialogDescription>Reused AI footage; lips do not match new answers unless video replies are on. Device voice varies by device. Video replies film a real lip-synced answer per reply, billed per second from your wallet. Premium speech and new AI creations use your wallet.</DialogDescription>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={testSpeaker}><Volume2 />Test speaker</Button>
           <Button variant="outline" size="sm" onClick={toggleMic}><Mic />{isListening ? "Stop mic" : "Allow mic"}</Button>
@@ -2816,6 +2891,15 @@ const OraclePage = () => {
             {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
           </SelectContent></Select>}
 
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant={premiumVideo ? "default" : "outline"} size="sm" onClick={() => {
+            const next = !premiumVideo;
+            setPremiumVideo(next);
+            if (user?.id) localStorage.setItem(`oracle-video-replies:${user.id}`, next ? "on" : "off");
+            if (next) toast("Video replies on — each answer is filmed as a real lip-synced video, billed per second from your wallet.");
+          }}><Clapperboard />Video replies {premiumVideo ? "on · pay-per-use" : "off"}</Button>
+          {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer…</span>}
         </div>
         <AgentPicker />
         <div className="flex flex-wrap gap-2">

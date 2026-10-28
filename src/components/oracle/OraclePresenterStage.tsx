@@ -5,6 +5,7 @@ import greetingClipUrl from "@/assets/avatars/oracle-clip-greeting.webm";
 import thinkingClipUrl from "@/assets/avatars/oracle-clip-thinking.webm";
 import talkingClipUrl from "@/assets/avatars/oracle-clip-talking.webm";
 import doneClipUrl from "@/assets/avatars/oracle-clip-done.webm";
+import { choosePresenterClip, presenterHistory, type PresenterClip } from "@/lib/oracleClipSelection";
 
 export type PresenterState = "idle" | "listening" | "thinking" | "speaking";
 /** One-shot spoken clips with real lip-sync and their own audio. */
@@ -23,39 +24,70 @@ const CUE_CLIPS: Record<Exclude<PresenterCue, null>, ClipPlan> = {
 };
 const THINKING_CLIP: ClipPlan = { url: thinkingClipUrl, audible: true, loop: false };
 const TALKING_CLIP: ClipPlan = { url: talkingClipUrl, audible: false, loop: true };
-const LISTENING_CLIP: ClipPlan = { url: listeningClipUrl, audible: false, loop: true };
+
+/**
+ * Listening angles rotate so she is not always the same shot. Each clip is one
+ * steady locked-camera take; the angle changes BETWEEN clips, never mid-clip.
+ * Three-quarter left/right clips join this list once filmed (workspace credits
+ * pending 2026-10-28); the front clip carries the rotation until then.
+ */
+const LISTENING_CLIPS: PresenterClip[] = [
+  { id: "front", url: listeningClipUrl, states: ["idle", "listening"], approved: true, silent: true },
+];
 
 /**
  * Full-bleed presenter. Picks prerecorded clips by state and one-shot cues:
  * greeting/done clips carry real lip-synced speech, "thinking" plays once per
- * request, and a muted talking loop sits under device speech so her mouth
- * moves while answers are spoken. Footage is prerecorded — never presented
- * as a live camera feed.
+ * request, a muted talking loop sits under device speech, and a premium
+ * reply video (real lip-sync of the actual answer) takes top priority when
+ * present. Footage is prerecorded — never presented as a live camera feed.
  */
-export default function OraclePresenterStage({ state, image, userId, cue, onCueDone }: {
+export default function OraclePresenterStage({ state, image, userId, cue, onCueDone, replyVideoUrl, onReplyVideoDone }: {
   state: PresenterState;
   image?: string;
   userId?: string;
   cue?: PresenterCue;
   onCueDone?: () => void;
+  /** Premium pay-per-use video reply: real lip-sync of the actual answer. */
+  replyVideoUrl?: string | null;
+  onReplyVideoDone?: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
   const [thinkingPlayed, setThinkingPlayed] = useState(false);
+  const [listeningUrl, setListeningUrl] = useState(LISTENING_CLIPS[0].url);
+  const anglePickedRef = useRef(false);
 
   // Reset the one-shot thinking clip each time a new request starts.
   useEffect(() => { if (state !== "thinking") setThinkingPlayed(false); }, [state]);
   useEffect(() => () => { video.current?.pause(); }, []);
 
+  // Pick a fresh listening angle each time she settles back to listening.
+  useEffect(() => {
+    if (state !== "listening" && state !== "idle") { anglePickedRef.current = false; return; }
+    if (anglePickedRef.current) return;
+    anglePickedRef.current = true;
+    const key = `oracle-presenter-history:${userId || "anon"}`;
+    let recent: string[] = [];
+    try { recent = JSON.parse(localStorage.getItem(key) || "[]"); } catch { /* ignore */ }
+    const clip = choosePresenterClip(LISTENING_CLIPS, state, recent);
+    if (clip) {
+      setListeningUrl(clip.url);
+      try { localStorage.setItem(key, JSON.stringify(presenterHistory(recent, clip.id))); } catch { /* ignore */ }
+    }
+  }, [state, userId]);
+
   const plan: ClipPlan | null = image
     ? null
-    : cue
-      ? CUE_CLIPS[cue]
-      : state === "thinking" && !thinkingPlayed
-        ? THINKING_CLIP
-        : state === "speaking"
-          ? TALKING_CLIP
-          : LISTENING_CLIP;
+    : replyVideoUrl
+      ? { url: replyVideoUrl, audible: true, loop: false }
+      : cue
+        ? CUE_CLIPS[cue]
+        : state === "thinking" && !thinkingPlayed
+          ? THINKING_CLIP
+          : state === "speaking"
+            ? TALKING_CLIP
+            : { url: listeningUrl, audible: false, loop: true };
 
   // Audible clips need a play() attempt with sound; if the browser blocks
   // unmuted autoplay (no gesture yet), fall back to muted so she still moves.
@@ -70,7 +102,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   }, [plan?.url]);
 
   const handleEnded = () => {
-    if (cue) onCueDone?.();
+    if (replyVideoUrl) onReplyVideoDone?.();
+    else if (cue) onCueDone?.();
     else if (state === "thinking") setThinkingPlayed(true);
   };
 
