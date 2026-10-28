@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { choosePresenterClip, presenterHistory, type PresenterClip, type PresenterState } from "@/lib/oracleClipSelection";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
-import listeningClip from "@/assets/avatars/oracle-office-portrait-silent.webm.asset.json";
+import listeningClipUrl from "@/assets/avatars/oracle-office-listening-silent.webm";
 
 // Advertising footage is deliberately not approved as conversational footage.
-const approvedClips: PresenterClip[] = [{ id: "office-listening-1", url: new URL(listeningClip.url, "https://oraclelunar.com").href, states: ["idle", "listening", "thinking", "speaking"], approved: true, silent: true }];
+const approvedClips: PresenterClip[] = [{ id: "office-listening-1", url: listeningClipUrl, states: ["idle", "listening", "thinking", "speaking"], approved: true, silent: true }];
 export default function OraclePresenterStage({ state, image, userId }: { state: PresenterState; image?: string; userId?: string }) {
   const [clip, setClip] = useState<PresenterClip | null>(null);
   const recent = useRef<string[]>([]);
