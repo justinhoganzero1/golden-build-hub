@@ -7,7 +7,7 @@ import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel, Clapperboard } from "lucide-react";
 import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -251,6 +251,19 @@ const OraclePage = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   // One-shot lip-synced presenter clips ("greeting" hello, "done" reveal).
   const [presenterCue, setPresenterCue] = useState<"greeting" | "done" | null>(null);
+  // Premium pay-per-use video replies: the presenter answers with a real
+  // lip-synced generated video instead of device speech. Billed per second
+  // from the member's wallet by the gemini-video function (owner exempt).
+  const [premiumVideo, setPremiumVideo] = useState(false);
+  const [replyVideoUrl, setReplyVideoUrl] = useState<string | null>(null);
+  const [videoReplyPending, setVideoReplyPending] = useState(false);
+  const premiumVideoRef = useRef(false);
+  const portraitDataRef = useRef<string | null>(null);
+  useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
+  useEffect(() => {
+    if (!user?.id) return;
+    try { setPremiumVideo(localStorage.getItem(`oracle-video-replies:${user.id}`) === "on"); } catch { /* ignore */ }
+  }, [user?.id]);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
