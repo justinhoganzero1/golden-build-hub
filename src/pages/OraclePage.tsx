@@ -3001,7 +3001,7 @@ const OraclePage = () => {
       )}
 
       {/* Orb / Avatar area */}
-      <div className={`relative flex-1 min-h-0 flex items-center justify-center transition-all ${showChat ? "max-h-[40%]" : ""}`}>
+      <div className={`relative flex-1 shrink-0 min-h-[160px] sm:min-h-[220px] flex items-center justify-center transition-all ${showChat ? "max-h-[40%]" : ""}`}>
         {/* Live mic indicator */}
         {isListening && (
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
@@ -3019,7 +3019,6 @@ const OraclePage = () => {
             <div className="flex flex-col items-center h-full w-full min-h-0 z-10">
               <div
                 className={`oracle-presenter-frame relative w-[min(90vw,520px)] max-w-full h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
-                style={undefined}
               >
                 {oracleAvatar?.image_url ? <LivingAvatar imageUrl={oracleAvatar.image_url} alt={oracleName} intensity="subtle" className="w-full h-full" /> :
                   <img src={adPresenterPreview} data-original-asset={adPresenter.url} alt={oracleName} className="w-full h-full object-cover object-top" />}
@@ -3157,9 +3156,9 @@ const OraclePage = () => {
       <div className="px-4 py-3 z-10" style={{ background: "linear-gradient(to top, #0a0a0a, rgba(10,10,10,0.95))" }}>
         {!micPermGranted && (
           <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center justify-between gap-2 flex-nowrap">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-foreground">Voice chat</div>
+                <div className="hidden sm:block text-sm font-semibold text-foreground">Voice chat</div>
                 {micPermissionError && (
                   <div className="text-xs text-red-300 mt-1">{micPermissionError}</div>
                 )}
@@ -3187,7 +3186,7 @@ const OraclePage = () => {
             cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
             speechModeRef.current = value; setSpeechMode(value);
             if (user?.id) localStorage.setItem(`oracle-speech-mode:${user.id}`, value);
-          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto min-w-[180px]"><SelectValue /></SelectTrigger><SelectContent>
+          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="device">Device voice · no TTS fee</SelectItem>
             <SelectItem value="premium">Premium voice · wallet paid</SelectItem>
           </SelectContent></Select>
