@@ -85,6 +85,11 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     }
   }, [closeCheckout]);
 
+  useEffect(() => {
+    globalOpen = openCheckout;
+    return () => { globalOpen = null; };
+  }, [openCheckout]);
+
   return (
     <CheckoutContext.Provider value={{ openCheckout, closeCheckout, isOpen: !!request }}>
       {children}
