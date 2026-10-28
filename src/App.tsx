@@ -50,7 +50,6 @@ const loaders = {
   "/teleport": () => import("./pages/TeleportPage"),
   "/creator-studio": () => import("./pages/CreatorStudioPage"),
   "/personal-assistant": () => import("./pages/PersonalAssistantPage"),
-  "/ai-tutor": () => import("./pages/AITutorPage"),
   "/interpreter": () => import("./pages/InterpreterPage"),
   "/inventor": () => import("./pages/InventorPage"),
   "/calendar": () => import("./pages/CalendarPage"),
@@ -91,7 +90,6 @@ const loaders = {
   "/admin/editor": () => import("./pages/AdminEditorPage"),
   "/voice-receptionist": () => import("./pages/VoiceReceptionistPage"),
   "/admin/voice-receptionist": () => import("./pages/admin/VoiceReceptionistAdminPage"),
-  "/ai-companion": () => import("./pages/AICompanionPage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
@@ -186,7 +184,6 @@ const PhotographyHubPage = lazy(loaders["/photography-hub"]);
 const TeleportPage = lazy(loaders["/teleport"]);
 const CreatorStudioPage = lazy(loaders["/creator-studio"]);
 const PersonalAssistantPage = lazy(loaders["/personal-assistant"]);
-const AITutorPage = lazy(loaders["/ai-tutor"]);
 const InterpreterPage = lazy(loaders["/interpreter"]);
 const InventorPage = lazy(loaders["/inventor"]);
 const CalendarPage = lazy(loaders["/calendar"]);
@@ -234,7 +231,6 @@ const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AdminAuthAuditPage = lazy(() => import("./pages/AdminAuthAuditPage"));
 const AdminBuildAABPage = lazy(() => import("./pages/AdminBuildAABPage"));
-const AICompanionPage = lazy(loaders["/ai-companion"]);
 const AvatarGalleryPage = lazy(loaders["/avatar-gallery"]);
 const PrivacyPolicyPage = lazy(loaders["/privacy-policy"]);
 const TermsOfServicePage = lazy(loaders["/terms-of-service"]);
