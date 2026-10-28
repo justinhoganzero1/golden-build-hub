@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies } from "./oraclePresenter";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice } from "./oraclePresenter";
 
 describe("Oracle presenter rules", () => {
+  it("uses premium female Sarah instead of the rejected male Charlie voice", () => {
+    expect(resolveOraclePremiumVoice(null)).toBe("EXAVITQu4vr4xnSDxMaL");
+    expect(resolveOraclePremiumVoice("IKne3meq5aSn9XLyUdCD")).toBe("EXAVITQu4vr4xnSDxMaL");
+    expect(resolveOraclePremiumVoice("custom-female")).toBe("custom-female");
+  });
   it("enables generated replies for the consenting account only", () => {
     expect(resolveVideoReplies(null, true)).toBe(true);
     expect(resolveVideoReplies(null, false)).toBe(false);
