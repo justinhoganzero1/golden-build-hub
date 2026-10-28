@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech } from "./oraclePresenter";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies } from "./oraclePresenter";
 
 describe("Oracle presenter rules", () => {
+  it("enables generated replies for the consenting account only", () => {
+    expect(resolveVideoReplies(null, true)).toBe(true);
+    expect(resolveVideoReplies(null, false)).toBe(false);
+  });
+  it("preserves explicit video reply opt-in and opt-out", () => {
+    expect(resolveVideoReplies("off", true)).toBe(false);
+    expect(resolveVideoReplies("on", false)).toBe(true);
+  });
   it("defaults to premium voice; an explicit saved choice wins", () => {
     expect(resolveSpeechMode(null, false)).toBe("premium");
     expect(resolveSpeechMode(null, true)).toBe("premium");

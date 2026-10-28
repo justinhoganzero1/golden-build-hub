@@ -1,4 +1,8 @@
 export type OracleSpeechMode = "device" | "premium";
+export function resolveVideoReplies(saved: string | null, authorizedDefault: boolean): boolean {
+  if (saved === "on" || saved === "off") return saved === "on";
+  return authorizedDefault;
+}
 export type OracleArtifactKind = "image" | "video" | "audio" | "story" | "app";
 export interface OracleArtifact {
   id: string;
