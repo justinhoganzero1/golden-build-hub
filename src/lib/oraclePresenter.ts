@@ -1,4 +1,12 @@
 export type OracleSpeechMode = "device" | "premium";
+export function resolveOraclePremiumVoice(saved: string | null | undefined): string {
+  // Charlie is a male voice, not the female presenter requested by Juzzy.
+  return !saved || saved === "IKne3meq5aSn9XLyUdCD" ? "EXAVITQu4vr4xnSDxMaL" : saved;
+}
+export function resolveVideoReplies(saved: string | null, authorizedDefault: boolean): boolean {
+  if (saved === "on" || saved === "off") return saved === "on";
+  return authorizedDefault;
+}
 export type OracleArtifactKind = "image" | "video" | "audio" | "story" | "app";
 export interface OracleArtifact {
   id: string;
