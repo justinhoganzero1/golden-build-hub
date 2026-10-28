@@ -1642,6 +1642,36 @@ const OraclePage = () => {
     }
     const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
 
+    const searchRequest = text.match(/^(?:search (?:the )?(?:web|net)|look up online|research online)\s*[:,-]?\s+(.+)/i);
+    if (!isIntroTrigger && searchRequest) {
+      const query = searchRequest[1].trim().slice(0, 300);
+      const id = crypto.randomUUID();
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "", color: "#FFD700", content: text }, { id, role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content: "Searching live sources…" }]);
+      setIsLoading(true);
+      try {
+        await requireEdgeAuthToken();
+        const { data, error } = await supabase.functions.invoke("oracle-research", { body: { query } });
+        if (error || !data?.answer) throw error || new Error("No research answer returned");
+        const content = formatWebAnswer(data.answer, data.sources || []);
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, content } : m));
+        speakAsAgent(data.answer, oracleName);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : "Search unavailable";
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, content: /402|insufficient/i.test(detail) ? "Your wallet needs a top-up for web research." : "Live research did not finish. No verified answer is available." } : m));
+      } finally { setIsLoading(false); }
+      return;
+    }
+
+    const recallRequest = text.match(/^(?:find|search)\s+(?:in\s+)?my\s+(?:private\s+)?library\s*[:,-]?\s+(.+)/i);
+    if (!isIntroTrigger && recallRequest && user?.id) {
+      const words = recallRequest[1].replace(/[^\p{L}\p{N}\s]/gu, "").trim().slice(0, 100);
+      if (!words) return;
+      const { data, error } = await supabase.from("user_media").select("id,title,media_type,created_at").eq("user_id", user.id).ilike("title", `%${words}%`).order("created_at", { ascending: false }).limit(8);
+      const content = error ? "Your saved Library could not be searched just now." : data?.length ? "**From your saved Library**\n\n" + data.map(item => `- [${item.title.replace(/[\[\]]/g, "")} ](/media-library?item=${item.id}) · ${item.media_type}`).join("\n") : "I did not find a saved Library title matching that request.";
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content }]);
+      return;
+    }
+
     // ── Universal command resolver — gives Oracle full operator control ──
     // Recognises any of the 70+ app routes plus click/fill/scroll/back markers.
     const oracleCmd = preRoutedImagePrompt || isIntroTrigger ? null : resolveOracleCommand(text);
