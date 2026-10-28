@@ -4,11 +4,13 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RequireAuth from "@/components/RequireAuth";
 import { useMembership } from "@/hooks/useMembership";
+import { useAuth } from "@/contexts/AuthContext";
 const OraclePage = lazy(() => import("@/pages/OraclePage"));
 
 export default function OracleWorkspace({ children }: { children: ReactNode }) {
   const location = useLocation(); const navigate = useNavigate();
   const { active: memberActive, exempt, loading } = useMembership();
+  const { user } = useAuth();
   const stageContainer = useRef<HTMLDivElement>(null);
   const entered = useRef(false);
   const isOracle = location.pathname === "/oracle";
@@ -18,7 +20,7 @@ export default function OracleWorkspace({ children }: { children: ReactNode }) {
   if (!active) return <>{children}</>;
   return <>
     <div ref={element => { stageContainer.current = element; element?.toggleAttribute("inert", !isOracle); }} aria-hidden={!isOracle}>
-      {(isOracle || (!loading && (memberActive || exempt))) && <RequireAuth><Suspense fallback={<div className="h-[100dvh] bg-background" />}><OraclePage /></Suspense></RequireAuth>}
+      {(isOracle || (!loading && (memberActive || exempt))) && <RequireAuth><Suspense fallback={<div className="h-[100dvh] bg-background" />}><OraclePage key={user?.id || "signed-out"} /></Suspense></RequireAuth>}
     </div>
     {!isOracle && <section role="dialog" aria-modal="true" aria-label="Oracle workspace tool" className="fixed inset-0 z-40 flex flex-col bg-background">
       <header className="flex shrink-0 items-center gap-3 border-b border-border bg-background px-3 py-2">

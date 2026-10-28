@@ -604,10 +604,8 @@ const OraclePage = () => {
       const current = getOracleMode();
       const userHasChoice = current.mode === "avatar" && current.avatarId
         && userAvatars.some(a => a.id === current.avatarId);
-      if (masterOracle && !userHasChoice) {
-        setOracleMode("avatar", masterOracle.id);
-        setOracleModeState({ mode: "avatar", avatarId: masterOracle.id });
-      }
+      // Preserve explicit saved choices; a DB default must not replace the
+      // consistent ad presenter later while the avatar list finishes loading.
       masterSeededRef.current = true;
     }
 
@@ -2083,7 +2081,14 @@ const OraclePage = () => {
           messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
           isFirstMeeting,
-          userMemories: formatMemoriesForPrompt(oracleMemories),
+          userMemories: formatMemoriesForPrompt(oracleMemories) + (() => {
+            if (!user?.id) return "";
+            try {
+              const ratings = JSON.parse(localStorage.getItem(`oracle-response-feedback:${user.id}`) || "{}");
+              const voted = trimmedMsgs.filter(m => m.role === "assistant" && ratings[m.id]).slice(-4);
+              return voted.length ? "\nUser feedback on recent replies (preference only, not proof of factual accuracy):\n" + voted.map(m => `${ratings[m.id] > 0 ? "Helpful" : "Unhelpful"}: ${m.content.slice(0, 350)}`).join("\n") : "";
+            } catch { return ""; }
+          })(),
           adContext: {
             showAds: adPrefs?.ads_enabled ?? true,
             isSubscribed: subscribed,
