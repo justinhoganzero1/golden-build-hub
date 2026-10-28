@@ -1,11 +1,15 @@
-// Returns the current user's subscription state with plan name,
-// renewal date, cancel-at-period-end status, and recent invoices.
+// Returns the current user's subscription state from the subscriptions
+// table (kept current by payments-webhook). No direct Stripe calls.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const PLAN_NAMES: Record<string, string> = {
+  oracle_monthly: "Oracle Lunar Membership",
+  ai_partner_monthly: "AI Partner",
 };
 
 Deno.serve(async (req) => {
@@ -23,73 +27,49 @@ Deno.serve(async (req) => {
     if (ce || !c?.claims?.sub) {
       return new Response(JSON.stringify({ error: "auth required" }), { status: 401, headers: corsHeaders });
     }
-    const email = c.claims.email as string | undefined;
-    if (!email) return new Response(JSON.stringify({ subscribed: false }), { headers: corsHeaders });
+    const userId = c.claims.sub as string;
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false, customer: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const customerId = customers.data[0].id;
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } }
+    );
 
-    const subs = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "all",
-      limit: 5,
-      expand: ["data.items.data.price.product"],
-    });
+    const { data: subs } = await admin
+      .from("subscriptions")
+      .select("price_id, status, current_period_end, cancel_at_period_end, stripe_customer_id, environment")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(5);
 
-    const active = subs.data.find((s) => s.status === "active" || s.status === "trialing");
-    const sub = active ?? subs.data[0];
+    const now = new Date();
+    const isLive = (s: any) =>
+      (s.status === "active" || s.status === "trialing") &&
+      (!s.current_period_end || new Date(s.current_period_end) > now);
+    const active = (subs ?? []).find(isLive);
+    const sub = active ?? (subs ?? [])[0];
 
     let plan: { name: string; amount_cents: number; interval: string | null; product_id: string; price_id: string } | null = null;
-    let periodEnd: string | null = null;
-    let cancelAtPeriodEnd = false;
-    let cancelAt: string | null = null;
-    let status: string | null = null;
-
     if (sub) {
-      status = sub.status;
-      periodEnd = new Date(sub.current_period_end * 1000).toISOString();
-      cancelAtPeriodEnd = !!sub.cancel_at_period_end;
-      cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null;
-      const item = sub.items.data[0];
-      const product = item.price.product as Stripe.Product;
       plan = {
-        name: typeof product === "object" ? product.name : "Plan",
-        amount_cents: item.price.unit_amount ?? 0,
-        interval: item.price.recurring?.interval ?? null,
-        product_id: typeof product === "object" ? product.id : (product as string),
-        price_id: item.price.id,
+        name: PLAN_NAMES[sub.price_id] ?? "Oracle Lunar Plan",
+        amount_cents: 0,
+        interval: "month",
+        product_id: sub.price_id,
+        price_id: sub.price_id,
       };
     }
-
-    // Recent invoices
-    const invoices = await stripe.invoices.list({ customer: customerId, limit: 5 });
-    const invoiceList = invoices.data.map((i) => ({
-      id: i.id,
-      number: i.number,
-      amount_paid: i.amount_paid,
-      currency: i.currency,
-      status: i.status,
-      created: i.created,
-      hosted_invoice_url: i.hosted_invoice_url,
-      pdf: i.invoice_pdf,
-    }));
 
     return new Response(
       JSON.stringify({
         subscribed: !!active,
-        status,
+        status: sub?.status ?? null,
         plan,
-        current_period_end: periodEnd,
-        cancel_at_period_end: cancelAtPeriodEnd,
-        cancel_at: cancelAt,
-        customer: { id: customerId, email },
-        invoices: invoiceList,
+        current_period_end: sub?.current_period_end ?? null,
+        cancel_at_period_end: sub?.cancel_at_period_end ?? false,
+        cancel_at: null,
+        customer: sub ? { id: sub.stripe_customer_id, email: c.claims.email } : null,
+        invoices: [],
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
