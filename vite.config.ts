@@ -20,6 +20,9 @@ export default ({ mode }: { mode: string }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core", "react-helmet-async"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "react-helmet-async"],
+    // Scan lazy tool pages before serving React. Late dependency discovery
+    // can otherwise leave a mounted renderer on an older React chunk hash.
+    entries: ["index.html", "src/**/*.{ts,tsx}", "!src/**/*.test.{ts,tsx}", "!src/test/**"],
+    include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "react-helmet-async", "@radix-ui/react-dropdown-menu"],
   },
 });
