@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 // Smooth single-take shot locked to the canonical portrait (same face across the angle drift).
 import listeningClipUrl from "@/assets/avatars/oracle-office-listening-smooth.webm";
@@ -57,11 +59,12 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
+  const [playBlocked, setPlayBlocked] = useState(false);
   const [thinkingPlayed, setThinkingPlayed] = useState(false);
   const [listeningUrl, setListeningUrl] = useState(LISTENING_CLIPS[0].url);
   const anglePickedRef = useRef(false);
   // An unavailable earlier cue must not permanently hide a later reply.
-  useEffect(() => { setFailed(false); }, [replyVideoUrl, cue, state]);
+  useEffect(() => { setFailed(false); setPlayBlocked(false); }, [replyVideoUrl, cue, state]);
 
   // Reset the one-shot thinking clip each time a new request starts.
   useEffect(() => { if (state !== "thinking") setThinkingPlayed(false); }, [state]);
@@ -98,11 +101,14 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
     const v = video.current;
     if (!v || !plan) return;
     v.muted = !plan.audible;
-    const tryPlay = () => v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    const tryPlay = () => v.play().catch(() => {
+      if (replyVideoUrl) { setPlayBlocked(true); return; }
+      v.muted = true; v.play().catch(() => {});
+    });
     if (v.readyState >= 2) tryPlay();
     else v.addEventListener("canplay", tryPlay, { once: true });
     return () => v.removeEventListener("canplay", tryPlay);
-  }, [plan?.url]);
+  }, [plan?.url, replyVideoUrl]);
 
   const handleEnded = () => {
     if (replyVideoUrl) onReplyVideoDone?.();
@@ -121,6 +127,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         autoPlay
         loop={plan.loop}
         playsInline
+        data-ignore-app-mute={replyVideoUrl ? "true" : undefined}
+        controls={!!replyVideoUrl}
         preload="auto"
         onEnded={plan.loop ? undefined : handleEnded}
         onError={() => setFailed(true)}
@@ -128,6 +136,14 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
       />
     )}
     <div className="absolute inset-0 oracle-stage-shade" />
+    {replyVideoUrl && (playBlocked || failed) && <div className="absolute inset-0 flex items-center justify-center z-20">
+      {failed ? <Button variant="secondary" onClick={onReplyVideoDone}>Video playback unavailable · Close</Button> : <Button variant="secondary" onClick={() => {
+        const v = video.current;
+        if (!v) return;
+        v.muted = false;
+        v.play().then(() => setPlayBlocked(false)).catch(() => setPlayBlocked(true));
+      }}><Play />Play video reply</Button>}
+    </div>}
     {state === "speaking" && !replyVideoUrl && !cue && (
       <div aria-hidden data-testid="oracle-voice-glow" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 animate-pulse bg-gradient-to-t from-primary/30 to-transparent" />
     )}

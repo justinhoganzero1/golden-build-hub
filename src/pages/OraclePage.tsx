@@ -27,7 +27,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
 import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
-import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
@@ -829,10 +829,10 @@ const OraclePage = () => {
     speechRequestRef.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
-      // Read the master voice the user picked in Voice Studio (falls back to
-      // "Charlie" — the exact voice used in the Oracle Lunar ad)
+      // Preserve custom selections but replace the rejected male Charlie
+      // default with a premium female voice; an exact ad match is unverified.
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
-      const masterVoiceId = storedMasterVoice?.id || ((typeof localStorage !== "undefined" && localStorage.getItem("oracle-lunar-voice")) || "IKne3meq5aSn9XLyUdCD");
+      const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null));
       let masterSettings: Record<string, unknown> | null = null;
       try {
         const raw = storedMasterVoice?.settings
@@ -1034,7 +1034,7 @@ const OraclePage = () => {
           fr.readAsDataURL(blob);
         });
       }
-      const prompt = `The woman looks at the camera and says exactly these words, with accurate natural lip-sync, in a warm Australian accent: "${spoken.replace(/"/g, "'")}" Keep her face, hair, clothing and the futuristic office identical. Locked camera, head and shoulders, single continuous shot, no scene cuts. No caption, no on-screen text.`;
+      const prompt = `The woman in the reference image is the ONLY speaker. Her own clear, expressive FEMALE voice has a warm Australian accent, never a male voice and never a narrator. She looks at the camera and says exactly these words, with accurate natural lip-sync: "${spoken.replace(/"/g, "'")}" Generate her spoken audio and matching mouth movement together. Keep her face, hair, clothing and the futuristic office identical. Locked camera, head and shoulders, single continuous shot, no scene cuts. No caption, no on-screen text.`;
       const start = await supabase.functions.invoke("gemini-video", { headers: { Authorization: `Bearer ${await requireEdgeAuthToken()}` }, body: { request_key: crypto.randomUUID(), image_url: portraitDataRef.current, prompt, duration, ratio: "9:16" } });
       if (start.error) throw start.error;
       const jobId = start.data?.job_id as string | undefined;
@@ -2829,7 +2829,7 @@ const OraclePage = () => {
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
-          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"} · Reused AI video</p>
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{replyVideoUrl ? "Generated video reply" : videoReplyPending ? "Preparing video reply…" : isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"}{!replyVideoUrl && !videoReplyPending ? " · Reused AI video" : ""}</p>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="oracle-control" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}>{conversationOpen ? <X /> : <MessageSquare />}</Button>
