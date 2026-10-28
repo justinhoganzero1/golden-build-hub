@@ -963,7 +963,7 @@ const OraclePage = () => {
   }, [isMuted, processSpeechQueue, oracleName]);
 
   const offerArtifact = (opts: { kind: OracleArtifact["kind"]; url?: string; body?: string; deepPath: string; libraryId?: string; reused?: boolean; fallback?: boolean }) => {
-    const libraryId = opts.libraryId || opts.deepPath.match(/[?&]item=([^&]+)/)?.[1];
+    const libraryId = opts.libraryId;
     const artifact = finishedArtifact({ ...opts, libraryId, id: crypto.randomUUID(), state: "complete" });
     if (!artifact) return;
     const content = artifactAnnouncement(artifact);
@@ -2412,7 +2412,7 @@ const OraclePage = () => {
                 try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } }); savedId = saved?.id || saved; } catch (err) { console.error("Oracle image marker library save failed", err); toast.error("Image made, but library save failed"); }
               }
               if (wasFallback) { toast.error("The new image did not finish; an older fallback was returned."); return; }
-              askOpenChoice({ kind: "image", url: imgUrl, reused: wasCached, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+              askOpenChoice({ kind: "image", url: imgUrl, libraryId: savedId, reused: wasCached, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "MUSIC") {
             toast.success("Composing that track…");
@@ -2428,7 +2428,7 @@ const OraclePage = () => {
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
                 let savedId: string | undefined;
                 try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = saved?.id || saved; } catch {}
-                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+                askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Music generation failed"); }
             })();
           } else if (kind === "SFX") {
@@ -2445,7 +2445,7 @@ const OraclePage = () => {
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
                 let savedId: string | undefined;
                 try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved?.id || saved; } catch {}
-                askOpenChoice({ kind: "audio", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+                askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
             })();
           } else if (kind === "STORY" || kind === "POEM") {
@@ -2505,7 +2505,7 @@ const OraclePage = () => {
                 console.error("Oracle story library save failed", err);
                 toast.error(`${label} written, but the library save failed`);
               }
-              askOpenChoice({ kind: "story", body: draft, deepPath: savedId ? `/media-library?item=${savedId}` : `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+              askOpenChoice({ kind: "story", body: draft, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : `/story-writer?prompt=${encodeURIComponent(prompt)}` });
             })();
           } else if (kind === "APP") {
             // Build it for real in the background and save the finished
@@ -2551,7 +2551,7 @@ const OraclePage = () => {
                   metadata: { kind: "app", prompt, architecture: architecture.slice(0, 1500), built_by: "oracle-marker" } as any,
                 });
                 savedId = saved?.id || saved;
-                askOpenChoice({ kind: "app", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
+                askOpenChoice({ kind: "app", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
               } catch (e) {
                 console.error("GEN_APP build failed", e);
                 toast.error("The build failed — opening App Builder with your brief");
@@ -2591,7 +2591,7 @@ const OraclePage = () => {
                   });
                   savedId = saved?.id || saved;
                 } catch (err) { console.error("Oracle video library save failed", err); }
-                askOpenChoice({ kind: "video", url: videoUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+                askOpenChoice({ kind: "video", url: videoUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) {
                 console.error("GEN_VIDEO animate failed", e);
                 try {
