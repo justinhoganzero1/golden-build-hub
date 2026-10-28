@@ -249,6 +249,8 @@ const OraclePage = () => {
   const [councilBusy, setCouncilBusy] = useState(false);
   const [showDoctor, setShowDoctor] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // One-shot lip-synced presenter clips ("greeting" hello, "done" reveal).
+  const [presenterCue, setPresenterCue] = useState<"greeting" | "done" | null>(null);
   // Audio-truncation clarifier — when the Oracle detects a cut-off message
   // like "udio on my device", we surface a quick form before the prompt is sent.
   const [audioClarify, setAudioClarify] = useState<{ open: boolean; fragment: string }>({ open: false, fragment: "" });
@@ -981,7 +983,8 @@ const OraclePage = () => {
     const content = artifactAnnouncement(artifact);
     setShowChat(true);
     setMessages(prev => [...prev, { id: artifact.id, role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content, artifact }]);
-    speakAsAgent(content, oracleName);
+    // Lip-synced "All done — would you like to see it?" clip instead of device speech.
+    setPresenterCue("done");
   };
 
   // Monthly heated debate check
@@ -1411,7 +1414,8 @@ const OraclePage = () => {
       const greet = "Hello — I'm your Oracle. What would you like to do today?";
       setShowChat(true);
       setMessages((prev) => [...prev, { id: `setup-${Date.now()}`, role: "assistant", sender: "Oracle", emoji: "🔮", color: "#FFD700", content: greet } as any]);
-      try { speakAsAgent(greet, "Oracle"); } catch {}
+      // Lip-synced greeting clip speaks the hello with her real filmed voice.
+      try { setPresenterCue("greeting"); } catch {}
     }, 1200);
     return () => clearTimeout(t);
   }, []);
@@ -2731,7 +2735,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} />
+      <OraclePresenterStage userId={user?.id} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
