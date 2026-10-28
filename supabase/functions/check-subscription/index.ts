@@ -1,6 +1,4 @@
 import { statusFor } from "../_shared/errorStatus.ts";
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -13,7 +11,11 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
+// Subscription status is read from the database (memberships + subscriptions
+// tables), which the signed payments webhook keeps current. No direct Stripe
+// calls — works with Lovable built-in payments in both test and live.
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -33,9 +35,6 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No authorization header provided");
 
@@ -54,11 +53,10 @@ serve(async (req) => {
         status: 401,
       });
     }
+    const userId = claimsData.claims.sub as string;
     const email = typeof claimsData.claims.email === "string" ? claimsData.claims.email : null;
     if (!email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { email });
-
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     if (body.admin_count === true || body.admin_users === true) {
       const normalizedEmail = email.trim().toLowerCase();
@@ -93,19 +91,16 @@ serve(async (req) => {
         .gt("expires_at", new Date().toISOString());
       if (trialsError) throw trialsError;
 
-      let paidCount = 0;
-      let hasMore = true;
-      let startingAfter: string | undefined;
-      while (hasMore) {
-        const subscriptions = await stripe.subscriptions.list({
-          status: "active",
-          limit: 100,
-          starting_after: startingAfter,
-        });
-        paidCount += subscriptions.data.length;
-        hasMore = subscriptions.has_more;
-        startingAfter = subscriptions.data.at(-1)?.id;
-      }
+      // Paid members = active subscriptions (webhook-maintained) + founder seats
+      const { count: activeSubs } = await supabaseClient
+        .from("subscriptions")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["active", "trialing"]);
+      const { count: founderCount } = await supabaseClient
+        .from("memberships")
+        .select("id", { count: "exact", head: true })
+        .not("founder_number", "is", null);
+      const paidCount = (activeSubs ?? 0) + (founderCount ?? 0);
 
       // "Online" = signed in within the last 5 minutes
       const ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -121,7 +116,6 @@ serve(async (req) => {
       for (const g of (activeGrants ?? []) as any[]) {
         const ffl = g.reward_type === "free_for_life" || g.reason === "free_for_life";
         const prev = grantsByUser.get(g.user_id);
-        // Prefer FFL row if multiple
         if (!prev || (ffl && !prev.freeForLife)) {
           grantsByUser.set(g.user_id, { ...g, freeForLife: ffl });
         }
@@ -167,72 +161,39 @@ serve(async (req) => {
       });
     }
 
-    const customers = await stripe.customers.list({ email, limit: 1 });
+    // Member path: read webhook-maintained tables.
+    const { data: membership } = await supabaseClient
+      .from("memberships")
+      .select("founder_number, monthly_active_until, stripe_subscription_id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (customers.data.length === 0) {
-      logStep("No Stripe customer found");
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
+    const isFounder = membership?.founder_number != null;
+    const monthlyActive = !!membership?.monthly_active_until && new Date(membership.monthly_active_until) > new Date();
 
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+    // AI Partner or any other active subscription
+    const { data: subs } = await supabaseClient
+      .from("subscriptions")
+      .select("price_id, product_id, status, current_period_end, cancel_at_period_end")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 10,
-    });
+    const activeSub = (subs ?? []).find((s) =>
+      (["active", "trialing"].includes(s.status) && (!s.current_period_end || new Date(s.current_period_end) > new Date()))
+      || (s.status === "canceled" && s.current_period_end && new Date(s.current_period_end) > new Date())
+    );
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let productId = null;
-    let priceId = null;
-    let subscriptionEnd = null;
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      productId = subscription.items.data[0].price.product;
-      priceId = subscription.items.data[0].price.id;
-      logStep("Active subscription found", { productId, priceId, subscriptionEnd });
-    } else {
-      logStep("No active subscription");
-    }
-
-    // Check for ORACLE LUNAR Lifetime Unlock one-time payment ($900) - LIVE
-    const LIFETIME_PRICE_ID = "price_1TN7ybLGip9LWuvpeExWonbd";
-    const LIFETIME_PRODUCT_ID = "prod_ULpd2N2mCZfoMd";
-    let hasLifetime = false;
-    try {
-      const charges = await stripe.charges.list({ customer: customerId, limit: 100 });
-      for (const ch of charges.data) {
-        if (ch.paid && !ch.refunded && ch.status === "succeeded") {
-          // Confirm via the related payment intent's invoice/line items if needed; simplest: scan checkout sessions
-        }
-      }
-      const sessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 100 });
-      for (const s of sessions.data) {
-        if (s.mode === "payment" && s.payment_status === "paid") {
-          const items = await stripe.checkout.sessions.listLineItems(s.id, { limit: 10 });
-          if (items.data.some(li => li.price?.id === LIFETIME_PRICE_ID || li.price?.product === LIFETIME_PRODUCT_ID)) {
-            hasLifetime = true;
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      logStep("Lifetime check error", { error: String(e) });
-    }
-    logStep("Lifetime status", { hasLifetime });
+    const subscribed = isFounder || monthlyActive || !!activeSub;
+    logStep("Status", { isFounder, monthlyActive, activeSub: activeSub?.price_id ?? null });
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub || hasLifetime,
-      product_id: hasLifetime ? LIFETIME_PRODUCT_ID : productId,
-      price_id: hasLifetime ? LIFETIME_PRICE_ID : priceId,
-      subscription_end: hasLifetime ? null : subscriptionEnd,
-      lifetime: hasLifetime,
+      subscribed,
+      product_id: activeSub?.product_id ?? null,
+      price_id: activeSub?.price_id ?? null,
+      subscription_end: isFounder ? null : (membership?.monthly_active_until ?? activeSub?.current_period_end ?? null),
+      lifetime: isFounder,
+      founder_number: membership?.founder_number ?? null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
