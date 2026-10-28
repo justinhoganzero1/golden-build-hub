@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
-import listeningClipUrl from "@/assets/avatars/oracle-office-listening-silent.webm";
+// Smooth single-take shot locked to the canonical portrait (same face across the angle drift).
+import listeningClipUrl from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClipUrl from "@/assets/avatars/oracle-clip-greeting.webm";
 import thinkingClipUrl from "@/assets/avatars/oracle-clip-thinking.webm";
 import talkingClipUrl from "@/assets/avatars/oracle-clip-talking.webm";
