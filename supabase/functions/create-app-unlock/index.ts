@@ -1,29 +1,29 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
+import { APP_PAYMENTS } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Single source of truth for app unlock pricing.
-// Keep client-side AppUnlockGate prices in sync with these.
-const APP_PRICES: Record<string, { price: string; label: string; amount_cents: number }> = {
-  app_wrapper: { price: "price_1TNjKELGip9LWuvpgfyCXGKE", label: "App Wrapper", amount_cents: 500 },
-  app_maker: { price: "price_1TNjPQLGip9LWuvpXeNDys3j", label: "App Maker", amount_cents: 2000 },
-  movie_studio: { price: "price_1TNjPoLGip9LWuvpNSihLK7v", label: "Movie Studio Pro", amount_cents: 100 },
-  photo_templates: { price: "price_1TQcriLGip9LWuvpKFaAUlKx", label: "Unlimited Photo Templates", amount_cents: 100 },
-};
+// One-time app unlocks via Lovable built-in payments (embedded checkout).
+// Prices are server-owned in APP_PAYMENTS (paymentValidation.ts); the
+// payments webhook records the unlock in app_unlocks.
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { app_key } = await req.json().catch(() => ({}));
-    const product = app_key && APP_PRICES[app_key as string];
+    const { app_key, environment } = await req.json().catch(() => ({}));
+    if (environment !== "sandbox" && environment !== "live") {
+      return new Response(JSON.stringify({ error: "invalid environment" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const env: StripeEnv = environment;
+    const product = app_key && APP_PAYMENTS[app_key as string];
     if (!product) {
       return new Response(JSON.stringify({ error: "Invalid app_key" }), {
         status: 400,
@@ -62,24 +62,17 @@ serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
-      apiVersion: "2025-08-27.basil",
-    });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    const customerId = customers.data[0]?.id;
-
     const origin = safeOrigin(req);
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: product.price, quantity: 1 }],
-      mode: "payment",
-      success_url: `${origin}/unlock-success?app=${app_key}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/apps`,
+    const clientSecret = await createEmbeddedSession({
+      env,
+      userId: user.id,
+      email: user.email,
+      priceLookupKey: product.price,
+      returnUrl: `${origin}/unlock-success?app=${app_key}&session_id={CHECKOUT_SESSION_ID}`,
       metadata: { purchase_type: "app_unlock", app_key, user_id: user.id, label: product.label },
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ clientSecret }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

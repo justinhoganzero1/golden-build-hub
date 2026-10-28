@@ -1,24 +1,17 @@
-// Movie Studio Pro — Stripe one-off checkout per quality tier.
-// Body: { project_id: string, quality_tier: "sd"|"hd"|"4k"|"4k_ultimate" }
-// Returns: { url: string } — redirect user to Stripe Checkout.
-// On success, Stripe redirects to /movie-payment-success?session_id=cs_...
-// then frontend calls verify-movie-payment to mark project paid + queue rendering.
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { safeOrigin } from "../_shared/origin.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
+import { MOVIE_PAYMENTS } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Stripe price IDs created via stripe-create-product tool
-const PRICE_IDS: Record<string, { price: string; amount_cents: number; label: string }> = {
-  sd:           { price: "price_1TNob8LGip9LWuvpZsCHHeMU", amount_cents: 900,   label: "SD Quality"  },
-  hd:           { price: "price_1TNobXLGip9LWuvp4XFCnQYf", amount_cents: 2900,  label: "HD Quality"  },
-  "4k":         { price: "price_1TNobvLGip9LWuvp3hDSZO3I", amount_cents: 7900,  label: "4K Quality"  },
-  "4k_ultimate":{ price: "price_1TNocFLGip9LWuvpIhVz42ra", amount_cents: 19900, label: "4K Ultimate" },
-};
+// Movie render checkout via Lovable built-in payments (embedded checkout).
+// Price IDs are the human-readable lookup keys in MOVIE_PAYMENTS
+// (paymentValidation.ts); the payments webhook marks the project paid and
+// kicks rendering.
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -38,10 +31,12 @@ Deno.serve(async (req) => {
     const user = u.user;
     if (!user?.email) return json({ error: "unauthorized" }, 401);
 
-    const { project_id, quality_tier } = await req.json();
+    const { project_id, quality_tier, environment } = await req.json();
     if (!project_id || !quality_tier) return json({ error: "project_id and quality_tier required" }, 400);
+    if (environment !== "sandbox" && environment !== "live") return json({ error: "invalid environment" }, 400);
+    const env: StripeEnv = environment;
 
-    const tier = PRICE_IDS[quality_tier];
+    const tier = MOVIE_PAYMENTS[quality_tier];
     if (!tier) return json({ error: `unknown quality_tier: ${quality_tier}` }, 400);
 
     // Verify project belongs to user
@@ -50,32 +45,24 @@ Deno.serve(async (req) => {
     if (!project || project.user_id !== user.id) return json({ error: "project not found" }, 404);
     if (project.payment_status === "paid") return json({ error: "already paid" }, 400);
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
-
-    // Find or create customer
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    const customerId = customers.data[0]?.id;
-
     const origin = safeOrigin(req);
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: tier.price, quantity: 1 }],
-      mode: "payment",
-      success_url: `${origin}/movie-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${project_id}`,
-      cancel_url: `${origin}/movie-studio-pro?cancelled=1`,
+    const clientSecret = await createEmbeddedSession({
+      env,
+      userId: user.id,
+      email: user.email,
+      priceLookupKey: tier.price,
+      returnUrl: `${origin}/movie-payment-success?session_id={CHECKOUT_SESSION_ID}&project_id=${project_id}`,
       metadata: { project_id, quality_tier, user_id: user.id },
     });
 
     // Mark pending
     await supabase.from("movie_projects").update({
-      stripe_session_id: session.id,
       payment_status: "pending",
       quality_tier,
       estimated_cost_cents: tier.amount_cents,
     }).eq("id", project_id);
 
-    return json({ url: session.url, session_id: session.id, amount_cents: tier.amount_cents, label: tier.label });
+    return json({ clientSecret, amount_cents: tier.amount_cents, label: tier.label });
   } catch (e) {
     console.error("[movie-checkout]", e);
     return json({ error: e instanceof Error ? e.message : "unknown" }, 500);
