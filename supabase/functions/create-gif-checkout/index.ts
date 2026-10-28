@@ -1,9 +1,11 @@
 import { statusFor } from "../_shared/errorStatus.ts";
-// Living GIF $4 one-time Stripe checkout
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
+
+// Living GIF $4 one-time checkout via Lovable built-in payments (embedded).
+// The payments webhook marks the GIF row paid; generate-living-gif then
+// queues generation without needing to talk to Stripe.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +16,7 @@ const corsHeaders = {
 const log = (s: string, d?: unknown) =>
   console.log(`[gif-checkout] ${s}${d ? " " + JSON.stringify(d) : ""}`);
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -42,7 +44,7 @@ serve(async (req) => {
     const isAdmin = !!roleRow;
 
     const body = await req.json().catch(() => ({}));
-    const { source_avatar_id, source_image_url, prompt, title } = body ?? {};
+    const { source_avatar_id, source_image_url, prompt, title, environment } = body ?? {};
     if (!source_image_url || !prompt || String(prompt).trim().length < 4) {
       return new Response(
         JSON.stringify({ error: "source_image_url and prompt (min 4 chars) required" }),
@@ -66,7 +68,7 @@ serve(async (req) => {
       .single();
     if (insErr) throw insErr;
 
-    // Admin: skip Stripe entirely, return a marker the client uses to trigger generation
+    // Admin: skip payment entirely, return a marker the client uses to trigger generation
     if (isAdmin) {
       log("admin bypass — free generation", { gif_id: gif.id, user: user.email });
       return new Response(
@@ -75,52 +77,32 @@ serve(async (req) => {
       );
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-      apiVersion: "2025-08-27.basil",
-    });
-
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    const customerId = customers.data[0]?.id;
+    if (environment !== "sandbox" && environment !== "live") throw new Error("invalid environment");
+    const env: StripeEnv = environment;
 
     const origin = safeOrigin(req);
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            unit_amount: 400,
-            product_data: {
-              name: "Living GIF (20s 4K)",
-              description: `Custom 20-second 4K animated avatar GIF.`,
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${origin}/living-gif-studio?paid=1&gif_id=${gif.id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/living-gif-studio?canceled=1&gif_id=${gif.id}`,
-      metadata: { gif_id: gif.id, user_id: user.id, kind: "living_gif" },
+    const { clientSecret, sessionId } = await createEmbeddedSession({
+      env,
+      userId: user.id,
+      email: user.email,
+      priceLookupKey: "living_gif_once",
+      returnUrl: `${origin}/living-gif-studio?paid=1&gif_id=${gif.id}&session_id={CHECKOUT_SESSION_ID}`,
+      metadata: { purchase_type: "living_gif", kind: "living_gif", gif_id: gif.id, user_id: user.id },
     });
 
     await supa
       .from("living_gifs")
-      .update({ stripe_session_id: session.id })
+      .update({ stripe_session_id: sessionId })
       .eq("id", gif.id);
 
-    log("checkout created", { gif_id: gif.id, session: session.id });
-    return new Response(JSON.stringify({ url: session.url, gif_id: gif.id }), {
+    return new Response(
+      JSON.stringify({ clientSecret, gif_id: gif.id }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
+  } catch (error) {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    log("ERROR", { msg });
-    return new Response(JSON.stringify({ error: msg }), {
-      status: statusFor(e),
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: statusFor(error),
     });
   }
 });

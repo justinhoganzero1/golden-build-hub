@@ -1,8 +1,7 @@
 import { statusFor } from "../_shared/errorStatus.ts";
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,16 +12,20 @@ const corsHeaders = {
 const log = (s: string, d?: any) =>
   console.log(`[SHOP-CHECKOUT] ${s}${d ? ` ${JSON.stringify(d)}` : ""}`);
 
-serve(async (req) => {
+// Creator Shop checkout via Lovable built-in payments (embedded).
+// The full amount is collected by the platform; the creator's 80% share is
+// recorded on the purchase row (creator_payout_cents) and paid out from the
+// creator earnings ledger. The payments webhook marks the purchase paid.
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY missing");
-
-    const { item_id, item_kind } = await req.json();
+    const { item_id, item_kind, environment } = await req.json();
     if (!item_id || !["media", "gif", "movie", "realm", "module"].includes(item_kind))
       throw new Error("Invalid item");
+    if (environment !== "sandbox" && environment !== "live") throw new Error("invalid environment");
+    const env: StripeEnv = environment;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -54,31 +57,8 @@ serve(async (req) => {
       throw new Error("Item is not for sale");
     if (item.user_id === buyer.id) throw new Error("You cannot buy your own item");
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    // Lookup or create Stripe customer
-    const customers = await stripe.customers.list({ email: buyer.email, limit: 1 });
-    const customerId = customers.data[0]?.id;
-
     const platformFee = Math.ceil(item.shop_price_cents * 0.20);
     const creatorPayout = item.shop_price_cents - platformFee;
-
-    // Find creator's Stripe Connect account (optional — enables direct payout)
-    const { data: connectRow } = await supabase
-      .from("connect_accounts")
-      .select("stripe_account_id")
-      .eq("user_id", item.user_id)
-      .maybeSingle();
-
-    let creatorReady = false;
-    if (connectRow?.stripe_account_id) {
-      try {
-        const acct = await stripe.accounts.retrieve(connectRow.stripe_account_id);
-        creatorReady = !!acct.charges_enabled;
-      } catch (_) {
-        creatorReady = false;
-      }
-    }
 
     // Create pending purchase row
     const { data: purchase, error: pErr } = await supabase
@@ -98,50 +78,19 @@ serve(async (req) => {
     if (pErr) throw pErr;
 
     const origin = safeOrigin(req);
-
-    // If creator has a ready Connect account, route the funds: destination charge w/ application fee.
-    const paymentIntentData: Stripe.Checkout.SessionCreateParams.PaymentIntentData | undefined =
-      creatorReady && connectRow?.stripe_account_id
-        ? {
-            application_fee_amount: platformFee,
-            transfer_data: { destination: connectRow.stripe_account_id },
-            metadata: {
-              purchase_id: purchase.id,
-              creator_id: item.user_id,
-              buyer_id: buyer.id,
-              item_kind,
-              item_id,
-            },
-          }
-        : {
-            metadata: {
-              purchase_id: purchase.id,
-              creator_id: item.user_id,
-              buyer_id: buyer.id,
-              item_kind,
-              item_id,
-              payout_pending: "creator_not_connected",
-            },
-          };
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : buyer.email,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: item.title || `Creator item (${item_kind})`,
-              description: `Public Library purchase — ${item_kind}`,
-            },
-            unit_amount: item.shop_price_cents,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      payment_intent_data: paymentIntentData,
+    const { clientSecret, sessionId } = await createEmbeddedSession({
+      env,
+      userId: buyer.id,
+      email: buyer.email,
+      priceData: {
+        currency: "usd",
+        unit_amount: item.shop_price_cents,
+        name: item.title || `Creator item (${item_kind})`,
+        description: `Public Library purchase — ${item_kind}`,
+      },
+      returnUrl: item_kind === "module"
+        ? `${origin}/module-shop?bought=${item_id}&session_id={CHECKOUT_SESSION_ID}`
+        : `${origin}/purchase-success?purchase_id=${purchase.id}&item_kind=${item_kind}&item_id=${item_id}&session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         purchase_id: purchase.id,
         item_id,
@@ -149,17 +98,15 @@ serve(async (req) => {
         creator_id: item.user_id,
         buyer_id: buyer.id,
       },
-      success_url: item_kind === "module" ? `${origin}/module-shop?bought=${item_id}&session_id={CHECKOUT_SESSION_ID}` : `${origin}/purchase-success?purchase_id=${purchase.id}&item_kind=${item_kind}&item_id=${item_id}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: item_kind === "module" ? `${origin}/module-shop?purchase=cancel` : `${origin}/library/public?purchase=cancel&item_id=${item_id}`,
     });
 
     await supabase
       .from("shop_purchases")
-      .update({ stripe_session_id: session.id })
+      .update({ stripe_session_id: sessionId })
       .eq("id", purchase.id);
 
-    log("created", { sessionId: session.id, purchaseId: purchase.id, creatorReady });
-    return new Response(JSON.stringify({ url: session.url, creatorReady }), {
+    log("created", { sessionId, purchaseId: purchase.id });
+    return new Response(JSON.stringify({ clientSecret, creatorReady: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

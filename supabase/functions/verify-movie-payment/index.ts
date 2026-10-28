@@ -2,7 +2,7 @@
 // marks the project as paid and triggers script-chunker → render pipeline.
 // Body: { session_id: string, project_id: string }
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@18.5.0";
+import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 import { validateMoviePayment } from "../_shared/paymentValidation.ts";
 
 const corsHeaders = {
@@ -28,10 +28,11 @@ Deno.serve(async (req) => {
     const user = u.user;
     if (!user) return json({ error: "unauthorized" }, 401);
 
-    const { session_id, project_id } = await req.json();
+    const { session_id, project_id, environment } = await req.json();
+    if (environment !== "sandbox" && environment !== "live") return json({ error: "invalid environment" }, 400);
     if (!session_id || !project_id) return json({ error: "session_id and project_id required" }, 400);
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+    const stripe = createStripeClient(environment as StripeEnv);
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session.payment_status !== "paid") {

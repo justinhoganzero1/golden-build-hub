@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TRIAL_DAYS } from "@/lib/apiKeyReminderLogic";
 import {
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
+import { getStripeEnvironment } from "@/lib/stripe";
   FEATURE_PRICES,
   FEATURE_GROUPS,
   chargedCents,
@@ -67,12 +69,11 @@ const CreditDashboardPage = () => {
   const topUp = async () => {
     setBuying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      await openCheckoutGlobal({
+        functionName: "create-checkout",
         body: { coinPackDollars: 10, returnTo: "/credit" },
+        title: "Top up — $10 coin pack",
       });
-      if (error) throw error;
-      if (!data?.url) throw new Error("Checkout did not return a payment page.");
-      window.location.href = data.url as string;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not open the payment page.");
       setBuying(false);
@@ -83,7 +84,7 @@ const CreditDashboardPage = () => {
     setChangingCard(true);
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal", {
-        body: { returnTo: "/credit" },
+        body: { returnTo: "/credit", environment: getStripeEnvironment() },
       });
       if (error) throw error;
       if (!data?.url) throw new Error("Could not open your card settings.");

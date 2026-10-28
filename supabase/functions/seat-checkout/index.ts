@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { safeOrigin } from "../_shared/origin.ts";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,15 +10,18 @@ const corsHeaders = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-// Founder seat resale: buyer pays seller's price, Oracle Lunar keeps 20%.
-serve(async (req) => {
+// Founder seat resale: buyer pays the seller's listed price via Lovable
+// built-in payments (embedded checkout). The full amount is collected by the
+// platform; the seller's 80% share is paid out from the platform. The
+// payments webhook transfers the seat exactly once.
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("Payments are not configured");
     const body = await req.json().catch(() => ({}));
     const listingId = typeof body?.listing_id === "string" ? body.listing_id : "";
     if (!/^[0-9a-f-]{36}$/i.test(listingId)) return json({ error: "Invalid listing" }, 400);
+    if (body?.environment !== "sandbox" && body?.environment !== "live") return json({ error: "invalid environment" }, 400);
+    const env: StripeEnv = body.environment;
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
       auth: { persistSession: false },
@@ -42,15 +44,6 @@ serve(async (req) => {
     if (sellerM?.founder_number !== listing.founder_number) return json({ error: "Seller no longer owns this seat" }, 409);
 
     const fee = Math.ceil(listing.price_cents * 0.2);
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    const { data: connect } = await supabase.from("connect_accounts").select("stripe_account_id").eq("user_id", listing.seller_id).maybeSingle();
-    let destination: string | null = null;
-    if (connect?.stripe_account_id) {
-      try { const a = await stripe.accounts.retrieve(connect.stripe_account_id); if (a.charges_enabled) destination = a.id; } catch { /* not ready */ }
-    }
-
-    const customers = await stripe.customers.list({ email: buyer.email, limit: 1 });
     const meta = {
       purchase_type: "founder_seat_resale",
       listing_id: listing.id,
@@ -60,27 +53,21 @@ serve(async (req) => {
       platform_fee_cents: String(fee),
     };
     const origin = safeOrigin(req);
-    const session = await stripe.checkout.sessions.create({
-      customer: customers.data[0]?.id,
-      customer_email: customers.data[0]?.id ? undefined : buyer.email,
-      mode: "payment",
-      line_items: [{
-        price_data: {
-          currency: "aud",
-          product_data: { name: `Founder Seat #${listing.founder_number}`, description: "Lifetime Oracle Lunar founding membership (resale)" },
-          unit_amount: listing.price_cents,
-        },
-        quantity: 1,
-      }],
-      payment_intent_data: destination
-        ? { application_fee_amount: fee, transfer_data: { destination }, metadata: meta }
-        : { metadata: { ...meta, payout_pending: "seller_not_connected" } },
+    const { clientSecret } = await createEmbeddedSession({
+      env,
+      userId: buyer.id,
+      email: buyer.email,
+      priceData: {
+        currency: "aud",
+        unit_amount: listing.price_cents,
+        name: `Founder Seat #${listing.founder_number} (resale)`,
+        description: "Lifetime founder membership transferred from the current owner.",
+      },
+      returnUrl: `${origin}/founder-seats?bought=${listing.founder_number}&session_id={CHECKOUT_SESSION_ID}`,
       metadata: meta,
-      success_url: `${origin}/founder-seats?bought=${listing.founder_number}`,
-      cancel_url: `${origin}/founder-seats`,
     });
-    console.log("[SEAT-CHECKOUT] created", { listing: listing.id, session: session.id, destination: !!destination });
-    return json({ url: session.url });
+    console.log("[SEAT-CHECKOUT] created", { listing: listing.id });
+    return json({ clientSecret });
   } catch (e) {
     console.error("[SEAT-CHECKOUT]", e);
     return json({ error: e instanceof Error ? e.message : "Checkout failed" }, 500);

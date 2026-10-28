@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import { toast } from "sonner";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 interface RealmRow {
   id: string;
@@ -86,10 +87,11 @@ export default function PublicRealmsPage() {
     if (r.user_id === user.id) { toast.error("You already own this realm"); return; }
     setBuying(r.id);
     try {
-      const { data, error } = await supabase.functions.invoke("shop-checkout", { body: { item_id: r.id, item_kind: "realm" } });
-      if (error) throw error;
-      if ((data as any)?.url) window.location.href = (data as any).url;
-      else throw new Error("No checkout URL");
+      await openCheckoutGlobal({
+        functionName: "shop-checkout",
+        body: { item_id: r.id, item_kind: "realm" },
+        title: r.title || "Buy this realm",
+      });
     } catch (e: any) {
       toast.error("Checkout failed", { description: e?.message });
     } finally {

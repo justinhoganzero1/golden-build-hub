@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import ImmersiveFPSViewer from "@/components/ImmersiveFPSViewer";
 import { toast } from "sonner";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const REPORT_REASONS = [
   "Illegal content",
@@ -109,11 +110,11 @@ export default function RealmViewerPage() {
     if (!user?.id) { toast.error("Sign in to purchase"); return; }
     setBuying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("shop-checkout", {
+      await openCheckoutGlobal({
+        functionName: "shop-checkout",
         body: { item_id: realm.id, item_kind: "realm" },
+        title: realm.title || "Buy this realm",
       });
-      if (error) throw error;
-      if (data?.url) window.location.href = data.url;
     } catch (e: any) {
       toast.error("Checkout failed", { description: e?.message });
     } finally {

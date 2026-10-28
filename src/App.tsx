@@ -5,6 +5,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CheckoutProvider } from "@/components/payments/CheckoutProvider";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { MuteProvider } from "@/contexts/MuteContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
@@ -308,6 +310,7 @@ const OracleApp = () => (
   <ErrorBoundary pageName="App Root">
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <CheckoutProvider>
         <MuteProvider>
           <TooltipProvider>
             <BrowserRouter>
@@ -318,6 +321,7 @@ const OracleApp = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
+              <PaymentTestModeBanner />
               <Suspense fallback={null}>
                 {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
                     they cover portal balloons. Re-add per-page if needed. */}
@@ -515,6 +519,7 @@ const OracleApp = () => (
             </BrowserRouter>
           </TooltipProvider>
         </MuteProvider>
+        </CheckoutProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>

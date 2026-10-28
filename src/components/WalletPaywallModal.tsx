@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { WALLET_INSUFFICIENT_EVENT, WalletInsufficientDetail } from "@/lib/walletPaywall";
 import { useNavigate, useLocation } from "react-router-dom";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const COINS_PER_DOLLAR = 5.37;
 const DEFAULT_PACK = 10;
@@ -40,12 +41,11 @@ const WalletPaywallModal = () => {
     }
     setLoading(dollars);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      await openCheckoutGlobal({
+        functionName: "create-checkout",
         body: { coinPackDollars: dollars, returnTo: location.pathname },
+        title: `Top up — $${dollars} coin pack`,
       });
-      if (error) throw error;
-      if (!data?.url) throw new Error("Checkout did not return a payment link.");
-      window.location.href = data.url;
     } catch (err: any) {
       toast.error(err?.message || "Could not open checkout.");
       setLoading(null);

@@ -2113,6 +2113,42 @@ export type Database = {
         }
         Relationships: []
       }
+      movie_block_payments: {
+        Row: {
+          amount_cents: number
+          block_number: number
+          created_at: string | null
+          currency: string
+          id: string
+          paid_at: string | null
+          stripe_payment_intent: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          block_number: number
+          created_at?: string | null
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          block_number?: number
+          created_at?: string | null
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       movie_character_bible: {
         Row: {
           created_at: string
@@ -3423,6 +3459,54 @@ export type Database = {
           stripe_event_id?: string | null
           stripe_session_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          price_id: string
+          product_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id: string
+          product_id: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id?: string
+          product_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -4906,6 +4990,10 @@ export type Database = {
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
       grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
       has_active_reward: { Args: { _user_id: string }; Returns: boolean }
+      has_active_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
       has_app_unlock: {
         Args: { _app_key: string; _user_id: string }
         Returns: boolean

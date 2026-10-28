@@ -1,8 +1,7 @@
 import { statusFor } from "../_shared/errorStatus.ts";
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { safeOrigin } from "../_shared/origin.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +19,7 @@ function priceForBlockUSD(blockNumber: number): number {
   return 1000;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -31,7 +30,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const { blockNumber } = await req.json();
+    const { blockNumber, environment } = await req.json();
+    if (environment !== "sandbox" && environment !== "live") throw new Error("invalid environment");
+    const env: StripeEnv = environment;
     const block = Math.max(1, Math.floor(Number(blockNumber) || 1));
     const usd = priceForBlockUSD(block);
 
@@ -43,38 +44,25 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
-
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    const customerId = customers.data[0]?.id;
-
     const origin = safeOrigin(req);
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [{
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: `Movie Studio — Scene Block ${block} (10 scenes)`,
-            description: block === 1
-              ? "First-time launch pricing for your first 10 scenes."
-              : `Sliding-scale price for your block #${block} of 10 scenes.`,
-          },
-          unit_amount: usd * 100,
-        },
-        quantity: 1,
-      }],
-      mode: "payment",
-      success_url: `${origin}/photography-hub?block_paid=${block}`,
-      cancel_url: `${origin}/photography-hub?block_canceled=1`,
-      metadata: { kind: "movie-block", block: String(block), user_id: user.id },
+    const { clientSecret, sessionId } = await createEmbeddedSession({
+      env,
+      userId: user.id,
+      email: user.email,
+      priceData: {
+        currency: "usd",
+        unit_amount: usd * 100,
+        name: `Movie Studio — Scene Block ${block} (10 scenes)`,
+        description: block === 1
+          ? "First-time launch pricing for your first 10 scenes."
+          : `Sliding-scale price for your block #${block} of 10 scenes.`,
+      },
+      returnUrl: `${origin}/photography-hub?block_paid=${block}&session_id={CHECKOUT_SESSION_ID}`,
+      metadata: { purchase_type: "movie_block", kind: "movie-block", block: String(block), user_id: user.id },
     });
 
-    return new Response(JSON.stringify({ url: session.url, amount_usd: usd, block }), {
+    return new Response(JSON.stringify({ clientSecret, amount_usd: usd, block }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

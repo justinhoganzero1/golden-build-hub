@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 interface Listing { id: string; seller_id: string; founder_number: number; price_cents: number; status: string }
 
@@ -44,18 +45,18 @@ const FounderSeatsPage = () => {
 
   const buyNew = async () => {
     setBusy("new");
-    const { data, error } = await supabase.functions.invoke("membership", { body: { action: "checkout", plan: "founder" } });
+    try {
+      await openCheckoutGlobal({ functionName: "membership", body: { action: "checkout", plan: "founder" }, title: "Founder Seat — A$1 once" });
+    } catch { /* toast already shown */ }
     setBusy(null);
-    if (error || !data?.url) return toast.error(data?.error === "founder_seats_gone" ? "All 500 founder seats are taken." : "Couldn't open checkout.");
-    window.location.href = data.url;
   };
 
   const buyResale = async (id: string) => {
     setBusy(id);
-    const { data, error } = await supabase.functions.invoke("seat-checkout", { body: { listing_id: id } });
+    try {
+      await openCheckoutGlobal({ functionName: "seat-checkout", body: { listing_id: id }, title: "Founder Seat (resale)" });
+    } catch { /* toast already shown */ }
     setBusy(null);
-    if (error || !data?.url) return toast.error(data?.error || "Couldn't open checkout.");
-    window.location.href = data.url;
   };
 
   const listSeat = async () => {
