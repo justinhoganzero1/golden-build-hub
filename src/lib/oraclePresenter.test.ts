@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech } from "./oraclePresenter";
 
 describe("Oracle presenter rules", () => {
-  it("defaults to no-cost device speech even when a premium voice is saved", () => {
-    expect(resolveSpeechMode(null, false)).toBe("device");
-    expect(resolveSpeechMode(null, true)).toBe("device");
+  it("defaults to premium voice; an explicit saved choice wins", () => {
+    expect(resolveSpeechMode(null, false)).toBe("premium");
+    expect(resolveSpeechMode(null, true)).toBe("premium");
     expect(resolveSpeechMode("device", true)).toBe("device");
     expect(resolveSpeechMode("premium", true)).toBe("premium");
   });
