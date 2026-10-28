@@ -119,6 +119,11 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
     // same permission/schema failure only overload the backend and block UI.
     const strategies: Array<"rpc" | "insert" | "edge"> = ["rpc", "insert", "edge"];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!canDrainLibraryQueue(ownerId, currentSession?.user.id)) {
+        enqueue(input, ownerId);
+        return null;
+      }
       const strategy = strategies[(attempt - 1) % strategies.length];
       try {
         savedId = await trySaveOnce(input, isPublic, strategy);
