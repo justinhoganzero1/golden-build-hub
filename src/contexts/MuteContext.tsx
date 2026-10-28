@@ -16,7 +16,8 @@ export const MuteProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem("app_muted", String(isMuted));
     // Mute all audio/video elements globally
-    document.querySelectorAll("audio, video").forEach((el) => {
+    // Media marked data-ignore-app-mute (e.g. the public ad) keeps its own sound.
+    document.querySelectorAll("audio:not([data-ignore-app-mute]), video:not([data-ignore-app-mute])").forEach((el) => {
       (el as HTMLMediaElement).muted = isMuted;
     });
     // Also suppress Web Speech API
@@ -29,7 +30,7 @@ export const MuteProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const observer = new MutationObserver(() => {
       if (isMuted) {
-        document.querySelectorAll("audio, video").forEach((el) => {
+        document.querySelectorAll("audio:not([data-ignore-app-mute]), video:not([data-ignore-app-mute])").forEach((el) => {
           (el as HTMLMediaElement).muted = true;
         });
       }
