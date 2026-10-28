@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { libraryQueueKey, canDrainLibraryQueue } from "@/lib/libraryQueueScope";
 
 /**
  * Universal "save to user library" helper.
@@ -26,18 +27,18 @@ export interface SaveToLibraryInput {
 }
 
 const MAX_ATTEMPTS = 3;
-const QUEUE_KEY = "oracle-lunar-library-save-queue-v1";
 
-function loadQueue(): SaveToLibraryInput[] {
-  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch { return []; }
+function loadQueue(ownerId: string): SaveToLibraryInput[] {
+  try { return JSON.parse(localStorage.getItem(libraryQueueKey(ownerId)) || "[]"); } catch { return []; }
 }
-function persistQueue(items: SaveToLibraryInput[]) {
-  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(items.slice(-50))); } catch { /* ignore */ }
+function persistQueue(ownerId: string, items: SaveToLibraryInput[]) {
+  try { localStorage.setItem(libraryQueueKey(ownerId), JSON.stringify(items.slice(-50))); } catch { /* ignore */ }
 }
-function enqueue(input: SaveToLibraryInput) {
-  const q = loadQueue();
+function enqueue(input: SaveToLibraryInput, ownerId?: string) {
+  if (!ownerId) return; // Legacy/unowned queues are retained but never reassigned.
+  const q = loadQueue(ownerId);
   q.push(input);
-  persistQueue(q);
+  persistQueue(ownerId, q);
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -99,13 +100,14 @@ async function trySaveOnce(
 }
 
 export async function saveToLibrary(input: SaveToLibraryInput): Promise<string | null> {
+  let ownerId: string | undefined;
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       console.warn("[saveToLibrary] queued — user not signed in");
-      enqueue(input);
       return null;
     }
+    ownerId = session.user.id;
 
     const wantsShop = !!input.shop_enabled && (input.shop_price_cents ?? 0) > 0;
     const isPublic = !!input.is_public || wantsShop;
@@ -117,6 +119,11 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
     // same permission/schema failure only overload the backend and block UI.
     const strategies: Array<"rpc" | "insert" | "edge"> = ["rpc", "insert", "edge"];
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!canDrainLibraryQueue(ownerId, currentSession?.user.id)) {
+        enqueue(input, ownerId);
+        return null;
+      }
       const strategy = strategies[(attempt - 1) % strategies.length];
       try {
         savedId = await trySaveOnce(input, isPublic, strategy);
@@ -125,7 +132,7 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
         lastErr = e;
         // Don't keep hammering on auth failures — queue for later.
         if (/not_authenticated/.test(String(e?.message))) {
-          enqueue(input);
+          enqueue(input, ownerId);
           return null;
         }
       }
@@ -134,7 +141,7 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
 
     if (!savedId) {
       console.warn("[saveToLibrary] all persistence paths failed — queued for background retry", lastErr?.message);
-      enqueue(input);
+      enqueue(input, ownerId);
       return null;
     }
 
@@ -156,7 +163,7 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
     return savedId;
   } catch (e) {
     console.warn("[saveToLibrary] unexpected", e);
-    enqueue(input);
+    enqueue(input, ownerId);
     return null;
   }
 }
@@ -166,16 +173,19 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
  * the app starts and whenever the user signs in or comes back online.
  */
 export async function drainLibraryQueue(): Promise<void> {
-  const queue = loadQueue();
-  if (queue.length === 0) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
+  const ownerId = session.user.id;
+  const queue = loadQueue(ownerId);
+  if (queue.length === 0) return;
   const remaining: SaveToLibraryInput[] = [];
   for (const item of queue) {
+    const { data: { session: current } } = await supabase.auth.getSession();
+    if (!canDrainLibraryQueue(ownerId, current?.user.id)) return;
     const id = await saveToLibrary(item).catch(() => null);
     if (!id) remaining.push(item);
   }
-  persistQueue(remaining);
+  persistQueue(ownerId, remaining);
 }
 
 if (typeof window !== "undefined") {

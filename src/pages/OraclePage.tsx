@@ -28,7 +28,10 @@ import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff } from "lucide-react";
+import { PhoneOff, MessageSquare, Info } from "lucide-react";
+import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
+import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
+import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
 import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
@@ -227,6 +230,8 @@ const OraclePage = () => {
   const [agents, setAgents] = useState<ChatAgent[]>(DEFAULT_AGENTS);
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [conversationOpen, setConversationOpen] = useState(false);
+  const [voiceOptionsOpen, setVoiceOptionsOpen] = useState(false);
   // ── COUNCIL MODE ──
   // Every AI agent (Nova, Lyra, Sage, Kai) answers here inside the one Oracle
   // chat, reads the others, debates, and the Oracle delivers one final answer.
@@ -599,10 +604,8 @@ const OraclePage = () => {
       const current = getOracleMode();
       const userHasChoice = current.mode === "avatar" && current.avatarId
         && userAvatars.some(a => a.id === current.avatarId);
-      if (masterOracle && !userHasChoice) {
-        setOracleMode("avatar", masterOracle.id);
-        setOracleModeState({ mode: "avatar", avatarId: masterOracle.id });
-      }
+      // Preserve explicit saved choices; a DB default must not replace the
+      // consistent ad presenter later while the avatar list finishes loading.
       masterSeededRef.current = true;
     }
 
@@ -1438,8 +1441,8 @@ const OraclePage = () => {
     introTriggeredRef.current = true;
     // Kick off the naming setup question instead of the old generic intro.
     const t = setTimeout(() => {
-      sessionStorage.setItem(SETUP_KEY, "name");
-      const greet = "Hello — I'm your Oracle. Before we start, what would you like to call me? You can pick any name you like.";
+      sessionStorage.setItem(SETUP_KEY, "done");
+      const greet = "Hello — I'm your Oracle. What would you like to do today?";
       setShowChat(true);
       setMessages((prev) => [...prev, { id: `setup-${Date.now()}`, role: "assistant", sender: "Oracle", emoji: "🔮", color: "#FFD700", content: greet } as any]);
       try { speakAsAgent(greet, "Oracle"); } catch {}
@@ -1450,78 +1453,10 @@ const OraclePage = () => {
   // Handles a single setup reply from the user. Returns true if the message
   // was consumed by the setup flow (so sendMessage should NOT forward it to
   // the oracle-chat backend).
-  const handleSetupReply = useCallback(async (rawText: string): Promise<boolean> => {
-    const stage = getSetupStage();
-    if (!stage || stage === "done") return false;
-    const text = rawText.trim();
-    if (!text) return false;
-
-    // Echo the user's reply into the chat so it isn't lost.
-    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text } as any]);
-
-    if (stage === "name") {
-      // Extract a clean name (strip "call you", "your name is", quotes, trailing punctuation).
-      let name = text.replace(/^(please\s+)?(call\s+you|call\s+yourself|your\s+name\s+is|name\s+you|i\s+(?:will\s+)?call\s+you|let'?s\s+call\s+you|i\s+want\s+to\s+call\s+you)\s+/i, "");
-      name = name.replace(/^["'`]|["'`.!?,]+$/g, "").trim();
-      // Cap length, take first 3 words max.
-      name = name.split(/\s+/).slice(0, 3).join(" ").slice(0, 32);
-      if (!name) name = "Oracle";
-      setAgentName("Oracle", name);
-      sessionStorage.setItem(SETUP_KEY, "look");
-      const ack = `Beautiful — I'll go by ${name} from now on. Now describe how you'd like me to look: hair, eyes, vibe, art style — anything you can picture. I'll paint myself based on what you tell me.`;
-      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: name, emoji: "🔮", color: "#FFD700", content: ack } as any]);
-      try { speakAsAgent(ack, name); } catch {}
-      return true;
-    }
-
-    if (stage === "look") {
-      const description = text;
-      const myName = getDisplayName("Oracle");
-      sessionStorage.setItem(SETUP_KEY, "generating");
-      const ack = `Painting myself now — give me a moment.`;
-      setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🎨", color: "#FFD700", content: ack } as any]);
-      try { speakAsAgent(ack, myName); } catch {}
-      try {
-        const prompt = `Portrait of an AI oracle named ${myName}. ${description}. Cinematic lighting, soft glow, gold and amber accents, head-and-shoulders, looking gently at camera, ultra detailed, photorealistic.`;
-        const gen = await generateImage({ prompt, tier: "premium" });
-        const imgUrl = gen.url;
-        if (!imgUrl) throw new Error("no image");
-
-        // Save the new avatar to the DB so it persists across logins, and mark
-        // it as the master Oracle avatar.
-        const created = await createAvatar.mutateAsync({
-          name: myName,
-          purpose: "oracle",
-          voice_style: "warm and wise",
-          personality: description.slice(0, 240),
-          image_url: imgUrl,
-          art_style: "photorealistic",
-          description,
-          is_default: true,
-        });
-        setOracleMode("avatar", created.id);
-        setOracleModeState({ mode: "avatar", avatarId: created.id });
-        sessionStorage.setItem(SETUP_KEY, "done");
-        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
-        const done = `That's me. I'm ${myName} now — your Oracle. Whenever you want to talk, just speak. What would you like to do first?`;
-        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: done, avatar_url: imgUrl } as any]);
-        try { speakAsAgent(done, myName); } catch {}
-        toast.success(`${myName} is ready.`);
-      } catch (err) {
-        console.error("[oracle-setup] avatar generation failed", err);
-        sessionStorage.setItem(SETUP_KEY, "done");
-        localStorage.setItem("oracle-lunar-introduced", new Date().toISOString());
-        const fallback = `I couldn't paint myself just now, but I'm still here. We can pick my look later from the Avatar gallery.`;
-        setMessages((prev) => [...prev, { id: `s-${Date.now()}`, role: "assistant", sender: myName, emoji: "🔮", color: "#FFD700", content: fallback } as any]);
-        try { speakAsAgent(fallback, myName); } catch {}
-      }
-      return true;
-    }
-
+  const handleSetupReply = useCallback(async (_rawText: string): Promise<boolean> => {
+    sessionStorage.setItem(SETUP_KEY, "done");
     return false;
-  }, [createAvatar, speakAsAgent]);
-
-
+  }, []);
 
   // Activate the microphone only after an explicit composer tap.
 
@@ -1706,6 +1641,36 @@ const OraclePage = () => {
       cancelCurrentSpeech(); setViewingArtifact(pending); return;
     }
     const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
+
+    const searchRequest = text.match(/^(?:search (?:the )?(?:web|net)|look up online|research online)\s*[:,-]?\s+(.+)/i);
+    if (!isIntroTrigger && searchRequest) {
+      const query = searchRequest[1].trim().slice(0, 300);
+      const id = crypto.randomUUID();
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "", color: "#FFD700", content: text }, { id, role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content: "Searching live sources…" }]);
+      setIsLoading(true);
+      try {
+        await requireEdgeAuthToken();
+        const { data, error } = await supabase.functions.invoke("oracle-research", { body: { query } });
+        if (error || !data?.answer) throw error || new Error("No research answer returned");
+        const content = formatWebAnswer(data.answer, data.sources || []);
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, content } : m));
+        speakAsAgent(data.answer, oracleName);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : "Search unavailable";
+        setMessages(prev => prev.map(m => m.id === id ? { ...m, content: /402|insufficient/i.test(detail) ? "Your wallet needs a top-up for web research." : "Live research did not finish. No verified answer is available." } : m));
+      } finally { setIsLoading(false); }
+      return;
+    }
+
+    const recallRequest = text.match(/^(?:find|search)\s+(?:in\s+)?my\s+(?:private\s+)?library\s*[:,-]?\s+(.+)/i);
+    if (!isIntroTrigger && recallRequest && user?.id) {
+      const words = recallRequest[1].replace(/[^\p{L}\p{N}\s]/gu, "").trim().slice(0, 100);
+      if (!words) return;
+      const { data, error } = await supabase.from("user_media").select("id,title,media_type,created_at").eq("user_id", user.id).ilike("title", `%${words}%`).order("created_at", { ascending: false }).limit(8);
+      const content = error ? "Your saved Library could not be searched just now." : data?.length ? "**From your saved Library**\n\n" + data.map(item => `- [${item.title.replace(/[\[\]]/g, "")} ](/media-library?item=${item.id}) · ${item.media_type}`).join("\n") : "I did not find a saved Library title matching that request.";
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content }]);
+      return;
+    }
 
     // ── Universal command resolver — gives Oracle full operator control ──
     // Recognises any of the 70+ app routes plus click/fill/scroll/back markers.
@@ -2146,7 +2111,14 @@ const OraclePage = () => {
           messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
           isFirstMeeting,
-          userMemories: formatMemoriesForPrompt(oracleMemories),
+          userMemories: formatMemoriesForPrompt(oracleMemories) + (() => {
+            if (!user?.id) return "";
+            try {
+              const ratings = JSON.parse(localStorage.getItem(`oracle-response-feedback:${user.id}`) || "{}");
+              const voted = trimmedMsgs.filter(m => m.role === "assistant" && ratings[m.id]).slice(-4);
+              return voted.length ? "\nUser feedback on recent replies (preference only, not proof of factual accuracy):\n" + voted.map(m => `${ratings[m.id] > 0 ? "Helpful" : "Unhelpful"}: ${m.content.slice(0, 350)}`).join("\n") : "";
+            } catch { return ""; }
+          })(),
           adContext: {
             showAds: adPrefs?.ads_enabled ?? true,
             isSubscribed: subscribed,
@@ -2352,6 +2324,7 @@ const OraclePage = () => {
             if (error || !data?.answer) throw error || new Error("no answer");
             const content = formatWebAnswer(data.answer, data.sources || []);
             setMessages(prev => prev.map(m => m.id === webId ? { ...m, content } : m));
+            speakAsAgent(data.answer, oracleName);
           } catch (e: any) {
             const msg = /402|insufficient/i.test(String(e?.message || e?.context?.status)) ? "Your wallet needs a top-up for web searches." : "The web search didn't come back. Tap send again to retry.";
             setMessages(prev => prev.map(m => m.id === webId ? { ...m, content: `🌐 ${msg}` } : m));
@@ -2782,7 +2755,8 @@ const OraclePage = () => {
       description="Chat with Oracle, the ORACLE LUNAR voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
       path="/oracle"
     />
-    <div className="h-[100dvh] flex flex-col relative overflow-hidden bg-background">
+    <div className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
+      <OraclePresenterStage userId={user?.id} image={oracleAvatar?.image_url || undefined} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} />
       {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
       {explosionActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none" style={{ animation: "explosion-flash 2.2s ease-out forwards" }}>
@@ -2829,7 +2803,7 @@ const OraclePage = () => {
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 z-10">
-        <UniversalBackButton />
+        <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
         <div className="flex items-center gap-2">
           {/* Free-tier daily message badge — only visible when server tracks usage (free users) */}
           {usage && (
@@ -2848,16 +2822,11 @@ const OraclePage = () => {
               <span>{usage.count} / {usage.limit} free</span>
             </button>
           )}
+          <Button variant="outline" size="icon" aria-label="Presenter information" title="Presenter information" onClick={() => toast("Oracle is AI. This view currently uses a portrait; approved reused video clips are not yet available. Device speech has no TTS fee. New AI work uses your wallet.")}><Info /></Button>
+          <Button variant="outline" size="icon" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}><MessageSquare /></Button>
+          <OracleAccountMenu />
           {/* Oracle Swap button */}
-          <button onClick={() => setShowOracleSwap(!showOracleSwap)}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-full border border-purple-500/30 bg-black/50 backdrop-blur">
-            <Crown className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-[10px] text-purple-400">Swap</span>
-          </button>
-          <button onClick={() => navigate("/avatar-gallery")} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FFAA00]/30 bg-black/50 backdrop-blur">
-            <Eye className="w-4 h-4 text-[#FFAA00]" />
-            <span className="text-xs text-[#FFAA00] font-medium">Gallery</span>
-          </button>
+          <Button variant="outline" size="icon" aria-label="Choose Oracle appearance" title="Choose Oracle appearance" onClick={() => setShowOracleSwap(!showOracleSwap)}><Crown /></Button>
           <button onClick={() => setShowFriendPanel(!showFriendPanel)} className="p-2 rounded-full border border-[#FFAA00]/30 bg-black/50 backdrop-blur relative">
             <Users className="w-5 h-5 text-[#FFAA00]" />
             {activeAgents.length > 0 && (
@@ -3000,48 +2969,15 @@ const OraclePage = () => {
         </div>
       )}
 
-      {/* Orb / Avatar area */}
-      <div className={`relative flex-1 shrink-0 min-h-[160px] sm:min-h-[220px] flex items-center justify-center transition-all ${showChat ? "max-h-[40%]" : ""}`}>
-        {/* Live mic indicator */}
-        {isListening && (
-          <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
-            <span
-              className="w-2 h-2 rounded-full bg-emerald-400"
-              style={{ animation: "pulse 1.4s ease-in-out infinite" }}
-            />
-            <span className="text-[10px] text-muted-foreground">Listening now</span>
-          </div>
-        )}
-        <div className={`transition-opacity duration-1000 ${oracleMedia ? "opacity-0 pointer-events-none" : "opacity-100"} ${oracleMode.mode === "orb" ? "absolute inset-0" : "flex flex-col items-center h-full w-full min-h-0 z-10"}`}>
-          {oracleMode.mode === "orb" ? (
-            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-          ) : (
-            <div className="flex flex-col items-center h-full w-full min-h-0 z-10">
-              <div
-                className={`oracle-presenter-frame relative w-[min(90vw,520px)] max-w-full h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
-              >
-                {oracleAvatar?.image_url ? <LivingAvatar imageUrl={oracleAvatar.image_url} alt={oracleName} intensity="subtle" className="w-full h-full" /> :
-                  <img src={adPresenterPreview} data-original-asset={adPresenter.url} alt={oracleName} className="w-full h-full object-contain sm:object-cover" />}
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-md bg-background/90 px-3 py-2 text-foreground">
-                  <div><p className="text-sm font-semibold">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
-                  <Button variant="ghost" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
-                    if (isListeningRef.current) toggleMic();
-                    speechQueueRef.current = []; isSpeakingQueueRef.current = false; cancelCurrentSpeech();
-                    mutedRef.current = true; setMuted(true);
-                  }}><PhoneOff /></Button>
-                </div>
-                {isListening && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                    {[0, 1, 2].map(i => (
-                      <div key={i} className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+      {/* The stage stays full-bleed; products only appear after explicit reveal. */}
+      <div className="relative flex-1 min-h-0 pointer-events-none">
+        {oracleMode.mode === "orb" && <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />}
+        <div className="absolute right-4 top-3 pointer-events-auto">
+          <Button variant="outline" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
+            if (isListeningRef.current) toggleMic();
+            speechQueueRef.current = []; isSpeakingQueueRef.current = false; cancelCurrentSpeech(); mutedRef.current = true; setMuted(true);
+          }}><PhoneOff /></Button>
         </div>
-
         {/* Generated media overlay — Oracle steps aside while showing the user's creation */}
         {oracleMedia && (
           <div className="absolute inset-0 z-20 flex items-center justify-center p-4 animate-fade-in">
@@ -3073,8 +3009,8 @@ const OraclePage = () => {
         )}
 
 
-        {/* Orbiting agents */}
-        {activeAgents.map((a, i) => {
+      {/* Orbiting agents only appear in explicitly selected orb mode. */}
+        {(oracleMode.mode === "orb" ? activeAgents : []).map((a, i) => {
           const angle = (i / Math.max(activeAgents.length, 1)) * Math.PI * 2 - Math.PI / 2;
           const radius = 42;
           return (
@@ -3097,8 +3033,8 @@ const OraclePage = () => {
       </div>
 
       {/* Chat messages */}
-      {showChat && (
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-2 space-y-2 min-h-0" style={{ background: "rgba(10, 10, 10, 0.95)" }}>
+      {showChat && conversationOpen && (
+        <div ref={scrollRef} className="absolute inset-x-3 top-20 bottom-48 z-20 overflow-y-auto rounded-lg border border-border bg-background/95 px-3 py-3 space-y-2">
           {messages.map(msg => (
             <div key={msg.id} className={`flex gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
               {msg.sender !== "user" && (
@@ -3128,6 +3064,7 @@ const OraclePage = () => {
                 {msg.sender === "user" ? msg.content : (
                   <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0 [&_img]:rounded-xl [&_img]:w-full [&_img]:max-h-56 [&_img]:object-cover [&_img]:my-2 [&_a]:text-primary"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                 )}
+                {msg.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={msg.id} />}
                 {msg.artifact && <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(msg.artifact || null); }}>Show me</Button>
                   <Button size="sm" variant="outline" onClick={() => { cancelCurrentSpeech(); toast("Kept in this conversation for later."); }}>Later</Button>
@@ -3152,9 +3089,14 @@ const OraclePage = () => {
         </div>
       )}
 
+      {!conversationOpen && messages.length > 0 && <div className="relative z-10 mx-4 mb-3 max-h-[24dvh] overflow-auto rounded-lg border border-border bg-background/85 p-3 text-sm text-foreground">
+        <ReactMarkdown>{messages[messages.length - 1]?.content || ""}</ReactMarkdown>
+        {messages[messages.length - 1]?.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={messages[messages.length - 1].id} />}
+        {messages[messages.length - 1]?.artifact && <div className="mt-2 flex gap-2"><Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(messages[messages.length - 1].artifact || null); }}>Show me</Button><Button variant="outline" size="sm" onClick={() => toast("Kept in your conversation.")}>Later</Button></div>}
+      </div>}
       {/* Input bar */}
-      <div className="px-4 py-3 z-10" style={{ background: "linear-gradient(to top, #0a0a0a, rgba(10,10,10,0.95))" }}>
-        {!micPermGranted && (
+      <div className="px-3 pb-3 z-10 bg-background/85 backdrop-blur-md">
+        {!micPermGranted && voiceOptionsOpen && (
           <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
             <div className="flex items-center justify-between gap-2 flex-nowrap">
               <div className="min-w-0">
@@ -3180,7 +3122,7 @@ const OraclePage = () => {
             {wakeActive ? "● Mic on — speak naturally. Replies after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+        {voiceOptionsOpen && <div className="mb-2 flex flex-wrap items-center gap-2">
           <Select value={speechMode} onValueChange={value => {
             if (value !== "device" && value !== "premium") return;
             cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
@@ -3197,10 +3139,10 @@ const OraclePage = () => {
             <SelectItem value="automatic">Automatic device voice</SelectItem>
             {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
           </SelectContent></Select>}
-        </div>
+        </div>}
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
         <div data-testid="oracle-composer" className="relative rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
-          <AgentPicker />
+          {voiceOptionsOpen && <AgentPicker />}
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -3222,7 +3164,7 @@ const OraclePage = () => {
               }
             }}
             placeholder={`Speak, type, paste, or attach for ${oracleName}...`}
-            rows={2}
+            rows={1}
             spellCheck
             autoCapitalize="sentences"
             className="w-full min-w-0 bg-transparent text-[#dbeeff] text-sm placeholder:text-sky-100/60 outline-none resize-none max-h-32 py-1.5 select-text"
@@ -3233,6 +3175,7 @@ const OraclePage = () => {
           <Button variant="ghost" size="icon" onClick={toggleMic} title={isListening ? "Turn microphone off" : "Talk to Oracle"} aria-label="Toggle Oracle microphone" aria-pressed={isListening} className={`h-9 w-9 shrink-0 rounded-full ${isListening ? "bg-[hsl(var(--status-active)/0.3)] text-[hsl(var(--status-active))]" : "bg-primary/15 text-primary"}`}>
             <Mic className={isListening ? "animate-pulse" : ""} />
           </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Voice and agent settings" title="Voice and agent settings" onClick={() => setVoiceOptionsOpen(v => !v)}><Settings2 /></Button>
           <input
             ref={uploadInputRef}
             type="file"
@@ -3278,21 +3221,6 @@ const OraclePage = () => {
             }
           />
           </OracleToolsMenu>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                const txt = await navigator.clipboard.readText();
-                if (txt) setInput(prev => prev + txt);
-              } catch {
-                toast.error("Clipboard blocked — long-press the box and choose Paste.");
-              }
-            }}
-            title="Paste from clipboard"
-            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-purple-500/20 hover:bg-purple-500/40 transition-colors text-[#dbeeff] text-[10px] font-semibold"
-          >
-            Paste
-          </button>
           <button aria-label="Send message" onClick={() => sendMessage(input)} disabled={!input.trim()} className="h-9 w-9 ml-auto shrink-0 flex items-center justify-center rounded-full bg-[#FFAA00] disabled:opacity-30">
             <Send className="w-5 h-5 text-black" />
           </button>
@@ -3300,23 +3228,6 @@ const OraclePage = () => {
         </div>
       </div>
 
-      {/* Status bar */}
-      <div className="flex flex-col items-center pb-3 gap-2 z-10" style={{ background: "#0a0a0a" }}>
-        <div className="flex items-center gap-3">
-          {activeAgents.length >= 2 && (
-            <button onClick={() => setShowDebate(p => !p)} className={`px-2 py-1 rounded-full border text-[9px] font-medium transition-all ${showDebate ? "border-orange-500/40 bg-orange-600/20 text-orange-300" : "border-gray-700 bg-gray-800/50 text-gray-500"}`}>
-              {showDebate ? "🔥 Debates On" : "Debates Off"}
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[#FFAA00]">{oracleName} + {activeAgents.length} agents</span>
-        </div>
-      </div>
-
-      <button onClick={() => navigate("/dashboard")} className="fixed bottom-4 right-4 z-20 p-3 rounded-full border-2 border-[#FFAA00] bg-black/80 backdrop-blur">
-        <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
-      </button>
       <OracleArtifactViewer artifact={viewingArtifact} onClose={() => setViewingArtifact(null)} />
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
       <AudioClarifyDialog

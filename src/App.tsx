@@ -31,6 +31,7 @@ import PaywallGate from "@/components/PaywallGate";
 import AdminFlagBootstrap from "@/components/AdminFlagBootstrap";
 import PreviewShield from "@/components/PreviewShield";
 import { isReimaginedEntry } from "@/reimagined/model";
+import OracleWorkspace from "@/components/oracle/OracleWorkspace";
 const ReimaginedApp = lazy(() => import("@/reimagined/ReimaginedApp"));
 
 // Centralized loader factory so Speed AI can prefetch the same chunks React.lazy uses.
@@ -172,7 +173,7 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 // Root route: signed-in users see the Dashboard (full app); visitors see the public website.
 // Root route always shows the Dashboard so Lovable visitors / preview viewers see the full app.
 // The public marketing website is still reachable at /website.
-const RootRoute = () => <><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></>;
+const RootRoute = () => <Navigate to="/oracle" replace />;
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
@@ -340,8 +341,9 @@ const OracleApp = () => (
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 
               <Suspense fallback={<Loading />}>
-                <Routes>
+                <OracleWorkspace><Routes>
                   <Route path="/" element={<RequireAuth><ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/index" element={<Navigate to="/oracle" replace />} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
@@ -351,7 +353,7 @@ const OracleApp = () => (
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/vault" element={<RequireAuth><ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/oracle" element={<RequireAuth freeAccess><ErrorBoundary pageName="Oracle AI"><OraclePage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/oracle" element={null} />
                   <Route path="/chat-oracle" element={<Navigate to="/oracle" replace />} />
                   <Route path="/ai-studio" element={<RequireAuth><ErrorBoundary pageName="AI Studio"><AIStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/video-editor" element={<RequireAuth><ErrorBoundary pageName="Video Editor"><VideoEditorPage /></ErrorBoundary></RequireAuth>} />
@@ -514,7 +516,7 @@ const OracleApp = () => (
                   <Route path="/get-api-key/:provider" element={<RequireAuth><ErrorBoundary pageName="Get API Key"><GetApiKeyWizardPage /></ErrorBoundary></RequireAuth>} />
 
                   <Route path="*" element={<NotFound />} />
-                </Routes>
+                </Routes></OracleWorkspace>
               </Suspense>
               <Suspense fallback={null}><SiteFooter /></Suspense>
               </>)}

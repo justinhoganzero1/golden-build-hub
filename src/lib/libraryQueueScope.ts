@@ -1,0 +1,2 @@
+export const libraryQueueKey = (userId: string) => `oracle-lunar-library-save-queue-v2:${userId}`;
+export const canDrainLibraryQueue = (ownerId: string, currentId?: string) => !!currentId && ownerId === currentId;

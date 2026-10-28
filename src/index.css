@@ -2013,3 +2013,7 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 .reimagined-theme { --background: 182 55% 9%; --card: 180 50% 14%; --popover: 180 50% 14%; --secondary: 180 40% 18%; --muted: 180 35% 17%; --input: 180 40% 16%; --border: 44 85% 52%; --ri-chrome: linear-gradient(135deg, hsl(45 100% 82%), hsl(42 90% 48%) 25%, hsl(48 100% 90%) 50%, hsl(38 85% 38%) 75%, hsl(46 100% 75%)); }
 .reimagined-theme .ri-metric, .reimagined-theme .ri-claim-card, .reimagined-theme .ri-connection, .reimagined-theme .ri-card, .reimagined-theme .ri-ai-band, .reimagined-theme .ri-why-band, .reimagined-theme .ri-sidebar, .reimagined-theme .ri-popup, .reimagined-theme .ri-improvement-popup { border: 2px solid transparent !important; background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box, var(--ri-chrome) border-box !important; box-shadow: 0 0 18px hsl(45 100% 55% / 0.18), inset 0 1px 0 hsl(48 100% 85% / 0.25); }
 .reimagined-theme .ri-primary { border: 2px solid transparent !important; background: linear-gradient(hsl(var(--primary)), hsl(var(--primary))) padding-box, var(--ri-chrome) border-box !important; box-shadow: 0 0 12px hsl(45 100% 55% / 0.35) !important; }
+
+/* Oracle call presentation uses existing semantic theme roles. */
+.oracle-stage-shade { background: linear-gradient(to bottom, hsl(var(--background) / .65), transparent 25%, transparent 45%, hsl(var(--background) / .9)); }
+.oracle-call .oracle-presenter-frame { border: 0; }
