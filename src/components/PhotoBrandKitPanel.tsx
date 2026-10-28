@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
-import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
   Loader2, Sparkles, Save, Upload, Trash2, Lock, Plus, ExternalLink,
   Instagram, Youtube, Facebook, Linkedin, Twitter, Globe2,
 } from "lucide-react";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 type SocialKey =
   | "instagram" | "tiktok" | "youtube" | "x" | "facebook"
