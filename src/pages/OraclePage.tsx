@@ -23,6 +23,11 @@ import { useSubscription } from "@/hooks/useSubscription";
 import SystemDoctorPanel from "@/components/SystemDoctorPanel";
 import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
 import LivingAvatar from "@/components/LivingAvatar";
+import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
+import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PhoneOff } from "lucide-react";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
 import { detectTruncation } from "@/lib/truncationDetector";
 import { saveOracleTextTurn } from "@/lib/saveToLibrary";
@@ -41,6 +46,7 @@ interface Message {
   content: string;
   avatar_url?: string;
   isAppResult?: boolean;
+  artifact?: OracleArtifact;
 }
 
 interface ChatAgent {
@@ -248,6 +254,26 @@ const OraclePage = () => {
   // Server-reported free-tier daily usage (null = unknown / bypassed for paid+admin)
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
   const [oracleMedia, setOracleMedia] = useState<{ kind: "image" | "video"; url: string } | null>(null);
+  const [viewingArtifact, setViewingArtifact] = useState<OracleArtifact | null>(null);
+  const [speechMode, setSpeechMode] = useState<OracleSpeechMode>("device");
+  const speechModeRef = useRef<OracleSpeechMode>("device");
+  const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [deviceVoice, setDeviceVoice] = useState("");
+  useEffect(() => {
+    if (!user?.id) return;
+    const selected = resolveSpeechMode(localStorage.getItem(`oracle-speech-mode:${user.id}`), !!(getStoredOracleMasterVoice()?.id || localStorage.getItem("oracle-lunar-voice")));
+    speechModeRef.current = selected;
+    setSpeechMode(selected);
+    setDeviceVoice(localStorage.getItem(`oracle-device-voice:${user.id}`) || "");
+    setViewingArtifact(null);
+  }, [user?.id]);
+  useEffect(() => {
+    if (!window.speechSynthesis) return;
+    const load = () => setDeviceVoices(window.speechSynthesis.getVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
   const [uploading, setUploading] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
@@ -855,7 +881,7 @@ const OraclePage = () => {
       for (let i = 0; i < agentName.length; i++) h = (h * 31 + agentName.charCodeAt(i)) >>> 0;
       agentPitchRef.current.set(agentName, 0.95 + (h % 100) / 666);
     }
-    return agentPitchRef.current.get(agentName)!;
+    return agentPitchRef.current.get(agentName) ?? 1;
   };
 
   // Fallback browser TTS for non-Oracle agents
@@ -865,13 +891,18 @@ const OraclePage = () => {
       const myToken = speechTokenRef.current;
       const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
       const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
+      if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+        toast.error("Device speech is not available in this browser."); resolve(); return;
+      }
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.lang = "en-US";
       utterance.rate = 0.88;
       utterance.pitch = getStablePitch(agentName);
       utterance.volume = 0.95;
-      const voice = getVoiceForAgent(agentName);
-      if (voice) utterance.voice = voice;
+      const voice = (agentName === oracleName && deviceVoice
+        ? window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice)
+        : undefined) || getVoiceForAgent(agentName);
+      if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
       utterance.onstart = () => {
         if (speechTokenRef.current !== myToken) {
           try { window.speechSynthesis.cancel(); } catch {}
@@ -886,7 +917,7 @@ const OraclePage = () => {
       if (speechTokenRef.current !== myToken) { resolve(); return; }
       window.speechSynthesis.speak(utterance);
     });
-  }, [getVoiceForAgent]);
+  }, [getVoiceForAgent, deviceVoice, oracleName]);
 
   const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
@@ -903,22 +934,15 @@ const OraclePage = () => {
 
     try {
       const isOracle = next.agentName === oracleName;
-      // Oracle ALWAYS tries the premium ElevenLabs path first so its voice
-      // never wobbles between system voices across utterances. The edge
-      // function decides whether to actually serve audio (free vs paid).
-      if (isOracle && premiumClean) {
-        const tokenBefore = speechTokenRef.current;
-        const ok = await speakWithElevenLabs(premiumClean);
-        // Only fall back to browser TTS if (a) ElevenLabs really failed AND
-        // (b) no newer utterance has taken over while we were waiting. Without
-        // this check, a slow-failing ElevenLabs call could trigger a browser
-        // voice on top of the next utterance's premium voice.
-        if (!ok && browserClean && speechTokenRef.current === tokenBefore) {
-          await speakWithBrowserTTS(browserClean, oracleName);
-        }
-      } else if (!isOracle && browserClean) {
-        await speakWithBrowserTTS(browserClean, next.agentName);
-      }
+      if (isOracle) {
+        await routeOracleSpeech(speechModeRef.current,
+          () => speakWithBrowserTTS(browserClean, oracleName),
+          async () => {
+            const tokenBefore = speechTokenRef.current;
+            const ok = premiumClean ? await speakWithElevenLabs(premiumClean) : false;
+            if (!ok && browserClean && speechTokenRef.current === tokenBefore) await speakWithBrowserTTS(browserClean, oracleName);
+          });
+      } else if (browserClean) await speakWithBrowserTTS(browserClean, next.agentName);
     } catch (err) {
       console.error("[speech-queue] utterance failed", err);
     } finally {
@@ -936,6 +960,16 @@ const OraclePage = () => {
     speechQueueRef.current.push({ text, agentName });
     processSpeechQueue();
   }, [isMuted, processSpeechQueue, oracleName]);
+
+  const offerArtifact = (opts: { kind: OracleArtifact["kind"]; url?: string; body?: string; deepPath: string; libraryId?: string; reused?: boolean; fallback?: boolean }) => {
+    const libraryId = opts.libraryId || opts.deepPath.match(/[?&]item=([^&]+)/)?.[1];
+    const artifact = finishedArtifact({ ...opts, libraryId, id: crypto.randomUUID(), state: "complete" });
+    if (!artifact) return;
+    const content = artifactAnnouncement(artifact);
+    setShowChat(true);
+    setMessages(prev => [...prev, { id: artifact.id, role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content, artifact }]);
+    speakAsAgent(content, oracleName);
+  };
 
   // Monthly heated debate check
   useEffect(() => {
@@ -1666,6 +1700,10 @@ const OraclePage = () => {
     if (!isIntroTrigger) setInput("");
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
 
+    const pending = [...messages].reverse().find(m => m.artifact)?.artifact;
+    if (!isIntroTrigger && pending && /^(?:yes|yeah|yep|show me|show it|let me see|open it)(?: please)?[.!?]*$/i.test(text.trim())) {
+      cancelCurrentSpeech(); setViewingArtifact(pending); return;
+    }
     const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
 
     // ── Universal command resolver — gives Oracle full operator control ──
@@ -1943,20 +1981,14 @@ const OraclePage = () => {
           if (!code) throw new Error("Pipeline finished without code");
           const dataUrl = `data:text/html;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(code)))}`;
           const niceName = (promptTail || fullPrompt).slice(0, 60).replace(/\s+/g, " ").trim() || "My App";
-          saveMedia.mutate({
+          const savedApp = await saveMedia.mutateAsync({
             media_type: "app" as any,
             title: `App: ${niceName}`,
             url: dataUrl,
             source_page: "app-builder",
             metadata: { kind: "app", prompt: fullPrompt, architecture: architecture.slice(0, 1500), built_by: "oracle-master" } as any,
           });
-          toast.success("Your new app is ready in your Library");
-          const doneMsg: Message = {
-            id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🚀", color: "#FFD700",
-            content: `Done — your new app is built and saved to your Library. Open the App Builder any time to launch, share, or keep iterating on it.`
-          };
-          setMessages(prev => [...prev, doneMsg]);
-          if (!isMuted) speakAsAgent(doneMsg.content, oracleName);
+          offerArtifact({ kind: "app", url: dataUrl, libraryId: typeof savedApp === "string" ? savedApp : savedApp?.id, deepPath: "/media-library" });
         } catch (e) {
           console.error(e);
           toast.error("App build failed");
@@ -1988,11 +2020,13 @@ const OraclePage = () => {
         // plus session/server cache and library-fallback if everything else fails.
         let imgUrl: string | null = null;
         let wasFallback = false;
+              let wasCached = false;
         let savedId: string | undefined;
         try {
           const gen = await generateImage({ prompt });
           imgUrl = gen.url;
           wasFallback = gen.fallback;
+                wasCached = gen.cached;
           savedId = gen.libraryId;
         } catch (e: any) {
           if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
@@ -2007,16 +2041,8 @@ const OraclePage = () => {
             savedId = saved?.id || saved;
           } catch (err) { console.error("Oracle image library save failed", err); toast.error("Image made, but library save failed"); }
         }
-        window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
-        toast.success(wasFallback ? "Showing your most recent image while I retry" : "Image ready in your Library");
-        const done: Message = {
-          id: (Date.now()+2).toString(), role: "assistant", sender: oracleName, emoji: "🖼️", color: "#FFD700",
-          content: wasFallback
-            ? `Generation is rough right now — I queued the job and pulled your most recent image so we don't lose momentum.`
-            : `Done — I made it, saved it, and opened it here.${savedId ? " It is also in your Library." : ""}`
-        };
-        setMessages(prev => [...prev, done]);
-        if (!isMuted) speakAsAgent(done.content, oracleName);
+        if (wasFallback) { toast.error("The image did not finish; the returned image is an older fallback."); return; }
+        offerArtifact({ kind: "image", url: imgUrl, libraryId: savedId, reused: wasCached, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
       })();
       return;
     }
@@ -2044,8 +2070,9 @@ const OraclePage = () => {
           if (!r.ok) { toast.error("Sound effect generation failed"); return; }
           const blob = await r.blob();
           const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-          saveMedia.mutate({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } });
-          toast.success("Sound effect ready in your Library");
+          let savedId: string | undefined;
+          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = typeof saved === "string" ? saved : saved?.id; } catch { toast.error("Audio made, but Library save failed"); }
+          offerArtifact({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
         } catch (e) { console.error(e); toast.error("Sound effect generation failed"); }
       })();
       return;
@@ -2072,8 +2099,9 @@ const OraclePage = () => {
           if (!r.ok) { toast.error("Music generation failed"); return; }
           const blob = await r.blob();
           const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
-          saveMedia.mutate({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } });
-          toast.success("Music track ready in your Library");
+          let savedId: string | undefined;
+          try { const saved = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = typeof saved === "string" ? saved : saved?.id; } catch { toast.error("Audio made, but Library save failed"); }
+          offerArtifact({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
         } catch (e) { console.error(e); toast.error("Music generation failed"); }
       })();
       return;
@@ -2348,31 +2376,7 @@ const OraclePage = () => {
       // After every creation, offer the user a CHOICE: view inline (here in
       // the chat / Oracle media overlay) OR open the actual creation in its
       // proper screen — never just dump it into the library list.
-      const askOpenChoice = (opts: { kind: "image" | "audio" | "story" | "app" | "video"; url?: string; deepPath: string }) => {
-        toast.success(`Your ${opts.kind} is ready — how do you want to see it?`, {
-          duration: 20000,
-          action: {
-            label: "Open it now",
-            onClick: () => {
-              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
-                // Show inline rather than a fragile window.open which sometimes
-                // produces an empty tab for large data: URLs.
-                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
-              } else navigate(opts.deepPath);
-            },
-          },
-          cancel: {
-            label: "View here",
-            onClick: () => {
-              if ((opts.kind === "image" || opts.kind === "video") && opts.url) {
-                window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: opts.url } }));
-              } else if (opts.kind === "audio" && opts.url) {
-                try { new Audio(opts.url).play(); } catch {}
-              }
-            },
-          },
-        });
-      };
+      const askOpenChoice = offerArtifact;
 
       try {
         const fired = new Set<string>();
@@ -2388,11 +2392,13 @@ const OraclePage = () => {
             (async () => {
               let imgUrl: string | null = null;
               let wasFallback = false;
+              let wasCached = false;
               let savedId: string | undefined;
               try {
                 const gen = await generateImage({ prompt });
                 imgUrl = gen.url;
                 wasFallback = gen.fallback;
+                wasCached = gen.cached;
                 savedId = gen.libraryId;
               } catch (e: any) {
                 if (e instanceof InsufficientCreditsError) { toast.error("Out of AI credits."); return; }
@@ -2404,9 +2410,8 @@ const OraclePage = () => {
               if (!savedId && !wasFallback) {
                 try { const saved: any = await saveMedia.mutateAsync({ media_type: "image", title: `Image: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-image", metadata: { kind: "image", prompt, fallback: wasFallback } }); savedId = saved?.id || saved; } catch (err) { console.error("Oracle image marker library save failed", err); toast.error("Image made, but library save failed"); }
               }
-              window.dispatchEvent(new CustomEvent("oracle:show-media", { detail: { kind: "image", url: imgUrl } }));
-              if (wasFallback) toast("Showing your most recent image while I retry");
-              askOpenChoice({ kind: "image", url: imgUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+              if (wasFallback) { toast.error("The new image did not finish; an older fallback was returned."); return; }
+              askOpenChoice({ kind: "image", url: imgUrl, reused: wasCached, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "MUSIC") {
             toast.success("Composing that track…");
@@ -2478,7 +2483,7 @@ const OraclePage = () => {
               if (!draft) {
                 toast.error(`I couldn't finish that ${label} — opening Story Writer with your brief instead`);
                 try { sessionStorage.setItem("story-writer-prefill", prompt); } catch {}
-                askOpenChoice({ kind: "story", deepPath: `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+                toast("Open Story Writer to try your brief", { action: { label: "Story Writer", onClick: () => navigate(`/story-writer?prompt=${encodeURIComponent(prompt)}`) } });
                 return;
               }
               // Hand the finished draft to Story Writer AND persist it now.
@@ -2499,11 +2504,7 @@ const OraclePage = () => {
                 console.error("Oracle story library save failed", err);
                 toast.error(`${label} written, but the library save failed`);
               }
-              setMessages(prev => [...prev, {
-                id: `${Date.now()}-story`, role: "assistant", sender: oracleName, emoji: "📖", color: "#FFD700",
-                content: draft,
-              } as Message]);
-              askOpenChoice({ kind: "story", deepPath: savedId ? `/media-library?item=${savedId}` : `/story-writer?prompt=${encodeURIComponent(prompt)}` });
+              askOpenChoice({ kind: "story", body: draft, deepPath: savedId ? `/media-library?item=${savedId}` : `/story-writer?prompt=${encodeURIComponent(prompt)}` });
             })();
           } else if (kind === "APP") {
             // Build it for real in the background and save the finished
@@ -2549,12 +2550,12 @@ const OraclePage = () => {
                   metadata: { kind: "app", prompt, architecture: architecture.slice(0, 1500), built_by: "oracle-marker" } as any,
                 });
                 savedId = saved?.id || saved;
-                askOpenChoice({ kind: "app", deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
+                askOpenChoice({ kind: "app", url: dataUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
               } catch (e) {
                 console.error("GEN_APP build failed", e);
                 toast.error("The build failed — opening App Builder with your brief");
                 try { sessionStorage.setItem("app-builder-prefill", prompt); } catch {}
-                askOpenChoice({ kind: "app", deepPath: `/app-builder?prompt=${encodeURIComponent(prompt)}` });
+                toast("Open App Builder to try your brief", { action: { label: "App Builder", onClick: () => navigate(`/app-builder?prompt=${encodeURIComponent(prompt)}`) } });
               }
             })();
           } else if (kind === "VIDEO") {
@@ -2589,11 +2590,13 @@ const OraclePage = () => {
                   });
                   savedId = saved?.id || saved;
                 } catch (err) { console.error("Oracle video library save failed", err); }
-                askOpenChoice({ kind: "video", deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+                askOpenChoice({ kind: "video", url: videoUrl, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) {
                 console.error("GEN_VIDEO animate failed", e);
-                saveMedia.mutate({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });
-                toast("Animation step failed — I saved the cinematic frame to your Library instead");
+                try {
+                  await saveMedia.mutateAsync({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });
+                  toast("Video failed; only its still frame was saved to Library.");
+                } catch { toast.error("Video failed and its still frame could not be saved."); }
               }
             })();
           }
@@ -2778,7 +2781,7 @@ const OraclePage = () => {
       description="Chat with Oracle, the ORACLE LUNAR voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
       path="/oracle"
     />
-    <div className="h-screen flex flex-col relative overflow-hidden" style={{ background: "#0a0a0a" }}>
+    <div className="h-[100dvh] flex flex-col relative overflow-hidden bg-background">
       {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
       {explosionActive && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none" style={{ animation: "explosion-flash 2.2s ease-out forwards" }}>
@@ -2997,7 +3000,7 @@ const OraclePage = () => {
       )}
 
       {/* Orb / Avatar area */}
-      <div className={`relative flex-1 flex items-center justify-center transition-all ${showChat ? "max-h-[35%]" : ""}`}>
+      <div className={`relative flex-1 min-h-0 flex items-center justify-center transition-all ${showChat ? "max-h-[40%]" : ""}`}>
         {/* Live mic indicator */}
         {isListening && (
           <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border">
@@ -3008,21 +3011,29 @@ const OraclePage = () => {
             <span className="text-[10px] text-muted-foreground">Listening now</span>
           </div>
         )}
-        <div className={`transition-opacity duration-1000 ${oracleMedia ? "opacity-0 pointer-events-none" : "opacity-100"} ${oracleMode.mode === "orb" ? "absolute inset-0" : "flex flex-col items-center gap-3 z-10"}`}>
+        <div className={`transition-opacity duration-1000 ${oracleMedia ? "opacity-0 pointer-events-none" : "opacity-100"} ${oracleMode.mode === "orb" ? "absolute inset-0" : "flex flex-col items-center h-full w-full min-h-0 z-10"}`}>
           {oracleMode.mode === "orb" ? (
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
           ) : (
-            <div className="flex flex-col items-center gap-3 z-10">
+            <div className="flex flex-col items-center h-full w-full min-h-0 z-10">
               <div
-                className={`relative w-[260px] h-[260px] sm:w-[340px] sm:h-[340px] md:w-[420px] md:h-[420px] rounded-full overflow-hidden border-4 transition-all ${isSpeaking ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.5)]" : isListening ? "border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.4)]" : "border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.2)]"}`}
+                className={`oracle-presenter-frame relative w-[min(90vw,520px)] h-full min-h-0 overflow-hidden border transition-all ${isSpeaking ? "border-primary" : isListening ? "border-ring" : "border-border"}`}
                 style={undefined}
               >
                 <LivingAvatar
-                  imageUrl={oracleAvatar?.image_url || MASTER_AI_AVATAR}
+                  imageUrl={oracleAvatar?.image_url || adPresenter.url}
                   alt={oracleName}
                   intensity="subtle"
                   className="w-full h-full"
                 />
+                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 rounded-md bg-background/90 px-3 py-2 text-foreground">
+                  <div><p className="text-sm font-semibold">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
+                  <Button variant="ghost" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
+                    if (isListeningRef.current) toggleMic();
+                    speechQueueRef.current = []; isSpeakingQueueRef.current = false; cancelCurrentSpeech();
+                    mutedRef.current = true; setMuted(true);
+                  }}><PhoneOff /></Button>
+                </div>
                 {isListening && (
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                     {[0, 1, 2].map(i => (
@@ -3121,6 +3132,10 @@ const OraclePage = () => {
                 {msg.sender === "user" ? msg.content : (
                   <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0 [&_img]:rounded-xl [&_img]:w-full [&_img]:max-h-56 [&_img]:object-cover [&_img]:my-2 [&_a]:text-primary"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                 )}
+                {msg.artifact && <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(msg.artifact || null); }}>Show me</Button>
+                  <Button size="sm" variant="outline" onClick={() => { cancelCurrentSpeech(); toast("Kept in this conversation for later."); }}>Later</Button>
+                </div>}
               </div>
             </div>
           ))}
@@ -3169,6 +3184,24 @@ const OraclePage = () => {
             {wakeActive ? "● Mic on — speak naturally. Replies after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
           </div>
         )}
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <Select value={speechMode} onValueChange={value => {
+            if (value !== "device" && value !== "premium") return;
+            cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+            speechModeRef.current = value; setSpeechMode(value);
+            if (user?.id) localStorage.setItem(`oracle-speech-mode:${user.id}`, value);
+          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto min-w-[180px]"><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="device">Device voice · no TTS fee</SelectItem>
+            <SelectItem value="premium">Premium voice · wallet paid</SelectItem>
+          </SelectContent></Select>
+          {speechMode === "device" && <Select value={deviceVoice || "automatic"} onValueChange={value => {
+            const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();
+            if (user?.id) localStorage.setItem(`oracle-device-voice:${user.id}`, selected);
+          }}><SelectTrigger aria-label="Device voice" className="h-9 w-auto max-w-full sm:max-w-[260px]"><SelectValue placeholder="Automatic voice" /></SelectTrigger><SelectContent>
+            <SelectItem value="automatic">Automatic device voice</SelectItem>
+            {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
+          </SelectContent></Select>}
+        </div>
         <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
         <div data-testid="oracle-composer" className="relative rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
           <AgentPicker />
@@ -3288,6 +3321,7 @@ const OraclePage = () => {
       <button onClick={() => navigate("/dashboard")} className="fixed bottom-4 right-4 z-20 p-3 rounded-full border-2 border-[#FFAA00] bg-black/80 backdrop-blur">
         <LayoutGrid className="w-6 h-6 text-[#FFAA00]" />
       </button>
+      <OracleArtifactViewer artifact={viewingArtifact} onClose={() => setViewingArtifact(null)} />
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
       <AudioClarifyDialog
         open={audioClarify.open}
