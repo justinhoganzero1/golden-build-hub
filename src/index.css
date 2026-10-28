@@ -2017,3 +2017,49 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 /* Oracle call presentation uses existing semantic theme roles. */
 .oracle-stage-shade { background: linear-gradient(to bottom, hsl(var(--background) / .65), transparent 25%, transparent 45%, hsl(var(--background) / .9)); }
 .oracle-call .oracle-presenter-frame { border: 0; }
+
+/* One restrained avatar-led Oracle surface. Values stay scoped to Oracle. */
+.oracle-call, .oracle-settings {
+  --foreground: 40 20% 96%;
+  --muted-foreground: 40 8% 68%;
+  --card: 180 10% 8%;
+  --popover: 180 10% 8%;
+  --popover-foreground: 40 20% 96%;
+  --border: 42 26% 27%;
+  --oracle-glass: 180 10% 7%;
+  --oracle-scrim: linear-gradient(to bottom, hsl(var(--background) / .68), transparent 23%, transparent 48%, hsl(var(--background) / .9));
+  --oracle-shadow: 0 12px 40px hsl(var(--background) / .38);
+  color: hsl(var(--foreground));
+  font-family: 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0;
+}
+.oracle-call .oracle-stage-shade { background: var(--oracle-scrim); }
+.oracle-header { padding: max(20px, env(safe-area-inset-top)) 24px 16px; }
+.oracle-header h1 { font-size: 22px; line-height: 1.2; text-shadow: none; letter-spacing: 0; }
+.oracle-control { width: 40px !important; height: 40px !important; border-radius: 6px !important; flex-shrink: 0; box-shadow: none !important; }
+.oracle-header .oracle-control, .oracle-header button { background: hsl(var(--oracle-glass) / .55); border-color: hsl(var(--border) / .6); box-shadow: none; border-radius: 6px; }
+.oracle-dock { width: min(720px, calc(100% - 40px)); margin: 0 auto; padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+.oracle-prompt { position: relative; padding: 12px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--oracle-glass) / .91); backdrop-filter: blur(22px); box-shadow: var(--oracle-shadow); }
+.oracle-prompt:focus-within { border-color: hsl(var(--primary) / .75); }
+.oracle-prompt-field { display: block; width: 100%; min-height: 50px; max-height: 120px; overflow-y: auto; resize: none; padding: 4px 6px 12px; outline: none; background: transparent; color: hsl(var(--foreground)); font-size: 16px; line-height: 1.5; }
+.oracle-prompt-field::placeholder { color: hsl(var(--muted-foreground)); }
+.oracle-send { width: 40px !important; height: 40px !important; flex-shrink: 0; border-radius: 6px !important; box-shadow: none !important; background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
+.oracle-mic-active { color: hsl(var(--status-active)) !important; background: hsl(var(--status-active) / .15) !important; }
+.oracle-reply { max-height: min(26dvh, 250px); overflow-y: auto; margin-bottom: 12px; padding: 16px 18px; border-left: 2px solid hsl(var(--primary) / .7); background: hsl(var(--oracle-glass) / .82); backdrop-filter: blur(20px); border-radius: 0 6px 6px 0; font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
+.oracle-reply p { margin: 0 0 6px; }
+.oracle-reply a, .oracle-transcript a { color: hsl(var(--primary)); text-decoration: underline; }
+.oracle-reply img, .oracle-transcript img { max-width: 100%; max-height: 220px; object-fit: contain; }
+.oracle-transcript { position: absolute; z-index: 20; top: 88px; bottom: 186px; left: max(20px, calc((100% - 720px) / 2)); right: max(20px, calc((100% - 720px) / 2)); overflow-y: auto; background: hsl(var(--oracle-glass) / .96); backdrop-filter: blur(24px); border: 1px solid hsl(var(--border)); border-radius: 8px; padding: 20px; }
+.oracle-message { padding: 16px 0; border-bottom: 1px solid hsl(var(--border) / .6); overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
+.oracle-message-user { color: hsl(var(--muted-foreground)); }
+.oracle-message pre, .oracle-reply pre { overflow-x: auto; max-width: 100%; }
+.oracle-settings { width: min(560px, calc(100% - 32px)); max-height: 82dvh; overflow-y: auto; border-radius: 8px; }
+.oracle-settings button { box-shadow: none; border-radius: 6px; }
+@media (max-width: 600px) {
+  .oracle-header { padding: max(16px, env(safe-area-inset-top)) 16px 12px; }
+  .oracle-header h1 { font-size: 20px; }
+  .oracle-dock { width: calc(100% - 24px); padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .oracle-prompt { padding: 9px; }
+  .oracle-reply { padding: 12px 14px; }
+  .oracle-transcript { left: 12px; right: 12px; top: 80px; bottom: 172px; padding: 16px; }
+}

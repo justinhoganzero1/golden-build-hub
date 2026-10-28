@@ -18,6 +18,8 @@
 - Oracle microphone teardown runs only on page unmount or an explicit stop, never on render-dependent objects; otherwise listening silently shuts down during screen updates.
 - Oracle voice playback streams decoded MP3 frames when supported and buffers only on unsupported browsers; early complete speech phrases reduce latency without replaying synthesis or bypassing billing.
 - Route all app-wide Oracle launchers to the canonical /oracle chat instead of mounting a second chat engine, so microphone, model selection and tool execution have one owner.
+- OraclePromptBox is the only main Oracle composer; keep UI separate from canonical chat dispatch and place advanced options behind its settings dialog so tools and saved work survive presentation changes.
+- Rank available device voices through oracleDeviceVoice and preserve sentence punctuation; reviewed silent presenter loops remain independent of speech and never imply live lip-sync.
 
 - Whole-book rewrites must stage and validate every chapter before one final database replacement, because partial saves can corrupt a manuscript.
 - Recovery must never automatically remount paid actions, replay uncertain side effects, or weaken authentication; preserve drafts and reconcile outcomes first.

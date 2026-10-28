@@ -2,6 +2,7 @@ import { generateMemberVideo } from "@/lib/videoGeneration";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
+import { chooseOracleDeviceVoice, naturalDeviceSpeechText } from "@/lib/oracleDeviceVoice";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
@@ -29,6 +30,8 @@ import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
+import OraclePromptBox from "@/components/oracle/OraclePromptBox";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
@@ -649,6 +652,10 @@ const OraclePage = () => {
     if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
     const allVoices = window.speechSynthesis.getVoices();
     const englishVoices = allVoices.filter(v => v.lang.startsWith("en"));
+    if (agentName === oracleName) {
+      const voice = chooseOracleDeviceVoice(allVoices);
+      if (voice) { voiceMapRef.current.set(agentName, voice); return voice; }
+    }
 
     // Score voices by quality — neural/natural voices sound far less robotic
     const scoreVoice = (v: SpeechSynthesisVoice): number => {
@@ -702,7 +709,7 @@ const OraclePage = () => {
     const voice = available.length > 0 ? available[0] : englishVoices[0];
     if (voice) voiceMapRef.current.set(agentName, voice);
     return voice;
-  }, [agents]);
+  }, [agents, oracleName]);
 
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
@@ -727,7 +734,10 @@ const OraclePage = () => {
       toast.error("This browser cannot play the voice check.");
       return;
     }
-    const utterance = new SpeechSynthesisUtterance("Hello Juzzy. Your speaker is on. Tap the microphone to talk to Oracle.");
+    const utterance = new SpeechSynthesisUtterance("Hi there! It’s lovely to hear from you. What shall we make today?");
+    const voice = window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice) || chooseOracleDeviceVoice(window.speechSynthesis.getVoices());
+    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+    utterance.rate = 1; utterance.pitch = 1; utterance.volume = 1;
     utterance.onerror = () => toast.error("Sound could not start. Check your device volume and tap again.");
     window.speechSynthesis.speak(utterance);
   };
@@ -893,15 +903,14 @@ const OraclePage = () => {
     return new Promise((resolve) => {
       // Snapshot token; if a newer utterance preempts us, abort silently.
       const myToken = speechTokenRef.current;
-      const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-      const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
+      const fullText = naturalDeviceSpeechText(text);
       if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
         toast.error("Device speech is not available in this browser."); resolve(); return;
       }
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.lang = "en-US";
-      utterance.rate = 0.88;
-      utterance.pitch = getStablePitch(agentName);
+      utterance.rate = 1;
+      utterance.pitch = agentName === oracleName ? 1 : getStablePitch(agentName);
       utterance.volume = 0.95;
       const voice = (agentName === oracleName && deviceVoice
         ? window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice)
@@ -1048,53 +1057,10 @@ const OraclePage = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // ============ ATOMIC EXPLOSION ANIMATION ============
+  // Tool navigation stays inside the one Oracle workspace, without a flash or sound.
   const triggerExplosion = useCallback((targetPath: string) => {
-    setExplosionActive(true);
-    // Play explosion sound
-    if (!isMuted) {
-      try {
-        const ctx = new AudioContext();
-        // Create explosion sound effect
-        const createNoise = (duration: number) => {
-          const bufferSize = ctx.sampleRate * duration;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
-          }
-          return buffer;
-        };
-        const noise = ctx.createBufferSource();
-        noise.buffer = createNoise(2.5);
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.8, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.5);
-        const filter = ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(800, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 2);
-        noise.connect(filter).connect(gain).connect(ctx.destination);
-        noise.start();
-        // Sub bass boom
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(60, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(20, ctx.currentTime + 1.5);
-        const oscGain = ctx.createGain();
-        oscGain.gain.setValueAtTime(1, ctx.currentTime);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
-        osc.connect(oscGain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 1.5);
-      } catch {}
-    }
-    // Navigate after explosion
-    setTimeout(() => {
-      setExplosionActive(false);
-      navigate(targetPath);
-    }, 2200);
-  }, [navigate, isMuted]);
+    navigate(targetPath, { state: { oracleWorkspace: true } });
+  }, [navigate]);
 
   // ============ PARSE NAVIGATION COMMANDS FROM AI RESPONSE ============
   const parseAndHandleNavigation = useCallback((content: string): { cleanContent: string; navPath: string | null; isBackground: boolean } => {
@@ -1631,7 +1597,7 @@ const OraclePage = () => {
 
   // ============ SEND MESSAGE ============
   const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isLoading) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
     const finalOnlyMode = !isIntroTrigger && wantsFinalOnlyMode(text);
@@ -1689,7 +1655,7 @@ const OraclePage = () => {
       setMessages(prev => finalOnlyMode ? [...prev, userMsgNav] : [...prev, userMsgNav, ackNav]);
       if (!finalOnlyMode && !isMuted) speakAsAgent(ackNav.content, oracleName);
       toast(`Opening ${directRoute.label}...`);
-      setTimeout(() => triggerExplosion(directRoute.path), 650);
+      triggerExplosion(directRoute.path);
       return;
     }
     // Non-nav direct commands (click/fill/scroll/back/open) — fire immediately.
@@ -1710,7 +1676,7 @@ const OraclePage = () => {
       setMessages(prev => finalOnlyMode ? [...prev, userMsgComputer] : [...prev, userMsgComputer, ackComputer]);
       if (!finalOnlyMode && !isMuted) speakAsAgent(ackComputer.content, oracleName);
       toast("Opening App Builder...");
-      setTimeout(() => triggerExplosion("/app-builder"), 650);
+      triggerExplosion("/app-builder");
       return;
     }
 
@@ -2704,7 +2670,7 @@ const OraclePage = () => {
           // broken ("the AI doesn't do anything"). Give the user a brief toast
           // so they understand what's about to happen.
           toast(`Opening ${navPath.replace(/^\//, "")}...`);
-          setTimeout(() => triggerExplosion(navPath), 1500);
+          triggerExplosion(navPath);
         }
       }
 
@@ -2747,98 +2713,116 @@ const OraclePage = () => {
     } finally { setIsLoading(false); abortRef.current = null; }
   };
 
-  // ============ RENDER ============
-  return (
-    <>
-    <SEO
-      title="Oracle AI Chat — Talk to Your Voice AI Companion"
-      description="Chat with Oracle, the ORACLE LUNAR voice AI companion. Real-time voice + text, persistent memory, multi-agent conversations. Free to start."
-      path="/oracle"
-    />
-    <div className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
+  const stopOracle = () => {
+    abortRef.current?.abort();
+    if (isListeningRef.current) toggleMic();
+    speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+    cancelCurrentSpeech(); mutedRef.current = true; setMuted(true);
+  };
+  const latest = messages[messages.length - 1];
+  const renderAnswer = (msg: Message) => <>
+    <ReactMarkdown>{msg.content}</ReactMarkdown>
+    {msg.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={msg.id} />}
+    {msg.artifact && <div className="mt-3 flex gap-2">
+      <Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(msg.artifact || null); }}>Show me</Button>
+      <Button size="sm" variant="outline" onClick={() => toast("Kept in this conversation for later.")}>Later</Button>
+    </div>}
+  </>;
+  return <>
+    <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
+    <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
       <OraclePresenterStage userId={user?.id} image={oracleAvatar?.image_url || undefined} state={isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} />
-      {/* ======== ATOMIC EXPLOSION OVERLAY ======== */}
-      {explosionActive && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none" style={{ animation: "explosion-flash 2.2s ease-out forwards" }}>
-          {/* Flash */}
-          <div className="absolute inset-0" style={{
-            background: "radial-gradient(circle at 50% 50%, #fff 0%, #ff6600 20%, #ff0000 40%, #330000 70%, #000 100%)",
-            animation: "explosion-grow 2.2s ease-out forwards",
-          }} />
-          {/* Mushroom cloud */}
-          <div className="absolute" style={{
-            width: "300px", height: "400px",
-            background: "radial-gradient(ellipse at 50% 30%, #ff4400 0%, #ff6600 25%, #cc3300 50%, rgba(0,0,0,0.8) 100%)",
-            borderRadius: "50% 50% 20% 20%",
-            animation: "mushroom-rise 2s ease-out forwards",
-            filter: "blur(8px)",
-          }} />
-          {/* Stem */}
-          <div className="absolute" style={{
-            width: "80px", height: "250px", bottom: "10%",
-            background: "linear-gradient(to top, #330000, #ff4400, #ff6600)",
-            animation: "stem-rise 1.8s ease-out forwards",
-            filter: "blur(4px)",
-          }} />
-          {/* Shockwave rings */}
-          <div className="absolute rounded-full border-4 border-orange-500/60" style={{
-            width: "50px", height: "50px",
-            animation: "shockwave 1.5s ease-out forwards",
-          }} />
-          <div className="absolute rounded-full border-2 border-red-500/40" style={{
-            width: "50px", height: "50px",
-            animation: "shockwave 1.5s ease-out 0.3s forwards",
-          }} />
+      <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"} · {oracleAvatar?.image_url ? "AI portrait" : "Reused AI video"}</p>
         </div>
-      )}
-
-      {/* Explosion CSS animations */}
-      <style>{`
-        @keyframes explosion-flash { 0% { opacity: 0; } 5% { opacity: 1; } 60% { opacity: 1; } 100% { opacity: 0; } }
-        @keyframes explosion-grow { 0% { transform: scale(0); opacity: 1; } 30% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
-        @keyframes mushroom-rise { 0% { transform: translateY(200px) scale(0.2); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-50px) scale(1.5); opacity: 0.3; } }
-        @keyframes stem-rise { 0% { transform: scaleY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: scaleY(1.5); opacity: 0.2; } }
-        @keyframes shockwave { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(30); opacity: 0; } }
-      `}</style>
-
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 z-10">
-        <div className="min-w-0"><p className="text-sm font-semibold text-foreground">{oracleName}</p><p className="text-xs text-muted-foreground">AI portrait · {isSpeaking ? "Speaking" : isLoading ? "Working" : isListening ? "Listening" : "Ready"}</p></div>
-        <div className="flex items-center gap-2">
-          {/* Free-tier daily message badge — only visible when server tracks usage (free users) */}
-          {usage && (
-            <button
-              onClick={() => navigate("/subscribe")}
-              title="Free daily Oracle chat limit. Tap to upgrade."
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-full border backdrop-blur text-[10px] font-semibold transition-colors ${
-                usage.remaining <= 5
-                  ? "border-red-500/40 bg-red-500/10 text-red-300"
-                  : usage.remaining <= 10
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-              }`}
-            >
-              <Crown className="w-3 h-3" />
-              <span>{usage.count} / {usage.limit} free</span>
-            </button>
-          )}
-          <Button variant="outline" size="icon" aria-label="Presenter information" title="Presenter information" onClick={() => toast("Oracle is AI. This view currently uses a portrait; approved reused video clips are not yet available. Device speech has no TTS fee. New AI work uses your wallet.")}><Info /></Button>
-          <Button variant="outline" size="icon" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}><MessageSquare /></Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="oracle-control" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}>{conversationOpen ? <X /> : <MessageSquare />}</Button>
           <OracleAccountMenu />
-          {/* Oracle Swap button */}
-          <Button variant="outline" size="icon" aria-label="Choose Oracle appearance" title="Choose Oracle appearance" onClick={() => setShowOracleSwap(!showOracleSwap)}><Crown /></Button>
-          <button onClick={() => setShowFriendPanel(!showFriendPanel)} className="p-2 rounded-full border border-[#FFAA00]/30 bg-black/50 backdrop-blur relative">
-            <Users className="w-5 h-5 text-[#FFAA00]" />
-            {activeAgents.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center font-bold">{activeAgents.length}</span>
-            )}
-          </button>
         </div>
+      </header>
+      <div className="relative min-h-0 flex-1">
+        {oracleMedia && <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-background/80">
+          <Button variant="outline" size="icon" className="absolute top-3 right-3" aria-label="Dismiss" onClick={() => setOracleMedia(null)}><X /></Button>
+          {oracleMedia.kind === "video" ? <video src={oracleMedia.url} autoPlay playsInline controls onEnded={() => setOracleMedia(null)} className="max-w-full max-h-full" /> : <img src={oracleMedia.url} alt="Generated creation" className="max-w-full max-h-full object-contain" />}
+        </div>}
       </div>
+      {conversationOpen && <section ref={scrollRef} aria-label="Oracle conversation" className="oracle-transcript">
+        <h2 className="text-sm font-semibold text-primary">Conversation</h2>
+        {!messages.length && <p className="mt-5 text-sm text-muted-foreground">No messages yet.</p>}
+        {messages.map(msg => <article key={msg.id} className={`oracle-message ${msg.role === "user" ? "oracle-message-user" : ""}`}><p className="mb-2 text-xs font-semibold text-primary">{msg.role === "user" ? "You" : msg.sender}</p>{renderAnswer(msg)}</article>)}
+      </section>}
+      <div className="oracle-dock relative z-10 shrink-0">
+        {!conversationOpen && latest && <section aria-label="Latest Oracle message" className="oracle-reply">{renderAnswer(latest)}</section>}
+        {(isLoading || debateActive || isListening) && <p role="status" className="mb-2 text-center text-xs text-foreground">{debateActive ? "Agents working…" : isLoading ? "Working on your request…" : wakeActive ? "Listening…" : "Microphone paused"}</p>}
+        <OraclePromptBox input={input} onInput={setInput} onSend={() => sendMessage(input)} onStop={stopOracle} busy={isLoading || debateActive} listening={isListening} muted={isMuted} uploading={uploading} onMic={toggleMic}
+          onSpeaker={() => { if (isMuted) testSpeaker(); else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); } }}
+          onAttach={() => uploadInputRef.current?.click()} onSettings={() => setVoiceOptionsOpen(true)} tools={
+          <OracleToolsMenu>
+          <Button
+            type="button"
+            onClick={() => {
+              const next = !councilMode;
+              setCouncilMode(next);
+              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
+              toast(next
+                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
+                : "Council off — it's just me answering now.");
+            }}
+            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
+            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
+          >
+            <Gavel className="w-5 h-5" />
+          </Button>
+          <SwarmAgentsButton
+            currentInput={input}
+            onResult={(markdown) =>
+              setMessages(prev => [...prev, { id: `swarm-${Date.now()}`, role: "assistant", sender: `${oracleName} Swarm`, emoji: "🐝", color: "#FFD700", content: markdown } as any])
+            }
+          />
+          </OracleToolsMenu>
+          } />
+        <input ref={uploadInputRef} type="file" accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv" className="hidden" onChange={handleUpload} />
+      </div>
+      <Dialog open={voiceOptionsOpen} onOpenChange={setVoiceOptionsOpen}><DialogContent className="oracle-settings">
+        <DialogTitle>Oracle settings</DialogTitle>
+        <DialogDescription>Reused AI footage; lips do not match new answers. Device voice varies by device. Premium speech and new AI creations use your wallet.</DialogDescription>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={testSpeaker}><Volume2 />Test speaker</Button>
+          <Button variant="outline" size="sm" onClick={toggleMic}><Mic />{isListening ? "Stop mic" : "Allow mic"}</Button>
+          <Button variant="outline" size="sm" onClick={stopOracle}><PhoneOff />Stop Oracle</Button>
+        </div>
+        {micPermissionError && <p className="text-sm text-destructive">{micPermissionError}</p>}
+        <div className="flex flex-wrap gap-2">
+          <Select value={speechMode} onValueChange={value => {
+            if (value !== "device" && value !== "premium") return;
+            cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+            speechModeRef.current = value; setSpeechMode(value);
+            if (user?.id) localStorage.setItem(`oracle-speech-mode:${user.id}`, value);
+          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="device">Device voice · no TTS fee</SelectItem>
+            <SelectItem value="premium">Premium voice · wallet paid</SelectItem>
+          </SelectContent></Select>
+          {speechMode === "device" && <Select value={deviceVoice || "automatic"} onValueChange={value => {
+            const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();
+            if (user?.id) localStorage.setItem(`oracle-device-voice:${user.id}`, selected);
+          }}><SelectTrigger aria-label="Device voice" className="h-9 w-auto max-w-full sm:max-w-[260px]"><SelectValue placeholder="Automatic voice" /></SelectTrigger><SelectContent>
+            <SelectItem value="automatic">Automatic device voice</SelectItem>
+            {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
+          </SelectContent></Select>}
 
+        </div>
+        <AgentPicker />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>
+          <Button variant="outline" onClick={() => setShowFriendPanel(v => !v)}><Users />Chat agents</Button>
+          <OracleImageComposer />
+          {usage && <Button variant="outline" onClick={() => navigate("/subscribe", { state: { oracleWorkspace: true } })}>{usage.count} / {usage.limit} messages</Button>}
+        </div>
       {/* ======== ORACLE SWAP PANEL ======== */}
       {showOracleSwap && (
-        <div className="absolute top-14 left-4 z-30 bg-black/95 border border-purple-500/30 rounded-2xl p-4 backdrop-blur-xl w-72 max-h-[60vh] overflow-y-auto">
+        <div className="relative border border-border rounded-lg p-4 w-full">
           <div className="flex justify-between items-center mb-3">
             <p className="text-xs text-purple-400 font-semibold">Replace Oracle</p>
             <button onClick={() => setShowOracleSwap(false)}><X className="w-4 h-4 text-purple-400" /></button>
@@ -2883,7 +2867,7 @@ const OraclePage = () => {
 
       {/* Agent panel overlay */}
       {showFriendPanel && (
-        <div className="absolute top-14 right-4 z-30 bg-black/95 border border-[#FFAA00]/30 rounded-2xl p-4 backdrop-blur-xl w-72 max-h-[70vh] overflow-y-auto">
+        <div className="relative border border-border rounded-lg p-4 w-full">
           <div className="flex justify-between items-center mb-3">
             <p className="text-xs text-[#FFAA00] font-semibold">Summon AI into Chat</p>
             <button onClick={() => setShowFriendPanel(false)}><X className="w-4 h-4 text-[#FFAA00]" /></button>
@@ -2969,282 +2953,15 @@ const OraclePage = () => {
         </div>
       )}
 
-      {/* The stage stays full-bleed; products only appear after explicit reveal. */}
-      <div className="relative flex-1 min-h-0 pointer-events-none">
-        {oracleMode.mode === "orb" && <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />}
-        <div className="absolute right-4 top-3 pointer-events-auto">
-          <Button variant="outline" size="icon" title="Stop conversation" aria-label="Stop Oracle conversation" onClick={() => {
-            if (isListeningRef.current) toggleMic();
-            speechQueueRef.current = []; isSpeakingQueueRef.current = false; cancelCurrentSpeech(); mutedRef.current = true; setMuted(true);
-          }}><PhoneOff /></Button>
-        </div>
-        {/* Generated media overlay — Oracle steps aside while showing the user's creation */}
-        {oracleMedia && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center p-4 animate-fade-in">
-            <button
-              type="button"
-              onClick={() => setOracleMedia(null)}
-              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-background/70 border border-border flex items-center justify-center hover:bg-background"
-              aria-label="Dismiss"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            {oracleMedia.kind === "video" ? (
-              <video
-                src={oracleMedia.url}
-                autoPlay
-                playsInline
-                controls
-                onEnded={() => setOracleMedia(null)}
-                className="max-w-full max-h-full rounded-2xl shadow-2xl"
-              />
-            ) : (
-              <img
-                src={oracleMedia.url}
-                alt="Generated"
-                className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain"
-              />
-            )}
-          </div>
-        )}
 
-
-      {/* Orbiting agents only appear in explicitly selected orb mode. */}
-        {(oracleMode.mode === "orb" ? activeAgents : []).map((a, i) => {
-          const angle = (i / Math.max(activeAgents.length, 1)) * Math.PI * 2 - Math.PI / 2;
-          const radius = 42;
-          return (
-            <div key={a.name} className="absolute z-10 animate-bounce" style={{
-              top: `calc(50% + ${Math.sin(angle) * radius}%)`,
-              left: `calc(50% + ${Math.cos(angle) * radius}%)`,
-              transform: "translate(-50%, -50%)",
-              animationDuration: `${3 + i * 0.5}s`,
-            }}>
-              {a.avatar_url ? (
-                <img src={a.avatar_url} alt={a.name} className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: a.color }} />
-              ) : (
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 backdrop-blur" style={{ borderColor: a.color, backgroundColor: a.color + "20" }}>
-                  {a.emoji}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Chat messages */}
-      {showChat && conversationOpen && (
-        <div ref={scrollRef} className="absolute inset-x-3 top-20 bottom-48 z-20 overflow-y-auto rounded-lg border border-border bg-background/95 px-3 py-3 space-y-2">
-          {messages.map(msg => (
-            <div key={msg.id} className={`flex gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
-              {msg.sender !== "user" && (
-                <div className="relative group shrink-0">
-                  {msg.avatar_url ? (
-                    <img src={msg.avatar_url} alt={msg.sender} className="w-7 h-7 rounded-full object-cover border cursor-pointer" style={{ borderColor: msg.color }} />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm border cursor-pointer" style={{ borderColor: msg.color, backgroundColor: msg.color + "15" }}>
-                      {msg.emoji}
-                    </div>
-                  )}
-                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 pointer-events-none">
-                    {msg.avatar_url ? (
-                      <img src={msg.avatar_url} alt={msg.sender} className="w-28 h-28 rounded-2xl object-cover border-2 shadow-xl" style={{ borderColor: msg.color }} />
-                    ) : (
-                      <div className="w-28 h-28 rounded-2xl flex items-center justify-center text-4xl border-2 shadow-xl" style={{ borderColor: msg.color, backgroundColor: msg.color + "25" }}>
-                        {msg.emoji}
-                      </div>
-                    )}
-                    <p className="text-center text-[10px] font-bold mt-1" style={{ color: msg.color }}>{msg.sender}</p>
-                  </div>
-                </div>
-              )}
-              <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${msg.sender === "user" ? "bg-[#FFAA00] text-black rounded-br-sm" : "rounded-bl-sm"}`}
-                style={msg.sender !== "user" ? { backgroundColor: msg.color + "15", border: `1px solid ${msg.color}30`, color: "#e5e5e5" } : undefined}>
-                {msg.sender !== "user" && <p className="text-[9px] font-bold mb-0.5" style={{ color: msg.color }}>{msg.sender}</p>}
-                {msg.sender === "user" ? msg.content : (
-                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0 [&_img]:rounded-xl [&_img]:w-full [&_img]:max-h-56 [&_img]:object-cover [&_img]:my-2 [&_a]:text-primary"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
-                )}
-                {msg.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={msg.id} />}
-                {msg.artifact && <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(msg.artifact || null); }}>Show me</Button>
-                  <Button size="sm" variant="outline" onClick={() => { cancelCurrentSpeech(); toast("Kept in this conversation for later."); }}>Later</Button>
-                </div>}
-              </div>
-            </div>
-          ))}
-          {isLoading && messages[messages.length - 1]?.sender === "user" && (
-            <div className="flex gap-2 items-center">
-              {oracleAvatar?.image_url ? (
-                <img src={oracleAvatar.image_url} alt={oracleName} className="w-7 h-7 rounded-full object-cover border border-purple-500" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-[#9b87f5]/20 flex items-center justify-center text-sm border border-[#9b87f5]">🔮</div>
-              )}
-              <div className="flex gap-1 px-3 py-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FFAA00] animate-bounce" />
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FFAA00] animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FFAA00] animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {!conversationOpen && messages.length > 0 && <div className="relative z-10 mx-4 mb-3 max-h-[24dvh] overflow-auto rounded-lg border border-border bg-background/85 p-3 text-sm text-foreground">
-        <ReactMarkdown>{messages[messages.length - 1]?.content || ""}</ReactMarkdown>
-        {messages[messages.length - 1]?.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={messages[messages.length - 1].id} />}
-        {messages[messages.length - 1]?.artifact && <div className="mt-2 flex gap-2"><Button size="sm" onClick={() => { cancelCurrentSpeech(); setViewingArtifact(messages[messages.length - 1].artifact || null); }}>Show me</Button><Button variant="outline" size="sm" onClick={() => toast("Kept in your conversation.")}>Later</Button></div>}
-      </div>}
-      {/* Input bar */}
-      <div className="px-3 pb-3 z-10 bg-background/85 backdrop-blur-md">
-        {!micPermGranted && voiceOptionsOpen && (
-          <div className="mb-3 rounded-2xl border border-[#FFAA00]/30 bg-black/70 px-4 py-3">
-            <div className="flex items-center justify-between gap-2 flex-nowrap">
-              <div className="min-w-0">
-                <div className="hidden sm:block text-sm font-semibold text-foreground">Voice chat</div>
-                {micPermissionError && (
-                  <div className="text-xs text-red-300 mt-1">{micPermissionError}</div>
-                )}
-              </div>
-              <Button variant="outline" size="sm" onClick={testSpeaker}>
-                <Volume2 /> Test speaker
-              </Button>
-              <Button
-                onClick={toggleMic}
-                size="sm"
-              >
-                <Mic /> Allow mic
-              </Button>
-            </div>
-          </div>
-        )}
-        {isListening && (
-          <div className={`mb-2 text-center text-[11px] font-medium ${wakeActive ? "text-emerald-300" : "text-amber-300"}`}>
-            {wakeActive ? "● Mic on — speak naturally. Replies after you stop. Say \"enough Oracle\" or \"mute my mic\" to turn off." : "○ Oracle paused — say \"hey Oracle\" to resume."}
-          </div>
-        )}
-        {voiceOptionsOpen && <div className="mb-2 flex flex-wrap items-center gap-2">
-          <Select value={speechMode} onValueChange={value => {
-            if (value !== "device" && value !== "premium") return;
-            cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
-            speechModeRef.current = value; setSpeechMode(value);
-            if (user?.id) localStorage.setItem(`oracle-speech-mode:${user.id}`, value);
-          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="device">Device voice · no TTS fee</SelectItem>
-            <SelectItem value="premium">Premium voice · wallet paid</SelectItem>
-          </SelectContent></Select>
-          {speechMode === "device" && <Select value={deviceVoice || "automatic"} onValueChange={value => {
-            const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();
-            if (user?.id) localStorage.setItem(`oracle-device-voice:${user.id}`, selected);
-          }}><SelectTrigger aria-label="Device voice" className="h-9 w-auto max-w-full sm:max-w-[260px]"><SelectValue placeholder="Automatic voice" /></SelectTrigger><SelectContent>
-            <SelectItem value="automatic">Automatic device voice</SelectItem>
-            {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
-          </SelectContent></Select>}
-        </div>}
-        <ThinkingIndicator active={isLoading || debateActive} label={debateActive ? "Agents Working..." : "Thinking..."} />
-        <div data-testid="oracle-composer" className="relative rounded-2xl border border-[#FFAA00]/30 bg-black/60 backdrop-blur p-2 space-y-2">
-          {voiceOptionsOpen && <AgentPicker />}
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(input);
-              }
-            }}
-            onPaste={e => {
-              // Explicitly allow paste — read clipboard text and append
-              const pasted = e.clipboardData?.getData("text");
-              if (pasted) {
-                e.preventDefault();
-                const target = e.currentTarget;
-                const start = target.selectionStart ?? input.length;
-                const end = target.selectionEnd ?? input.length;
-                setInput(input.slice(0, start) + pasted + input.slice(end));
-              }
-            }}
-            placeholder={`Speak, type, paste, or attach for ${oracleName}...`}
-            rows={1}
-            spellCheck
-            autoCapitalize="sentences"
-            className="w-full min-w-0 bg-transparent text-[#dbeeff] text-sm placeholder:text-sky-100/60 outline-none resize-none max-h-32 py-1.5 select-text"
-            style={{ userSelect: "text", WebkitUserSelect: "text" }}
-          />
-
-          <div className="flex items-center gap-2 px-1">
-          <Button variant="ghost" size="icon" onClick={toggleMic} title={isListening ? "Turn microphone off" : "Talk to Oracle"} aria-label="Toggle Oracle microphone" aria-pressed={isListening} className={`h-9 w-9 shrink-0 rounded-full ${isListening ? "bg-[hsl(var(--status-active)/0.3)] text-[hsl(var(--status-active))]" : "bg-primary/15 text-primary"}`}>
-            <Mic className={isListening ? "animate-pulse" : ""} />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Voice and agent settings" title="Voice and agent settings" onClick={() => setVoiceOptionsOpen(v => !v)}><Settings2 /></Button>
-          <input
-            ref={uploadInputRef}
-            type="file"
-            accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv"
-            className="hidden"
-            onChange={handleUpload}
-          />
-          <button
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={uploading}
-            title="Attach photo or file"
-            aria-label="Attach photo or file" className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-50 transition-colors"
-          >
-            <Paperclip className={`w-5 h-5 text-purple-300 ${uploading ? "animate-pulse" : ""}`} />
-          </button>
-          <OracleImageComposer />
-          <Button variant="ghost" size="icon" onClick={() => {
-            if (isMuted) testSpeaker();
-            else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); }
-          }} title={isMuted ? "Enable Oracle speaker" : "Mute Oracle speaker"} aria-label={isMuted ? "Unmute Oracle speaker" : "Mute Oracle speaker"} aria-pressed={!isMuted} className={`h-9 w-9 shrink-0 rounded-full border ${isMuted ? "border-destructive/40 bg-destructive/20 text-destructive" : "border-[hsl(var(--status-active)/0.4)] bg-[hsl(var(--status-active)/0.2)] text-[hsl(var(--status-active))]"}`}>
-            {isMuted ? <VolumeX /> : <Volume2 />}
-          </Button>
-          <OracleToolsMenu>
-          <button
-            type="button"
-            onClick={() => {
-              const next = !councilMode;
-              setCouncilMode(next);
-              try { localStorage.setItem("oracle-council-mode", next ? "1" : "0"); } catch { /* storage blocked */ }
-              toast(next
-                ? "Council on — Nova, Lyra, Sage and Kai will all answer, debate, then I give you the best answer."
-                : "Council off — it's just me answering now.");
-            }}
-            title={councilMode ? "Council mode on — every agent answers and debates" : "Council mode off — Oracle answers alone"}
-            className={`p-2 rounded-full transition-colors ${councilMode ? "bg-[#FFAA00] text-black" : "bg-[#FFAA00]/15 text-[#FFAA00] hover:bg-[#FFAA00]/30"}`}
-          >
-            <Gavel className="w-5 h-5" />
-          </button>
-          <SwarmAgentsButton
-            currentInput={input}
-            onResult={(markdown) =>
-              setMessages(prev => [...prev, { id: `swarm-${Date.now()}`, role: "assistant", sender: `${oracleName} Swarm`, emoji: "🐝", color: "#FFD700", content: markdown } as any])
-            }
-          />
-          </OracleToolsMenu>
-          <button aria-label="Send message" onClick={() => sendMessage(input)} disabled={!input.trim()} className="h-9 w-9 ml-auto shrink-0 flex items-center justify-center rounded-full bg-[#FFAA00] disabled:opacity-30">
-            <Send className="w-5 h-5 text-black" />
-          </button>
-          </div>
-        </div>
-      </div>
-
+      </DialogContent></Dialog>
       <OracleArtifactViewer artifact={viewingArtifact} onClose={() => setViewingArtifact(null)} />
       <SystemDoctorPanel open={showDoctor} onClose={() => setShowDoctor(false)} />
-      <AudioClarifyDialog
-        open={audioClarify.open}
-        fragment={audioClarify.fragment}
-        onResolve={(intent: AudioIntent) => {
-          const { fragment } = audioClarify;
-          setAudioClarify({ open: false, fragment: "" });
-          // Send the cleaned-up prompt (or the original text if user picked Cancel)
-          const cleaned = intentToPrompt(intent, fragment);
-          // Defer one tick so the dialog unmounts before the model call begins
-          setTimeout(() => sendMessageRef.current?.(cleaned), 0);
-        }}
-      />
-    </div>
-    </>
-  );
+      <AudioClarifyDialog open={audioClarify.open} fragment={audioClarify.fragment} onResolve={(intent: AudioIntent) => {
+        const { fragment } = audioClarify; setAudioClarify({ open: false, fragment: "" });
+        const cleaned = intentToPrompt(intent, fragment); setTimeout(() => sendMessageRef.current?.(cleaned), 0);
+      }} />
+    </main>
+  </>;
 };
-
 export default OraclePage;
