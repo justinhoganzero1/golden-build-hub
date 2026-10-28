@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { choosePresenterClip, presenterHistory, type PresenterClip, type PresenterState } from "@/lib/oracleClipSelection";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
-import listeningClip from "@/assets/avatars/oracle-office-portrait-silent.webm.asset.json";
+import listeningClipUrl from "@/assets/avatars/oracle-office-listening-silent.webm";
 
 // Advertising footage is deliberately not approved as conversational footage.
 const approvedClips: PresenterClip[] = [{ id: "office-listening-1", url: listeningClipUrl, states: ["idle", "listening", "thinking", "speaking"], approved: true, silent: true }];
