@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import SEO from "@/components/SEO";
-import { Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
+import { Banknote, Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,40 @@ const WalletPage = () => {
   const [balanceCents, setBalanceCents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState<number | null>(null);
+  const [earnings, setEarnings] = useState({ shopCents: 0, seatCents: 0, availableCents: 0 });
+  const [myPayouts, setMyPayouts] = useState<any[]>([]);
+  const [payoutMethod, setPayoutMethod] = useState("payid");
+  const [payoutDestination, setPayoutDestination] = useState("");
+  const [requestingPayout, setRequestingPayout] = useState(false);
+
+  const loadEarnings = async () => {
+    if (!user) return;
+    try {
+      const [{ data: bal }, { data: reqs }] = await Promise.all([
+        supabase.functions.invoke("payouts", { body: { action: "balance" } }),
+        supabase.functions.invoke("payouts", { body: { action: "my_requests" } }),
+      ]);
+      if (bal) setEarnings({ shopCents: bal.shopCents ?? 0, seatCents: bal.seatCents ?? 0, availableCents: bal.availableCents ?? 0 });
+      if (reqs?.requests) setMyPayouts(reqs.requests);
+    } catch { /* earnings section stays at zero */ }
+  };
+
+  const requestPayout = async () => {
+    setRequestingPayout(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("payouts", {
+        body: { action: "request", amountCents: earnings.availableCents, method: payoutMethod, destination: payoutDestination },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Could not request payout.");
+      toast.success("Payout requested! We'll review it shortly.");
+      setPayoutDestination("");
+      await loadEarnings();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not request payout.");
+    } finally {
+      setRequestingPayout(false);
+    }
+  };
 
   const coinBalance = useMemo(() => (balanceCents / 100) * COINS_PER_DOLLAR, [balanceCents]);
 
