@@ -334,8 +334,8 @@ const OracleApp = () => (
 
               <Suspense fallback={<Loading />}>
                 <OracleWorkspace><Routes>
-                  <Route path="/" element={<RequireAuth><ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/index" element={<Navigate to="/oracle" replace />} />
+                  <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
+                  <Route path="/index" element={<Navigate to="/" replace />} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
