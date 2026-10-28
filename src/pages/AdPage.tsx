@@ -21,8 +21,14 @@ export default function AdPage() {
 
       <div className="mt-6 w-full max-w-sm rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)]">
         <video
+          data-ignore-app-mute
           controls
           playsInline
+          onPlay={(e) => {
+            // Never let a saved app-wide mute silence the ad.
+            e.currentTarget.muted = false;
+            if (e.currentTarget.volume === 0) e.currentTarget.volume = 1;
+          }}
           preload="metadata"
           className="w-full h-auto bg-black"
         >
