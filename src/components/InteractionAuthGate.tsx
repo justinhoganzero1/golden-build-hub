@@ -27,7 +27,6 @@ const PUBLIC_PATH_PREFIXES = [
   "/terms",
   "/about",
   "/website",
-  "/oracle-preview",
   "/oauth/consent",
   "/oauth/authorize",
   "/google/callback",
