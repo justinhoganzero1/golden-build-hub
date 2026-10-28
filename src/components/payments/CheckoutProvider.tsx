@@ -30,6 +30,23 @@ export function useCheckout(): CheckoutContextValue {
   return ctx;
 }
 
+// Global opener so any existing button can start checkout without a hook.
+let globalOpen: ((req: CheckoutRequest) => Promise<void>) | null = null;
+
+export function openCheckoutGlobal(req: CheckoutRequest): Promise<void> {
+  if (!globalOpen) {
+    toast.error("Checkout is not ready yet — please try again in a moment.");
+    return Promise.reject(new Error("Checkout provider not mounted"));
+  }
+  return globalOpen(req);
+}
+
+const FRIENDLY_ERRORS: Record<string, string> = {
+  founder_seats_gone: "All 500 founder seats are taken.",
+  already_founder: "You already own a founder seat.",
+  auth_required: "Please sign in first.",
+};
+
 export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<CheckoutRequest | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
