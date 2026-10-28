@@ -8,7 +8,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
  * Global app footer — About, Help, Legal, Investor and in-app mail on every page.
  * Hidden on immersive/standalone routes where a footer would cover the UI.
  */
-const HIDDEN_PREFIXES = ["/standalone", "/app/", "/oracle-preview", "/teleport"];
+const HIDDEN_PREFIXES = ["/standalone", "/app/", "/oracle", "/teleport"];
 
 const SiteFooter = () => {
   const { pathname } = useLocation();

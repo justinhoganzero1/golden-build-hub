@@ -25,7 +25,7 @@ const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const redirectPath = searchParams.get("redirect") || "/oracle";
   const requestedSignUp = searchParams.get("mode") === "signup";
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard";
@@ -59,10 +59,10 @@ const SignInPage = () => {
     if (justSignedUp) sessionStorage.removeItem("oracle-just-signed-up");
     let nextPath: string;
     if (!isOwner) {
-      if (justSignedUp && !requestedAdmin && redirectPath === "/dashboard") {
+      if (justSignedUp && !requestedAdmin && !searchParams.get("redirect")) {
         nextPath = "/founder-seats";
       } else {
-        nextPath = requestedAdmin ? "/dashboard" : redirectPath;
+        nextPath = requestedAdmin ? "/oracle" : redirectPath;
       }
     } else {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
