@@ -1,9 +1,7 @@
-// Owner-only Stripe revenue summary.
-// Returns gross/net totals, recent payouts, and active subscription count
-// pulled directly from the platform Stripe account.
+// Owner-only revenue summary. Reads billing_transactions and subscriptions
+// (both kept current by payments-webhook) instead of calling Stripe directly.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
@@ -22,9 +20,6 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) return json({ error: "STRIPE_SECRET_KEY not configured" }, 500);
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -42,115 +37,92 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
     if (userError || !userData?.user) {
-      console.error("[stripe-revenue] auth failed", userError);
       return json({ error: "Not authenticated", detail: userError?.message }, 401);
     }
     const userId = userData.user.id;
-    console.log("[stripe-revenue] authed user", userId, userData.user.email);
 
-    // Owner check via has_role RPC
-    const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+    const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
-    console.log("[stripe-revenue] has_role result", { isAdmin, roleError });
-    if (!isAdmin) return json({ error: "Forbidden", userId, isAdmin, roleError: roleError?.message }, 403);
+    if (!isAdmin) return json({ error: "Forbidden" }, 403);
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    // Time windows
     const now = Math.floor(Date.now() / 1000);
     const day = 86400;
-    const since30 = now - 30 * day;
-    const since7 = now - 7 * day;
+    const since30iso = new Date((now - 30 * day) * 1000).toISOString();
+    const since7iso = new Date((now - 7 * day) * 1000).toISOString();
 
-    // Pull recent successful charges (last 100) — covers most small platforms
-    const charges = await stripe.charges.list({
-      limit: 100,
-      created: { gte: since30 },
-    });
+    const [{ data: txns }, { data: subs }, { data: payoutRows }] = await Promise.all([
+      supabase
+        .from("billing_transactions")
+        .select("id, transaction_type, total_micros, currency, status, created_at")
+        .gte("created_at", since30iso)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("subscriptions")
+        .select("id", { count: "exact", head: false })
+        .in("status", ["active", "trialing"]),
+      supabase
+        .from("payout_requests")
+        .select("id, amount_cents, status, processed_at")
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
 
     let gross30 = 0;
-    let net30 = 0;
-    let fees30 = 0;
-    let refunded30 = 0;
     let count30 = 0;
     let gross7 = 0;
     let count7 = 0;
     const currencyTotals: Record<string, number> = {};
 
-    for (const ch of charges.data) {
-      if (ch.status !== "succeeded") continue;
-      const amount = ch.amount ?? 0;
-      const refunded = ch.amount_refunded ?? 0;
-      const fee = (ch.application_fee_amount as number | null) ?? 0;
-      gross30 += amount;
-      refunded30 += refunded;
-      fees30 += fee;
-      net30 += amount - refunded - fee;
+    for (const t of txns ?? []) {
+      if (t.status !== "settled") continue;
+      const cents = Math.round((t.total_micros ?? 0) / 10_000);
+      gross30 += cents;
       count30 += 1;
-      currencyTotals[ch.currency] = (currencyTotals[ch.currency] ?? 0) + amount;
-      if ((ch.created ?? 0) >= since7) {
-        gross7 += amount;
+      const cur = String(t.currency ?? "aud").toLowerCase();
+      currencyTotals[cur] = (currencyTotals[cur] ?? 0) + cents;
+      if (t.created_at >= since7iso) {
+        gross7 += cents;
         count7 += 1;
       }
     }
 
-    // Current Stripe balance
-    const balance = await stripe.balance.retrieve();
-    const available = balance.available.reduce((acc: Record<string, number>, b: Stripe.Balance.Available) => {
-      acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
-      return acc;
-    }, {} as Record<string, number>);
-    const pending = balance.pending.reduce((acc: Record<string, number>, b: Stripe.Balance.Pending) => {
-      acc[b.currency] = (acc[b.currency] ?? 0) + b.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Active subscriptions count
-    const subs = await stripe.subscriptions.list({ status: "active", limit: 100 });
-
-    // Recent payouts
-    const payouts = await stripe.payouts.list({ limit: 5 });
-
-    // Recent charges for the table
-    const recent = charges.data.slice(0, 10).map((c: Stripe.Charge) => ({
-      id: c.id,
-      amount: c.amount,
-      currency: c.currency,
-      created: c.created,
-      status: c.status,
-      description: c.description ?? c.statement_descriptor ?? null,
-      receipt_url: c.receipt_url ?? null,
+    const recent = (txns ?? []).slice(0, 10).map((t) => ({
+      id: t.id,
+      amount: Math.round((t.total_micros ?? 0) / 10_000),
+      currency: String(t.currency ?? "aud").toLowerCase(),
+      created: Math.floor(new Date(t.created_at).getTime() / 1000),
+      status: t.status,
+      description: t.transaction_type,
+      receipt_url: null,
     }));
 
     return json({
       gross30Cents: gross30,
-      net30Cents: net30,
-      fees30Cents: fees30,
-      refunded30Cents: refunded30,
+      net30Cents: gross30,
+      fees30Cents: 0,
+      refunded30Cents: 0,
       count30,
       gross7Cents: gross7,
       count7,
       currencyTotals,
-      activeSubscriptions: subs.data.length,
-      availableBalance: available,
-      pendingBalance: pending,
+      activeSubscriptions: (subs ?? []).length,
+      availableBalance: {},
+      pendingBalance: {},
       recentCharges: recent,
-      recentPayouts: payouts.data.map((p: Stripe.Payout) => ({
+      recentPayouts: (payoutRows ?? []).map((p) => ({
         id: p.id,
-        amount: p.amount,
-        currency: p.currency,
-        arrival_date: p.arrival_date,
+        amount: p.amount_cents,
+        currency: "aud",
+        arrival_date: p.processed_at ? Math.floor(new Date(p.processed_at).getTime() / 1000) : null,
         status: p.status,
       })),
       generatedAt: now,
     });
   } catch (e) {
     console.error("[stripe-revenue]", e);
-    return json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
-      500
-    );
+    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
