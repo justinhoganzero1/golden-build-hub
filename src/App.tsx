@@ -324,7 +324,6 @@ const OracleApp = () => (
                 <PreviewModeBanner />
               </Suspense>
               <MasterMuteButton />
-              <OracleAgent />
               <OracleControlListener />
               <AdminFlagBootstrap />
               <InteractionAuthGate />
@@ -341,7 +340,7 @@ const OracleApp = () => (
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />
                   <Route path="/membership" element={<RequireAuth><ErrorBoundary pageName="Membership"><MembershipPage /></ErrorBoundary></RequireAuth>} />
-                  <Route path="/oracle-preview" element={<ErrorBoundary pageName="Oracle Preview"><OraclePreviewPage /></ErrorBoundary>} />
+                  <Route path="/oracle-preview" element={<Navigate to="/oracle" replace />} />
                   <Route path="/ad" element={<ErrorBoundary pageName="Ad"><AdPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
