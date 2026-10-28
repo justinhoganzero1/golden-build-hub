@@ -2892,6 +2892,15 @@ const OraclePage = () => {
           </SelectContent></Select>}
 
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant={premiumVideo ? "default" : "outline"} size="sm" onClick={() => {
+            const next = !premiumVideo;
+            setPremiumVideo(next);
+            if (user?.id) localStorage.setItem(`oracle-video-replies:${user.id}`, next ? "on" : "off");
+            if (next) toast("Video replies on — each answer is filmed as a real lip-synced video, billed per second from your wallet.");
+          }}><Clapperboard />Video replies {premiumVideo ? "on · pay-per-use" : "off"}</Button>
+          {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer…</span>}
+        </div>
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>
