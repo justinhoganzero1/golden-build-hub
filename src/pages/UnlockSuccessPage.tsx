@@ -31,7 +31,7 @@ const UnlockSuccessPage = () => {
         return;
       }
       const { data, error } = await supabase.functions.invoke("verify-app-unlock", { /* environment added below */
-        body: { app_key: appKey, session_id: sessionId },
+        body: { app_key: appKey, session_id: sessionId, environment: getStripeEnvironment() },
       });
       if (error || !(data as any)?.unlocked) {
         setStatus("fail");

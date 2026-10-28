@@ -26,7 +26,7 @@ export default function MoviePaymentSuccessPage() {
     }
     (async () => {
       const { data, error } = await supabase.functions.invoke("verify-movie-payment", { /* environment added below */
-        body: { session_id: sessionId, project_id: projectId },
+        body: { session_id: sessionId, project_id: projectId, environment: getStripeEnvironment() },
       });
       if (error || data?.error) {
         setStatus("error");
