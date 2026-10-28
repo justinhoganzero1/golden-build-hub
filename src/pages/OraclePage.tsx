@@ -2,6 +2,7 @@ import { generateMemberVideo } from "@/lib/videoGeneration";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
+import { chooseOracleDeviceVoice, naturalDeviceSpeechText } from "@/lib/oracleDeviceVoice";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
@@ -651,6 +652,10 @@ const OraclePage = () => {
     if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
     const allVoices = window.speechSynthesis.getVoices();
     const englishVoices = allVoices.filter(v => v.lang.startsWith("en"));
+    if (agentName === oracleName) {
+      const voice = chooseOracleDeviceVoice(allVoices);
+      if (voice) { voiceMapRef.current.set(agentName, voice); return voice; }
+    }
 
     // Score voices by quality — neural/natural voices sound far less robotic
     const scoreVoice = (v: SpeechSynthesisVoice): number => {
@@ -704,7 +709,7 @@ const OraclePage = () => {
     const voice = available.length > 0 ? available[0] : englishVoices[0];
     if (voice) voiceMapRef.current.set(agentName, voice);
     return voice;
-  }, [agents]);
+  }, [agents, oracleName]);
 
   const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
@@ -729,7 +734,10 @@ const OraclePage = () => {
       toast.error("This browser cannot play the voice check.");
       return;
     }
-    const utterance = new SpeechSynthesisUtterance("Hello Juzzy. Your speaker is on. Tap the microphone to talk to Oracle.");
+    const utterance = new SpeechSynthesisUtterance("Hi there! It’s lovely to hear from you. What shall we make today?");
+    const voice = window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice) || chooseOracleDeviceVoice(window.speechSynthesis.getVoices());
+    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+    utterance.rate = 1; utterance.pitch = 1; utterance.volume = 1;
     utterance.onerror = () => toast.error("Sound could not start. Check your device volume and tap again.");
     window.speechSynthesis.speak(utterance);
   };
@@ -895,15 +903,14 @@ const OraclePage = () => {
     return new Promise((resolve) => {
       // Snapshot token; if a newer utterance preempts us, abort silently.
       const myToken = speechTokenRef.current;
-      const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
-      const fullText = sentences.map(s => s.trim()).filter(Boolean).join('. ');
+      const fullText = naturalDeviceSpeechText(text);
       if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
         toast.error("Device speech is not available in this browser."); resolve(); return;
       }
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.lang = "en-US";
-      utterance.rate = 0.88;
-      utterance.pitch = getStablePitch(agentName);
+      utterance.rate = 1;
+      utterance.pitch = agentName === oracleName ? 1 : getStablePitch(agentName);
       utterance.volume = 0.95;
       const voice = (agentName === oracleName && deviceVoice
         ? window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice)
@@ -2728,7 +2735,7 @@ const OraclePage = () => {
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
-          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"} · AI portrait</p>
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"} · {oracleAvatar?.image_url ? "AI portrait" : "Reused AI video"}</p>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="oracle-control" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}>{conversationOpen ? <X /> : <MessageSquare />}</Button>
@@ -2780,7 +2787,7 @@ const OraclePage = () => {
       </div>
       <Dialog open={voiceOptionsOpen} onOpenChange={setVoiceOptionsOpen}><DialogContent className="oracle-settings">
         <DialogTitle>Oracle settings</DialogTitle>
-        <DialogDescription>AI portrait · device voice available. New AI creations use your wallet.</DialogDescription>
+        <DialogDescription>Reused AI footage; lips do not match new answers. Device voice varies by device. Premium speech and new AI creations use your wallet.</DialogDescription>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={testSpeaker}><Volume2 />Test speaker</Button>
           <Button variant="outline" size="sm" onClick={toggleMic}><Mic />{isListening ? "Stop mic" : "Allow mic"}</Button>

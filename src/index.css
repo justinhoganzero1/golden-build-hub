@@ -2043,7 +2043,7 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 .oracle-prompt:focus-within { border-color: hsl(var(--primary) / .75); }
 .oracle-prompt-field { display: block; width: 100%; min-height: 50px; max-height: 120px; overflow-y: auto; resize: none; padding: 4px 6px 12px; outline: none; background: transparent; color: hsl(var(--foreground)); font-size: 16px; line-height: 1.5; }
 .oracle-prompt-field::placeholder { color: hsl(var(--muted-foreground)); }
-.oracle-send { width: 40px !important; height: 40px !important; flex-shrink: 0; border-radius: 6px !important; box-shadow: none !important; }
+.oracle-send { width: 40px !important; height: 40px !important; flex-shrink: 0; border-radius: 6px !important; box-shadow: none !important; background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
 .oracle-mic-active { color: hsl(var(--status-active)) !important; background: hsl(var(--status-active) / .15) !important; }
 .oracle-reply { max-height: min(26dvh, 250px); overflow-y: auto; margin-bottom: 12px; padding: 16px 18px; border-left: 2px solid hsl(var(--primary) / .7); background: hsl(var(--oracle-glass) / .82); backdrop-filter: blur(20px); border-radius: 0 6px 6px 0; font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
 .oracle-reply p { margin: 0 0 6px; }
