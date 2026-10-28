@@ -275,7 +275,6 @@ const AudioDiagnosticsPage = lazy(loaders["/diagnostics/audio"]);
 const PublicLibraryPage = lazy(loaders["/library/public"]);
 const ShopPurchaseSuccessPage = lazy(() => import("./pages/ShopPurchaseSuccessPage"));
 const AgentsHubPage = lazy(() => import("./pages/AgentsHubPage"));
-const AgentChatPage = lazy(() => import("./pages/AgentChatPage"));
 const GetApiKeyWizardPage = lazy(() => import("./pages/GetApiKeyWizardPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminInboxPage = lazy(() => import("./pages/AdminInboxPage"));
@@ -319,9 +318,6 @@ const OracleApp = () => (
               <Toaster />
               <Sonner />
               <OfflineBanner />
-              {/* MasterOracleLauncher removed from center of screen —
-                  the Oracle chicklet on the dashboard already provides access. */}
-              {/* <MasterOracleLauncher /> */}
               <Suspense fallback={null}>
                 {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
                     they cover portal balloons. Re-add per-page if needed. */}
