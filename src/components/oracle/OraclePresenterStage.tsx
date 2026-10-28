@@ -60,6 +60,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   const [thinkingPlayed, setThinkingPlayed] = useState(false);
   const [listeningUrl, setListeningUrl] = useState(LISTENING_CLIPS[0].url);
   const anglePickedRef = useRef(false);
+  // An unavailable earlier cue must not permanently hide a later reply.
+  useEffect(() => { setFailed(false); }, [replyVideoUrl, cue, state]);
 
   // Reset the one-shot thinking clip each time a new request starts.
   useEffect(() => { if (state !== "thinking") setThinkingPlayed(false); }, [state]);
@@ -129,6 +131,6 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
     {state === "speaking" && !replyVideoUrl && !cue && (
       <div aria-hidden data-testid="oracle-voice-glow" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 animate-pulse bg-gradient-to-t from-primary/30 to-transparent" />
     )}
-    <span className="sr-only">{plan && !failed ? "AI presenter using prerecorded footage" : "AI presenter portrait; video is not active"}</span>
+    <span className="sr-only">{plan && !failed ? replyVideoUrl ? "AI presenter with a newly generated video reply" : "AI presenter using prerecorded footage" : "AI presenter portrait; video is not active"}</span>
   </div>;
 }
