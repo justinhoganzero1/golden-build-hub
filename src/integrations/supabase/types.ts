@@ -2708,6 +2708,42 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_requests: {
+        Row: {
+          admin_note: string | null
+          amount_cents: number
+          created_at: string
+          destination: string
+          id: string
+          method: string
+          processed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount_cents: number
+          created_at?: string
+          destination: string
+          id?: string
+          method?: string
+          processed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount_cents?: number
+          created_at?: string
+          destination?: string
+          id?: string
+          method?: string
+          processed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       photography_templates: {
         Row: {
           created_at: string
@@ -5142,6 +5178,7 @@ export type Database = {
         Args: { _metadata: Json; _story_id: string; _title: string }
         Returns: string
       }
+      seller_available_balance: { Args: { user_uuid: string }; Returns: number }
       stripe_event_summary: {
         Args: { _hours?: number }
         Returns: {
