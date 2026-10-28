@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import SEO from "@/components/SEO";
 import { Banknote, Coins, Loader2, RefreshCw, ShoppingCart, Sparkles, Wallet } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -193,6 +194,7 @@ const WalletPage = () => {
           })}
         </div>
 
+        {!Capacitor.isNativePlatform() && (
         <div className="rounded-2xl border border-border bg-card p-5 mt-5">
           <div className="flex items-center gap-2 mb-2">
             <Banknote className="w-4 h-4 text-primary" />
@@ -259,6 +261,7 @@ const WalletPage = () => {
             </div>
           )}
         </div>
+        )}
 
         <div className="rounded-2xl border border-border bg-card p-5 mt-5 space-y-2">
           <h2 className="text-sm font-bold text-foreground">What uses coins</h2>
