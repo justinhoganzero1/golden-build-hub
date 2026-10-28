@@ -14,6 +14,7 @@ import { usePublicLibrary, PublicLibraryItem } from "@/hooks/usePublicLibrary";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { SignedImage, SignedVideo } from "@/components/SignedMedia";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
@@ -78,12 +79,11 @@ const PublicLibraryPage = () => {
     }
     setBusyId(item.id);
     try {
-      const { data, error } = await supabase.functions.invoke("shop-checkout", {
+      await openCheckoutGlobal({
+        functionName: "shop-checkout",
         body: { item_id: item.id, item_kind: item.kind },
+        title: item.title || "Creators Shop purchase",
       });
-      if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank", "noopener,noreferrer");
-      else toast.error("Could not start checkout.");
     } catch (e: any) {
       toast.error(e?.message || "Checkout failed.");
     } finally {

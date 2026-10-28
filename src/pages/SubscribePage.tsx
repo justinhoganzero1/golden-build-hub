@@ -5,6 +5,7 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const COINS_PER_DOLLAR = 5.37;
 const coinPacks = [
@@ -29,12 +30,11 @@ const SubscribePage = () => {
 
     setCheckingOut(dollars);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      await openCheckoutGlobal({
+        functionName: "create-checkout",
         body: { coinPackDollars: dollars },
+        title: `Top up — $${dollars} coin pack`,
       });
-      if (error) throw error;
-      if (!data?.url) throw new Error("Checkout did not return a payment link.");
-      window.location.href = data.url;
     } catch (err: any) {
       toast.error(err?.message || "Could not open coin checkout.");
       setCheckingOut(null);

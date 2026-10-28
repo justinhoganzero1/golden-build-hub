@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Crown, Sparkles, Lock, Unlock, ArrowLeft, MessageCircle, Library, UserRound } from "lucide-react";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const UPGRADE_FROM_KEY = "oracle.upgradeFrom";
 
@@ -63,10 +64,14 @@ const MembershipPage = () => {
   const checkout = async (plan: "founder" | "monthly") => {
     if (!user) return navigate("/sign-in?mode=signup&redirect=/membership");
     setBusy(plan);
-    const { data, error } = await supabase.functions.invoke("membership", { body: { action: "checkout", plan } });
+    try {
+      await openCheckoutGlobal({
+        functionName: "membership",
+        body: { action: "checkout", plan },
+        title: plan === "founder" ? "Founder Seat — A$1 once" : "Membership — A$19.99/month",
+      });
+    } catch { /* toast already shown */ }
     setBusy(null);
-    if (error || !data?.url) return toast.error(data?.error === "founder_seats_gone" ? "All 500 founder seats are taken." : "Couldn't open checkout.");
-    window.location.href = data.url;
   };
 
   const transfer = async () => {

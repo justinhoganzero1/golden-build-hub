@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useLivingGifs";
 import { supabase } from "@/integrations/supabase/client";
 import { MASTER_AI_AVATAR } from "@/assets/master-ai-avatar";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const PRICE_LABEL = "$4.00";
 
@@ -150,8 +151,11 @@ const LivingGifStudioPage = () => {
         return;
       }
 
-      if (!data?.url) throw new Error("No checkout URL");
-      window.location.href = data.url;
+      await openCheckoutGlobal({
+        functionName: "create-gif-checkout",
+        body: { source_avatar_id: pickedId === "master" ? null : pickedId, source_image_url: typeof sourceImage === "string" ? sourceImage : picked.image_url, prompt, title },
+        title: "Living GIF — $4",
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`Couldn't generate: ${msg}`);

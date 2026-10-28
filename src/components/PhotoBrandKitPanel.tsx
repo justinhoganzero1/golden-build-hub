@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
   Loader2, Sparkles, Save, Upload, Trash2, Lock, Plus, ExternalLink,
   Instagram, Youtube, Facebook, Linkedin, Twitter, Globe2,
 } from "lucide-react";
@@ -207,17 +208,17 @@ const PhotoBrandKitPanel = ({ currentImage, prompt, filter, mode, onApplyTemplat
   const unlockUnlimited = async () => {
     setUnlocking(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-app-unlock", {
+      await openCheckoutGlobal({
+        functionName: "create-app-unlock",
         body: { app_key: "photo_templates" },
+        title: "Unlimited Photo Templates — $1",
+        onResponse: (d) => {
+          if (d?.already_unlocked) {
+            toast.success("Already unlocked");
+            refreshQuota();
+          }
+        },
       });
-      if (error) throw error;
-      const url = (data as any)?.url;
-      if ((data as any)?.already_unlocked) {
-        toast.success("Already unlocked");
-        refreshQuota();
-        return;
-      }
-      if (url) window.location.href = url;
     } catch (e: any) {
       toast.error(e.message || "Could not start checkout");
     } finally {

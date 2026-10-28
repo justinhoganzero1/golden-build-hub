@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, ShoppingBag, Play, Trash2 } from "lucide-react";
 import SEO from "@/components/SEO";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 type Listing = { id: string; user_id: string; title: string; description: string; kind: "quiz" | "tracker"; shop_price_cents: number; download_count: number; owned: boolean };
 type QuizQ = { q: string; options: string[]; answer: number };
@@ -104,10 +105,10 @@ export default function ModuleShopPage() {
 
   const buy = async (l: Listing) => {
     setBusy(l.id);
-    const { data, error } = await supabase.functions.invoke("shop-checkout", { body: { item_id: l.id, item_kind: "module" } });
+    try {
+      await openCheckoutGlobal({ functionName: "shop-checkout", body: { item_id: l.id, item_kind: "module" }, title: l.title || "Buy this module" });
+    } catch { /* toast already shown */ }
     setBusy(null);
-    if (error || !data?.url) return toast.error(data?.error || error?.message || "Checkout failed");
-    window.location.href = data.url;
   };
 
   return (

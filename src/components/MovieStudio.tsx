@@ -24,6 +24,7 @@ import MovieHostPanel from "@/components/movie/MovieHostPanel";
 import RecentlyCreatedMovies from "@/components/movie/RecentlyCreatedMovies";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
   DEFAULT_HOST, audioEnvelope, envelopeAt, drawTalkingHead, hostRect, hostPortraitPrompt,
   clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
 } from "@/lib/movieHost";
@@ -672,16 +673,12 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
     if (!confirm(`Block ${blockNum}: $${usd} USD for 10 scenes.\n\nAfter payment you'll be returned here. Continue to checkout?`)) return;
     setPayingBlock(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-block-payment", {
+      await openCheckoutGlobal({
+        functionName: "create-block-payment",
         body: { blockNumber: blockNum },
+        title: `Scene block ${blockNum} — $${usd}`,
       });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        toast.success(`Checkout opened for block ${blockNum} ($${usd}). After paying, click "I've paid — generate" to continue.`);
-      } else {
-        throw new Error("No checkout URL");
-      }
+      toast.success(`After paying you'll be returned here — then click "I've paid — generate" to continue.`);
     } catch (e: any) {
       console.error(e); toast.error(e.message || "Could not start checkout");
     } finally { setPayingBlock(false); }

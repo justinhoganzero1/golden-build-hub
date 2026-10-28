@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Crown, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 interface MoviePaymentDialogProps {
   open: boolean;
@@ -29,16 +30,12 @@ export default function MoviePaymentDialog({ open, onOpenChange, projectId, proj
   const pay = async (tier: string) => {
     setBusy(tier);
     try {
-      const { data, error } = await supabase.functions.invoke("movie-checkout", {
+      await openCheckoutGlobal({
+        functionName: "movie-checkout",
         body: { project_id: projectId, quality_tier: tier },
+        title: `Movie render — ${tier.toUpperCase()}`,
       });
-      if (error || data?.error) {
-        toast.error(error?.message || data?.error || "Checkout failed");
-        return;
-      }
-      if (data?.url) {
-        window.location.href = data.url;
-      }
+      onOpenChange(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Unexpected error");
     } finally {

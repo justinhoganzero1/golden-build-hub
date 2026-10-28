@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAppUnlock, APP_PRICING, type AppKey } from "@/hooks/useAppUnlock";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 interface Props {
   appKey: AppKey;
@@ -26,18 +27,17 @@ const AppUnlockGate = ({ appKey, children }: Props) => {
   const startCheckout = async () => {
     setPaying(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-app-unlock", {
+      await openCheckoutGlobal({
+        functionName: "create-app-unlock",
         body: { app_key: appKey },
+        title: meta?.label ? `Unlock ${meta.label}` : "Unlock this app",
+        onResponse: (d) => {
+          if (d?.already_unlocked) {
+            toast.success("You already own this — refreshing.");
+            window.location.reload();
+          }
+        },
       });
-      if (error) throw error;
-      if ((data as any)?.already_unlocked) {
-        toast.success("You already own this — refreshing.");
-        window.location.reload();
-        return;
-      }
-      const url = (data as any)?.url;
-      if (!url) throw new Error("No checkout URL");
-      window.location.href = url;
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't start checkout");
       setPaying(false);

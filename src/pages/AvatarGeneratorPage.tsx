@@ -14,6 +14,7 @@ import { useSetMasterAvatar } from "@/hooks/useMasterAvatar";
 import MediaPickerDialog from "@/components/MediaPickerDialog";
 import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const STYLES = [
   { value: "3d-4k-realistic", label: "3D 4K Realistic", desc: "Ultra-realistic 3D 4K cinematic render" },
@@ -203,13 +204,11 @@ const AvatarGeneratorPage = () => {
     }
     setIsCheckingOut(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-avatar-checkout", {
+      await openCheckoutGlobal({
+        functionName: "create-avatar-checkout",
         body: { product },
+        title: product === "partner" ? "AI Partner — $15/month" : "AI Friend Avatar — $3",
       });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
     } catch (e) {
       console.error(e);
       toast.error("Failed to start checkout");

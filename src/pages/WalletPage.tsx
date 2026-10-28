@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { trackAiDiscovery } from "@/lib/aiDiscovery";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const COINS_PER_DOLLAR = 5.37;
 const coinPacks = [5, 10, 20, 50, 100];
@@ -50,13 +51,12 @@ const WalletPage = () => {
     }
     setCheckingOut(dollars);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { coinPackDollars: dollars },
-      });
-      if (error) throw error;
-      if (!data?.url) throw new Error("Checkout did not return a payment link.");
       await trackAiDiscovery("topup_started", { amount_cents: Math.round(dollars * 100) });
-      window.location.href = data.url;
+      await openCheckoutGlobal({
+        functionName: "create-checkout",
+        body: { coinPackDollars: dollars },
+        title: `Top up — $${dollars} coin pack`,
+      });
     } catch (err: any) {
       toast.error(err?.message || "Could not open coin checkout.");
       setCheckingOut(null);
