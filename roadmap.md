@@ -90,3 +90,4 @@
 - [x] Fix zero audio on oraclelunar.com/ad (phone + desktop)
 - [ ] Switch payments to Lovable built-in (seamless Stripe): user confirmed they want Lovable-managed paygates instead of own Stripe key
 - [ ] Audit gaps found: avatar checkout + gif checkout + block payment not fulfilled by stripe-webhook
+- [ ] Lovable built-in payments: enable Stripe, recreate products/prices, wire webhook so avatar/GIF/block purchases fulfil (old BYOK webhook gaps)
