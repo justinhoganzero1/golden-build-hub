@@ -280,8 +280,8 @@ const OraclePage = () => {
   const [usage, setUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
   const [oracleMedia, setOracleMedia] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const [viewingArtifact, setViewingArtifact] = useState<OracleArtifact | null>(null);
-  const [speechMode, setSpeechMode] = useState<OracleSpeechMode>("device");
-  const speechModeRef = useRef<OracleSpeechMode>("device");
+  const [speechMode, setSpeechMode] = useState<OracleSpeechMode>("premium");
+  const speechModeRef = useRef<OracleSpeechMode>("premium");
   const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [deviceVoice, setDeviceVoice] = useState("");
   useEffect(() => {
@@ -844,10 +844,11 @@ const OraclePage = () => {
 
       // Always favor the saved Oracle voice configuration so playback stays
       // consistent and we never slip into a different-sounding fallback voice.
-      // Same saved voice, but always on the low-latency speech engine so
-      // Oracle starts talking well inside the three-second target.
+      // Premium by default: full multilingual engine at broadcast bitrate so
+      // Oracle sounds like the ad, not like a low-latency sketch voice. A
+      // saved flash/turbo model is honoured only when deliberately picked.
       const savedModelId = (masterSettings?.model_id as string | undefined) || undefined;
-      const modelId = savedModelId && /flash|turbo/i.test(savedModelId) ? savedModelId : "eleven_flash_v2_5";
+      const modelId = savedModelId || "eleven_multilingual_v2";
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",
@@ -857,7 +858,7 @@ const OraclePage = () => {
           text: prepared,
           voiceId: masterVoiceId,
           fast: true,
-          outputFormat: "mp3_22050_32",
+          outputFormat: "mp3_44100_128",
           modelId,
           settings: hasCustomMaster
             ? {

@@ -12,8 +12,9 @@ export interface OracleArtifact {
 
 export function resolveSpeechMode(saved: string | null, hasSavedPremiumVoice: boolean): OracleSpeechMode {
   if (saved === "device" || saved === "premium") return saved;
-  // A voice selection alone is not permission to charge for speech.
-  return "device";
+  // Premium is the default sound; members without funds fall back to device
+  // speech at playback time, so nobody is left unheard.
+  return "premium";
 }
 
 export async function routeOracleSpeech(mode: OracleSpeechMode, device: () => Promise<void>, premium: () => Promise<void>) {
