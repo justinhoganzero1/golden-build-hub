@@ -1,4 +1,5 @@
 # Project Rules
+- OracleWorkspace keeps one canonical Oracle mounted while existing guarded tool routes render as returnable overlays; legacy direct routes remain available and Reimagined never shares this shell. Presenter clip selection is separate from speech and accepts only reviewed silent clips, with an honest portrait fallback.
 - Canonical Oracle stages typed completed artifacts before a user-selected reveal; generation and Library-save confirmation are separate, and device speech routes through the existing queue without invoking paid TTS. Live-video services require separate verified pricing and authorization.
 - Movie Maker recent movies query only the signed-in account's saved video metadata; fetch and sign private media only on selection, and reuse Library records rather than duplicate storage.
 - Reimagined whole-caseload preparation is deterministic and bounded to 1,000 claims; manager-confirmed tasks/drafts use stable IDs and versioned saves, while synthetic scale exercises never create accounts or replace saved claims, preserving human decisions and demo isolation.

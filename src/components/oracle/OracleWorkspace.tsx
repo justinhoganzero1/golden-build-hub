@@ -14,7 +14,7 @@ export default function OracleWorkspace({ children }: { children: ReactNode }) {
   const active = entered.current;
   if (!active) return <>{children}</>;
   return <>
-    <RequireAuth><Suspense fallback={<div className="h-[100dvh] bg-background" />}><OraclePage /></Suspense></RequireAuth>
+    <div aria-hidden={!isOracle} inert={!isOracle ? true : undefined}><RequireAuth><Suspense fallback={<div className="h-[100dvh] bg-background" />}><OraclePage /></Suspense></RequireAuth></div>
     {!isOracle && <section role="dialog" aria-modal="true" aria-label="Oracle workspace tool" className="fixed inset-0 z-40 flex flex-col bg-background">
       <header className="flex shrink-0 items-center gap-3 border-b border-border bg-background px-3 py-2">
         <Button variant="outline" onClick={() => navigate("/oracle", { replace: true })}><ArrowLeft className="h-4 w-4" />Back to Oracle</Button>

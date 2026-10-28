@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { choosePresenterClip, presenterHistory, type PresenterClip, type PresenterState } from "@/lib/oracleClipSelection";
-import portrait from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
+import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 
 // Advertising footage is deliberately not approved as conversational footage.
 const approvedClips: PresenterClip[] = [];

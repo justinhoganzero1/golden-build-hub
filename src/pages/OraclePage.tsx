@@ -2974,8 +2974,8 @@ const OraclePage = () => {
         )}
 
 
-        {/* Orbiting agents */}
-        {activeAgents.map((a, i) => {
+      {/* Orbiting agents only appear in explicitly selected orb mode. */}
+        {(oracleMode.mode === "orb" ? activeAgents : []).map((a, i) => {
           const angle = (i / Math.max(activeAgents.length, 1)) * Math.PI * 2 - Math.PI / 2;
           const radius = 42;
           return (
