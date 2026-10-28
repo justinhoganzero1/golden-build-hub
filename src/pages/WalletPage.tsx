@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { trackAiDiscovery } from "@/lib/aiDiscovery";
 import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 const COINS_PER_DOLLAR = 5.37;
 const coinPacks = [5, 10, 20, 50, 100];
@@ -42,6 +43,42 @@ const WalletPage = () => {
     const h = () => loadWallet();
     window.addEventListener("wallet:updated", h);
     return () => window.removeEventListener("wallet:updated", h);
+  }, [user]);
+
+  // After checkout returns with ?coins=success, poll until the verified
+  // webhook credit lands, then refresh the balance.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (params.get("coins") !== "success" || !sessionId || !user) return;
+    let cancelled = false;
+    let attempts = 0;
+    toast.info("Payment received — adding your coins…");
+    const poll = async () => {
+      while (!cancelled && attempts < 15) {
+        attempts++;
+        try {
+          const { data } = await supabase.functions.invoke("verify-coin-topup", {
+            body: { sessionId, environment: getStripeEnvironment() },
+          });
+          if (data?.credited) {
+            if (!cancelled) {
+              toast.success("Coins added to your wallet!");
+              window.dispatchEvent(new Event("wallet:updated"));
+              window.history.replaceState({}, "", "/wallet");
+            }
+            return;
+          }
+        } catch { /* keep polling */ }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (!cancelled) {
+        toast.info("Still processing — your coins will appear shortly.");
+        window.dispatchEvent(new Event("wallet:updated"));
+      }
+    };
+    void poll();
+    return () => { cancelled = true; };
   }, [user]);
 
   const buyCoins = async (dollars: number) => {

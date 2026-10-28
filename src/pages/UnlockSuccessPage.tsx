@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { APP_PRICING, type AppKey } from "@/hooks/useAppUnlock";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 const APP_ROUTES: Record<AppKey, string> = {
   app_wrapper: "/dashboard",
@@ -29,8 +30,8 @@ const UnlockSuccessPage = () => {
         setError("Missing payment details");
         return;
       }
-      const { data, error } = await supabase.functions.invoke("verify-app-unlock", {
-        body: { app_key: appKey, session_id: sessionId },
+      const { data, error } = await supabase.functions.invoke("verify-app-unlock", { /* environment added below */
+        body: { app_key: appKey, session_id: sessionId, environment: getStripeEnvironment() },
       });
       if (error || !(data as any)?.unlocked) {
         setStatus("fail");

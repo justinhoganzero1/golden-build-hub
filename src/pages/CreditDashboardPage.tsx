@@ -9,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TRIAL_DAYS } from "@/lib/apiKeyReminderLogic";
 import {
-import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
-import { getStripeEnvironment } from "@/lib/stripe";
   FEATURE_PRICES,
   FEATURE_GROUPS,
   chargedCents,
   centsToCoins,
   COINS_PER_DOLLAR,
 } from "@/lib/featurePrices";
+import { getStripeEnvironment } from "@/lib/stripe";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 const money = (cents: number) =>
   cents >= 100 ? `$${(cents / 100).toFixed(2)}` : `${cents}c`;

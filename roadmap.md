@@ -88,6 +88,6 @@
 - [ ] Finish all in-app video paths: primary Omni endpoint and MovieStudio/Oracle/Library handoffs repaired and owner real generation verified; separate movie-project/GIF/Runway/Shotstack need verified cost/payment handling and credentials before real renders. No claim all paths work.
 - [x] Presenter feature ad with AI reveal, no subtitles (30s, 1080p)
 - [x] Fix zero audio on oraclelunar.com/ad (phone + desktop)
-- [ ] Switch payments to Lovable built-in (seamless Stripe): user confirmed they want Lovable-managed paygates instead of own Stripe key
-- [ ] Audit gaps found: avatar checkout + gif checkout + block payment not fulfilled by stripe-webhook
-- [ ] Lovable built-in payments: enable Stripe, recreate products/prices, wire webhook so avatar/GIF/block purchases fulfil (old BYOK webhook gaps)
+- [x] Switch payments to Lovable built-in (seamless Stripe): enabled, 13 products created, all 9 checkouts + webhook rewired, $5 test purchase verified end-to-end (wallet credited)
+- [x] Audit gaps fixed: avatar, GIF and block purchases now fulfilled server-side by payments-webhook (app_unlocks / living_gifs.paid / movie_block_payments)
+- [ ] Go-live: Juzzy must claim the payments account in the Payments tab and finish live setup before real money works

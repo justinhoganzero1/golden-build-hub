@@ -24,10 +24,10 @@ import MovieHostPanel from "@/components/movie/MovieHostPanel";
 import RecentlyCreatedMovies from "@/components/movie/RecentlyCreatedMovies";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
   DEFAULT_HOST, audioEnvelope, envelopeAt, drawTalkingHead, hostRect, hostPortraitPrompt,
   clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
 } from "@/lib/movieHost";
+import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 
 
 
