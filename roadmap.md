@@ -88,3 +88,5 @@
 - [ ] Finish all in-app video paths: primary Omni endpoint and MovieStudio/Oracle/Library handoffs repaired and owner real generation verified; separate movie-project/GIF/Runway/Shotstack need verified cost/payment handling and credentials before real renders. No claim all paths work.
 - [x] Presenter feature ad with AI reveal, no subtitles (30s, 1080p)
 - [x] Fix zero audio on oraclelunar.com/ad (phone + desktop)
+- [ ] Switch payments to Lovable built-in (seamless Stripe): user confirmed they want Lovable-managed paygates instead of own Stripe key
+- [ ] Audit gaps found: avatar checkout + gif checkout + block payment not fulfilled by stripe-webhook
