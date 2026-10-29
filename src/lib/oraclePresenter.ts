@@ -42,3 +42,15 @@ export function artifactAnnouncement(artifact: OracleArtifact) {
   const start = artifact.reused ? `I found your existing ${artifact.kind}.` : `Your ${artifact.kind} is finished.`;
   return `${start}${artifact.libraryId ? " It is saved in your Library." : " The Library save is not confirmed."} Would you like to see it?`;
 }
+export type OracleChatTier = "basic" | "voice" | "premium";
+/** Basic = free device voice; Voice = wallet-paid ad voice; Premium = wallet-paid lip-sync clips. */
+export function oracleChatTier(speech: OracleSpeechMode, video: boolean): OracleChatTier {
+  if (video) return "premium";
+  return speech === "device" ? "basic" : "voice";
+}
+export function tierSettings(tier: string): { speech: OracleSpeechMode; video: boolean } | null {
+  if (tier === "basic") return { speech: "device", video: false };
+  if (tier === "voice") return { speech: "premium", video: false };
+  if (tier === "premium") return { speech: "premium", video: true };
+  return null;
+}
