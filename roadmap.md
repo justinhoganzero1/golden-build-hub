@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Create Juzzy’s three-minute fictional Redcliffe UAP/orb comedy interview with both opening entertainment disclaimers, then save completed video to Library for member viewing. User chose generated fictional phone footage; verify actual video, audio, length and sharing before marking complete.
+- [ ] Create Juzzy’s three-minute fictional Redcliffe UAP/orb comedy interview with both opening entertainment disclaimers, then save completed video to Library for member viewing. User chose generated fictional phone footage. Opening clip rejected by video service content-safety policy; no video rendered or Library save made. Await revised character depiction before continuing; verify actual video, audio, length and sharing before marking complete.
 - [ ] Enable generated lip-synced Oracle replies for Juzzy’s consenting account; verify account preference and real generated playback. Preserve member opt-in and billing; exact Charlie voice in generated video is unverified.
 - [ ] Address Juzzy’s reported male voice and missing lip-sync immediately; do not call generated audio the ad voice or claim playback without evidence.
 - [x] Ad voice cloned (IVC, voice "Oracle Ad Voice") from cleaned ad recording and set as Oracle default; test clip voice/oracle-ad-voice-test.mp3.
