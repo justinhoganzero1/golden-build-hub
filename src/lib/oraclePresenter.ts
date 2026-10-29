@@ -1,7 +1,9 @@
 export type OracleSpeechMode = "device" | "premium";
-export function resolveOraclePremiumVoice(saved: string | null | undefined): string | null {
-  // No substitute is a verified match for the generated ad voice.
-  return !saved || saved === "IKne3meq5aSn9XLyUdCD" ? null : saved;
+// Custom voice cloned from the cleaned oraclelunar.com/ad soundtrack.
+export const ORACLE_AD_VOICE_ID = "Fo0Bi1BDck0zXC4ByI80";
+const REPLACED_DEFAULTS = new Set(["IKne3meq5aSn9XLyUdCD", "EXAVITQu4vr4xnSDxMaL"]);
+export function resolveOraclePremiumVoice(saved: string | null | undefined): string {
+  return !saved || REPLACED_DEFAULTS.has(saved) ? ORACLE_AD_VOICE_ID : saved;
 }
 export function resolveVideoReplies(saved: string | null, authorizedDefault: boolean): boolean {
   if (saved === "on" || saved === "off") return saved === "on";
