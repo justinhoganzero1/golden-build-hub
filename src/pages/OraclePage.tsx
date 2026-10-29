@@ -265,10 +265,10 @@ const OraclePage = () => {
     if (!user?.id) { setPremiumVideo(false); premiumVideoRef.current = false; return; }
     // Juzzy explicitly requested activation; migrate once without overwriting
     // future opt-outs or activating billable replies for other accounts.
-    const authorizedDefault = false; // generated clips take minutes; instant ad-voice replies by default
+    const authorizedDefault = user.email?.toLowerCase() === "justinbretthogan@gmail.com";
     let next = authorizedDefault;
     try {
-      const key = `oracle-video-replies:v3:${user.id}`;
+      const key = `oracle-video-replies:v4:${user.id}`;
       const saved = localStorage.getItem(key);
       const legacy = authorizedDefault ? null : localStorage.getItem(`oracle-video-replies:${user.id}`);
       next = resolveVideoReplies(saved ?? legacy, authorizedDefault);
@@ -2911,7 +2911,7 @@ const OraclePage = () => {
             const next = !premiumVideo;
             premiumVideoRef.current = next;
             setPremiumVideo(next);
-            if (user?.id) localStorage.setItem(`oracle-video-replies:v3:${user.id}`, next ? "on" : "off");
+            if (user?.id) localStorage.setItem(`oracle-video-replies:v4:${user.id}`, next ? "on" : "off");
             if (next) toast("Video replies on — each answer is filmed as a real lip-synced video, billed per second from your wallet.");
           }}><Clapperboard />Video replies {premiumVideo ? "on · pay-per-use" : "off"}</Button>
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer…</span>}
