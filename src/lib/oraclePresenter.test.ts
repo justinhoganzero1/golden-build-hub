@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice } from "./oraclePresenter";
 
 describe("Oracle presenter rules", () => {
-  it("does not invent an ad voice match or reuse the rejected male voice", () => {
-    expect(resolveOraclePremiumVoice(null)).toBeNull();
-    expect(resolveOraclePremiumVoice("IKne3meq5aSn9XLyUdCD")).toBeNull();
+  it("defaults to the cloned ad voice and replaces old Charlie/Sarah defaults", () => {
+    expect(resolveOraclePremiumVoice(null)).toBe("Fo0Bi1BDck0zXC4ByI80");
+    expect(resolveOraclePremiumVoice("IKne3meq5aSn9XLyUdCD")).toBe("Fo0Bi1BDck0zXC4ByI80");
+    expect(resolveOraclePremiumVoice("EXAVITQu4vr4xnSDxMaL")).toBe("Fo0Bi1BDck0zXC4ByI80");
     expect(resolveOraclePremiumVoice("custom-female")).toBe("custom-female");
   });
   it("enables generated replies for the consenting account only", () => {
