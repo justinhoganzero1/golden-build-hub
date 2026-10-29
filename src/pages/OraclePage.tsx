@@ -2887,34 +2887,32 @@ const OraclePage = () => {
           <Button variant="outline" size="sm" onClick={stopOracle}><PhoneOff />Stop Oracle</Button>
         </div>
         {micPermissionError && <p className="text-sm text-destructive">{micPermissionError}</p>}
-        <div className="flex flex-wrap gap-2">
-          <Select value={speechMode} onValueChange={value => {
-            if (value !== "device" && value !== "premium") return;
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={oracleChatTier(speechMode, premiumVideo)} onValueChange={value => {
+            const s = tierSettings(value);
+            if (!s) return;
             cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
-            speechModeRef.current = value; setSpeechMode(value);
-            if (user?.id) localStorage.setItem(`oracle-speech-mode:${user.id}`, value);
-          }}><SelectTrigger aria-label="Oracle speech mode" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="device">Device voice · no TTS fee</SelectItem>
-            <SelectItem value="premium">Premium voice · wallet paid</SelectItem>
+            speechModeRef.current = s.speech; setSpeechMode(s.speech);
+            premiumVideoRef.current = s.video; setPremiumVideo(s.video);
+            if (user?.id) {
+              localStorage.setItem(`oracle-speech-mode:${user.id}`, s.speech);
+              localStorage.setItem(`oracle-video-replies:v4:${user.id}`, s.video ? "on" : "off");
+            }
+            if (s.video) toast("Premium on: each answer is a lip-synced talking clip. It takes 1 to 3 minutes and is charged from your wallet.");
+          }}><SelectTrigger aria-label="Oracle chat level" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
+            <SelectItem value="basic">Basic · device voice · free</SelectItem>
+            <SelectItem value="voice">Voice · premium ad voice · wallet paid</SelectItem>
+            <SelectItem value="premium">Premium · lip-sync talking clips · wallet paid (costs most)</SelectItem>
           </SelectContent></Select>
-          {speechMode === "device" && <Select value={deviceVoice || "automatic"} onValueChange={value => {
+          {speechMode === "device" && !premiumVideo && <Select value={deviceVoice || "automatic"} onValueChange={value => {
             const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();
             if (user?.id) localStorage.setItem(`oracle-device-voice:${user.id}`, selected);
           }}><SelectTrigger aria-label="Device voice" className="h-9 w-auto max-w-full sm:max-w-[260px]"><SelectValue placeholder="Automatic voice" /></SelectTrigger><SelectContent>
             <SelectItem value="automatic">Automatic device voice</SelectItem>
             {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
           </SelectContent></Select>}
-
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant={premiumVideo ? "default" : "outline"} size="sm" onClick={() => {
-            const next = !premiumVideo;
-            premiumVideoRef.current = next;
-            setPremiumVideo(next);
-            if (user?.id) localStorage.setItem(`oracle-video-replies:v4:${user.id}`, next ? "on" : "off");
-            if (next) toast("Video replies on — each answer is filmed as a real lip-synced video, billed per second from your wallet.");
-          }}><Clapperboard />Video replies {premiumVideo ? "on · pay-per-use" : "off"}</Button>
-          {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer…</span>}
+          {premiumVideo && <Clapperboard className="h-4 w-4 text-primary" aria-hidden />}
+          {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
         </div>
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
