@@ -2,8 +2,11 @@ export type OracleSpeechMode = "device" | "premium";
 // Custom voice cloned from the cleaned oraclelunar.com/ad soundtrack.
 export const ORACLE_AD_VOICE_ID = "Fo0Bi1BDck0zXC4ByI80";
 const REPLACED_DEFAULTS = new Set(["IKne3meq5aSn9XLyUdCD", "EXAVITQu4vr4xnSDxMaL"]);
-export function resolveOraclePremiumVoice(saved: string | null | undefined): string {
-  return !saved || REPLACED_DEFAULTS.has(saved) ? ORACLE_AD_VOICE_ID : saved;
+/** Premade warm male voice used when the member picks a male look and hasn't chosen their own voice. */
+export const ORACLE_MALE_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
+export function resolveOraclePremiumVoice(saved: string | null | undefined, lookGender?: "woman" | "man" | "nonbinary"): string {
+  if (!saved || REPLACED_DEFAULTS.has(saved)) return lookGender === "man" ? ORACLE_MALE_VOICE_ID : ORACLE_AD_VOICE_ID;
+  return saved;
 }
 export function resolveVideoReplies(saved: string | null, authorizedDefault: boolean): boolean {
   if (saved === "on" || saved === "off") return saved === "on";

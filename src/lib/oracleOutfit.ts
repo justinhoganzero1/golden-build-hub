@@ -34,7 +34,7 @@ export function outfitPrompt(source: { photo: true } | { description: string }) 
   const outfit = "photo" in source
     ? "the outfit shown in the second image (copy its clothing style, colours, fabric and details; ignore any person, face or background in that photo)"
     : source.description;
-  return `Edit the first image. Dress the woman in ${outfit}. Keep her face, identity, skin tone, hair, expression, pose, framing, lighting and the futuristic office background exactly the same; change only her clothing. Photorealistic, natural fit. Keep it tasteful and fully clothed (suitable for all ages): if the outfit is revealing, make a modest version of it.`;
+  return `Edit the first image. Dress the person in ${outfit}. Keep their face, identity, skin tone, hair, eye colour, expression, pose, framing, lighting and the futuristic office background exactly the same; change only the clothing. Photorealistic, natural fit. Keep it tasteful and fully clothed (suitable for all ages): if the outfit is revealing, make a modest version of it.`;
 }
 
 /** Shrinks a picture to a JPEG data URL so uploads stay small. */
@@ -77,14 +77,14 @@ export function parseOutfitCommand(text: string): OutfitCommand | null {
 
 export class OutfitError extends Error { constructor(public code: "wallet" | "failed" | "signin") { super(code); } }
 
-/** One wallet-paid picture edit of Oracle's portrait. Never accepts cached or fallback pictures. */
-export async function requestOutfitImage(prompt: string, clothingPhoto?: string): Promise<{ url: string; libraryId: string | null }> {
+/** One wallet-paid picture edit of Oracle's portrait (or the member's chosen look). Never accepts cached or fallback pictures. */
+export async function requestOutfitImage(prompt: string, clothingPhoto?: string, basePortraitUrl?: string): Promise<{ url: string; libraryId: string | null }> {
   const [{ supabase }, { requireEdgeAuthToken }, portrait] = await Promise.all([
     import("@/integrations/supabase/client"), import("@/lib/edgeAuth"), import("@/assets/avatars/oracle-futuristic-office.jpg"),
   ]);
   let token: string;
   try { token = await requireEdgeAuthToken(); } catch { throw new OutfitError("signin"); }
-  const base = await toSmallDataUrl(portrait.default);
+  const base = await toSmallDataUrl(basePortraitUrl || portrait.default);
   const { data, error } = await supabase.functions.invoke("image-gen", {
     headers: { Authorization: `Bearer ${token}` },
     body: { prompt, inputImages: clothingPhoto ? [base, clothingPhoto] : [base], tier: "premium", useCache: false, libraryFallback: false, maxAttempts: 3 },

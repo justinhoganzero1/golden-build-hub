@@ -17,7 +17,7 @@ describe("Oracle outfits", () => {
     const p = outfitPrompt({ photo: true });
     expect(p).toMatch(/second image/);
     expect(p).toMatch(/ignore any person, face or background/);
-    expect(p).toMatch(/change only her clothing/);
+    expect(p).toMatch(/change only the clothing/);
     expect(p).toMatch(/fully clothed/);
   });
   it("offers ready-made outfits", () => expect(OUTFIT_PRESETS.length).toBeGreaterThanOrEqual(6));

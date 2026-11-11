@@ -35,6 +35,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
 import { pickFiller, fillerClipUrl } from "@/lib/oracleFillers";
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
+import OracleLookPicker from "@/components/oracle/OracleLookPicker";
+import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLook";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
@@ -267,6 +269,15 @@ const OraclePage = () => {
   const [outfit, setOutfit] = useState<OracleOutfit | null>(null);
   const outfitRef = useRef<OracleOutfit | null>(null);
   const lastAttachedImageRef = useRef<string | null>(null);
+  // Member-designed look (race, hair, eyes, age...). A new look clears the outfit,
+  // which was drawn on the previous face.
+  const [look, setLook] = useState<OracleLook | null>(null);
+  const lookRef = useRef<OracleLook | null>(null);
+  const applyLook = (next: OracleLook | null) => {
+    lookRef.current = next; setLook(next); portraitDataRef.current = null;
+    if (outfitRef.current) { outfitRef.current = null; setOutfit(null); if (user?.id) saveOutfit(user.id, null); }
+    if (user?.id && !saveLook(user.id, next)) toast("New look is on for now, but this device couldn't remember it for next time.");
+  };
   const applyOutfit = (next: OracleOutfit | null) => {
     outfitRef.current = next; setOutfit(next); portraitDataRef.current = null;
     if (user?.id && !saveOutfit(user.id, next)) toast("Outfit is on for now, but this device couldn't remember it for next time.");
@@ -335,6 +346,8 @@ const OraclePage = () => {
     fillersOnRef.current = fillers; setFillersOn(fillers);
     const savedOutfit = loadOutfit(user.id);
     outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
+    const savedLook = loadLook(user.id);
+    lookRef.current = savedLook; setLook(savedLook);
     setViewingArtifact(null);
   }, [user?.id]);
   useEffect(() => {
@@ -866,7 +879,7 @@ const OraclePage = () => {
     try {
       // Do not substitute a different voice for the actual ad recording.
       const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
-      const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null));
+      const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null), lookRef.current?.choice.gender);
       if (!masterVoiceId) return false;
       let masterSettings: Record<string, unknown> | null = null;
       try {
@@ -1092,7 +1105,7 @@ const OraclePage = () => {
     try {
       if (!portraitDataRef.current) {
         // Premium talking clips wear the member's chosen outfit when one is set.
-        const res = await fetch(outfitRef.current?.url || oraclePortraitUrl);
+        const res = await fetch(outfitRef.current?.url || lookRef.current?.url || oraclePortraitUrl);
         const blob = await res.blob();
         portraitDataRef.current = await new Promise<string>((resolve, reject) => {
           const fr = new FileReader();
@@ -1778,7 +1791,7 @@ const OraclePage = () => {
       setIsLoading(true);
       try {
         const prompt = outfitCmd.kind === "photo" ? outfitPrompt({ photo: true }) : outfitPrompt({ description: outfitCmd.description });
-        const { url, libraryId } = await requestOutfitImage(prompt, photo || undefined);
+        const { url, libraryId } = await requestOutfitImage(prompt, photo || undefined, lookRef.current?.url);
         applyOutfit({ url, label: outfitCmd.kind === "photo" ? "Outfit from your photo" : outfitCmd.description.slice(0, 40), libraryId });
         say("Ta-da! What do you reckon? A copy is saved in your Library.");
       } catch (e) {
@@ -2234,7 +2247,8 @@ const OraclePage = () => {
     setIsLoading(true);
     // Talk while thinking: say a fitting stored reaction straight away; the
     // real answer queues behind it and follows on as soon as she finishes.
-    if (!isIntroTrigger && fillersOnRef.current && !mutedRef.current && !premiumVideoRef.current) {
+    // Stored reactions are in her ad voice; skip them for a male look so voices never mix.
+    if (!isIntroTrigger && fillersOnRef.current && !mutedRef.current && !premiumVideoRef.current && lookRef.current?.choice.gender !== "man") {
       const filler = pickFiller(text, recentFillersRef.current);
       recentFillersRef.current = [...recentFillersRef.current, filler.key].slice(-40);
       setThinkingLine(filler.text);
@@ -2267,6 +2281,7 @@ const OraclePage = () => {
           messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
           oracleName,
           isFirstMeeting,
+          look: lookPersona(lookRef.current),
           userMemories: formatMemoriesForPrompt(oracleMemories) + (() => {
             if (!user?.id) return "";
             try {
@@ -2926,7 +2941,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} image={outfit?.url} standbyUrl={standby ? standbyLoop.url : undefined} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
+      <OraclePresenterStage userId={user?.id} image={outfit?.url || look?.url} standbyUrl={standby ? standbyLoop.url : undefined} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -3023,7 +3038,8 @@ const OraclePage = () => {
           }} />
           Talk while thinking (she chats naturally while your answer loads · free)
         </label>
-        <OracleOutfitPicker current={outfit} onChange={applyOutfit} />
+        <OracleLookPicker current={look} onChange={applyLook} />
+        <OracleOutfitPicker current={outfit} onChange={applyOutfit} basePortraitUrl={look?.url} />
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>

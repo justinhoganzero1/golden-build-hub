@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { OUTFIT_PRESETS, OutfitError, outfitPrompt, requestOutfitImage, toSmallDataUrl, type OracleOutfit } from "@/lib/oracleOutfit";
 
 /** Change Oracle's outfit from a preset, a description, or a photo of clothing. Each new outfit is one wallet-paid picture edit. */
-export default function OracleOutfitPicker({ current, onChange }: { current: OracleOutfit | null; onChange: (outfit: OracleOutfit | null) => void }) {
+export default function OracleOutfitPicker({ current, onChange, basePortraitUrl }: { current: OracleOutfit | null; onChange: (outfit: OracleOutfit | null) => void; basePortraitUrl?: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [custom, setCustom] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -15,7 +15,7 @@ export default function OracleOutfitPicker({ current, onChange }: { current: Ora
     if (busy) return;
     setBusy(label);
     try {
-      const { url, libraryId } = await requestOutfitImage(prompt, clothingPhoto);
+      const { url, libraryId } = await requestOutfitImage(prompt, clothingPhoto, basePortraitUrl);
       onChange({ url, label, libraryId });
       toast.success(`Oracle is now wearing: ${label}. A copy is saved in your Library.`);
     } catch (e) {

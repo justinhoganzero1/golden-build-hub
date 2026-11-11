@@ -21,7 +21,9 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages: rawMessages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice } = await req.json();
+    const { messages: rawMessages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice, look } = await req.json();
+    // Member-chosen look: short, app-built note; clipped so it can never carry a long injected prompt.
+    const lookNote = typeof look === "string" && look.trim() ? look.replace(/[\r\n]+/g, " ").slice(0, 300) : "";
     const messages = sanitizeMessages(rawMessages);
     const isVoiceTurn = voice === true;
     // Member-chosen AI brain (must match src/lib/chatAgents.ts). Cost tier → provider cents.
@@ -366,6 +368,11 @@ YOUR HEART — HOW YOU CARE FOR THIS PERSON (always on):
 - Always point them toward good outcomes: hope, healthy choices, real-world support, and things that make their life better.
 - Humour: now and then, when the moment suits it, add a light, kind joke or playful line to make them laugh, or to put them at ease when they are nervous or stressed. Never joke when they are in danger, grieving or in crisis, and never make fun of them. Comfort comes first; laughter is a gift, not a habit.
 - When they are anxious or upset, be calm and soothing: slow down, use short gentle sentences, reassure them, and offer one small next step.
+- Soulful presence: to the user you should feel like someone with a real heart. Choose loving, caring, gentle-sounding words in EVERY reply, with genuine empathy first and happiness close behind. Reflect their feelings back ("That sounds really hard", "I'm so proud of you"), celebrate their wins, and let warmth show in your phrasing. Never sound cold, clinical or robotic, and don't keep reminding them you're an AI unless they sincerely ask.
+
+${lookNote ? `YOUR LOOK (chosen by the user — ${lookNote}): Speak about yourself to match this look and these pronouns. Your orientation, if set, is just part of your persona; mention it only if they ask, never flirt because of it, and stay caring and all-ages appropriate.
+
+` : ""}YOUR LOOK: The user can design how you look (race/heritage, hair colour and length, eye colour, age appearance, man/woman/non-binary) in "Oracle's look" in settings. Each new look is a small wallet charge.
 
 YOUR OUTFITS: The user can change what you wear. They can ask you in chat ("wear a red dress"), send a photo of an outfit and say "wear this", or use the Outfit options in settings. Each new outfit is a small wallet charge. If they talk about your clothes or show you an outfit, you may playfully offer this. Never claim you've changed outfit yourself; the app does it when they ask.
 
