@@ -34,6 +34,8 @@ import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
 import { pickFiller, fillerClipUrl } from "@/lib/oracleFillers";
+import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
+import { loadOutfit, saveOutfit, type OracleOutfit } from "@/lib/oracleOutfit";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
@@ -261,6 +263,8 @@ const OraclePage = () => {
   const [videoReplyPending, setVideoReplyPending] = useState(false);
   const premiumVideoRef = useRef(false);
   const portraitDataRef = useRef<string | null>(null);
+  const [outfit, setOutfit] = useState<OracleOutfit | null>(null);
+  const outfitRef = useRef<OracleOutfit | null>(null);
   useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
   useEffect(() => {
     if (!user?.id) { setPremiumVideo(false); premiumVideoRef.current = false; return; }
@@ -310,6 +314,8 @@ const OraclePage = () => {
     setDeviceVoice(localStorage.getItem(`oracle-device-voice:${user.id}`) || "");
     const fillers = localStorage.getItem(`oracle-thinking-reactions:${user.id}`) !== "off";
     fillersOnRef.current = fillers; setFillersOn(fillers);
+    const savedOutfit = loadOutfit(user.id);
+    outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
     setViewingArtifact(null);
   }, [user?.id]);
   useEffect(() => {
@@ -1064,7 +1070,8 @@ const OraclePage = () => {
     setVideoReplyPending(true);
     try {
       if (!portraitDataRef.current) {
-        const res = await fetch(oraclePortraitUrl);
+        // Premium talking clips wear the member's chosen outfit when one is set.
+        const res = await fetch(outfitRef.current?.url || oraclePortraitUrl);
         const blob = await res.blob();
         portraitDataRef.current = await new Promise<string>((resolve, reject) => {
           const fr = new FileReader();
@@ -2872,7 +2879,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
+      <OraclePresenterStage userId={user?.id} image={outfit?.url} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -2969,6 +2976,10 @@ const OraclePage = () => {
           }} />
           Talk while thinking (she chats naturally while your answer loads · free)
         </label>
+        <OracleOutfitPicker current={outfit} onChange={next => {
+          outfitRef.current = next; setOutfit(next); portraitDataRef.current = null;
+          if (user?.id && !saveOutfit(user.id, next)) toast("Outfit is on for now, but this device couldn't remember it for next time.");
+        }} />
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>

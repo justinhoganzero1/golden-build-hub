@@ -85,8 +85,10 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
     }
   }, [state, userId]);
 
+  // A custom outfit picture replaces the prerecorded loops (filmed in her
+  // original outfit); a generated reply video still plays on top.
   const plan: ClipPlan | null = image
-    ? null
+    ? (replyVideoUrl ? { url: replyVideoUrl, audible: true, loop: false } : null)
     : replyVideoUrl
       ? { url: replyVideoUrl, audible: true, loop: false }
       : cue
