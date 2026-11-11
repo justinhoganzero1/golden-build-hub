@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Sparkles, ShoppingBag, Download, Eye, Loader2, Filter, Search, X } from "lucide-react";
+import { Sparkles, ShoppingBag, Download, Eye, Loader2, Filter, Search, X, Layers } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import WeeklyWinnerShowcase from "@/components/WeeklyWinnerShowcase";
@@ -22,11 +23,12 @@ type SortKey = "newest" | "popular" | "price_low" | "price_high";
 
 const PublicLibraryPage = () => {
   const { user } = useAuth();
-  const [filter, setFilter] = useState<"all" | "shop" | "media" | "gif" | "movie">("all");
+  const [filter, setFilter] = useState<"all" | "shop" | "template" | "media" | "gif" | "movie">("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
   const { data: rawItems = [], isLoading } = usePublicLibrary(filter);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const items = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -91,6 +93,35 @@ const PublicLibraryPage = () => {
     }
   };
 
+  const handleUseTemplate = async (item: PublicLibraryItem) => {
+    if (!user) {
+      toast.error("Sign in to use templates.");
+      return;
+    }
+    setBusyId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("library-use-template", { body: { item_id: item.id } });
+      const body = (data as any) ?? (await (error as any)?.context?.json?.().catch(() => null));
+      if (body?.needs_purchase) {
+        toast.info("This template has a price set by its creator. Buy it first, then tap Use as template again.");
+        await handleBuy(item);
+        return;
+      }
+      if (body?.needs_membership) {
+        toast.error("Templates are for members.", { action: { label: "Membership", onClick: () => navigate("/membership") } });
+        return;
+      }
+      if (error || !body?.id) throw new Error(body?.error || "Could not copy this template.");
+      toast.success(body.existing ? "You already have a copy in your Library." : "Copied to your Library — it's yours to build on.", {
+        action: { label: "Open", onClick: () => navigate(`/media-library?search=${encodeURIComponent(body.title || "")}`) },
+      });
+    } catch (e: any) {
+      toast.error(e?.message || "Could not copy this template.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <PageShell title="Public Library" subtitle="Every creation, shared by every member">
       <SEO
@@ -123,6 +154,7 @@ const PublicLibraryPage = () => {
         <TabsList className="flex flex-wrap gap-1 h-auto">
           <TabsTrigger value="all"><Filter className="w-3 h-3 mr-1" /> All</TabsTrigger>
           <TabsTrigger value="shop"><ShoppingBag className="w-3 h-3 mr-1" /> Creators Shop</TabsTrigger>
+          <TabsTrigger value="template"><Layers className="w-3 h-3 mr-1" /> Templates</TabsTrigger>
           <TabsTrigger value="media">Photos</TabsTrigger>
           <TabsTrigger value="gif">Living GIFs</TabsTrigger>
           <TabsTrigger value="movie">Movies</TabsTrigger>
@@ -232,6 +264,17 @@ const PublicLibraryPage = () => {
                     <Eye className="w-3 h-3" /> {item.view_count}
                     <Download className="w-3 h-3 ml-1" /> {item.download_count}
                   </div>
+                  {item.allow_template && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="w-full h-7 text-xs"
+                      onClick={() => handleUseTemplate(item)}
+                      disabled={busy}
+                    >
+                      <Layers className="w-3 h-3 mr-1" /> Use as template
+                    </Button>
+                  )}
                   {isShop ? (
                     <Button
                       size="sm"

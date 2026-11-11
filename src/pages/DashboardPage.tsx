@@ -71,6 +71,7 @@ const groups: TileGroup[] = [
       { label: "Magic Hub", icon: <Star className="w-6 h-6" />, path: "/magic-hub" },
       { label: "Story Writer", icon: <BookOpen className="w-6 h-6" />, path: "/story-writer" },
       { label: "Media Library", icon: <Camera className="w-6 h-6" />, path: "/media-library" },
+      { label: "Oracle Videos", icon: <Film className="w-6 h-6" />, path: "/oracle-videos" },
     ],
   },
   {

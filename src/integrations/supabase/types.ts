@@ -2642,6 +2642,48 @@ export type Database = {
         }
         Relationships: []
       }
+      oracle_clips: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          is_published: boolean
+          poster_url: string | null
+          published_at: string
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean
+          poster_url?: string | null
+          published_at?: string
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_published?: boolean
+          poster_url?: string | null
+          published_at?: string
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       oracle_memories: {
         Row: {
           content: string
@@ -4102,6 +4144,7 @@ export type Database = {
       }
       user_media: {
         Row: {
+          allow_template: boolean
           created_at: string
           creator_display_name: string | null
           download_count: number
@@ -4120,6 +4163,7 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          allow_template?: boolean
           created_at?: string
           creator_display_name?: string | null
           download_count?: number
@@ -4138,6 +4182,7 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          allow_template?: boolean
           created_at?: string
           creator_display_name?: string | null
           download_count?: number
@@ -4788,6 +4833,7 @@ export type Database = {
       }
       public_user_media: {
         Row: {
+          allow_template: boolean | null
           created_at: string | null
           creator_display_name: string | null
           download_count: number | null
@@ -4802,6 +4848,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          allow_template?: boolean | null
           created_at?: string | null
           creator_display_name?: string | null
           download_count?: number | null
@@ -4816,6 +4863,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          allow_template?: boolean | null
           created_at?: string | null
           creator_display_name?: string | null
           download_count?: number | null
@@ -5051,6 +5099,7 @@ export type Database = {
         }[]
       }
       internal_job_token: { Args: never; Returns: string }
+      is_active_member: { Args: { _user_id: string }; Returns: boolean }
       is_anon_visitor: { Args: { _user_id: string }; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_owner_email_locked: { Args: never; Returns: boolean }

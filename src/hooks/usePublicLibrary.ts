@@ -19,11 +19,13 @@ export interface PublicLibraryItem {
   download_count: number;
   view_count: number;
   source_page?: string | null;
+  /** Creator allows members to copy it as a starting point. */
+  allow_template?: boolean;
 }
 
 const PAGE_SIZE = 60;
 
-export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all") => {
+export const usePublicLibrary = (filter: "all" | "shop" | "template" | PublicItemKind = "all") => {
   return useQuery({
     queryKey: ["public-library", filter],
     queryFn: async (): Promise<PublicLibraryItem[]> => {
@@ -33,7 +35,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
         supabase
           .from("public_user_media")
           .select(
-            "id,title,url,thumbnail_url,media_type,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count,source_page"
+            "id,title,url,thumbnail_url,media_type,created_at,shop_enabled,shop_price_cents,creator_display_name,download_count,view_count,source_page,allow_template"
           )
           .order("created_at", { ascending: false })
           .limit(PAGE_SIZE),
@@ -76,6 +78,7 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
           download_count: m.download_count || 0,
           view_count: m.view_count || 0,
           source_page: m.source_page,
+          allow_template: !!m.allow_template,
         })
       );
 
@@ -121,6 +124,8 @@ export const usePublicLibrary = (filter: "all" | "shop" | PublicItemKind = "all"
           ? items
           : filter === "shop"
           ? items.filter((i) => i.shop_enabled && i.shop_price_cents > 0)
+          : filter === "template"
+          ? items.filter((i) => i.allow_template)
           : items.filter((i) => i.kind === filter);
 
       // Sort newest first across all sources

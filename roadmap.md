@@ -109,5 +109,5 @@
 - [x] Answer: cut Premium lip-sync wait time
 
 ## Oracle video Library (requested 2026-11-12)
-- [ ] Real Oracle Library page: browse, watch and download videos, with a subscription for new clips (waiting on Juzzy's answers)
-- [ ] Members can opt in (videos, pictures, stories/books, apps) to share their own creations to the public Library, where other members can use them as templates
+- [x] Oracle Videos page: members browse, watch and download Juzzy's clips (part of membership; New badges; owner upload)
+- [x] Members can opt in (videos, pictures, stories/books, apps) to share their own creations to the public Library, where other members can use them as templates

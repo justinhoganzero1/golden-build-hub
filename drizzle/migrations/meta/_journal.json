@@ -113,6 +113,20 @@
       "when": 1793169815056,
       "tag": "0015_create_payout_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794439997928,
+      "tag": "0016_oracle_clips_and_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794440029267,
+      "tag": "0017_oracle_clips_storage_policies",
+      "breakpoints": true
     }
   ]
 }

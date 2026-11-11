@@ -27,7 +27,7 @@ const MEMBERSHIP_EXEMPT = [
 const FOUNDER_ALLOWED = [
   "/", "/dashboard", "/welcome", "/get-started", "/oracle", "/chat-oracle",
   "/free-zone", "/founder-vault", "/my-apps", "/mind-hub", "/crisis-hub",
-  "/calendar", "/media-library", "/story-writer", "/read", "/author-dashboard",
+  "/calendar", "/media-library", "/story-writer", "/read", "/author-dashboard", "/oracle-videos",
 ];
 
 const match = (list: string[], path: string) =>

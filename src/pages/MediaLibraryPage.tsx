@@ -122,7 +122,7 @@ const MediaLibraryPage = () => {
     }
   }, [selected]);
 
-  const updateSelectedFlags = async (patch: { is_public?: boolean; shop_enabled?: boolean; shop_price_cents?: number }) => {
+  const updateSelectedFlags = async (patch: { is_public?: boolean; shop_enabled?: boolean; shop_price_cents?: number; allow_template?: boolean }) => {
     if (!selected) return;
     setSavingShare(true);
     try {
@@ -685,10 +685,24 @@ const MediaLibraryPage = () => {
                   <>
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
                       <div className="flex items-center gap-2 min-w-0">
+                        <Layers className="w-4 h-4 text-primary shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Let members use it as a template</p>
+                          <p className="text-[10px] text-muted-foreground">They get their own copy to build on. If you set a shop price, they pay it first.</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={!!selected.allow_template}
+                        disabled={savingShare}
+                        onCheckedChange={(v) => updateSelectedFlags({ allow_template: v })}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2 min-w-0">
                         <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground">Sell in Creators Shop</p>
-                          <p className="text-[10px] text-muted-foreground">You keep 70%, platform 30%.</p>
+                          <p className="text-[10px] text-muted-foreground">You keep 80%, Oracle Lunar 20%.</p>
                         </div>
                       </div>
                       <Switch
