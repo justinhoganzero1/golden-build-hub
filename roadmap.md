@@ -107,3 +107,7 @@
 - [ ] Go-live: Juzzy must claim the payments account in the Payments tab and finish live setup before real money works
 - [x] Seller payouts rebuilt: 70/30 shop split + seat resale earnings tracked, sellers request payout in Wallet, owner pays and marks done at /admin/payouts (money sent manually via PayID/bank/PayPal — Lovable payments has no direct-to-seller transfers)
 - [x] Answer: cut Premium lip-sync wait time
+
+## Oracle video Library (requested 2026-11-12)
+- [ ] Real Oracle Library page: browse, watch and download videos, with a subscription for new clips (waiting on Juzzy's answers)
+- [ ] Members can opt in to share their own creations to the public Library, where other members can use them as templates
