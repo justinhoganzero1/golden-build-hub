@@ -110,4 +110,4 @@
 
 ## Oracle video Library (requested 2026-11-12)
 - [ ] Real Oracle Library page: browse, watch and download videos, with a subscription for new clips (waiting on Juzzy's answers)
-- [ ] Members can opt in to share their own creations to the public Library, where other members can use them as templates
+- [ ] Members can opt in (videos, pictures, stories/books, apps) to share their own creations to the public Library, where other members can use them as templates
