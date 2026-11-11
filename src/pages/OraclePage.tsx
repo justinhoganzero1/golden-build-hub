@@ -35,7 +35,8 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
 import { pickFiller, fillerClipUrl } from "@/lib/oracleFillers";
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
-import { loadOutfit, saveOutfit, type OracleOutfit } from "@/lib/oracleOutfit";
+import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
+import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
@@ -265,6 +266,24 @@ const OraclePage = () => {
   const portraitDataRef = useRef<string | null>(null);
   const [outfit, setOutfit] = useState<OracleOutfit | null>(null);
   const outfitRef = useRef<OracleOutfit | null>(null);
+  const lastAttachedImageRef = useRef<string | null>(null);
+  const applyOutfit = (next: OracleOutfit | null) => {
+    outfitRef.current = next; setOutfit(next); portraitDataRef.current = null;
+    if (user?.id && !saveOutfit(user.id, next)) toast("Outfit is on for now, but this device couldn't remember it for next time.");
+  };
+  // Standby: after 3 minutes with no activity she shows a longer calm loop.
+  const [standby, setStandby] = useState(false);
+  const lastActivityRef = useRef(Date.now());
+  const standbyRef = useRef(false);
+  useEffect(() => {
+    const poke = () => { lastActivityRef.current = Date.now(); if (standbyRef.current) { standbyRef.current = false; setStandby(false); } };
+    const events = ["pointerdown", "keydown", "touchstart", "wheel", "mousemove"] as const;
+    events.forEach(e => window.addEventListener(e, poke, { passive: true }));
+    const timer = window.setInterval(() => {
+      if (!standbyRef.current && isStandby(lastActivityRef.current, Date.now())) { standbyRef.current = true; setStandby(true); }
+    }, 5000);
+    return () => { events.forEach(e => window.removeEventListener(e, poke)); window.clearInterval(timer); };
+  }, []);
   useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
   useEffect(() => {
     if (!user?.id) { setPremiumVideo(false); premiumVideoRef.current = false; return; }
@@ -379,9 +398,10 @@ const OraclePage = () => {
           metadata: { kind: "upload", mime: file.type, size: file.size },
         });
       } catch { /* non-fatal */ }
+      if (mediaType === "image") { try { lastAttachedImageRef.current = await toSmallDataUrl(file); } catch { /* not readable */ } }
       toast.success(`Attached ${file.name} — sent to ${oracleName}`);
       const sizeKb = Math.round(file.size / 1024);
-      const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
+      const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If the image shows clothing or an outfit, you can offer to wear it — they just need to say "wear this". If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
       await sendMessage(prompt);
     } catch (err: any) {
       toast.error(err?.message || "Upload failed");
@@ -444,6 +464,7 @@ const OraclePage = () => {
   }, [normalizeCapturedText]);
 
   useEffect(() => { isLoadingRef.current = isLoading; if (!isLoading) setThinkingLine(""); }, [isLoading]);
+  useEffect(() => { lastActivityRef.current = Date.now(); standbyRef.current = false; setStandby(false); }, [messages.length, isLoading, isSpeaking, replyVideoUrl, presenterCue]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   // Once the mic is on, Oracle is ALWAYS awake and listening. The mic only
   // turns off when the user says "enough oracle" / "mute my mic" or taps the
@@ -1740,6 +1761,32 @@ const OraclePage = () => {
     if (!isIntroTrigger && pending && /^(?:yes|yeah|yep|show me|show it|let me see|open it)(?: please)?[.!?]*$/i.test(text.trim())) {
       cancelCurrentSpeech(); setViewingArtifact(pending); return;
     }
+    // Outfit changes asked for in the chat ("wear a red dress", "wear this").
+    const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);
+    if (outfitCmd) {
+      cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+      setShowChat(true);
+      const say = (content: string) => {
+        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content }]);
+        if (!isMuted) speakAsAgent(content, oracleName);
+      };
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }]);
+      if (outfitCmd.kind === "reset") { applyOutfit(null); say("Back in my usual outfit. Feels like home!"); return; }
+      const photo = outfitCmd.kind === "photo" ? lastAttachedImageRef.current : undefined;
+      if (outfitCmd.kind === "photo" && !photo) { say("I'd love to! Tap the attach button, take or pick a photo of the outfit, then tell me to wear it."); return; }
+      say(outfitCmd.kind === "photo" ? "Ooh, nice pick! Let me go and get changed. Give me about half a minute." : "Ooh, fun! Let me go and get changed. Give me about half a minute.");
+      setIsLoading(true);
+      try {
+        const prompt = outfitCmd.kind === "photo" ? outfitPrompt({ photo: true }) : outfitPrompt({ description: outfitCmd.description });
+        const { url, libraryId } = await requestOutfitImage(prompt, photo || undefined);
+        applyOutfit({ url, label: outfitCmd.kind === "photo" ? "Outfit from your photo" : outfitCmd.description.slice(0, 40), libraryId });
+        say("Ta-da! What do you reckon? A copy is saved in your Library.");
+      } catch (e) {
+        const code = e instanceof OutfitError ? e.code : "failed";
+        say(code === "wallet" ? "I'd love to change, but your wallet needs a top-up first. Each new outfit is a small picture charge." : code === "signin" ? "Please sign in again, then ask me once more." : "Oh no, the outfit change didn't work this time. Want me to try again?");
+      } finally { setIsLoading(false); }
+      return;
+    }
     const preRoutedImagePrompt = isIntroTrigger ? null : extractImagePrompt(text);
 
     const searchRequest = text.match(/^(?:search (?:the )?(?:web|net)|look up online|research online)\s*[:,-]?\s+(.+)/i);
@@ -2879,7 +2926,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} image={outfit?.url} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
+      <OraclePresenterStage userId={user?.id} image={outfit?.url} standbyUrl={standby ? standbyLoop.url : undefined} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -2976,10 +3023,7 @@ const OraclePage = () => {
           }} />
           Talk while thinking (she chats naturally while your answer loads · free)
         </label>
-        <OracleOutfitPicker current={outfit} onChange={next => {
-          outfitRef.current = next; setOutfit(next); portraitDataRef.current = null;
-          if (user?.id && !saveOutfit(user.id, next)) toast("Outfit is on for now, but this device couldn't remember it for next time.");
-        }} />
+        <OracleOutfitPicker current={outfit} onChange={applyOutfit} />
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>

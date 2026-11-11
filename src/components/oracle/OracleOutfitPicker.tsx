@@ -3,10 +3,7 @@ import { toast } from "sonner";
 import { Camera, Loader2, RotateCcw, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { requireEdgeAuthToken } from "@/lib/edgeAuth";
-import { OUTFIT_PRESETS, outfitPrompt, toSmallDataUrl, type OracleOutfit } from "@/lib/oracleOutfit";
-import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
+import { OUTFIT_PRESETS, OutfitError, outfitPrompt, requestOutfitImage, toSmallDataUrl, type OracleOutfit } from "@/lib/oracleOutfit";
 
 /** Change Oracle's outfit from a preset, a description, or a photo of clothing. Each new outfit is one wallet-paid picture edit. */
 export default function OracleOutfitPicker({ current, onChange }: { current: OracleOutfit | null; onChange: (outfit: OracleOutfit | null) => void }) {
@@ -18,25 +15,12 @@ export default function OracleOutfitPicker({ current, onChange }: { current: Ora
     if (busy) return;
     setBusy(label);
     try {
-      const base = await toSmallDataUrl(portrait);
-      const { data, error } = await supabase.functions.invoke("image-gen", {
-        headers: { Authorization: `Bearer ${await requireEdgeAuthToken()}` },
-        // No cache or Library fallback: an old or unrelated picture must never pose as the new outfit.
-        body: { prompt, inputImages: clothingPhoto ? [base, clothingPhoto] : [base], tier: "premium", useCache: false, libraryFallback: false, maxAttempts: 3 },
-      });
-      if (error) {
-        const ctx = (error as { context?: Response }).context;
-        const detail = ctx?.text ? await ctx.text().catch(() => "") : String(error.message || "");
-        if (ctx?.status === 402 || /insufficient|coins|402/i.test(detail)) toast.error("Not enough in your wallet for a new outfit. Top up and try again.");
-        else toast.error("The new outfit didn't work this time. Please try again.");
-        return;
-      }
-      const url = data?.fallback ? null : (data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || null);
-      if (!url) { toast.error(data?.error ? "The new outfit didn't work this time. Please try again." : "No outfit picture came back."); return; }
-      onChange({ url, label, libraryId: data?.library_id ?? null });
+      const { url, libraryId } = await requestOutfitImage(prompt, clothingPhoto);
+      onChange({ url, label, libraryId });
       toast.success(`Oracle is now wearing: ${label}. A copy is saved in your Library.`);
     } catch (e) {
-      toast.error(e instanceof Error && /sign in/i.test(e.message) ? "Please sign in again." : "The new outfit didn't work this time. Please try again.");
+      const code = e instanceof OutfitError ? e.code : "failed";
+      toast.error(code === "wallet" ? "Not enough in your wallet for a new outfit. Top up and try again." : code === "signin" ? "Please sign in again." : "The new outfit didn't work this time. Please try again.");
     } finally { setBusy(null); }
   };
 
@@ -51,7 +35,7 @@ export default function OracleOutfitPicker({ current, onChange }: { current: Ora
 
   return <section aria-label="Oracle outfit" className="space-y-2">
     <p className="flex items-center gap-2 text-sm font-medium text-foreground"><Shirt className="h-4 w-4 text-primary" />Outfit{current ? ` · ${current.label}` : " · Original"}</p>
-    <p className="text-xs text-muted-foreground">Each new outfit is one picture edit, paid from your wallet. In a new outfit she shows as a still picture; Premium talking clips wear it too.</p>
+    <p className="text-xs text-muted-foreground">Each new outfit is one picture edit, paid from your wallet. You can also just ask her in the chat, like “wear a red dress”, or send a photo and say “wear this”. In a new outfit she shows as a still picture; Premium talking clips wear it too.</p>
     <div className="flex flex-wrap gap-2">
       {OUTFIT_PRESETS.map(p => <Button key={p.id} type="button" variant="outline" size="sm" disabled={!!busy} onClick={() => dress(p.label, outfitPrompt({ description: p.description }))}>
         {busy === p.label && <Loader2 className="animate-spin" />}{p.label}

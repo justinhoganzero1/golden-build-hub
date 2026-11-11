@@ -52,3 +52,53 @@ export async function toSmallDataUrl(src: Blob | string, max = 1024): Promise<st
     return canvas.toDataURL("image/jpeg", 0.88);
   } finally { URL.revokeObjectURL(url); }
 }
+
+export type OutfitCommand = { kind: "photo" } | { kind: "describe"; description: string } | { kind: "reset" };
+
+const CLOTHING = /\b(dress|gown|shirt|t-shirt|tee|blouse|jacket|blazer|suit|outfit|clothes|jumper|sweater|hoodie|cardigan|top|jeans|pants|trousers|skirt|shorts|coat|hat|cap|scarf|uniform|costume|overalls|leggings|activewear|tracksuit|kimono|saree|sari)\b/i;
+
+/** Recognises a chat request for Oracle to change what she is wearing. */
+export function parseOutfitCommand(text: string): OutfitCommand | null {
+  const t = text.trim().replace(/[.!?]+$/, "");
+  if (t.length > 300 || t.startsWith("[")) return null;
+  const lead = String.raw`^(?:hey\s+)?(?:oracle[,\s]+)?(?:please\s+)?(?:can you\s+|could you\s+|would you\s+|will you\s+|i want you to\s+|i'd like you to\s+)?(?:please\s+)?`;
+  if (new RegExp(lead + String.raw`(?:go\s+|change\s+|get\s+changed\s+)?back\s+(?:in)?to\s+(?:your\s+)?(?:original|normal|usual|old)\s+(?:outfit|clothes|look)`, "i").test(t)
+    || new RegExp(lead + String.raw`wear\s+your\s+(?:original|normal|usual)\s+(?:outfit|clothes)`, "i").test(t)) return { kind: "reset" };
+  const verbs = String.raw`(?:wear|try\s+on|put\s+on|dress\s+(?:yourself\s+|up\s+)?in|change\s+into|get\s+changed\s+into|change\s+(?:your\s+)?(?:outfit|clothes)\s+(?:to|into)|switch\s+(?:your\s+)?(?:outfit|clothes)\s+to)`;
+  const m = t.match(new RegExp(lead + verbs + String.raw`\s+(.+)$`, "i"));
+  if (!m) return null;
+  const rest = m[1].trim();
+  if (/^(?:this|that|it|these|those)(?:\s+(?:one|outfit|dress|top|look))?(?:\s+(?:from|in)\s+(?:the|my)\s+(?:photo|picture|pic))?$/i.test(rest)
+    || /^(?:the|my)\s+(?:outfit|clothes|dress|look|one)\s+(?:in|from)\s+(?:the|my|this)\s+(?:photo|picture|pic|image)/i.test(rest)
+    || /^what(?:'s| is)\s+in\s+(?:the|my)\s+(?:photo|picture|pic)/i.test(rest)) return { kind: "photo" };
+  if (/^put\s+on/i.test(m[0].replace(new RegExp(lead, "i"), "")) && !CLOTHING.test(rest)) return null;
+  return { kind: "describe", description: rest.slice(0, 300) };
+}
+
+export class OutfitError extends Error { constructor(public code: "wallet" | "failed" | "signin") { super(code); } }
+
+/** One wallet-paid picture edit of Oracle's portrait. Never accepts cached or fallback pictures. */
+export async function requestOutfitImage(prompt: string, clothingPhoto?: string): Promise<{ url: string; libraryId: string | null }> {
+  const [{ supabase }, { requireEdgeAuthToken }, portrait] = await Promise.all([
+    import("@/integrations/supabase/client"), import("@/lib/edgeAuth"), import("@/assets/avatars/oracle-futuristic-office.jpg"),
+  ]);
+  let token: string;
+  try { token = await requireEdgeAuthToken(); } catch { throw new OutfitError("signin"); }
+  const base = await toSmallDataUrl(portrait.default);
+  const { data, error } = await supabase.functions.invoke("image-gen", {
+    headers: { Authorization: `Bearer ${token}` },
+    body: { prompt, inputImages: clothingPhoto ? [base, clothingPhoto] : [base], tier: "premium", useCache: false, libraryFallback: false, maxAttempts: 3 },
+  });
+  if (error) {
+    const ctx = (error as { context?: Response }).context;
+    const detail = ctx?.text ? await ctx.text().catch(() => "") : String(error.message || "");
+    throw new OutfitError(ctx?.status === 402 || /insufficient|coins|402/i.test(detail) ? "wallet" : "failed");
+  }
+  const url = data?.fallback ? null : (data?.images?.[0]?.image_url?.url || data?.images?.[0]?.url || null);
+  if (!url) throw new OutfitError(data?.code === "credits_exhausted" ? "failed" : "failed");
+  return { url, libraryId: data?.library_id ?? null };
+}
+
+export const STANDBY_AFTER_MS = 3 * 60 * 1000;
+/** Standby loop starts after three minutes with no activity. */
+export const isStandby = (lastActivity: number, now: number) => now - lastActivity >= STANDBY_AFTER_MS;

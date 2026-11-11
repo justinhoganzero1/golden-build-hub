@@ -47,7 +47,7 @@ const LISTENING_CLIPS: PresenterClip[] = [
  * reply video (real lip-sync of the actual answer) takes top priority when
  * present. Footage is prerecorded — never presented as a live camera feed.
  */
-export default function OraclePresenterStage({ state, image, userId, cue, onCueDone, replyVideoUrl, onReplyVideoDone }: {
+export default function OraclePresenterStage({ state, image, userId, cue, onCueDone, replyVideoUrl, onReplyVideoDone, standbyUrl }: {
   state: PresenterState;
   image?: string;
   userId?: string;
@@ -56,6 +56,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   /** Premium pay-per-use video reply: real lip-sync of the actual answer. */
   replyVideoUrl?: string | null;
   onReplyVideoDone?: () => void;
+  /** Longer silent standby loop shown after a stretch of no activity. */
+  standbyUrl?: string;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
@@ -95,7 +97,9 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         ? CUE_CLIPS[cue]
         : state === "thinking" && !thinkingPlayed
           ? THINKING_CLIP
-          : { url: listeningUrl, audible: false, loop: true };
+          : standbyUrl && (state === "idle" || state === "listening")
+            ? { url: standbyUrl, audible: false, loop: true }
+            : { url: listeningUrl, audible: false, loop: true };
 
   // Audible clips need a play() attempt with sound; if the browser blocks
   // unmuted autoplay (no gesture yet), fall back to muted so she still moves.

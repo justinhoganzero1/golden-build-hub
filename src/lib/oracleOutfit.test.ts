@@ -22,3 +22,30 @@ describe("Oracle outfits", () => {
   });
   it("offers ready-made outfits", () => expect(OUTFIT_PRESETS.length).toBeGreaterThanOrEqual(6));
 });
+
+import { parseOutfitCommand, isStandby } from "./oracleOutfit";
+describe("asking Oracle to change outfit in the chat", () => {
+  it("understands a described outfit", () => {
+    expect(parseOutfitCommand("Can you wear a red leather jacket?")).toEqual({ kind: "describe", description: "a red leather jacket" });
+    expect(parseOutfitCommand("Oracle, change into a summer dress please")?.kind).toBe("describe");
+    expect(parseOutfitCommand("put on a cosy hoodie")).toEqual({ kind: "describe", description: "a cosy hoodie" });
+  });
+  it("understands 'wear this' as the photo they sent", () => {
+    expect(parseOutfitCommand("wear this")).toEqual({ kind: "photo" });
+    expect(parseOutfitCommand("Could you wear the outfit in the photo?")).toEqual({ kind: "photo" });
+  });
+  it("understands going back to her original outfit", () => {
+    expect(parseOutfitCommand("go back to your original outfit")).toEqual({ kind: "reset" });
+  });
+  it("ignores normal chat", () => {
+    expect(parseOutfitCommand("What should I wear to the party?")).toBeNull();
+    expect(parseOutfitCommand("put on some music")).toBeNull();
+    expect(parseOutfitCommand("I love your outfit")).toBeNull();
+  });
+});
+describe("standby video", () => {
+  it("starts after 3 minutes of no activity, not before", () => {
+    expect(isStandby(0, 179_000)).toBe(false);
+    expect(isStandby(0, 180_000)).toBe(true);
+  });
+});
