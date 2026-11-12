@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
+import blushOverlay from "@/assets/avatars/oracle-blush.png";
+import blushClipOverlay from "@/assets/avatars/oracle-blush-clip.png";
 // Smooth single-take shot locked to the canonical portrait (same face across the angle drift).
 import listeningClipUrl from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClipUrl from "@/assets/avatars/oracle-clip-greeting.webm";
@@ -48,7 +50,7 @@ const LISTENING_CLIPS: PresenterClip[] = [
  * reply video (real lip-sync of the actual answer) takes top priority when
  * present. Footage is prerecorded — never presented as a live camera feed.
  */
-export default function OraclePresenterStage({ state, image, userId, cue, onCueDone, replyVideoUrl, onReplyVideoDone, standbyUrl }: {
+export default function OraclePresenterStage({ state, image, userId, cue, onCueDone, replyVideoUrl, onReplyVideoDone, standbyUrl, blush = null }: {
   state: PresenterState;
   image?: string;
   userId?: string;
@@ -59,6 +61,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   onReplyVideoDone?: () => void;
   /** Longer silent standby loop shown after a stretch of no activity. */
   standbyUrl?: string;
+  /** Embarrassed flush on her cheeks after a burp ("soft") or fart ("full"). */
+  blush?: "soft" | "full" | null;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
@@ -157,6 +161,9 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
       />
     )}
+    {/* Matches the framing of whatever is showing (still portrait or filmed clip), so the flush lands on her cheeks. */}
+    <img src={plan && !failed && !image ? blushClipOverlay : blushOverlay} alt="" aria-hidden data-testid="oracle-blush" data-blush={blush ?? undefined}
+      className={`pointer-events-none absolute inset-0 h-full w-full object-cover object-center mix-blend-multiply transition-opacity duration-700 ${blush === "full" ? "opacity-100" : blush === "soft" ? "opacity-50" : "opacity-0"}`} />
     </div>
     <div className="absolute inset-0 oracle-stage-shade" />
     {replyVideoUrl && (playBlocked || failed) && <div className="absolute inset-0 flex items-center justify-center z-20">

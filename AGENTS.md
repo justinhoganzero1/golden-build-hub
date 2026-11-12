@@ -49,3 +49,4 @@
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
 - Signed-out / shows AppStorePage, installed launches PublicWelcomePage; install CTAs use installRedirect to avoid dead hosts.
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
+- Oracle human sounds (oracleHumanSounds) are bundled device clips chosen by a pure, tested picker and played in the speech queue before her line; never paid generation, silenced by mute, and cheeky noises are skipped for serious moods.

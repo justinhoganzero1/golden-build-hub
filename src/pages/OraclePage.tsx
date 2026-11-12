@@ -33,10 +33,12 @@ import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
-import { addReading, detectMood, moodNote, type MoodReading } from "@/lib/oracleMood";
+import { addReading, currentMood, detectMood, moodNote, type MoodReading } from "@/lib/oracleMood";
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
 import OracleLookPicker from "@/components/oracle/OracleLookPicker";
 import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLook";
+import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, pickHumanSound, playHumanSound, saveSoundPrefs, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
+import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
@@ -289,6 +291,14 @@ const OraclePage = () => {
   // which was drawn on the previous face.
   const [look, setLook] = useState<OracleLook | null>(null);
   const lookRef = useRef<OracleLook | null>(null);
+  // Human sounds (breaths, sighs, giggles, the odd burp, a very rare fart) and the embarrassed blush after one.
+  const [soundPrefs, setSoundPrefs] = useState<HumanSoundPrefs>(() => loadSoundPrefs());
+  const soundPrefsRef = useRef(soundPrefs);
+  soundPrefsRef.current = soundPrefs;
+  const soundStateRef = useRef(freshSoundState());
+  const [blush, setBlush] = useState<"soft" | "full" | null>(null);
+  const blushTimerRef = useRef<number | null>(null);
+  const updateSoundPrefs = (next: HumanSoundPrefs) => { setSoundPrefs(next); saveSoundPrefs(user?.id, next); };
   const applyLook = (next: OracleLook | null) => {
     lookRef.current = next; setLook(next); portraitDataRef.current = null;
     if (outfitRef.current) { outfitRef.current = null; setOutfit(null); if (user?.id) saveOutfit(user.id, null); }
@@ -356,6 +366,7 @@ const OraclePage = () => {
     outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
     const savedLook = loadLook(user.id);
     lookRef.current = savedLook; setLook(savedLook);
+    setSoundPrefs(loadSoundPrefs(user.id));
     setViewingArtifact(null);
   }, [user?.id]);
   useEffect(() => {
@@ -1031,13 +1042,30 @@ const OraclePage = () => {
     cancelCurrentSpeech();
     const next = speechQueueRef.current.shift();
     if (!next) return;
-    const premiumClean = cleanTextForPremiumSpeech(next.text);
-    const browserClean = cleanTextForSpeech(next.text);
+    let premiumClean = cleanTextForPremiumSpeech(next.text);
+    let browserClean = cleanTextForSpeech(next.text);
     isSpeakingQueueRef.current = true;
 
     try {
       const isOracle = next.agentName === oracleName;
       if (isOracle) {
+        // A breath, sigh or giggle before she talks — and now and then a burp or a
+        // very rare fart, then an embarrassed "excuse me" and a blush. Free device clips.
+        const kind = pickHumanSound(next.text, soundStateRef.current, soundPrefsRef.current, currentMood(moodHistoryRef.current)?.mood ?? null);
+        soundStateRef.current = nextSoundState(soundStateRef.current, kind);
+        const soundUrl = kind ? humanSoundUrl(kind, lookRef.current?.choice.gender ?? "woman") : null;
+        if (kind && soundUrl) {
+          const soundToken = speechTokenRef.current;
+          await playHumanSound(soundUrl, () => speechTokenRef.current === soundToken && !mutedRef.current);
+          if (speechTokenRef.current !== soundToken || mutedRef.current) return;
+          if (kind === "burp" || kind === "fart") {
+            if (blushTimerRef.current) window.clearTimeout(blushTimerRef.current);
+            setBlush(kind === "fart" ? "full" : "soft");
+            blushTimerRef.current = window.setTimeout(() => setBlush(null), kind === "fart" ? 6000 : 2500);
+          }
+          const sorry = embarrassedLine(kind);
+          if (sorry) { premiumClean = `${sorry} ${premiumClean}`.trim(); browserClean = `${sorry} ${browserClean}`.trim(); }
+        }
         // Free accounts hear Oracle's free device voice; her premium voice is a paid-plan feature.
         await routeOracleSpeech(getCurrentPlan() === "free" ? "device" : speechModeRef.current,
           () => speakWithBrowserTTS(browserClean, oracleName),
@@ -2963,7 +2991,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} image={outfit?.url || look?.url} standbyUrl={standby ? standbyLoop.url : undefined} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
+      <OraclePresenterStage userId={user?.id} image={outfit?.url || look?.url} standbyUrl={standby ? standbyLoop.url : undefined} blush={blush} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
@@ -3049,6 +3077,12 @@ const OraclePage = () => {
             {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
           </SelectContent></Select>}
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
+        </div>
+        <div className="space-y-2 rounded-lg border border-border p-3">
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Human sounds<span className="block text-xs text-muted-foreground">Breaths, sighs and giggles as she talks</span></span>
+            <Switch checked={soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, human: v })} aria-label="Human sounds" /></label>
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Cheeky sounds<span className="block text-xs text-muted-foreground">The odd burp, and a very rare fart (she gets embarrassed)</span></span>
+            <Switch checked={soundPrefs.cheeky} disabled={!soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, cheeky: v })} aria-label="Cheeky sounds" /></label>
         </div>
         <OracleLookPicker current={look} onChange={applyLook} />
         <OracleOutfitPicker current={outfit} onChange={applyOutfit} basePortraitUrl={look?.url} />
