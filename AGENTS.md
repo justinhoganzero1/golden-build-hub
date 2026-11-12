@@ -44,8 +44,8 @@
 - Oracle's member-designed look is a wallet-paid edit of the canonical portrait built only from whitelisted choices (cleanLook); a new look clears the outfit, outfits edit the look, and a male look switches default voice and skips ad-voice fillers so voices never mismatch.
 - Voice-level Oracle speech uses a procedural head sway (no mouth movement), keeping replies fast and free without implying lip-sync; real lip-sync stays in paid clips.
 - Oracle mood awareness runs in the browser (oracleMood) for the current chat only and sends a short sanitized hint, never stored, so care stays free and non-surveillance.
-- Oracle routes everyday chat to the fastest model, deep questions to a stronger low-reasoning one and speech to low-latency TTS, because speed comes first.
+- Oracle: fastest model for chat, stronger low-reasoning for deep questions, low-latency TTS; speed first.
 - Shop sales credit the creator share to their wallet via idempotent credit_creator_sale (payments webhook); cash payouts exclude wallet-credited sales, so nothing is paid twice.
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
-- Signed-out browsers at / get AppStorePage, installed/native launches PublicWelcomePage; install CTAs use installRedirect so they never hit dead hosts or missing files.
-- The app-wide look lives in one final theme layer in src/index.css (fixed office backdrop, glass surfaces, tokens); body colours use plain CSS, not @apply, because Tailwind copies every rule naming an applied class onto body.
+- Signed-out / shows AppStorePage, installed launches PublicWelcomePage; install CTAs use installRedirect to avoid dead hosts.
+- App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
