@@ -18,7 +18,7 @@ const HOME_JSON_LD = [
     "url": "https://oracle-lunar.online/",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127" },
-    "screenshot": "https://oracle-lunar.online/icons/icon-512.png",
+    "screenshot": "https://oraclelunar.com/icons/icon-512.png",
     "featureList": "Oracle AI voice chat, Crisis Hub, Mind Hub, AI Companion, Photography Hub, Live Vision, Movie Studio, Voice Studio, AI Tutor, Marketing Hub, App Builder",
   },
   {
