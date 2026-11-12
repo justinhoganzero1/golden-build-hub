@@ -2916,7 +2916,6 @@ const OraclePage = () => {
         </div>
       </header>
       <div className="relative min-h-0 flex-1">
-        {videoReplyPending && <ProductionProgress className="absolute left-3 right-3 top-2 z-20 mx-auto max-w-sm" />}
         {welcomeOpen && <OracleWelcome name={(user?.user_metadata?.display_name as string | undefined)?.split(" ")[0]} onSkip={closeWelcome} onChoose={c => { closeWelcome(); if (c === "look") setVoiceOptionsOpen(true); else if (c === "create") navigate("/movie-studio-pro"); else void sendMessageRef.current?.("Hi Oracle! I'd love to get to know you."); }} />}
         {oracleMedia && <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-background/80">
           <Button variant="outline" size="icon" className="absolute top-3 right-3" aria-label="Dismiss" onClick={() => setOracleMedia(null)}><X /></Button>
