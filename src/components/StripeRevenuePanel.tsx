@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Loader2, RefreshCw, TrendingUp, Wallet, Users } from "lucide-react";
 import { isLowPowerMobile } from "@/lib/utils";
+import { Drill } from "@/components/admin/DrillDown";
 
 interface RevenueData {
   gross30Cents: number;
@@ -121,33 +122,42 @@ export default function StripeRevenuePanel() {
       {data && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Drill metric="real_payments" params={{ days: 30 }} title="Real payments — last 30 days" className="rounded-lg">
             <Stat
               icon={<TrendingUp className="w-4 h-4 text-emerald-400" />}
               label="Gross (30d)"
               value={fmtMoney(data.gross30Cents, primaryCurrency)}
               sub={`${data.count30} payments`}
             />
+            </Drill>
+            <Drill metric="real_payments" params={{ days: 30 }} title="Real payments — last 30 days" className="rounded-lg">
             <Stat
               icon={<DollarSign className="w-4 h-4 text-amber-400" />}
               label="Net (30d)"
               value={fmtMoney(data.net30Cents, primaryCurrency)}
               sub={`Fees ${fmtMoney(data.fees30Cents, primaryCurrency)}`}
             />
+            </Drill>
+            <Drill metric="real_payments" params={{ days: 7 }} title="Real payments — last 7 days" className="rounded-lg">
             <Stat
               icon={<TrendingUp className="w-4 h-4 text-sky-400" />}
               label="Last 7 days"
               value={fmtMoney(data.gross7Cents, primaryCurrency)}
               sub={`${data.count7} payments`}
             />
+            </Drill>
+            <Drill metric="live_subscriptions" params={{}} title="Live subscriptions" className="rounded-lg">
             <Stat
               icon={<Users className="w-4 h-4 text-teal-400" />}
               label="Active Subs"
               value={String(data.activeSubscriptions)}
               sub="Recurring"
             />
+            </Drill>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Drill metric="balance" title="Stripe balance" className="rounded-lg">
             <Card className="p-4 bg-background/40 border-amber-500/10">
               <div className="flex items-center gap-2 mb-2">
                 <Wallet className="w-4 h-4 text-emerald-400" />
@@ -158,7 +168,9 @@ export default function StripeRevenuePanel() {
                 Pending: {fmtBalance(data.pendingBalance)}
               </p>
             </Card>
+            </Drill>
 
+            <Drill metric="payouts" title="Payouts to your bank" className="rounded-lg">
             <Card className="p-4 bg-background/40 border-amber-500/10">
               <div className="text-sm font-medium mb-2">Recent payouts</div>
               {data.recentPayouts.length === 0 ? (
@@ -179,10 +191,11 @@ export default function StripeRevenuePanel() {
                 </ul>
               )}
             </Card>
+            </Drill>
           </div>
 
           <div>
-            <div className="text-sm font-medium mb-2">Recent charges</div>
+            <Drill metric="real_payments" params={{ days: 30 }} title="Real payments — last 30 days" className="mb-2 inline-block rounded px-1 pr-5 text-sm font-medium">Recent charges</Drill>
             {data.recentCharges.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 No real customer payments in the last 30 days yet.

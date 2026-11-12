@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Drill } from "@/components/admin/DrillDown";
 
 interface Check { name: string; ok: boolean; detail: string; }
 interface HealthResponse { checks: Check[]; all_ok: boolean; expected_webhook_url: string; account_id?: string; }
@@ -86,7 +87,11 @@ export default function StripeHealthPanel() {
                 <tr key={i} className="border-t border-border/30">
                   <td className="py-1">{r.source}</td>
                   <td className={r.status === "ok" ? "text-emerald-300" : "text-rose-300"}>{r.status}</td>
-                  <td>{r.count}</td>
+                  <td>
+                    <Drill metric="stripe_events" params={{ hours: 24, source: r.source, status: r.status }} title={`Payment notices — ${r.source} (${r.status})`} className="inline-block rounded px-2 pr-5 font-semibold underline decoration-dotted">
+                      {r.count}
+                    </Drill>
+                  </td>
                   <td className="text-muted-foreground">{new Date(r.last_at).toLocaleString()}</td>
                 </tr>
               ))}

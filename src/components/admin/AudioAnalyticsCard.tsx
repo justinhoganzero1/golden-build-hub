@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Headphones, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Drill } from "@/components/admin/DrillDown";
 import { summarizeAudioEvents, type AudioEvent } from "@/lib/audioAnalytics";
 
 const LABELS: Record<AudioEvent, string> = {
@@ -41,7 +42,22 @@ const AudioAnalyticsCard = () => {
       </div>
       <div className="space-y-1.5">
         {(Object.entries(data.counts) as [AudioEvent, number][]).map(([k, v]) => (
-          <div key={k} className="flex items-center gap-2">
+          <Drill
+            key={k}
+            title={`${LABELS[k]} — this device`}
+            local={{
+              note: "Audio events are recorded on this device only.",
+              columns: [
+                { key: "when", label: "When", type: "date" },
+                { key: "details", label: "Details" },
+              ],
+              rows: data.events
+                .filter((e) => e.type === k)
+                .reverse()
+                .map((e) => ({ when: new Date(e.ts).toISOString(), details: e.meta ? JSON.stringify(e.meta) : "—" })),
+            }}
+            className="flex items-center gap-2 rounded pr-5"
+          >
             <span className="text-[10px] text-muted-foreground w-20 shrink-0">{LABELS[k]}</span>
             <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
               <div
@@ -50,7 +66,7 @@ const AudioAnalyticsCard = () => {
               />
             </div>
             <span className="text-[10px] font-bold text-foreground w-8 text-right">{v}</span>
-          </div>
+          </Drill>
         ))}
       </div>
     </div>

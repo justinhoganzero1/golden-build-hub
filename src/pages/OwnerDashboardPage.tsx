@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { downloadFileFromUrl, isLowPowerMobile } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import FeaturedPhotoPicker from "@/components/admin/FeaturedPhotoPicker";
+import { Drill } from "@/components/admin/DrillDown";
 
 const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
@@ -84,7 +85,7 @@ const OwnerDashboardPage = () => {
   }>({ totalClicks: 0, totalInstalls: 0, perPlatform: { android: { clicks: 0, installs: 0 }, ios: { clicks: 0, installs: 0 }, desktop: { clicks: 0, installs: 0 } } });
   const [memberStats, setMemberStats] = useState({ totalUsers: 0, paidUsers: 0, trialUsers: 0, revenue: 0 });
   // Private live-traffic stats (admin-only) — visitors to landing + total installs + paid upgrades
-  const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0 });
+  const [liveTraffic, setLiveTraffic] = useState<{ visitors: number; returning: number; installs: number; paidUpgrades: number; testUpgrades: number }>({ visitors: 0, returning: 0, installs: 0, paidUpgrades: 0, testUpgrades: 0 });
   // Traffic sources for the bar graph (admin-only): which sites/campaigns referred visitors
   const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
   // Top pages viewed (admin-only): which pages are most-visited
@@ -287,6 +288,7 @@ const OwnerDashboardPage = () => {
           supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
         ]);
         let paidUpgrades = 0;
+        let testUpgrades = 0;
         try {
           if (accessToken) {
             const { data } = await supabase.functions.invoke("check-subscription", {
@@ -296,6 +298,7 @@ const OwnerDashboardPage = () => {
               body: { admin_count: true },
             });
             if (typeof data?.paid_count === "number") paidUpgrades = data.paid_count;
+            if (typeof data?.test_paid_count === "number") testUpgrades = data.test_paid_count;
             if (!cancelled) {
               setMemberStats({
                 totalUsers: typeof data?.total_users === "number" ? data.total_users : 0,
@@ -312,6 +315,7 @@ const OwnerDashboardPage = () => {
             returning: typeof returning === "number" ? returning : 0,
             installs: typeof installs === "number" ? installs : 0,
             paidUpgrades,
+            testUpgrades,
           });
         }
       } catch {}
@@ -786,12 +790,12 @@ const OwnerDashboardPage = () => {
                 <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">20% commission</span>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                <Drill metric="affiliate_clicks" params={{ partner: "elevenlabs" }} title="ElevenLabs link clicks" className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-amber-300">
                     {(() => { try { return localStorage.getItem("affiliate_clicks_elevenlabs") || "0"; } catch { return "0"; } })()}
                   </p>
                   <p className="text-[10px] text-gray-400">Local Clicks</p>
-                </div>
+                </Drill>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-xs text-gray-300 truncate" title="https://try.elevenlabs.io/20p2fwdcfmr2">
                     try.elevenlabs.io/20p2fwdcfmr2
@@ -844,12 +848,12 @@ const OwnerDashboardPage = () => {
                 );
               })()}
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                <Drill metric="affiliate_clicks" params={{ partner: "heygen" }} title="HeyGen link clicks" className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-amber-300">
                     {(() => { try { return localStorage.getItem("affiliate_clicks_heygen") || "0"; } catch { return "0"; } })()}
                   </p>
                   <p className="text-[10px] text-gray-400">Local Clicks</p>
-                </div>
+                </Drill>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-xs text-gray-300 truncate">Edit src/lib/affiliateLinks.ts</p>
                   <p className="text-[10px] text-gray-400 mt-1">Paste real URL when approved</p>
@@ -886,43 +890,46 @@ const OwnerDashboardPage = () => {
                 <h3 className="text-sm font-bold text-white">Live Traffic — Your Site (Private)</h3>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                <Drill metric="page_views" params={{ page: "landing" }} title="Website visitors" className="bg-white/5 rounded-xl p-3 text-center">
                   <Eye className="w-4 h-4 text-cyan-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-cyan-300">{liveTraffic.visitors.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Visitors</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                </Drill>
+                <Drill metric="page_views" params={{ page: "landing", medium: "returning" }} title="Returning visitors" className="bg-white/5 rounded-xl p-3 text-center">
                   <Users className="w-4 h-4 text-teal-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-teal-300">{liveTraffic.returning.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Returning (no DL)</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                </Drill>
+                <Drill metric="install_events" params={{ event_type: "installed" }} title="Downloads" className="bg-white/5 rounded-xl p-3 text-center">
                   <Download className="w-4 h-4 text-emerald-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-emerald-300">{liveTraffic.installs.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Downloads</p>
-                </div>
-                <div className="bg-white/5 rounded-xl p-3 text-center">
+                </Drill>
+                <Drill metric="paid_members" title="Upgraded members" className="bg-white/5 rounded-xl p-3 text-center">
                   <Crown className="w-4 h-4 text-yellow-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-yellow-300">{liveTraffic.paidUpgrades.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Upgraded</p>
-                </div>
+                  {liveTraffic.testUpgrades > 0 && (
+                    <p className="text-[9px] text-gray-500">+{liveTraffic.testUpgrades} test</p>
+                  )}
+                </Drill>
               </div>
-              <p className="text-[10px] text-gray-500 mt-2">Refreshes every 30 seconds. Only you can see this.</p>
+              <p className="text-[10px] text-gray-500 mt-2">Refreshes every 30 seconds. Only you can see this. Tap any number for details.</p>
             </div>
 
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "Total Users", value: totalUsers, icon: <Users className="w-5 h-5" />, color: "from-blue-500/20 to-cyan-500/20", textColor: "text-blue-400" },
-                { label: "Paid Members", value: paidUsers, icon: <DollarSign className="w-5 h-5" />, color: "from-green-500/20 to-emerald-500/20", textColor: "text-green-400" },
-                { label: "Trial Users", value: trialUsers, icon: <Zap className="w-5 h-5" />, color: "from-teal-500/20 to-amber-500/20", textColor: "text-teal-400" },
-                { label: "Revenue", value: `$${revenue}`, icon: <TrendingUp className="w-5 h-5" />, color: "from-yellow-500/20 to-orange-500/20", textColor: "text-yellow-400" },
+                { label: "Total Users", metric: "users_all", params: {}, value: totalUsers, icon: <Users className="w-5 h-5" />, color: "from-blue-500/20 to-cyan-500/20", textColor: "text-blue-400" },
+                { label: "Paid Members", metric: "paid_members", params: {}, value: paidUsers, icon: <DollarSign className="w-5 h-5" />, color: "from-green-500/20 to-emerald-500/20", textColor: "text-green-400" },
+                { label: "Trial Users", metric: "trial_users", params: {}, value: trialUsers, icon: <Zap className="w-5 h-5" />, color: "from-teal-500/20 to-amber-500/20", textColor: "text-teal-400" },
+                { label: "Revenue", metric: "real_payments", params: { days: 30 }, value: `$${revenue}`, icon: <TrendingUp className="w-5 h-5" />, color: "from-yellow-500/20 to-orange-500/20", textColor: "text-yellow-400" },
               ].map((stat, i) => (
-                <div key={i} className={`bg-gradient-to-br ${stat.color} border border-white/10 rounded-2xl p-4`}>
+                <Drill key={i} metric={stat.metric} params={stat.params} title={stat.label} className={`bg-gradient-to-br ${stat.color} border border-white/10 rounded-2xl p-4`}>
                   <div className={`${stat.textColor} mb-2`}>{stat.icon}</div>
                   <p className="text-2xl font-bold text-white">{stat.value}</p>
                   <p className="text-[10px] text-gray-400">{stat.label}</p>
-                </div>
+                </Drill>
               ))}
             </div>
 
@@ -972,26 +979,26 @@ const OwnerDashboardPage = () => {
                     <span className="ml-auto text-[10px] text-gray-400">Live</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                    <Drill metric="install_events" params={{ event_type: "clicks" }} title="Install clicks" className="bg-white/5 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-cyan-300">{installStats.totalClicks}</p>
                       <p className="text-[10px] text-gray-400">Clicks</p>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                    </Drill>
+                    <Drill metric="install_events" params={{ event_type: "installed" }} title="Installs" className="bg-white/5 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-emerald-300">{installStats.totalInstalls}</p>
                       <p className="text-[10px] text-gray-400">Installs</p>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                    </Drill>
+                    <Drill metric="install_events" title="All install activity" className="bg-white/5 rounded-xl p-3 text-center">
                       <p className="text-xl font-bold text-yellow-300">{conv}%</p>
                       <p className="text-[10px] text-gray-400">Conversion</p>
-                    </div>
+                    </Drill>
                   </div>
                   <div className="space-y-1.5">
                     {rows.map((r) => (
                       <div key={r.key} className="flex items-center gap-2 text-xs bg-white/5 rounded-lg px-3 py-2">
                         <span className="text-cyan-300">{r.icon}</span>
                         <span className="text-white font-medium w-16">{r.label}</span>
-                        <span className="text-gray-400">Clicks: <span className="text-white">{r.clicks}</span></span>
-                        <span className="text-gray-400 ml-auto">Installs: <span className="text-emerald-300">{r.installs}</span></span>
+                        <Drill metric="install_events" params={{ platform: r.key, event_type: "clicks" }} title={`${r.label} install clicks`} className="rounded px-1.5 py-0.5 text-gray-400">Clicks: <span className="text-white">{r.clicks}</span></Drill>
+                        <Drill metric="install_events" params={{ platform: r.key, event_type: "installed" }} title={`${r.label} installs`} className="ml-auto rounded px-1.5 py-0.5 pr-5 text-gray-400">Installs: <span className="text-emerald-300">{r.installs}</span></Drill>
                       </div>
                     ))}
                   </div>
@@ -1837,7 +1844,7 @@ const OwnerDashboardPage = () => {
                     return trafficSources.map((s, i) => {
                       const pct = (s.visits / max) * 100;
                       return (
-                        <div key={s.source + i} className="space-y-1">
+                        <Drill key={s.source + i} metric="page_views" params={{ source: s.source }} title={`Visits from ${s.source}`} className="space-y-1 rounded-lg p-1 pr-5">
                           <div className="flex justify-between text-[11px]">
                             <span className="text-white font-medium truncate max-w-[60%]">{s.source}</span>
                             <span className="text-cyan-300 font-bold">{s.visits.toLocaleString()}</span>
@@ -1848,7 +1855,7 @@ const OwnerDashboardPage = () => {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                        </div>
+                        </Drill>
                       );
                     });
                   })()}
@@ -1875,7 +1882,7 @@ const OwnerDashboardPage = () => {
                     return topPages.map((p, i) => {
                       const pct = (p.visits / max) * 100;
                       return (
-                        <div key={p.page + i} className="space-y-1">
+                        <Drill key={p.page + i} metric="page_views" params={{ page: p.page }} title={`Visits to ${p.page}`} className="space-y-1 rounded-lg p-1 pr-5">
                           <div className="flex justify-between text-[11px]">
                             <span className="text-white font-medium truncate max-w-[70%]" title={p.page}>{p.page}</span>
                             <span className="text-emerald-300 font-bold">{p.visits.toLocaleString()}</span>
@@ -1886,7 +1893,7 @@ const OwnerDashboardPage = () => {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                        </div>
+                        </Drill>
                       );
                     });
                   })()}
@@ -1898,7 +1905,7 @@ const OwnerDashboardPage = () => {
               <p className="text-white text-xs font-bold mb-2">💡 Tip — track each campaign</p>
               <p>Share trackable links like:</p>
               <code className="block mt-2 p-2 bg-black/40 rounded text-cyan-300 break-all">
-                https://golden-vault-builder.lovable.app/?utm_source=facebook&utm_medium=ad&utm_campaign=launch
+                https://oraclelunar.com/?utm_source=facebook&utm_medium=ad&utm_campaign=launch
               </code>
               <p className="mt-2">Each one shows up as a separate bar above so you know exactly what's working.</p>
             </div>

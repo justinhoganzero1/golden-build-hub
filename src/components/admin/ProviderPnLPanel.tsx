@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, AlertTriangle, DollarSign, Activity } from "lucide-react";
 import { formatCentsAsCoins } from "@/lib/coins";
+import { Drill } from "@/components/admin/DrillDown";
 
 interface PnLRow {
   service: string;
@@ -100,21 +101,21 @@ export default function ProviderPnLPanel() {
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-card/60 rounded-xl p-3">
+          <Drill metric="ai_charges" params={{ days }} title={`AI charges — last ${days} days`} className="bg-card/60 rounded-xl p-3">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Revenue</div>
             <div className="text-lg font-bold text-foreground">{fmtUsd(totalRev)}</div>
             <div className="text-[10px] text-muted-foreground">{formatCentsAsCoins(totalRev)}</div>
-          </div>
-          <div className="bg-card/60 rounded-xl p-3">
+          </Drill>
+          <Drill metric="ai_charges" params={{ days }} title={`AI charges — last ${days} days`} className="bg-card/60 rounded-xl p-3">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Provider Cost</div>
             <div className="text-lg font-bold text-foreground">{fmtUsd(totalCost)}</div>
             <div className="text-[10px] text-muted-foreground">est.</div>
-          </div>
-          <div className="bg-card/60 rounded-xl p-3">
+          </Drill>
+          <Drill metric="ai_charges" params={{ days }} title={`AI charges — last ${days} days`} className="bg-card/60 rounded-xl p-3">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</div>
             <div className={`text-lg font-bold ${marginColor}`}>{netMargin.toFixed(1)}%</div>
             <div className="text-[10px] text-muted-foreground">target ≥ {SAFE_MARGIN}%</div>
-          </div>
+          </Drill>
         </div>
       </div>
 
@@ -126,14 +127,14 @@ export default function ProviderPnLPanel() {
             <h4 className="text-sm font-bold text-red-300">Margin Alerts ({alerts.length})</h4>
           </div>
           {alerts.map((a) => (
-            <div key={a.id} className="bg-card/60 rounded-lg p-2 text-xs flex items-center justify-between">
-              <div>
+            <div key={a.id} className="bg-card/60 rounded-lg p-2 text-xs flex items-center justify-between gap-2">
+              <Drill metric="ai_charges" params={{ from: a.period_start, to: a.period_end }} title="AI charges in this alert's period" className="flex-1 rounded p-1 pr-5">
                 <span className={`font-bold ${a.severity === "critical" ? "text-red-400" : "text-amber-400"}`}>
                   {a.margin_pct}%
                 </span>{" "}
                 margin · {fmtUsd(a.revenue_cents)} rev / {fmtUsd(a.est_provider_cost_cents)} cost ·{" "}
                 <span className="text-muted-foreground">{new Date(a.created_at).toLocaleString()}</span>
-              </div>
+              </Drill>
               <button onClick={() => ack(a.id)} className="px-2 py-1 rounded bg-muted text-[10px] font-bold">Ack</button>
             </div>
           ))}
@@ -150,7 +151,7 @@ export default function ProviderPnLPanel() {
         {!loading && pnl.length === 0 && <p className="text-xs text-muted-foreground">No charges in window.</p>}
         <div className="space-y-1">
           {pnl.map((r) => (
-            <div key={r.service} className="grid grid-cols-5 gap-2 text-xs py-1.5 border-b border-border/50 last:border-0">
+            <Drill key={r.service} metric="ai_charges" params={{ days, service: r.service }} title={`AI charges — ${r.service}`} className="grid grid-cols-5 gap-2 text-xs py-1.5 pr-5 rounded border-b border-border/50 last:border-0">
               <div className="font-bold text-foreground truncate">{r.service}</div>
               <div className="text-muted-foreground">{r.charges_count} calls</div>
               <div className="text-emerald-400">{fmtUsd(Number(r.revenue_cents))}</div>
@@ -158,7 +159,7 @@ export default function ProviderPnLPanel() {
               <div className={`font-bold text-right ${Number(r.margin_pct) >= SAFE_MARGIN ? "text-emerald-400" : "text-amber-400"}`}>
                 {Number(r.margin_pct).toFixed(1)}%
               </div>
-            </div>
+            </Drill>
           ))}
         </div>
       </div>
@@ -172,7 +173,7 @@ export default function ProviderPnLPanel() {
         {users.length === 0 && <p className="text-xs text-muted-foreground">No usage in window.</p>}
         <div className="space-y-1 max-h-64 overflow-y-auto">
           {users.map((u) => (
-            <div key={u.user_id} className="text-xs py-1.5 border-b border-border/50 last:border-0">
+            <Drill key={u.user_id} metric="ai_charges" params={{ days, user_id: u.user_id }} title={`AI charges — ${u.user_email || "member"}`} className="text-xs py-1.5 pr-5 rounded border-b border-border/50 last:border-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="truncate text-foreground font-mono">{u.user_email || u.user_id.slice(0, 8)}</div>
                 <div className="text-emerald-400 font-bold whitespace-nowrap">{fmtUsd(Number(u.total_spent_cents))}</div>
@@ -183,7 +184,7 @@ export default function ProviderPnLPanel() {
                   <> · {Object.entries(u.services).map(([s, n]) => `${s}:${n}`).join(" · ")}</>
                 )}
               </div>
-            </div>
+            </Drill>
           ))}
         </div>
       </div>

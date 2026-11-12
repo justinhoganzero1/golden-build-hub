@@ -1,5 +1,6 @@
 import { statusFor } from "../_shared/errorStatus.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { countPaidMembers } from "../_shared/ownerMetrics.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,16 +92,18 @@ Deno.serve(async (req) => {
         .gt("expires_at", new Date().toISOString());
       if (trialsError) throw trialsError;
 
-      // Paid members = active subscriptions (webhook-maintained) + founder seats
-      const { count: activeSubs } = await supabaseClient
+      // Paid members = active REAL-MONEY (live) subscriptions + founder seats.
+      // Test-money (sandbox) subscriptions are reported separately, never as paid.
+      const { data: activeSubRows } = await supabaseClient
         .from("subscriptions")
-        .select("id", { count: "exact", head: true })
+        .select("status, environment")
         .in("status", ["active", "trialing"]);
       const { count: founderCount } = await supabaseClient
         .from("memberships")
-        .select("id", { count: "exact", head: true })
+        .select("user_id", { count: "exact", head: true })
         .not("founder_number", "is", null);
-      const paidCount = (activeSubs ?? 0) + (founderCount ?? 0);
+      const paid = countPaidMembers(activeSubRows ?? [], founderCount ?? 0);
+      const paidCount = paid.real;
 
       // "Online" = signed in within the last 5 minutes
       const ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -149,6 +152,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         total_users: enriched.length,
         paid_count: paidCount,
+        test_paid_count: paid.test,
         trial_count: activeTrials ?? 0,
         online_count: onlineCount,
         offline_count: enriched.length - onlineCount,
