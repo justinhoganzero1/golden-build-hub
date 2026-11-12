@@ -38,7 +38,7 @@ const ReferralPage = () => {
   };
 
   // Always share the real domain — never a preview/editor host.
-  const inviteUrl = `https://www.oracle-lunar.online/?ref=${referralCode}`;
+  const inviteUrl = `https://oraclelunar.com/?ref=${referralCode}`;
   const inviteText = `I'm using Oracle Lunar — an AI best friend app with free games, planners and a voice Oracle. Join free with my code ${referralCode}:`;
   const shareLink = () => {
     if (navigator.share) {

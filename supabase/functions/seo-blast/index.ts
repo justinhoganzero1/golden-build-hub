@@ -4,7 +4,7 @@
 // return 404/410. The only reliable external push channel left is IndexNow plus
 // user-verified Google Search Console (which the site owner must connect manually).
 
-const SITE = "https://oracle-lunar.online";
+const SITE = "https://oraclelunar.com";
 const SITEMAP_URL = `${SITE}/sitemap.xml`;
 const INDEXNOW_KEY = "40c21cdfe37d596683032a1dcc3b5563";
 const INDEXNOW_KEY_LOCATION = `${SITE}/${INDEXNOW_KEY}.txt`;
@@ -24,7 +24,7 @@ async function fetchSitemapUrls(): Promise<string[]> {
 
 async function submitIndexNow(urls: string[]) {
   const body = {
-    host: "oracle-lunar.online",
+    host: "oraclelunar.com",
     key: INDEXNOW_KEY,
     keyLocation: INDEXNOW_KEY_LOCATION,
     urlList: urls,

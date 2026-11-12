@@ -52,7 +52,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h3 className="font-bold text-foreground">Free AI Tools — Sign Up to Try</h3>
+          <h3 className="font-bold text-foreground">Quick AI Tools — Try Them in the App</h3>
         </div>
         {onClose && (
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
@@ -93,7 +93,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
         disabled={loading || !prompt.trim()}
         className="w-full mt-2 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <>Sign up free → Generate <ArrowRight className="w-4 h-4" /></>}
+        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</> : <>Sign in → Generate <ArrowRight className="w-4 h-4" /></>}
       </button>
 
       {result && (

@@ -97,7 +97,7 @@ const StoryPublicPage = () => {
     );
   }
 
-  const url = `https://oracle-lunar.online/stories/${slug}`;
+  const url = `https://oraclelunar.com/stories/${slug}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -160,7 +160,7 @@ const StoryPublicPage = () => {
         <div className="mt-16 p-5 rounded-xl border border-border text-center">
           <p className="text-sm text-muted-foreground mb-3">Created with Oracle Lunar</p>
           <a
-            href="https://oracle-lunar.online"
+            href="https://oraclelunar.com"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-amber-500 text-primary-foreground font-semibold"
           >
             Try Oracle Lunar free

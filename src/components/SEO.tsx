@@ -9,7 +9,7 @@ interface SEOProps {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
-const SITE = "https://www.oracle-lunar.online";
+const SITE = "https://oraclelunar.com";
 const DEFAULT_TITLE = "ORACLE LUNAR — Free AI Companion, Friend & Voice Chat";
 const DEFAULT_DESC =
   "ORACLE LUNAR — your free AI companion. Voice chat, AI friend, tutor, mind & wellness. 24/7 support. Install free today.";

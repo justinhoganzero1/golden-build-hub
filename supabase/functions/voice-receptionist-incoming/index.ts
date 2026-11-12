@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
         // Schedule a follow-up SMS with booking link
         await supabase.from("crm_followups").insert({
           contact_id: callRow.contact_id, channel: "sms",
-          body: "Thanks for calling! Book a time here: https://oracle-lunar.online/calendar",
+          body: "Thanks for calling! Book a time here: https://oraclelunar.com/calendar",
           send_at: new Date(Date.now() + 30_000).toISOString(),
         });
       }

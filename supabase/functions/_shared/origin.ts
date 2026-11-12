@@ -3,13 +3,15 @@
 // of our own domains. Everything else falls back to the production domain.
 // End users never route through Lovable hosts, so those are not allowlisted.
 const ALLOWED_ORIGINS = [
+  "https://oraclelunar.com",
+  "https://www.oraclelunar.com",
   "https://oracle-lunar.online",
   "https://www.oracle-lunar.online",
   "http://localhost:8080",
   "http://localhost:5173",
 ];
 
-export const DEFAULT_ORIGIN = "https://oracle-lunar.online";
+export const DEFAULT_ORIGIN = "https://oraclelunar.com";
 
 /** Return a safe redirect origin for this request. */
 export function safeOrigin(req: Request): string {

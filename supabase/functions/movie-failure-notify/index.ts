@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
             <pre style="background:#1a1a22;padding:12px;border-radius:8px;color:#ff9b9b;white-space:pre-wrap;font-size:13px">${errMsg}</pre>
             <p>Good news — it's saved as a draft. Open Movie Studio Pro and tap <strong>Retry failed scenes</strong> to pick up where it left off.</p>
             <p style="margin-top:24px">
-              <a href="https://oracle-lunar.online/movie-studio-pro" style="background:#f5b042;color:#0b0b0f;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Open Movie Studio Pro</a>
+              <a href="https://oraclelunar.com/movie-studio-pro" style="background:#f5b042;color:#0b0b0f;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Open Movie Studio Pro</a>
             </p>
             <p style="color:#888;font-size:12px;margin-top:32px">— ORACLE LUNAR Movie Studio</p>
           </div>`;
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
             ${thumb}
             <p style="margin-top:24px;display:flex;gap:8px;flex-wrap:wrap">
               <a href="${p.final_video_url}" style="background:#f5b042;color:#0b0b0f;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">▶ Watch</a>
-              <a href="https://oracle-lunar.online/movie-studio-pro" style="background:#1a1a22;color:#f5f5f7;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #333">Open Studio</a>
+              <a href="https://oraclelunar.com/movie-studio-pro" style="background:#1a1a22;color:#f5f5f7;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid #333">Open Studio</a>
             </p>
             ${p.trailer_url ? `<p style="margin-top:12px"><a href="${p.trailer_url}" style="color:#f5b042">🎞 Watch the trailer</a></p>` : ""}
             <p style="color:#888;font-size:12px;margin-top:32px">— ORACLE LUNAR Movie Studio</p>

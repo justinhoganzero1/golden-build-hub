@@ -110,7 +110,7 @@ export const MovieProjectDashboard = () => {
       body: {
         action: "bundle",
         title: pkg.title || project.title,
-        description: pkg.description || `Created with ORACLE LUNAR Movie Studio Pro — https://oracle-lunar.online`,
+        description: pkg.description || `Created with ORACLE LUNAR Movie Studio Pro — https://oraclelunar.com`,
         tags: Array.isArray(pkg.tags) && pkg.tags.length ? pkg.tags : ["AI", "Movie", "ORACLE LUNAR"],
         video_url: project.final_video_url,
       },

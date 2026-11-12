@@ -196,7 +196,7 @@ KEY FACTS YOU CAN SHARE:
 - ORACLE LUNAR is an all-in-one AI super-app: Oracle chat, Live Vision, Movie Studio, Voice Studio, Mind Hub, Crisis Hub, Wallet, Family Hub, and 40+ more modules.
 - Free tier: Oracle chat (25 msgs/day), Crisis Hub, Safety Center, Suggestion Box.
 - Paid tiers from $5/mo (Starter) up to lifetime access via accepted Suggestion Box ideas.
-- Native mobile via Capacitor, web PWA, deployed at oracle-lunar.online.
+- Native mobile via Capacitor, web PWA, deployed at oraclelunar.com.
 - Investors: contact via /investor page on the site.
 
 If asked anything outside sales/investor scope, give the redirect line above and stop.`;

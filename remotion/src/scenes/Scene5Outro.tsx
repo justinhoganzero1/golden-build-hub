@@ -70,7 +70,7 @@ export const Scene5Outro: React.FC = () => {
           opacity: urlOpacity,
         }}
       >
-        oracle-lunar.online
+        oraclelunar.com
       </div>
     </AbsoluteFill>
   );

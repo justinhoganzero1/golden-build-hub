@@ -28,8 +28,8 @@ export const MOVIE_FORMATS: MovieFormat[] = [
     targetSeconds: 30,
     destination: "youtube",
     fileExtension: "webm",
-    ctaUrl: "https://oracle-lunar.online",
-    ctaLabel: "oracle-lunar.online",
+    ctaUrl: "https://oraclelunar.com",
+    ctaLabel: "oraclelunar.com",
   },
   {
     id: "promo_ad_vertical",
@@ -41,8 +41,8 @@ export const MOVIE_FORMATS: MovieFormat[] = [
     targetSeconds: 30,
     destination: "social",
     fileExtension: "webm",
-    ctaUrl: "https://oracle-lunar.online",
-    ctaLabel: "oracle-lunar.online",
+    ctaUrl: "https://oraclelunar.com",
+    ctaLabel: "oraclelunar.com",
   },
   {
     id: "youtube_standard",

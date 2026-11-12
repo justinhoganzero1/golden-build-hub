@@ -17,7 +17,7 @@ import { narrateStoryToMp3 } from "@/lib/storyNarration";
 import { supabase } from "@/integrations/supabase/client";
 
 
-const PUBLIC_ORIGIN = "https://oracle-lunar.online";
+const PUBLIC_ORIGIN = "https://oraclelunar.com";
 
 export interface ShareStory {
   id?: string;

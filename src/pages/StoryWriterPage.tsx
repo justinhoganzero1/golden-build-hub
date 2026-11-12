@@ -2229,7 +2229,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
     }
     const slug = (story.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "story")
       + "-" + Math.random().toString(36).slice(2, 7);
-    const publishedUrl = `https://oracle-lunar.online/stories/${slug}`;
+    const publishedUrl = `https://oraclelunar.com/stories/${slug}`;
     try {
       const wordCount = story.chapters.reduce((n, c) => n + c.content.split(/\s+/).filter(Boolean).length, 0);
       // Keep EVERYTHING the draft already had (cover art, blurb, chapter images)

@@ -15,7 +15,7 @@ const HOME_JSON_LD = [
     "name": "ORACLE LUNAR — AI Companion Super App",
     "operatingSystem": "Android, iOS, Web",
     "applicationCategory": "LifestyleApplication",
-    "url": "https://oracle-lunar.online/",
+    "url": "https://oraclelunar.com/",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "127" },
     "screenshot": "https://oraclelunar.com/icons/icon-512.png",
@@ -35,7 +35,7 @@ const HOME_JSON_LD = [
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://oracle-lunar.online/" },
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://oraclelunar.com/" },
     ],
   },
 ];

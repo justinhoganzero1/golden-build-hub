@@ -66,7 +66,7 @@ function extractEmail(text: string): string | null {
 async function aiDraft(prospect: { url: string; title?: string; description?: string; pageSummary?: string }, campaign: string) {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) return { subject: "", body: "" };
-  const sys = `You are a world-class growth marketer for ORACLE LUNAR — a cinematic AI super-app (40+ modules: Oracle AI, Crisis Hub, Movie Studio, Avatar Generator, Live Vision, AI Companion, Wallet, etc.). Live at https://oracle-lunar.online. Founder: Justin Hogan. Write SHORT, warm, specific outreach emails that get replies. Always reference something specific from the target site. Never sound templated. End with one clear ask.`;
+  const sys = `You are a world-class growth marketer for ORACLE LUNAR — a cinematic AI super-app (40+ modules: Oracle AI, Crisis Hub, Movie Studio, Avatar Generator, Live Vision, AI Companion, Wallet, etc.). Live at https://oraclelunar.com. Founder: Justin Hogan. Write SHORT, warm, specific outreach emails that get replies. Always reference something specific from the target site. Never sound templated. End with one clear ask.`;
   const user = `Campaign type: ${campaign}
 Target site: ${prospect.url}
 Title: ${prospect.title ?? ""}

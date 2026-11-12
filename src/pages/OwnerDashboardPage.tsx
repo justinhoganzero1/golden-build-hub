@@ -1034,12 +1034,12 @@ const OwnerDashboardPage = () => {
                 onClick={async () => {
                   const message = prompt(
                     "Broadcast message to Telegram / Discord / Slack / Email / 80 webhooks:",
-                    "🆓 ORACLE LUNAR is FREE to join — become a Founding Member at https://oracle-lunar.online"
+                    "🆓 ORACLE LUNAR is FREE to join — become a Founding Member at https://oraclelunar.com"
                   );
                   if (!message) return;
                   try {
                     const { data, error } = await supabase.functions.invoke("growth-broadcast", {
-                      body: { event: "feature", title: "📣 ORACLE LUNAR Announcement", message, url: "https://oracle-lunar.online" },
+                      body: { event: "feature", title: "📣 ORACLE LUNAR Announcement", message, url: "https://oraclelunar.com" },
                     });
                     if (error) throw error;
                     const ok = (data?.results || []).filter((r: any) => r.ok).map((r: any) => r.label).join(", ");

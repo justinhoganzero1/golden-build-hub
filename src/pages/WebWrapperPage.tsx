@@ -125,7 +125,7 @@ const WebWrapperPage = () => {
     const cleanUrl = (url || "").trim();
     const cleanName = (appName || "").trim();
     if (!/^https?:\/\/.+\..+/i.test(cleanUrl)) {
-      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL (e.g. https://oracle-lunar.online).", variant: "destructive" });
+      toast({ title: "Invalid URL", description: "Please enter a valid https:// URL (e.g. https://oraclelunar.com).", variant: "destructive" });
       return;
     }
     if (!cleanName) {

@@ -90,7 +90,7 @@ const UrlBar: React.FC = () => {
           textShadow: "0 2px 18px rgba(0,0,0,0.9)",
         }}
       >
-        oracle-lunar.online
+        oraclelunar.com
       </div>
     </div>
   );

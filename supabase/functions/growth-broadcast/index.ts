@@ -23,7 +23,7 @@ type Payload = {
   meta?: Record<string, unknown>;
 };
 
-const APP_URL = "https://oracle-lunar.online";
+const APP_URL = "https://oraclelunar.com";
 
 function buildText(p: Payload): { title: string; body: string } {
   const ev = (p.event || "custom").toLowerCase();

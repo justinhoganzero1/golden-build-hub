@@ -317,7 +317,7 @@ const DashboardPage = () => {
         open={shareOpen}
         onOpenChange={setShareOpen}
         title="Oracle Lunar App"
-        url={`https://oracle-lunar.online/?ref=${user ? `ORACLE LUNAR${user.id.slice(0,6).toUpperCase()}` : ""}`}
+        url={`https://oraclelunar.com/?ref=${user ? `ORACLE LUNAR${user.id.slice(0,6).toUpperCase()}` : ""}`}
         description="Check out Oracle Lunar — your AI companion to do everything. Sign up free, get welcome coins, and top up only when you want more paid AI actions."
       />
 

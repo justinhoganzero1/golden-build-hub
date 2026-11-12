@@ -1,4 +1,4 @@
-# Oracle Lunar — https://www.oracle-lunar.online
+# Oracle Lunar — https://oraclelunar.com
 # Search crawlers
 User-agent: Googlebot
 Allow: /
@@ -88,5 +88,5 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://www.oracle-lunar.online/sitemap.xml
-Host: https://www.oracle-lunar.online
+Sitemap: https://oraclelunar.com/sitemap.xml
+Host: https://oraclelunar.com

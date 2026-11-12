@@ -183,7 +183,7 @@ const TitleCard: React.FC = () => {
             letterSpacing: 3,
           }}
         >
-          oracle-lunar.online
+          oraclelunar.com
         </div>
       </div>
     </AbsoluteFill>

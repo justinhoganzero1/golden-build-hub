@@ -95,7 +95,7 @@ const UrlBar: React.FC<{ globalFrame: number }> = ({ globalFrame }) => {
           color: GOLD_HOT,
         }}
       >
-        oracle-lunar.online
+        oraclelunar.com
       </div>
     </div>
   );
@@ -229,7 +229,7 @@ const DeviceCard: React.FC<{
             letterSpacing: 0.6,
           }}
         >
-          oracle-lunar.online{route}
+          oraclelunar.com{route}
         </div>
       </div>
       <Img

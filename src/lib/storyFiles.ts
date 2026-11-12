@@ -109,7 +109,7 @@ export const buildTxtBlob = (story: StoryFileSource): Blob => {
   for (const c of nonEmptyChapters(story)) {
     lines.push(c.title || "Chapter", "", c.content.trim(), "", "".padEnd(60, "-"), "");
   }
-  lines.push("", "Created with Oracle Lunar — https://oracle-lunar.online");
+  lines.push("", "Created with Oracle Lunar — https://oraclelunar.com");
   return new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
 };
 
@@ -148,7 +148,7 @@ ${cover}
 ${story.author ? `<p class="by">by ${xmlEscape(story.author)}</p>` : ""}
 ${story.blurb || story.premise ? `<p class="blurb">${xmlEscape(story.blurb || story.premise || "")}</p>` : ""}
 ${chapters}
-<footer>Created with Oracle Lunar — <a href="https://oracle-lunar.online">oracle-lunar.online</a></footer>
+<footer>Created with Oracle Lunar — <a href="https://oraclelunar.com">oraclelunar.com</a></footer>
 </main></body></html>`;
   return new Blob([html], { type: "text/html;charset=utf-8" });
 };

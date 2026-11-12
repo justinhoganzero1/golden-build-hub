@@ -101,7 +101,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
   const [fbAttempts, setFbAttempts] = useState(0);
 
   // Always share the public production domain — never the lovable preview/editor URL.
-  const PUBLIC_ORIGIN = "https://oracle-lunar.online";
+  const PUBLIC_ORIGIN = "https://oraclelunar.com";
   const rawUrl = url || imageUrl || (typeof window !== "undefined" ? window.location.href : "");
   const shareUrl = (() => {
     try {
@@ -603,7 +603,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
                   <li><b>In-app browser (FB/IG):</b> open this page in Chrome/Safari instead.</li>
                   <li><b>Quote stripped:</b> FB ignores prefilled text for non-app shares — paste manually (caption is copied).</li>
                   <li><b>App not installed:</b> the <code>fb://</code> deep link silently fails — we then try the web version.</li>
-                  <li><b>Iframe (preview):</b> open the live site at oracle-lunar.online to share.</li>
+                  <li><b>Iframe (preview):</b> open the live site at oraclelunar.com to share.</li>
                 </ul>
                 <p className="font-semibold pt-1">Fail-proof fallback ({fbAttempts} attempt{fbAttempts === 1 ? "" : "s"}):</p>
                 <ol className="list-decimal pl-4 space-y-0.5 text-muted-foreground">

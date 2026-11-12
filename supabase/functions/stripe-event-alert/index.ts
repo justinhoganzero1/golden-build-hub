@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
             <p>A Stripe event was logged with status <strong>${status}</strong>.</p>
             <pre style="background:#1a1a22;padding:12px;border-radius:8px;color:#f5b042;white-space:pre-wrap;font-size:13px">${lines}</pre>
             <p style="margin-top:16px">
-              <a href="https://oracle-lunar.online/owner-dashboard" style="background:#f5b042;color:#0b0b0f;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Open Owner Dashboard</a>
+              <a href="https://oraclelunar.com/owner-dashboard" style="background:#f5b042;color:#0b0b0f;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600">Open Owner Dashboard</a>
             </p>
           </div>`;
         const resp = await fetch("https://api.resend.com/emails", {
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
                   {
                     type: "button",
                     text: { type: "plain_text", text: "Owner Dashboard" },
-                    url: "https://oracle-lunar.online/owner-dashboard",
+                    url: "https://oraclelunar.com/owner-dashboard",
                   },
                 ],
               },
