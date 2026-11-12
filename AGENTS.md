@@ -44,10 +44,10 @@
 - Oracle's member look is a wallet-paid portrait edit from whitelisted choices (cleanLook); a new look clears the outfit, and a male look switches voice so voices never mismatch.
 - Voice-level Oracle speech uses a procedural head sway (no mouth movement), keeping replies fast and free without implying lip-sync; real lip-sync stays in paid clips.
 - Oracle mood awareness runs in the browser (oracleMood) for the current chat only and sends a short sanitized hint, never stored, so care stays free and non-surveillance.
-- Oracle: fastest model for chat, stronger low-reasoning for deep questions, low-latency TTS; speed first.
+- Oracle: fastest chat model, stronger low-reasoning for deep questions, low-latency TTS; speed first.
 - Shop sales credit creators' wallets via idempotent credit_creator_sale; cash payouts exclude wallet-credited sales, so nothing pays twice.
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
 - Signed-out / → AppStorePage, installed → PublicWelcomePage, signed-in → Oracle; /download always AppStorePage. Install CTAs use installRedirect (no dead hosts).
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
-- Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; website arrivals use site_arrivals so page_views counters stay unchanged.
+- Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; website arrivals use site_arrivals so page_views counts stay unchanged.
