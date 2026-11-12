@@ -26,3 +26,8 @@
 - [x] 8. Search pages improved (done in 1b) — verify they render signed-out
 - [ ] 9. Google Play listing — waits on Juzzy's Play Console account (US$25)
 - [ ] 10. Paid ads — skipped (Juzzy asked for free only)
+
+## Funny ad (2026-11-12)
+- [ ] Fart comedy cut of the Australian ad: fart in first 5s, laugh on floor, worse fart, "gotta run", beer + burp, petrol line
+- [ ] Walk-off ending: "bloody shower… beers this afternoon", waddle, leg shake + fart, fade on floor laughing "someone bring me a bucket"
+- [ ] Add the funny ad to the website landing page next to the current ad
