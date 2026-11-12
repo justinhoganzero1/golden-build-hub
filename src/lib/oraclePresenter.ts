@@ -4,7 +4,7 @@ export const ORACLE_AD_VOICE_ID = "Fo0Bi1BDck0zXC4ByI80";
 const REPLACED_DEFAULTS = new Set(["IKne3meq5aSn9XLyUdCD", "EXAVITQu4vr4xnSDxMaL"]);
 /** Premade warm male voice used when the member picks a male look and hasn't chosen their own voice. */
 export const ORACLE_MALE_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
-export function resolveOraclePremiumVoice(saved: string | null | undefined, lookGender?: "woman" | "man" | "nonbinary"): string {
+export function resolveOraclePremiumVoice(saved: string | null | undefined, lookGender?: "woman" | "man" | "androgynous"): string {
   if (!saved || REPLACED_DEFAULTS.has(saved)) return lookGender === "man" ? ORACLE_MALE_VOICE_ID : ORACLE_AD_VOICE_ID;
   return saved;
 }

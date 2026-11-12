@@ -1,6 +1,6 @@
 // Oracle's look: the member chooses how she (or he) appears. Each new look is one
 // wallet-paid picture edit of the canonical portrait, saved per account on this device.
-export type LookGender = "woman" | "man" | "nonbinary";
+export type LookGender = "woman" | "man" | "androgynous";
 export interface OracleLookChoice {
   gender: LookGender;
   heritage: string;
@@ -16,7 +16,7 @@ export const LOOK_OPTIONS = {
   gender: [
     { id: "woman", label: "Woman" },
     { id: "man", label: "Man" },
-    { id: "nonbinary", label: "Non-binary" },
+    { id: "androgynous", label: "Androgynous" },
   ],
   heritage: ["Caucasian / European", "Aboriginal Australian", "Torres Strait Islander", "Pacific Islander", "Maori", "East Asian", "South Asian", "Southeast Asian", "African", "African American", "Middle Eastern", "Latino / Hispanic", "Mixed heritage"],
   hairColour: ["Black", "Dark brown", "Light brown", "Blonde", "Platinum blonde", "Red", "Auburn", "Grey", "Silver", "White"],
@@ -35,7 +35,9 @@ const pick = (list: readonly string[], value: unknown, fallback: string) => type
 /** Keeps only known choices so nothing odd ever reaches the picture prompt. */
 export function cleanLook(raw: Partial<OracleLookChoice> | null | undefined): OracleLookChoice {
   const r = raw || {};
-  const gender = (["woman", "man", "nonbinary"] as const).includes(r.gender as LookGender) ? r.gender as LookGender : DEFAULT_LOOK.gender;
+  // Older saves used "nonbinary"; treat them as the renamed "androgynous" choice.
+  const rawGender = (r.gender as string) === "nonbinary" ? "androgynous" : r.gender;
+  const gender = (["woman", "man", "androgynous"] as const).includes(rawGender as LookGender) ? rawGender as LookGender : DEFAULT_LOOK.gender;
   return {
     gender,
     heritage: pick(LOOK_OPTIONS.heritage, r.heritage, DEFAULT_LOOK.heritage),
@@ -47,7 +49,7 @@ export function cleanLook(raw: Partial<OracleLookChoice> | null | undefined): Or
   };
 }
 
-const PERSON: Record<LookGender, string> = { woman: "woman", man: "man", nonbinary: "androgynous non-binary person" };
+const PERSON: Record<LookGender, string> = { woman: "woman", man: "man", androgynous: "androgynous person" };
 
 /** Picture instruction: image 1 is her canonical portrait. Orientation is never drawn. */
 export function lookPrompt(raw: OracleLookChoice) {
