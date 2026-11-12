@@ -28,6 +28,10 @@ export const usePWAInstall = () => {
       window.navigator.standalone === true;
     setIsStandalone(standalone);
 
+    // index.html stores an install offer that arrived before this page loaded.
+    const early = (window as unknown as { __oracleInstallPrompt?: BeforeInstallPromptEvent | null }).__oracleInstallPrompt;
+    if (early) setDeferredPrompt(early);
+
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -50,6 +54,7 @@ export const usePWAInstall = () => {
     await deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
     setDeferredPrompt(null);
+    (window as unknown as { __oracleInstallPrompt?: null }).__oracleInstallPrompt = null;
     return choice.outcome;
   };
 

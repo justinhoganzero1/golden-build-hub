@@ -11,7 +11,11 @@
  * actually works. On the real production host this is a no-op.
  */
 
-export const PUBLIC_HOST = "oracle-lunar.online";
+// oraclelunar.com is the live primary web address; oracle-lunar.online does not
+// currently load, so installs and links must never bounce visitors there.
+export const PUBLIC_HOST = "oraclelunar.com";
+/** Every web address that serves the real production app. */
+export const PRODUCTION_HOSTS = ["oraclelunar.com", "www.oraclelunar.com", "oracle-lunar.online", "www.oracle-lunar.online"];
 export const PUBLIC_ORIGIN = `https://${PUBLIC_HOST}`;
 export const PUBLIC_URL = `${PUBLIC_ORIGIN}/`;
 
@@ -49,6 +53,20 @@ export const getNativeStoreUrl = (): string | null => {
 /** True when we have a hosted .apk available for direct sideload. */
 export const hasDirectApk = (): boolean => Boolean(ANDROID_APK_URL);
 
+/**
+ * True only when the hosted .apk file really exists. The URL is configured even
+ * before a build is uploaded, so ask storage instead of trusting the constant.
+ */
+export const checkApkAvailable = async (): Promise<boolean> => {
+  if (!hasDirectApk()) return false;
+  try {
+    const res = await fetch(ANDROID_APK_URL, { method: "HEAD", cache: "no-store" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+};
+
 /** True when the current device is Android (any browser). */
 export const isAndroidDevice = (): boolean => {
   if (typeof navigator === "undefined") return false;
@@ -61,7 +79,7 @@ export const isOnProductionHost = (): boolean => {
     if (typeof window === "undefined") return true;
     // Inside any iframe (Lovable preview, embedded webviews) → not production-safe.
     if (window.self !== window.top) return false;
-    return window.location.hostname === PUBLIC_HOST;
+    return PRODUCTION_HOSTS.includes(window.location.hostname.toLowerCase());
   } catch {
     return false;
   }
@@ -91,8 +109,13 @@ export const openProductionSite = (path = "/"): void => {
 
   // 2. Try a fresh tab so the user keeps the editor preview open.
   try {
-    const w = window.open(target, "_blank", "noopener,noreferrer");
-    if (w && !w.closed) return;
+    // "noopener" makes window.open return null even on success, which used to
+    // open the site twice; open plainly and cut the link back to this page.
+    const w = window.open(target, "_blank");
+    if (w) {
+      try { w.opener = null; } catch { /* ignore */ }
+      return;
+    }
   } catch {
     /* blocked → fall through */
   }

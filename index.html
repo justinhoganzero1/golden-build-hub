@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Oracle Lunar — Your AI Best Friend, Voice Oracle & Free Games</title>
-    <meta name="description" content="Oracle Lunar — your AI best friend. Voice Oracle, free games and planners, story writer and more. 3-day free trial, then A$1 founding seat." />
+    <title>Oracle Lunar — Install Your AI Best Friend App</title>
+    <meta name="description" content="Install Oracle Lunar free on your phone, tablet or computer. Chat with Oracle, your AI best friend, plus stories, videos, planners and more." />
     <meta name="theme-color" content="#FFAA00" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,6 +17,11 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Keep the browser's one-time "install app" offer even if it fires before the page finishes loading.
+      window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__oracleInstallPrompt = e; });
+      window.addEventListener("appinstalled", function () { window.__oracleInstallPrompt = null; });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Caveat:wght@600;700&family=Cinzel:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -91,8 +96,8 @@
     </style>
     <meta property="og:title" content="Oracle Lunar — Your AI Best Friend, Always Here For You">
   <meta name="twitter:title" content="Oracle Lunar — Your AI Best Friend, Always Here For You">
-  <meta property="og:description" content="Voice Oracle, free games, planners and a story writer. Try 3 days free, then grab one of 500 A$1 founding seats.">
-  <meta name="twitter:description" content="Voice Oracle, free games, planners and a story writer. Try 3 days free, then grab one of 500 A$1 founding seats.">
+  <meta property="og:description" content="Install Oracle Lunar free on your phone, tablet or computer. Chat with Oracle, your AI best friend, plus stories, videos and planners.">
+  <meta name="twitter:description" content="Install Oracle Lunar free on your phone, tablet or computer. Chat with Oracle, your AI best friend, plus stories, videos and planners.">
 </head>
   <body>
     <div id="root"></div>

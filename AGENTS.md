@@ -47,3 +47,4 @@
 - Oracle routes everyday chat to the fastest model, deep questions to a stronger low-reasoning model, and speech to low-latency TTS; speed is the priority.
 - Shop sales credit the creator share to their wallet via idempotent credit_creator_sale (payments webhook); cash payouts exclude wallet-credited sales, so nothing is paid twice.
 - New members get Oracle's free scripted welcome; dashboard apps soft-unlock via oracleDiscovery (choices, their words, [[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
+- Signed-out browser visitors at / get the store-style AppStorePage; installed/native launches get PublicWelcomePage. Install CTAs route through installRedirect (production-host check, real APK HEAD check, PWA prompt captured early in index.html) so installs never hit a dead host or missing file.

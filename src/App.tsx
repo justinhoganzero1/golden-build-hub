@@ -173,10 +173,19 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 // Root route: signed-in users go straight to Oracle; signed-out visitors get
 // the public welcome page (Oracle video + pitch) instead of a bare sign-in wall.
 const PublicWelcomePage = lazy(() => import("./pages/PublicWelcomePage"));
+const AppStorePage = lazy(() => import("./pages/AppStorePage"));
+// Opened from the installed home-screen icon (not a browser tab).
+const isInstalledApp = () =>
+  typeof window !== "undefined" &&
+  (window.matchMedia?.("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true);
 const RootRoute = () => {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  return user ? <Navigate to="/oracle" replace /> : <PublicWelcomePage />;
+  if (user) return <Navigate to="/oracle" replace />;
+  // Browsers see the app-store listing; the installed app greets with Oracle instead.
+  return isInstalledApp() ? <PublicWelcomePage /> : <AppStorePage />;
 };
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
