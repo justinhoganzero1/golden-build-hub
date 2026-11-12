@@ -352,7 +352,7 @@ const MindHubPage = () => {
         </div>
 
         {/* Category Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+        <div className="flex gap-2 flex-wrap pb-2 mb-3 scrollbar-hide">
           {categories.map(c => (
             <button key={c} onClick={() => setCategoryFilter(c)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${categoryFilter === c ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>

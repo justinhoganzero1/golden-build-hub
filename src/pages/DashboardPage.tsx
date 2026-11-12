@@ -239,7 +239,7 @@ const DashboardPage = () => {
       </OracleMoonHeader>
 
       {/* Primary nav — top row (moved off the bottom so it never covers content) */}
-      <nav className="px-4 pt-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <nav className="px-4 pt-3 flex items-center gap-2 flex-wrap no-scrollbar">
         {[
           { label: "Settings", icon: <Settings className="w-4 h-4" />,      path: "/settings" },
           { label: "Oracle",   icon: <MessageCircle className="w-4 h-4" />, path: "/oracle" },

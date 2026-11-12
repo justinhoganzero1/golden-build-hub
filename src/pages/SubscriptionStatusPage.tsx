@@ -70,11 +70,11 @@ export default function SubscriptionStatusPage() {
       />
       <OracleMoonHeader />
       <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold text-amber-200 flex items-center gap-2">
             <Crown className="h-6 w-6" /> Subscription Status
           </h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" asChild>
               <Link to="/subscription/timeline"><Activity className="h-4 w-4 mr-2" />Timeline</Link>
             </Button>

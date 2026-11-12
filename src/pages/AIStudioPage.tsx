@@ -307,7 +307,7 @@ const AIStudioPage = () => {
           <h2 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" /> Active in Oracle Chat ({avatars.filter(a => a.active).length})
           </h2>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 flex-wrap pb-2">
             {avatars.filter(a => a.active).map(a => (
               <div key={a.id} className="flex items-center gap-2 px-3 py-2 rounded-xl shrink-0" style={{ backgroundColor: a.color + "15", border: `1px solid ${a.color}30` }}>
                 <img src={getAppearance(a.appearanceId).img} alt={a.name} className="w-7 h-7 rounded-full object-cover" loading="lazy" width={512} height={512} />

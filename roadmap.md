@@ -31,3 +31,8 @@
 - [ ] Fart comedy cut of the Australian ad: fart in first 5s, laugh on floor, worse fart, "gotta run", beer + burp, petrol line
 - [ ] Walk-off ending: "bloody shower… beers this afternoon", waddle, leg shake + fart, fade on floor laughing "someone bring me a bucket"
 - [ ] Add the funny ad to the website landing page next to the current ad
+
+## Library and phone fit (2026-11-13)
+- [x] Delete a single Library item (clear Delete button)
+- [x] Select many Library items and delete them together
+- [x] Every screen fits the phone width — no sideways swiping for option rows

@@ -182,7 +182,7 @@ const PublicLibraryPage = () => {
             </button>
           )}
         </div>
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 flex-wrap">
           {(["newest", "popular", "price_low", "price_high"] as SortKey[]).map((k) => (
             <Button
               key={k}

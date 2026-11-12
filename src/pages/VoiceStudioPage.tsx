@@ -419,7 +419,7 @@ export default function VoiceStudioPage() {
         </a>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
+        <div className="flex gap-2 mb-6 border-b border-border flex-wrap">
           {(["library", "party", "saved", "studio", "clone"] as Tab[]).map((t) => (
             <button
               key={t}

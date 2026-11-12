@@ -187,7 +187,7 @@ const AdminEditorPage = () => {
         <span className="ml-auto text-[11px] text-muted-foreground">Changes go live instantly</span>
       </header>
 
-      <div className="px-4 py-3 flex gap-2 border-b border-border overflow-x-auto">
+      <div className="px-4 py-3 flex gap-2 border-b border-border flex-wrap">
         {(["content", "announcement", "images", "broadcast"] as const).map((t) => (
           <button
             key={t}

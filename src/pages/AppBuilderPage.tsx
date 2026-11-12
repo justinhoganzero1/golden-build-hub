@@ -689,7 +689,7 @@ const AppBuilderPage = () => {
       {/* Projects bar */}
       {projects.length > 0 && (
         <div className="px-4 py-2 border-t border-border bg-card/50">
-          <div className="flex gap-2 overflow-x-auto">
+          <div className="flex gap-2 flex-wrap">
             {projects.map(p => (
               <div key={p.id} className={`flex items-center gap-1 rounded-full text-xs whitespace-nowrap border transition-colors overflow-hidden ${
                   previewProject?.id === p.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary"
@@ -744,7 +744,7 @@ const AppBuilderPage = () => {
           <p className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
             <Palette className="w-3.5 h-3.5" /> App style — {activeStyle.label}
           </p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 flex-wrap pb-1">
             {APP_STYLES.map(s => (
               <button
                 key={s.id}

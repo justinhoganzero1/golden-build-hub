@@ -308,8 +308,8 @@ export default function RealmBuilderPage() {
           <Button asChild size="sm" variant="ghost" className="text-white/70 hover:text-white">
             <Link to="/dashboard"><ArrowLeft className="w-4 h-4 mr-1" /> Back</Link>
           </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold flex flex-wrap items-center gap-2">
               <Wand2 className="w-5 h-5 text-amber-400" />
               Realm Builder
               <span className="text-[10px] uppercase tracking-wider text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded-full">Phase 4</span>
@@ -317,7 +317,7 @@ export default function RealmBuilderPage() {
             <p className="text-xs text-white/50">Describe → 4K photoreal realm → walk inside → publish & earn</p>
           </div>
           <Button asChild size="sm" variant="ghost" className="text-amber-400 hover:text-amber-300">
-            <Link to="/realms"><Globe2 className="w-4 h-4 mr-1" /> Public Library</Link>
+            <Link to="/realms"><Globe2 className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Public Library</span><span className="sr-only sm:hidden">Public Library</span></Link>
           </Button>
         </div>
       </header>

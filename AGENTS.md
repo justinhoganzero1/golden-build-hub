@@ -51,3 +51,5 @@
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
 - Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (time-zone country, no IP) go to site_arrivals, not page_views.
+- Library deletes remove only the member's own user_media rows (bulk delete filters by user_id) and never remove storage files, because the same file can still back Movie Maker projects, templates or other saved work.
+- Phone layouts never scroll sideways: html/body clip horizontal overflow and option/tab rows wrap instead of using overflow-x scrolling; reserve horizontal scrollers for tables and picture carousels.

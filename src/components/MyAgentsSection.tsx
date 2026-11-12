@@ -79,12 +79,12 @@ export default function MyAgentsSection() {
         <p className="text-[10px] text-muted-foreground mt-2">Cost is an estimate of what a member pays (AI cost + 20%). Your owner account isn't charged.</p>
       </div>
 
-      <div className="grid gap-2 mt-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name (e.g. Coach Max)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
-        <select value={model} onChange={(e) => setModel(e.target.value)} className="rounded-lg border border-border bg-background px-3 py-2 text-sm">
+      <div className="grid grid-cols-1 gap-2 mt-2 min-w-0">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name (e.g. Coach Max)" className="w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+        <select value={model} onChange={(e) => setModel(e.target.value)} className="w-full min-w-0 max-w-full truncate rounded-lg border border-border bg-background px-3 py-2 text-sm">
           {CHAT_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label} ({m.maker}) — {m.note} · {m.cost} cost</option>)}
         </select>
-        <textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="Personality (e.g. tough-love fitness coach, short answers)" rows={2} className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+        <textarea value={personality} onChange={(e) => setPersonality(e.target.value)} placeholder="Personality (e.g. tough-love fitness coach, short answers)" rows={2} className="w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-sm" />
         <button onClick={add} className="flex items-center justify-center gap-1 rounded-lg bg-primary text-primary-foreground py-2 text-sm font-semibold">
           <Plus className="w-4 h-4" /> Add agent
         </button>

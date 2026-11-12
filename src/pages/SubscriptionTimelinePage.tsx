@@ -68,8 +68,8 @@ export default function SubscriptionTimelinePage() {
       <OracleMoonHeader />
       <main className="min-h-screen bg-background pt-24 pb-16 px-4">
         <div className="mx-auto max-w-3xl">
-          <div className="flex items-center justify-between mb-6">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                 <Activity className="h-7 w-7 text-amber-400" /> Subscription Timeline
               </h1>
@@ -77,7 +77,7 @@ export default function SubscriptionTimelinePage() {
                 Plan switches, renewals and cancellations from Stripe.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" asChild>
                 <Link to="/subscription"><CreditCard className="h-4 w-4 mr-1" />Status</Link>
               </Button>

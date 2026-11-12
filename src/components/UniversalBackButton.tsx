@@ -30,7 +30,7 @@ const UniversalBackButton = ({ label = "USER DASHBOARD", fallbackPath = "/dashbo
       type="button"
       onClick={goToUserDashboard}
       aria-label={label}
-      className="holo-card fixed left-3 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full text-primary hover:text-foreground transition-colors active:scale-95"
+      className="holo-card fixed left-3 z-50 w-auto max-w-[calc(100vw-1.5rem)] flex items-center gap-2 px-4 py-2.5 rounded-full text-primary hover:text-foreground transition-colors active:scale-95"
       style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
     >
       <Home className="w-4 h-4" />

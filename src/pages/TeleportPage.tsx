@@ -265,7 +265,7 @@ const TeleportPage = () => {
               {avatarSubjects.length > 0 && (
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Or pick a saved avatar</div>
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <div className="flex gap-2 flex-wrap pb-1">
                     {avatarSubjects.slice(0, 12).map((a: any) => (
                       <button
                         key={a.id}

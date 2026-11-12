@@ -2574,7 +2574,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
 
 
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 flex-wrap pb-1">
             {GENRES.map(g => (
               <button
                 key={g}
@@ -2768,7 +2768,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         </div>
 
         {/* Chapter tabs */}
-        <div className="px-4 flex gap-2 overflow-x-auto pb-2 border-b border-border">
+        <div className="px-4 flex gap-2 flex-wrap pb-2 border-b border-border">
           {story.chapters.map((c, i) => (
             <button
               key={i}
@@ -2799,12 +2799,12 @@ Rules: the three title-gradient colours must read as one confident, high-contras
                 <BookOpen className="w-3.5 h-3.5 text-primary" />
                 Chapters ({story.chapters.length})
               </p>
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                 <Button
                   type="button"
                   onClick={placeExistingIllustrations}
                   disabled={placeBusy || !story.chapters.some(chapter => (chapter.images?.length || 0) > 0)}
-                  className="h-9 px-4 font-black italic"
+                  className="h-auto min-h-9 max-w-full whitespace-normal text-left px-4 font-black italic"
                   title="Reads each chapter and seats its existing pictures at the moments they depict — no new images, no charge"
                 >
                   {placeBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
@@ -2982,11 +2982,11 @@ Rules: the three title-gradient colours must read as one confident, high-contras
             const isBusy = imgBusy === slotKey;
             return (
               <div className="rounded-xl border border-border bg-card/60 p-3 space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5" /> Chapter Illustrations ({imgs.length}/6)
                   </p>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                     <button
                       onClick={() => reIllustrateChapter(activeChapter)}
                       disabled={!!imgBusy || bulkBusy || chapterSetBusy !== null}

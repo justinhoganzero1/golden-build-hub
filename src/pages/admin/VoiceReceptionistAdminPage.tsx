@@ -137,7 +137,7 @@ const VoiceReceptionistAdminPage = () => {
               <div className="text-xs text-muted-foreground">Number: {cfg.twilio_phone_number || "— not set —"}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <WalletBalanceBadge />
             <Switch checked={cfg.enabled} onCheckedChange={(v) => setCfg({ ...cfg, enabled: v })} />
             <Button onClick={saveCfg} disabled={saving}>{saving ? "Saving…" : "Save All Settings"}</Button>

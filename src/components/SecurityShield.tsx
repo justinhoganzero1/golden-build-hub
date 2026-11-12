@@ -142,7 +142,7 @@ const SecurityShield = () => {
           </DialogHeader>
 
           {/* Category filter */}
-          <div className="px-4 py-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="px-4 py-2 flex gap-1.5 flex-wrap no-scrollbar">
             <button
               onClick={() => setFilterCat(null)}
               className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-all ${

@@ -403,7 +403,7 @@ export default function MonthlyAwardsShowcase() {
         </header>
 
         {/* Category bubbles */}
-        <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+        <div className="px-3 py-2 flex items-center gap-2 flex-wrap scrollbar-thin">
           {CATEGORIES.map((c, i) => {
             const active = i === activeIdx;
             return (

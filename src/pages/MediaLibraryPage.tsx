@@ -1,4 +1,4 @@
-import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign } from "lucide-react";
+import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign, CheckSquare, Square, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import LibraryTileFace from "@/components/library/LibraryTileFace";
 import LibraryCreationCard, { readableLibraryTitle } from "@/components/library/LibraryCreationCard";
@@ -24,6 +24,8 @@ import ShareDialog from "@/components/ShareDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { deleteLibraryRows, ownItemIds, ownSelectedIds } from "@/lib/libraryDelete";
 
 /* ── Source-based collection config ── */
 const COLLECTIONS = [
@@ -118,6 +120,16 @@ const MediaLibraryPage = () => {
   const [showOlder, setShowOlder] = useState(false);
   const [showAllApps, setShowAllApps] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const toggleChecked = (id: string) => setCheckedIds(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const exitSelectMode = () => { setSelectMode(false); setCheckedIds(new Set()); };
   const revealResults = () => {
     requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ block: "start", behavior: "instant" }));
   };
@@ -248,6 +260,26 @@ const MediaLibraryPage = () => {
     const mine = mediaItems.filter((m: any) => isLibraryApp(m) && (!user?.id || m.user_id === user.id));
     return keepNewestVersions(mine).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [mediaItems, user?.id]);
+
+  const ownFilteredIds = useMemo(() => ownItemIds(filtered, user?.id), [filtered, user?.id]);
+  const checkedOwnIds = useMemo(() => ownSelectedIds(mediaItems, checkedIds, user?.id), [mediaItems, checkedIds, user?.id]);
+  const allChecked = ownFilteredIds.length > 0 && ownFilteredIds.every(id => checkedIds.has(id));
+  const handleBulkDelete = async () => {
+    if (!user?.id || checkedOwnIds.length === 0) return;
+    setBulkDeleting(true);
+    try {
+      const count = await deleteLibraryRows(checkedOwnIds, user.id);
+      toast.success(`Deleted ${count} item${count === 1 ? "" : "s"}`);
+      exitSelectMode();
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+      qc.invalidateQueries({ queryKey: ["all-user-media"] });
+    } catch (e: any) {
+      toast.error("Couldn't delete: " + (e?.message || "please try again"));
+    } finally {
+      setBulkDeleting(false);
+      setConfirmBulk(false);
+    }
+  };
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <Image className="w-5 h-5 text-primary" />;
@@ -452,7 +484,7 @@ const MediaLibraryPage = () => {
 
       {/* ── Type filter pills ── */}
       <div className="px-4 mb-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 flex-wrap pb-1 scrollbar-hide">
           {TYPE_FILTERS.map(f => {
             const FIcon = f.icon;
             return (
@@ -507,14 +539,17 @@ const MediaLibraryPage = () => {
 
       {/* ── Content Grid / List ── */}
       <div ref={resultsRef} role="region" aria-label="Library results" className="px-4 scroll-mt-4">
-        <div className="sticky top-0 z-20 bg-background py-3 mb-3 flex gap-2 items-center">
-          <div className="relative flex-1">
+        <div className="sticky top-0 z-20 bg-background py-3 mb-3 flex flex-wrap gap-2 items-center">
+          <div className="relative basis-full sm:basis-auto sm:flex-1 min-w-0">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input aria-label={`Search ${activeCol.label}`} placeholder={`Search ${activeCol.label}…`} value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
           </div>
-          {(search || typeFilter !== "all") && <Button variant="outline" onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear</Button>}
-          {activeCollection !== "all" && <Button variant="outline" onClick={() => { setActiveCollection("all"); setSearch(""); setTypeFilter("all"); }}>All collections</Button>}
-          <Button variant="outline" aria-pressed={showOlder} onClick={() => setShowOlder(v => !v)}>{showOlder ? "Newest only" : "Show old versions"}</Button>
+          {(search || typeFilter !== "all") && <Button variant="outline" size="sm" onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear</Button>}
+          {activeCollection !== "all" && <Button variant="outline" size="sm" onClick={() => { setActiveCollection("all"); setSearch(""); setTypeFilter("all"); }}>All collections</Button>}
+          <Button variant="outline" size="sm" aria-pressed={showOlder} onClick={() => setShowOlder(v => !v)}>{showOlder ? "Newest only" : "Show old versions"}</Button>
+          <Button variant={selectMode ? "default" : "outline"} size="sm" aria-pressed={selectMode} onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}>
+            {selectMode ? <><X className="w-4 h-4" /> Done</> : <><CheckSquare className="w-4 h-4" /> Select to delete</>}
+          </Button>
         </div>
         <p role="status" className="text-sm font-semibold text-foreground mb-3">
           {activeCol.label} · {typeFilter === "all" ? "All Types" : TYPE_FILTERS.find(f => f.key === typeFilter)?.label} · {filtered.length} items
@@ -539,7 +574,17 @@ const MediaLibraryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {paged.map((m: any) => {
               const collection = COLLECTIONS.find(c => c.key === getCollectionKey(m.source_page, m.media_type, m.metadata))?.label || "Other";
-              return <LibraryCreationCard key={m.id} item={m} collection={collection} busy={openingId === m.id} onOpen={() => void openItem(m)} />;
+              if (!selectMode) return <LibraryCreationCard key={m.id} item={m} collection={collection} busy={openingId === m.id} onOpen={() => void openItem(m)} />;
+              const mine = m.user_id === user?.id;
+              const on = checkedIds.has(m.id);
+              return (
+                <div key={m.id} className={`relative rounded-lg ${on ? "ring-2 ring-destructive" : ""} ${mine ? "" : "opacity-50"}`}>
+                  <LibraryCreationCard item={m} collection={collection} busy={false} onOpen={() => mine ? toggleChecked(m.id) : toast.info("You can only delete your own creations.")} />
+                  <span aria-hidden className={`pointer-events-none absolute top-2 left-2 z-10 flex h-8 w-8 items-center justify-center rounded-md border ${on ? "bg-destructive border-destructive text-destructive-foreground" : "bg-background/90 border-border text-muted-foreground"}`}>
+                    {on ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                  </span>
+                </div>
+              );
             })}
           </div>
         ) : (
@@ -548,8 +593,12 @@ const MediaLibraryPage = () => {
               const colKey = getCollectionKey(m.source_page, m.media_type, m.metadata);
               const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
               return (
-                <button key={m.id} onClick={() => void openItem(m)} disabled={openingId === m.id}
-                  className="w-full flex items-center gap-3 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group">
+                <button key={m.id} onClick={() => {
+                    if (!selectMode) return void openItem(m);
+                    if (m.user_id === user?.id) toggleChecked(m.id); else toast.info("You can only delete your own creations.");
+                  }} disabled={openingId === m.id} aria-pressed={selectMode ? checkedIds.has(m.id) : undefined}
+                  className={`w-full flex items-center gap-3 bg-card border rounded-2xl p-3 hover:border-primary/40 hover:shadow-md transition-all text-left group ${selectMode && checkedIds.has(m.id) ? "border-destructive ring-1 ring-destructive" : "border-border"} ${selectMode && m.user_id !== user?.id ? "opacity-50" : ""}`}>
+                  {selectMode && (checkedIds.has(m.id) ? <CheckSquare className="w-5 h-5 shrink-0 text-destructive" /> : <Square className="w-5 h-5 shrink-0 text-muted-foreground" />)}
                   {isImageLike(m) || isVideoLike(m) ? (
                     <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shrink-0">
                       <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m)} />
@@ -774,7 +823,7 @@ const MediaLibraryPage = () => {
                 <Film className="w-4 h-4" /> Send to Movie Maker
               </button>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
 
                 <button onClick={handleDownloadSelected}
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
@@ -786,14 +835,43 @@ const MediaLibraryPage = () => {
                   <Share2 className="w-4 h-4" /> Share
                 </button>
                 <button onClick={() => handleDelete(selected.id)}
-                  className="py-2.5 px-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors">
-                  <Trash2 className="w-4 h-4" />
+                  aria-label="Delete this item"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete
                 </button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {selectMode && (
+        <div role="toolbar" aria-label="Delete selected items" className="fixed inset-x-3 bottom-28 z-40 rounded-2xl border border-border bg-card/95 backdrop-blur p-3 shadow-lg flex flex-wrap items-center gap-2" style={{ marginBottom: "env(safe-area-inset-bottom)" }}>
+          <span className="text-sm font-semibold text-foreground mr-auto">{checkedOwnIds.length} selected</span>
+          <Button size="sm" variant="outline" disabled={ownFilteredIds.length === 0}
+            onClick={() => setCheckedIds(allChecked ? new Set() : new Set(ownFilteredIds))}>
+            {allChecked ? "Unselect all" : `Select all (${ownFilteredIds.length})`}
+          </Button>
+          <Button size="sm" variant="destructive" disabled={checkedOwnIds.length === 0 || bulkDeleting} onClick={() => setConfirmBulk(true)}>
+            <Trash2 className="w-4 h-4" /> Delete
+          </Button>
+        </div>
+      )}
+
+      <AlertDialog open={confirmBulk} onOpenChange={(o) => !bulkDeleting && setConfirmBulk(o)}>
+        <AlertDialogContent className="w-[92vw] max-w-md rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {checkedOwnIds.length} item{checkedOwnIds.length === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogDescription>They'll be removed from your Library. This can't be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Keep them</AlertDialogCancel>
+            <AlertDialogAction disabled={bulkDeleting} onClick={(e) => { e.preventDefault(); void handleBulkDelete(); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ShareDialog
         open={!!shareItem}

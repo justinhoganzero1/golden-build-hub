@@ -787,7 +787,7 @@ const OwnerDashboardPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 mb-6 flex-wrap pb-1">
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key as any)} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-medium whitespace-nowrap transition-all ${tab === t.key ? "bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border border-yellow-500/30" : "bg-white/5 text-gray-400 border border-white/5"}`}>
               {t.icon} {t.label}

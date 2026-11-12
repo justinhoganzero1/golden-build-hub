@@ -248,7 +248,7 @@ const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStud
         </div>
 
         {/* Tabs */}
-        <div className="px-4 pt-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
+        <div className="px-4 pt-3 flex gap-1.5 flex-wrap scrollbar-hide">
           {([
             { k: "ai", l: "AI Magic", I: Sparkles },
             { k: "adjust", l: "Adjust", I: Sliders },

@@ -61,7 +61,7 @@ export default function LeadMagnetWidget({ onClose, inline = false }: Props) {
         )}
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+      <div className="flex gap-1.5 flex-wrap pb-2 mb-3 -mx-1 px-1">
         {TOOLS.map((t) => (
           <button
             key={t.key}

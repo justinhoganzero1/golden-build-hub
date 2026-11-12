@@ -2334,3 +2334,7 @@ body[data-route="/"] h1, body[data-route="/"] h2, body[data-route="/"] h3 { text
 /* Form fields: smoked glass with a gold focus light, matching sign-in. */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(.oracle-signin *),
 textarea:not(.oracle-prompt-field), select { color-scheme: dark; }
+
+/* Phone safety net: nothing may push the page wider than the screen, so members
+   never have to swipe sideways. `clip` (not hidden) keeps sticky headers working. */
+html, body { overflow-x: clip; max-width: 100%; }

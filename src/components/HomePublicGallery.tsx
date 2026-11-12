@@ -183,7 +183,7 @@ const HomePublicGallery = () => {
         </header>
 
         {/* Genre bubble filter */}
-        <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+        <div className="px-3 py-2 flex items-center gap-2 flex-wrap scrollbar-thin">
           {genres.map((g) => {
             const meta = g === "All" ? { emoji: "🌐" } : { emoji: grouped.get(g)?.emoji ?? "🎨" };
             const active = g === activeGenre;

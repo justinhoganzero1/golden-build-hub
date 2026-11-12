@@ -127,7 +127,7 @@ const FamilyHubPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+        <div className="flex gap-1.5 flex-wrap pb-2 mb-4 scrollbar-hide">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${activeTab === t.id ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
@@ -140,7 +140,7 @@ const FamilyHubPage = () => {
         {activeTab === "home" && (
           <>
             <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-primary" />Family Members</h2>
-            <div className="flex gap-3 mb-4 overflow-x-auto pb-2">
+            <div className="flex gap-3 mb-4 flex-wrap pb-2">
               {members.map(m => (
                 <div key={m.name} className="flex flex-col items-center gap-1 min-w-[72px]">
                   <div className="w-14 h-14 rounded-full bg-card border border-border flex items-center justify-center text-2xl">{m.avatar}</div>
