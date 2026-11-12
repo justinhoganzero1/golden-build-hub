@@ -81,6 +81,14 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   return "other";
 }
 
+function libraryShareFileName(item: any): string {
+  const base = String(item?.title || "oracle-lunar").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "oracle-lunar";
+  const path = String(item?._storedUrl || item?.url || "").split("?")[0];
+  const ext = path.match(/\.([a-z0-9]{2,5})$/i)?.[1]
+    || (item?.media_type === "video" ? "mp4" : item?.media_type === "audio" || item?.media_type === "music" ? "mp3" : item?.media_type === "image" ? "png" : "bin");
+  return `${base}.${ext}`;
+}
+
 const MediaLibraryPage = () => {
   const { isAdmin } = useIsAdmin();
   const [scope, setScope] = useState<"mine" | "others" | "everyone">("mine");
@@ -143,6 +151,16 @@ const MediaLibraryPage = () => {
     }
   };
 
+  // Shared links must keep working after the 1-hour viewing link expires,
+  // so private files get a fresh 7-day link at share time.
+  const openShare = async () => {
+    if (!selected) return;
+    const longUrl = selected.media_type === "text"
+      ? selected.url
+      : await resolveStorageUrl(selected._storedUrl || selected.url, 60 * 60 * 24 * 7);
+    setShareItem({ ...selected, url: longUrl || selected.url });
+  };
+
   const openItem = async (item: any) => {
     if (openingId) return;
     setOpeningId(item.id);
@@ -154,7 +172,7 @@ const MediaLibraryPage = () => {
         .single();
       if (error) throw error;
       const resolvedUrl = data.media_type === "text" ? data.url : await resolveStorageUrl(data.url);
-      setSelected({ ...data, url: resolvedUrl });
+      setSelected({ ...data, url: resolvedUrl, _storedUrl: data.url });
     } catch (e: any) {
       toast.error(e?.message || "Could not open this creation.");
     } finally {
@@ -762,9 +780,10 @@ const MediaLibraryPage = () => {
                   className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium flex items-center justify-center gap-2 shadow-md shadow-primary/20">
                   <Download className="w-4 h-4" /> Download
                 </button>
-                <button onClick={() => setShareItem(selected)}
-                  className="py-2.5 px-4 rounded-xl bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/80 transition-colors">
-                  <Share2 className="w-4 h-4" />
+                <button onClick={openShare}
+                  aria-label="Share"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/80 transition-colors flex items-center justify-center gap-2">
+                  <Share2 className="w-4 h-4" /> Share
                 </button>
                 <button onClick={() => handleDelete(selected.id)}
                   className="py-2.5 px-4 rounded-xl bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition-colors">
@@ -783,6 +802,8 @@ const MediaLibraryPage = () => {
         url={shareItem?.url}
         imageUrl={shareItem?.url}
         description={`Check out this ${shareItem?.media_type || "media"} from Oracle Lunar!`}
+        fileUrl={shareItem && shareItem.media_type !== "text" ? shareItem.url : undefined}
+        fileName={shareItem ? libraryShareFileName(shareItem) : undefined}
       />
     </div>
   );

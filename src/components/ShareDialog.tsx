@@ -13,6 +13,9 @@ interface ShareDialogProps {
   url?: string;
   imageUrl?: string;
   description?: string;
+  /** Optional direct file link; on phones this lets people send the actual file (e.g. by text message). */
+  fileUrl?: string;
+  fileName?: string;
 }
 
 // Robust clipboard copy that works in iframes / non-secure contexts
@@ -90,7 +93,8 @@ const robustOpen = async (href: string): Promise<boolean> => {
   return false;
 };
 
-const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: ShareDialogProps) => {
+const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fileUrl, fileName }: ShareDialogProps) => {
+  const [sendingFile, setSendingFile] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [copied, setCopied] = useState(false);
@@ -487,6 +491,36 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
 
   const hasNativeShare = typeof navigator !== "undefined" && "share" in navigator;
 
+  // Send the actual file through the phone's share sheet (Messages, email, WhatsApp…).
+  // Falls back to sharing the link when the device can't attach files.
+  const shareFile = async () => {
+    if (!fileUrl) return;
+    setSendingFile(true);
+    try {
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error("download failed");
+      const blob = await res.blob();
+      const name = fileName || "oracle-lunar-file";
+      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
+      const nav = navigator as any;
+      if (nav.canShare?.({ files: [file] })) {
+        await nav.share({ files: [file], title, text: shareText });
+        toast.success("Shared!");
+        return;
+      }
+      if (nav.share) {
+        await nav.share({ title, text: shareText, url: shareUrl });
+        toast.success("Shared!");
+        return;
+      }
+      toast.message("This device can't attach files here — use Email, Text message or Copy Link below.");
+    } catch (e: any) {
+      if (e?.name !== "AbortError") toast.error("Couldn't send the file. Try Email, Text message or Copy Link below.");
+    } finally {
+      setSendingFile(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -496,6 +530,15 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 mt-2">
+          {fileUrl && hasNativeShare && (
+            <button onClick={shareFile} disabled={sendingFile} className="w-full flex items-center gap-3 p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-60">
+              <Send className="w-5 h-5" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">{sendingFile ? "Getting the file ready…" : "Send the file"}</p>
+                <p className="text-[10px] opacity-80">Text message, email, WhatsApp, Messenger and more</p>
+              </div>
+            </button>
+          )}
           {/* Copy Link */}
           <button onClick={copyLink} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-all">
             {copied ? <Check className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-primary" />}

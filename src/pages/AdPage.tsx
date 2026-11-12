@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Play } from "lucide-react";
+import { Download, Play } from "lucide-react";
 import adVideo from "@/assets/videos/oracle-lunar-ad-clear-audio.mp4.asset.json";
 import adWebm from "@/assets/videos/oracle-lunar-ad-clear-audio.webm.asset.json";
 import adPoster from "@/assets/videos/oracle-lunar-ad-poster.jpg.asset.json";
@@ -75,7 +75,7 @@ export default function AdPage() {
         ))}
       </div>
 
-      <div className="relative mt-3 aspect-[9/16] h-[calc(100svh-15rem)] max-h-[44rem] max-w-full rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)] bg-background">
+      <div className="relative mt-3 aspect-[9/16] h-[calc(100svh-18rem)] max-h-[44rem] max-w-full rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)] bg-background">
         <video
           key={videoUrl}
           ref={videoRef}
@@ -126,14 +126,21 @@ export default function AdPage() {
       </div>
 
       <Link
+        to="/download"
+        className="mt-5 inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 text-base font-semibold bg-[hsl(var(--gold))] text-[hsl(var(--accent-foreground))] hover:opacity-90 transition-opacity"
+      >
+        <Download className="h-5 w-5" /> Download the app — free
+      </Link>
+
+      <Link
         to="/"
-        className="mt-5 inline-flex items-center justify-center rounded-full px-8 py-3 text-base font-semibold bg-[hsl(var(--gold))] text-[hsl(var(--accent-foreground))] hover:opacity-90 transition-opacity"
+        className="mt-3 inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-medium border border-[hsl(var(--gold)/0.5)] text-foreground hover:bg-[hsl(var(--gold)/0.1)] transition-colors"
       >
         Try Oracle Lunar — oraclelunar.com
       </Link>
 
       <p className="mt-3 text-xs text-muted-foreground text-center max-w-xs">
-        Share this page: {funny ? "oraclelunar.com/ad?v=funny" : "oraclelunar.com/ad"}
+        Share this page: {funny ? "oraclelunar.com/ad?v=funny" : "oraclelunar.com/ad"} · Download: oraclelunar.com/download
       </p>
     </div>
   );
