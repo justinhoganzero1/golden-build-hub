@@ -374,7 +374,8 @@ export default function AppStorePage() {
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         Oracle is an AI. Presenter footage is AI-generated. ·{" "}
-        <Link to="/ad" className="hover:underline">Watch the ad</Link>
+        <Link to="/ad" className="hover:underline">Watch the ad</Link> ·{" "}
+        <Link to="/ad?v=funny" className="hover:underline">Watch the funny ad 😂</Link>
       </footer>
 
       {/* Bottom install bar */}

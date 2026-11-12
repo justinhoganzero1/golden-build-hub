@@ -53,6 +53,7 @@ export default function PublicWelcomePage() {
             <Volume2 className="h-4 w-4" />Hear her say hello
           </button>
           <Link to="/ad" className="text-muted-foreground hover:underline">Watch the ad</Link>
+          <Link to="/ad?v=funny" className="text-muted-foreground hover:underline">Watch the funny ad 😂</Link>
         </div>
         <p className="mt-6 text-xs text-muted-foreground">Oracle is an AI. Presenter footage is AI-generated.</p>
       </div>

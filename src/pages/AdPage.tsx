@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Play } from "lucide-react";
 import adVideo from "@/assets/videos/oracle-lunar-ad-clear-audio.mp4.asset.json";
 import adWebm from "@/assets/videos/oracle-lunar-ad-clear-audio.webm.asset.json";
 import adPoster from "@/assets/videos/oracle-lunar-ad-poster.jpg.asset.json";
+import funnyVideo from "@/assets/videos/oracle-lunar-funny-cut.mp4.asset.json";
+import funnyPoster from "@/assets/videos/oracle-lunar-funny-poster.jpg.asset.json";
 
 const AD_URL = (adVideo as { url: string }).url;
+const FUNNY_URL = (funnyVideo as { url: string }).url;
 
 /**
  * Public ad page. The portrait video is sized to fit the phone screen so its
@@ -13,13 +16,18 @@ const AD_URL = (adVideo as { url: string }).url;
  * (phones otherwise show a blank box) and has a large tap-to-play button.
  */
 export default function AdPage() {
+  const [params, setParams] = useSearchParams();
+  const funny = params.get("v") === "funny";
+  const videoUrl = funny ? FUNNY_URL : AD_URL;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    document.title = "Oracle Lunar — Watch the Ad";
-  }, []);
+    document.title = funny ? "Oracle Lunar — The Funny Ad" : "Oracle Lunar — Watch the Ad";
+    setStarted(false);
+    setFailed(false);
+  }, [funny]);
 
   const play = async () => {
     const v = videoRef.current;
@@ -45,13 +53,36 @@ export default function AdPage() {
         Your AI best friend, always here for you.
       </p>
 
-      <div className="relative mt-4 aspect-[9/16] h-[calc(100svh-12rem)] max-h-[44rem] max-w-full rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)] bg-background">
+      <div className="mt-4 flex gap-2" role="tablist" aria-label="Choose an ad">
+        {[
+          { key: false, label: "The ad" },
+          { key: true, label: "The funny ad 😂" },
+        ].map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            role="tab"
+            aria-selected={funny === t.key}
+            onClick={() => setParams(t.key ? { v: "funny" } : {}, { replace: true })}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
+              funny === t.key
+                ? "bg-[hsl(var(--gold))] text-[hsl(var(--accent-foreground))] border-transparent"
+                : "border-[hsl(var(--gold)/0.4)] text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative mt-3 aspect-[9/16] h-[calc(100svh-15rem)] max-h-[44rem] max-w-full rounded-2xl overflow-hidden border border-[hsl(var(--gold)/0.4)] shadow-[0_0_40px_hsl(var(--gold)/0.25)] bg-background">
         <video
+          key={videoUrl}
           ref={videoRef}
           data-ignore-app-mute
           controls={started}
           playsInline
-          poster={adPoster.url}
+          poster={funny ? funnyPoster.url : adPoster.url}
           preload="metadata"
           onPlay={(e) => {
             // Never let a saved app-wide mute silence the ad.
@@ -62,8 +93,8 @@ export default function AdPage() {
           onError={() => setFailed(true)}
           className="h-full w-full object-contain bg-background"
         >
-          <source src={AD_URL} type="video/mp4" />
-          <source src={adWebm.url} type="video/webm" onError={() => setFailed(true)} />
+          <source src={videoUrl} type="video/mp4" />
+          {!funny && <source src={adWebm.url} type="video/webm" onError={() => setFailed(true)} />}
         </video>
 
         {!started && !failed && (
@@ -83,7 +114,7 @@ export default function AdPage() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/85 p-6 text-center">
             <p className="text-sm">The ad couldn't play in this browser.</p>
             <a
-              href={AD_URL}
+              href={videoUrl}
               target="_blank"
               rel="noreferrer"
               className="rounded-full px-6 py-2 text-sm font-semibold bg-[hsl(var(--gold))] text-[hsl(var(--accent-foreground))]"
@@ -102,7 +133,7 @@ export default function AdPage() {
       </Link>
 
       <p className="mt-3 text-xs text-muted-foreground text-center max-w-xs">
-        Share this page: oraclelunar.com/ad
+        Share this page: {funny ? "oraclelunar.com/ad?v=funny" : "oraclelunar.com/ad"}
       </p>
     </div>
   );
