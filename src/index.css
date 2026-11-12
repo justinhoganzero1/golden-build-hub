@@ -2050,6 +2050,9 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 .oracle-reply a, .oracle-transcript a { color: hsl(var(--primary)); text-decoration: underline; }
 .oracle-reply img, .oracle-transcript img { max-width: 100%; max-height: 220px; object-fit: contain; }
 .oracle-transcript { position: absolute; z-index: 20; top: 88px; bottom: 186px; left: max(20px, calc((100% - 720px) / 2)); right: max(20px, calc((100% - 720px) / 2)); overflow-y: auto; background: hsl(var(--oracle-glass) / .96); backdrop-filter: blur(24px); border: 1px solid hsl(var(--border)); border-radius: 8px; padding: 20px; }
+.oracle-read-chat { position: absolute !important; z-index: 25; right: 16px; top: 50%; transform: translateY(-50%); background: hsl(var(--oracle-glass) / .7) !important; border-color: hsl(var(--border) / .7) !important; backdrop-filter: blur(16px); }
+.oracle-read-chat-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 9999px; background: hsl(var(--primary)); box-shadow: 0 0 0 2px hsl(var(--background)); }
+.oracle-read-chat[aria-pressed="true"] { top: 96px; transform: none; }
 .oracle-message { padding: 16px 0; border-bottom: 1px solid hsl(var(--border) / .6); overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
 .oracle-message-user { color: hsl(var(--muted-foreground)); }
 .oracle-message pre, .oracle-reply pre { overflow-x: auto; max-width: 100%; }
@@ -2062,4 +2065,6 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
   .oracle-prompt { padding: 9px; }
   .oracle-reply { padding: 12px 14px; }
   .oracle-transcript { left: 12px; right: 12px; top: 80px; bottom: 172px; padding: 16px; }
+  .oracle-read-chat { right: 12px; }
+  .oracle-read-chat[aria-pressed="true"] { top: 88px; right: 20px; }
 }

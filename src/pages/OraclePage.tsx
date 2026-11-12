@@ -245,6 +245,8 @@ const OraclePage = () => {
   const [showFriendPanel, setShowFriendPanel] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
+  // Replies stay off-screen by default; this tracks what the member has read so the chat icon can show a dot.
+  const [seenCount, setSeenCount] = useState(0);
   const [voiceOptionsOpen, setVoiceOptionsOpen] = useState(false);
   // ── COUNCIL MODE ──
   // Every AI agent (Nova, Lyra, Sage, Kai) answers here inside the one Oracle
@@ -1200,7 +1202,11 @@ const OraclePage = () => {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, conversationOpen]);
+
+  useEffect(() => {
+    if (conversationOpen) setSeenCount(messages.length);
+  }, [conversationOpen, messages.length]);
 
   // Tool navigation stays inside the one Oracle workspace, without a flash or sound.
   const triggerExplosion = useCallback((targetPath: string) => {
@@ -2933,6 +2939,7 @@ const OraclePage = () => {
     cancelCurrentSpeech(); mutedRef.current = true; setMuted(true);
   };
   const latest = messages[messages.length - 1];
+  const hasUnread = !conversationOpen && messages.length > seenCount && latest?.role === "assistant";
   const renderAnswer = (msg: Message) => <>
     <ReactMarkdown>{msg.content}</ReactMarkdown>
     {msg.role === "assistant" && <OracleResponseFeedback userId={user?.id} messageId={msg.id} />}
@@ -2951,7 +2958,6 @@ const OraclePage = () => {
           <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-primary" />{replyVideoUrl ? "Generated video reply" : videoReplyPending ? "Preparing video reply…" : isSpeaking ? "Speaking" : isLoading ? "Working on it" : isListening ? "Listening" : "Here with you"}{!replyVideoUrl && !videoReplyPending ? " · Reused AI video" : ""}</p>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="oracle-control" aria-label="Conversation history" title="Conversation history" aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}>{conversationOpen ? <X /> : <MessageSquare />}</Button>
           <OracleAccountMenu />
         </div>
       </header>
@@ -2973,13 +2979,16 @@ const OraclePage = () => {
           {oracleMedia.kind === "video" ? <video src={oracleMedia.url} autoPlay playsInline controls onEnded={() => setOracleMedia(null)} className="max-w-full max-h-full" /> : <img src={oracleMedia.url} alt="Generated creation" className="max-w-full max-h-full object-contain" />}
         </div>}
       </div>
+      <Button variant="outline" size="icon" className="oracle-control oracle-read-chat" aria-label={conversationOpen ? "Hide chat" : hasUnread ? "Read chat, new reply" : "Read chat"} title={conversationOpen ? "Hide chat" : "Read chat"} aria-pressed={conversationOpen} onClick={() => setConversationOpen(v => !v)}>
+        {conversationOpen ? <X /> : <MessageSquare />}
+        {!conversationOpen && hasUnread && <span aria-hidden="true" className="oracle-read-chat-dot" />}
+      </Button>
       {conversationOpen && <section ref={scrollRef} aria-label="Oracle conversation" className="oracle-transcript">
         <h2 className="text-sm font-semibold text-primary">Conversation</h2>
         {!messages.length && <p className="mt-5 text-sm text-muted-foreground">No messages yet.</p>}
         {messages.map(msg => <article key={msg.id} className={`oracle-message ${msg.role === "user" ? "oracle-message-user" : ""}`}><p className="mb-2 text-xs font-semibold text-primary">{msg.role === "user" ? "You" : msg.sender}</p>{renderAnswer(msg)}</article>)}
       </section>}
       <div className="oracle-dock relative z-10 shrink-0">
-        {!conversationOpen && latest && <section aria-label="Latest Oracle message" className="oracle-reply">{renderAnswer(latest)}</section>}
         {(isLoading || debateActive || isListening) && <p role="status" className="mb-2 text-center text-xs text-foreground">{debateActive ? "Agents working…" : isLoading ? "Oracle is thinking…" : wakeActive ? "Listening…" : "Microphone paused"}</p>}
         <OraclePromptBox input={input} onInput={setInput} onSend={() => sendMessage(input)} onStop={stopOracle} busy={isLoading || debateActive} listening={isListening} muted={isMuted} uploading={uploading} onMic={toggleMic}
           onSpeaker={() => { if (isMuted) testSpeaker(); else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); } }}
