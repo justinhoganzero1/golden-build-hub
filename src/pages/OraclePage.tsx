@@ -33,7 +33,6 @@ import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
-import { pickFiller, fillerClipUrl } from "@/lib/oracleFillers";
 import { addReading, detectMood, moodNote, type MoodReading } from "@/lib/oracleMood";
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
 import OracleLookPicker from "@/components/oracle/OracleLookPicker";
@@ -307,17 +306,14 @@ const OraclePage = () => {
   useEffect(() => { premiumVideoRef.current = premiumVideo; }, [premiumVideo]);
   useEffect(() => {
     if (!user?.id) { setPremiumVideo(false); premiumVideoRef.current = false; return; }
-    // Juzzy explicitly requested activation; migrate once without overwriting
-    // future opt-outs or activating billable replies for other accounts.
-    const authorizedDefault = user.email?.toLowerCase() === "justinbretthogan@gmail.com";
-    let next = authorizedDefault;
+    // Juzzy asked to drop slow lip-sync clips: everyone (owner included) gets
+    // the fast ad voice with the talking head movement. v5 resets old "on" saves.
+    let next = false;
     try {
-      const key = `oracle-video-replies:v4:${user.id}`;
-      const saved = localStorage.getItem(key);
-      const legacy = authorizedDefault ? null : localStorage.getItem(`oracle-video-replies:${user.id}`);
-      next = resolveVideoReplies(saved ?? legacy, authorizedDefault);
+      const key = `oracle-video-replies:v5:${user.id}`;
+      next = resolveVideoReplies(localStorage.getItem(key), false);
       localStorage.setItem(key, next ? "on" : "off");
-    } catch { /* use the consenting account's default */ }
+    } catch { /* default off */ }
     premiumVideoRef.current = next;
     setPremiumVideo(next);
   }, [user?.id, user?.email]);
@@ -337,11 +333,6 @@ const OraclePage = () => {
   const [oracleMedia, setOracleMedia] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const [viewingArtifact, setViewingArtifact] = useState<OracleArtifact | null>(null);
   const [speechMode, setSpeechMode] = useState<OracleSpeechMode>("premium");
-  // Stored "thinking out loud" reactions spoken while the real answer loads.
-  const [fillersOn, setFillersOn] = useState(true);
-  const fillersOnRef = useRef(true);
-  const [thinkingLine, setThinkingLine] = useState("");
-  const recentFillersRef = useRef<string[]>([]);
   // Emotional awareness: this chat's mood readings, kept in memory only (never saved).
   const moodHistoryRef = useRef<MoodReading[]>([]);
   const speechModeRef = useRef<OracleSpeechMode>("premium");
@@ -353,8 +344,6 @@ const OraclePage = () => {
     speechModeRef.current = selected;
     setSpeechMode(selected);
     setDeviceVoice(localStorage.getItem(`oracle-device-voice:${user.id}`) || "");
-    const fillers = localStorage.getItem(`oracle-thinking-reactions:${user.id}`) !== "off";
-    fillersOnRef.current = fillers; setFillersOn(fillers);
     const savedOutfit = loadOutfit(user.id);
     outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
     const savedLook = loadLook(user.id);
@@ -487,7 +476,7 @@ const OraclePage = () => {
     return `${current} ${next}`.replace(/\s+/g, " ").trim();
   }, [normalizeCapturedText]);
 
-  useEffect(() => { isLoadingRef.current = isLoading; if (!isLoading) setThinkingLine(""); }, [isLoading]);
+  useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => { lastActivityRef.current = Date.now(); standbyRef.current = false; setStandby(false); }, [messages.length, isLoading, isSpeaking, replyVideoUrl, presenterCue]);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
   // Once the mic is on, Oracle is ALWAYS awake and listening. The mic only
@@ -798,7 +787,7 @@ const OraclePage = () => {
     return voice;
   }, [agents, oracleName]);
 
-  const speechQueueRef = useRef<Array<{ text: string; agentName: string; clips?: string[] }>>([]);
+  const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
   const isSpeakingQueueRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -1022,33 +1011,6 @@ const OraclePage = () => {
     });
   }, [getVoiceForAgent, deviceVoice, oracleName]);
 
-  // Plays pre-recorded reaction clips in Oracle's ad voice (static files, no paid speech).
-  const playFillerClips = useCallback(async (ids: string[]) => {
-    const myToken = speechTokenRef.current;
-    const audio = playbackAudioRef.current ?? new Audio();
-    playbackAudioRef.current = audio;
-    currentAudioRef.current = audio;
-    for (const id of ids) {
-      if (speechTokenRef.current !== myToken || mutedRef.current) break;
-      await new Promise<void>((resolve) => {
-        let settled = false;
-        const finish = () => {
-          if (settled) return; settled = true;
-          window.clearInterval(watch); window.clearTimeout(limit);
-          audio.onended = null; audio.onerror = null; resolve();
-        };
-        const watch = window.setInterval(() => { if (speechTokenRef.current !== myToken || mutedRef.current) finish(); }, 100);
-        const limit = window.setTimeout(finish, 6000);
-        audio.onended = finish; audio.onerror = finish;
-        audio.src = fillerClipUrl(id);
-        audio.volume = 0.95; audio.playbackRate = 1;
-        audio.play().then(() => { if (speechTokenRef.current === myToken) setIsSpeaking(true); }).catch(finish);
-      });
-    }
-    if (currentAudioRef.current === audio) currentAudioRef.current = null;
-    if (speechTokenRef.current === myToken) setIsSpeaking(false);
-  }, []);
-
   const processSpeechQueue = useCallback(async () => {
     if (isMuted || isSpeakingQueueRef.current || speechQueueRef.current.length === 0) return;
     // HARD GUARD: cancel any stray audio (browser TTS or leftover <audio>)
@@ -1064,11 +1026,7 @@ const OraclePage = () => {
 
     try {
       const isOracle = next.agentName === oracleName;
-      if (isOracle && next.clips?.length) {
-        // Thinking reaction: ad-voice clips in Voice mode, device voice in Basic.
-        if (speechModeRef.current === "premium") await playFillerClips(next.clips);
-        else if (browserClean) await speakWithBrowserTTS(browserClean, oracleName);
-      } else if (isOracle) {
+      if (isOracle) {
         await routeOracleSpeech(speechModeRef.current,
           () => speakWithBrowserTTS(browserClean, oracleName),
           async () => {
@@ -1087,7 +1045,7 @@ const OraclePage = () => {
       echoCooldownUntilRef.current = Date.now() + 600;
       processSpeechQueue();
     }
-  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, playFillerClips, subLoading, tier]);
+  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text || premiumVideoRef.current) return;
@@ -2259,16 +2217,6 @@ const OraclePage = () => {
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
     setIsLoading(true);
-    // Talk while thinking: say a fitting stored reaction straight away; the
-    // real answer queues behind it and follows on as soon as she finishes.
-    // Stored reactions are in her ad voice; skip them for a male look so voices never mix.
-    if (!isIntroTrigger && fillersOnRef.current && !mutedRef.current && !premiumVideoRef.current && lookRef.current?.choice.gender !== "man") {
-      const filler = pickFiller(text, recentFillersRef.current);
-      recentFillersRef.current = [...recentFillersRef.current, filler.key].slice(-40);
-      setThinkingLine(filler.text);
-      speechQueueRef.current.push({ text: filler.text, agentName: oracleName, clips: filler.clips.map(c => c.id) });
-      processSpeechQueue();
-    }
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -2982,7 +2930,7 @@ const OraclePage = () => {
       </section>}
       <div className="oracle-dock relative z-10 shrink-0">
         {!conversationOpen && latest && <section aria-label="Latest Oracle message" className="oracle-reply">{renderAnswer(latest)}</section>}
-        {(isLoading || debateActive || isListening) && <p role="status" className="mb-2 text-center text-xs text-foreground">{debateActive ? "Agents working…" : isLoading ? (thinkingLine ? `“${thinkingLine}”` : "Working on your request…") : wakeActive ? "Listening…" : "Microphone paused"}</p>}
+        {(isLoading || debateActive || isListening) && <p role="status" className="mb-2 text-center text-xs text-foreground">{debateActive ? "Agents working…" : isLoading ? "Oracle is thinking…" : wakeActive ? "Listening…" : "Microphone paused"}</p>}
         <OraclePromptBox input={input} onInput={setInput} onSend={() => sendMessage(input)} onStop={stopOracle} busy={isLoading || debateActive} listening={isListening} muted={isMuted} uploading={uploading} onMic={toggleMic}
           onSpeaker={() => { if (isMuted) testSpeaker(); else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); } }}
           onAttach={() => uploadInputRef.current?.click()} onSettings={() => setVoiceOptionsOpen(true)} tools={
@@ -3031,13 +2979,6 @@ const OraclePage = () => {
           </SelectContent></Select>}
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
         </div>
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <input type="checkbox" className="h-4 w-4 accent-primary" checked={fillersOn} onChange={e => {
-            const on = e.target.checked; fillersOnRef.current = on; setFillersOn(on);
-            if (user?.id) localStorage.setItem(`oracle-thinking-reactions:${user.id}`, on ? "on" : "off");
-          }} />
-          Talk while thinking (she chats naturally while your answer loads · free)
-        </label>
         <OracleLookPicker current={look} onChange={applyLook} />
         <OracleOutfitPicker current={outfit} onChange={applyOutfit} basePortraitUrl={look?.url} />
         <AgentPicker />
