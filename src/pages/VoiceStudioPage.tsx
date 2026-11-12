@@ -337,7 +337,7 @@ export default function VoiceStudioPage() {
   }
 
   function masterFromParty(p: PartyVoice) {
-    setAsOracleMaster(p.id, p.name, { ...p.partySettings, model_id: "eleven_multilingual_v2" } as VoiceSettings);
+    setAsOracleMaster(p.id, p.name, { ...p.partySettings, model_id: "eleven_turbo_v2_5" } as VoiceSettings);
   }
 
   function setAsOracleMaster(voiceId: string, voiceName: string, voiceSettings?: VoiceSettings) {

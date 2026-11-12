@@ -908,8 +908,11 @@ const OraclePage = () => {
       // Premium by default: full multilingual engine at broadcast bitrate so
       // Oracle sounds like the ad, not like a low-latency sketch voice. A
       // saved flash/turbo model is honoured only when deliberately picked.
-      const savedModelId = (masterSettings?.model_id as string | undefined) || undefined;
-      const modelId = savedModelId || "eleven_multilingual_v2";
+      // The old Multilingual default (auto-saved by Voice Studio) is upgraded to the faster engine.
+      const rawModelId = (masterSettings?.model_id as string | undefined) || undefined;
+      const savedModelId = rawModelId === "eleven_multilingual_v2" ? undefined : rawModelId;
+      // SPEED: Turbo v2.5 starts her voice ~1.5s sooner than Multilingual v2 with the same cloned voice.
+      const modelId = savedModelId || "eleven_turbo_v2_5";
 
       const response = await fetch(ELEVENLABS_TTS_URL, {
         method: "POST",

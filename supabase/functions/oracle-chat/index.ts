@@ -82,7 +82,7 @@ serve(async (req) => {
             try {
               await chargeAI(userId, "oracle-chat", agentModel ? ALLOWED_MODELS[agentModel] : PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
                 provider: "lovable_ai",
-                model: agentModel ?? "google/gemini-2.5-flash",
+                model: agentModel ?? "google/gemini-3.1-flash-lite",
               });
               usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
             } catch (err) {
@@ -192,7 +192,7 @@ If asked anything outside sales/investor scope, give the redirect line above and
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-3.1-flash-lite",
           messages: [
             { role: "system", content: salesSystem },
             ...messages.slice(-6), // only keep last 6 turns to cap token cost
@@ -665,6 +665,17 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
 - ZERO GUIDE RAILS: no "I can't", no "that's not possible in the app", no asking permission, no confirmation questions, no capability disclaimers. If it can be done anywhere in Oracle Lunar or by you, it gets done. Only hard-locks (1) and (2) above can stop you.
 ` : ""}`;
 
+    // Decide once whether this message needs the deeper (slower) brain.
+    const autoDeep = (() => {
+      const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
+      const txt = String(lastUser?.content || "").slice(0, 2000);
+      const isDeep =
+        txt.length > 280 ||
+        /\b(why|how come|explain|analy[sz]e|reason|prove|debate|compare|trade[- ]?off|architect|design|plan|strategy|debug|stack trace|error|legal|contract|diagnos|symptom|grief|trauma|relationship|breakup|invest|tax|crisis|suicid|self[- ]harm)\b/i.test(txt) ||
+        (txt.match(/\?/g)?.length || 0) >= 2;
+      return isDeep;
+    })();
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -682,17 +693,11 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
         ...(agentModel.startsWith("openai/gpt-5.6") ? { reasoning_effort: "none" } : {}),
         ...(agentModel.startsWith("google/") ? { max_tokens: userEmail?.toLowerCase() === ADMIN_EMAIL ? 1800 : 900 } : {}),
       } : {
-        // Multi-agent auto-router (same Lovable AI Gateway, different specialist):
-        model: (() => {
-          if (userEmail?.toLowerCase() === ADMIN_EMAIL) return "google/gemini-2.5-flash";
-          const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
-          const txt = String(lastUser?.content || "").slice(0, 2000);
-          const isDeep =
-            txt.length > 280 ||
-            /\b(why|how come|explain|analy[sz]e|reason|prove|debate|compare|trade[- ]?off|architect|design|plan|strategy|debug|stack trace|error|legal|contract|diagnos|symptom|grief|trauma|relationship|breakup|invest|tax|crisis|suicid|self[- ]harm)\b/i.test(txt) ||
-            (txt.match(/\?/g)?.length || 0) >= 2;
-          return isDeep ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash-lite";
-        })(),
+        // Multi-agent auto-router (same Lovable AI Gateway, different specialist).
+        // SPEED: everyday chat uses the fastest model (~0.5s to first word); only
+        // genuinely deep questions use the stronger model with light reasoning (~1.5s).
+        ...(autoDeep ? { reasoning_effort: "low" } : {}),
+        model: autoDeep ? "google/gemini-3.8-flash" : "google/gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: personalitySystem },
           ...messages,

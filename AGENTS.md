@@ -43,3 +43,4 @@
 - Oracle's member-designed look is a wallet-paid edit of the canonical portrait built only from whitelisted choices (cleanLook); a new look clears the outfit, outfits edit the look, and a male look switches default voice and skips ad-voice fillers so voices never mismatch.
 - Voice-level Oracle speech animates her existing picture with a gentle procedural head-and-shoulder sway (no mouth movement), so replies stay fast and free of clip costs without implying lip-sync; real lip-sync stays in paid Premium clips.
 - Oracle's emotional awareness reads mood and mood shifts in the browser (oracleMood, no AI cost) for the current chat only and sends a short sanitized hint; it is never stored, so care stays non-surveillance and free.
+- Oracle's auto-router sends everyday chat to the fastest model and only deep questions to the stronger model with low reasoning, and her speech defaults to a low-latency TTS engine; response speed is the priority for the canonical chat.
