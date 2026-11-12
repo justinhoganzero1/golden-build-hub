@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Mail, Lock, ArrowRight, Shield, Eye, EyeOff, CalendarDays, Check } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { trackAiDiscovery } from "@/lib/aiDiscovery";
@@ -25,10 +25,17 @@ const SignInPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get("redirect") || "/oracle";
+  const location = useLocation();
+  // Protected pages send signed-out visitors here with the page they wanted in
+  // router state; return them there after sign-in (e.g. /owner-dashboard).
+  const fromState = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+  const fromPath = fromState?.pathname && fromState.pathname.startsWith("/") && !fromState.pathname.startsWith("//") && fromState.pathname !== "/sign-in"
+    ? fromState.pathname + (fromState.search || "")
+    : null;
+  const redirectPath = searchParams.get("redirect") || fromPath || "/oracle";
   const requestedSignUp = searchParams.get("mode") === "signup";
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
-  const isOwnerAccess = redirectPath === "/owner-dashboard";
+  const isOwnerAccess = redirectPath === "/owner-dashboard" || redirectPath.startsWith("/owner-dashboard?");
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +67,7 @@ const SignInPage = () => {
     if (justSignedUp) sessionStorage.removeItem("oracle-just-signed-up");
     let nextPath: string;
     if (!isOwner) {
-      if (justSignedUp && !requestedAdmin && !searchParams.get("redirect")) {
+      if (justSignedUp && !requestedAdmin && !searchParams.get("redirect") && !fromPath) {
         nextPath = "/oracle";
       } else {
         nextPath = requestedAdmin ? "/oracle" : redirectPath;
@@ -69,7 +76,7 @@ const SignInPage = () => {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
     }
     navigate(nextPath, { replace: true });
-  }, [authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess]);
+  }, [authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess, fromPath, searchParams]);
 
   useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 

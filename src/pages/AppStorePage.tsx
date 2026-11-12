@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ApkDownloadDialog from "@/components/ApkDownloadDialog";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { detectInstallPlatform, trackInstallEvent } from "@/lib/installAnalytics";
 import {
   PUBLIC_URL, checkApkAvailable, downloadApk, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
@@ -58,6 +60,8 @@ const isInAppBrowser = () =>
 
 export default function AppStorePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { canInstall, isStandalone, installed, install } = usePWAInstall();
   const [platform, setPlatform] = useState<Platform>("unknown");
   const [apkReady, setApkReady] = useState(false);
@@ -145,9 +149,22 @@ export default function AppStorePage() {
             <img src={appIcon} alt="" className="h-8 w-8 rounded-[22%]" />
             <span className="text-lg font-semibold tracking-tight">Oracle <span className="text-primary">Lunar</span></span>
           </Link>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/sign-in">Sign in</Link>
-          </Button>
+          {user ? (
+            <div className="flex items-center gap-1">
+              {isAdmin && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/owner-dashboard">Owner dashboard</Link>
+                </Button>
+              )}
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/oracle">Open app</Link>
+              </Button>
+            </div>
+          ) : (
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/sign-in">Sign in</Link>
+            </Button>
+          )}
         </div>
       </header>
 
