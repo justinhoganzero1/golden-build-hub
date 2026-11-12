@@ -101,7 +101,7 @@ export default function CreatorRealmsPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard icon={<TrendingUp className="w-4 h-4" />} label="Total sales" value={String(data.totals.sales_count)} />
               <StatCard icon={<DollarSign className="w-4 h-4" />} label="Gross revenue" value={money(data.totals.gross_cents)} />
-              <StatCard icon={<Wallet className="w-4 h-4" />} label="Your payouts (70%)" value={money(data.totals.payout_cents)} highlight />
+              <StatCard icon={<Wallet className="w-4 h-4" />} label="Your earnings (80%)" value={money(data.totals.payout_cents)} highlight />
               <StatCard icon={<DollarSign className="w-4 h-4" />} label="Platform fee (30%)" value={money(data.totals.platform_fee_cents)} />
             </div>
 
@@ -133,7 +133,7 @@ export default function CreatorRealmsPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-white/50">Connect your Stripe account to receive payouts. Creators keep 70% on every sale.</p>
+                <p className="text-xs text-white/50">Creators keep 80% on every sale — it lands straight in your wallet.</p>
               )}
             </Card>
 
@@ -169,7 +169,7 @@ export default function CreatorRealmsPage() {
                         <th className="py-2 pr-3">Views</th>
                         <th className="py-2 pr-3">Sales</th>
                         <th className="py-2 pr-3">Gross</th>
-                        <th className="py-2 pr-3">Your 70%</th>
+                        <th className="py-2 pr-3">Your 80%</th>
                         <th className="py-2 pr-3">Last sale</th>
                       </tr>
                     </thead>

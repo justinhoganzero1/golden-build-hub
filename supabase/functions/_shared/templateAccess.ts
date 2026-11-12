@@ -52,3 +52,10 @@ export function templateObjectPath(userId: string, newId: string, oldPath: strin
   const name = (oldPath.split("/").pop() || "file").replace(/[^\w.\-]+/g, "_");
   return `${userId}/templates/${newId}/${name}`;
 }
+
+/** Creator Shop split: Oracle Lunar keeps 20% (rounded up), the creator gets the rest (80%) in their wallet. */
+export function shopSplit(priceCents: number): { platformFeeCents: number; creatorCents: number } {
+  const price = Math.max(0, Math.floor(priceCents));
+  const platformFeeCents = Math.ceil(price * 0.2);
+  return { platformFeeCents, creatorCents: price - platformFeeCents };
+}

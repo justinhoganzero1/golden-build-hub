@@ -91,6 +91,7 @@ import ThinkingIndicator from "@/components/ThinkingIndicator";
 import OracleWelcome from "@/components/oracle/OracleWelcome";
 import ProductionProgress, { playReadyChime } from "@/components/oracle/ProductionProgress";
 import { welcomeKey } from "@/lib/productionStages";
+import { discoveryNote, loadUnlocks, modulesForText, moduleForPath, needsGuidedUnlock, unlockMarkers, unlockPaths, type DiscoverableModule } from "@/lib/oracleDiscovery";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 import { formatWebAnswer } from "@/lib/oracleWeb";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
@@ -270,6 +271,11 @@ const OraclePage = () => {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   useEffect(() => { if (user?.id && !localStorage.getItem(welcomeKey(user.id))) setWelcomeOpen(true); }, [user?.id]);
   const closeWelcome = () => { if (user?.id) localStorage.setItem(welcomeKey(user.id), "1"); setWelcomeOpen(false); };
+  // New members unlock apps as Oracle introduces them; older members see everything.
+  const guidedUnlock = needsGuidedUnlock(user?.created_at, user?.email?.toLowerCase() === "justinbretthogan@gmail.com");
+  const announceUnlocked = (mods: DiscoverableModule[]) => {
+    for (const m of mods) toast.success(`Unlocked: ${m.label}`, { action: { label: "Open", onClick: () => navigate(m.path) } });
+  };
   const wasPendingRef = useRef(false);
   useEffect(() => { if (wasPendingRef.current && !videoReplyPending && replyVideoUrl) playReadyChime(); wasPendingRef.current = videoReplyPending; }, [videoReplyPending, replyVideoUrl]);
   const premiumVideoRef = useRef(false);
@@ -1613,6 +1619,27 @@ const OraclePage = () => {
     return () => clearTimeout(t);
   }, [oracleName, speakAsAgent, subLoading]);
 
+  // A locked dashboard tile opens Oracle with ?discover=/path: she introduces
+  // that app (free, pre-written line) and it unlocks.
+  const discoverHandledRef = useRef(false);
+  useEffect(() => {
+    if (discoverHandledRef.current || !user?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get("discover");
+    if (!target) return;
+    discoverHandledRef.current = true;
+    const mod = moduleForPath(target);
+    params.delete("discover");
+    window.history.replaceState(null, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
+    if (!mod) return;
+    greetTriggeredRef.current = true; // her intro replaces the usual greeting
+    unlockPaths(user.id, [mod.path]);
+    const line = `${mod.label} is unlocked for you now. Tap Open to have a look, or tell me what you'd like to do and I'll help you get started.`;
+    setMessages(prev => [...prev, { id: `discover-${Date.now()}`, role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: line }]);
+    toast.success(`Unlocked: ${mod.label}`, { action: { label: "Open", onClick: () => navigate(mod.path) }, duration: 10000 });
+    try { speakAsAgent(line, oracleName); } catch { /* speech is optional */ }
+  }, [user?.id, oracleName, speakAsAgent, navigate]);
+
   const toggleMic = async () => {
     if (alwaysListenRef.current) {
       alwaysListenRef.current = false;
@@ -2216,6 +2243,7 @@ const OraclePage = () => {
     if (!isIntroTrigger) {
       setMessages(prev => [...prev, userMsg]);
       moodHistoryRef.current = addReading(moodHistoryRef.current, detectMood(text));
+      if (guidedUnlock) announceUnlocked(unlockPaths(user?.id, modulesForText(text).map(m => m.path)));
     }
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
@@ -2248,6 +2276,7 @@ const OraclePage = () => {
           isFirstMeeting,
           look: lookPersona(lookRef.current),
           mood: moodNote(moodHistoryRef.current),
+          discovery: guidedUnlock ? discoveryNote(loadUnlocks(user?.id)) : null,
           userMemories: formatMemoriesForPrompt(oracleMemories) + (() => {
             if (!user?.id) return "";
             try {
@@ -2342,6 +2371,7 @@ const OraclePage = () => {
             .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
             .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
             .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
+            .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
             .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
             .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
@@ -2454,6 +2484,12 @@ const OraclePage = () => {
         }
       }
 
+      // ── Guided discovery: apps Oracle introduced or opened become unlocked ──
+      if (guidedUnlock && oracleContent) {
+        const navPaths = [...oracleContent.matchAll(/\[\[\s*(?:NAVIGATE:|NAV\s+)(\/[^\]\s]*)/gi)].map(m => m[1]);
+        announceUnlocked(unlockPaths(user?.id, [...unlockMarkers(oracleContent), ...navPaths]));
+      }
+
       // ── Live web research: [[WEB: query]] → cited answer with pictures ──
       const webMatch = oracleContent.match(/\[\[WEB:([\s\S]+?)\]\]/i);
       if (webMatch) {
@@ -2480,6 +2516,7 @@ const OraclePage = () => {
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
         .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
         .replace(/\[\[WEB:[\s\S]+?\]\]/gi, "")
+        .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
         .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
         .replace(/\[\[\s*(?:nav|click|fill|scroll|back|open)[^\]]*\]\]/gi, "")
         .trim();
@@ -2919,7 +2956,18 @@ const OraclePage = () => {
         </div>
       </header>
       <div className="relative min-h-0 flex-1">
-        {welcomeOpen && <OracleWelcome name={(user?.user_metadata?.display_name as string | undefined)?.split(" ")[0]} onSkip={closeWelcome} onChoose={c => { closeWelcome(); if (c === "look") setVoiceOptionsOpen(true); else if (c === "create") navigate("/movie-studio-pro"); else void sendMessageRef.current?.("Hi Oracle! I'd love to get to know you."); }} />}
+        {welcomeOpen && <OracleWelcome name={(user?.user_metadata?.display_name as string | undefined)?.split(" ")[0]} userId={user?.id}
+          onSay={(userLine, oracleLine) => {
+            setMessages(prev => [...prev,
+              { id: `welcome-u-${Date.now()}`, role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: userLine },
+              { id: `welcome-o-${Date.now()}`, role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: oracleLine }]);
+            try { speakAsAgent(oracleLine, oracleName); } catch { /* speech is optional */ }
+          }}
+          onOpen={path => navigate(path)}
+          onLook={() => setVoiceOptionsOpen(true)}
+          onTalk={() => void sendMessageRef.current?.("Hi Oracle! I'd love to get to know you.")}
+          onFounder={() => navigate("/founder-seats")}
+          onClose={closeWelcome} />}
         {oracleMedia && <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-background/80">
           <Button variant="outline" size="icon" className="absolute top-3 right-3" aria-label="Dismiss" onClick={() => setOracleMedia(null)}><X /></Button>
           {oracleMedia.kind === "video" ? <video src={oracleMedia.url} autoPlay playsInline controls onEnded={() => setOracleMedia(null)} className="max-w-full max-h-full" /> : <img src={oracleMedia.url} alt="Generated creation" className="max-w-full max-h-full object-contain" />}

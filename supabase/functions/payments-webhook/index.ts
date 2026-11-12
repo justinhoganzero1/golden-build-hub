@@ -412,6 +412,14 @@ async function handleCheckoutCompleted(session: any, eventId: string, env: Strip
         .eq("id", existing.item_id);
       log("shop purchase marked paid", { purchaseId });
     }
+    if (existing) {
+      // Creator's 80% share goes straight into their wallet. The database
+      // function is idempotent (once per sale), so webhook retries are safe.
+      const { data: credit, error: creditError } = await supabase.rpc("credit_creator_sale", { _purchase_id: purchaseId });
+      if (creditError) throw creditError;
+      const row = Array.isArray(credit) ? credit[0] : credit;
+      log(row?.credited ? "creator wallet credited" : "creator wallet already credited", { purchaseId, creator: row?.creator_id, cents: row?.amount_cents });
+    }
     return;
   }
 

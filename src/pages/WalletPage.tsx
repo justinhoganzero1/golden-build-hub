@@ -18,7 +18,7 @@ const WalletPage = () => {
   const [balanceCents, setBalanceCents] = useState(0);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState<number | null>(null);
-  const [earnings, setEarnings] = useState({ shopCents: 0, seatCents: 0, availableCents: 0 });
+  const [earnings, setEarnings] = useState({ shopCents: 0, seatCents: 0, walletCreditedCents: 0, availableCents: 0 });
   const [myPayouts, setMyPayouts] = useState<any[]>([]);
   const [payoutMethod, setPayoutMethod] = useState("payid");
   const [payoutDestination, setPayoutDestination] = useState("");
@@ -31,7 +31,7 @@ const WalletPage = () => {
         supabase.functions.invoke("payouts", { body: { action: "balance" } }),
         supabase.functions.invoke("payouts", { body: { action: "my_requests" } }),
       ]);
-      if (bal) setEarnings({ shopCents: bal.shopCents ?? 0, seatCents: bal.seatCents ?? 0, availableCents: bal.availableCents ?? 0 });
+      if (bal) setEarnings({ shopCents: bal.shopCents ?? 0, seatCents: bal.seatCents ?? 0, walletCreditedCents: bal.walletCreditedCents ?? 0, availableCents: bal.availableCents ?? 0 });
       if (reqs?.requests) setMyPayouts(reqs.requests);
     } catch { /* earnings section stays at zero */ }
   };
@@ -201,8 +201,11 @@ const WalletPage = () => {
             <h2 className="text-sm font-bold text-foreground">Your seller earnings</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-3">
-            Money from your Creator Shop sales (your 70% share) and founder seat resales.
+            Your Creator Shop sales (your 80% share) land straight in your wallet balance above. Founder seat resales can be paid out below.
           </p>
+          {earnings.walletCreditedCents > 0 && (
+            <p className="text-xs text-primary mb-3">${(earnings.walletCreditedCents / 100).toFixed(2)} from shop sales has been added to your wallet.</p>
+          )}
           <div className="grid grid-cols-3 gap-2 mb-3 text-center">
             <div className="rounded-xl bg-muted/40 p-3">
               <p className="text-sm font-bold text-foreground">${(earnings.shopCents / 100).toFixed(2)}</p>

@@ -25,6 +25,8 @@ import PartnerBubbles from "@/components/PartnerBubbles";
 import DashboardOnboarding from "@/components/DashboardOnboarding";
 import UserConnectorsPanel from "@/components/UserConnectorsPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { Lock } from "lucide-react";
+import { UNLOCKS_EVENT, isUnlocked, loadUnlocks, needsGuidedUnlock, unlockEverything, type UnlockState } from "@/lib/oracleDiscovery";
 
 interface AppTile {
   label: string;
@@ -150,6 +152,19 @@ const DashboardPage = () => {
     return () => window.removeEventListener("oracle-lunar-layout-change", handler);
   }, []);
 
+  // New members: apps unlock as Oracle introduces them (soft lock, always escapable).
+  const guided = !!user && !adminLoading && needsGuidedUnlock(user.created_at, isAdmin);
+  const [unlocks, setUnlocks] = useState<UnlockState>(() => loadUnlocks(user?.id));
+  useEffect(() => {
+    setUnlocks(loadUnlocks(user?.id));
+    const onChange = () => setUnlocks(loadUnlocks(user?.id));
+    window.addEventListener(UNLOCKS_EVENT, onChange);
+    window.addEventListener("storage", onChange);
+    return () => { window.removeEventListener(UNLOCKS_EVENT, onChange); window.removeEventListener("storage", onChange); };
+  }, [user?.id]);
+  const tileLocked = (tile: AppTile) => guided && !isUnlocked(unlocks, tile.path);
+  const lockedCount = guided ? groups.reduce((n, g) => n + g.tiles.filter(tileLocked).length, 0) : 0;
+
   const gridCols = layout?.gridCols || 4;
   const labelSize = layout?.fontSize || "text-[10px]";
   const gridGap = layout?.gap || "gap-3";
@@ -157,6 +172,7 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
+    if (tileLocked(tile)) { navigate(`/oracle?discover=${encodeURIComponent(tile.path)}`); return; }
     navigate(tile.path);
   };
 
@@ -306,6 +322,16 @@ const DashboardPage = () => {
         </div>
       </details>
 
+      {lockedCount > 0 && (
+        <div className="mx-4 mb-3 rounded-2xl border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+          <p>🔮 Oracle unlocks your apps as you chat with her. Tap a locked app and she'll introduce it — {lockedCount} still to discover.</p>
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" onClick={() => navigate("/oracle")}>Chat with Oracle</Button>
+            <Button size="sm" variant="outline" onClick={() => user && unlockEverything(user.id)}>Show me everything</Button>
+          </div>
+        </div>
+      )}
+
       {/* Expand/collapse controls */}
       <div className="px-4 flex items-center gap-2 mb-3">
         <button onClick={expandAll} className="text-[11px] px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition">Expand all</button>
@@ -337,8 +363,10 @@ const DashboardPage = () => {
                     <button
                       key={group.id + tile.path + tile.label}
                       onClick={() => handleTileClick(tile)}
-                      className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR} relative`}
+                      className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR} relative ${tileLocked(tile) ? "opacity-50" : ""}`}
+                      aria-label={tileLocked(tile) ? `${tile.label} (locked — ask Oracle)` : undefined}
                     >
+                      {tileLocked(tile) && <Lock className="absolute right-1.5 top-1.5 h-3 w-3 text-muted-foreground" aria-hidden="true" />}
                       <div className="holo-icon text-primary">{tile.icon}</div>
                       <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>
                         {tile.label}

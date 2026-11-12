@@ -26,13 +26,14 @@ Deno.serve(async (req) => {
 
     const earningsOf = async (uid: string) => {
       const [{ data: shop }, { data: seats }, { data: balance }] = await Promise.all([
-        supabase.from("shop_purchases").select("creator_payout_cents").eq("creator_id", uid).eq("status", "paid"),
+        supabase.from("shop_purchases").select("creator_payout_cents, wallet_credited_at").eq("creator_id", uid).eq("status", "paid"),
         supabase.from("founder_seat_listings").select("price_cents").eq("seller_id", uid).eq("status", "sold"),
         supabase.rpc("seller_available_balance", { user_uuid: uid }),
       ]);
       const shopCents = (shop ?? []).reduce((s, r) => s + (r.creator_payout_cents ?? 0), 0);
       const seatCents = (seats ?? []).reduce((s, r) => s + (r.price_cents ?? 0), 0);
-      return { shopCents, seatCents, availableCents: balance ?? 0 };
+      const walletCreditedCents = (shop ?? []).filter((r) => r.wallet_credited_at).reduce((s, r) => s + (r.creator_payout_cents ?? 0), 0);
+      return { shopCents, seatCents, walletCreditedCents, availableCents: balance ?? 0 };
     };
 
     if (action === "balance") {

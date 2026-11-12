@@ -114,3 +114,7 @@
 
 ## Oracle emotions (requested 2026-11-12)
 - [x] Emotional awareness engine, mood-shift detection and detailed backstory
+
+## Creator Shop wallet + welcome flow (requested 2026-11-12)
+- [x] Template sales credit the creator's 80% share straight into their wallet (once per sale)
+- [x] New sign-ups land on Oracle's greeting first; modules unlock as Oracle introduces them in chat

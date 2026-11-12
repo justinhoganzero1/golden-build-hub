@@ -53,14 +53,14 @@ const SignInPage = () => {
     // force them into the owner dashboard when they didn't ask for somewhere
     // specific (i.e. arrived at /sign-in with no redirect).
     const cameFromOwnerLink = isOwnerAccess; // explicit ?redirect=/owner-dashboard
-    // Brand-new signups land straight on the Founder Seats page so they can
-    // buy their A$1 seat first (unless they asked for a specific page).
+    // Brand-new signups land straight on Oracle's welcome greeting; she offers
+    // the A$1 Founder seat and unlocks apps in conversation.
     const justSignedUp = sessionStorage.getItem("oracle-just-signed-up") === "1";
     if (justSignedUp) sessionStorage.removeItem("oracle-just-signed-up");
     let nextPath: string;
     if (!isOwner) {
       if (justSignedUp && !requestedAdmin && !searchParams.get("redirect")) {
-        nextPath = "/founder-seats";
+        nextPath = "/oracle";
       } else {
         nextPath = requestedAdmin ? "/oracle" : redirectPath;
       }

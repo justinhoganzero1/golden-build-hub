@@ -2,6 +2,7 @@ import { statusFor } from "../_shared/errorStatus.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { type StripeEnv, createEmbeddedSession } from "../_shared/stripe.ts";
+import { shopSplit } from "../_shared/templateAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,8 +15,8 @@ const log = (s: string, d?: any) =>
 
 // Creator Shop checkout via Lovable built-in payments (embedded).
 // The full amount is collected by the platform; the creator's 80% share is
-// recorded on the purchase row (creator_payout_cents) and paid out from the
-// creator earnings ledger. The payments webhook marks the purchase paid.
+// recorded on the purchase row (creator_payout_cents); the payments webhook marks
+// the purchase paid and credits that share straight into the creator's wallet.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -57,8 +58,7 @@ Deno.serve(async (req) => {
       throw new Error("Item is not for sale");
     if (item.user_id === buyer.id) throw new Error("You cannot buy your own item");
 
-    const platformFee = Math.ceil(item.shop_price_cents * 0.20);
-    const creatorPayout = item.shop_price_cents - platformFee;
+    const { platformFeeCents: platformFee, creatorCents: creatorPayout } = shopSplit(item.shop_price_cents);
 
     // Create pending purchase row
     const { data: purchase, error: pErr } = await supabase

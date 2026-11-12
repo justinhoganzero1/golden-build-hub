@@ -3217,6 +3217,7 @@ export type Database = {
           status: string
           stripe_payment_intent: string | null
           stripe_session_id: string | null
+          wallet_credited_at: string | null
         }
         Insert: {
           amount_cents: number
@@ -3233,6 +3234,7 @@ export type Database = {
           status?: string
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          wallet_credited_at?: string | null
         }
         Update: {
           amount_cents?: number
@@ -3249,6 +3251,7 @@ export type Database = {
           status?: string
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          wallet_credited_at?: string | null
         }
         Relationships: []
       }
@@ -5044,6 +5047,15 @@ export type Database = {
       count_user_jailbreak_attempts: {
         Args: { _user_id: string }
         Returns: number
+      }
+      credit_creator_sale: {
+        Args: { _purchase_id: string }
+        Returns: {
+          amount_cents: number
+          creator_id: string
+          credited: boolean
+          new_balance_cents: number
+        }[]
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }

@@ -21,7 +21,9 @@ serve(async (req) => {
     // Auth header is optional — anonymous visitors fall through to public sales mode below.
     const authHeader = req.headers.get("Authorization") || "";
 
-    const { messages: rawMessages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice, look, mood } = await req.json();
+    const { messages: rawMessages, oracleName, navigateCommand, userMemories, adContext, isFirstMeeting, masterAvatar, agent, voice, look, mood, discovery } = await req.json();
+    // New-member app guide: app names + paths only, clipped and stripped of anything else.
+    const discoveryNote = typeof discovery === "string" && discovery.trim() ? discovery.replace(/[^a-z0-9 ,()/?=&✨\-]/gi, " ").replace(/\s+/g, " ").trim().slice(0, 600) : "";
     // Member-chosen look: short, app-built note; clipped so it can never carry a long injected prompt.
     const lookNote = typeof look === "string" && look.trim() ? look.replace(/[\r\n]+/g, " ").slice(0, 300) : "";
     // Emotional-awareness hint built by the app (mood words only); clipped and stripped of anything else.
@@ -401,6 +403,11 @@ EMOTIONAL AWARENESS ENGINE (always on):
 - Never use their emotions to sell, pressure, guilt or keep them chatting. Their wellbeing always comes first, including encouraging real-world people and support.
 ${moodNote ? `
 PRIVATE MOOD HINT (do not mention): ${moodNote}
+` : ""}${discoveryNote ? `
+NEW MEMBER APP GUIDE: This member is new. Their apps unlock as you introduce them. Not yet discovered: ${discoveryNote}.
+- When it naturally fits what they're talking about, introduce ONE of these (never list them all, never more than one per reply) in one warm sentence about how it helps them.
+- Then put [[UNLOCK:/path]] on its own line at the very end so it opens for them. Use the exact path from the list. Never mention the marker.
+- Never push apps when they are upset, grieving or in crisis — care comes first.
 ` : ""}
 ${lookNote ? `YOUR LOOK (chosen by the user — ${lookNote}): Speak about yourself to match this look and these pronouns. Your orientation, if set, is just part of your persona; mention it only if they ask, never flirt because of it, and stay caring and all-ages appropriate.
 

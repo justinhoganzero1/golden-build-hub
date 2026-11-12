@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { CheckCircle2, Download, Loader2, AlertCircle, ShoppingBag } from "lucide-react";
+import { CheckCircle2, Download, Loader2, AlertCircle, ShoppingBag, Layers } from "lucide-react";
 import PageShell from "@/components/PageShell";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ type ItemRow = {
   thumbnail_url: string | null;
   media_type: string;
   creator_display_name: string | null;
+  allow_template?: boolean;
 };
 
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -42,6 +43,25 @@ const ShopPurchaseSuccessPage = () => {
   const [polling, setPolling] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Paid templates: copy the bought item into the buyer's own Library.
+  const addTemplateToLibrary = async () => {
+    if (!item) return;
+    setCopying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("library-use-template", { body: { item_id: item.id } });
+      const body = data as { id?: string; error?: string } | null;
+      if (error || !body?.id) throw new Error(body?.error || "Could not add this template to your Library.");
+      setCopied(true);
+      toast.success("Added to your Library — open Media Library to start using it.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not add this template to your Library.");
+    } finally {
+      setCopying(false);
+    }
+  };
 
   // Poll purchase status until paid (webhook may take a few seconds)
   useEffect(() => {
@@ -93,7 +113,7 @@ const ShopPurchaseSuccessPage = () => {
         // Different tables expose the asset URL under different columns.
         const fields =
           data.item_kind === "media"
-            ? "id,title,url,thumbnail_url,media_type,creator_display_name"
+            ? "id,title,url,thumbnail_url,media_type,creator_display_name,allow_template"
             : data.item_kind === "gif"
             ? "id,title,gif_url,preview_mp4_url,thumbnail_url,creator_display_name"
             : "id,title,final_video_url,thumbnail_url,creator_display_name";
@@ -123,6 +143,7 @@ const ShopPurchaseSuccessPage = () => {
                 ? "gif"
                 : "video",
             creator_display_name: r.creator_display_name,
+            allow_template: data.item_kind === "media" && !!r.allow_template,
           });
         }
       } else if (attempts >= maxAttempts) {
@@ -241,6 +262,12 @@ const ShopPurchaseSuccessPage = () => {
                 )}
                 Download now
               </Button>
+              {item.allow_template && (
+                <Button variant="secondary" onClick={addTemplateToLibrary} disabled={copying || copied} className="flex-1">
+                  {copying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Layers className="w-4 h-4 mr-2" />}
+                  {copied ? "In your Library" : "Add to my Library as template"}
+                </Button>
+              )}
               <Button variant="outline" asChild className="flex-1">
                 <Link to="/library/public">
                   <ShoppingBag className="w-4 h-4 mr-2" /> Back to Library

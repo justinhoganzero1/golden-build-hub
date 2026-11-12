@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { templateAccess, templateMetadata, templateObjectPath, isPaidTemplate } from "../../supabase/functions/_shared/templateAccess";
+import { templateAccess, templateMetadata, templateObjectPath, isPaidTemplate, shopSplit } from "../../supabase/functions/_shared/templateAccess";
 import { clipSource, isNewClip } from "./oracleClips";
 import { memberPageAccess } from "./memberPageAccess";
 
@@ -44,5 +44,14 @@ describe("Oracle video Library", () => {
   it("plays site assets directly and signs private uploads", () => {
     expect(clipSource("/__l5e/assets-v1/x/ad.mp4")).toEqual({ kind: "direct", url: "/__l5e/assets-v1/x/ad.mp4" });
     expect(clipSource("abc/clip.mp4")).toEqual({ kind: "storage", path: "abc/clip.mp4" });
+  });
+});
+
+describe("creator shop split", () => {
+  it("creator gets 80% of a sale, Oracle Lunar 20%", () => {
+    expect(shopSplit(1000)).toEqual({ platformFeeCents: 200, creatorCents: 800 });
+  });
+  it("odd cents round in Oracle Lunar's favour so the creator never exceeds 80%", () => {
+    expect(shopSplit(299)).toEqual({ platformFeeCents: 60, creatorCents: 239 });
   });
 });
