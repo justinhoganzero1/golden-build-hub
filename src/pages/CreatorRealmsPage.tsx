@@ -79,7 +79,7 @@ export default function CreatorRealmsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SEO title="Creator Earnings — Realms" description="Track your realm sales, Stripe Connect payouts, and current balance." />
       <header className="border-b border-white/10 bg-black/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">

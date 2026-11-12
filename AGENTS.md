@@ -48,3 +48,4 @@
 - Shop sales credit the creator share to their wallet via idempotent credit_creator_sale (payments webhook); cash payouts exclude wallet-credited sales, so nothing is paid twice.
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
 - Signed-out browsers at / get AppStorePage, installed/native launches PublicWelcomePage; install CTAs use installRedirect so they never hit dead hosts or missing files.
+- The app-wide look lives in one final theme layer in src/index.css (fixed office backdrop, glass surfaces, tokens); body colours use plain CSS, not @apply, because Tailwind copies every rule naming an applied class onto body.

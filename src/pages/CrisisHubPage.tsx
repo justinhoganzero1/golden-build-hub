@@ -243,8 +243,8 @@ const CrisisHubPage = () => {
     { name: "Police", number: numbers.police, icon: <Shield className="w-5 h-5" />, color: "from-blue-500/30 to-blue-500/5 text-blue-300 border-blue-500/30" },
     { name: "Ambulance", number: numbers.ambulance, icon: <Heart className="w-5 h-5" />, color: "from-red-500/30 to-red-500/5 text-red-300 border-red-500/30" },
     { name: "Fire Service", number: numbers.fire, icon: <Flame className="w-5 h-5" />, color: "from-orange-500/30 to-orange-500/5 text-orange-300 border-orange-500/30" },
-    { name: "Crisis Helpline", number: numbers.crisis, icon: <Phone className="w-5 h-5" />, color: "from-purple-500/30 to-purple-500/5 text-purple-300 border-purple-500/30" },
-    { name: "Domestic Violence", number: numbers.domesticViolence, icon: <ShieldCheck className="w-5 h-5" />, color: "from-pink-500/30 to-pink-500/5 text-pink-300 border-pink-500/30" },
+    { name: "Crisis Helpline", number: numbers.crisis, icon: <Phone className="w-5 h-5" />, color: "from-teal-500/30 to-teal-500/5 text-teal-300 border-teal-500/30" },
+    { name: "Domestic Violence", number: numbers.domesticViolence, icon: <ShieldCheck className="w-5 h-5" />, color: "from-amber-500/30 to-amber-500/5 text-amber-300 border-amber-500/30" },
     { name: "Poison Control", number: numbers.poison, icon: <Pill className="w-5 h-5" />, color: "from-green-500/30 to-green-500/5 text-green-300 border-green-500/30" },
     { name: "Child Helpline", number: numbers.childAbuse, icon: <Users className="w-5 h-5" />, color: "from-amber-500/30 to-amber-500/5 text-amber-300 border-amber-500/30" },
   ];
@@ -326,7 +326,7 @@ const CrisisHubPage = () => {
             </button>
           ) : (
             <div className="flex flex-col items-center py-4">
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-blue-400/40 to-purple-500/30 border border-blue-300/40 flex items-center justify-center transition-transform duration-[4000ms] ease-in-out ${breathScale}`}>
+              <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-blue-400/40 to-teal-500/30 border border-blue-300/40 flex items-center justify-center transition-transform duration-[4000ms] ease-in-out ${breathScale}`}>
                 <span className="text-blue-100 text-sm font-medium">{breathLabel}</span>
               </div>
               <button onClick={stopBreathing} className="mt-4 text-xs text-muted-foreground hover:text-foreground">Stop</button>
@@ -382,10 +382,10 @@ const CrisisHubPage = () => {
         </div>
 
         {/* Safety plan */}
-        <div className="holo-card rounded-2xl border border-purple-500/20 mb-5">
+        <div className="holo-card rounded-2xl border border-teal-500/20 mb-5">
           <button onClick={() => setPlanOpen(o => !o)}
             className="w-full p-4 flex items-center gap-3">
-            <div className="p-1.5 rounded-lg bg-purple-500/15"><Activity className="w-4 h-4 text-purple-300" /></div>
+            <div className="p-1.5 rounded-lg bg-teal-500/15"><Activity className="w-4 h-4 text-teal-300" /></div>
             <div className="flex-1 text-left">
               <h2 className="text-sm font-semibold text-foreground">My Safety Plan</h2>
               <p className="text-[10px] text-muted-foreground">Personal coping plan — saved privately on this device</p>
@@ -413,7 +413,7 @@ const CrisisHubPage = () => {
                 </div>
               ))}
               <button onClick={savePlan}
-                className="w-full py-2.5 rounded-lg bg-purple-500/20 border border-purple-400/30 text-purple-200 text-sm font-medium flex items-center justify-center gap-2">
+                className="w-full py-2.5 rounded-lg bg-teal-500/20 border border-teal-400/30 text-teal-200 text-sm font-medium flex items-center justify-center gap-2">
                 {planSaved ? <Check className="w-4 h-4" /> : null}
                 {planSaved ? "Saved" : "Save Safety Plan"}
               </button>

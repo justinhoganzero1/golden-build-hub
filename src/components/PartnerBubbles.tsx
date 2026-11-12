@@ -87,12 +87,12 @@ const PartnerBubbles = () => {
               }}
             >
               {b.badge && (
-                <span className="text-[9px] font-black uppercase tracking-widest text-pink-300 mb-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-300 mb-1">
                   {b.badge}
                 </span>
               )}
               <div className="relative">
-                <div className={`absolute inset-0 rounded-full blur-2xl scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${b.featured ? "bg-pink-400/40" : "bg-amber-400/20"}`} />
+                <div className={`absolute inset-0 rounded-full blur-2xl scale-110 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${b.featured ? "bg-amber-400/40" : "bg-amber-400/20"}`} />
                 <img
                   src={b.img}
                   alt={`${b.label} — ${b.tagline}`}
@@ -103,7 +103,7 @@ const PartnerBubbles = () => {
                 />
               </div>
               <div className="text-center">
-                <div className={`font-bold ${b.featured ? "text-base text-pink-300" : "text-sm text-foreground"}`}>{b.label}</div>
+                <div className={`font-bold ${b.featured ? "text-base text-amber-300" : "text-sm text-foreground"}`}>{b.label}</div>
                 <div className="text-[11px] text-muted-foreground">{b.tagline}</div>
               </div>
             </a>

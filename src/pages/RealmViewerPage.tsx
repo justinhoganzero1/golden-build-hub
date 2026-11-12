@@ -148,14 +148,14 @@ export default function RealmViewerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin" />
       </div>
     );
   }
   if (!realm || !realm.is_public || !realm.skybox_url) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-3">
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center gap-3">
         <p className="text-white/60">This realm is private or does not exist.</p>
         <Button asChild variant="secondary"><Link to="/realms">Browse public realms</Link></Button>
       </div>

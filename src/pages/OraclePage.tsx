@@ -3063,14 +3063,14 @@ const OraclePage = () => {
       {showOracleSwap && (
         <div className="relative border border-border rounded-lg p-4 w-full">
           <div className="flex justify-between items-center mb-3">
-            <p className="text-xs text-purple-400 font-semibold">Replace Oracle</p>
-            <button onClick={() => setShowOracleSwap(false)}><X className="w-4 h-4 text-purple-400" /></button>
+            <p className="text-xs text-teal-400 font-semibold">Replace Oracle</p>
+            <button onClick={() => setShowOracleSwap(false)}><X className="w-4 h-4 text-teal-400" /></button>
           </div>
           
           {/* Default orb option */}
           <button onClick={() => swapOracle()}
-            className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.mode === "orb" ? "ring-1 ring-purple-500 bg-purple-500/10" : "opacity-60 hover:opacity-80"}`}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-lg border border-purple-500/30">🔮</div>
+            className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.mode === "orb" ? "ring-1 ring-teal-500 bg-teal-500/10" : "opacity-60 hover:opacity-80"}`}>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500/30 to-amber-500/30 flex items-center justify-center text-lg border border-teal-500/30">🔮</div>
             <div>
               <p className="text-xs text-white font-medium">Mystic Orb</p>
               <p className="text-[9px] text-gray-500">Default animated oracle</p>
@@ -3080,11 +3080,11 @@ const OraclePage = () => {
           {/* User avatars with oracle/partner purpose */}
           {userAvatars.filter(a => a.purpose === "oracle" || a.purpose === "partner").map(a => (
             <button key={a.id} onClick={() => swapOracle(a.id)}
-              className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.avatarId === a.id ? "ring-1 ring-purple-500 bg-purple-500/10" : "opacity-60 hover:opacity-80"}`}>
+              className={`w-full flex items-center gap-3 p-2.5 rounded-xl mb-2 transition-all ${oracleMode.avatarId === a.id ? "ring-1 ring-teal-500 bg-teal-500/10" : "opacity-60 hover:opacity-80"}`}>
               {a.image_url ? (
-                <img src={a.image_url} alt={a.name} className="w-10 h-10 rounded-full object-cover border border-purple-500/30" />
+                <img src={a.image_url} alt={a.name} className="w-10 h-10 rounded-full object-cover border border-teal-500/30" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-lg border border-pink-500/30">💕</div>
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-lg border border-amber-500/30">💕</div>
               )}
               <div>
                 <p className="text-xs text-white font-medium">{a.name}</p>
@@ -3098,7 +3098,7 @@ const OraclePage = () => {
           )}
 
           <button onClick={() => { setShowOracleSwap(false); navigate("/avatar-generator?purpose=oracle"); }}
-            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-xs flex items-center justify-center gap-1.5 mt-2 hover:border-purple-500 hover:text-purple-400">
+            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-xs flex items-center justify-center gap-1.5 mt-2 hover:border-teal-500 hover:text-teal-400">
             <Plus className="w-3.5 h-3.5" /> Create Oracle Avatar
           </button>
         </div>
@@ -3113,18 +3113,18 @@ const OraclePage = () => {
           </div>
 
           {/* Rename Oracle */}
-          <div className="mb-3 p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <p className="text-[10px] text-purple-400 uppercase tracking-wider mb-1">Oracle Name</p>
+          <div className="mb-3 p-2 rounded-xl bg-teal-500/10 border border-teal-500/20">
+            <p className="text-[10px] text-teal-400 uppercase tracking-wider mb-1">Oracle Name</p>
             {renamingAgent === "Oracle" ? (
               <div className="flex gap-1">
                 <input value={renameInput} onChange={e => setRenameInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleRename("Oracle")}
-                  className="flex-1 bg-black/50 border border-purple-500/30 rounded px-2 py-1 text-xs text-white outline-none" autoFocus placeholder="New name..." />
-                <button onClick={() => handleRename("Oracle")} className="px-2 py-1 bg-purple-500 rounded text-[10px] text-white">Save</button>
+                  className="flex-1 bg-black/50 border border-teal-500/30 rounded px-2 py-1 text-xs text-white outline-none" autoFocus placeholder="New name..." />
+                <button onClick={() => handleRename("Oracle")} className="px-2 py-1 bg-teal-500 rounded text-[10px] text-white">Save</button>
               </div>
             ) : (
               <button onClick={() => { setRenamingAgent("Oracle"); setRenameInput(oracleName); }}
-                className="flex items-center gap-1.5 text-xs text-white hover:text-purple-300">
+                className="flex items-center gap-1.5 text-xs text-white hover:text-teal-300">
                 <Edit2 className="w-3 h-3" /> {oracleName}
               </button>
             )}
@@ -3142,7 +3142,7 @@ const OraclePage = () => {
                 </button>
                 {!a.locked && (
                   <button onClick={() => { setRenamingAgent(a.name); setRenameInput(getDisplayName(a.name)); }}
-                    className="text-[8px] text-gray-600 hover:text-purple-400"><Edit2 className="w-2.5 h-2.5" /></button>
+                    className="text-[8px] text-gray-600 hover:text-teal-400"><Edit2 className="w-2.5 h-2.5" /></button>
                 )}
               </div>
             ))}
@@ -3186,7 +3186,7 @@ const OraclePage = () => {
           )}
 
           <button onClick={() => { setShowFriendPanel(false); navigate("/avatar-generator"); }}
-            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-xs flex items-center justify-center gap-1.5 hover:border-purple-500 hover:text-purple-400">
+            className="w-full py-2 rounded-xl border border-dashed border-gray-700 text-gray-400 text-xs flex items-center justify-center gap-1.5 hover:border-teal-500 hover:text-teal-400">
             <Plus className="w-3.5 h-3.5" /> Create New Avatar
           </button>
         </div>

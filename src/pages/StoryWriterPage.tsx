@@ -3260,7 +3260,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         <div className="px-4 pt-4">
           <button
             onClick={() => setKindleOpen(true)}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-teal-600 text-primary-foreground text-sm font-bold flex items-center justify-center gap-2"
           >
             <BookMarked className="w-4 h-4" />
             Send this book to my Kindle — guided, one tap
@@ -3284,7 +3284,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
           <button
             onClick={() => void exportEpub()}
             disabled={epubBusy}
-            className="py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+            className="py-3 rounded-xl bg-gradient-to-r from-teal-500 to-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {epubBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookMarked className="w-4 h-4" />}
             EPUB — Kindle, Kobo, Apple, Google, B&amp;N
@@ -3328,7 +3328,7 @@ Rules: the three title-gradient colours must read as one confident, high-contras
         <div className="px-4 pt-4 space-y-2">
           <button
             onClick={() => sendStoryToMovieMaker(story, navigate)}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-primary to-amber-500 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
           >
             🎬 Send this Story to the Movie Maker
           </button>

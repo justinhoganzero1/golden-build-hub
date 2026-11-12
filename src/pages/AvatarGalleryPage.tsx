@@ -50,12 +50,12 @@ const AvatarGalleryPage = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
+    <div className="min-h-screen bg-background pb-20">
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
+            <div className="p-2 rounded-xl bg-teal-500/10"><Palette className="w-7 h-7 text-teal-400" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Avatar Gallery</h1>
               <p className="text-gray-500 text-xs">{avatars.length} avatars created</p>
@@ -63,7 +63,7 @@ const AvatarGalleryPage = () => {
           </div>
           <button
             onClick={() => navigate("/avatar-generator")}
-            className="p-2.5 rounded-xl bg-purple-600 text-white"
+            className="p-2.5 rounded-xl bg-teal-600 text-white"
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -83,7 +83,7 @@ const AvatarGalleryPage = () => {
               onClick={() => setFilter(f.value)}
               className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all ${
                 filter === f.value
-                  ? "bg-purple-600 text-white"
+                  ? "bg-teal-600 text-white"
                   : "bg-[#1a1a1a] border border-gray-800 text-gray-400"
               }`}
             >
@@ -94,7 +94,7 @@ const AvatarGalleryPage = () => {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
@@ -102,7 +102,7 @@ const AvatarGalleryPage = () => {
             <p className="text-gray-500 text-sm">No avatars yet</p>
             <button
               onClick={() => navigate("/avatar-generator")}
-              className="mt-3 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm"
+              className="mt-3 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm"
             >
               Create Your First Avatar
             </button>
@@ -113,7 +113,7 @@ const AvatarGalleryPage = () => {
               <button
                 key={avatar.id}
                 onClick={() => setSelected(avatar)}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden hover:border-purple-500 transition-all group"
+                className="bg-[#1a1a1a] border border-gray-800 rounded-2xl overflow-hidden hover:border-teal-500 transition-all group"
               >
                 <div className="aspect-square bg-[#0f0f0f] flex items-center justify-center overflow-hidden">
                   {avatar.image_url ? (
@@ -192,7 +192,7 @@ const AvatarGalleryPage = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => { navigate("/oracle"); setSelected(null); }}
-                  className="flex-1 py-2.5 rounded-xl bg-purple-600 text-white text-sm font-medium flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-medium flex items-center justify-center gap-1.5"
                 >
                   <Eye className="w-4 h-4" /> Use in Chat
                 </button>

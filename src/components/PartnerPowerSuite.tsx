@@ -69,7 +69,7 @@ const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: 
   };
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-amber-950/30 via-background to-purple-950/20 border-amber-500/20 ${className}`}>
+    <Card className={`p-4 bg-gradient-to-br from-amber-950/30 via-background to-teal-950/20 border-amber-500/20 ${className}`}>
       <div className="flex items-center gap-2 mb-3">
         <Film className="w-5 h-5 text-amber-400" />
         <h3 className="text-sm font-bold text-foreground">Partner Power Suite</h3>
@@ -90,7 +90,7 @@ const PartnerPowerSuite = ({ placementPrefix, filter = "all", className = "" }: 
             className="text-left p-3 rounded-lg bg-background/40 border border-border/40 hover:border-amber-500/60 hover:bg-amber-500/5 transition-colors group"
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className={`p-1.5 rounded-md ${f.partner === "heygen" ? "bg-pink-500/15 text-pink-300" : "bg-blue-500/15 text-blue-300"}`}>
+              <span className={`p-1.5 rounded-md ${f.partner === "heygen" ? "bg-amber-500/15 text-amber-300" : "bg-blue-500/15 text-blue-300"}`}>
                 {f.icon}
               </span>
               <span className="text-xs font-semibold text-foreground truncate">{f.title}</span>

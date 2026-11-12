@@ -694,12 +694,12 @@ const OwnerDashboardPage = () => {
 
   const getMediaIcon = (type: string) => {
     if (type === "image") return <Image className="w-6 h-6 text-blue-400" />;
-    if (type === "video") return <Video className="w-6 h-6 text-purple-400" />;
-    return <Music className="w-6 h-6 text-pink-400" />;
+    if (type === "video") return <Video className="w-6 h-6 text-teal-400" />;
+    return <Music className="w-6 h-6 text-amber-400" />;
   };
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1628 100%)" }}>
+    <div className="min-h-screen bg-background pb-20">
       <button
         type="button"
         onClick={() => navigate("/dashboard", { replace: false })}
@@ -819,9 +819,9 @@ const OwnerDashboardPage = () => {
             </div>
 
             {/* HeyGen Affiliate Tracker */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-2xl p-4">
+            <div className="bg-gradient-to-br from-teal-500/10 to-amber-500/10 border border-teal-500/30 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Video className="w-4 h-4 text-pink-400" />
+                <Video className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold text-white">HeyGen Affiliate</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full">Up to 30% commission</span>
               </div>
@@ -845,7 +845,7 @@ const OwnerDashboardPage = () => {
               })()}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-pink-300">
+                  <p className="text-2xl font-bold text-amber-300">
                     {(() => { try { return localStorage.getItem("affiliate_clicks_heygen") || "0"; } catch { return "0"; } })()}
                   </p>
                   <p className="text-[10px] text-gray-400">Local Clicks</p>
@@ -865,7 +865,7 @@ const OwnerDashboardPage = () => {
                     localStorage.setItem(k, String(parseInt(localStorage.getItem(k) || "0", 10) + 1));
                   } catch {}
                 }}
-                className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold hover:opacity-90"
+                className="block w-full text-center px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-amber-500 text-white text-xs font-bold hover:opacity-90"
               >
                 Open HeyGen Affiliate Portal →
               </a>
@@ -892,8 +892,8 @@ const OwnerDashboardPage = () => {
                   <p className="text-[10px] text-gray-400">Visitors</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <Users className="w-4 h-4 text-purple-300 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-purple-300">{liveTraffic.returning.toLocaleString()}</p>
+                  <Users className="w-4 h-4 text-teal-300 mx-auto mb-1" />
+                  <p className="text-2xl font-bold text-teal-300">{liveTraffic.returning.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Returning (no DL)</p>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3 text-center">
@@ -915,7 +915,7 @@ const OwnerDashboardPage = () => {
               {[
                 { label: "Total Users", value: totalUsers, icon: <Users className="w-5 h-5" />, color: "from-blue-500/20 to-cyan-500/20", textColor: "text-blue-400" },
                 { label: "Paid Members", value: paidUsers, icon: <DollarSign className="w-5 h-5" />, color: "from-green-500/20 to-emerald-500/20", textColor: "text-green-400" },
-                { label: "Trial Users", value: trialUsers, icon: <Zap className="w-5 h-5" />, color: "from-purple-500/20 to-pink-500/20", textColor: "text-purple-400" },
+                { label: "Trial Users", value: trialUsers, icon: <Zap className="w-5 h-5" />, color: "from-teal-500/20 to-amber-500/20", textColor: "text-teal-400" },
                 { label: "Revenue", value: `$${revenue}`, icon: <TrendingUp className="w-5 h-5" />, color: "from-yellow-500/20 to-orange-500/20", textColor: "text-yellow-400" },
               ].map((stat, i) => (
                 <div key={i} className={`bg-gradient-to-br ${stat.color} border border-white/10 rounded-2xl p-4`}>
@@ -1004,7 +1004,7 @@ const OwnerDashboardPage = () => {
         {/* WEB CRAWLER — Growth engine */}
         {tab === "crawler" && (
           <div className="space-y-3">
-            <div className="bg-gradient-to-br from-amber-500/10 to-purple-500/10 border border-amber-500/30 rounded-xl p-4">
+            <div className="bg-gradient-to-br from-amber-500/10 to-teal-500/10 border border-amber-500/30 rounded-xl p-4">
               <h2 className="text-lg font-bold text-white mb-1">Web Crawler & Outreach</h2>
               <p className="text-xs text-gray-400 mb-3">Discovers high-value sites (press, partners, directories, investors, backlink targets), extracts contact emails, and AI-drafts personalized outreach for every prospect. Optionally logs each prospect to the Leads tab.</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -1067,7 +1067,7 @@ const OwnerDashboardPage = () => {
                     <p className="text-[10px] text-gray-500 truncate mb-2">{p.url}</p>
                     {p.outreach_subject && (
                       <div className="bg-black/40 border border-white/5 rounded-lg p-2 mb-2">
-                        <p className="text-[10px] text-purple-300 mb-1">Subject: <span className="text-white font-medium">{p.outreach_subject}</span></p>
+                        <p className="text-[10px] text-teal-300 mb-1">Subject: <span className="text-white font-medium">{p.outreach_subject}</span></p>
                         <p className="text-xs text-gray-300 whitespace-pre-wrap">{p.outreach_body}</p>
                       </div>
                     )}
@@ -1112,7 +1112,7 @@ const OwnerDashboardPage = () => {
                       <span className="text-[10px] text-gray-500">{new Date(l.created_at).toLocaleString()}</span>
                     </div>
                     {l.interest && (
-                      <p className="text-xs text-purple-300 mb-1">Interest: {l.interest}</p>
+                      <p className="text-xs text-teal-300 mb-1">Interest: {l.interest}</p>
                     )}
                     <p className="text-sm text-gray-300">{l.message}</p>
                     {l.email && (
@@ -1197,9 +1197,9 @@ const OwnerDashboardPage = () => {
         {/* VAULT */}
         {tab === "vault" && (
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-2xl p-5">
+            <div className="bg-gradient-to-br from-teal-500/10 to-blue-500/10 border border-teal-500/20 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Lock className="w-5 h-5 text-purple-400" />
+                <Lock className="w-5 h-5 text-teal-400" />
                 <h3 className="text-sm font-bold text-white">Deep Dark Vault Access</h3>
               </div>
               <p className="text-xs text-gray-400 mb-3">Share vault access with different security levels</p>
@@ -1209,12 +1209,12 @@ const OwnerDashboardPage = () => {
                 <option value="editor">✏️ Editor — Read & write</option>
                 <option value="admin">🔐 Admin — Full access</option>
               </select>
-              <button onClick={addVaultUser} className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium text-sm">Grant Vault Access</button>
+              <button onClick={addVaultUser} className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-blue-600 text-white font-medium text-sm">Grant Vault Access</button>
             </div>
             <h3 className="text-sm font-bold text-white">Vault Users ({vaultUsers.length})</h3>
             {vaultUsers.map((u, i) => (
               <div key={i} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3">
-                <Shield className="w-4 h-4 text-purple-400" />
+                <Shield className="w-4 h-4 text-teal-400" />
                 <div className="flex-1">
                   <p className="text-sm text-white">{u.email}</p>
                   <p className="text-[10px] text-gray-500 capitalize">{u.level}</p>
@@ -1251,7 +1251,7 @@ const OwnerDashboardPage = () => {
             </div>
 
             {/* Referral paywall discounts */}
-            <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-4">
+            <div className="bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-500/20 rounded-2xl p-4">
               <h3 className="text-sm font-bold text-white mb-2">🎁 Referral Discounts</h3>
               <p className="text-xs text-gray-400 mb-3">Configure paywall discounts for referrals</p>
               <div className="grid grid-cols-2 gap-2">
@@ -1575,9 +1575,9 @@ const OwnerDashboardPage = () => {
                   {libSelected.media_type === "image" && libSelected.url ? (
                     <img src={libSelected.url} alt={libSelected.title} className="w-full h-full object-contain" />
                   ) : libSelected.media_type === "video" ? (
-                    <div className="text-center"><Play className="w-12 h-12 text-purple-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Video</p></div>
+                    <div className="text-center"><Play className="w-12 h-12 text-teal-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Video</p></div>
                   ) : (
-                    <div className="text-center"><Music className="w-12 h-12 text-pink-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Audio</p></div>
+                    <div className="text-center"><Music className="w-12 h-12 text-amber-400 mx-auto mb-2" /><p className="text-xs text-gray-500">Audio</p></div>
                   )}
                 </div>
                 <div className="space-y-1">
@@ -1619,10 +1619,10 @@ const OwnerDashboardPage = () => {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
               <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                 <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Zap className="w-5 h-5 text-purple-400" /> Trial Users</h2>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2"><Zap className="w-5 h-5 text-teal-400" /> Trial Users</h2>
                   <p className="text-xs text-gray-400">Everyone with an active reward / freebie grant — full email + one-click Free For Life upgrade.</p>
                 </div>
-                <span className="text-xs text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded-lg">
+                <span className="text-xs text-teal-300 bg-teal-500/10 border border-teal-500/30 px-2 py-1 rounded-lg">
                   {trialsList.length} active
                 </span>
               </div>
@@ -1648,7 +1648,7 @@ const OwnerDashboardPage = () => {
                           <td className="py-2 pr-3 text-gray-400">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}</td>
                           <td className="py-2 pr-3 text-gray-400">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "Never"}</td>
                           <td className="py-2 pr-3">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.free_for_life ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-purple-500/15 text-purple-300 border border-purple-500/30"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.free_for_life ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-teal-500/15 text-teal-300 border border-teal-500/30"}`}>
                               {u.free_for_life ? "💎 Free For Life" : (u.grant_reason || u.reward_type || "trial")}
                             </span>
                           </td>

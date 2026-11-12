@@ -22,7 +22,7 @@ const AboutPage = () => {
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         {/* App Identity */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-teal-500 to-blue-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-primary">Oracle Lunar — Your AI Companion For Everything</h1>

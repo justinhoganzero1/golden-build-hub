@@ -132,7 +132,7 @@ const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
   };
 
   return (
-    <Card className={`p-4 holo-card border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-background to-purple-950/20 ${className}`}>
+    <Card className={`p-4 holo-card border border-amber-500/20 bg-gradient-to-br from-amber-950/20 via-background to-teal-950/20 ${className}`}>
       <div className="flex items-center gap-2 mb-3">
         <div className="p-1.5 rounded-lg holo-bubble bg-amber-500/15">
           <Wand2 className="w-4 h-4 text-amber-300" />
@@ -177,7 +177,7 @@ const PhotoAIPowerLab = ({ onApplyPreset, className = "" }: Props) => {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`p-1.5 rounded-md ${
-                        p.partner === "heygen" ? "bg-pink-500/15 text-pink-300"
+                        p.partner === "heygen" ? "bg-amber-500/15 text-amber-300"
                         : p.partner === "elevenlabs" ? "bg-blue-500/15 text-blue-300"
                         : "bg-amber-500/15 text-amber-300"
                       }`}>

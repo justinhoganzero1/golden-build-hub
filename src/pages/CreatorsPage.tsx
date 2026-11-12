@@ -113,7 +113,7 @@ const CreatorsPage = () => {
       <div className="px-4 pt-14 pb-4 max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-teal-500 to-blue-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Code className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-primary">Creator Studio</h1>
@@ -154,7 +154,7 @@ const CreatorsPage = () => {
         </div>
 
         {/* Portfolio Highlight */}
-        <div className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-blue-500/10 border border-primary/20 rounded-xl p-4 mb-6">
+        <div className="bg-gradient-to-r from-primary/10 via-teal-500/10 to-blue-500/10 border border-primary/20 rounded-xl p-4 mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-primary">Featured: Oracle Lunar AI Super App</h3>

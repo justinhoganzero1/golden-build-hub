@@ -31,7 +31,7 @@ export default function AudioFilterHUD({ status, onEnroll, learnedCount, current
     <div className="pointer-events-auto flex flex-col gap-1 rounded-lg border border-primary/20 bg-background/80 p-2 text-[10px] shadow-lg backdrop-blur">
       <div className="flex items-center gap-2 pb-1 border-b border-primary/10">
         <MlscLogo className="h-5 w-5" />
-        <span className="font-bold text-[11px] bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+        <span className="font-bold text-[11px] bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-teal-400 bg-clip-text text-transparent">
           MLSC ACTIVE
         </span>
         <span className="ml-auto text-muted-foreground">{MLSC_TOTAL_LAYERS.toLocaleString()} layers</span>
@@ -53,7 +53,7 @@ export default function AudioFilterHUD({ status, onEnroll, learnedCount, current
         <Mic className="h-3 w-3" />
         <div className="h-1 flex-1 overflow-hidden rounded bg-muted">
           <div
-            className="h-full bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 transition-all"
+            className="h-full bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-teal-400 transition-all"
             style={{ width: `${Math.round(status.voiceMatch * 100)}%` }}
           />
         </div>

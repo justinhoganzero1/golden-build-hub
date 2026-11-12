@@ -45,8 +45,8 @@ const CARDS: StudioCard[] = [
     cta: "Open Movie Studio",
     to: "/movie-studio-pro",
     Icon: Clapperboard,
-    gradient: "from-fuchsia-500/30 via-purple-500/15 to-transparent",
-    accent: "text-fuchsia-300 border-fuchsia-500/40 bg-fuchsia-500/10",
+    gradient: "from-teal-500/30 via-teal-500/15 to-transparent",
+    accent: "text-teal-300 border-teal-500/40 bg-teal-500/10",
     glyph: "🎬",
   },
   {

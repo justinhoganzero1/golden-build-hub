@@ -83,7 +83,7 @@ const HoloTile = ({
           <h3
             className={`font-semibold truncate ${
               compact ? "text-sm" : "text-sm sm:text-base"
-            } ${variant === "gold" ? "text-amber-100" : "text-violet-100"}`}
+            } ${variant === "gold" ? "text-amber-100" : "text-teal-100"}`}
             style={{ textShadow: "0 1px 6px rgba(0,0,0,0.8)" }}
           >
             {title}

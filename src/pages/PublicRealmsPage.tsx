@@ -100,7 +100,7 @@ export default function PublicRealmsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SEO title="Public Realm Library — Oracle Lunar" description="Explore 4K photoreal 3D realms built by the Oracle Lunar community. Walk in free, or unlock premium realms — creators earn 70%." />
       <header className="border-b border-white/10 bg-black/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">

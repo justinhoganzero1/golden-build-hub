@@ -194,7 +194,7 @@ const TeleportPage = () => {
   }, [result]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
+    <div className="min-h-screen bg-background">
       <SEO
         title="Teleport — Oracle Lunar"
         description="Send yourself anywhere. Your Oracle companion drops the real you into any place, era, or dream scene — same face, new world."

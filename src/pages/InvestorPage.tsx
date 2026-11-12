@@ -93,7 +93,7 @@ const InvestorPage = () => {
       case "reviewing": return "bg-blue-500/20 text-blue-400";
       case "accepted": return "bg-green-500/20 text-green-400";
       case "declined": return "bg-red-500/20 text-red-400";
-      case "negotiating": return "bg-purple-500/20 text-purple-400";
+      case "negotiating": return "bg-teal-500/20 text-teal-400";
       default: return "bg-muted text-muted-foreground";
     }
   };
@@ -168,7 +168,7 @@ const InvestorPage = () => {
                   <button onClick={() => updateStatus(offer.id, "reviewing")} className="px-3 py-1.5 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-medium">
                     <Clock className="w-3 h-3 inline mr-1" />Reviewing
                   </button>
-                  <button onClick={() => updateStatus(offer.id, "negotiating")} className="px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-xs font-medium">
+                  <button onClick={() => updateStatus(offer.id, "negotiating")} className="px-3 py-1.5 bg-teal-500/20 text-teal-400 rounded-lg text-xs font-medium">
                     <MessageSquare className="w-3 h-3 inline mr-1" />Negotiate
                   </button>
                   <button onClick={() => updateStatus(offer.id, "accepted")} className="px-3 py-1.5 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium">

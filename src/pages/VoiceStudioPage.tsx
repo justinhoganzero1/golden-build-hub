@@ -437,7 +437,7 @@ export default function VoiceStudioPage() {
         {/* PARTY */}
         {tab === "party" && (
           <div>
-            <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 border border-purple-500/30 rounded-lg p-4 mb-4">
+            <div className="bg-gradient-to-r from-amber-500/10 via-teal-500/10 to-amber-500/10 border border-teal-500/30 rounded-lg p-4 mb-4">
               <h2 className="font-bold text-lg mb-1">🎉 50 Party Voices</h2>
               <p className="text-sm text-muted-foreground">
                 Pre-tuned high-energy personas for birthdays, clubs, weddings, Halloween, karaoke and more.
@@ -446,7 +446,7 @@ export default function VoiceStudioPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {PARTY_VOICES.map((p, i) => (
-                <div key={`${p.id}-${i}`} className="bg-card border border-border rounded-lg p-4 hover:border-purple-500/50 transition-colors">
+                <div key={`${p.id}-${i}`} className="bg-card border border-border rounded-lg p-4 hover:border-teal-500/50 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0">
                       <h3 className="font-semibold truncate">{p.name}</h3>
@@ -454,7 +454,7 @@ export default function VoiceStudioPage() {
                         {p.vibe} • {p.gender} • {p.accent}
                       </p>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full whitespace-nowrap ml-2">PARTY</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-teal-500/20 text-teal-300 rounded-full whitespace-nowrap ml-2">PARTY</span>
                   </div>
                   <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{p.description}</p>
                   <div className="flex flex-wrap gap-2">

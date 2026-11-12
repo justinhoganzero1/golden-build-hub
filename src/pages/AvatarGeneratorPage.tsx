@@ -266,7 +266,7 @@ const AvatarGeneratorPage = () => {
   };
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: "#0f0f0f" }}>
+    <div className="min-h-screen bg-background pb-20">
       <SEO title="4K AI Avatar Generator — Free | Oracle Lunar" description="Create cinematic 4K AI avatars from a selfie or prompt. Free to try in Oracle Lunar." path="/avatar-generator" />
       <UniversalBackButton />
       <div className="px-4 pt-14 pb-4">
@@ -287,7 +287,7 @@ const AvatarGeneratorPage = () => {
 
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-purple-500/10"><Palette className="w-7 h-7 text-purple-400" /></div>
+            <div className="p-2 rounded-xl bg-teal-500/10"><Palette className="w-7 h-7 text-teal-400" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Avatar Generator</h1>
               <p className="text-gray-500 text-xs">
@@ -298,7 +298,7 @@ const AvatarGeneratorPage = () => {
               <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[9px] font-bold uppercase">Owner</span>
             )}
           </div>
-          <button onClick={() => navigate("/avatar-gallery")} className="px-3 py-1.5 rounded-xl border border-gray-700 text-purple-400 text-xs font-medium">
+          <button onClick={() => navigate("/avatar-gallery")} className="px-3 py-1.5 rounded-xl border border-gray-700 text-teal-400 text-xs font-medium">
             Gallery
           </button>
         </div>
@@ -308,7 +308,7 @@ const AvatarGeneratorPage = () => {
           <div className="space-y-4">
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" /> What is this avatar for?
+                <Sparkles className="w-4 h-4 text-teal-400" /> What is this avatar for?
               </h2>
               <div className="grid grid-cols-2 gap-2">
                 {AVATAR_PURPOSES.map(p => (
@@ -317,7 +317,7 @@ const AvatarGeneratorPage = () => {
                     onClick={() => setPurpose(p.value)}
                     className={`text-left p-3 rounded-xl border transition-all text-xs relative ${
                       purpose === p.value
-                        ? "border-purple-500 bg-purple-500/10 text-white"
+                        ? "border-teal-500 bg-teal-500/10 text-white"
                         : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
                     }`}
                   >
@@ -338,7 +338,7 @@ const AvatarGeneratorPage = () => {
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Avatar Name</label>
                 <input value={avatarName} onChange={e => setAvatarName(e.target.value)} placeholder="e.g. Luna, Shadow, Alex..."
-                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500" />
+                  className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 outline-none focus:border-teal-500" />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Style</label>
@@ -350,18 +350,18 @@ const AvatarGeneratorPage = () => {
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Description</label>
                 <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="Describe your avatar..."
-                  rows={3} className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-purple-500 resize-none" />
+                  rows={3} className="w-full bg-[#0f0f0f] border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 outline-none focus:border-teal-500 resize-none" />
               </div>
               <button onClick={generate} disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-amber-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />} Generate Avatar
               </button>
               <button onClick={() => setShowSelfie(true)}
-                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-teal-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-teal-500">
                 <Camera className="w-4 h-4" /> Take a Selfie Instead
               </button>
               <button onClick={() => setShowMediaPicker(true)}
-                className="w-full py-2.5 rounded-xl border border-gray-700 text-purple-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-purple-500">
+                className="w-full py-2.5 rounded-xl border border-gray-700 text-teal-400 font-medium text-sm flex items-center justify-center gap-2 hover:border-teal-500">
                 <FolderOpen className="w-4 h-4" /> Pick from Library
               </button>
 
@@ -381,7 +381,7 @@ const AvatarGeneratorPage = () => {
                   <button onClick={() => setViewMode("normal-3d")}
                     className={`p-3 rounded-xl border text-xs text-center transition-all ${
                       viewMode === "normal-3d"
-                        ? "border-purple-500 bg-purple-500/10 text-purple-300"
+                        ? "border-teal-500 bg-teal-500/10 text-teal-300"
                         : "border-gray-800 bg-[#0f0f0f] text-gray-400 hover:border-gray-600"
                     }`}>
                     <div className="font-bold text-sm mb-0.5">🎨 Normal 3D</div>
@@ -394,12 +394,12 @@ const AvatarGeneratorPage = () => {
             {showVoiceAndPersonality && (
               <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-5 space-y-3">
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Mic className="w-4 h-4 text-purple-400" /> Voice & Personality
+                  <Mic className="w-4 h-4 text-teal-400" /> Voice & Personality
                 </h2>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs text-gray-400">Voice Style <span className="text-[10px] text-purple-300">(pick as many as you like — AI blends them)</span></label>
-                    <button onClick={selectAllVoices} className="text-[10px] text-purple-400 hover:text-purple-300 underline">Use all</button>
+                    <label className="text-xs text-gray-400">Voice Style <span className="text-[10px] text-teal-300">(pick as many as you like — AI blends them)</span></label>
+                    <button onClick={selectAllVoices} className="text-[10px] text-teal-400 hover:text-teal-300 underline">Use all</button>
                   </div>
                   {savedVoices.length > 0 && (
                     <>
@@ -424,7 +424,7 @@ const AvatarGeneratorPage = () => {
                       const active = selectedVoices.includes(v);
                       return (
                         <button key={v} onClick={() => toggleVoice(v)}
-                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-purple-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-teal-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
                           {active ? "✓ " : ""}{v}
                         </button>
                       );
@@ -437,16 +437,16 @@ const AvatarGeneratorPage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs text-gray-400 flex items-center gap-1">
-                      <Heart className="w-3 h-3 text-pink-400" /> Personality <span className="text-[10px] text-pink-300">(pick as many — AI shifts based on situation)</span>
+                      <Heart className="w-3 h-3 text-amber-400" /> Personality <span className="text-[10px] text-amber-300">(pick as many — AI shifts based on situation)</span>
                     </label>
-                    <button onClick={selectAllPersonalities} className="text-[10px] text-pink-400 hover:text-pink-300 underline">Use all</button>
+                    <button onClick={selectAllPersonalities} className="text-[10px] text-amber-400 hover:text-amber-300 underline">Use all</button>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {PERSONALITY_OPTIONS.map(p => {
                       const active = selectedPersonalities.includes(p);
                       return (
                         <button key={p} onClick={() => togglePersonality(p)}
-                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-pink-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
+                          className={`px-3 py-1.5 rounded-full text-xs transition-all ${active ? "bg-amber-600 text-white" : "bg-[#0f0f0f] border border-gray-700 text-gray-400"}`}>
                           {active ? "✓ " : ""}{p}
                         </button>
                       );
@@ -466,12 +466,12 @@ const AvatarGeneratorPage = () => {
               <h2 className="text-sm font-bold text-white mb-3">Preview</h2>
               <div className={`aspect-[3/4] rounded-xl overflow-hidden flex items-center justify-center ${
                 viewMode === "holographic-4k" && imageUrl && !isLoading
-                  ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-purple-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
+                  ? "bg-gradient-to-br from-cyan-900/30 via-[#0f0f0f] to-teal-900/30 border border-cyan-500/20 shadow-[0_0_40px_rgba(0,200,255,0.15),0_0_80px_rgba(120,0,255,0.08)]"
                   : "bg-[#0f0f0f] border border-gray-800"
               }`}>
                 {isLoading ? (
                   <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+                    <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
                     <p className="text-xs text-gray-500">Generating your avatar...</p>
                   </div>
                 ) : imageUrl ? (
@@ -481,7 +481,7 @@ const AvatarGeneratorPage = () => {
                     }`} />
                     {viewMode === "holographic-4k" && (
                       <>
-                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-purple-500/10 pointer-events-none animate-pulse" style={{ animationDuration: "3s" }} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-teal-500/10 pointer-events-none animate-pulse" style={{ animationDuration: "3s" }} />
                         <div className="absolute inset-0 pointer-events-none" style={{
                           background: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,200,255,0.03) 3px, rgba(0,200,255,0.03) 4px)",
                         }} />
@@ -554,9 +554,9 @@ const AvatarGeneratorPage = () => {
                           }}
                           disabled={createAvatar.isPending}
                           className={`py-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-0.5 transition-all disabled:opacity-50 ${
-                            c.color === "pink" ? "border-pink-500/40 bg-pink-500/10 text-pink-300 hover:border-pink-500" :
+                            c.color === "pink" ? "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:border-amber-500" :
                             c.color === "blue" ? "border-blue-500/40 bg-blue-500/10 text-blue-300 hover:border-blue-500" :
-                            "border-purple-500/40 bg-purple-500/10 text-purple-300 hover:border-purple-500"
+                            "border-teal-500/40 bg-teal-500/10 text-teal-300 hover:border-teal-500"
                           }`}
                         >
                           <span className="text-base leading-none">{c.label.split(" ")[0]}</span>

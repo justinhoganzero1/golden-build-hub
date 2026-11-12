@@ -74,7 +74,8 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     /* Blue + red neon border framing every page */
     box-shadow:
       inset 0 0 0 2px hsl(var(--accent-blue) / 0.55),
@@ -2135,3 +2136,201 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
 .oracle-signin .oracle-signin-switch button[aria-selected="false"] { background: transparent !important; }
 .oracle-signin .oracle-signin-submit { box-shadow: 0 8px 24px hsl(var(--primary) / .28); }
 .oracle-signin .oracle-signin-eye { background: transparent !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ORACLE OFFICE THEME — app-wide and website-wide.
+   Every page sits in Oracle's glass office: dark smoked glass,
+   warm gold and teal light strips, frosted-glass panels.
+   Reimagined keeps its own scoped theme (it never shares this shell).
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --background: 190 18% 5%;
+  --foreground: 40 20% 95%;
+  --card: 185 14% 9%;
+  --card-foreground: 40 20% 95%;
+  --popover: 185 14% 8%;
+  --popover-foreground: 40 20% 95%;
+  --primary: 42 82% 58%;
+  --primary-foreground: 30 30% 7%;
+  --secondary: 185 12% 14%;
+  --secondary-foreground: 40 20% 92%;
+  --muted: 185 10% 14%;
+  --muted-foreground: 40 8% 68%;
+  --accent: 174 62% 46%;
+  --accent-foreground: 190 18% 5%;
+  --border: 42 26% 27%;
+  --input: 185 12% 15%;
+  --ring: 42 82% 58%;
+  --radius: 0.75rem;
+  --gold: 42 82% 58%;
+  --gold-dark: 38 70% 38%;
+  --gold-light: 44 90% 72%;
+  --gold-glow: 42 82% 58%;
+  --accent-blue: 174 62% 46%;
+  --accent-blue-glow: 174 72% 56%;
+  --accent-blue-deep: 184 60% 30%;
+  --accent-red: 38 80% 56%;
+  --accent-red-glow: 42 82% 62%;
+  --accent-red-deep: 32 70% 40%;
+  --sidebar-background: 185 14% 7%;
+  --sidebar-foreground: 40 20% 92%;
+  --sidebar-primary: 42 82% 58%;
+  --sidebar-primary-foreground: 30 30% 7%;
+  --sidebar-accent: 185 12% 14%;
+  --sidebar-accent-foreground: 40 20% 95%;
+  --sidebar-border: 42 26% 22%;
+  --sidebar-ring: 42 82% 58%;
+  --oracle-glass: 180 10% 7%;
+  --oracle-teal: 174 72% 56%;
+  --office-scrim: radial-gradient(ellipse at 50% 35%, hsl(var(--background) / .66), hsl(var(--background) / .86) 75%), linear-gradient(to bottom, hsl(var(--background) / .35), hsl(var(--background) / .55));
+  --glass-shadow: 0 18px 44px -22px hsl(0 0% 0% / .7), inset 0 1px 0 hsl(var(--foreground) / .06);
+}
+
+html { background: hsl(var(--background)); color-scheme: dark; }
+body {
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+/* Retire the chrome page frame; the office itself is the frame now. */
+body::before { content: none !important; display: none !important; }
+/* The glass office, fixed behind every page. */
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--office-scrim), url("./assets/oracle-office-empty.jpg") center / cover no-repeat;
+}
+@media (min-width: 768px) {
+  body::after { background: var(--office-scrim), url("./assets/oracle-office-wide.jpg") center / cover no-repeat; }
+}
+
+/* Full-page wrappers let the office show through. */
+.min-h-screen.bg-background:not(.reimagined-theme),
+.min-h-dvh.bg-background:not(.reimagined-theme),
+.min-h-\[100dvh\].bg-background:not(.reimagined-theme),
+.h-screen.bg-background:not(.reimagined-theme),
+.h-dvh.bg-background:not(.reimagined-theme) { background-color: transparent; }
+.ri-worker-app { background: hsl(var(--background)); }
+/* Reimagined keeps its own solid surfaces. */
+.reimagined-theme .sticky.bg-background, .reimagined-theme .fixed.bg-background,
+.reimagined-theme .bg-background, .reimagined-theme.bg-background { background-color: hsl(var(--background)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.reimagined-theme .bg-card, .reimagined-theme.bg-card { background-color: hsl(var(--card)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.reimagined-theme .bg-popover, .reimagined-theme.bg-popover { background-color: hsl(var(--popover)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Sticky bars become smoked glass. */
+.sticky.bg-background,
+.fixed.bg-background:not([role="dialog"]) {
+  background-color: hsl(var(--oracle-glass) / .72);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Panels and cards: frosted glass with a fine gold-to-teal top light. */
+.bg-card {
+  background-color: hsl(var(--oracle-glass) / .74);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+}
+.bg-popover {
+  background-color: hsl(var(--oracle-glass) / .94);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+[role="dialog"].bg-background:not(.reimagined-theme) {
+  background-color: hsl(var(--oracle-glass) / .9);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+
+/* Calm the old neon: no pink/violet cushions, just soft glass depth. */
+button, a[href], [role="tab"], [role="button"], [role="menuitem"], [role="link"],
+.tab, .portal-tile, .app-tile, .card-tile, [data-glow="pink"] { box-shadow: none; }
+[class*="rounded-"][class*="border"]:not(input):not(textarea):not(select),
+.card, [data-slot="card"] { box-shadow: var(--glass-shadow); }
+@media (prefers-reduced-motion: reduce) {
+  button, a[href], [role="tab"], [role="button"], [role="menuitem"], [role="link"],
+  .tab, .portal-tile, .app-tile, .card-tile, [data-glow="pink"] { box-shadow: none; }
+}
+
+/* Tabs: a slim gold light strip under the active tab, like the office lights. */
+[role="tab"]::before, [role="tablist"] > button::before, [role="tablist"] > a::before,
+[data-slot="tab"]::before, [data-tab]::before, .tab-pink-glow::before { content: none !important; animation: none !important; }
+[role="tab"]::after, [role="tablist"] > button::after, [role="tablist"] > a::after,
+[data-slot="tab"]::after, [data-tab]::after, .tab-pink-glow::after {
+  left: 18%; right: 18%; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), hsl(var(--oracle-teal)), transparent);
+  box-shadow: 0 0 8px hsl(var(--primary) / .5);
+  opacity: 0;
+  transition: opacity .2s;
+}
+[role="tab"][data-state="active"]::after, [data-slot="tab"][data-state="active"]::after,
+[data-tab][aria-selected="true"]::after, .tab-pink-glow[data-state="active"]::after { opacity: 1; height: 2px; bottom: -1px; }
+
+/* 3D tiles keep their keycap shape, recoloured as smoked office glass with gold and teal edge light. */
+.holo-tile, .holo-card {
+  background:
+    radial-gradient(ellipse 130% 70% at 50% 0%, hsl(var(--foreground) / .14) 0%, hsl(var(--foreground) / .04) 20%, transparent 46%),
+    radial-gradient(ellipse 100% 100% at 50% 100%, hsl(185 30% 9% / .85) 0%, hsl(var(--oracle-glass) / .95) 70%),
+    linear-gradient(160deg, hsl(185 14% 20%) 0%, hsl(186 16% 12%) 50%, hsl(190 18% 7%) 100%) !important;
+  box-shadow:
+    inset 0 2px 0 hsl(var(--foreground) / .4),
+    inset 0 -6px 12px hsl(0 0% 0% / .55),
+    inset 0 -2px 0 hsl(0 0% 0% / .85),
+    0 2px 0 hsl(0 0% 0% / .55), 0 4px 0 hsl(0 0% 0% / .5), 0 6px 0 hsl(0 0% 0% / .45), 0 8px 0 hsl(0 0% 0% / .4),
+    0 14px 26px hsl(0 0% 0% / .55),
+    0 0 0 1px hsl(var(--primary) / .32),
+    0 0 18px hsl(var(--oracle-teal) / .14) !important;
+}
+.holo-tile:hover, .holo-card:hover {
+  box-shadow:
+    inset 0 2px 0 hsl(var(--foreground) / .5),
+    inset 0 -6px 12px hsl(0 0% 0% / .55),
+    inset 0 -2px 0 hsl(0 0% 0% / .85),
+    0 2px 0 hsl(0 0% 0% / .55), 0 4px 0 hsl(0 0% 0% / .5), 0 6px 0 hsl(0 0% 0% / .45), 0 8px 0 hsl(0 0% 0% / .4), 0 10px 0 hsl(0 0% 0% / .35),
+    0 22px 40px hsl(0 0% 0% / .6),
+    0 0 0 1px hsl(var(--primary) / .6),
+    0 0 26px hsl(var(--primary) / .28),
+    0 0 50px hsl(var(--oracle-teal) / .18) !important;
+}
+.holo-card:hover .holo-float, .holo-card:hover img, .holo-card:hover .holo-bubble {
+  filter: drop-shadow(0 10px 22px hsl(var(--primary) / .45)) drop-shadow(0 0 20px hsl(var(--oracle-teal) / .3));
+}
+.holo-tile:hover .holo-icon { filter: drop-shadow(0 4px 8px hsl(var(--primary) / .5)) drop-shadow(0 6px 14px hsl(var(--oracle-teal) / .35)); }
+.holo-iridescent-bg { background: linear-gradient(135deg, hsl(var(--primary) / .28), hsl(var(--oracle-teal) / .22) 50%, hsl(var(--primary) / .24)); background-size: 200% 200%; }
+.holo-bubble > .holo-rim { background: conic-gradient(from 0deg, hsl(var(--primary)), hsl(var(--oracle-teal)), hsl(var(--gold-light)), hsl(var(--oracle-teal)), hsl(var(--primary))); }
+.holo-bubble > .holo-sheen { opacity: .3; }
+
+/* Buttons: solid warm gold primary, smoked-glass secondary — as on Oracle and sign-in. */
+.holo-button {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: 1px solid hsl(var(--gold-light) / .35);
+  box-shadow: 0 8px 22px -6px hsl(var(--primary) / .45), inset 0 1px 0 hsl(var(--gold-light) / .5);
+  animation: none;
+  border-radius: 10px;
+}
+.holo-button:hover { transform: translateY(-1px); background: hsl(var(--gold-light)); box-shadow: 0 10px 28px -6px hsl(var(--primary) / .55), inset 0 1px 0 hsl(var(--gold-light) / .6); }
+
+/* Movie Studio panels follow the office look too. */
+.movie-studio-blue-borders [class*="rounded-lg"][class*="bg-card"],
+.movie-studio-blue-borders [data-slot="card"],
+.movie-studio-blue-borders > .rounded-lg,
+.movie-studio-blue-borders [class*="rounded-lg"][class*="border"],
+[data-movie-studio-dialog] [data-slot="card"],
+[data-movie-studio-dialog] [class*="rounded-lg"][class*="border"] { box-shadow: var(--glass-shadow) !important; }
+.movie-studio-blue-borders [class*="rounded-lg"][class*="bg-card"]:hover,
+.movie-studio-blue-borders [data-slot="card"]:hover,
+[data-movie-studio-dialog] [data-slot="card"]:hover { box-shadow: var(--glass-shadow), 0 0 22px hsl(var(--oracle-teal) / .22) !important; }
+.movie-studio-blue-borders [class*="border-primary"], .movie-studio-blue-borders [class*="border-amber"],
+.movie-studio-blue-borders [class*="border-orange"], .movie-studio-blue-borders [class*="border-yellow"],
+[data-movie-studio-dialog] [class*="border-primary"], [data-movie-studio-dialog] [class*="border-amber"],
+[data-movie-studio-dialog] [class*="border-orange"], [data-movie-studio-dialog] [class*="border-yellow"] { border-color: hsl(var(--oracle-teal) / .45) !important; }
+
+/* Headings: calm warm-white type, no neon bloom (wordmark keeps its gold). */
+h1, h2, h3 { letter-spacing: 0; }
+body[data-route="/"] h1, body[data-route="/"] h2, body[data-route="/"] h3 { text-shadow: 0 1px 3px hsl(0 0% 0% / .5); }
+.oracle-lunar-wordmark { text-shadow: 0 0 14px hsl(var(--primary) / .35), 0 2px 4px hsl(0 0% 0% / .6); }
+
+/* Form fields: smoked glass with a gold focus light, matching sign-in. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(.oracle-signin *),
+textarea:not(.oracle-prompt-field), select { color-scheme: dark; }

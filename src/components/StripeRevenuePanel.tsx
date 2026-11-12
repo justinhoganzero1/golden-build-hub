@@ -139,7 +139,7 @@ export default function StripeRevenuePanel() {
               sub={`${data.count7} payments`}
             />
             <Stat
-              icon={<Users className="w-4 h-4 text-purple-400" />}
+              icon={<Users className="w-4 h-4 text-teal-400" />}
               label="Active Subs"
               value={String(data.activeSubscriptions)}
               sub="Recurring"

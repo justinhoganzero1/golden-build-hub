@@ -650,7 +650,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">Pinterest</span>
             </button>
             <button onClick={shareTumblr} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
-              <Link2 className="w-5 h-5 text-indigo-400" />
+              <Link2 className="w-5 h-5 text-teal-400" />
               <span className="text-[10px] text-foreground">Tumblr</span>
             </button>
             <button onClick={shareThreads} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
@@ -670,7 +670,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">Snapchat</span>
             </button>
             <button onClick={sharePocket} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
-              <Link2 className="w-5 h-5 text-pink-500" />
+              <Link2 className="w-5 h-5 text-amber-500" />
               <span className="text-[10px] text-foreground">Pocket</span>
             </button>
             <button onClick={shareVK} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
@@ -678,7 +678,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">VK</span>
             </button>
             <button onClick={shareInstagram} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
-              <Link2 className="w-5 h-5 text-pink-400" />
+              <Link2 className="w-5 h-5 text-amber-400" />
               <span className="text-[10px] text-foreground">Instagram</span>
             </button>
             <button onClick={shareTikTok} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
@@ -690,7 +690,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">YouTube</span>
             </button>
             <button onClick={shareDiscord} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
-              <MessageCircle className="w-5 h-5 text-indigo-400" />
+              <MessageCircle className="w-5 h-5 text-teal-400" />
               <span className="text-[10px] text-foreground">Discord</span>
             </button>
             <button onClick={shareMessenger} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
@@ -698,7 +698,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description }: 
               <span className="text-[10px] text-foreground">Messenger</span>
             </button>
             <button onClick={shareMastodon} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">
-              <Link2 className="w-5 h-5 text-purple-400" />
+              <Link2 className="w-5 h-5 text-teal-400" />
               <span className="text-[10px] text-foreground">Mastodon</span>
             </button>
             <button onClick={shareXing} className="flex flex-col items-center gap-1 p-2 rounded-xl bg-card border border-border hover:border-primary transition-all">

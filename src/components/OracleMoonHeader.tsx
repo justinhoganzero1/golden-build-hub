@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import heroBackground from "@/assets/oracle-lunar-hero-gold.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface OracleMoonHeaderProps {
@@ -43,45 +42,30 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
 
 
   return (
-    <div className="relative overflow-hidden border-b border-amber-500/30">
-      {/* ── Cinematic gold-particle background ── */}
-      <img
-        src={heroBackground}
-        alt=""
-        aria-hidden="true"
-        width={1920}
-        height={1080}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ filter: "saturate(1.1) contrast(1.05) brightness(0.95)" }}
-      />
-
-      {/* Cinematic vignette + gold glow overlays */}
+    <div className="relative overflow-hidden border-b border-border/70">
+      {/* ── Oracle's glass office shows through; soft gold and teal light strips sweep across. ── */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 50%, transparent 0%, hsl(0 0% 0% / 0.55) 90%),
-            linear-gradient(180deg, hsl(0 0% 0% / 0.35) 0%, transparent 30%, transparent 60%, hsl(var(--background)) 100%),
-            radial-gradient(ellipse 60% 40% at 50% 30%, hsl(45 100% 50% / 0.18), transparent 70%)
+            radial-gradient(ellipse 60% 45% at 50% 38%, hsl(var(--primary) / 0.14), transparent 70%),
+            linear-gradient(180deg, hsl(var(--background) / 0.25) 0%, transparent 35%, transparent 65%, hsl(var(--background) / 0.55) 100%)
           `,
         }}
       />
-
-      {/* Subtle film-grain shimmer */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-30 mix-blend-overlay"
+        className="absolute pointer-events-none oracle-header-sweep"
         style={{
-          background:
-            "linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.18) 50%, transparent 65%)",
-          backgroundSize: "300% 300%",
-          animation: "heroSheen 8s ease-in-out infinite",
+          inset: "-20% -60%",
+          background: "linear-gradient(110deg, transparent 42%, hsl(var(--oracle-teal) / 0.08) 48%, hsl(var(--primary) / 0.10) 52%, transparent 58%)",
+          animation: "oracleHeaderSweep 9s ease-in-out infinite",
         }}
       />
 
       {/* ── Foreground content ── */}
       <div className="relative z-10 px-4 py-12 sm:py-20 flex flex-col items-center text-center min-h-[360px] sm:min-h-[460px]">
         {/* Crown badge */}
-        <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] bg-black/40 backdrop-blur border border-amber-400/40 text-amber-200">
+        <div className="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] bg-card/60 backdrop-blur border border-primary/40 text-primary">
           <span>✦</span>
           <span>4K Cinematic AI</span>
           <span>✦</span>
@@ -116,15 +100,15 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
 
           {/* Gold flourish */}
           <div className="mt-3 flex items-center gap-3 opacity-90">
-            <span className="block h-px w-16 sm:w-28 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
-            <span className="text-amber-200 text-sm">✦</span>
-            <span className="block h-px w-16 sm:w-28 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
+            <span className="block h-px w-16 sm:w-28 bg-gradient-to-r from-transparent via-primary to-transparent" />
+            <span className="text-primary text-sm">✦</span>
+            <span className="block h-px w-16 sm:w-28 bg-gradient-to-r from-transparent via-primary to-transparent" />
           </div>
 
-          <p className="mt-3 text-[11px] sm:text-sm uppercase tracking-[0.4em] text-amber-100/90 drop-shadow">
+          <p className="mt-3 text-[11px] sm:text-sm uppercase tracking-[0.4em] text-primary/90 drop-shadow">
             Welcome to
           </p>
-          <p className="mt-1 text-xs sm:text-base text-white/85 max-w-md drop-shadow">
+          <p className="mt-1 text-xs sm:text-base text-foreground/85 max-w-md drop-shadow">
             The world's first cinematic AI super-app.
           </p>
         </button>
@@ -141,10 +125,10 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
                 type="button"
                 onClick={() => goToApp(cap.route)}
                 data-auth-allow
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-black/45 backdrop-blur-sm border border-amber-400/30 text-amber-100 hover:bg-amber-500/20 hover:border-amber-300 transition cursor-pointer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-card/60 backdrop-blur-sm border border-border text-foreground hover:bg-primary/15 hover:border-primary/60 transition cursor-pointer"
                 aria-label={user ? `Open ${cap.label}` : `Sign in to open ${cap.label}`}
               >
-                <span className="text-amber-300">✦</span>
+                <span className="text-primary">✦</span>
                 {cap.label}
               </button>
             ))}
@@ -155,10 +139,11 @@ export default function OracleMoonHeader({ children }: OracleMoonHeaderProps) {
       </div>
 
       <style>{`
-        @keyframes heroSheen {
-          0%   { background-position: 200% 0; }
-          100% { background-position: -100% 0; }
+        @keyframes oracleHeaderSweep {
+          0%, 100% { transform: translateX(-30%); }
+          50%      { transform: translateX(30%); }
         }
+        @media (prefers-reduced-motion: reduce) { .oracle-header-sweep { animation: none !important; } }
         @keyframes marqueeSlide {
           from { transform: translateX(0); }
           to   { transform: translateX(-50%); }

@@ -69,7 +69,7 @@ export default function RealmModerationPage() {
   }, [isAdmin]);
 
   if (authLoading || adminLoading) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+    return <div className="min-h-screen bg-background text-foreground flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   }
   if (!user) return <Navigate to="/sign-in" replace />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
@@ -130,7 +130,7 @@ export default function RealmModerationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SEO title="Realm Moderation — Admin" description="Review reported realms and take moderation actions." />
       <header className="border-b border-white/10 bg-black/50 backdrop-blur sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">

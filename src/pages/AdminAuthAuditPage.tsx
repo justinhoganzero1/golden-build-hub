@@ -264,7 +264,7 @@ export default function AdminAuthAuditPage() {
                               : r.event_type === "rate_limited"
                                 ? "bg-amber-500/20 text-amber-300"
                                 : r.event_type === "denied_free_access"
-                                  ? "bg-fuchsia-500/20 text-fuchsia-300"
+                                  ? "bg-teal-500/20 text-teal-300"
                                   : "bg-blue-500/20 text-blue-300"
                           }`}
                         >

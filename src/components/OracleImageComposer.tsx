@@ -230,7 +230,7 @@ const OracleImageComposer = ({ onGenerated }: OracleImageComposerProps) => {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={refs.length >= MAX_REFS || busy}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] bg-purple-500/20 hover:bg-purple-500/40 disabled:opacity-40 text-purple-200"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] bg-teal-500/20 hover:bg-teal-500/40 disabled:opacity-40 text-teal-200"
                 >
                   <Upload className="w-3 h-3" /> Add photos
                 </button>

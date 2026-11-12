@@ -297,7 +297,7 @@ export default function RealmBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-neutral-950 to-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SEO
         title="Realm Builder — Oracle Lunar"
         description="Build 4K photoreal 3D realms with AI. Walk inside your creation, drop in your avatar, and share it."

@@ -79,7 +79,7 @@ const StandaloneCompanion = () => {
         <p className="text-sm text-muted-foreground text-center mb-4">Pick your companion</p>
         {PERSONAS.map((p) => (
           <button key={p.name} onClick={() => setPersona(p)} className="w-full text-left p-4 rounded-2xl border border-border bg-card hover:border-primary/40 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-pink-500/20 text-pink-500 flex items-center justify-center"><Heart className="w-5 h-5" /></div>
+            <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center"><Heart className="w-5 h-5" /></div>
             <div>
               <div className="font-semibold">{p.name}</div>
               <div className="text-xs text-muted-foreground">{p.vibe}</div>

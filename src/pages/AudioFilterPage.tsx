@@ -75,7 +75,7 @@ export default function AudioFilterPage() {
           <div className="flex items-center gap-3">
             <MlscLogo size="lg" />
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 via-yellow-300 via-green-400 via-blue-400 to-teal-400 bg-clip-text text-transparent">
                 MLSC — Multi-Layering Super Clarity
               </h1>
               <p className="text-xs text-muted-foreground">Free for everyone. App-wide. Always-on.</p>
