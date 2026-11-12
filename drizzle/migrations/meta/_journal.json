@@ -141,6 +141,13 @@
       "when": 1794461047331,
       "tag": "0019_plan_tiers_free_plus_pro",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794484981821,
+      "tag": "0020_create_site_arrivals",
+      "breakpoints": true
     }
   ]
 }

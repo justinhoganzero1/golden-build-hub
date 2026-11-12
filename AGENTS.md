@@ -51,3 +51,4 @@
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips via tested picker (oracleHumanSounds); never paid, obey mute, none in serious moods.
 - Owner Dashboard figures drill into admin-drilldown's whitelisted owner-only metrics; paid counts are live-money only so tests never pose as customers.
+- Website landing pages are recorded once per browser tab in site_arrivals (oraclelunar.com only, owner pages excluded, anonymous, owner-only reads) so arrival tracking never inflates the existing page_views counters.

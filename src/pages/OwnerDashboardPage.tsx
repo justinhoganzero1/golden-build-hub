@@ -90,6 +90,12 @@ const OwnerDashboardPage = () => {
   const [trafficSources, setTrafficSources] = useState<{ source: string; visits: number }[]>([]);
   // Top pages viewed (admin-only): which pages are most-visited
   const [topPages, setTopPages] = useState<{ page: string; visits: number }[]>([]);
+  // Where each website visitor first landed (anonymous, oraclelunar.com only)
+  const [arrivals, setArrivals] = useState<{
+    total: number;
+    pages: { page: string; visits: number }[];
+    recent: { when: string; page: string; from: string }[];
+  } | null>(null);
 
   // Ad platform state
   const [adPlatformView, setAdPlatformView] = useState<string | null>(null);
@@ -376,6 +382,25 @@ const OwnerDashboardPage = () => {
           setTrafficSources(arr);
           setTopPages(pagesArr);
         }
+      } catch {}
+      try {
+        const { data: arr } = await supabase
+          .from("site_arrivals")
+          .select("landing_path, source, campaign, created_at")
+          .order("created_at", { ascending: false })
+          .limit(lowPowerMode ? 1000 : 5000);
+        if (cancelled || !arr) return;
+        const counts: Record<string, number> = {};
+        for (const r of arr) counts[r.landing_path] = (counts[r.landing_path] || 0) + 1;
+        setArrivals({
+          total: arr.length,
+          pages: Object.entries(counts).map(([page, visits]) => ({ page, visits })).sort((x, y) => y.visits - x.visits).slice(0, 15),
+          recent: arr.slice(0, 8).map((r) => ({
+            when: r.created_at,
+            page: r.landing_path,
+            from: r.campaign ? `${r.source} · ${r.campaign}` : r.source,
+          })),
+        });
       } catch {}
     };
 
@@ -1859,6 +1884,55 @@ const OwnerDashboardPage = () => {
                       );
                     });
                   })()}
+                </div>
+              )}
+            </div>
+
+            {/* Where each visitor lands */}
+            <div className="bg-gradient-to-br from-amber-500/10 to-teal-500/10 border border-amber-500/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Globe className="w-5 h-5 text-amber-300" />
+                <h3 className="text-sm font-bold text-white">Where visitors land</h3>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-3">
+                The first page each visitor opened on oraclelunar.com, and the post or site that sent them. Anonymous. Tap any line for every visit.
+              </p>
+              {!arrivals || arrivals.total === 0 ? (
+                <div className="text-center py-6 text-gray-500 text-xs">No arrivals recorded yet. They appear here once the website is published and people visit.</div>
+              ) : (
+                <div className="space-y-3">
+                  <Drill metric="site_arrivals" title="Where each visitor landed" className="flex justify-between items-center rounded-lg p-2 pr-6 bg-white/5">
+                    <span className="text-xs text-white font-medium">All visits</span>
+                    <span className="text-amber-300 font-bold text-sm">{arrivals.total.toLocaleString()}</span>
+                  </Drill>
+                  <div className="space-y-2">
+                    {(() => {
+                      const max = Math.max(...arrivals.pages.map((p) => p.visits), 1);
+                      return arrivals.pages.map((p) => (
+                        <Drill key={p.page} metric="site_arrivals" params={{ landing_path: p.page }} title={`Visitors who landed on ${p.page}`} className="space-y-1 rounded-lg p-1 pr-5">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-white font-medium truncate max-w-[70%]" title={p.page}>{p.page}</span>
+                            <span className="text-amber-300 font-bold">{p.visits.toLocaleString()}</span>
+                          </div>
+                          <div className="h-3 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-amber-400 to-teal-500 rounded-full" style={{ width: `${(p.visits / max) * 100}%` }} />
+                          </div>
+                        </Drill>
+                      ));
+                    })()}
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-gray-400 mb-1">Latest visitors</p>
+                    <ul className="space-y-1">
+                      {arrivals.recent.map((r, i) => (
+                        <li key={r.when + i} className="flex justify-between gap-2 text-[11px] bg-white/5 rounded-md px-2 py-1">
+                          <span className="text-white truncate">{r.page}</span>
+                          <span className="text-gray-400 truncate">{r.from}</span>
+                          <span className="text-gray-500 shrink-0">{new Date(r.when).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>

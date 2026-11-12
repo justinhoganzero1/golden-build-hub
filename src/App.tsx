@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { recordSiteArrival } from "@/lib/siteArrival";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -319,6 +320,8 @@ const Loading = () => (
 
 // The restricted IT app has a separate session and no Oracle providers/chrome.
 const REIMAGINED_HOST = typeof window !== "undefined" && isReimaginedEntry(window.location.hostname, window.location.pathname);
+// Note the first page a website visitor lands on, before any redirect changes the address.
+if (!REIMAGINED_HOST) recordSiteArrival();
 
 const OracleApp = () => (
   <ErrorBoundary pageName="App Root">

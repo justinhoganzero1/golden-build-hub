@@ -44,7 +44,7 @@ const iso = (v: unknown): string | null => {
 const METRICS = new Set([
   "users_all", "paid_members", "trial_users", "page_views", "install_events",
   "real_payments", "live_subscriptions", "payouts", "balance",
-  "ai_charges", "stripe_events", "affiliate_clicks",
+  "ai_charges", "stripe_events", "affiliate_clicks", "site_arrivals",
 ]);
 
 Deno.serve(async (req) => {
@@ -212,6 +212,28 @@ Deno.serve(async (req) => {
           { key: "campaign", label: "Campaign" }, { key: "medium", label: "Medium" }, { key: "device", label: "Device" },
           { key: "referrer", label: "Referring link" },
         ], rows, "Visits are anonymous — no names are recorded for website visitors. Latest 5,000 checked.");
+      }
+
+      case "site_arrivals": {
+        const landing = str(body.landing_path);
+        const source = str(body.source)?.toLowerCase() ?? null;
+        let q = admin.from("site_arrivals").select("landing_path, source, medium, campaign, referrer, user_agent, created_at")
+          .order("created_at", { ascending: false }).limit(5000);
+        if (landing) q = q.eq("landing_path", landing);
+        if (source) q = q.eq("source", source);
+        const { data, error } = await q;
+        if (error) throw error;
+        const rows = ((data ?? []) as any[]).map((v) => ({
+          when: v.created_at, landed: v.landing_path, source: v.source || "direct",
+          campaign: v.campaign || "—", medium: v.medium || "—",
+          device: deviceFromUserAgent(v.user_agent), referrer: v.referrer || "—",
+        }));
+        const title = landing ? `Visitors who landed on ${landing}` : source ? `Where visitors from ${source} landed` : "Where each visitor landed";
+        return out(title, [
+          { key: "when", label: "When", type: "date" }, { key: "landed", label: "Landed on" }, { key: "source", label: "Came from" },
+          { key: "campaign", label: "Post / campaign" }, { key: "medium", label: "Medium" }, { key: "device", label: "Device" },
+          { key: "referrer", label: "Referring link" },
+        ], rows, "One row per visit to oraclelunar.com: the first page they opened. Anonymous — no names are recorded. Your own owner pages are not counted.");
       }
 
       case "install_events": {

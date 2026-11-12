@@ -3369,6 +3369,39 @@ export type Database = {
         }
         Relationships: []
       }
+      site_arrivals: {
+        Row: {
+          campaign: string | null
+          created_at: string
+          id: string
+          landing_path: string
+          medium: string | null
+          referrer: string | null
+          source: string
+          user_agent: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          landing_path: string
+          medium?: string | null
+          referrer?: string | null
+          source?: string
+          user_agent?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          created_at?: string
+          id?: string
+          landing_path?: string
+          medium?: string | null
+          referrer?: string | null
+          source?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       site_content: {
         Row: {
           created_at: string
