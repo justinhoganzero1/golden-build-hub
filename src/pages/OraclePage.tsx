@@ -88,6 +88,9 @@ const DEFAULT_AGENTS: ChatAgent[] = [
 const ORACLE_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`;
 import AgentPicker from "@/components/AgentPicker";
 import ThinkingIndicator from "@/components/ThinkingIndicator";
+import OracleWelcome from "@/components/oracle/OracleWelcome";
+import ProductionProgress, { playReadyChime } from "@/components/oracle/ProductionProgress";
+import { welcomeKey } from "@/lib/productionStages";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 import { formatWebAnswer } from "@/lib/oracleWeb";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
@@ -264,6 +267,11 @@ const OraclePage = () => {
   const [premiumVideo, setPremiumVideo] = useState(false);
   const [replyVideoUrl, setReplyVideoUrl] = useState<string | null>(null);
   const [videoReplyPending, setVideoReplyPending] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  useEffect(() => { if (user?.id && !localStorage.getItem(welcomeKey(user.id))) setWelcomeOpen(true); }, [user?.id]);
+  const closeWelcome = () => { if (user?.id) localStorage.setItem(welcomeKey(user.id), "1"); setWelcomeOpen(false); };
+  const wasPendingRef = useRef(false);
+  useEffect(() => { if (wasPendingRef.current && !videoReplyPending && replyVideoUrl) playReadyChime(); wasPendingRef.current = videoReplyPending; }, [videoReplyPending, replyVideoUrl]);
   const premiumVideoRef = useRef(false);
   const portraitDataRef = useRef<string | null>(null);
   const [outfit, setOutfit] = useState<OracleOutfit | null>(null);
@@ -2953,6 +2961,8 @@ const OraclePage = () => {
         </div>
       </header>
       <div className="relative min-h-0 flex-1">
+        {videoReplyPending && <ProductionProgress className="absolute left-3 right-3 top-2 z-20 mx-auto max-w-sm" />}
+        {welcomeOpen && <OracleWelcome name={(user?.user_metadata?.display_name as string | undefined)?.split(" ")[0]} onSkip={closeWelcome} onChoose={c => { closeWelcome(); if (c === "look") setVoiceOptionsOpen(true); else if (c === "create") navigate("/movie-studio-pro"); else void sendMessageRef.current?.("Hi Oracle! I'd love to get to know you."); }} />}
         {oracleMedia && <div className="absolute inset-0 z-20 flex items-center justify-center p-4 bg-background/80">
           <Button variant="outline" size="icon" className="absolute top-3 right-3" aria-label="Dismiss" onClick={() => setOracleMedia(null)}><X /></Button>
           {oracleMedia.kind === "video" ? <video src={oracleMedia.url} autoPlay playsInline controls onEnded={() => setOracleMedia(null)} className="max-w-full max-h-full" /> : <img src={oracleMedia.url} alt="Generated creation" className="max-w-full max-h-full object-contain" />}

@@ -1,3 +1,4 @@
+import ProductionProgress from "@/components/oracle/ProductionProgress";
 import { requireEdgeAuthToken } from "@/lib/edgeAuth";
 import { generateMemberVideo, VideoPendingError } from "@/lib/videoGeneration";
 import { loadMovieVideo, drawMovieVideo } from "@/lib/movieVideoFrames";
@@ -3058,6 +3059,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
                         >
                           🎬 {s.generatingVideo ? "Animating…" : s.video_job_id ? "Resume video" : s.video_url ? "Re-animate" : "Real video"}
                         </Button>
+                        {s.generatingVideo && <ProductionProgress className="w-full" />}
                         <select
                           value={s.video_engine || "gemini"}
                           onChange={e => updateScene(s.id, { video_engine: e.target.value as "gemini" | "runway" })}
