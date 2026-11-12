@@ -42,9 +42,9 @@
 - Oracle Videos (owner clips) live in oracle_clips with a private oracle-clips bucket; members read via is_active_member RLS and signed URLs, only the owner role writes, so clips stay members-only without a separate subscription system.
 - Member templates copy a shared user_media row (allow_template) into the buyer's own folder through library-use-template; paid templates need a paid shop_purchases row and shared rules live in _shared/templateAccess.ts, so copies never depend on the creator's files or skip payment.
 - Oracle's member-designed look is a wallet-paid edit of the canonical portrait built only from whitelisted choices (cleanLook); a new look clears the outfit, outfits edit the look, and a male look switches default voice and skips ad-voice fillers so voices never mismatch.
-- Voice-level Oracle speech animates her existing picture with a gentle procedural head-and-shoulder sway (no mouth movement), so replies stay fast and free of clip costs without implying lip-sync; real lip-sync stays in paid Premium clips.
-- Oracle's emotional awareness reads mood and mood shifts in the browser (oracleMood, no AI cost) for the current chat only and sends a short sanitized hint; it is never stored, so care stays non-surveillance and free.
-- Oracle routes everyday chat to the fastest model, deep questions to a stronger low-reasoning model, and speech to low-latency TTS; speed is the priority.
+- Voice-level Oracle speech uses a procedural head sway (no mouth movement), keeping replies fast and free without implying lip-sync; real lip-sync stays in paid clips.
+- Oracle mood awareness runs in the browser (oracleMood) for the current chat only and sends a short sanitized hint, never stored, so care stays free and non-surveillance.
+- Oracle routes everyday chat to the fastest model, deep questions to a stronger low-reasoning one and speech to low-latency TTS, because speed comes first.
 - Shop sales credit the creator share to their wallet via idempotent credit_creator_sale (payments webhook); cash payouts exclude wallet-credited sales, so nothing is paid twice.
 - New members get Oracle's free scripted welcome; dashboard apps soft-unlock via oracleDiscovery (choices, their words, [[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
-- Signed-out browser visitors at / get the store-style AppStorePage; installed/native launches get PublicWelcomePage. Install CTAs route through installRedirect (production-host check, real APK HEAD check, PWA prompt captured early in index.html) so installs never hit a dead host or missing file.
+- Signed-out browsers at / get AppStorePage, installed/native launches PublicWelcomePage; install CTAs use installRedirect so they never hit dead hosts or missing files.
