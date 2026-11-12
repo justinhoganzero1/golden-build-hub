@@ -37,6 +37,7 @@ interface RevenueData {
     status: string;
   }>;
   generatedAt: number;
+  ownerPaymentsExcluded?: number;
 }
 
 function fmtMoney(cents: number, currency = "usd") {
@@ -100,8 +101,8 @@ export default function StripeRevenuePanel() {
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             {lowPowerMode
-              ? "Pulled directly from your Stripe account. Refresh manually on low-power devices."
-              : "Pulled directly from your Stripe account. Refreshes every 60 seconds."}
+              ? "Real customer payments only (live Stripe). Test money, AI usage and your own payments are left out. Refresh manually on low-power devices."
+              : "Real customer payments only (live Stripe). Test money, AI usage and your own payments are left out. Refreshes every 60 seconds."}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -184,7 +185,7 @@ export default function StripeRevenuePanel() {
             <div className="text-sm font-medium mb-2">Recent charges</div>
             {data.recentCharges.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No charges in the last 30 days yet.
+                No real customer payments in the last 30 days yet.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -221,6 +222,12 @@ export default function StripeRevenuePanel() {
               </div>
             )}
           </div>
+
+          {!!data.ownerPaymentsExcluded && (
+            <p className="text-[10px] text-muted-foreground">
+              {data.ownerPaymentsExcluded} of your own payments left out.
+            </p>
+          )}
 
           <p className="text-[10px] text-muted-foreground">
             Updated {new Date(data.generatedAt * 1000).toLocaleTimeString()}
