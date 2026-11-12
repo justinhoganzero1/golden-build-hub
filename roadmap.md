@@ -111,3 +111,6 @@
 ## Oracle video Library (requested 2026-11-12)
 - [x] Oracle Videos page: members browse, watch and download Juzzy's clips (part of membership; New badges; owner upload)
 - [x] Members can opt in (videos, pictures, stories/books, apps) to share their own creations to the public Library, where other members can use them as templates
+
+## Oracle emotions (requested 2026-11-12)
+- [x] Emotional awareness engine, mood-shift detection and detailed backstory

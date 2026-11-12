@@ -34,6 +34,7 @@ import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
 import { pickFiller, fillerClipUrl } from "@/lib/oracleFillers";
+import { addReading, detectMood, moodNote, type MoodReading } from "@/lib/oracleMood";
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
 import OracleLookPicker from "@/components/oracle/OracleLookPicker";
 import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLook";
@@ -341,6 +342,8 @@ const OraclePage = () => {
   const fillersOnRef = useRef(true);
   const [thinkingLine, setThinkingLine] = useState("");
   const recentFillersRef = useRef<string[]>([]);
+  // Emotional awareness: this chat's mood readings, kept in memory only (never saved).
+  const moodHistoryRef = useRef<MoodReading[]>([]);
   const speechModeRef = useRef<OracleSpeechMode>("premium");
   const [deviceVoices, setDeviceVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [deviceVoice, setDeviceVoice] = useState("");
@@ -2249,7 +2252,10 @@ const OraclePage = () => {
     const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
     // Track for speech-therapist listener-aware tone matching
     lastUserMessageRef.current = isIntroTrigger ? "" : text;
-    if (!isIntroTrigger) setMessages(prev => [...prev, userMsg]);
+    if (!isIntroTrigger) {
+      setMessages(prev => [...prev, userMsg]);
+      moodHistoryRef.current = addReading(moodHistoryRef.current, detectMood(text));
+    }
     speechQueueRef.current = [];
     isSpeakingQueueRef.current = false;
     setIsLoading(true);
@@ -2290,6 +2296,7 @@ const OraclePage = () => {
           oracleName,
           isFirstMeeting,
           look: lookPersona(lookRef.current),
+          mood: moodNote(moodHistoryRef.current),
           userMemories: formatMemoriesForPrompt(oracleMemories) + (() => {
             if (!user?.id) return "";
             try {
