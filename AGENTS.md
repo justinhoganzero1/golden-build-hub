@@ -46,5 +46,5 @@
 - Oracle mood awareness runs in the browser (oracleMood) for the current chat only and sends a short sanitized hint, never stored, so care stays free and non-surveillance.
 - Oracle routes everyday chat to the fastest model, deep questions to a stronger low-reasoning one and speech to low-latency TTS, because speed comes first.
 - Shop sales credit the creator share to their wallet via idempotent credit_creator_sale (payments webhook); cash payouts exclude wallet-credited sales, so nothing is paid twice.
-- New members get Oracle's free scripted welcome; dashboard apps soft-unlock via oracleDiscovery (choices, their words, [[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
+- New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
 - Signed-out browsers at / get AppStorePage, installed/native launches PublicWelcomePage; install CTAs use installRedirect so they never hit dead hosts or missing files.
