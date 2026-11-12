@@ -95,12 +95,15 @@ export async function stripImageMetadata(
   mime: "image/png" | "image/jpeg" = "image/png",
 ): Promise<Uint8Array | null> {
   try {
-    const img = await loadImage(src);
+    // Check drawing support first: without it the image can never be cleaned,
+    // and callers fall back to the original bytes instead of waiting.
+    if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth || img.width;
-    canvas.height = img.naturalHeight || img.height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
+    const img = await loadImage(src);
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
     ctx.drawImage(img, 0, 0);
     const blob: Blob | null = await new Promise(res => canvas.toBlob(res, mime, 0.95));
     if (!blob) return null;
@@ -110,12 +113,16 @@ export async function stripImageMetadata(
   }
 }
 
+/** Images that never finish loading must not freeze exports (e.g. a whole book). */
+const IMAGE_LOAD_TIMEOUT_MS = 10_000;
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const timer = setTimeout(() => reject(new Error("image load timed out")), IMAGE_LOAD_TIMEOUT_MS);
     img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("image load failed"));
+    img.onload = () => { clearTimeout(timer); resolve(img); };
+    img.onerror = () => { clearTimeout(timer); reject(new Error("image load failed")); };
     img.src = src;
   });
 }
