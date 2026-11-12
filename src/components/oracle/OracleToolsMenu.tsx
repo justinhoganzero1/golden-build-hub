@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, Search, ChevronUp } from "lucide-react";
 import { ROUTE_REGISTRY } from "@/lib/oracleControl";
+import { isAdminOnlyPath } from "@/lib/oracleAdminRoutes";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 
-const tools = [...ROUTE_REGISTRY.filter(t => t.path !== "/oracle"),
+const allTools = [...ROUTE_REGISTRY.filter(t => t.path !== "/oracle"),
   { label: "Creator Studio", path: "/creator-studio" },
   { label: "Module Shop", path: "/module-shop" },
   { label: "Free Zone", path: "/free-zone" },
@@ -20,6 +22,10 @@ export default function OracleToolsMenu({ children }: { children?: ReactNode }) 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { isAdmin } = useIsAdmin();
+  // Owner-only pages (admin editor, owner dashboard) stay out of the list
+  // until the owner is signed in — normal members never see them offered.
+  const tools = allTools.filter(t => isAdmin || !isAdminOnlyPath(t.path));
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const dismiss = (event: PointerEvent) => { if (!container.current?.contains(event.target as Node)) setOpen(false); };
