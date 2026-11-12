@@ -2047,6 +2047,13 @@ export type Database = {
           founder_number: number | null
           kind: string
           monthly_active_until: string | null
+          plan: string
+          plan_active_until: string | null
+          plan_cancel_at_period_end: boolean
+          plan_interval: string | null
+          plan_period_start: string | null
+          plan_status: string | null
+          plan_subscription_id: string | null
           stripe_customer_id: string | null
           stripe_founder_session_id: string | null
           stripe_subscription_id: string | null
@@ -2059,6 +2066,13 @@ export type Database = {
           founder_number?: number | null
           kind?: string
           monthly_active_until?: string | null
+          plan?: string
+          plan_active_until?: string | null
+          plan_cancel_at_period_end?: boolean
+          plan_interval?: string | null
+          plan_period_start?: string | null
+          plan_status?: string | null
+          plan_subscription_id?: string | null
           stripe_customer_id?: string | null
           stripe_founder_session_id?: string | null
           stripe_subscription_id?: string | null
@@ -2071,6 +2085,13 @@ export type Database = {
           founder_number?: number | null
           kind?: string
           monthly_active_until?: string | null
+          plan?: string
+          plan_active_until?: string | null
+          plan_cancel_at_period_end?: boolean
+          plan_interval?: string | null
+          plan_period_start?: string | null
+          plan_status?: string | null
+          plan_subscription_id?: string | null
           stripe_customer_id?: string | null
           stripe_founder_session_id?: string | null
           stripe_subscription_id?: string | null
@@ -2825,6 +2846,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
           watermark_config?: Json
+        }
+        Relationships: []
+      }
+      plan_credit_grants: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          grant_key: string
+          id: string
+          plan: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          grant_key: string
+          id?: string
+          plan: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          grant_key?: string
+          id?: string
+          plan?: string
+          transaction_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -5083,6 +5134,11 @@ export type Database = {
       get_book_page: { Args: { _story_id: string }; Returns: Json }
       get_story_writer_document: { Args: { _story_id: string }; Returns: Json }
       get_story_writer_images: { Args: { _story_id: string }; Returns: Json }
+      grant_due_plan_credits: { Args: never; Returns: number }
+      grant_plan_credit: {
+        Args: { _grant_key: string; _plan: string; _user_id: string }
+        Returns: boolean
+      }
       grant_referral_reward: { Args: { _referral_id: string }; Returns: string }
       grant_signup_welcome: { Args: { _user_id: string }; Returns: string }
       has_active_reward: { Args: { _user_id: string }; Returns: boolean }
@@ -5148,6 +5204,7 @@ export type Database = {
         }
         Returns: string
       }
+      member_plan: { Args: { _user_id: string }; Returns: string }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -5169,6 +5226,8 @@ export type Database = {
           unlocked: boolean
         }[]
       }
+      plan_credit_cents: { Args: { _plan: string }; Returns: number }
+      plan_rank: { Args: { _plan: string }; Returns: number }
       provider_pnl_summary: {
         Args: { _days?: number }
         Returns: {
@@ -5240,6 +5299,7 @@ export type Database = {
         Returns: string
       }
       seller_available_balance: { Args: { user_uuid: string }; Returns: number }
+      service_required_plan: { Args: { _service: string }; Returns: string }
       stripe_event_summary: {
         Args: { _hours?: number }
         Returns: {

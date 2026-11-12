@@ -26,6 +26,8 @@ import DashboardOnboarding from "@/components/DashboardOnboarding";
 import UserConnectorsPanel from "@/components/UserConnectorsPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock } from "lucide-react";
+import { useMembership } from "@/hooks/useMembership";
+import { pagePlan, planAllows, type PaidPlan } from "@/lib/plans";
 import { UNLOCKS_EVENT, isUnlocked, loadUnlocks, needsGuidedUnlock, unlockEverything, type UnlockState } from "@/lib/oracleDiscovery";
 
 interface AppTile {
@@ -163,6 +165,13 @@ const DashboardPage = () => {
     return () => { window.removeEventListener(UNLOCKS_EVENT, onChange); window.removeEventListener("storage", onChange); };
   }, [user?.id]);
   const tileLocked = (tile: AppTile) => guided && !isUnlocked(unlocks, tile.path);
+  // Paid-plan badge: which plan a tile needs when the member's plan doesn't include it.
+  const { plan, loading: planLoading } = useMembership();
+  const tileNeeds = (tile: AppTile): PaidPlan | null => {
+    if (planLoading || !tile.path.startsWith("/")) return null;
+    const needed = pagePlan(tile.path);
+    return needed !== "free" && !planAllows(plan, needed) ? needed : null;
+  };
   const lockedCount = guided ? groups.reduce((n, g) => n + g.tiles.filter(tileLocked).length, 0) : 0;
 
   const gridCols = layout?.gridCols || 4;
@@ -172,6 +181,8 @@ const DashboardPage = () => {
 
   const handleTileClick = (tile: AppTile) => {
     if (tile.path === "__share__") { setShareOpen(true); return; }
+    const needs = tileNeeds(tile);
+    if (needs) { navigate("/membership", { state: { upgradeFrom: tile.path, plan: needs } }); return; }
     if (tileLocked(tile)) { navigate(`/oracle?discover=${encodeURIComponent(tile.path)}`); return; }
     navigate(tile.path);
   };
@@ -364,8 +375,9 @@ const DashboardPage = () => {
                       key={group.id + tile.path + tile.label}
                       onClick={() => handleTileClick(tile)}
                       className={`holo-tile flex flex-col items-center gap-2 p-3 ${tileBR} relative ${tileLocked(tile) ? "opacity-50" : ""}`}
-                      aria-label={tileLocked(tile) ? `${tile.label} (locked — ask Oracle)` : undefined}
+                      aria-label={tileNeeds(tile) ? `${tile.label} (needs ${tileNeeds(tile) === "pro" ? "Pro" : "Plus"})` : tileLocked(tile) ? `${tile.label} (locked — ask Oracle)` : undefined}
                     >
+                      {tileNeeds(tile) && <span className="absolute left-1.5 top-1.5 rounded-full bg-primary px-1.5 py-px text-[9px] font-bold uppercase leading-tight text-primary-foreground" aria-hidden="true">{tileNeeds(tile) === "pro" ? "Pro" : "Plus"}</span>}
                       {tileLocked(tile) && <Lock className="absolute right-1.5 top-1.5 h-3 w-3 text-muted-foreground" aria-hidden="true" />}
                       <div className="holo-icon text-primary">{tile.icon}</div>
                       <span className={`${labelSize} text-foreground font-medium text-center leading-tight`}>

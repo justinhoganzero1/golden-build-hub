@@ -287,6 +287,7 @@ const AdminInboxPage = lazy(() => import("./pages/AdminInboxPage"));
 const InboxPage = lazy(() => import("./pages/InboxPage"));
 
 const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"));
+const PlanUpgradeModal = lazy(() => import("./components/PlanUpgradeModal"));
 const WalletTopupReturn = lazy(() => import("./components/WalletTopupReturn"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
 const SiteFooter = lazy(() => import("./components/SiteFooter"));
@@ -337,6 +338,7 @@ const OracleApp = () => (
               <InteractionAuthGate />
               <PreviewShield />
               <Suspense fallback={null}><WalletPaywallModal /></Suspense>
+              <Suspense fallback={null}><PlanUpgradeModal /></Suspense>
               <Suspense fallback={null}><WalletTopupReturn /></Suspense>
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
 

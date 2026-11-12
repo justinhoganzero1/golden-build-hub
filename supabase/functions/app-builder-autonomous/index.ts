@@ -5,7 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
-import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { chargeAI, InsufficientCoinsError, PlanRequiredError } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
@@ -528,6 +528,11 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
         });
         controller.close();
       } catch (err) {
+        if (err instanceof PlanRequiredError) {
+          send("error", { message: "The App Builder is part of the Pro plan. Upgrade to use it.", code: "plan_required", required_plan: err.required_plan });
+          controller.close();
+          return;
+        }
         if (err instanceof InsufficientCoinsError) {
           send("error", {
             message: "Not enough coins. Top up your wallet to continue.",

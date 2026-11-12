@@ -32,10 +32,11 @@ describe("member templates", () => {
 });
 
 describe("Oracle video Library", () => {
-  it("is part of membership, including $1 founders", () => {
-    const founder = { signedIn: true, owner: false, active: true, founder: true, monthly: false, path: "/oracle-videos" };
+  it("is part of paid plans, including $1 founders, but not Free", () => {
+    const founder = { signedIn: true, plan: "founder" as const, path: "/oracle-videos" };
     expect(memberPageAccess(founder)).toBe("allow");
-    expect(memberPageAccess({ ...founder, active: false })).toBe("upgrade");
+    expect(memberPageAccess({ ...founder, plan: "plus" })).toBe("allow");
+    expect(memberPageAccess({ ...founder, plan: "free" })).toBe("upgrade");
   });
   it("marks clips added since the last visit as new", () => {
     expect(isNewClip("2026-11-12T00:00:00Z", "2026-11-11T00:00:00Z")).toBe(true);

@@ -5,7 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
-import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,6 +105,7 @@ serve(async (req) => {
         return json({ error: "This swarm run was already submitted.", code: "duplicate" }, 409);
       }
     } catch (e) {
+      if (e instanceof PlanRequiredError) return planRequiredResponse(e, corsHeaders);
       if (e instanceof InsufficientCoinsError) {
         return json(
           { error: "insufficient_coins", message: "Not enough coins for this swarm.", code: "insufficient_funds", needed_cents: e.needed_cents, balance_cents: e.balance_cents },

@@ -1,20 +1,25 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolvePlan, type PlanId } from "@/lib/plans";
+import { setCurrentPlan } from "@/lib/walletPaywall";
 
 export interface Membership {
   kind: "trial" | "founder" | "monthly" | "none";
   trial_ends_at: string;
   founder_number: number | null;
   monthly_active_until: string | null;
+  plan: "free" | "plus" | "pro";
+  plan_interval: "month" | "year" | null;
+  plan_status: string | null;
+  plan_active_until: string | null;
+  plan_cancel_at_period_end: boolean;
 }
 
+/** True for paid members (Plus, Pro, Founder). Free accounts still use the no-cost pages. */
 export function membershipActive(m: Membership | null): boolean {
-  if (!m) return false; // Missing membership is not proof of access; account pages remain available.
-  const now = Date.now();
-  if (m.founder_number) return true;
-  if (m.monthly_active_until && new Date(m.monthly_active_until).getTime() > now) return true;
-  return new Date(m.trial_ends_at).getTime() > now;
+  const plan = resolvePlan(m, false);
+  return plan !== "free";
 }
 
 export function useMembership() {
@@ -26,7 +31,9 @@ export function useMembership() {
   const refresh = useCallback(async () => {
     if (!user) { setMembership(null); setExempt(false); setLoadedFor(null); return; }
     const [{ data: m }, { data: admin }] = await Promise.all([
-      supabase.from("memberships" as any).select("kind,trial_ends_at,founder_number,monthly_active_until").eq("user_id", user.id).maybeSingle(),
+      supabase.from("memberships" as any)
+        .select("kind,trial_ends_at,founder_number,monthly_active_until,plan,plan_interval,plan_status,plan_active_until,plan_cancel_at_period_end")
+        .eq("user_id", user.id).maybeSingle(),
       supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
     ]);
     setMembership((m as any) ?? null);
@@ -43,5 +50,7 @@ export function useMembership() {
 
   // Still loading until the result belongs to the current user, so a fresh sign-in never sees stale "no membership".
   const loading = loadedFor !== (user?.id ?? null);
-  return { membership, exempt, loading, active: exempt || membershipActive(membership), refresh };
+  const plan: PlanId = resolvePlan(membership, exempt);
+  useEffect(() => { if (!loading) setCurrentPlan(plan); }, [loading, plan]);
+  return { membership, exempt, loading, plan, active: plan !== "free", refresh };
 }

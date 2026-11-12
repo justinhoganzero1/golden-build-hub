@@ -3,35 +3,19 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
 import { memberPageAccess } from '@/lib/memberPageAccess';
+import { pagePlan } from "@/lib/plans";
 
 /**
- * Full lockdown: every app page needs a signed-in account.
- * - Owner/admin: everything.
- * - Monthly members and trial users: everything.
- * - $1 lifetime Founders (no monthly): only the FOUNDER_ALLOWED pages; anything
- *   else sends them to /membership to upgrade.
- * - No active membership: /membership.
+ * Every app page needs a signed-in account. The member's plan then decides the page:
+ * - Free: only no-cost pages (Oracle welcome, calendar, library, safety, wallet, account).
+ * - Plus and $1 Founders: everything except Pro tools.
+ * - Pro and the owner: everything.
+ * Locked pages send the member to /membership with the plan they need.
  */
 interface RequireAuthProps {
   children: ReactNode;
   freeAccess?: boolean; // deprecated
 }
-
-// Always reachable when signed in, so members can pay or manage their account.
-const MEMBERSHIP_EXEMPT = [
-  "/membership", "/founder-seats", "/wallet", "/profile", "/settings", "/my-account",
-  "/terms-of-service", "/privacy-policy",
-];
-
-// The part of the app a $1 lifetime Founder can use.
-const FOUNDER_ALLOWED = [
-  "/", "/dashboard", "/welcome", "/get-started", "/oracle", "/chat-oracle",
-  "/free-zone", "/founder-vault", "/my-apps", "/mind-hub", "/crisis-hub",
-  "/calendar", "/media-library", "/story-writer", "/read", "/author-dashboard", "/oracle-videos",
-];
-
-const match = (list: string[], path: string) =>
-  list.some((p) => path === p || (p !== "/" && path.startsWith(`${p}/`)));
 
 const Spinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -42,22 +26,16 @@ const Spinner = () => (
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const { membership, exempt, active, loading: mLoading } = useMembership();
+  const { plan, loading: mLoading } = useMembership();
 
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
 
   const path = location.pathname;
-  if (match(MEMBERSHIP_EXEMPT, path)) return <>{children}</>;
+  if (pagePlan(path) === "free") return <>{children}</>;
   if (mLoading) return <Spinner />;
-  if (exempt) return <>{children}</>;
-  if (!active) return <Navigate to="/membership" replace />;
-
-  const monthly = !!membership?.monthly_active_until &&
-    new Date(membership.monthly_active_until).getTime() > Date.now();
-  const founderOnly = !!membership?.founder_number && !monthly;
-  if (memberPageAccess({ signedIn: true, owner: exempt, active, founder: founderOnly, monthly, path }) === 'upgrade') {
-    return <Navigate to="/membership" state={{ upgradeFrom: path }} replace />;
+  if (memberPageAccess({ signedIn: true, plan, path }) === 'upgrade') {
+    return <Navigate to="/membership" state={{ upgradeFrom: path, plan: pagePlan(path) }} replace />;
   }
   return <>{children}</>;
 };

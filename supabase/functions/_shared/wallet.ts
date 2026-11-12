@@ -19,6 +19,34 @@ export class InsufficientCoinsError extends Error {
   }
 }
 
+/**
+ * The member's plan does not include this paid service (Free tier, or a Pro-only
+ * tool on Plus/Founder). Extends InsufficientCoinsError so every existing
+ * `instanceof InsufficientCoinsError` branch still stops the request; the shared
+ * response helper turns it into a `plan_required` upgrade answer.
+ */
+export class PlanRequiredError extends InsufficientCoinsError {
+  required_plan: "plus" | "pro";
+  constructor(requiredPlan: "plus" | "pro") {
+    super(0, 0);
+    this.message = `plan_required:${requiredPlan}`;
+    this.required_plan = requiredPlan;
+  }
+}
+
+export function planRequiredResponse(err: PlanRequiredError, corsHeaders: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({
+      error: "plan_required",
+      required_plan: err.required_plan,
+      message: err.required_plan === "pro"
+        ? "This tool is part of the Pro plan. Upgrade to use it."
+        : "This needs a Plus plan. Upgrade to unlock Oracle's AI features.",
+    }),
+    { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
 export interface ChargeResult {
   charge_id: string;
   total_cents: number;
@@ -79,6 +107,8 @@ export async function authorizeAI(
     _metadata: metadata,
   });
   if (error) {
+    const plan = /plan_required:(plus|pro)/.exec(error.message);
+    if (plan) throw new PlanRequiredError(plan[1] as "plus" | "pro");
     if (error.message.includes("insufficient_funds")) {
       const balance = await currentBalance(userId);
       const total = Math.ceil((estimatedMicros * 1.2) / 10_000);
@@ -182,6 +212,7 @@ export async function chargeAI(
 
 /** Standard 402 response for an insufficient-coins error. */
 export function insufficientCoinsResponse(err: InsufficientCoinsError, corsHeaders: Record<string, string>): Response {
+  if (err instanceof PlanRequiredError) return planRequiredResponse(err, corsHeaders);
   return new Response(
     JSON.stringify({
       error: "insufficient_coins",

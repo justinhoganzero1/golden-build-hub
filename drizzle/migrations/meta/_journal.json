@@ -134,6 +134,13 @@
       "when": 1794457681829,
       "tag": "0018_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794461047331,
+      "tag": "0019_plan_tiers_free_plus_pro",
+      "breakpoints": true
     }
   ]
 }

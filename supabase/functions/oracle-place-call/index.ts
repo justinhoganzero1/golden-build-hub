@@ -3,7 +3,7 @@
 // Charges the user's wallet at Twilio cost + 50% service fee.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +117,7 @@ Deno.serve(async (req) => {
     try {
       await chargeAI(user.id, "phone-call", totalCpm * paidMinutes, { provider: "twilio", destination_tier: tier, minutes: paidMinutes });
     } catch (err) {
+      if (err instanceof PlanRequiredError) return planRequiredResponse(err, corsHeaders);
       if (err instanceof InsufficientCoinsError) {
         return json({ error: "insufficient_coins", needed_cents: err.needed_cents, balance_cents: err.balance_cents }, 402);
       }

@@ -9,6 +9,28 @@ export type WalletInsufficientDetail = {
 };
 
 export const WALLET_INSUFFICIENT_EVENT = "wallet:insufficient";
+export const PLAN_REQUIRED_EVENT = "plan:required";
+
+export type PlanRequiredDetail = { requiredPlan: "plus" | "pro"; message?: string };
+
+// The signed-in member's plan, kept current by useMembership, so non-React code
+// (Oracle's voice, the fetch interceptor) can skip paid calls a Free account can't make.
+// "unknown" until the plan has loaded, so paid members are never blocked by a slow first load (the server still enforces plans).
+let currentPlan: string = "unknown";
+export const setCurrentPlan = (plan: string) => { currentPlan = plan; };
+export const getCurrentPlan = () => currentPlan;
+
+let lastPlanFiredAt = 0;
+export function notifyPlanRequired(detail: PlanRequiredDetail) {
+  const now = Date.now();
+  if (now - lastPlanFiredAt < 4000) return;
+  lastPlanFiredAt = now;
+  try {
+    window.dispatchEvent(new CustomEvent(PLAN_REQUIRED_EVENT, { detail }));
+  } catch {
+    /* noop (SSR / non-browser) */
+  }
+}
 
 // A burst of parallel paid calls all fail at once when the wallet runs dry.
 // Only the first one should raise the modal, or it flickers and resets.
@@ -39,6 +61,10 @@ export async function handleEdgeInsufficient(err: any): Promise<boolean> {
       if (!body && res.status !== 402) return false;
     } else if (err && typeof err === "object") {
       body = err;
+    }
+    if (body?.error === "plan_required") {
+      notifyPlanRequired({ requiredPlan: body.required_plan === "pro" ? "pro" : "plus", message: body.message });
+      return true;
     }
     const insufficient =
       body?.error === "insufficient_coins" ||

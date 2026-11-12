@@ -8,7 +8,7 @@
 // Patching fetch once catches every path — raw fetch AND supabase.functions.invoke,
 // which uses fetch internally — so the "add $10 and keep going" modal always shows.
 
-import { notifyWalletInsufficient } from "./walletPaywall";
+import { notifyPlanRequired, notifyWalletInsufficient } from "./walletPaywall";
 
 let installed = false;
 
@@ -26,6 +26,10 @@ export function installWalletInterceptor() {
           typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
         if (url.includes("/functions/v1/")) {
           const body = await res.clone().json().catch(() => null);
+          if (body?.error === "plan_required") {
+            notifyPlanRequired({ requiredPlan: body.required_plan === "pro" ? "pro" : "plus", message: body.message });
+            return res;
+          }
           notifyWalletInsufficient({
             service: body?.service,
             requiredCents: body?.needed_cents ?? body?.required_cents,

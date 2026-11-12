@@ -10,11 +10,11 @@ import { useMembership } from "@/hooks/useMembership";
 import { goldThemeOn, setGoldTheme } from "@/lib/goldTheme";
 
 const FounderVaultPage = () => {
-  const { membership, exempt, loading } = useMembership();
+  const { membership, exempt, loading, plan } = useMembership();
   const [gold, setGold] = useState(goldThemeOn());
   const monthly = !!membership?.monthly_active_until && new Date(membership.monthly_active_until) > new Date();
   const founder = membership?.founder_number ?? null;
-  const allowed = exempt || !!founder || monthly;
+  const allowed = exempt || !!founder || monthly || plan !== "free";
 
   if (loading) return null;
 

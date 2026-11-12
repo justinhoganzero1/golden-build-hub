@@ -4,10 +4,10 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import { Coins, Gift, MessageCircle, Wallet, CheckCircle2, Sparkles } from "lucide-react";
 
 const steps = [
-  { icon: Gift, title: "Your 3-day free trial", body: "Every free tool is open to you straight away — no card needed." },
-  { icon: Sparkles, title: "Pick a membership", body: "After 3 days, choose Founder (A$1 lifetime, limited seats) or A$19.99 a month.", to: "/membership", cta: "See memberships" },
-  { icon: Wallet, title: "Top up your coin wallet", body: "AI features run on coins. Top up any amount from A$5 — you pay securely by card.", to: "/wallet", cta: "Open my wallet" },
-  { icon: MessageCircle, title: "Talk to Oracle", body: "Ask Oracle anything. Each reply uses a few coins — you always see your balance.", to: "/oracle", cta: "Open Oracle" },
+  { icon: Gift, title: "Start free", body: "Every no-cost tool is open to you straight away, free forever — no card needed." },
+  { icon: Sparkles, title: "Upgrade for Oracle's AI", body: "Plus (A$9.99/mo) or Pro (A$24.99/mo), each with monthly AI credit included. Yearly saves 2 months.", to: "/membership", cta: "See plans" },
+  { icon: Wallet, title: "Top up when you need more", body: "Used your monthly credit? Top up your wallet from A$5 and keep going.", to: "/wallet", cta: "Open my wallet" },
+  { icon: MessageCircle, title: "Talk to Oracle", body: "Ask Oracle anything. Each reply uses a little credit — you always see your balance.", to: "/oracle", cta: "Open Oracle" },
 ];
 
 const free = ["Calendar & Life Diary", "Planners & trackers", "Alarm clock", "Personal vault", "Free games", "Media library", "Public library reading"];

@@ -8,7 +8,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
-import { notifyWalletInsufficient } from "@/lib/walletPaywall";
+import { getCurrentPlan, notifyPlanRequired, notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -1038,7 +1038,8 @@ const OraclePage = () => {
     try {
       const isOracle = next.agentName === oracleName;
       if (isOracle) {
-        await routeOracleSpeech(speechModeRef.current,
+        // Free accounts hear Oracle's free device voice; her premium voice is a paid-plan feature.
+        await routeOracleSpeech(getCurrentPlan() === "free" ? "device" : speechModeRef.current,
           () => speakWithBrowserTTS(browserClean, oracleName),
           async () => {
             const tokenBefore = speechTokenRef.current;
@@ -1778,6 +1779,17 @@ const OraclePage = () => {
     const pending = [...messages].reverse().find(m => m.artifact)?.artifact;
     if (!isIntroTrigger && pending && /^(?:yes|yeah|yep|show me|show it|let me see|open it)(?: please)?[.!?]*$/i.test(text.trim())) {
       cancelCurrentSpeech(); setViewingArtifact(pending); return;
+    }
+    // Free plan: Oracle's AI replies are a paid-plan feature. Answer kindly for free and offer the upgrade.
+    if (getCurrentPlan() === "free") {
+      if (isIntroTrigger) return;
+      const reply = "I'd love to chat properly with you! My full conversations are part of Plus — it comes with monthly AI credit so we can talk, create and explore together. Until then, your calendar, library and safety pages are all yours for free.";
+      setMessages(prev => [...prev,
+        { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
+        { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: reply }]);
+      if (!isMuted) speakAsAgent(reply, oracleName);
+      notifyPlanRequired({ requiredPlan: "plus", message: "Chatting with Oracle is part of Plus. Upgrade to talk with her any time." });
+      return;
     }
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
     const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);

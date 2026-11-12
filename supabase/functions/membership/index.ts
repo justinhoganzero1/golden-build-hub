@@ -1,5 +1,5 @@
-// Membership: founder seat ($1 AUD once, 500 max) and monthly ($19.99 AUD).
-// actions: checkout {plan, environment}, verify {sessionId, environment}, status {environment}, transfer {toEmail}
+// Membership: Plus / Pro plans (monthly or yearly), founder seat ($1 AUD once, 500 max), legacy monthly.
+// actions: checkout {plan, environment}, change {plan, environment}, portal {environment}, verify {sessionId, environment}, status {environment}, transfer {toEmail}
 // Checkout uses Lovable built-in payments: embedded checkout, clientSecret returned.
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { safeOrigin } from "../_shared/origin.ts";
@@ -12,6 +12,10 @@ const corsHeaders = {
 };
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const PLAN_PRICES = { plus_monthly: "plus", plus_yearly: "plus", pro_monthly: "pro", pro_yearly: "pro" } as const;
+// Higher number = bigger plan; yearly ranks above monthly of the same plan so moving to yearly bills straight away.
+const PLAN_RANK: Record<string, number> = { plus_monthly: 1, plus_yearly: 2, pro_monthly: 3, pro_yearly: 4 };
 
 function envFrom(body: any): StripeEnv {
   if (body?.environment !== "sandbox" && body?.environment !== "live") throw new Error("invalid environment");
@@ -32,9 +36,63 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "");
 
+    if (action === "checkout" && typeof body.plan === "string" && body.plan in PLAN_PRICES) {
+      const env = envFrom(body);
+      const priceKey = body.plan as keyof typeof PLAN_PRICES;
+      const { data: m } = await admin.from("memberships").select("plan, plan_active_until, plan_subscription_id").eq("user_id", user.id).maybeSingle();
+      if (m?.plan_subscription_id && m.plan !== "free" && m.plan_active_until && new Date(m.plan_active_until) > new Date()) {
+        return json({ error: "already_subscribed", message: "You already have a plan. Use Change plan instead." }, 409);
+      }
+      const origin = safeOrigin(req);
+      const { clientSecret } = await createEmbeddedSession({
+        env,
+        userId: user.id,
+        email: user.email ?? undefined,
+        priceLookupKey: priceKey,
+        returnUrl: `${origin}/membership?paid=1&session_id={CHECKOUT_SESSION_ID}`,
+        metadata: { purchase_type: "membership_plan", plan_price: priceKey, user_id: user.id, userId: user.id },
+      });
+      return json({ clientSecret });
+    }
+
+    if (action === "change") {
+      // Switch an existing Plus/Pro subscription to another plan price straight away, with fair part-month charges.
+      const env = envFrom(body);
+      const priceKey = String(body.plan || "");
+      if (!(priceKey in PLAN_PRICES)) return json({ error: "invalid plan" }, 400);
+      const { data: m } = await admin.from("memberships").select("plan, plan_subscription_id, plan_active_until").eq("user_id", user.id).maybeSingle();
+      if (!m?.plan_subscription_id || m.plan === "free") return json({ error: "no_plan", message: "Choose a plan first." }, 409);
+      const stripe = createStripeClient(env);
+      const sub = await stripe.subscriptions.retrieve(m.plan_subscription_id);
+      if ((sub.metadata?.userId || sub.metadata?.user_id) !== user.id) return json({ error: "not yours" }, 403);
+      const prices = await stripe.prices.list({ lookup_keys: [priceKey] });
+      if (!prices.data.length) return json({ error: "price not found" }, 500);
+      const item = sub.items.data[0];
+      if (item.price.id === prices.data[0].id && !sub.cancel_at_period_end) return json({ ok: true, unchanged: true });
+      const upgrade = PLAN_RANK[priceKey] > PLAN_RANK[(item.price.lookup_key ?? "") as string] ;
+      await stripe.subscriptions.update(sub.id, {
+        items: [{ id: item.id, price: prices.data[0].id }],
+        cancel_at_period_end: false,
+        proration_behavior: upgrade ? "always_invoice" : "create_prorations",
+        metadata: { ...sub.metadata, plan_price: priceKey },
+      });
+      return json({ ok: true });
+    }
+
+    if (action === "portal") {
+      // Stripe-hosted page to cancel, change card or see invoices.
+      const env = envFrom(body);
+      const { data: m } = await admin.from("memberships").select("stripe_customer_id").eq("user_id", user.id).maybeSingle();
+      if (!m?.stripe_customer_id) return json({ error: "no_customer", message: "No paid plan on this account yet." }, 404);
+      const stripe = createStripeClient(env);
+      const portal = await stripe.billingPortal.sessions.create({ customer: m.stripe_customer_id, return_url: `${safeOrigin(req)}/membership` });
+      return json({ url: portal.url });
+    }
+
     if (action === "checkout") {
       const env = envFrom(body);
-      const plan = body.plan === "founder" ? "founder" : body.plan === "monthly" ? "monthly" : null;
+      // The old single A$19.99 monthly plan is retired from sale; Plus/Pro are handled above.
+      const plan = body.plan === "founder" ? "founder" : null;
       if (!plan) return json({ error: "invalid plan" }, 400);
       if (plan === "founder") {
         const { data: left } = await admin.rpc("public_founder_seats_left");
@@ -68,6 +126,11 @@ Deno.serve(async (req) => {
         const { data: f } = await admin.from("founder_payment_fulfillments").select("stripe_session_id").eq("stripe_session_id", s.id).maybeSingle();
         if (f && m?.founder_number) return json({ ok: true, kind: "founder", founder_number: m.founder_number });
         if (f && !m?.founder_number) return json({ ok: false, error: "founder_seats_gone_refunded" });
+        return json({ ok: false, pending: true });
+      }
+      if (s.metadata?.purchase_type === "membership_plan") {
+        const { data: p } = await admin.from("memberships").select("plan, plan_subscription_id, plan_active_until").eq("user_id", user.id).maybeSingle();
+        if (p?.plan_subscription_id && p.plan_subscription_id === s.subscription && p.plan !== "free") return json({ ok: true, kind: "plan", plan: p.plan, until: p.plan_active_until });
         return json({ ok: false, pending: true });
       }
       if (s.metadata?.purchase_type === "membership_monthly") {

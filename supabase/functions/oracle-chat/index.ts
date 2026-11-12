@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { sanitizeMessages } from "../_shared/chatMessages.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
-import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
@@ -80,6 +80,11 @@ serve(async (req) => {
             hasOwnKey = !!(keyRow?.openai_key || keyRow?.gemini_key);
           } catch (_) { /* treat as no key */ }
 
+          // Own provider keys skip the wallet, but chatting with Oracle is still a paid-plan feature.
+          if (!isAdmin && hasOwnKey) {
+            const { data: plan } = await admin.rpc("member_plan", { _user_id: userId });
+            if (!plan || plan === "free") return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+          }
           if (!isAdmin && !hasOwnKey) {
             try {
               await chargeAI(userId, "oracle-chat", agentModel ? ALLOWED_MODELS[agentModel] : PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
@@ -88,7 +93,8 @@ serve(async (req) => {
               });
               usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
             } catch (err) {
-              if (err instanceof InsufficientCoinsError) {
+              if (err instanceof PlanRequiredError) return planRequiredResponse(err, corsHeaders);
+      if (err instanceof InsufficientCoinsError) {
                 return new Response(
                   JSON.stringify({
                     error: "insufficient_coins",

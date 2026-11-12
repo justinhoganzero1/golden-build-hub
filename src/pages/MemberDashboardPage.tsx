@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Coins, Gamepad2, Gem, Loader2, Wallet } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
+import { planLabel } from "@/lib/plans";
 import { supabase } from "@/integrations/supabase/client";
 
 const COINS_PER_DOLLAR = 5.37;
@@ -15,7 +16,7 @@ interface Topup { id: string; amount_cents: number; gross_cents: number | null; 
 
 const MemberDashboardPage = () => {
   const { user } = useAuth();
-  const { membership } = useMembership();
+  const { membership, plan } = useMembership();
   const [balance, setBalance] = useState<number | null>(null);
   const [topups, setTopups] = useState<Topup[]>([]);
 
@@ -31,7 +32,7 @@ const MemberDashboardPage = () => {
     })();
   }, [user]);
 
-  const isPaid = !!membership?.founder_number || (membership?.monthly_active_until && new Date(membership.monthly_active_until) > new Date());
+  const isPaid = plan !== "free";
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -50,6 +51,14 @@ const MemberDashboardPage = () => {
           )}
           <Button asChild className="mt-4"><Link to="/wallet"><Coins className="w-4 h-4 mr-2" /> Buy more coins</Link></Button>
         </div>
+
+        <Link to="/membership" className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 hover:border-primary/50">
+          <div>
+            <p className="text-xs text-muted-foreground">Your plan</p>
+            <p className="font-bold text-foreground">{planLabel(plan)}</p>
+          </div>
+          <span className="text-sm font-medium text-primary">{plan === "free" || plan === "founder" || plan === "plus" ? "See upgrades" : "Manage plan"}</span>
+        </Link>
 
         <div className="grid sm:grid-cols-2 gap-3">
           <Link to={isPaid ? "/founder-vault" : "/membership"} className="rounded-2xl border border-border bg-card p-4 hover:border-primary/50">

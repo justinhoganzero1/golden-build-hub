@@ -14,7 +14,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { markupCents, PROVIDER_RATES } from "../_shared/pricing.ts";
-import { authorizeAI, settleAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { authorizeAI, settleAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,7 +169,8 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("movie-render-charge error:", e);
-    if (e instanceof InsufficientCoinsError) {
+    if (e instanceof PlanRequiredError) return planRequiredResponse(e, corsHeaders);
+      if (e instanceof InsufficientCoinsError) {
       return json({ error: "insufficient_coins", needed_cents: e.needed_cents, required_cents: e.needed_cents, balance_cents: e.balance_cents }, 402);
     }
     return json({ error: e instanceof Error ? e.message : "unknown" }, 500);

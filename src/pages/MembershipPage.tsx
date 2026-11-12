@@ -2,26 +2,30 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMembership, membershipActive } from "@/hooks/useMembership";
+import { useMembership } from "@/hooks/useMembership";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Crown, Sparkles, Lock, Unlock, ArrowLeft, MessageCircle, Library, UserRound } from "lucide-react";
+import { Crown, Sparkles, Lock, ArrowLeft, MessageCircle, Library, UserRound, Check, Settings2 } from "lucide-react";
 import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { FREE_FEATURES, PLANS, planLabel, planRank, priceIdFor, yearlySavingAud, type BillingInterval, type PaidPlan } from "@/lib/plans";
 
 const UPGRADE_FROM_KEY = "oracle.upgradeFrom";
+const aud = (n: number) => `A$${n.toFixed(2)}`;
 
 const MembershipPage = () => {
   const { user } = useAuth();
-  const { membership, exempt, refresh } = useMembership();
+  const { membership, plan, refresh } = useMembership();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const upgradeFrom = (location.state as any)?.upgradeFrom as string | undefined;
+  const neededPlan = (location.state as any)?.plan as PaidPlan | undefined;
   useEffect(() => {
-    if (upgradeFrom) try { sessionStorage.setItem(UPGRADE_FROM_KEY, upgradeFrom); } catch {}
+    if (upgradeFrom) try { sessionStorage.setItem(UPGRADE_FROM_KEY, upgradeFrom); } catch { /* storage blocked */ }
   }, [upgradeFrom]);
+  const [billing, setBilling] = useState<BillingInterval>("month");
   const [left, setLeft] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [toEmail, setToEmail] = useState("");
@@ -34,7 +38,7 @@ const MembershipPage = () => {
     const sid = params.get("session_id");
     if (!user || params.get("paid") !== "1" || !sid) return;
     (async () => {
-      // The verified Stripe notice grants membership; poll briefly until it lands.
+      // The verified Stripe notice grants the plan; poll briefly until it lands.
       let data: any = null; let error: unknown = null;
       for (let i = 0; i < 10; i++) {
         ({ data, error } = await supabase.functions.invoke("membership", { body: { action: "verify", sessionId: sid, environment: getStripeEnvironment() } }));
@@ -48,31 +52,59 @@ const MembershipPage = () => {
       } else if (data.kind === "founder") {
         toast.success(`Welcome, Founding Member #${data.founder_number}!`);
       } else {
-        toast.success("Full app unlocked — welcome!");
+        toast.success(data.plan === "pro" ? "Welcome to Pro — everything is unlocked!" : "Welcome to Plus!");
         let back: string | null = null;
-        try { back = sessionStorage.getItem(UPGRADE_FROM_KEY); sessionStorage.removeItem(UPGRADE_FROM_KEY); } catch {}
-        if (back) {
-          const destination = back;
-          setTimeout(() => navigate(destination, { replace: true }), 800);
-        }
+        try { back = sessionStorage.getItem(UPGRADE_FROM_KEY); sessionStorage.removeItem(UPGRADE_FROM_KEY); } catch { /* storage blocked */ }
+        if (back) { const destination = back; setTimeout(() => navigate(destination, { replace: true }), 800); }
       }
       setParams({}, { replace: true });
       window.dispatchEvent(new Event("membership:updated"));
       refresh();
     })();
-  }, [user, params, setParams, refresh]);
+  }, [user, params, setParams, refresh, navigate]);
 
-  const checkout = async (plan: "founder" | "monthly") => {
+  const hasSubscription = !!membership && membership.plan !== "free" && !!membership.plan_active_until && new Date(membership.plan_active_until).getTime() > Date.now();
+  const currentPriceId = hasSubscription ? priceIdFor(membership!.plan as PaidPlan, membership!.plan_interval === "year" ? "year" : "month") : null;
+
+  const choose = async (target: PaidPlan) => {
     if (!user) return navigate("/sign-in?mode=signup&redirect=/membership");
-    setBusy(plan);
+    const priceId = priceIdFor(target, billing);
+    setBusy(priceId);
     try {
-      await openCheckoutGlobal({
-        functionName: "membership",
-        body: { action: "checkout", plan },
-        title: plan === "founder" ? "Founder Seat — A$1 once" : "Membership — A$19.99/month",
-      });
+      if (hasSubscription) {
+        const p = PLANS[target];
+        const price = billing === "year" ? `${aud(p.yearlyAud)} a year` : `${aud(p.monthlyAud)} a month`;
+        if (!confirm(`Switch to ${p.name} at ${price}? The change starts now and the part-month difference is worked out fairly.`)) { setBusy(null); return; }
+        const { data, error } = await supabase.functions.invoke("membership", { body: { action: "change", plan: priceId, environment: getStripeEnvironment() } });
+        if (error || !data?.ok) throw new Error(data?.message || data?.error || "Could not change plan.");
+        toast.success(`Switching you to ${p.name}…`);
+        setTimeout(() => { window.dispatchEvent(new Event("membership:updated")); refresh(); }, 3000);
+      } else {
+        await openCheckoutGlobal({
+          functionName: "membership",
+          body: { action: "checkout", plan: priceId },
+          title: `Oracle Lunar ${PLANS[target].name} — ${billing === "year" ? `${aud(PLANS[target].yearlyAud)} / year` : `${aud(PLANS[target].monthlyAud)} / month`}`,
+        });
+      }
+    } catch (e: any) { if (e?.message) toast.error(e.message); }
+    setBusy(null);
+  };
+
+  const claimFounder = async () => {
+    if (!user) return navigate("/sign-in?mode=signup&redirect=/membership");
+    setBusy("founder");
+    try {
+      await openCheckoutGlobal({ functionName: "membership", body: { action: "checkout", plan: "founder" }, title: "Founder Seat — A$1 once" });
     } catch { /* toast already shown */ }
     setBusy(null);
+  };
+
+  const manage = async () => {
+    setBusy("portal");
+    const { data, error } = await supabase.functions.invoke("membership", { body: { action: "portal", environment: getStripeEnvironment() } });
+    setBusy(null);
+    if (error || !data?.url) return toast.error(data?.message || "Could not open plan settings.");
+    window.open(data.url, "_blank", "noopener");
   };
 
   const transfer = async () => {
@@ -86,89 +118,99 @@ const MembershipPage = () => {
     refresh();
   };
 
-  const active = exempt || membershipActive(membership);
-  const trialLeft = membership && !membership.founder_number && membership.kind === "trial"
-    ? Math.max(0, Math.ceil((new Date(membership.trial_ends_at).getTime() - Date.now()) / 3600000)) : 0;
+  const planButton = (target: PaidPlan) => {
+    const priceId = priceIdFor(target, billing);
+    if (currentPriceId === priceId) return <Button disabled variant="outline" className="w-full">Your plan</Button>;
+    const label = !hasSubscription ? `Get ${PLANS[target].name}`
+      : planRank(target) > planRank(membership!.plan as PaidPlan) ? `Upgrade to ${PLANS[target].name}`
+      : membership!.plan === target ? `Switch to ${billing === "year" ? "yearly" : "monthly"}` : `Switch to ${PLANS[target].name}`;
+    return <Button onClick={() => choose(target)} disabled={!!busy} variant={target === "pro" ? "default" : "outline"} className="w-full">{busy === priceId ? "Opening…" : label}</Button>;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <nav aria-label="Membership navigation" className="sticky top-0 z-30 border-b border-border bg-background px-4 py-3">
-        <div className="max-w-3xl mx-auto flex flex-wrap items-center gap-2">
-          {active && (
-            <>
-              <Button asChild className="gap-2"><Link to="/dashboard"><ArrowLeft className="h-4 w-4 shrink-0" />Back to app</Link></Button>
-              <Button asChild variant="outline" className="gap-2"><Link to="/oracle"><MessageCircle className="h-4 w-4 shrink-0" />Oracle</Link></Button>
-              <Button asChild variant="outline" className="gap-2"><Link to="/media-library"><Library className="h-4 w-4 shrink-0" />My Library</Link></Button>
-            </>
-          )}
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center gap-2">
+          <Button asChild className="gap-2"><Link to="/dashboard"><ArrowLeft className="h-4 w-4 shrink-0" />Back to app</Link></Button>
+          <Button asChild variant="outline" className="gap-2"><Link to="/oracle"><MessageCircle className="h-4 w-4 shrink-0" />Oracle</Link></Button>
+          <Button asChild variant="outline" className="gap-2"><Link to="/media-library"><Library className="h-4 w-4 shrink-0" />My Library</Link></Button>
           <Button asChild variant="outline" className="gap-2"><Link to="/my-account"><UserRound className="h-4 w-4 shrink-0" />My account</Link></Button>
         </div>
       </nav>
-      <div className="max-w-3xl mx-auto space-y-8 px-4 py-8">
-        <header className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Oracle Lunar Membership</h1>
-          {membership?.founder_number ? (
-            <p className="text-primary font-semibold flex items-center justify-center gap-2"><Crown className="w-5 h-5" /> Founding Member #{membership.founder_number}</p>
-          ) : trialLeft > 0 ? (
-            <p className="text-muted-foreground">Free trial: about {trialLeft} hours left. AI, voice and images are paid from your own wallet credit.</p>
-          ) : !active ? (
-            <p className="text-destructive font-medium">Your 3-day free trial has ended. Choose a membership to keep using the app.</p>
-          ) : null}
+      <div className="max-w-5xl mx-auto space-y-8 px-4 py-8">
+        <header className="text-center space-y-3">
+          <h1 className="text-3xl font-bold">Choose your plan</h1>
+          <p className="text-muted-foreground">Start free. Upgrade when you want Oracle's AI. Cancel any time.</p>
+          <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm">
+            {membership?.founder_number && <Crown className="h-4 w-4 text-founder" />}
+            You're on <strong>{planLabel(plan)}</strong>
+            {membership?.founder_number ? <> · Founding Member #{membership.founder_number}</> : null}
+          </p>
+          {hasSubscription && membership?.plan_cancel_at_period_end && membership.plan_active_until && (
+            <p className="text-sm text-destructive">Your plan ends on {new Date(membership.plan_active_until).toLocaleDateString()}. You'll go back to {membership.founder_number ? "Founder" : "Free"} after that.</p>
+          )}
+          {membership?.plan_status === "past_due" && <p className="text-sm text-destructive">Your last payment didn't go through. Update your card in Manage plan to keep your plan.</p>}
+          {upgradeFrom && neededPlan && (
+            <p className="flex items-center justify-center gap-2 text-sm font-medium text-primary"><Lock className="h-4 w-4" />That page is part of {PLANS[neededPlan].name}.</p>
+          )}
         </header>
 
-        {!membership?.founder_number && (
-          <div className="grid md:grid-cols-2 gap-6">
-            {left !== null && left > 0 && (
-              <div className="rounded-2xl border-2 border-founder p-6 space-y-4 bg-card">
-                <div className="flex items-center gap-2 text-founder font-bold"><Sparkles className="w-5 h-5" /> Founding Member</div>
-                <p className="text-4xl font-bold">$1 <span className="text-base font-normal text-muted-foreground">AUD once</span></p>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Free membership for life</li>
-                  <li>• Your own numbered seat (1 of 500)</li>
-                  <li>• Gold Founder badge, forever</li>
-                  <li>• Founder's Vault: exclusive gold theme and first access to new modules</li>
-                  <li>• Transferable to another member</li>
-                </ul>
-                <p className="text-xs text-muted-foreground">{left} seats left. Never offered again once gone.</p>
-                <Button onClick={() => checkout("founder")} disabled={!!busy} className="w-full bg-founder text-founder-foreground hover:bg-founder/90">
-                  {busy === "founder" ? "Opening…" : "Claim my Founder seat"}
-                </Button>
-              </div>
-            )}
-            <div className="rounded-2xl border border-border p-6 space-y-4 bg-card">
-              <div className="font-bold">Monthly Membership</div>
-              <p className="text-4xl font-bold">$19.99 <span className="text-base font-normal text-muted-foreground">AUD / month</span></p>
-              <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• Unlocks every feature</li>
-                <li>• Cancel any time</li>
-                <li>• AI, voice and images paid from your wallet credit</li>
-              </ul>
-              <Button onClick={() => checkout("monthly")} disabled={!!busy || membership?.kind === "monthly" && active} variant="outline" className="w-full">
-                {membership?.kind === "monthly" && active ? "Active" : busy === "monthly" ? "Opening…" : "Join monthly"}
-              </Button>
-            </div>
+        <div className="flex justify-center">
+          <div role="radiogroup" aria-label="Billing period" className="inline-flex rounded-lg border border-border bg-card p-1">
+            {(["month", "year"] as const).map(i => (
+              <button key={i} role="radio" aria-checked={billing === i} onClick={() => setBilling(i)}
+                className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${billing === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                {i === "month" ? "Monthly" : "Yearly · 2 months free"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          <section aria-label="Free plan" className="rounded-2xl border border-border bg-card p-6 space-y-4">
+            <div><h2 className="font-bold text-lg">Free</h2><p className="text-sm text-muted-foreground">Get to know Oracle Lunar</p></div>
+            <p className="text-4xl font-bold">A$0</p>
+            <ul className="space-y-2 text-sm">{FREE_FEATURES.map(f => <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{f}</li>)}</ul>
+            <p className="text-xs text-muted-foreground">No AI, voice, image or video features — those cost money to run.</p>
+            <Button disabled variant="outline" className="w-full">{plan === "free" ? "Your plan" : "Included"}</Button>
+          </section>
+          {(["plus", "pro"] as const).map(id => {
+            const p = PLANS[id];
+            const highlight = neededPlan ? neededPlan === id : id === "pro";
+            return (
+              <section key={id} aria-label={`${p.name} plan`} className={`relative rounded-2xl bg-card p-6 space-y-4 ${highlight ? "border-2 border-primary" : "border border-border"}`}>
+                {id === "pro" && <span className="absolute right-4 top-4 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">Most powerful</span>}
+                <div><h2 className="font-bold text-lg">{p.name}</h2><p className="text-sm text-muted-foreground">{p.tagline}</p></div>
+                <div>
+                  <p className="text-4xl font-bold">{aud(billing === "year" ? p.yearlyAud : p.monthlyAud)} <span className="text-base font-normal text-muted-foreground">/ {billing === "year" ? "year" : "month"}</span></p>
+                  <p className="text-xs text-muted-foreground">{billing === "year" ? `Save ${aud(yearlySavingAud(id))} a year` : `or ${aud(p.yearlyAud)} a year`}</p>
+                </div>
+                <p className="rounded-md bg-primary/10 px-3 py-2 text-sm"><Sparkles className="mr-1 inline h-4 w-4 text-primary" />Includes {p.monthlyCreditAudLabel} of AI credit every month</p>
+                <ul className="space-y-2 text-sm">{p.features.map(f => <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{f}</li>)}</ul>
+                {plan === "owner" ? <Button disabled variant="outline" className="w-full">Owner — all included</Button> : planButton(id)}
+              </section>
+            );
+          })}
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground">
+          When your monthly credit runs out, top up your <Link to="/wallet" className="underline">wallet</Link> and keep going. AI is charged at cost plus a small service fee.
+        </p>
+
+        {hasSubscription && (
+          <div className="flex justify-center">
+            <Button variant="outline" onClick={manage} disabled={!!busy} className="gap-2"><Settings2 className="h-4 w-4" />{busy === "portal" ? "Opening…" : "Manage plan — cancel, card, invoices"}</Button>
           </div>
         )}
 
-        {membership?.founder_number && !(membership.monthly_active_until && new Date(membership.monthly_active_until).getTime() > Date.now()) && (
-          <div className="rounded-2xl border-2 border-primary p-6 space-y-4 bg-card">
-            {upgradeFrom && (
-              <p className="flex items-center gap-2 text-sm font-medium text-primary">
-                <Lock className="w-4 h-4" /> That page is part of the full app. Upgrade to open it.
-              </p>
-            )}
-            <div className="flex items-center gap-2 font-bold text-lg"><Unlock className="w-5 h-5 text-primary" /> Unlock the full app</div>
-            <p className="text-4xl font-bold">$19.99 <span className="text-base font-normal text-muted-foreground">AUD / month</span></p>
-            <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• Opens every page: video, voice, photo studio, app builder and more</li>
-              <li>• You keep your Founder seat #{membership.founder_number} and gold badge</li>
-              <li>• Cancel any time — you drop back to your Founder pages</li>
-              <li>• AI, voice and images are still paid from your wallet credit</li>
-            </ul>
-            <Button onClick={() => checkout("monthly")} disabled={!!busy} className="w-full">
-              {busy === "monthly" ? "Opening…" : "Upgrade to the full app"}
-            </Button>
-          </div>
+        {!membership?.founder_number && left !== null && left > 0 && (
+          <section aria-label="Founder seat" className="rounded-2xl border-2 border-founder bg-card p-6 md:flex md:items-center md:justify-between md:gap-6 space-y-3 md:space-y-0">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 font-bold text-founder"><Sparkles className="h-5 w-5" />Founding Member — A$1 once</div>
+              <p className="text-sm text-muted-foreground">Plus-level features for life, your own numbered seat (1 of 500), gold badge and Founder's Vault. AI use is paid from your wallet. Transferable. {left} seats left.</p>
+            </div>
+            <Button onClick={claimFounder} disabled={!!busy} className="shrink-0 bg-founder text-founder-foreground hover:bg-founder/90">{busy === "founder" ? "Opening…" : "Claim my Founder seat"}</Button>
+          </section>
         )}
 
         {membership?.founder_number && (
@@ -183,8 +225,7 @@ const MembershipPage = () => {
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          See the <Link to="/terms-of-service" className="underline">Terms of Service</Link> for Founder seat rules.
-          {active && <> · <Link to="/dashboard" className="underline">Back to the app</Link></>}
+          Prices in Australian dollars. See the <Link to="/terms-of-service" className="underline">Terms of Service</Link> for plan and Founder seat rules.
         </p>
       </div>
     </div>

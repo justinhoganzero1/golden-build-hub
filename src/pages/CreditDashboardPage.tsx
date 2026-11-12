@@ -7,7 +7,8 @@ import { Coins, CreditCard, Loader2, RefreshCw, Clock, Wallet, Infinity as Infin
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TRIAL_DAYS } from "@/lib/apiKeyReminderLogic";
+import { useMembership } from "@/hooks/useMembership";
+import { PLANS, planLabel } from "@/lib/plans";
 import {
   FEATURE_PRICES,
   FEATURE_GROUPS,
@@ -58,13 +59,7 @@ const CreditDashboardPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const trial = useMemo(() => {
-    const createdAt = (user as { created_at?: string } | null)?.created_at;
-    if (!createdAt) return null;
-    const endMs = new Date(createdAt).getTime() + TRIAL_DAYS * 86_400_000;
-    const daysLeft = Math.max(0, Math.ceil((endMs - Date.now()) / 86_400_000));
-    return { endDate: new Date(endMs), daysLeft };
-  }, [user]);
+  const { plan } = useMembership();
 
   const topUp = async () => {
     setBuying(true);
@@ -99,8 +94,8 @@ const CreditDashboardPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Your credit, trial and prices | Oracle Lunar"
-        description="See your Oracle Lunar credit balance, when your free trial ends, and exactly what each feature costs per use."
+        title="Your credit, plan and prices | Oracle Lunar"
+        description="See your Oracle Lunar credit balance, your plan, and exactly what each feature costs per use."
       />
       <UniversalBackButton />
 
@@ -109,7 +104,7 @@ const CreditDashboardPage = () => {
           <div>
             <h1 className="text-2xl font-bold">Your credit &amp; costs</h1>
             <p className="text-sm text-muted-foreground">
-              What you have, when your trial ends, and what each thing costs to make.
+              What you have, your plan, and what each thing costs to make.
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
@@ -130,30 +125,24 @@ const CreditDashboardPage = () => {
 
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-              <Clock className="h-4 w-4" /> Free trial
+              <Clock className="h-4 w-4" /> Your plan
             </div>
             {unlimited ? (
               <p className="mt-2 flex items-center gap-2 text-xl font-semibold text-primary">
                 <InfinityIcon className="h-5 w-5" /> No limit on this account
               </p>
-            ) : trial ? (
-              <>
-                <p className="mt-2 text-3xl font-bold">
-                  {trial.daysLeft === 0 ? "Ended" : `${trial.daysLeft} day${trial.daysLeft === 1 ? "" : "s"}`}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {trial.daysLeft === 0 ? "Ended " : "Ends "}
-                  {trial.endDate.toLocaleDateString()}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {trial.daysLeft === 0
-                    ? "You're on the free membership: 10 chats and 1 picture a day, free forever. Add credit for unlimited use, video and movies."
-                    : "After the trial you keep a free membership: 10 chats and 1 picture a day."}
-                </p>
-
-              </>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">Sign in to see your trial.</p>
+              <>
+                <p className="mt-2 text-3xl font-bold">{planLabel(plan)}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {plan === "plus" || plan === "pro"
+                    ? `Includes ${PLANS[plan].monthlyCreditAudLabel} of AI credit every month.`
+                    : plan === "founder"
+                      ? "Plus-level features for life. AI is paid from your wallet."
+                      : "Free covers the no-cost tools. Upgrade to use Oracle's AI."}
+                </p>
+                <Button variant="link" className="h-auto p-0 text-xs" onClick={() => nav("/membership")}>See plans</Button>
+              </>
             )}
           </div>
 

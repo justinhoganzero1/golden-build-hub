@@ -10,7 +10,7 @@
 // Billed through the two-phase wallet like every other AI path.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
-import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError } from "../_shared/wallet.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -150,6 +150,7 @@ serve(async (req) => {
       transactionId = authz.transaction_id;
       if (authz.duplicate) return json({ error: "duplicate_request" }, 409);
     } catch (e) {
+      if (e instanceof PlanRequiredError) return planRequiredResponse(e, corsHeaders);
       if (e instanceof InsufficientCoinsError) {
         return json(
           {

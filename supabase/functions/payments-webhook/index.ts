@@ -233,6 +233,14 @@ async function recordBlockPayment(session: any) {
 
 // ---------- subscription tracking ----------
 
+// Plus / Pro subscription prices (human-readable lookup keys, same in test and live).
+const PLAN_PRICES: Record<string, { plan: "plus" | "pro"; interval: "month" | "year" }> = {
+  plus_monthly: { plan: "plus", interval: "month" },
+  plus_yearly: { plan: "plus", interval: "year" },
+  pro_monthly: { plan: "pro", interval: "month" },
+  pro_yearly: { plan: "pro", interval: "year" },
+};
+
 function priceKeyFromSubscription(subscription: any): string | null {
   const item = subscription.items?.data?.[0];
   return item?.price?.lookup_key
@@ -278,6 +286,37 @@ async function syncMembershipFromSubscription(subscription: any) {
   const until = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
   const active = ["active", "trialing", "past_due"].includes(subscription.status)
     || (subscription.status === "canceled" && periodEnd && periodEnd * 1000 > Date.now());
+
+  const planPrice = PLAN_PRICES[priceKey ?? ""];
+  if (planPrice) {
+    const periodStart = item?.current_period_start ?? subscription.current_period_start;
+    const { data: current } = await supabase.from("memberships")
+      .select("plan_subscription_id, plan_active_until").eq("user_id", userId).maybeSingle();
+    // A stale event for an old, replaced subscription must never downgrade the current one.
+    if (!active && current?.plan_subscription_id && current.plan_subscription_id !== subscription.id) {
+      log("ignored inactive old plan subscription", { user_id: userId, sub: subscription.id });
+      return;
+    }
+    const { error } = await supabase.from("memberships").upsert({
+      user_id: userId,
+      plan: active ? planPrice.plan : "free",
+      plan_interval: planPrice.interval,
+      plan_status: subscription.status,
+      plan_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
+      plan_active_until: active ? until : null,
+      plan_subscription_id: subscription.id,
+      plan_cancel_at_period_end: !!subscription.cancel_at_period_end,
+      stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : null,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+    log("plan synced", { user_id: userId, plan: planPrice.plan, status: subscription.status, active });
+    if (subscription.status === "active") {
+      const { error: grantErr } = await supabase.rpc("grant_due_plan_credits");
+      if (grantErr) log("plan credit grant failed (hourly job will retry)", { error: grantErr.message });
+    }
+    return;
+  }
 
   if (priceKey === "membership_monthly") {
     const { error } = await supabase.from("memberships").upsert({
@@ -526,9 +565,19 @@ Deno.serve(async (req) => {
         break;
       }
 
-      case "invoice.paid":
-        // Subscription state handled by customer.subscription.* events.
+      case "invoice.paid": {
+        // Renewal paid: re-read the subscription so the new period (and its credit) lands even if events arrive out of order.
+        const inv = event.data.object;
+        const subId = typeof inv.subscription === "string" ? inv.subscription
+          : typeof inv.parent?.subscription_details?.subscription === "string" ? inv.parent.subscription_details.subscription : null;
+        if (subId) {
+          const stripe = createStripeClient(env);
+          const sub = await stripe.subscriptions.retrieve(subId);
+          await upsertSubscriptionRow(sub, env);
+          await syncMembershipFromSubscription(sub);
+        }
         break;
+      }
 
       case "invoice.payment_failed":
       case "payment_intent.payment_failed": {
