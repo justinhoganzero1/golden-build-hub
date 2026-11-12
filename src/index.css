@@ -2068,3 +2068,70 @@ body.reimagined-body { background: hsl(200 35% 4%); box-shadow: none; background
   .oracle-read-chat { right: 12px; }
   .oracle-read-chat[aria-pressed="true"] { top: 88px; right: 20px; }
 }
+
+/* Sign-in: same glass office, gold and teal light as Oracle's chat. */
+.oracle-signin {
+  --foreground: 40 20% 96%;
+  --muted-foreground: 40 8% 70%;
+  --border: 42 26% 30%;
+  --oracle-glass: 180 10% 7%;
+  --oracle-teal: 174 72% 56%;
+  position: relative; min-height: 100dvh; overflow: hidden; display: flex; flex-direction: column;
+  background: hsl(var(--background)); color: hsl(var(--foreground));
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.oracle-signin-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; animation: oracle-signin-drift 28s ease-in-out infinite alternate; }
+.oracle-signin-scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, hsl(var(--background) / .7), hsl(var(--background) / .15) 26%, hsl(var(--background) / .2) 45%, hsl(var(--background) / .92) 78%); }
+.oracle-signin-sweep { position: absolute; inset: -20% -60%; background: linear-gradient(110deg, transparent 42%, hsl(var(--oracle-teal) / .08) 48%, hsl(var(--primary) / .1) 52%, transparent 58%); animation: oracle-signin-sweep 9s ease-in-out infinite; pointer-events: none; }
+.oracle-signin-header { position: relative; z-index: 1; padding: max(20px, env(safe-area-inset-top)) 24px 16px; }
+.oracle-signin-header h1 { font-size: 22px; line-height: 1.2; }
+.oracle-signin-card {
+  position: relative; z-index: 1; margin: auto auto 0; width: min(440px, calc(100% - 24px));
+  margin-bottom: max(12px, env(safe-area-inset-bottom)); padding: 22px;
+  border: 1px solid hsl(var(--border) / .8); border-radius: 14px;
+  background: hsl(var(--oracle-glass) / .78); backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 20px 60px hsl(var(--background) / .55), inset 0 1px 0 hsl(var(--foreground) / .07);
+  animation: oracle-signin-rise .6s cubic-bezier(.2,.8,.2,1) both;
+}
+.oracle-signin-card::before { content: ""; position: absolute; left: 22px; right: 22px; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, hsl(var(--primary) / .9), hsl(var(--oracle-teal) / .9), transparent); }
+.oracle-signin-switch { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; margin-bottom: 18px; border-radius: 10px; background: hsl(var(--background) / .55); border: 1px solid hsl(var(--border) / .6); }
+.oracle-signin-switch button { padding: 9px 0; border-radius: 7px; font-size: 13px; font-weight: 600; color: hsl(var(--muted-foreground)); transition: background .2s, color .2s; }
+.oracle-signin-switch button[aria-selected="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.oracle-signin-title { font-size: 26px; font-weight: 600; line-height: 1.15; }
+.oracle-signin-sub { margin-top: 6px; font-size: 14px; color: hsl(var(--muted-foreground)); }
+.oracle-signin-field { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; border-radius: 10px; border: 1px solid hsl(var(--border) / .8); background: hsl(var(--background) / .5); transition: border-color .2s, box-shadow .2s; cursor: text; }
+.oracle-signin-field:focus-within { border-color: hsl(var(--primary) / .8); box-shadow: 0 0 0 3px hsl(var(--primary) / .15); }
+.oracle-signin-field input { flex: 1; min-width: 0; background: transparent; outline: none; font-size: 16px; color: hsl(var(--foreground)); color-scheme: dark; }
+.oracle-signin-field input::placeholder { color: hsl(var(--muted-foreground)); }
+.oracle-signin-field input:disabled { opacity: .75; }
+.oracle-signin-inline-label { font-size: 13px; color: hsl(var(--muted-foreground)); white-space: nowrap; }
+.oracle-signin-eye { color: hsl(var(--muted-foreground)); padding: 6px; margin-right: -6px; }
+.oracle-signin-eye:hover { color: hsl(var(--foreground)); }
+.oracle-signin-hint { margin: 6px 2px 0; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.oracle-signin-secure { display: flex; align-items: center; gap: 6px; font-size: 11px; color: hsl(var(--oracle-teal)); }
+.oracle-signin-pulse { width: 6px; height: 6px; border-radius: 9999px; background: hsl(var(--oracle-teal)); box-shadow: 0 0 8px hsl(var(--oracle-teal)); animation: pulse 2s ease-in-out infinite; }
+.oracle-signin-submit { display: flex; width: 100%; align-items: center; justify-content: center; gap: 8px; min-height: 50px; margin-top: 6px; border-radius: 10px; font-size: 15px; font-weight: 700; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 8px 24px hsl(var(--primary) / .28); transition: transform .15s, box-shadow .2s, opacity .2s; }
+.oracle-signin-submit:hover { box-shadow: 0 10px 30px hsl(var(--primary) / .4); }
+.oracle-signin-submit:active { transform: scale(.985); }
+.oracle-signin-submit:disabled { opacity: .6; }
+.oracle-signin-help { margin-top: 12px; padding: 12px; text-align: left; font-size: 12px; border-radius: 10px; color: hsl(var(--muted-foreground)); background: hsl(var(--background) / .55); border: 1px solid hsl(var(--border) / .6); display: grid; gap: 6px; }
+.oracle-signin-legal { margin-top: 16px; text-align: center; font-size: 11px; color: hsl(var(--muted-foreground)); }
+@keyframes oracle-signin-drift { from { transform: scale(1.04) translateX(0); } to { transform: scale(1.1) translateX(-1.5%); } }
+@keyframes oracle-signin-sweep { 0%, 100% { transform: translateX(-30%); } 50% { transform: translateX(30%); } }
+@keyframes oracle-signin-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (min-width: 768px) {
+  .oracle-signin-card { margin: auto; padding: 30px; }
+  .oracle-signin-header { padding: 28px 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oracle-signin-bg, .oracle-signin-sweep, .oracle-signin-card, .oracle-signin-pulse { animation: none; }
+}
+/* Keep app-wide neon glows off this calm sign-in surface. */
+.oracle-signin button, .oracle-signin a, .oracle-signin [role="tab"], .oracle-signin [role="tablist"] { box-shadow: none; animation: none !important; text-shadow: none; }
+.oracle-signin button::before, .oracle-signin button::after, .oracle-signin [role="tab"]::before, .oracle-signin [role="tab"]::after { content: none !important; display: none !important; }
+.oracle-signin h1, .oracle-signin h2 { text-shadow: none !important; color: hsl(var(--foreground)); }
+.oracle-signin .oracle-signin-switch button { background-image: none !important; }
+.oracle-signin .oracle-signin-switch button[aria-selected="true"] { background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
+.oracle-signin .oracle-signin-switch button[aria-selected="false"] { background: transparent !important; }
+.oracle-signin .oracle-signin-submit { box-shadow: 0 8px 24px hsl(var(--primary) / .28); }
+.oracle-signin .oracle-signin-eye { background: transparent !important; }

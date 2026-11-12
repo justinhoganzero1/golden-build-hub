@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Mail, Lock, ArrowRight, Shield, Sparkles } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Mail, Lock, ArrowRight, Shield, Eye, EyeOff, CalendarDays, Check } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { trackAiDiscovery } from "@/lib/aiDiscovery";
-import oracleLunarBanner from "@/assets/oracle-lunar-banner.jpg";
+import officeBackdrop from "@/assets/oracle-office-empty.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
 
@@ -31,6 +31,7 @@ const SignInPage = () => {
   const isOwnerAccess = redirectPath === "/owner-dashboard";
   const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [humanCheck, setHumanCheck] = useState(newHumanCheck);
   const [humanAnswer, setHumanAnswer] = useState("");
 
@@ -161,239 +162,154 @@ const SignInPage = () => {
     }
   };
 
-  // Defeat any inherited pink tab glow on this page by scoping a wrapper.
+  const title = isOwnerAccess ? "Owner sign in" : isSignUp ? "Meet Oracle" : "Welcome back";
+  const subtitle = isOwnerAccess
+    ? "Approved owner account only."
+    : isSignUp
+      ? "Create your free account. No credit card needed."
+      : "Sign in and pick up where you left off.";
+
   return (
-    <div data-no-tab-glow className="min-h-screen bg-background flex flex-col items-center justify-start pt-6 px-4 pb-10">
-      <style>{`
-        [data-no-tab-glow] [role="tab"]::before,
-        [data-no-tab-glow] [role="tab"]::after,
-        [data-no-tab-glow] [role="tablist"] > button::before,
-        [data-no-tab-glow] [role="tablist"] > button::after { content: none !important; display: none !important; }
-      `}</style>
+    <main data-no-tab-glow className="oracle-signin">
+      <img src={officeBackdrop} alt="" aria-hidden className="oracle-signin-bg" width={848} height={1264} />
+      <div aria-hidden className="oracle-signin-scrim" />
+      <div aria-hidden className="oracle-signin-sweep" />
 
-      <div className="w-full max-w-md overflow-hidden rounded-[22px] mb-6 border border-primary/30 shadow-[0_0_32px_hsl(45_100%_55%/0.25)]">
-        <img src={oracleLunarBanner} alt="Oracle Lunar Banner" className="w-full h-auto object-cover" width={1024} height={512} />
-      </div>
+      <header className="oracle-signin-header">
+        <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
+        <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />Your AI best friend, always here for you
+        </p>
+      </header>
 
-      <div
-        className="w-full max-w-md rounded-[22px] p-7 animate-slide-up"
-        style={{
-          background: "linear-gradient(160deg, hsl(0 0% 6% / 0.95), hsl(265 35% 9% / 0.92) 50%, hsl(0 0% 4% / 0.95))",
-          border: "1.5px solid hsl(45 100% 55% / 0.5)",
-          boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.18), 0 0 26px hsl(45 100% 55% / 0.3), 0 0 50px hsl(280 90% 60% / 0.18)",
-        }}
-      >
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <h2 className="text-2xl font-bold text-primary text-center">
-            {isOwnerAccess ? "Owner Sign In" : isSignUp ? "Create Account" : "Sign In"}
-          </h2>
-        </div>
-
-        {isOwnerAccess ? (
-          <p className="text-center text-sm text-muted-foreground mb-6">Approved owner account only.</p>
-        ) : (
-          <>
-            <p className="text-center text-xs text-muted-foreground mb-2">
-              {isSignUp ? "Create your account with email and password." : "Sign in with your email and password."}
-            </p>
-            {isSignUp && (
-              <p className="text-center text-xs text-primary font-medium mb-4">
-                ✨ 100% free to join — no credit card required.
-              </p>
-            )}
-          </>
+      <section className="oracle-signin-card" aria-labelledby="signin-title">
+        {!isOwnerAccess && (
+          <div className="oracle-signin-switch" role="tablist" aria-label="Choose sign in or create account">
+            <button type="button" role="tab" aria-selected={!isSignUp} onClick={() => setIsSignUp(false)}>Sign in</button>
+            <button type="button" role="tab" aria-selected={isSignUp} onClick={() => setIsSignUp(true)}>Create account</button>
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div>
-            <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Email</label>
-            <div
-              className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors"
-              style={{
-                background: "hsl(0 0% 4% / 0.7)",
-                border: "1px solid hsl(45 100% 55% / 0.35)",
-                boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
-              }}
-            >
-              <Mail className="w-4 h-4 text-primary/80" />
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm disabled:opacity-70"
-                required
-                readOnly={isOwnerAccess}
-                disabled={isOwnerAccess}
-              />
-            </div>
-          </div>
+        <h2 id="signin-title" className="oracle-signin-title">{title}</h2>
+        <p className="oracle-signin-sub">{subtitle}</p>
 
-          <div>
-            <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">Password</label>
-            <div
-              className="flex items-center gap-3 rounded-[14px] px-4 py-3"
-              style={{
-                background: "hsl(0 0% 4% / 0.7)",
-                border: "1px solid hsl(280 90% 60% / 0.4)",
-                boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
-              }}
-            >
-              <Lock className="w-4 h-4 text-primary/80" />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
-                required
-              />
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+          <label className="oracle-signin-field">
+            <Mail className="h-4 w-4 shrink-0 text-primary" />
+            <span className="sr-only">Email</span>
+            <input
+              type="email"
+              autoComplete="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              readOnly={isOwnerAccess}
+              disabled={isOwnerAccess}
+            />
+          </label>
+
+          <label className="oracle-signin-field">
+            <Lock className="h-4 w-4 shrink-0 text-primary" />
+            <span className="sr-only">Password</span>
+            <input
+              type={showPassword ? "text" : "password"}
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="button" className="oracle-signin-eye" onClick={() => setShowPassword(v => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </label>
 
           {isSignUp && !isOwnerAccess && (
-            <div>
-              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
-                Date of Birth <span className="text-primary">(must be 16+)</span>
-              </label>
-              <div
-                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
-                style={{
-                  background: "hsl(0 0% 4% / 0.7)",
-                  border: "1px solid hsl(45 100% 55% / 0.35)",
-                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
-                }}
-              >
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  max={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())
-                    .toISOString().slice(0, 10)}
-                  min="1900-01-01"
-                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none flex-1 text-sm"
-                  required
-                />
+            <>
+              <div>
+                <label className="oracle-signin-field">
+                  <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="oracle-signin-inline-label">Birthday</span>
+                  <input
+                    type="date"
+                    aria-label="Date of birth (must be 16 or over)"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    max={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())
+                      .toISOString().slice(0, 10)}
+                    min="1900-01-01"
+                    required
+                  />
+                </label>
+                <p className="oracle-signin-hint">Oracle Lunar is for people aged 16 and over.</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                Oracle Lunar is restricted to users aged 16 and over.
-              </p>
-            </div>
-          )}
 
-          {isSignUp && !isOwnerAccess && (
-            <div>
-              <label className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5 block">
-                Human check <span className="text-primary">(prove you're not a robot)</span>
-              </label>
-              <div
-                className="flex items-center gap-3 rounded-[14px] px-4 py-3"
-                style={{
-                  background: "hsl(0 0% 4% / 0.7)",
-                  border: "1px solid hsl(160 84% 39% / 0.4)",
-                  boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.06)",
-                }}
-              >
-                <Shield className="w-4 h-4 text-primary/80" />
-                <span className="text-sm text-foreground font-semibold whitespace-nowrap">
-                  What is {humanCheck.a} + {humanCheck.b}?
-                </span>
+              <label className="oracle-signin-field">
+                <Shield className="h-4 w-4 shrink-0 text-primary" />
+                <span className="oracle-signin-inline-label">Quick check: what is {humanCheck.a} + {humanCheck.b}?</span>
                 <input
                   type="number"
                   inputMode="numeric"
+                  aria-label={`Human check: what is ${humanCheck.a} plus ${humanCheck.b}?`}
                   placeholder="?"
                   value={humanAnswer}
                   onChange={(e) => setHumanAnswer(e.target.value)}
-                  className="bg-transparent text-foreground placeholder:text-muted-foreground outline-none w-16 text-sm text-center"
+                  className="!w-14 !flex-none text-center"
                   required
                 />
-              </div>
-            </div>
+              </label>
+            </>
           )}
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-muted-foreground text-xs cursor-pointer">
-              <button
-                type="button"
-                onClick={() => setRememberMe(!rememberMe)}
-                className={`w-4 h-4 rounded-full border-2 transition-colors ${rememberMe ? "bg-primary border-primary" : "border-primary/40"}`}
-              />
+          <div className="flex items-center justify-between pt-1">
+            <button type="button" role="checkbox" aria-checked={rememberMe} onClick={() => setRememberMe(!rememberMe)}
+              className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${rememberMe ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+                {rememberMe && <Check className="h-3 w-3" />}
+              </span>
               Remember me
-            </label>
-            <span className="text-primary text-[11px] flex items-center gap-1">
-              <Shield className="w-3 h-3" /> Secure login
-            </span>
+            </button>
+            <span className="oracle-signin-secure"><span className="oracle-signin-pulse" />AI Anti-Hacker Active</span>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-            style={{
-              background: "linear-gradient(135deg, hsl(45 100% 55%), hsl(38 100% 50%))",
-              color: "hsl(0 0% 8%)",
-              border: "1px solid hsl(45 100% 60% / 0.7)",
-              boxShadow: "inset 0 1px 0 hsl(0 0% 100% / 0.4), 0 0 24px hsl(45 100% 55% / 0.4), 0 4px 14px hsl(45 100% 50% / 0.35)",
-            }}
-          >
-            {loading ? "Loading..." : isOwnerAccess ? "Sign In as Owner" : isSignUp ? "Create Account" : "Sign In"}
-            <ArrowRight className="w-4 h-4" />
+          <button type="submit" disabled={loading} className="oracle-signin-submit">
+            {loading ? "One moment…" : isOwnerAccess ? "Sign in as owner" : isSignUp ? "Create my account" : "Sign in"}
+            {!loading && <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
 
         {!isOwnerAccess && (
-          <>
-            <p className="text-center text-muted-foreground text-xs mt-5">
-              {isSignUp ? "Already have an account?" : "New here?"}{" "}
-              <span className="text-primary cursor-pointer hover:underline font-semibold" onClick={() => setIsSignUp(!isSignUp)}>
-                {isSignUp ? "Sign in" : "Create an account"}
-              </span>
-            </p>
-            <div className="text-center mt-3">
-              <button
-                type="button"
-                onClick={() => setShowHelp((v) => !v)}
-                className="text-[11px] text-muted-foreground hover:text-primary underline underline-offset-2"
-              >
-                Trouble signing up?
-              </button>
-              {showHelp && (
-                <div
-                  className="mt-3 text-left text-xs text-muted-foreground rounded-[14px] p-3 space-y-2"
-                  style={{ background: "hsl(0 0% 4% / 0.6)", border: "1px solid hsl(280 90% 60% / 0.3)" }}
-                >
-                  <p className="text-foreground font-semibold">Quick fixes:</p>
-                  <ul className="list-disc pl-4 space-y-1">
-                    <li>Use a password with <span className="text-foreground">8+ characters</span>.</li>
-                    <li>Avoid common passwords — they're auto-blocked.</li>
-                    <li>Already have an account? Tap <span className="text-primary">Sign in</span> above.</li>
-                    <li>Check your inbox (and spam) for confirmation.</li>
-                  </ul>
-                  <p className="pt-1">
-                    Still stuck? Email <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">justinbretthogan@gmail.com</a>.
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
+          <div className="mt-4 text-center">
+            <button type="button" onClick={() => setShowHelp((v) => !v)}
+              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-primary">
+              Trouble signing in?
+            </button>
+            {showHelp && (
+              <div className="oracle-signin-help">
+                <p className="font-semibold text-foreground">Quick fixes:</p>
+                <ul className="list-disc space-y-1 pl-4">
+                  <li>Use a password with <span className="text-foreground">8+ characters</span>.</li>
+                  <li>Avoid common passwords — they're auto-blocked.</li>
+                  <li>Already have an account? Choose <span className="text-primary">Sign in</span> above.</li>
+                  <li>Check your inbox (and spam) for the confirmation email.</li>
+                </ul>
+                <p className="pt-1">
+                  Still stuck? Email <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">justinbretthogan@gmail.com</a>.
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
-        <div className="flex justify-center mt-5">
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider"
-            style={{ border: "1px solid hsl(160 84% 39% / 0.5)", color: "hsl(160 84% 50%)", background: "hsl(160 84% 20% / 0.15)" }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "hsl(160 84% 45%)" }} />
-            AI Anti-Hacker Active
-          </div>
-        </div>
-      </div>
-
-      <p className="text-muted-foreground text-[11px] mt-5">
-        By continuing, you agree to our <span className="text-primary cursor-pointer hover:underline">Terms of Service</span>
-      </p>
-    </div>
+        <p className="oracle-signin-legal">
+          By continuing you agree to our{" "}
+          <Link to="/terms-of-service" className="text-primary hover:underline">Terms</Link> and{" "}
+          <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.
+        </p>
+      </section>
+    </main>
   );
 };
 
