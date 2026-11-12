@@ -49,6 +49,5 @@
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
 - Signed-out / → AppStorePage, installed → PublicWelcomePage, signed-in → Oracle; /download always AppStorePage. Install CTAs use installRedirect (no dead hosts).
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
-- Oracle human sounds: bundled clips via tested picker (oracleHumanSounds); never paid, obey mute, none in serious moods.
-- Owner Dashboard figures drill into admin-drilldown's whitelisted owner-only metrics; paid counts are live-money only so tests never pose as customers.
-- Website landing pages are recorded once per browser tab in site_arrivals (oraclelunar.com only, owner pages excluded, anonymous, owner-only reads) so arrival tracking never inflates the existing page_views counters.
+- Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
+- Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; website arrivals use site_arrivals so page_views counters stay unchanged.
