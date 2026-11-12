@@ -7,7 +7,7 @@ import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
 import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
-import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel, Clapperboard } from "lucide-react";
+import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
 import { notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
 import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
-import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, oracleChatTier, tierSettings, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
+import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
@@ -3015,22 +3015,6 @@ const OraclePage = () => {
         </div>
         {micPermissionError && <p className="text-sm text-destructive">{micPermissionError}</p>}
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={oracleChatTier(speechMode, premiumVideo)} onValueChange={value => {
-            const s = tierSettings(value);
-            if (!s) return;
-            cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
-            speechModeRef.current = s.speech; setSpeechMode(s.speech);
-            premiumVideoRef.current = s.video; setPremiumVideo(s.video);
-            if (user?.id) {
-              localStorage.setItem(`oracle-speech-mode:${user.id}`, s.speech);
-              localStorage.setItem(`oracle-video-replies:v4:${user.id}`, s.video ? "on" : "off");
-            }
-            if (s.video) toast("Premium on: each answer is a lip-synced talking clip. It takes 1 to 3 minutes and is charged from your wallet.");
-          }}><SelectTrigger aria-label="Oracle chat level" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
-            <SelectItem value="basic">Basic · device voice · free</SelectItem>
-            <SelectItem value="voice">Voice · ad voice + talking movement · fast · wallet paid</SelectItem>
-            <SelectItem value="premium">Premium · real lip-sync clips · 1–3 min · wallet paid (costs most)</SelectItem>
-          </SelectContent></Select>
           {speechMode === "device" && !premiumVideo && <Select value={deviceVoice || "automatic"} onValueChange={value => {
             const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();
             if (user?.id) localStorage.setItem(`oracle-device-voice:${user.id}`, selected);
@@ -3038,7 +3022,6 @@ const OraclePage = () => {
             <SelectItem value="automatic">Automatic device voice</SelectItem>
             {deviceVoices.filter((v, i, all) => all.findIndex(x => x.voiceURI === v.voiceURI) === i).map(v => <SelectItem key={v.voiceURI} value={v.voiceURI}>{v.name} · {v.lang}</SelectItem>)}
           </SelectContent></Select>}
-          {premiumVideo && <Clapperboard className="h-4 w-4 text-primary" aria-hidden />}
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
         </div>
         <label className="flex items-center gap-2 text-sm text-foreground">
