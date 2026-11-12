@@ -3028,8 +3028,8 @@ const OraclePage = () => {
             if (s.video) toast("Premium on: each answer is a lip-synced talking clip. It takes 1 to 3 minutes and is charged from your wallet.");
           }}><SelectTrigger aria-label="Oracle chat level" className="h-9 w-auto max-w-full"><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="basic">Basic · device voice · free</SelectItem>
-            <SelectItem value="voice">Voice · premium ad voice · wallet paid</SelectItem>
-            <SelectItem value="premium">Premium · lip-sync talking clips · wallet paid (costs most)</SelectItem>
+            <SelectItem value="voice">Voice · ad voice + talking movement · fast · wallet paid</SelectItem>
+            <SelectItem value="premium">Premium · real lip-sync clips · 1–3 min · wallet paid (costs most)</SelectItem>
           </SelectContent></Select>
           {speechMode === "device" && !premiumVideo && <Select value={deviceVoice || "automatic"} onValueChange={value => {
             const selected = value === "automatic" ? "" : value; setDeviceVoice(selected); voiceMapRef.current.clear();

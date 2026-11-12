@@ -8,6 +8,7 @@ import greetingClipUrl from "@/assets/avatars/oracle-clip-greeting.webm";
 import thinkingClipUrl from "@/assets/avatars/oracle-clip-thinking.webm";
 import talkingClipUrl from "@/assets/avatars/oracle-clip-talking.webm";
 import doneClipUrl from "@/assets/avatars/oracle-clip-done.webm";
+import { talkingPose, poseTransform } from "@/lib/talkingMotion";
 import { choosePresenterClip, presenterHistory, type PresenterClip } from "@/lib/oracleClipSelection";
 
 export type PresenterState = "idle" | "listening" | "thinking" | "speaking";
@@ -116,13 +117,28 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
     return () => v.removeEventListener("canplay", tryPlay);
   }, [plan?.url, replyVideoUrl]);
 
+  // Voice level: gentle head-and-shoulder sway while she speaks (no generated
+  // clip, no mouth movement — it is a talking motion, not lip-sync).
+  const talking = state === "speaking" && !replyVideoUrl && !cue;
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    if (!talking || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { el.style.transform = ""; return; }
+    let frame = 0; const start = performance.now();
+    const tick = (now: number) => { el.style.transform = poseTransform(talkingPose((now - start) / 1000)); frame = requestAnimationFrame(tick); };
+    frame = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(frame); el.style.transition = "transform 400ms ease-out"; el.style.transform = ""; };
+  }, [talking]);
+
   const handleEnded = () => {
     if (replyVideoUrl) onReplyVideoDone?.();
     else if (cue) onCueDone?.();
     else if (state === "thinking") setThinkingPlayed(true);
   };
 
-  return <div className="absolute inset-0" data-testid="oracle-presenter-stage">
+  return <div className="absolute inset-0 overflow-hidden" data-testid="oracle-presenter-stage">
+    <div ref={body} data-testid="oracle-talking-body" data-talking={talking ? "true" : undefined} className="absolute inset-0 origin-[50%_65%] will-change-transform">
     <img src={image || portrait} alt="Oracle AI presenter" className="h-full w-full object-cover object-center" />
     {plan && !failed && (
       <video
@@ -141,6 +157,7 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
       />
     )}
+    </div>
     <div className="absolute inset-0 oracle-stage-shade" />
     {replyVideoUrl && (playBlocked || failed) && <div className="absolute inset-0 flex items-center justify-center z-20">
       {failed ? <Button variant="secondary" onClick={onReplyVideoDone}>Video playback unavailable · Close</Button> : <Button variant="secondary" onClick={() => {

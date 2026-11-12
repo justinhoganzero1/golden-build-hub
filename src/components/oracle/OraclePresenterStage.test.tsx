@@ -27,3 +27,14 @@ describe("Oracle standby video", () => {
     expect(container.querySelector("img")?.getAttribute("src")).toBe("/outfit.png");
   });
 });
+
+describe("Oracle talking movement", () => {
+  it("sways her picture only while she speaks without a lip-sync clip", () => {
+    const speak = render(<OraclePresenterStage state="speaking" />);
+    expect(speak.container.querySelector('[data-testid="oracle-talking-body"]')?.getAttribute("data-talking")).toBe("true");
+    const idle = render(<OraclePresenterStage state="idle" />);
+    expect(idle.container.querySelector('[data-testid="oracle-talking-body"]')?.hasAttribute("data-talking")).toBe(false);
+    const clip = render(<OraclePresenterStage state="speaking" replyVideoUrl="/reply.mp4" />);
+    expect(clip.container.querySelector('[data-testid="oracle-talking-body"]')?.hasAttribute("data-talking")).toBe(false);
+  });
+});
