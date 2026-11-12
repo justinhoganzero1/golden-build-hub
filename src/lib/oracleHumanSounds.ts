@@ -1,5 +1,5 @@
 // Oracle's human sounds: a soft breath, sigh or giggle before she speaks, an
-// occasional burp and a very rare loud fart (followed by an embarrassed blush).
+// occasional burp and a very rare loud fart with a wet, runny tail (followed by an embarrassed blush).
 // All sounds are small prerecorded clips played on the device — free, never a
 // paid generation — and they respect mute and the member's settings.
 import type { Mood } from "@/lib/oracleMood";
@@ -91,7 +91,7 @@ export function playHumanSound(url: string, isLive: () => boolean): Promise<void
     let done = false;
     const finish = () => { if (done) return; done = true; clearInterval(watch); clearTimeout(cap); audio.pause(); resolve(); };
     const watch = setInterval(() => { if (!isLive()) finish(); }, 100);
-    const cap = setTimeout(finish, 3500);
+    const cap = setTimeout(finish, 4500);
     audio.onended = finish; audio.onerror = finish;
     audio.play().catch(finish);
   });
