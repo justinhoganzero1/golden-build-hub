@@ -193,6 +193,7 @@ export default function AppStorePage() {
               {platform === "desktop" ? <Laptop className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
               {deviceLine}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">No sign-in needed to download — you create your account inside the app.</p>
             <Link to="/sign-in" className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <Globe className="h-3.5 w-3.5" />Or use it right here in your browser
             </Link>
