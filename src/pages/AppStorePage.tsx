@@ -10,7 +10,7 @@ import ApkDownloadDialog from "@/components/ApkDownloadDialog";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { detectInstallPlatform, trackInstallEvent } from "@/lib/installAnalytics";
 import {
-  PUBLIC_URL, checkApkAvailable, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
+  PUBLIC_URL, checkApkAvailable, downloadApk, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
 } from "@/lib/installRedirect";
 import { FREE_FEATURES, PLANS } from "@/lib/plans";
 import { toast } from "sonner";
@@ -95,6 +95,9 @@ export default function AppStorePage() {
       return;
     }
     if (isAndroidDevice() && apkReady) {
+      // Start the real app download right away, then show the finishing steps.
+      trackInstallEvent("download_start", "android", "store-page");
+      downloadApk();
       setApkOpen(true);
       return;
     }
@@ -382,7 +385,7 @@ export default function AppStorePage() {
       </Dialog>
 
       <InstallHelpDialog open={helpOpen} onOpenChange={setHelpOpen} platform={platform} />
-      <ApkDownloadDialog open={apkOpen} onOpenChange={setApkOpen} />
+      <ApkDownloadDialog open={apkOpen} onOpenChange={setApkOpen} downloadStarted />
     </div>
   );
 }

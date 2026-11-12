@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  ANDROID_APK_URL,
-  ANDROID_APK_VERSION,
+  downloadApk,
   hasDirectApk,
   isAndroidDevice,
 } from "@/lib/installRedirect";
@@ -30,6 +29,8 @@ import { cn } from "@/lib/utils";
 interface ApkDownloadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The download already started from the Install tap — open straight on the finishing steps. */
+  downloadStarted?: boolean;
 }
 
 type Phase = "intro" | "guide" | "result";
@@ -38,7 +39,7 @@ const STEPS = [
   {
     key: "download",
     title: "Tap Download .apk",
-    body: "The file (~30 MB) saves to your Downloads folder.",
+    body: "The file (~18 MB) saves to your Downloads folder.",
   },
   {
     key: "open",
@@ -57,7 +58,7 @@ const STEPS = [
   },
 ] as const;
 
-const ApkDownloadDialog = ({ open, onOpenChange }: ApkDownloadDialogProps) => {
+const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkDownloadDialogProps) => {
   const onAndroid = isAndroidDevice();
   const apkReady = hasDirectApk();
   const [phase, setPhase] = useState<Phase>("intro");
@@ -66,21 +67,15 @@ const ApkDownloadDialog = ({ open, onOpenChange }: ApkDownloadDialogProps) => {
   // Reset state every time the dialog opens.
   useEffect(() => {
     if (open) {
-      setPhase("intro");
-      setStepIdx(0);
+      setPhase(downloadStarted ? "guide" : "intro");
+      setStepIdx(downloadStarted ? 1 : 0);
     }
-  }, [open]);
+  }, [open, downloadStarted]);
 
   const startDownload = () => {
     if (!apkReady) return;
     trackInstallEvent("download_start", "android");
-    const a = document.createElement("a");
-    a.href = ANDROID_APK_URL;
-    a.download = `oracle-lunar-${ANDROID_APK_VERSION}.apk`;
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    downloadApk();
     // Hand off to the in-app guided checklist.
     trackInstallEvent("guide_open", "android");
     setPhase("guide");
@@ -109,7 +104,7 @@ const ApkDownloadDialog = ({ open, onOpenChange }: ApkDownloadDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" data-auth-allow>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-primary" />
