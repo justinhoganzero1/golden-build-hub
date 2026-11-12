@@ -1020,6 +1020,7 @@ const SettingsPage = () => {
     ]},
     { title: "About", items: [
       { icon: <Smartphone className="w-5 h-5" />, label: "About Oracle Lunar", action: () => navigate("/about") },
+      { icon: <Globe className="w-5 h-5" />, label: "View the website", subtitle: "oraclelunar.com/download", action: () => navigate("/download") },
       { icon: <Shield className="w-5 h-5" />, label: "Privacy Policy", action: () => navigate("/privacy-policy") },
       { icon: <FileText className="w-5 h-5" />, label: "Terms of Service", action: () => navigate("/terms-of-service") },
       { icon: <HelpCircle className="w-5 h-5" />, label: "Help & Support", action: () => setTab("help") },

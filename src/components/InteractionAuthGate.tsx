@@ -27,6 +27,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/terms",
   "/about",
   "/website",
+  "/download",
   "/oauth/consent",
   "/oauth/authorize",
   "/google/callback",

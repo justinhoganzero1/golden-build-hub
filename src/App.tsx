@@ -355,6 +355,8 @@ const OracleApp = () => (
                 <OracleWorkspace><Routes>
                   <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
+                  {/* Always shows the public store-style website, even when signed in or opened from the installed app. */}
+                  <Route path="/download" element={<ErrorBoundary pageName="App Store Listing"><AppStorePage /></ErrorBoundary>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><ErrorBoundary pageName="Dashboard"><DashboardPage /><Suspense fallback={null}><FreeForLifeNotice /></Suspense></ErrorBoundary></RequireAuth>} />

@@ -50,3 +50,4 @@
 - Signed-out / shows AppStorePage, installed launches PublicWelcomePage; install CTAs use installRedirect to avoid dead hosts.
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds (oracleHumanSounds) are bundled device clips chosen by a pure, tested picker and played in the speech queue before her line; never paid generation, silenced by mute, and cheeky noises are skipped for serious moods.
+- /download always renders the public store listing regardless of sign-in or installed mode; / keeps redirecting signed-in users to Oracle, so the owner and members can still reach the website.
