@@ -20,6 +20,9 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import FeaturedPhotoPicker from "@/components/admin/FeaturedPhotoPicker";
 import { Drill } from "@/components/admin/DrillDown";
 
+/** When country-aware visit tracking began; older landing visits come from the earlier counter. */
+const VISITOR_CUTOVER = "2026-11-12T12:00:00Z";
+
 const StripeConnectPanel = lazy(() => import("@/components/StripeConnectPanel"));
 const StripeRevenuePanel = lazy(() => import("@/components/StripeRevenuePanel"));
 const AdvertiserInquiriesPanel = lazy(() => import("@/components/admin/AdvertiserInquiriesPanel"));
@@ -94,7 +97,7 @@ const OwnerDashboardPage = () => {
   const [arrivals, setArrivals] = useState<{
     total: number;
     pages: { page: string; visits: number }[];
-    recent: { when: string; page: string; from: string }[];
+    recent: { when: string; page: string; from: string; country: string }[];
   } | null>(null);
 
   // Ad platform state
@@ -289,10 +292,12 @@ const OwnerDashboardPage = () => {
     const load = async () => {
       try {
         const [{ count: visitors }, { count: returning }, { count: installs }] = await Promise.all([
-          supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing"),
+          supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing").lt("created_at", VISITOR_CUTOVER),
           supabase.from("page_views").select("*", { count: "exact", head: true }).eq("page", "landing").eq("utm_medium", "returning"),
           supabase.from("install_events").select("*", { count: "exact", head: true }).eq("event_type", "installed"),
         ]);
+        const { count: arrivalCount } = await supabase.from("site_arrivals").select("*", { count: "exact", head: true });
+        const arrivalsCount = typeof arrivalCount === "number" ? arrivalCount : 0;
         let paidUpgrades = 0;
         let testUpgrades = 0;
         try {
@@ -317,7 +322,7 @@ const OwnerDashboardPage = () => {
         } catch {}
         if (!cancelled) {
           setLiveTraffic({
-            visitors: typeof visitors === "number" ? visitors : 0,
+            visitors: (typeof visitors === "number" ? visitors : 0) + arrivalsCount,
             returning: typeof returning === "number" ? returning : 0,
             installs: typeof installs === "number" ? installs : 0,
             paidUpgrades,
@@ -386,7 +391,7 @@ const OwnerDashboardPage = () => {
       try {
         const { data: arr } = await supabase
           .from("site_arrivals")
-          .select("landing_path, source, campaign, created_at")
+          .select("landing_path, source, campaign, country, created_at")
           .order("created_at", { ascending: false })
           .limit(lowPowerMode ? 1000 : 5000);
         if (cancelled || !arr) return;
@@ -399,6 +404,7 @@ const OwnerDashboardPage = () => {
             when: r.created_at,
             page: r.landing_path,
             from: r.campaign ? `${r.source} · ${r.campaign}` : r.source,
+            country: r.country || "Unknown",
           })),
         });
       } catch {}
@@ -915,7 +921,7 @@ const OwnerDashboardPage = () => {
                 <h3 className="text-sm font-bold text-white">Live Traffic — Your Site (Private)</h3>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                <Drill metric="page_views" params={{ page: "landing" }} title="Website visitors" className="bg-white/5 rounded-xl p-3 text-center">
+                <Drill metric="website_visitors" title="Website visitors" className="bg-white/5 rounded-xl p-3 text-center">
                   <Eye className="w-4 h-4 text-cyan-300 mx-auto mb-1" />
                   <p className="text-2xl font-bold text-cyan-300">{liveTraffic.visitors.toLocaleString()}</p>
                   <p className="text-[10px] text-gray-400">Visitors</p>
@@ -1927,6 +1933,7 @@ const OwnerDashboardPage = () => {
                       {arrivals.recent.map((r, i) => (
                         <li key={r.when + i} className="flex justify-between gap-2 text-[11px] bg-white/5 rounded-md px-2 py-1">
                           <span className="text-white truncate">{r.page}</span>
+                          <span className="text-amber-200 truncate">{r.country}</span>
                           <span className="text-gray-400 truncate">{r.from}</span>
                           <span className="text-gray-500 shrink-0">{new Date(r.when).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</span>
                         </li>

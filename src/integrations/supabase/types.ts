@@ -3372,6 +3372,8 @@ export type Database = {
       site_arrivals: {
         Row: {
           campaign: string | null
+          country: string | null
+          country_basis: string | null
           created_at: string
           id: string
           landing_path: string
@@ -3382,6 +3384,8 @@ export type Database = {
         }
         Insert: {
           campaign?: string | null
+          country?: string | null
+          country_basis?: string | null
           created_at?: string
           id?: string
           landing_path: string
@@ -3392,6 +3396,8 @@ export type Database = {
         }
         Update: {
           campaign?: string | null
+          country?: string | null
+          country_basis?: string | null
           created_at?: string
           id?: string
           landing_path?: string

@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
+import { PROVIDER_RATES } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +53,17 @@ Respond in JSON format: {"approved": boolean, "notes": "string"}
 Be permissive of constructive feedback, praise, and genuine questions. Reject spam, hate speech, harassment, and obviously inappropriate content.`;
     }
 
+    // The member pays their own AI cost plus the standard margin (Plus plan or higher).
+    const MODEL = "google/gemini-3-flash-preview";
+    const costCents = PROVIDER_RATES.lovable_ai_gemini_flash_per_call;
+    let hold: { transaction_id: string };
+    try {
+      hold = await authorizeAI(auth.user.id, `ai-moderate:${crypto.randomUUID()}`, "ai-moderate", "lovable", MODEL, costCents, { type });
+    } catch (e) {
+      if (e instanceof InsufficientCoinsError) return insufficientCoinsResponse(e, corsHeaders);
+      throw e;
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -58,7 +71,7 @@ Be permissive of constructive feedback, praise, and genuine questions. Reject sp
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content },
@@ -69,6 +82,7 @@ Be permissive of constructive feedback, praise, and genuine questions. Reject sp
     if (!response.ok) {
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
+      await cancelAI(hold.transaction_id).catch(() => {});
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,6 +90,7 @@ Be permissive of constructive feedback, praise, and genuine questions. Reject sp
     }
 
     const data = await response.json();
+    await settleAI(hold.transaction_id, costCents, undefined, [{ unit_type: "request", quantity: 1 }], { type });
     const text = data.choices?.[0]?.message?.content || "";
 
     // Extract JSON from response

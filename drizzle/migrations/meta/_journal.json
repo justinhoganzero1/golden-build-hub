@@ -148,6 +148,13 @@
       "when": 1794484981821,
       "tag": "0020_create_site_arrivals",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794485618323,
+      "tag": "0021_site_arrivals_country",
+      "breakpoints": true
     }
   ]
 }

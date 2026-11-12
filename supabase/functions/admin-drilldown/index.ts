@@ -41,10 +41,15 @@ const iso = (v: unknown): string | null => {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
+/** Country visits started being noted; older landing visits come from the earlier counter. */
+const VISITOR_CUTOVER = "2026-11-12T12:00:00Z";
+const arrivalCountry = (country: string | null, basis: string | null) =>
+  !country ? "Unknown" : basis === "timezone" ? `${country}*` : country;
+
 const METRICS = new Set([
   "users_all", "paid_members", "trial_users", "page_views", "install_events",
   "real_payments", "live_subscriptions", "payouts", "balance",
-  "ai_charges", "stripe_events", "affiliate_clicks", "site_arrivals",
+  "ai_charges", "stripe_events", "affiliate_clicks", "site_arrivals", "website_visitors",
 ]);
 
 Deno.serve(async (req) => {
@@ -217,23 +222,61 @@ Deno.serve(async (req) => {
       case "site_arrivals": {
         const landing = str(body.landing_path);
         const source = str(body.source)?.toLowerCase() ?? null;
-        let q = admin.from("site_arrivals").select("landing_path, source, medium, campaign, referrer, user_agent, created_at")
+        let q = admin.from("site_arrivals").select("landing_path, source, medium, campaign, referrer, user_agent, country, country_basis, created_at")
           .order("created_at", { ascending: false }).limit(5000);
         if (landing) q = q.eq("landing_path", landing);
         if (source) q = q.eq("source", source);
         const { data, error } = await q;
         if (error) throw error;
         const rows = ((data ?? []) as any[]).map((v) => ({
-          when: v.created_at, landed: v.landing_path, source: v.source || "direct",
+          when: v.created_at, country: arrivalCountry(v.country, v.country_basis), landed: v.landing_path, source: v.source || "direct",
           campaign: v.campaign || "—", medium: v.medium || "—",
           device: deviceFromUserAgent(v.user_agent), referrer: v.referrer || "—",
         }));
         const title = landing ? `Visitors who landed on ${landing}` : source ? `Where visitors from ${source} landed` : "Where each visitor landed";
         return out(title, [
-          { key: "when", label: "When", type: "date" }, { key: "landed", label: "Landed on" }, { key: "source", label: "Came from" },
+          { key: "when", label: "When", type: "date" }, { key: "country", label: "Country" }, { key: "landed", label: "Landed on" }, { key: "source", label: "Came from" },
           { key: "campaign", label: "Post / campaign" }, { key: "medium", label: "Medium" }, { key: "device", label: "Device" },
           { key: "referrer", label: "Referring link" },
-        ], rows, "One row per visit to oraclelunar.com: the first page they opened. Anonymous — no names are recorded. Your own owner pages are not counted.");
+        ], rows, "One row per visit to oraclelunar.com: the first page they opened. Anonymous — no names are recorded. Your own owner pages are not counted. * = country from the visitor's device time zone.");
+      }
+
+      case "website_visitors": {
+        // Every recorded website visit: new visits (with country) plus older ones from before country was noted.
+        // The database returns at most 1,000 rows per read, so page through up to 5,000 of each.
+        const readAll = async (build: (from: number) => any) => {
+          const all: any[] = [];
+          for (let from = 0; from < 5000; from += 1000) {
+            const { data, error } = await build(from);
+            if (error) throw error;
+            all.push(...(data ?? []));
+            if (!data || data.length < 1000) break;
+          }
+          return all;
+        };
+        const [arrivals, older] = await Promise.all([
+          readAll((from) => admin.from("site_arrivals").select("landing_path, source, campaign, referrer, user_agent, country, country_basis, created_at")
+            .order("created_at", { ascending: false }).range(from, from + 999)),
+          readAll((from) => admin.from("page_views").select("referrer, utm_source, utm_medium, utm_campaign, user_agent, created_at")
+            .eq("page", "landing").lt("created_at", VISITOR_CUTOVER).order("created_at", { ascending: false }).range(from, from + 999)),
+        ]);
+        const rows: Row[] = [
+          ...((arrivals ?? []) as any[]).map((v) => ({
+            when: v.created_at, country: arrivalCountry(v.country, v.country_basis), landed: v.landing_path,
+            source: v.source || "direct", campaign: v.campaign || "—", device: deviceFromUserAgent(v.user_agent),
+            visit: "First visit this session",
+          })),
+          ...((older ?? []) as any[]).map((v) => ({
+            when: v.created_at, country: "Not recorded (before 12 Nov)", landed: "/website",
+            source: trafficSource(v.utm_source, v.referrer), campaign: v.utm_campaign || "—", device: deviceFromUserAgent(v.user_agent),
+            visit: v.utm_medium === "returning" ? "Returning" : "New",
+          })),
+        ].sort((a, b) => String(b.when).localeCompare(String(a.when)));
+        return out("Website visitors", [
+          { key: "when", label: "When", type: "date" }, { key: "country", label: "Country" }, { key: "landed", label: "Landed on" },
+          { key: "source", label: "Came from" }, { key: "campaign", label: "Post / campaign" }, { key: "device", label: "Device" },
+          { key: "visit", label: "Visit" },
+        ], rows, "Visitors are anonymous: the website never learns a visitor's name unless they sign up (then they appear under Users). Country comes from the visitor's device time zone (marked *), so a traveller or VPN user may show their home country.");
       }
 
       case "install_events": {

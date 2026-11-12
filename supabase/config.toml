@@ -32,3 +32,6 @@ project_id = "tpkpfkcnqdyrzpqdoqnp"
 
 [functions.process-email-queue]
 verify_jwt = true
+
+[functions.record-arrival]
+verify_jwt = false

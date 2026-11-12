@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildArrival, shouldRecordArrival } from "./siteArrival";
+import { buildArrival, countryFromTimeZone, shouldRecordArrival } from "./siteArrival";
+import { countryName } from "../../supabase/functions/_shared/countries";
 
 describe("site arrivals", () => {
   it("records the landing page and the Reddit campaign from a tagged link", () => {
@@ -23,5 +24,17 @@ describe("site arrivals", () => {
     expect(shouldRecordArrival("localhost", "/")).toBe(false);
     expect(shouldRecordArrival("golden-vault-builder.lovable.app", "/")).toBe(false);
     expect(shouldRecordArrival("oraclelunar.com", "/owner-dashboard")).toBe(false);
+  });
+
+  it("guesses the visitor's country from their time zone when the network gives none", () => {
+    expect(countryFromTimeZone("Australia/Brisbane")).toBe("AU");
+    expect(countryFromTimeZone("America/New_York")).toBe("US");
+    expect(countryFromTimeZone("Europe/London")).toBe("GB");
+    expect(countryFromTimeZone("Etc/UTC")).toBeNull();
+  });
+
+  it("shows country names, not codes", () => {
+    expect(countryName("au")).toBe("Australia");
+    expect(countryName("US")).toBe("United States");
   });
 });

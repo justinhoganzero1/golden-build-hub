@@ -50,4 +50,4 @@
 - Signed-out / → AppStorePage, installed → PublicWelcomePage, signed-in → Oracle; /download always AppStorePage. Install CTAs use installRedirect (no dead hosts).
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
-- Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; website arrivals use site_arrivals so page_views counts stay unchanged.
+- Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (time-zone country, no IP) go to site_arrivals, not page_views.

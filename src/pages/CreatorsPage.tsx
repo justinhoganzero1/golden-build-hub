@@ -72,7 +72,8 @@ const CreatorsPage = () => {
         body: { type: "comment", content: `Name: ${name}\nComment: ${message}` },
       });
 
-      const approved = aiData?.approved !== false;
+      // Only an explicit AI approval posts straight away; anything else waits for owner review.
+      const approved = aiData?.approved === true;
       const notes = aiData?.notes ?? "";
 
       const { error } = await supabase.from("creator_comments").insert({
