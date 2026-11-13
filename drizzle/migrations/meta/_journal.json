@@ -162,6 +162,13 @@
       "when": 1794487681024,
       "tag": "0022_tighten_site_arrivals_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794549256129,
+      "tag": "0023_profile_birthday_rules",
+      "breakpoints": true
     }
   ]
 }

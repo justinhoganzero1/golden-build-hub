@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
 import { memberPageAccess } from '@/lib/memberPageAccess';
 import { pagePlan } from "@/lib/plans";
+import { useBirthdayGate } from "@/hooks/useBirthdayGate";
 
 /**
  * Every app page needs a signed-in account. The member's plan then decides the page:
@@ -27,9 +28,13 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const { plan, loading: mLoading } = useMembership();
+  const birthday = useBirthdayGate();
 
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
+  // Google sign-ups skip the form's birthday question; ask it once here (16+).
+  if (birthday.loading) return <Spinner />;
+  if (birthday.needed) return <Navigate to="/age-required" state={{ from: location }} replace />;
 
   const path = location.pathname;
   if (pagePlan(path) === "free") return <>{children}</>;
