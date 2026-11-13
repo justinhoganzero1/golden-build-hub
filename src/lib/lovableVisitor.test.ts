@@ -19,3 +19,22 @@ describe("visitors arriving from Lovable see the funny ad first", () => {
     expect(cameFromLovable({ referrer: "https://notlovable.dev/", ownHost: "oraclelunar.com" })).toBe(false);
   });
 });
+
+import { landingAdPath, isBotUserAgent } from "./lovableVisitor";
+
+describe("every internet visitor sees the funny ad first, once per visit", () => {
+  const ua = "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile Safari/537.36";
+  it("sends a first-time visitor to the funny ad", () => {
+    expect(landingAdPath({ ua, alreadyShown: false, fromLovable: false })).toBe("/ad?v=funny&from=web");
+  });
+  it("keeps the Lovable version for Lovable visitors", () => {
+    expect(landingAdPath({ ua, alreadyShown: false, fromLovable: true })).toBe("/ad?v=funny&from=lovable");
+  });
+  it("does not repeat the ad in the same visit", () => {
+    expect(landingAdPath({ ua, alreadyShown: true, fromLovable: false })).toBeNull();
+  });
+  it("lets Google and link previews see the normal home page", () => {
+    expect(isBotUserAgent("Mozilla/5.0 (compatible; Googlebot/2.1)")).toBe(true);
+    expect(landingAdPath({ ua: "facebookexternalhit/1.1", alreadyShown: false, fromLovable: false })).toBeNull();
+  });
+});

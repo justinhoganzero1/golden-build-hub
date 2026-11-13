@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Download, MessageCircle, Play, RotateCcw } from "lucide-react";
+import { ArrowRight, Download, MessageCircle, Play, RotateCcw } from "lucide-react";
 import { isOnProductionHost, openProductionSite } from "@/lib/installRedirect";
 import { markLovableAdShown } from "@/lib/lovableVisitor";
 import adVideo from "@/assets/videos/oracle-lunar-ad-clear-audio.mp4.asset.json";
@@ -26,11 +26,32 @@ export default function AdPage() {
   const [failed, setFailed] = useState(false);
   const [ended, setEnded] = useState(false);
   const fromLovable = params.get("from") === "lovable";
+  // Visitors from anywhere online land here first; when the ad ends they move on to the site.
+  const fromWeb = params.get("from") === "web";
+  const intro = fromLovable || fromWeb;
+  const [countdown, setCountdown] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (fromLovable) markLovableAdShown();
-  }, [fromLovable]);
+    if (intro) markLovableAdShown();
+  }, [intro]);
+
+  const enterSite = () => navigate("/", { replace: true });
+
+  useEffect(() => {
+    // If the ad can't play, visitors still move on to the site.
+    if (!fromWeb || !(ended || failed)) return;
+    setCountdown(5);
+    const id = window.setInterval(() => {
+      setCountdown((n) => (n === null ? null : n - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [fromWeb, ended, failed]);
+
+  useEffect(() => {
+    if (countdown !== null && countdown <= 0) enterSite();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown]);
 
   // Inside a Lovable page (or any non-live address) open the real site in its own tab;
   // on oraclelunar.com just move within the app.
@@ -42,6 +63,7 @@ export default function AdPage() {
   const replay = () => {
     const v = videoRef.current;
     setEnded(false);
+    setCountdown(null);
     if (!v) return;
     v.currentTime = 0;
     void v.play().catch(() => setStarted(false));
@@ -81,6 +103,15 @@ export default function AdPage() {
         <p className="mt-2 text-sm text-foreground text-center max-w-xs">
           Tap play to meet Oracle — no sign-up needed to watch.
         </p>
+      )}
+      {intro && (
+        <button
+          type="button"
+          onClick={() => (fromWeb ? enterSite() : go("/"))}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium border border-[hsl(var(--gold)/0.5)] text-foreground hover:bg-[hsl(var(--gold)/0.1)] transition-colors"
+        >
+          Skip to Oracle Lunar <ArrowRight className="h-4 w-4" />
+        </button>
       )}
 
       <div className="mt-4 flex gap-2" role="tablist" aria-label="Choose an ad">
@@ -145,6 +176,11 @@ export default function AdPage() {
         {ended && !failed && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm p-6 text-center">
             <p className="text-xl font-serif text-[hsl(var(--gold))]">Want to meet Oracle for real?</p>
+            {fromWeb && countdown !== null && countdown > 0 && (
+              <p role="status" className="text-sm font-medium text-foreground">
+                Opening Oracle Lunar in {countdown}…
+              </p>
+            )}
             <p className="text-sm text-muted-foreground max-w-[16rem]">
               She's free to download. Chat, laugh and create with your AI best friend.
             </p>
@@ -175,6 +211,11 @@ export default function AdPage() {
         {failed && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/85 p-6 text-center">
             <p className="text-sm">The ad couldn't play in this browser.</p>
+            {fromWeb && countdown !== null && countdown > 0 && (
+              <p role="status" className="text-sm font-medium text-foreground">
+                Opening Oracle Lunar in {countdown}…
+              </p>
+            )}
             <a
               href={videoUrl}
               target="_blank"
