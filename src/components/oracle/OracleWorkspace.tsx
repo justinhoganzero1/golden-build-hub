@@ -15,7 +15,7 @@ export default function OracleWorkspace({ children }: { children: ReactNode }) {
   const entered = useRef(false);
   const isOracle = location.pathname === "/oracle";
   if (isOracle || location.state?.oracleWorkspace) entered.current = true;
-  if (/^\/(sign-in|auth|ad|website|reimagined|workcover|\.lovable)(\/|$)/.test(location.pathname)) entered.current = false;
+  if (/^\/(sign-in|auth|age-required|ad|website|reimagined|workcover|\.lovable)(\/|$)/.test(location.pathname)) entered.current = false;
   const active = entered.current;
   if (!active) return <>{children}</>;
   return <>

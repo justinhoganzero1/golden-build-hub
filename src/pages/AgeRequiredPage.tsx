@@ -74,7 +74,7 @@ const AgeRequiredPage = () => {
           <>
             <h2 id="birthday-title" className="oracle-signin-title">One quick thing</h2>
             <p className="oracle-signin-sub">What's your birthday? Oracle Lunar is for people aged {MIN_AGE} and over. We only ask once.</p>
-            <form onSubmit={onSubmit} className="mt-5 space-y-3">
+            <form onSubmit={onSubmit} noValidate className="mt-5 space-y-3">
               <div>
                 <label className="oracle-signin-field">
                   <CalendarDays className="h-4 w-4 shrink-0 text-primary" />
