@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
+import { watchPageUrl } from "@/lib/sharedMedia";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { deleteLibraryRows, ownItemIds, ownSelectedIds } from "@/lib/libraryDelete";
@@ -877,7 +878,7 @@ const MediaLibraryPage = () => {
         open={!!shareItem}
         onOpenChange={() => setShareItem(null)}
         title={shareItem?.title || "Media"}
-        url={shareItem?.url}
+        url={shareItem ? (watchPageUrl(shareItem.url, shareItem.title || "Oracle Lunar", shareItem.media_type) || shareItem.url) : undefined}
         imageUrl={shareItem?.url}
         description={`Check out this ${shareItem?.media_type || "media"} from Oracle Lunar!`}
         fileUrl={shareItem && shareItem.media_type !== "text" ? shareItem.url : undefined}

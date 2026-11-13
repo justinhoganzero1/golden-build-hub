@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fileMimeType } from "@/lib/sharedMedia";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -491,18 +492,39 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
 
   const hasNativeShare = typeof navigator !== "undefined" && "share" in navigator;
 
+  // Phones only allow the share sheet straight after a tap, so the file is
+  // fetched when the box opens; tapping "Send the file" then shares instantly.
+  const fileRef = useRef<{ url: string; file: File } | null>(null);
+  const [fileReady, setFileReady] = useState(false);
+  const fileNameFinal = fileName || "oracle-lunar-file";
+  const loadFile = async (): Promise<File> => {
+    if (fileRef.current?.url === fileUrl) return fileRef.current.file;
+    const res = await fetch(fileUrl as string);
+    if (!res.ok) throw new Error("download failed");
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) throw new Error("empty file");
+    const type = fileMimeType(fileNameFinal, res.headers.get("content-type"));
+    const file = new File([buf], fileNameFinal, { type });
+    fileRef.current = { url: fileUrl as string, file };
+    return file;
+  };
+  useEffect(() => {
+    setFileReady(false);
+    if (!open || !fileUrl || typeof navigator === "undefined" || !("share" in navigator)) return;
+    let cancelled = false;
+    loadFile().catch(() => {}).finally(() => { if (!cancelled) setFileReady(true); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, fileUrl]);
+
   // Send the actual file through the phone's share sheet (Messages, email, WhatsApp…).
-  // Falls back to sharing the link when the device can't attach files.
+  // Falls back to sharing the watch link when the device can't attach files.
   const shareFile = async () => {
     if (!fileUrl) return;
     setSendingFile(true);
+    const nav = navigator as any;
     try {
-      const res = await fetch(fileUrl);
-      if (!res.ok) throw new Error("download failed");
-      const blob = await res.blob();
-      const name = fileName || "oracle-lunar-file";
-      const file = new File([blob], name, { type: blob.type || "application/octet-stream" });
-      const nav = navigator as any;
+      const file = await loadFile();
       if (nav.canShare?.({ files: [file] })) {
         await nav.share({ files: [file], title, text: shareText });
         toast.success("Shared!");
@@ -515,7 +537,12 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
       }
       toast.message("This device can't attach files here — use Email, Text message or Copy Link below.");
     } catch (e: any) {
-      if (e?.name !== "AbortError") toast.error("Couldn't send the file. Try Email, Text message or Copy Link below.");
+      if (e?.name === "AbortError") return;
+      // The phone may refuse a share that started too long after the tap — send the link instead.
+      try {
+        if (nav.share) { await nav.share({ title, text: shareText, url: shareUrl }); toast.success("Shared the link instead."); return; }
+      } catch (e2: any) { if (e2?.name === "AbortError") return; }
+      toast.error("Couldn't send the file. Try Email, Text message or Copy Link below.");
     } finally {
       setSendingFile(false);
     }
@@ -534,7 +561,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
             <button onClick={shareFile} disabled={sendingFile} className="w-full flex items-center gap-3 p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-60">
               <Send className="w-5 h-5" />
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">{sendingFile ? "Getting the file ready…" : "Send the file"}</p>
+                <p className="text-sm font-semibold">{sendingFile || !fileReady ? "Getting the file ready…" : "Send the file"}</p>
                 <p className="text-[10px] opacity-80">Text message, email, WhatsApp, Messenger and more</p>
               </div>
             </button>
