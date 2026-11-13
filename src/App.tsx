@@ -1,3 +1,4 @@
+import { isLovableVisit, LOVABLE_LANDING } from "./lib/lovableVisitor";
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -185,6 +186,8 @@ const RootRoute = () => {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (user) return <Navigate to="/oracle" replace />;
+  // People who click Oracle Lunar on Lovable watch the funny ad first; it ends with links into the app.
+  if (isLovableVisit()) return <Navigate to={LOVABLE_LANDING} replace />;
   // Browsers see the app-store listing; the installed app greets with Oracle instead.
   return isInstalledApp() ? <PublicWelcomePage /> : <AppStorePage />;
 };
