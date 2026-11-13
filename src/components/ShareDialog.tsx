@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fileMimeType } from "@/lib/sharedMedia";
+import { systemShare, systemShareAvailable, webShareAllowed } from "@/lib/systemShare";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -152,7 +153,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
   const shareWhatsApp = async () => {
     const message = `${shareText} ${shareUrl}`;
     // 1. Native share sheet on mobile lets the user pick WhatsApp directly
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    if (webShareAllowed()) {
       try {
         await (navigator as any).share({ title, text: shareText, url: shareUrl });
         toast.success("Shared!");
@@ -179,7 +180,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
   ) => {
     const message = `${shareText} ${shareUrl}`;
     // 1. Native share sheet (best on mobile — lets user pick the app directly)
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
+    if (webShareAllowed()) {
       try {
         await (navigator as any).share({ title, text: shareText, url: shareUrl });
         toast.success("Shared!");
@@ -477,20 +478,39 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
     await universalShare("Weibo", { mobile: url, desktop: url });
   };
 
-  const nativeShare = async () => {
-    if (typeof navigator !== "undefined" && (navigator as any).share) {
-      try {
-        await (navigator as any).share({ title, text: shareText, url: shareUrl });
-        toast.success("Shared!");
-      } catch (e: any) {
-        if (e?.name !== "AbortError") toast.error("Native share failed — try one of the options below.");
-      }
+  // When the device's share menu can't open (embedded preview, older browser),
+  // copy the link instead so the member can paste it into any app.
+  const copyLinkFallback = async () => {
+    const ok = await robustCopy(`${shareText}\n\n${shareUrl}`);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success("Link copied — open any app (Messages, WhatsApp, Facebook…) and paste it.");
     } else {
-      toast.error("Native sharing isn't supported here. Use one of the buttons below.");
+      toast.message("Press and hold the link above to copy it, then paste it into any app.");
     }
   };
 
-  const hasNativeShare = typeof navigator !== "undefined" && "share" in navigator;
+  const sharingRef = useRef(false);
+  const nativeShare = async () => {
+    if (sharingRef.current) return;
+    sharingRef.current = true;
+    try {
+      const outcome = await systemShare({ title, text: shareText, url: shareUrl });
+      if (outcome === "shared") toast.success("Shared!");
+      else if (outcome === "unavailable") await copyLinkFallback();
+    } finally {
+      sharingRef.current = false;
+    }
+  };
+
+  // Browsers say straight away; the installed app checks its native share menu.
+  const [hasNativeShare, setHasNativeShare] = useState<boolean>(() => webShareAllowed());
+  useEffect(() => {
+    let live = true;
+    systemShareAvailable().then((v) => { if (live) setHasNativeShare(v); });
+    return () => { live = false; };
+  }, []);
 
   // Phones only allow the share sheet straight after a tap, so the file is
   // fetched when the box opens; tapping "Send the file" then shares instantly.
@@ -510,50 +530,42 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
   };
   useEffect(() => {
     setFileReady(false);
-    if (!open || !fileUrl || typeof navigator === "undefined" || !("share" in navigator)) return;
+    if (!open || !fileUrl || !hasNativeShare) return;
     let cancelled = false;
     loadFile().catch(() => {}).finally(() => { if (!cancelled) setFileReady(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, fileUrl]);
+  }, [open, fileUrl, hasNativeShare]);
 
   // Send the actual file through the phone's share sheet (Messages, email, WhatsApp…).
   // Falls back to sharing the watch link when the device can't attach files.
   const shareFile = async () => {
-    if (!fileUrl) return;
+    if (!fileUrl || sharingRef.current) return;
+    sharingRef.current = true;
     setSendingFile(true);
-    const nav = navigator as any;
     try {
-      const file = await loadFile();
-      if (nav.canShare?.({ files: [file] })) {
-        await nav.share({ files: [file], title, text: shareText });
-        toast.success("Shared!");
-        return;
+      let file: File | undefined;
+      try { file = await loadFile(); } catch { file = undefined; }
+      let outcome = file ? await systemShare({ title, text: shareText, file }) : "unavailable";
+      // Some phones refuse big files or a share that started too long after the tap — send the link instead.
+      if (outcome === "unavailable") {
+        outcome = await systemShare({ title, text: shareText, url: shareUrl });
+        if (outcome === "shared") { toast.success("Shared the link instead."); return; }
       }
-      if (nav.share) {
-        await nav.share({ title, text: shareText, url: shareUrl });
-        toast.success("Shared!");
-        return;
-      }
-      toast.message("This device can't attach files here — use Email, Text message or Copy Link below.");
-    } catch (e: any) {
-      if (e?.name === "AbortError") return;
-      // The phone may refuse a share that started too long after the tap — send the link instead.
-      try {
-        if (nav.share) { await nav.share({ title, text: shareText, url: shareUrl }); toast.success("Shared the link instead."); return; }
-      } catch (e2: any) { if (e2?.name === "AbortError") return; }
-      toast.error("Couldn't send the file. Try Email, Text message or Copy Link below.");
+      if (outcome === "shared") toast.success("Shared!");
+      else if (outcome === "unavailable") await copyLinkFallback();
     } finally {
+      sharingRef.current = false;
       setSendingFile(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md grid-cols-[minmax(0,1fr)] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Share2 className="w-5 h-5 text-primary" /> Share "{title}"
+          <DialogTitle className="flex items-center gap-2 text-base min-w-0 pr-6">
+            <Share2 className="w-5 h-5 text-primary shrink-0" /> <span className="truncate">Share "{title}"</span>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 mt-2">

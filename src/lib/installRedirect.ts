@@ -39,7 +39,7 @@ export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXX
 // Upload your built file as `oracle-lunar.apk` to make this URL live.
 export const ANDROID_APK_URL =
   "https://tpkpfkcnqdyrzpqdoqnp.supabase.co/storage/v1/object/public/app-downloads/oracle-lunar.apk";
-export const ANDROID_APK_VERSION = "1.0.5";
+export const ANDROID_APK_VERSION = "1.0.6";
 
 /** Starts the real Android app download. Call it straight from a tap so the browser allows it. */
 export const downloadApk = (): void => {
