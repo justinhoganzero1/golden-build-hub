@@ -23,7 +23,6 @@ import InteractionAuthGate from "@/components/InteractionAuthGate";
 import RequireAdmin from "@/components/RequireAdmin";
 // Lazy: non-critical chrome — keep these out of the initial bundle so Android
 // startup parses less JS before first paint.
-const PreviewModeBanner = lazy(() => import("@/components/PreviewModeBanner"));
 const AnnouncementBanner = lazy(() => import("@/components/AnnouncementBanner"));
 const SoftLaunchBanner = lazy(() => import("@/components/SoftLaunchBanner"));
 // EAGER import — must NEVER be lazy. A Suspense fallback during chunk reload
@@ -345,11 +344,8 @@ const OracleApp = () => (
               <Sonner />
               <OfflineBanner />
               <PaymentTestModeBanner />
-              <Suspense fallback={null}>
-                {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
-                    they cover portal balloons. Re-add per-page if needed. */}
-                <PreviewModeBanner />
-              </Suspense>
+              {/* SoftLaunchBanner & AnnouncementBanner intentionally NOT global —
+                   they cover portal balloons. Re-add per-page if needed. */}
               <MasterMuteButton />
               <OracleControlListener />
               <AdminFlagBootstrap />
