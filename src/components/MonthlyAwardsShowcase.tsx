@@ -74,17 +74,17 @@ const CATEGORIES: Category[] = [
         bio: "Cinematic portrait artist blending Renaissance lighting with futurist couture.",
         hero: monthlyWinnerPhoto,
         gallery: [monthlyWinnerPhoto,"1502823403499-6ccfcf4fb453","1494790108377-be9c29b29330","1524504388940-b1c1722653e1"],
-        likes: 12480, views: 184320, downloads: 920, priceCents: 1200 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1200 },
       { rank: 2, name: "Kiyan Mori", handle: "@kiyan.studio", title: "Midnight Monarch",
         bio: "Tokyo-based AI photographer specialising in moody nocturnal portraits.",
         hero: "1506794778202-cad84cf45f1d",
         gallery: ["1500648767791-00dcc994a43e","1506277886164-e25aa3f4ef7f","1521119989659-a83eee488004","1463453091185-61582044d556"],
-        likes: 9120, views: 142010, downloads: 612 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Lumi Park", handle: "@lumipark", title: "Bronze Echo",
         bio: "Soft warm tones, sun-drenched faces, organic film grain.",
         hero: "1508214751196-bcfd4ca60f91",
         gallery: ["1517841905240-472988babdf9","1534528741775-53994a69daeb","1502685104226-ee32379fefbe","1531123897727-8f129e1688ce"],
-        likes: 7340, views: 98220, downloads: 410 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -97,17 +97,17 @@ const CATEGORIES: Category[] = [
         bio: "Nine chapters of cosmic mystery, fully illustrated in cinematic gold.",
         hero: monthlyWinnerStory,
         gallery: [monthlyWinnerStory,"1465101046530-73398c7f28ca","1444080748397-f442aa95c3e5","1502134249126-9f3755a50d78"],
-        likes: 14210, views: 210400, downloads: 1820, priceCents: 900 },
+        likes: 0, views: 0, downloads: 0, priceCents: 900 },
       { rank: 2, name: "Sable Quinn", handle: "@sablequinn", title: "Hymn of the Wolf",
         bio: "A folkloric novella with hand-painted forest spreads.",
         hero: "1448375240586-882707db888b",
         gallery: ["1441974231531-c6227db76b6e","1426604966848-d7adac402bff","1500382017468-9049fed747ef","1518495973542-4542c06a5843"],
-        likes: 9810, views: 156100, downloads: 1240 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Ren Iwata", handle: "@reniwata", title: "Paper Lanterns",
         bio: "A tender slice-of-life set in a coastal Japanese town.",
         hero: "1528360983277-13d401cdc186",
         gallery: ["1490375991207-94e2b65bfdcf","1545569341-9eb8b30979d9","1493780474015-ba834fd0ce2f","1480796927426-f609979314bd"],
-        likes: 7110, views: 102530, downloads: 890 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -120,17 +120,17 @@ const CATEGORIES: Category[] = [
         bio: "A 4-minute sci-fi short rendered entirely in Oracle Movie Studio.",
         hero: monthlyWinnerVideo,
         gallery: [monthlyWinnerVideo,"1446776811953-b23d57bd21aa","1502134249126-9f3755a50d78","1419242902214-272b3f66ee7a"],
-        likes: 18540, views: 320420, downloads: 2410, priceCents: 1500 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1500 },
       { rank: 2, name: "Mira Solé", handle: "@mirasole", title: "Last Light",
         bio: "Quiet drama about a coastal lighthouse keeper at the end of an era.",
         hero: "1493514789931-586cb221d7a7",
         gallery: ["1470770841072-f978cf4d019e","1500382017468-9049fed747ef","1465056836041-7f43ac27dcb5","1431794062232-2a99a5431c6c"],
-        likes: 11230, views: 198400, downloads: 1410 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Jonas Vrij", handle: "@jonasvrij", title: "After the Rain",
         bio: "Neon-soaked Amsterdam vignette in 90 seconds.",
         hero: "1419242902214-272b3f66ee7a",
         gallery: ["1493514789931-586cb221d7a7","1518972559570-7cc1309f3229","1492684223066-81342ee5ff30","1492684223066-81342ee5ff30"],
-        likes: 8420, views: 134220, downloads: 980 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -143,17 +143,17 @@ const CATEGORIES: Category[] = [
         bio: "Self-portrait fused with feathers of fire — Magic Hub remix winner.",
         hero: monthlyWinnerArt,
         gallery: [monthlyWinnerArt,"1502691876148-a84978e59af8","1531297484001-80022131f5a1","1517242810446-cc8951b2be40"],
-        likes: 16210, views: 280310, downloads: 1980 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 2, name: "Theo Rask", handle: "@theorask", title: "Glass Garden",
         bio: "A botanical portrait built from refracted prisms.",
         hero: "1465146344425-f00d5f5c8f07",
         gallery: ["1416879595882-3373a0480b5b","1490750967868-88aa4486c946","1501004318641-b39e6451bec6","1462275646964-a0e3386b89fa"],
-        likes: 10840, views: 172300, downloads: 1190 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Coco Ling", handle: "@cocoling", title: "Neon Sakura",
         bio: "Cherry-blossom self-portrait set in cyberpunk Kyoto.",
         hero: "1522383225653-ed111181a951",
         gallery: ["1494790108377-be9c29b29330","1531746020798-e6953c6e8e04","1524504388940-b1c1722653e1","1500648767791-00dcc994a43e"],
-        likes: 8120, views: 119450, downloads: 740 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -166,17 +166,17 @@ const CATEGORIES: Category[] = [
         bio: "Molten gold phoenix rising through a lunar flower garden — the month's most collected art piece.",
         hero: monthlyWinnerArt,
         gallery: [monthlyWinnerArt,"1495103033382-fe343886b671","1465146344425-f00d5f5c8f07","1522383225653-ed111181a951"],
-        likes: 22410, views: 388900, downloads: 2810, priceCents: 1400 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1400 },
       { rank: 2, name: "Theo Rask", handle: "@theorask", title: "Glass Garden",
         bio: "A crystalline botanical world painted with lunar refractions and amber light.",
         hero: "1465146344425-f00d5f5c8f07",
         gallery: ["1416879595882-3373a0480b5b","1490750967868-88aa4486c946","1501004318641-b39e6451bec6","1462275646964-a0e3386b89fa"],
-        likes: 17340, views: 240300, downloads: 1690, priceCents: 900 },
+        likes: 0, views: 0, downloads: 0, priceCents: 900 },
       { rank: 3, name: "Coco Ling", handle: "@cocoling", title: "Neon Sakura",
         bio: "A cyber-lunar blossom study with saturated neon petals and soft cinematic haze.",
         hero: "1522383225653-ed111181a951",
         gallery: ["1522383225653-ed111181a951","1494790108377-be9c29b29330","1531746020798-e6953c6e8e04","1524504388940-b1c1722653e1"],
-        likes: 12120, views: 177450, downloads: 1040, priceCents: 700 },
+        likes: 0, views: 0, downloads: 0, priceCents: 700 },
     ],
   },
   {
@@ -189,17 +189,17 @@ const CATEGORIES: Category[] = [
         bio: "A polished micro-SaaS app with lunar streak tracking, mood notes, and creator-ready onboarding.",
         hero: monthlyWinnerApp,
         gallery: [monthlyWinnerApp,"1517292987719-0369a794ec0f","1499951360447-b19be8fe80f5","1500530855697-b586d89ba3ee"],
-        likes: 15180, views: 208410, downloads: 910, priceCents: 1900 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1900 },
       { rank: 2, name: "Coco Ling", handle: "@cocoling", title: "Mood Journal",
         bio: "A calming journaling app with AI prompts, private reflections, and soft moonlit analytics.",
         hero: "1499951360447-b19be8fe80f5",
         gallery: ["1499951360447-b19be8fe80f5","1516321318423-f06f85e504b3","1515879218367-8466d910aaa4","1500530855697-b586d89ba3ee"],
-        likes: 10920, views: 164220, downloads: 730, priceCents: 1500 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1500 },
       { rank: 3, name: "Ren Iwata", handle: "@reniwata", title: "Launch Checklist AI",
         bio: "A startup launch assistant that turns rough ideas into step-by-step builder tasks.",
         hero: "1516321318423-f06f85e504b3",
         gallery: ["1516321318423-f06f85e504b3","1517292987719-0369a794ec0f","1499951360447-b19be8fe80f5","1500530855697-b586d89ba3ee"],
-        likes: 8820, views: 121880, downloads: 560, priceCents: 1200 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1200 },
     ],
   },
   {
@@ -212,17 +212,17 @@ const CATEGORIES: Category[] = [
         bio: "A complete mixed-media drop: avatar, image pack, prompt set, logo, and app concept in one bundle.",
         hero: monthlyWinnerGeneral,
         gallery: [monthlyWinnerGeneral, monthlyWinnerPhoto, monthlyWinnerStory, monthlyWinnerApp],
-        likes: 24110, views: 432800, downloads: 3420, priceCents: 2200 },
+        likes: 0, views: 0, downloads: 0, priceCents: 2200 },
       { rank: 2, name: "Jules Aren", handle: "@julesaren", title: "Halo Coffee Launch",
         bio: "Brand visuals, product photography, logo direction, and social kit created as a complete launch package.",
         hero: "1495474472287-4d71bcdd2085",
         gallery: ["1495474472287-4d71bcdd2085","1442975631115-c4f7b05b8a2c","1497935586351-b67a49e012bf","1453614512568-c4024d13c247"],
-        likes: 15120, views: 211200, downloads: 1720, priceCents: 1600 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1600 },
       { rank: 3, name: "Petra Cole", handle: "@petracole", title: "North & Pine Studio",
         bio: "A rugged creator bundle with logos, campaign imagery, and prompt recipes for outdoor brands.",
         hero: "1441986300917-64674bd600d8",
         gallery: ["1518495973542-4542c06a5843","1441974231531-c6227db76b6e","1500382017468-9049fed747ef","1426604966848-d7adac402bff"],
-        likes: 11420, views: 162410, downloads: 1180, priceCents: 1200 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1200 },
     ],
   },
   {
@@ -235,17 +235,17 @@ const CATEGORIES: Category[] = [
         bio: "Hyper-real 4K avatar, golden hour, regal pose.",
         hero: "1488426862026-3ee34a7d66df",
         gallery: ["1517841905240-472988babdf9","1534528741775-53994a69daeb","1531746020798-e6953c6e8e04","1502823403499-6ccfcf4fb453"],
-        likes: 21320, views: 410220, downloads: 3140, priceCents: 800 },
+        likes: 0, views: 0, downloads: 0, priceCents: 800 },
       { rank: 2, name: "Indra Noor", handle: "@indranoor", title: "Obsidian Knight",
         bio: "Armoured avatar with cinematic dark-key lighting.",
         hero: "1492562080023-ab3db95bfbce",
         gallery: ["1500648767791-00dcc994a43e","1506794778202-cad84cf45f1d","1463453091185-61582044d556","1521119989659-a83eee488004"],
-        likes: 14210, views: 256780, downloads: 1820 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Pia Lune", handle: "@pialune", title: "Crystal Muse",
         bio: "Ethereal avatar dressed in shards of light.",
         hero: "1524504388940-b1c1722653e1",
         gallery: ["1488161628813-04466f872be2","1494790108377-be9c29b29330","1502685104226-ee32379fefbe","1531123897727-8f129e1688ce"],
-        likes: 9810, views: 148120, downloads: 1140 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -258,17 +258,17 @@ const CATEGORIES: Category[] = [
         bio: "Lip-sync clip set to ambient synth — featured on the home reel.",
         hero: "1517841905240-472988babdf9",
         gallery: ["1531746020798-e6953c6e8e04","1488426862026-3ee34a7d66df","1502823403499-6ccfcf4fb453","1494790108377-be9c29b29330"],
-        likes: 11920, views: 198330, downloads: 1320 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 2, name: "Mako Kira", handle: "@makokira", title: "Glass Idol",
         bio: "Walking avatar on a holographic runway.",
         hero: "1521119989659-a83eee488004",
         gallery: ["1463453091185-61582044d556","1506794778202-cad84cf45f1d","1500648767791-00dcc994a43e","1531746020798-e6953c6e8e04"],
-        likes: 9120, views: 154220, downloads: 1010 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Saoirse Bell", handle: "@saoirse", title: "Lumen Walk",
         bio: "Sun-drenched walking loop in honey-gold tones.",
         hero: "1534528741775-53994a69daeb",
         gallery: ["1488161628813-04466f872be2","1502685104226-ee32379fefbe","1531123897727-8f129e1688ce","1494790108377-be9c29b29330"],
-        likes: 6840, views: 99410, downloads: 720 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -281,17 +281,17 @@ const CATEGORIES: Category[] = [
         bio: "Warm, resonant baritone — most-used voice in Story Writer this month.",
         hero: "1493225457124-a3eb161ffa5f",
         gallery: ["1511671782779-c97d3d27a1d4","1485579149621-3123dd979885","1493225457124-a3eb161ffa5f","1470225620780-dba8ba36b745"],
-        likes: 8420, views: 124310, downloads: 2410, priceCents: 500 },
+        likes: 0, views: 0, downloads: 0, priceCents: 500 },
       { rank: 2, name: "Nia Voss", handle: "@niavoss", title: "Crystal Soprano",
         bio: "Bright lyric soprano — stand-out in poetic narration.",
         hero: "1485579149621-3123dd979885",
         gallery: ["1470225620780-dba8ba36b745","1511671782779-c97d3d27a1d4","1493225457124-a3eb161ffa5f","1485579149621-3123dd979885"],
-        likes: 6210, views: 92110, downloads: 1640 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Brody Lin", handle: "@brodylin", title: "Warm Narrator",
         bio: "Calm documentary narrator with soft American cadence.",
         hero: "1470225620780-dba8ba36b745",
         gallery: ["1493225457124-a3eb161ffa5f","1485579149621-3123dd979885","1470225620780-dba8ba36b745","1511671782779-c97d3d27a1d4"],
-        likes: 4820, views: 71220, downloads: 1180 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
   {
@@ -304,17 +304,17 @@ const CATEGORIES: Category[] = [
         bio: "A premium specialty-coffee identity built in Photography Hub.",
         hero: "1495474472287-4d71bcdd2085",
         gallery: ["1442975631115-c4f7b05b8a2c","1497935586351-b67a49e012bf","1494314671902-399b18174975","1453614512568-c4024d13c247"],
-        likes: 9120, views: 142200, downloads: 1620, priceCents: 1500 },
+        likes: 0, views: 0, downloads: 0, priceCents: 1500 },
       { rank: 2, name: "Petra Cole", handle: "@petracole", title: "North & Pine",
         bio: "Outdoor-apparel brand with hand-engraved monogram.",
         hero: "1441986300917-64674bd600d8",
         gallery: ["1518495973542-4542c06a5843","1441974231531-c6227db76b6e","1500382017468-9049fed747ef","1426604966848-d7adac402bff"],
-        likes: 6420, views: 92410, downloads: 1080 },
+        likes: 0, views: 0, downloads: 0 },
       { rank: 3, name: "Mateo Diaz", handle: "@mateodiaz", title: "Lumi Studio",
         bio: "Bold luminous mark for an interior-design studio.",
         hero: "1497366216548-37526070297c",
         gallery: ["1503602642458-232111445657","1505761671935-60b3a7427bad","1493663284031-b7e3aefcae8e","1505691938895-1758d7feb511"],
-        likes: 4910, views: 71240, downloads: 820 },
+        likes: 0, views: 0, downloads: 0 },
     ],
   },
 ];
@@ -517,10 +517,12 @@ export default function MonthlyAwardsShowcase() {
                 <div className="absolute inset-x-0 bottom-0 p-2">
                   <p className="text-[11px] sm:text-xs font-bold text-white line-clamp-1 drop-shadow">{w.title}</p>
                   <p className="text-[9px] sm:text-[10px] text-white/75 line-clamp-1">{w.name} · {w.handle}</p>
-                  <div className="mt-1 flex items-center gap-2 text-[9px] text-white/80">
-                    <span className="inline-flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" />{formatCount(w.likes)}</span>
-                    <span className="inline-flex items-center gap-0.5"><Eye className="w-2.5 h-2.5" />{formatCount(w.views)}</span>
-                  </div>
+                  {(w.likes > 0 || w.views > 0) && (
+                    <div className="mt-1 flex items-center gap-2 text-[9px] text-white/80">
+                      <span className="inline-flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" />{formatCount(w.likes)}</span>
+                      <span className="inline-flex items-center gap-0.5"><Eye className="w-2.5 h-2.5" />{formatCount(w.views)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </button>
@@ -573,7 +575,8 @@ export default function MonthlyAwardsShowcase() {
               <div className="p-4 space-y-4">
                 <p className="text-sm text-foreground leading-relaxed">{openWinner.w.bio}</p>
 
-                {/* Stats */}
+                {/* Stats — shown only once real likes, views or downloads exist */}
+                {(openWinner.w.likes > 0 || openWinner.w.views > 0 || openWinner.w.downloads > 0) && (
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { icon: Heart, label: "Likes", value: openWinner.w.likes },
@@ -587,6 +590,7 @@ export default function MonthlyAwardsShowcase() {
                     </div>
                   ))}
                 </div>
+                )}
 
                 {/* Sample gallery */}
                 <div>

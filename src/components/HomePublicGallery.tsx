@@ -51,22 +51,22 @@ type DemoItem = {
 };
 
 const DEMO_ITEMS: DemoItem[] = [
-  { id: "d1",  title: "Velvet Saint",          creator: "Aurora Vex",   genre: "Photography",    emoji: "📸", thumb: monthlyWinnerPhoto, priceCents: 1200, views: 18432, downloads: 920 },
-  { id: "d2",  title: "Midnight Monarch",      creator: "Kiyan Mori",   genre: "Photography",    emoji: "📸", thumb: ux("1506794778202-cad84cf45f1d"), priceCents: 800,  views: 14201, downloads: 612 },
-  { id: "d3",  title: "Solar Empress",         creator: "Vega Kade",    genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1488426862026-3ee34a7d66df"), priceCents: 600,  views: 41022, downloads: 3140 },
-  { id: "d4",  title: "Obsidian Knight",       creator: "Indra Noor",   genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1492562080023-ab3db95bfbce"), priceCents: 700,  views: 25678, downloads: 1820 },
-  { id: "d5",  title: "Echoes of Mars",        creator: "Dax Halberg",  genre: "Movies",         emoji: "🎬", thumb: monthlyWinnerVideo, priceCents: 1500, views: 32042, downloads: 2410 },
-  { id: "d6",  title: "Last Light",            creator: "Mira Solé",    genre: "Movies",         emoji: "🎬", thumb: ux("1493514789931-586cb221d7a7"), priceCents: 1200, views: 19840, downloads: 1410 },
-  { id: "d7",  title: "Phoenix Bloom",         creator: "Iris Vohr",    genre: "Magic Photos",   emoji: "✨", thumb: monthlyWinnerArt, priceCents: 900,  views: 28031, downloads: 1980 },
-  { id: "d8",  title: "Glass Garden",          creator: "Theo Rask",    genre: "Magic Photos",   emoji: "✨", thumb: ux("1465146344425-f00d5f5c8f07"), priceCents: 700,  views: 17230, downloads: 1190 },
-  { id: "d9",  title: "The Gilded Comet",      creator: "Nyx Rivers",   genre: "Stories",        emoji: "📖", thumb: monthlyWinnerStory, priceCents: 900,  views: 21040, downloads: 1820 },
-  { id: "d10", title: "Hymn of the Wolf",      creator: "Sable Quinn",  genre: "Stories",        emoji: "📖", thumb: ux("1448375240586-882707db888b"), priceCents: 800,  views: 15610, downloads: 1240 },
-  { id: "d11", title: "Soft Static",           creator: "Eden Roux",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1517841905240-472988babdf9"), priceCents: 500,  views: 19833, downloads: 1320 },
-  { id: "d12", title: "Glass Idol",            creator: "Mako Kira",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1521119989659-a83eee488004"), priceCents: 500,  views: 15422, downloads: 1010 },
-  { id: "d13", title: "Halo Coffee",           creator: "Jules Aren",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1495474472287-4d71bcdd2085"), priceCents: 1500, views: 14220, downloads: 1620 },
-  { id: "d14", title: "North & Pine",          creator: "Petra Cole",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1441986300917-64674bd600d8"), priceCents: 1200, views: 9241,  downloads: 1080 },
-  { id: "d15", title: "Pocket Habit Tracker",  creator: "Ren Iwata",    genre: "Apps",           emoji: "📱", thumb: monthlyWinnerApp, priceCents: 1900, views: 8412,  downloads: 510 },
-  { id: "d16", title: "Lunar Creation Kit",    creator: "Vega Kade",    genre: "Other",          emoji: "🌐", thumb: monthlyWinnerGeneral, priceCents: 2200, views: 24380, downloads: 1320 },
+  { id: "d1",  title: "Velvet Saint",          creator: "Aurora Vex",   genre: "Photography",    emoji: "📸", thumb: monthlyWinnerPhoto, priceCents: 1200, views: 0, downloads: 0 },
+  { id: "d2",  title: "Midnight Monarch",      creator: "Kiyan Mori",   genre: "Photography",    emoji: "📸", thumb: ux("1506794778202-cad84cf45f1d"), priceCents: 800,  views: 0, downloads: 0 },
+  { id: "d3",  title: "Solar Empress",         creator: "Vega Kade",    genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1488426862026-3ee34a7d66df"), priceCents: 600,  views: 0, downloads: 0 },
+  { id: "d4",  title: "Obsidian Knight",       creator: "Indra Noor",   genre: "Avatars",        emoji: "🧑‍🎤", thumb: ux("1492562080023-ab3db95bfbce"), priceCents: 700,  views: 0, downloads: 0 },
+  { id: "d5",  title: "Echoes of Mars",        creator: "Dax Halberg",  genre: "Movies",         emoji: "🎬", thumb: monthlyWinnerVideo, priceCents: 1500, views: 0, downloads: 0 },
+  { id: "d6",  title: "Last Light",            creator: "Mira Solé",    genre: "Movies",         emoji: "🎬", thumb: ux("1493514789931-586cb221d7a7"), priceCents: 1200, views: 0, downloads: 0 },
+  { id: "d7",  title: "Phoenix Bloom",         creator: "Iris Vohr",    genre: "Magic Photos",   emoji: "✨", thumb: monthlyWinnerArt, priceCents: 900,  views: 0, downloads: 0 },
+  { id: "d8",  title: "Glass Garden",          creator: "Theo Rask",    genre: "Magic Photos",   emoji: "✨", thumb: ux("1465146344425-f00d5f5c8f07"), priceCents: 700,  views: 0, downloads: 0 },
+  { id: "d9",  title: "The Gilded Comet",      creator: "Nyx Rivers",   genre: "Stories",        emoji: "📖", thumb: monthlyWinnerStory, priceCents: 900,  views: 0, downloads: 0 },
+  { id: "d10", title: "Hymn of the Wolf",      creator: "Sable Quinn",  genre: "Stories",        emoji: "📖", thumb: ux("1448375240586-882707db888b"), priceCents: 800,  views: 0, downloads: 0 },
+  { id: "d11", title: "Soft Static",           creator: "Eden Roux",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1517841905240-472988babdf9"), priceCents: 500,  views: 0, downloads: 0 },
+  { id: "d12", title: "Glass Idol",            creator: "Mako Kira",    genre: "Living Avatars", emoji: "🌀", thumb: ux("1521119989659-a83eee488004"), priceCents: 500,  views: 0, downloads: 0 },
+  { id: "d13", title: "Halo Coffee",           creator: "Jules Aren",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1495474472287-4d71bcdd2085"), priceCents: 1500, views: 0, downloads: 0 },
+  { id: "d14", title: "North & Pine",          creator: "Petra Cole",   genre: "Brand & Logo",   emoji: "🎨", thumb: ux("1441986300917-64674bd600d8"), priceCents: 1200, views: 0, downloads: 0 },
+  { id: "d15", title: "Pocket Habit Tracker",  creator: "Ren Iwata",    genre: "Apps",           emoji: "📱", thumb: monthlyWinnerApp, priceCents: 1900, views: 0, downloads: 0 },
+  { id: "d16", title: "Lunar Creation Kit",    creator: "Vega Kade",    genre: "Other",          emoji: "🌐", thumb: monthlyWinnerGeneral, priceCents: 2200, views: 0, downloads: 0 },
 ];
 
 // Map demo genre → (source_page, kind, media_type) so demo items
@@ -285,14 +285,15 @@ const HomePublicGallery = () => {
                         <ShoppingBag className="w-2.5 h-2.5" />
                         {formatPrice(item.shop_price_cents)}
                       </span>
-                    ) : (
+                    ) : (item.view_count > 0 || item.download_count > 0) ? (
+                      // Real counts only — badges stay hidden until real activity exists.
                       <span className="text-[9px] text-white/60 inline-flex items-center gap-0.5">
                         <Eye className="w-2.5 h-2.5" />
                         {item.view_count}
                         <Download className="w-2.5 h-2.5 ml-1" />
                         {item.download_count}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </button>
