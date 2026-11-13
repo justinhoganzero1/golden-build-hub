@@ -22,13 +22,25 @@ describe("shared media", () => {
     expect(isShareableMediaSource("data:video/mp4;base64,AAAA")).toBe(false);
     expect(watchPageUrl("https://evil.example.com/a.mp4", "x", "video")).toBeNull();
   });
-  it("keeps text items on a normal link", () => {
-    expect(watchPageUrl(storage, "Notes", "text")).toBeNull();
+  it("opens apps, notes and documents on the watch page as documents", () => {
+    for (const t of ["app", "text", "document"]) {
+      const link = watchPageUrl(storage, "Notes", t);
+      expect(link).toContain("/watch?");
+      expect(new URL(link!).searchParams.get("type")).toBe("doc");
+    }
+  });
+  it("keeps stories and unknown types on a normal link", () => {
+    expect(watchPageUrl(storage, "My story", "story")).toBeNull();
   });
   it("sends videos stored as octet-stream as real mp4 files", () => {
     expect(fileMimeType("clip.mp4", "application/octet-stream")).toBe("video/mp4");
     expect(fileMimeType("clip.mp4", "")).toBe("video/mp4");
     expect(fileMimeType("song.mp3", null)).toBe("audio/mpeg");
     expect(fileMimeType("clip.mp4", "video/webm")).toBe("video/webm");
+  });
+  it("trusts the file extension over the plain-text label signed links serve", () => {
+    expect(fileMimeType("my-game.html", "text/plain")).toBe("text/html");
+    expect(fileMimeType("note.txt", "text/plain")).toBe("text/plain");
+    expect(fileMimeType("clip.mp4", "text/plain; charset=utf-8")).toBe("video/mp4");
   });
 });

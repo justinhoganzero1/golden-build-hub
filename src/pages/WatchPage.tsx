@@ -9,19 +9,49 @@ const WatchPage = () => {
   const [params] = useSearchParams();
   const src = params.get("src") || "";
   const title = (params.get("title") || "Shared from Oracle Lunar").slice(0, 120);
-  const kind = (["video", "audio", "image"].includes(params.get("type") || "") ? params.get("type") : "video") as SharedKind;
+  const kind = (["video", "audio", "image", "doc"].includes(params.get("type") || "") ? params.get("type") : "video") as SharedKind;
   const allowed = isShareableMediaSource(src);
   const fileName = useMemo(() => {
     const last = src.split("?")[0].split("/").pop() || "";
-    return /\.[a-z0-9]{2,5}$/i.test(last) ? last : `oracle-lunar.${kind === "audio" ? "mp3" : kind === "image" ? "png" : "mp4"}`;
+    return /\.[a-z0-9]{2,5}$/i.test(last) ? last : `oracle-lunar.${kind === "audio" ? "mp3" : kind === "image" ? "png" : kind === "doc" ? "txt" : "mp4"}`;
   }, [src, kind]);
   const [playSrc, setPlaySrc] = useState(allowed ? src : "");
   const [failed, setFailed] = useState(false);
   const retried = useRef(false);
   const objectUrl = useRef<string | null>(null);
+  const [docUrl, setDocUrl] = useState<string | null>(null);
+  const [docMime, setDocMime] = useState("");
+  const [docText, setDocText] = useState<string | null>(null);
 
   useEffect(() => { document.title = `${title} · Oracle Lunar`; }, [title]);
   useEffect(() => () => { if (objectUrl.current) URL.revokeObjectURL(objectUrl.current); }, []);
+
+  // Documents, apps and notes: signed file links arrive labelled as plain
+  // text, so fetch the bytes, re-label them with the real type and show
+  // them here — apps run in a sandboxed frame, notes show as text.
+  useEffect(() => {
+    if (kind !== "doc" || !allowed) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(String(res.status));
+        const mime = fileMimeType(fileName, res.headers.get("content-type"));
+        const blob = new Blob([await res.arrayBuffer()], { type: mime });
+        if (cancelled) return;
+        setDocMime(mime);
+        if (mime === "text/html" || mime === "application/pdf") {
+          objectUrl.current = URL.createObjectURL(blob);
+          setDocUrl(objectUrl.current);
+        } else {
+          setDocText(await blob.text());
+        }
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [kind, allowed, src, fileName]);
 
   // Some saved files are stored with a generic file type, which phones won't play.
   // Re-label the bytes with the real type and play them from memory instead.
@@ -67,6 +97,16 @@ const WatchPage = () => {
             <img src={playSrc} alt={title} className="block max-h-[60vh] w-full object-contain" onError={() => setFailed(true)} />
           ) : kind === "audio" ? (
             <audio src={playSrc} controls preload="metadata" className="w-full p-3" onError={onMediaError} />
+          ) : kind === "doc" ? (
+            docUrl && docMime === "text/html" ? (
+              <iframe title={title} src={docUrl} sandbox="allow-scripts allow-downloads allow-modals" className="block h-[60vh] w-full border-0 bg-background" />
+            ) : docUrl ? (
+              <iframe title={title} src={docUrl} className="block h-[60vh] w-full border-0 bg-background" />
+            ) : docText !== null ? (
+              <div className="max-h-[60vh] overflow-auto p-4 text-left text-sm leading-relaxed whitespace-pre-wrap text-foreground">{docText}</div>
+            ) : (
+              <p className="p-6 text-center text-sm text-muted-foreground">Opening…</p>
+            )
           ) : (
             <video
               key={playSrc}

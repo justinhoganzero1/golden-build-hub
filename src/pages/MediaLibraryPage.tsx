@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import ShareDialog from "@/components/ShareDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { resolveStorageUrl } from "@/lib/signedStorageUrl";
-import { watchPageUrl } from "@/lib/sharedMedia";
+import { prepareLibraryShare } from "@/lib/libraryShare";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { deleteLibraryRows, ownItemIds, ownSelectedIds } from "@/lib/libraryDelete";
@@ -84,13 +84,7 @@ function getCollectionKey(sourcePage: string | null, mediaType?: string, metadat
   return "other";
 }
 
-function libraryShareFileName(item: any): string {
-  const base = String(item?.title || "oracle-lunar").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "oracle-lunar";
-  const path = String(item?._storedUrl || item?.url || "").split("?")[0];
-  const ext = path.match(/\.([a-z0-9]{2,5})$/i)?.[1]
-    || (item?.media_type === "video" ? "mp4" : item?.media_type === "audio" || item?.media_type === "music" ? "mp3" : item?.media_type === "image" ? "png" : "bin");
-  return `${base}.${ext}`;
-}
+
 
 const MediaLibraryPage = () => {
   const { isAdmin } = useIsAdmin();
@@ -114,6 +108,7 @@ const MediaLibraryPage = () => {
   const openedLinkRef = useRef<string | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<any>(null);
+  const [preparingShare, setPreparingShare] = useState(false);
   const [showCollections, setShowCollections] = useState(true);
   const [savingShare, setSavingShare] = useState(false);
   const [priceInput, setPriceInput] = useState<string>("");
@@ -164,14 +159,20 @@ const MediaLibraryPage = () => {
     }
   };
 
-  // Shared links must keep working after the 1-hour viewing link expires,
-  // so private files get a fresh 7-day link at share time.
+  // Every item type shares as a real, openable link: apps/text/documents
+  // stored inline are uploaded to the member's own storage first, private
+  // files get a fresh 7-day link, and stories share their public page.
   const openShare = async () => {
-    if (!selected) return;
-    const longUrl = selected.media_type === "text"
-      ? selected.url
-      : await resolveStorageUrl(selected._storedUrl || selected.url, 60 * 60 * 24 * 7);
-    setShareItem({ ...selected, url: longUrl || selected.url });
+    if (!selected || !user?.id || preparingShare) return;
+    setPreparingShare(true);
+    try {
+      const prepared = await prepareLibraryShare(selected, user.id);
+      setShareItem({ ...selected, _share: prepared });
+    } catch (e: any) {
+      toast.error(e?.message || "Could not prepare this item for sharing.");
+    } finally {
+      setPreparingShare(false);
+    }
   };
 
   const openItem = async (item: any) => {
@@ -659,6 +660,7 @@ const MediaLibraryPage = () => {
             <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-border">
               <Button variant="outline" onClick={() => setSelected(null)}><ArrowRight className="h-4 w-4 rotate-180 mr-2" />Back to Library</Button>
               <Button variant="outline" onClick={handleDownloadSelected}><Download className="h-4 w-4 mr-2" />Download app</Button>
+              <Button variant="outline" onClick={openShare} disabled={preparingShare}><Share2 className="h-4 w-4 mr-2" />{preparingShare ? "Preparing…" : "Share"}</Button>
             </div>
             <LibraryAppViewer item={selected} />
           </>}
@@ -832,8 +834,9 @@ const MediaLibraryPage = () => {
                 </button>
                 <button onClick={openShare}
                   aria-label="Share"
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/80 transition-colors flex items-center justify-center gap-2">
-                  <Share2 className="w-4 h-4" /> Share
+                  disabled={preparingShare}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-60">
+                  <Share2 className="w-4 h-4" /> {preparingShare ? "Preparing…" : "Share"}
                 </button>
                 <button onClick={() => handleDelete(selected.id)}
                   aria-label="Delete this item"
@@ -878,11 +881,11 @@ const MediaLibraryPage = () => {
         open={!!shareItem}
         onOpenChange={() => setShareItem(null)}
         title={shareItem?.title || "Media"}
-        url={shareItem ? (watchPageUrl(shareItem.url, shareItem.title || "Oracle Lunar", shareItem.media_type) || shareItem.url) : undefined}
-        imageUrl={shareItem?.url}
+        url={shareItem?._share?.linkUrl}
+        imageUrl={shareItem?._share?.fileUrl}
         description={`Check out this ${shareItem?.media_type || "media"} from Oracle Lunar!`}
-        fileUrl={shareItem && shareItem.media_type !== "text" ? shareItem.url : undefined}
-        fileName={shareItem ? libraryShareFileName(shareItem) : undefined}
+        fileUrl={shareItem?._share?.fileUrl}
+        fileName={shareItem?._share?.fileName}
       />
     </div>
   );
