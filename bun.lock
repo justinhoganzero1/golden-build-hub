@@ -18,7 +18,7 @@
         "@elevenlabs/react": "^1.1.1",
         "@hookform/resolvers": "^3.10.0",
         "@lovable.dev/ai-gateway": "^0.1.9",
-        "@lovable.dev/cloud-auth-js": "^1.1.1",
+        "@lovable.dev/cloud-auth-js": "^1.1.2",
         "@lovable.dev/mcp-js": "0.24.0",
         "@radix-ui/react-accordion": "^1.2.11",
         "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -301,7 +301,7 @@
 
     "@lovable.dev/ai-gateway": ["@lovable.dev/ai-gateway@0.1.9", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/ai-gateway/-/ai-gateway-0.1.9.tgz", { "dependencies": { "commander": "14.0.3", "openapi-typescript": "7.10.1", "typescript": "npm:@typescript/typescript6@6.0.2", "ws": "^8.18.3" }, "bin": { "ai-gateway": "./dist/cli/index.js" } }, "sha512-5bjKG2USNr2G9+or0vOsi/Ug+DCuOzNDJdfT0JNySwJEQxK2WjiS0yreGPr/69V+SWZKfOQ5R9y5g+kIzVgbeg=="],
 
-    "@lovable.dev/cloud-auth-js": ["@lovable.dev/cloud-auth-js@1.1.1", "", {}, "sha512-80elU8dSJG6bho0Xnfj2oy53wp883nYXrG1Wy948LC/ZUaUQ0i9EGXQFmwTLOBFrWqxb6aNaOlZUvQ8BVGhjMQ=="],
+    "@lovable.dev/cloud-auth-js": ["@lovable.dev/cloud-auth-js@1.2.5", "", {}, "sha512-9U6Lvx9DFWyit6/nx/1rg3BeaEwaaBK4/9MvSU37xh+FHpUcg3vfAjtv/DAUDM8Myp0b5lg99f3sHug5I67fwQ=="],
 
     "@lovable.dev/mcp-js": ["@lovable.dev/mcp-js@0.24.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/mcp-js/-/mcp-js-0.24.0.tgz", { "dependencies": { "@modelcontextprotocol/sdk": "1.28.0", "esbuild": "^0.27.0", "jose": "^6.2.2" }, "peerDependencies": { "vite": ">=5.0.0 <9.0.0", "zod": ">=3.23.0" }, "bin": { "lovable-mcp-extract-manifest": "./dist/cli/extract-manifest.cjs" } }, "sha512-hofBMSz/dfRgi3fKNnKKPVcWMW8wc/Ova11jKK/Nr3G/PhfTOm+q0tgj90pWxmDsBgbKasxZcDCTitb+RnsJgg=="],
 
