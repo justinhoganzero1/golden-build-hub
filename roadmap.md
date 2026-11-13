@@ -36,3 +36,11 @@
 - [x] Delete a single Library item (clear Delete button)
 - [x] Select many Library items and delete them together
 - [x] Every screen fits the phone width — no sideways swiping for option rows
+
+## Google TV (2026-11-13)
+- [x] Installed app loads built-in videos (fetches them from oraclelunar.com)
+- [x] TV remote: arrow keys move a clear highlight, OK presses, play/pause key controls videos, Back closes pop-ups
+- [x] Oracle mic works in the installed Android/TV app (device's free speech service)
+- [x] App appears on the Google TV home screen (TV banner, no touchscreen needed)
+- [x] Build + upload Android app 1.0.5 so the Install button gives the TV version
+- [ ] Google Play for TV — waits on Play Console listing (TV needs its own Google review)

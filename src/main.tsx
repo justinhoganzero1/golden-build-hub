@@ -7,6 +7,10 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import RecoveryMonitor from "./components/RecoveryMonitor";
 import "./index.css";
 import { installWalletInterceptor } from "./lib/walletInterceptor";
+import { installTvNavigation } from "./lib/tvMode";
+
+// Google TV / Android TV: remote arrow keys move a visible highlight, OK presses.
+installTvNavigation();
 
 // Any paid AI call that comes back 402 raises the "add $10 and keep going" modal.
 installWalletInterceptor();
@@ -25,6 +29,15 @@ const initNative = async () => {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (Capacitor.isNativePlatform()) {
+      // The Android/TV app's WebView has no browser speech recognition, so
+      // Oracle's mic uses the device's own free speech service instead.
+      if (Capacitor.getPlatform() === "android") {
+        try {
+          const { installNativeSpeech } = await import("./lib/nativeSpeech");
+          installNativeSpeech();
+        } catch { /* mic stays on its normal path */ }
+      }
+
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setBackgroundColor({ color: "#080808" });
@@ -43,6 +56,13 @@ const initNative = async () => {
       // Handle Android back button: never walk browser history back to sign-in/logout screens.
       const { App: CapApp } = await import("@capacitor/app");
       CapApp.addListener("backButton", () => {
+        // A pop-up is open (TV remote / phone Back): close it instead of leaving the page.
+        const openDialog = document.querySelector('[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"]');
+        if (openDialog) {
+          const target = (document.activeElement as HTMLElement | null) || document.body;
+          target.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+          return;
+        }
         const path = window.location.pathname;
         if (path && path !== "/" && path !== "/dashboard") {
           window.location.assign("/dashboard");

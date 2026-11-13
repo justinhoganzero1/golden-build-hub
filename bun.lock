@@ -5,6 +5,7 @@
     "": {
       "name": "vite_react_shadcn_ts",
       "dependencies": {
+        "@capacitor-community/speech-recognition": "7.0.1",
         "@capacitor/android": "^8.5.3",
         "@capacitor/app": "^8.1.0",
         "@capacitor/browser": "^8.0.3",
@@ -142,6 +143,8 @@
     "@babel/runtime": ["@babel/runtime@7.29.2", "", {}, "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@1.10.1", "", {}, "sha512-wJ8ReQbHxsAfXhrf9ixl0aYbZorRuOWpBNzm8pL8ftmSxQx/wnJD5Eg861NwJU/czy2VXFIebCeZnZrI9rktIQ=="],
+
+    "@capacitor-community/speech-recognition": ["@capacitor-community/speech-recognition@7.0.1", "", { "peerDependencies": { "@capacitor/core": ">=7.0.0" } }, "sha512-ykpBZziR575X0eURO5vXaD9gVrXXC/7Ra2qql/2KP6/jxWOqAFuw4eKjSPjwdAgGE6a/Z+v8FJm4SVh57MVwDA=="],
 
     "@capacitor/android": ["@capacitor/android@8.5.3", "", { "peerDependencies": { "@capacitor/core": "^8.5.0" } }, "sha512-ilH4gSSz3DrketMkzDVAvY9JsWJ//rCQnECLTdcFRO7xXDogwAbUvQAnIAbiqefwV/D1xfjEL4Gw1MJXEcaA9g=="],
 

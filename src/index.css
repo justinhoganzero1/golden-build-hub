@@ -2281,3 +2281,14 @@ textarea:not(.oracle-prompt-field), select { color-scheme: dark; }
 /* Phone safety net: nothing may push the page wider than the screen, so members
    never have to swipe sideways. `clip` (not hidden) keeps sticky headers working. */
 html, body { overflow-x: clip; max-width: 100%; }
+
+/* Google TV / Android TV: a big, clear highlight shows where the remote is. */
+html.tv-mode *:focus,
+html.tv-mode *:focus-visible {
+  outline: 3px solid hsl(var(--primary)) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 7px hsl(var(--primary) / 0.28), 0 0 24px hsl(var(--primary) / 0.45) !important;
+  border-radius: 10px;
+  transition: outline-color 120ms ease, box-shadow 120ms ease;
+}
+html.tv-mode, html.tv-mode body { cursor: none; }
