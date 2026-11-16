@@ -44,3 +44,8 @@
 - [x] App appears on the Google TV home screen (TV banner, no touchscreen needed)
 - [x] Build + upload Android app 1.0.5 so the Install button gives the TV version
 - [ ] Google Play for TV — waits on Play Console listing (TV needs its own Google review)
+
+## Member's own Gemini key (2026-11-16)
+- [ ] Setup step: member adds their own Google Gemini key, with a clear consent notice that Google may use their AI data — waits on Juzzy's answers (age, required/optional, fallback, plan)
+- [ ] Oracle guides the member step by step in the chat to get the key; member approves each step by tap or voice
+- [ ] Keep a permanent consent record (what they agreed to, when, by tap or voice) for legal needs
