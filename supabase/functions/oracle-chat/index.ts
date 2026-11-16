@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { loadMemberGemini, memberHasPaidPlan, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,9 @@ serve(async (req) => {
     let userId: string | null = null;
     let userEmail: string | null = null;
     let isAdult = false;
+    let memberGeminiKey: string | null = null;
+    // deno-lint-ignore no-explicit-any
+    let adminClient: any = null;
 
     if (accessToken && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       try {
@@ -75,50 +79,18 @@ serve(async (req) => {
         if (userEmail?.toLowerCase() === ADMIN_EMAIL) isAdult = true;
 
         if (userId) {
-          // Pay-per-use: only the owner (admin) or a member using their own
-          // provider key skips the wallet. No trial, no free daily allowance.
+          // Members' Oracle chat runs on their own Google Gemini key (checked at setup).
+          // A paid plan is still required; the wallet and the platform's AI credits are never used
+          // for member chat, and a failing key pauses chat instead of falling back.
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-          let hasOwnKey = false;
-          if (!isAdmin) try {
-            const { data: keyRow } = await admin
-              .from("user_ai_keys")
-              .select("openai_key, gemini_key")
-              .eq("user_id", userId)
-              .maybeSingle();
-            hasOwnKey = !!(keyRow?.openai_key || keyRow?.gemini_key);
-          } catch (_) { /* treat as no key */ }
-
-          // Own provider keys skip the wallet, but chatting with Oracle is still a paid-plan feature.
-          if (!isAdmin && hasOwnKey) {
-            const { data: plan } = await admin.rpc("member_plan", { _user_id: userId });
-            if (!plan || plan === "free") return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+          if (!isAdmin) {
+            if (!(await memberHasPaidPlan(admin, userId))) return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+            const g = await loadMemberGemini(admin, userId);
+            if (!g.key || !g.verified) return geminiKeyRequiredResponse(corsHeaders);
+            memberGeminiKey = g.key;
+            adminClient = admin;
           }
-          if (!isAdmin && !hasOwnKey) {
-            try {
-              await chargeAI(userId, "oracle-chat", agentModel ? ALLOWED_MODELS[agentModel] : PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
-                provider: "lovable_ai",
-                model: agentModel ?? "google/gemini-3.1-flash-lite",
-              });
-              usageInfo = { count: 0, limit: 0, remaining: 0, over: false, bypassed: false };
-            } catch (err) {
-              if (err instanceof PlanRequiredError) return planRequiredResponse(err, corsHeaders);
-      if (err instanceof InsufficientCoinsError) {
-                return new Response(
-                  JSON.stringify({
-                    error: "insufficient_coins",
-                    reason: "wallet_empty",
-                    message: "Add credit to your wallet to chat with the Oracle.",
-                    needed_cents: err.needed_cents,
-                    balance_cents: err.balance_cents,
-                  }),
-                  { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-                );
-              }
-              throw err;
-            }
-          } else {
-            usageInfo.bypassed = true;
-          }
+          usageInfo.bypassed = true;
         }
       } catch (e) {
         console.error("Billing check failed:", e);
@@ -201,6 +173,18 @@ KEY FACTS YOU CAN SHARE:
 
 If asked anything outside sales/investor scope, give the redirect line above and stop.`;
 
+      const salesMessages = [
+        { role: "system", content: salesSystem },
+        ...messages.slice(-6), // only keep last 6 turns to cap token cost
+      ];
+      if (memberGeminiKey) {
+        const r = await callMemberGemini(memberGeminiKey, { model: MEMBER_GEMINI_MODELS.fast, messages: salesMessages, stream: true, max_tokens: 180 });
+        if (!r.ok) {
+          await markGeminiProblem(adminClient, userId!, r.problem).catch(() => {});
+          return geminiProblemResponse(r.problem, corsHeaders);
+        }
+        return new Response(r.response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      }
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -209,10 +193,7 @@ If asked anything outside sales/investor scope, give the redirect line above and
         },
         body: JSON.stringify({
           model: "google/gemini-3.1-flash-lite",
-          messages: [
-            { role: "system", content: salesSystem },
-            ...messages.slice(-6), // only keep last 6 turns to cap token cost
-          ],
+          messages: salesMessages,
           stream: true,
           max_tokens: 180, // tight cap — no rambling, no data waste
         }),
@@ -704,6 +685,33 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
         (txt.match(/\?/g)?.length || 0) >= 2;
       return isDeep;
     })();
+
+    const usageHeaders = {
+      "X-Oracle-Usage-Count": String(usageInfo.count),
+      "X-Oracle-Usage-Limit": String(usageInfo.limit),
+      "X-Oracle-Usage-Remaining": String(usageInfo.remaining),
+      "X-Oracle-Usage-Bypassed": String(usageInfo.bypassed),
+      "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed",
+    };
+
+    // Members: straight to Google on their own key. Deep questions or a chosen
+    // stronger brain use Google's smarter Flash; everyday chat uses the fastest.
+    if (memberGeminiKey) {
+      const wantsSmart = autoDeep || (!!agentModel && agentModel !== "google/gemini-3.1-flash-lite");
+      const system = personalitySystem + (agentName ? `\n\nFor this chat you are the member's custom agent "${agentName}".${agentPersona ? ` Personality set by the member: ${agentPersona}` : ""} Stay within all rules above.` : "");
+      const r = await callMemberGemini(memberGeminiKey, {
+        model: wantsSmart ? MEMBER_GEMINI_MODELS.smart : MEMBER_GEMINI_MODELS.fast,
+        messages: [{ role: "system", content: system }, ...messages],
+        stream: true,
+        max_tokens: wantsSmart ? 900 : 700,
+      });
+      if (!r.ok) {
+        await markGeminiProblem(adminClient, userId, r.problem).catch(() => {});
+        return geminiProblemResponse(r.problem, corsHeaders);
+      }
+      clearGeminiProblem(adminClient, userId).catch(() => {});
+      return new Response(r.response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream", ...usageHeaders } });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

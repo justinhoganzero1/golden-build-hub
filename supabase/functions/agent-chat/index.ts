@@ -6,8 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
-import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
-import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
+import { loadMemberGemini, memberHasPaidPlan, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 
 
@@ -93,30 +93,31 @@ serve(async (req) => {
 
     const cfg = AGENTS[agent as AgentId];
 
+    const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
+    // deno-lint-ignore no-explicit-any
+    let admin: any = null;
     if (SUPABASE_URL && SERVICE_KEY) {
-
       try {
-        const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-
-        if (userId) {
-          // Look up this user's own provider key.
-          const { data: keyRow } = await admin
-            .from("user_ai_keys")
-            .select(cfg.keyColumn)
-            .eq("user_id", userId)
-            .maybeSingle();
-          const raw = (keyRow as any)?.[cfg.keyColumn];
-          if (typeof raw === "string" && raw.trim().length > 10) userKey = raw.trim();
-
-          // Only enforce free-daily-limit when falling back to Lovable Gateway (your credits).
-          // When user brings their own key, they pay their provider directly — no gating.
-          if (!userKey) {
-            const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
-            if (!isAdmin) {
+        admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+        if (userId && !isAdmin) {
+          if (cfg.keyColumn === "gemini_key") {
+            // Lyra runs on the member's own Gemini key from setup. Plan still required.
+            if (!(await memberHasPaidPlan(admin, userId))) return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+            const g = await loadMemberGemini(admin, userId);
+            if (!g.key || !g.verified) return geminiKeyRequiredResponse(corsHeaders);
+            userKey = g.key;
+          } else {
+            const { data: keyRow } = await admin.from("user_ai_keys").select(cfg.keyColumn).eq("user_id", userId).maybeSingle();
+            const raw = (keyRow as any)?.[cfg.keyColumn];
+            if (typeof raw === "string" && raw.trim().length > 10) userKey = raw.trim();
+            if (userKey) {
+              // Own OpenAI key: no wallet charge, but AI is still a paid-plan feature.
+              if (!(await memberHasPaidPlan(admin, userId))) return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+            } else {
               try {
                 await chargeAI(userId, "agent-chat", PROVIDER_RATES.lovable_ai_gpt5_per_call, { provider: "lovable_ai", model: String(cfg.providerName) });
               } catch (err) {
+                if (err instanceof PlanRequiredError) return planRequiredResponse(err, corsHeaders);
                 if (err instanceof InsufficientCoinsError) return insufficientCoinsResponse(err, corsHeaders);
                 throw err;
               }
@@ -149,55 +150,27 @@ serve(async (req) => {
       });
     }
 
-    // Route the request: user's own key → direct provider; otherwise → Lovable Gateway.
-    const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const chatMessages = [{ role: "system", content: cfg.system }, ...messages.slice(-20)];
 
-    const callProvider = (useByok: boolean) => fetch(
-      useByok ? cfg.byokEndpoint : GATEWAY,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${useByok ? userKey : LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: useByok ? cfg.byokModel : cfg.model,
-          stream: true,
-          messages: [
-            { role: "system", content: cfg.system },
-            ...messages.slice(-20),
-          ],
-        }),
-      },
-    );
-
-    let usedByok = !!userKey;
-    let resp = await callProvider(usedByok);
-
-    // BYOK key exhausted / rate limited / rejected → transparently fall back to the
-    // gateway. The fallback runs on PLATFORM credit, so it must be billed to the
-    // user's wallet — otherwise a deliberately-broken BYOK key buys free compute.
-    if (usedByok && !resp.ok && [401, 402, 403, 429].includes(resp.status)) {
-      const detail = await resp.text().catch(() => "");
-      console.warn("BYOK key failed, falling back to gateway:", resp.status, detail.slice(0, 120).replace(/[A-Za-z0-9_-]{20,}/g, "[redacted]"));
-
-      if (userId) {
-        try {
-          await chargeAI(userId, "agent-chat", PROVIDER_RATES.lovable_ai_gemini_flash_per_call, {
-            provider: "lovable-ai",
-            model: cfg.model,
-            reason: "byok_fallback",
-          });
-        } catch (billErr) {
-          if (billErr instanceof InsufficientCoinsError) return insufficientCoinsResponse(billErr, corsHeaders);
-          console.error("agent-chat fallback billing error:", billErr);
-        }
+    // Lyra on the member's Gemini key: straight to Google, never a fallback.
+    if (userKey && cfg.keyColumn === "gemini_key") {
+      const r = await callMemberGemini(userKey, { model: MEMBER_GEMINI_MODELS.smart, stream: true, messages: chatMessages });
+      if (!r.ok) {
+        if (admin) await markGeminiProblem(admin, userId, r.problem).catch(() => {});
+        return geminiProblemResponse(r.problem, corsHeaders);
       }
-
-      usedByok = false;
-      resp = await callProvider(false);
+      if (admin) clearGeminiProblem(admin, userId).catch(() => {});
+      return new Response(r.response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
     }
 
+    // Own OpenAI key → OpenAI directly (no fallback: a failing key pauses and asks the member);
+    // otherwise (owner, or wallet-paid Nova) → Lovable Gateway.
+    const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const resp = await fetch(userKey ? cfg.byokEndpoint : GATEWAY, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${userKey ?? LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: userKey ? cfg.byokModel : cfg.model, stream: true, messages: chatMessages }),
+    });
 
     if (!resp.ok) {
       if (resp.status === 429) {

@@ -287,6 +287,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_key_consents: {
+        Row: {
+          consent_version: string
+          created_at: string
+          id: string
+          method: string
+          notice_text: string
+          spoken_words: string | null
+          step: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          consent_version: string
+          created_at?: string
+          id?: string
+          method: string
+          notice_text: string
+          spoken_words?: string | null
+          step: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          consent_version?: string
+          created_at?: string
+          id?: string
+          method?: string
+          notice_text?: string
+          spoken_words?: string | null
+          step?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_request_log: {
         Row: {
           created_at: string
@@ -1948,6 +1987,36 @@ export type Database = {
           revenue_cents?: number
           severity?: string
           threshold_pct?: number
+        }
+        Relationships: []
+      }
+      member_ai_setup: {
+        Row: {
+          consent_version: string | null
+          gemini_verified_at: string | null
+          key_problem: string | null
+          key_problem_at: string | null
+          key_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_version?: string | null
+          gemini_verified_at?: string | null
+          key_problem?: string | null
+          key_problem_at?: string | null
+          key_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_version?: string | null
+          gemini_verified_at?: string | null
+          key_problem?: string | null
+          key_problem_at?: string | null
+          key_status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

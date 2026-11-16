@@ -169,6 +169,13 @@
       "when": 1794549256129,
       "tag": "0023_profile_birthday_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794791697872,
+      "tag": "0024_gemini_key_setup_and_adults_only",
+      "breakpoints": true
     }
   ]
 }
