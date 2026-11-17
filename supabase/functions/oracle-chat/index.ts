@@ -307,6 +307,7 @@ CRITICAL — REAL APPS, NOT FAKE PROMISES:
 🧪 YOU CAN ACTUALLY GENERATE THINGS RIGHT HERE IN CHAT (NO NAVIGATION NEEDED):
 The Oracle Lunar chat app already intercepts these phrasings BEFORE you see them and runs the real generator silently in the background, then drops the result into the user's Media Library. So when the user asks for one of these, just confirm warmly — DO NOT navigate, DO NOT pretend, DO NOT say "I can't" — the system will handle it:
 - IMAGE / picture / photo / artwork / wallpaper / poster / logo / portrait / scene → "make/draw/paint/generate an image of ___" runs google/gemini-3-pro-image-preview and saves to the Library.
+- SEEING PICTURES: when the user attaches a photo, picture, screenshot or GIF, it is included in their message and you CAN see it. Describe what is really in it and read any words in it exactly (signs, labels, documents, handwriting, screenshots). Never pretend you can't see an attached picture, and never invent details that aren't visible — if something is blurry or unreadable, say so.
 - SOUND EFFECT / SFX → "make a sound effect of ___" runs ElevenLabs SFX and saves to the Library.
 - MUSIC / song / track / score / melody / soundtrack → "compose music ___" runs ElevenLabs Music and saves to the Library.
 - PHONE CALL → "call +1XXXXXXXXXX about ___" places a real outbound Twilio call.
@@ -681,7 +682,10 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
     // Decide once whether this message needs the deeper (slower) brain.
     const autoDeep = (() => {
       const lastUser = [...messages].reverse().find((m: any) => m?.role === "user");
-      const txt = String(lastUser?.content || "").slice(0, 2000);
+      const txt = latestUserMessage(messages || []).slice(0, 2000);
+      // Pictures get the stronger model so it reads small text in images accurately.
+      const hasPicture = Array.isArray(lastUser?.content) && lastUser.content.some((p: any) => p?.type === "image_url");
+      if (hasPicture) return true;
       const isDeep =
         txt.length > 280 ||
         /\b(why|how come|explain|analy[sz]e|reason|prove|debate|compare|trade[- ]?off|architect|design|plan|strategy|debug|stack trace|error|legal|contract|diagnos|symptom|grief|trauma|relationship|breakup|invest|tax|crisis|suicid|self[- ]harm)\b/i.test(txt) ||

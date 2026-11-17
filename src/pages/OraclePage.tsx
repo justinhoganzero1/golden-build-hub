@@ -28,6 +28,7 @@ import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
 import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
 import { extractFileText, documentHtml } from "@/lib/fileText";
+import { imageToVisionFrames, withVisionImages } from "@/lib/visionFrames";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
@@ -64,6 +65,8 @@ interface Message {
   avatar_url?: string;
   isAppResult?: boolean;
   artifact?: OracleArtifact;
+  /** Small picture frames the user attached, so Oracle's AI can see and read them. */
+  images?: string[];
 }
 
 interface ChatAgent {
@@ -431,13 +434,20 @@ const OraclePage = () => {
           metadata: { kind: "upload", mime: file.type, size: file.size },
         });
       } catch { /* non-fatal */ }
-      if (mediaType === "image") { try { lastAttachedImageRef.current = await toSmallDataUrl(file); } catch { /* not readable */ } }
+      let visionImages: string[] = [];
+      if (mediaType === "image") {
+        try { lastAttachedImageRef.current = await toSmallDataUrl(file); } catch { /* not readable */ }
+        visionImages = await imageToVisionFrames(file);
+      }
       toast.success(`Attached ${file.name} — sent to ${oracleName}`);
       const sizeKb = Math.round(file.size / 1024);
       const fileText = await extractFileText(file);
       const textPart = fileText ? `\n\n--- FILE CONTENTS (read this carefully and use it) ---\n${fileText}\n--- END FILE CONTENTS ---\nYou CAN read this file. If it relates to a document the user asked for (CV, resume, cover letter, letter, report), use these details directly and only ask for what is still missing.` : "";
       const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB${textPart}\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If the image shows clothing or an outfit, you can offer to wear it — they just need to say "wear this". If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
-      await sendMessage(prompt);
+      const visionPart = visionImages.length
+        ? `\n\n--- PICTURE ATTACHED (you can SEE it) ---\n${visionImages.length > 1 ? `These are ${visionImages.length} frames, in order, from an animated GIF.` : "The picture is attached to this message."} Look at it carefully: briefly say what it shows (people, objects, place, mood, what is happening). If it contains any words or writing (signs, labels, screenshots, documents, handwriting, menus), read them out exactly and say what they mean. Then ask what they would like to do with it.`
+        : "";
+      await sendMessage(prompt + visionPart, { images: visionImages });
     } catch (err: any) {
       toast.error(err?.message || "Upload failed");
     } finally {
@@ -1801,7 +1811,7 @@ const OraclePage = () => {
   };
 
   // ============ SEND MESSAGE ============
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, opts?: { images?: string[] }) => {
     if (!text.trim() || isLoading) return;
     const isIntroTrigger = text === "__INTRO__";
     if (!isIntroTrigger) setInput("");
@@ -2286,7 +2296,7 @@ const OraclePage = () => {
     cancelCurrentSpeech();
     setIsSpeaking(false);
     setShowChat(true);
-    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text };
+    const userMsg: Message = { id: Date.now().toString(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: isIntroTrigger ? "Hi" : text, ...(opts?.images?.length ? { images: opts.images } : {}) };
     // Track for speech-therapist listener-aware tone matching
     lastUserMessageRef.current = isIntroTrigger ? "" : text;
     if (!isIntroTrigger) {
@@ -2320,7 +2330,13 @@ const OraclePage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${oracleAuthToken}` },
         body: JSON.stringify({
-          messages: trimmedMsgs.map(m => ({ role: m.role, content: m.sender === "user" ? m.content : `[${m.sender}]: ${m.content}` })),
+          // Only the most recent attached picture travels with the chat, so follow-up
+          // questions ("what does the sign say?") still work without resending every photo.
+          messages: (() => {
+            let lastImageIdx = -1;
+            trimmedMsgs.forEach((m, i) => { if (m.role === "user" && m.images?.length) lastImageIdx = i; });
+            return trimmedMsgs.map((m, i) => ({ role: m.role, content: m.sender === "user" ? (i === lastImageIdx ? withVisionImages(m.content, m.images) : m.content) : `[${m.sender}]: ${m.content}` }));
+          })(),
           oracleName,
           isFirstMeeting,
           look: lookPersona(lookRef.current),

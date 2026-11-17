@@ -58,3 +58,8 @@
 - [x] Website Android download: file now arrives labelled as an installable app; steps wait for the download to finish
 - [ ] Make Gemini key setup a forced step right after sign-up — waits on Juzzy (currently asked when Oracle chat needs it)
 - [ ] Publish so the download fix and trial go live on oraclelunar.com — waits on Juzzy saying publish
+
+## Privacy and picture reading (2026-11-18)
+- [x] Lock member files, Amazon links and old announcements
+- [x] All of Juzzy's Library items private
+- [x] Oracle reads words in pictures and understands photos and GIFs
