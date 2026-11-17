@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _tmp_trial_card_backup: {
-        Row: {
-          card_brand: string | null
-          card_fingerprint_hash: string | null
-          card_last4: string | null
-          checkout_session_id: string | null
-          stripe_env: string | null
-          trial_ends_at: string | null
-          user_id: string | null
-          verified_at: string | null
-        }
-        Insert: {
-          card_brand?: string | null
-          card_fingerprint_hash?: string | null
-          card_last4?: string | null
-          checkout_session_id?: string | null
-          stripe_env?: string | null
-          trial_ends_at?: string | null
-          user_id?: string | null
-          verified_at?: string | null
-        }
-        Update: {
-          card_brand?: string | null
-          card_fingerprint_hash?: string | null
-          card_last4?: string | null
-          checkout_session_id?: string | null
-          stripe_env?: string | null
-          trial_ends_at?: string | null
-          user_id?: string | null
-          verified_at?: string | null
-        }
-        Relationships: []
-      }
       admin_messages: {
         Row: {
           created_at: string
