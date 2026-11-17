@@ -7,7 +7,7 @@ import { GEMINI_KEY_EVENT, type GeminiKeyDetail } from "@/lib/aiAccessEvents";
 import { playAhoogaHorn } from "@/lib/ahoogaHorn";
 
 export const GOOGLE_BILLING_URL = "https://console.cloud.google.com/billing";
-export const ALARM_HEADLINE = "CHECK GOOGLE KEY AS IT DENYING ACCESS! POSSIBLY NEEDS CREDIT";
+export const ALARM_HEADLINE = "CHECK GOOGLE KEY IT IS DENYING ACCESS! POSSIBLY NEEDS CREDIT";
 
 const openOutside = (url: string) => {
   const w = window.open(url, "_blank");

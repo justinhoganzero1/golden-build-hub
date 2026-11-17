@@ -66,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           const uid = session.user.id;
           setTimeout(() => ensureOwnAccount(uid), 0);
+          // Remember a trial account's devices so another account on them can't start a second free trial.
+          setTimeout(() => { import("@/lib/trialCard").then((m) => m.noteTrialDevice(uid)).catch(() => {}); }, 3000);
         }
 
         // Best-effort welcome-reward trigger after email-confirmation sign-in.

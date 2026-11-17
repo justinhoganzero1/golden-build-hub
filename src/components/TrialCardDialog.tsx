@@ -5,16 +5,21 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CARD_REQUIRED_EVENT } from "@/lib/aiAccessEvents";
-import { startTrialCardCheck } from "@/lib/trialCard";
+import { getTrialStatus, startTrialCardCheck } from "@/lib/trialCard";
 
 /** Raised when a Free member tries a trial tool before verifying a card. */
 const TrialCardDialog = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState<string | null>(null);
 
   useEffect(() => {
-    const h = () => setOpen(true);
+    const h = () => {
+      setBlocked(null);
+      setOpen(true);
+      getTrialStatus().then((s) => setBlocked(s.trial_blocked ? s.trial_blocked_message || "Your free trial has already been used." : null)).catch(() => {});
+    };
     window.addEventListener(CARD_REQUIRED_EVENT, h);
     return () => window.removeEventListener(CARD_REQUIRED_EVENT, h);
   }, []);
@@ -34,6 +39,15 @@ const TrialCardDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="w-[95vw] max-w-sm">
+        {blocked ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary" />Free trial already used</DialogTitle>
+              <DialogDescription>{blocked}</DialogDescription>
+            </DialogHeader>
+            <Button size="lg" onClick={() => { setOpen(false); navigate("/membership"); }}>Upgrade to keep going</Button>
+          </>
+        ) : (<>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary" />Start your free trial</DialogTitle>
           <DialogDescription>
@@ -46,6 +60,7 @@ const TrialCardDialog = () => {
           <Button variant="outline" onClick={() => { setOpen(false); navigate("/membership"); }}>See plans instead</Button>
         </div>
         <p className="text-center text-xs text-muted-foreground">No automatic upgrade. Nothing is charged unless you choose a plan.</p>
+        </>)}
       </DialogContent>
     </Dialog>
   );

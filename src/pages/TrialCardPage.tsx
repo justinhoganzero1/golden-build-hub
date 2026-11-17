@@ -96,6 +96,13 @@ const TrialCardPage = () => {
             <p className="oracle-signin-sub">Your plan already includes these tools — no trial needed.</p>
             <Button asChild className="mt-5 w-full"><Link to="/oracle">Back to Oracle</Link></Button>
           </>
+        ) : status?.trial_blocked ? (
+          <>
+            <h2 id="trial-title" className="oracle-signin-title">Free trial already used</h2>
+            <p className="oracle-signin-sub">{status.trial_blocked_message}</p>
+            <Button asChild size="lg" className="mt-5 w-full"><Link to="/membership">Upgrade to keep going</Link></Button>
+            <Button asChild variant="ghost" className="mt-2 w-full"><Link to="/oracle">Back to Oracle</Link></Button>
+          </>
         ) : !status?.card_verified ? (
           <>
             <h2 id="trial-title" className="oracle-signin-title">Start your free trial</h2>

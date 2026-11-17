@@ -8,6 +8,7 @@ import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import { type StripeEnv, createStripeClient, resolveOrCreateCustomer } from "../_shared/stripe.ts";
 import { TRIAL_DAYS, TRIAL_LIMITS, trialEndsAt } from "../_shared/freeTrial.ts";
+import { collectMarks, findOtherTrial, rememberTrialMarks, requestIp, TRIAL_USED_MESSAGE } from "../_shared/trialIdentity.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +40,15 @@ Deno.serve(async (req) => {
       admin.from("trial_card_checks").select("card_brand, card_last4, verified_at, trial_ends_at").eq("user_id", user.id).maybeSingle(),
       admin.from("free_trial_usage").select("images_used, videos_used").eq("user_id", user.id).maybeSingle(),
     ]);
+    const [{ data: isAdmin }] = await Promise.all([admin.rpc("has_role", { _user_id: user.id, _role: "admin" })]);
+    const exempt = !!isAdmin;
+    const marks = collectMarks({ email: user.email, deviceId: body?.device_id, ip: requestIp(req) });
+    // A trial account's devices and addresses are remembered every time it checks in.
+    if (card && !exempt) await rememberTrialMarks(admin, user.id, marks).catch((e: unknown) => console.error("trial marks:", e));
+    const usedElsewhere = !card && !exempt && (!plan || plan === "free") ? await findOtherTrial(admin, user.id, marks) : null;
     const status = () => ({
+      trial_blocked: !!usedElsewhere,
+      trial_blocked_message: usedElsewhere ? TRIAL_USED_MESSAGE : null,
       plan: plan ?? "free",
       card_verified: !!card,
       card_brand: card?.card_brand ?? null,
@@ -61,6 +70,7 @@ Deno.serve(async (req) => {
     if (action === "start") {
       if (card) return json({ error: "already_verified", message: "Your card is already verified.", ...status() }, 409);
       if (plan && plan !== "free") return json({ error: "not_needed", message: "Your plan already includes these tools." }, 409);
+      if (usedElsewhere) return json({ error: "trial_already_used", message: TRIAL_USED_MESSAGE, ...status() }, 409);
       const customer = await resolveOrCreateCustomer(stripe, { email: user.email ?? undefined, userId: user.id });
       const origin = safeOrigin(req);
       const metadata = { purpose: "trial_card", user_id: user.id };
@@ -90,6 +100,10 @@ Deno.serve(async (req) => {
         return json({ error: "not_finished", message: "The card check isn't finished yet. Please try again." }, 409);
       }
       const pm = intent.payment_method;
+      if (usedElsewhere) {
+        await stripe.paymentMethods.detach(pm?.id).catch(() => undefined);
+        return json({ error: "trial_already_used", message: TRIAL_USED_MESSAGE, ...status() }, 409);
+      }
       const fingerprint: string | undefined = pm?.card?.fingerprint;
       if (!fingerprint) return json({ error: "card_only", message: "Please use a debit or credit card." }, 400);
       const hash = await sha256(`${env}:${fingerprint}`);
@@ -97,7 +111,7 @@ Deno.serve(async (req) => {
       const { data: used } = await admin.from("trial_card_checks").select("user_id").eq("stripe_env", env).eq("card_fingerprint_hash", hash).maybeSingle();
       if (used && used.user_id !== user.id) {
         await stripe.paymentMethods.detach(pm.id).catch(() => undefined);
-        return json({ error: "card_already_used", message: "This card has already been used for a free trial. Please sign in to your original account, or upgrade." }, 409);
+        return json({ error: "trial_already_used", message: TRIAL_USED_MESSAGE }, 409);
       }
       const now = new Date();
       const { error } = await admin.from("trial_card_checks").insert({
@@ -111,10 +125,11 @@ Deno.serve(async (req) => {
         trial_ends_at: trialEndsAt(now).toISOString(),
       });
       if (error && error.code !== "23505") throw error;
-      if (error) return json({ error: "card_already_used", message: "This card has already been used for a free trial." }, 409);
+      if (error) return json({ error: "trial_already_used", message: TRIAL_USED_MESSAGE }, 409);
+      if (!exempt) await rememberTrialMarks(admin, user.id, marks).catch((e: unknown) => console.error("trial marks:", e));
       const { data: fresh } = await admin.from("trial_card_checks").select("card_brand, card_last4, verified_at, trial_ends_at").eq("user_id", user.id).maybeSingle();
       return json({
-        ok: true, ...status(), card_verified: true,
+        ok: true, ...status(), trial_blocked: false, trial_blocked_message: null, card_verified: true,
         card_brand: fresh?.card_brand ?? null, card_last4: fresh?.card_last4 ?? null,
         trial_ends_at: fresh?.trial_ends_at ?? null, trial_open: true,
       });

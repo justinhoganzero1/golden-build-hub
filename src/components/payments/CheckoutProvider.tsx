@@ -45,6 +45,7 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   founder_seats_gone: "All 500 founder seats are taken.",
   already_founder: "You already own a founder seat.",
   auth_required: "Please sign in first.",
+  trial_already_used: "A free trial has already been used on this account, device, card or internet connection. Please upgrade to keep going.",
 };
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
@@ -66,7 +67,11 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.functions.invoke(req.functionName, {
         body: { ...(req.body ?? {}), environment: getStripeEnvironment() },
       });
-      if (error) throw new Error(error.message || "Checkout failed to start");
+      if (error) {
+        const res: Response | undefined = (error as any)?.context;
+        const detail = res && typeof res.clone === "function" ? await res.clone().json().catch(() => null) : null;
+        throw new Error(detail?.message || (detail?.error && FRIENDLY_ERRORS[detail.error]) || error.message || "Checkout failed to start");
+      }
       if (data?.error) throw new Error(FRIENDLY_ERRORS[data.error] ?? data.error);
       req.onResponse?.(data ?? {});
       if (data?.already_unlocked || data?.admin_bypass) {

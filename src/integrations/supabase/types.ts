@@ -3915,6 +3915,33 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_identity_marks: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          mark_hash: string
+          mark_kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          mark_hash: string
+          mark_kind: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          mark_hash?: string
+          mark_kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       usage_events: {
         Row: {
           created_at: string
