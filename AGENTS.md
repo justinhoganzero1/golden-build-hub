@@ -51,3 +51,4 @@
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
 - Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (timezone country, no IP) use site_arrivals.
+- image-gen proofreads any words a picture request wants (image-gen/textCheck.ts), pins the exact corrected wording, reads the result back and makes one paid correction edit if it does not match; other pictures keep the no-text rule, and video prompts keep lettering from the proofread starting frame. Members pay each check; trial pictures skip them so trials stay free.

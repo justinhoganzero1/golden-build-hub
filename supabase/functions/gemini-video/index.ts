@@ -10,6 +10,8 @@ import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCo
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { z } from "npm:zod@3.25.76";
 import { trialDecision, releaseTrial, paywallResponse, isTrialBlocked, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
+// Any words seen in a generated video must stay spelled exactly as in the (already proofread) starting picture.
+const VIDEO_TEXT_RULE = " Keep any visible words, signs or lettering exactly as they appear in the starting image, spelled correctly; do not add new or scrambled text.";
 const bodySchema = z.object({ job_id: z.string().uuid().optional(), request_key: z.string().uuid().optional(), image_url: z.string().max(12000000).optional(), prompt: z.string().max(4096).default("Cinematic motion, natural subject movement"), duration: z.number().int().min(3).max(10).optional(), ratio: z.enum(["16:9", "9:16"]).optional() });
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -82,7 +84,7 @@ serve(async req => {
       localJobId = saved.id;
       submitted = true;
       try {
-        const remote = await generateVideo({ model: VIDEO_MODEL, input: image ? [{ type: "text", text: input.prompt }, image] : input.prompt, response_format: { type: "video", duration: `${seconds}s`, resolution: "720p" } }, { runId: saved.id });
+        const remote = await generateVideo({ model: VIDEO_MODEL, input: image ? [{ type: "text", text: `${input.prompt}${VIDEO_TEXT_RULE}` }, image] : `${input.prompt}${VIDEO_TEXT_RULE}`, response_format: { type: "video", duration: `${seconds}s`, resolution: "720p" } }, { runId: saved.id });
         const update = await client.from("member_video_jobs").update({ gateway_job_id: remote.id, status: remote.status, updated_at: new Date().toISOString() }).eq("id", saved.id);
         if (update.error) throw update.error;
         saved.gateway_job_id = remote.id;

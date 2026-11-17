@@ -63,3 +63,4 @@
 - [x] Lock member files, Amazon links and old announcements
 - [x] All of Juzzy's Library items private
 - [x] Oracle reads words in pictures and understands photos and GIFs
+- [x] Words in pictures Oracle makes are proofread, checked and corrected (videos keep the checked starting picture)

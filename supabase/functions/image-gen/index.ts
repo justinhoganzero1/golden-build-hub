@@ -3,6 +3,37 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { trialDecision, releaseTrial, paywallResponse, isTrialBlocked } from "../_shared/freeTrial.ts";
 import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { OWNER_EMAIL } from "../_shared/requireAuth.ts";
+import { wantsTextInImage, parseJsonLoose, cleanTexts, exactTextInstruction, textsMatch } from "./textCheck.ts";
+
+const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const TEXT_CHECK_MODEL = "google/gemini-3.8-flash";
+const TEXT_CHECK_COST_CENTS = 1;
+
+async function askChecker(key: string, content: unknown): Promise<string> {
+  const r = await fetch(GATEWAY_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: TEXT_CHECK_MODEL, messages: [{ role: "user", content }] }),
+  });
+  if (!r.ok) throw new Error(`checker ${r.status}`);
+  const d = await r.json();
+  return String(d?.choices?.[0]?.message?.content || "");
+}
+
+/** Proofreads the words the user wants drawn in the picture (spelling, grammar, punctuation). */
+async function proofreadWantedText(key: string, prompt: string): Promise<string[]> {
+  const raw = await askChecker(key, `You are a careful proofreader using Australian English. From the picture request below, list the exact words that should be written INSIDE the picture (titles, captions, signs, labels, slogans, names on cards). Correct any spelling, grammar and punctuation mistakes. Keep people's names and brand names as written. If the request does not say which words to show, return an empty list — never invent wording. Reply with JSON only: {"texts": ["..."]}\n\nRequest: ${prompt.slice(0, 2000)}`);
+  return cleanTexts(parseJsonLoose<{ texts?: unknown }>(raw)?.texts);
+}
+
+/** Reads back every word visible in a generated picture. */
+async function readTextInImage(key: string, imageUrl: string): Promise<string[]> {
+  const raw = await askChecker(key, [
+    { type: "text", text: 'Read every word written in this picture exactly as it is spelled, letter for letter, including mistakes. Reply with JSON only: {"found": ["..."]}' },
+    { type: "image_url", image_url: { url: imageUrl } },
+  ]);
+  return cleanTexts(parseJsonLoose<{ found?: unknown }>(raw)?.found);
+}
 
 
 const corsHeaders = {
@@ -234,9 +265,20 @@ serve(async (req) => {
     // Strip any text/words/names from rendered image (no captions, no speech bubble text, no watermarks)
     const NO_TEXT_SUFFIX =
       " — IMPORTANT: do NOT render any text, letters, words, names, captions, signatures, watermarks, logos, labels, speech bubbles with writing, or written language of any kind anywhere in the image. Speech bubbles, signs, and labels must be empty/blank if present.";
-    const cleanPrompt = /no text|no words|no letters|no watermark/i.test(prompt)
-      ? prompt
-      : prompt + NO_TEXT_SUFFIX;
+    // Words wanted in the picture are proofread first, then pinned exactly; otherwise no text at all
+    // (models scramble unrequested lettering). Trial pictures skip the extra checks to stay free.
+    let exactTexts: string[] = [];
+    if (trial !== "trial" && wantsTextInImage(prompt)) {
+      try {
+        if (trial === "paid") await chargeAI(user.id, "image_text_check", TEXT_CHECK_COST_CENTS, { step: "proofread", job_id: jobId });
+        exactTexts = await proofreadWantedText(LOVABLE_API_KEY, prompt);
+      } catch (e) { console.warn("image-gen proofread skipped:", e instanceof Error ? e.message : e); }
+    }
+    const cleanPrompt = exactTexts.length
+      ? prompt + exactTextInstruction(exactTexts)
+      : /no text|no words|no letters|no watermark/i.test(prompt)
+        ? prompt
+        : prompt + NO_TEXT_SUFFIX;
     // Accept one image (inputImage) or several (inputImages) as visual references.
     const refImages: string[] = Array.isArray(inputImages)
       ? inputImages.filter((u: unknown) => typeof u === "string" && u).slice(0, 4)
@@ -297,6 +339,50 @@ serve(async (req) => {
       await sleep(delay);
     }
 
+    let textCheck: { checked: boolean; ok?: boolean; expected?: string[]; found?: string[]; fixed?: boolean } = { checked: false };
+    if (succeeded && exactTexts.length) {
+      const firstUrl = images[0]?.image_url?.url || images[0]?.url || (typeof images[0] === "string" ? images[0] : null);
+      try {
+        if (firstUrl) {
+          if (trial === "paid") await chargeAI(user.id, "image_text_check", TEXT_CHECK_COST_CENTS, { step: "read_back", job_id: jobId });
+          let found = await readTextInImage(LOVABLE_API_KEY, firstUrl);
+          let ok = textsMatch(exactTexts, found);
+          let fixed = false;
+          if (!ok) {
+            // One correction pass: edit the same picture so only the lettering changes.
+            if (trial === "paid") await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { step: "text_fix", job_id: jobId, tier: chosenTier });
+            const fr = await fetch(GATEWAY_URL, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: usedModel,
+                messages: [{ role: "user", content: [
+                  { type: "text", text: `Edit this image. Fix the lettering so the only words shown read exactly ${exactTexts.map((t) => `"${t}"`).join(", ")} — correct spelling letter for letter, correct grammar and punctuation, clear legible lettering. Keep everything else in the picture identical.` },
+                  { type: "image_url", image_url: { url: firstUrl } },
+                ] }],
+                modalities: ["image", "text"],
+              }),
+            });
+            if (fr.ok) {
+              const fd = await fr.json();
+              const fixedImages = fd?.choices?.[0]?.message?.images || [];
+              const fixedUrl = fixedImages[0]?.image_url?.url || fixedImages[0]?.url;
+              if (fixedUrl) {
+                if (trial === "paid") await chargeAI(user.id, "image_text_check", TEXT_CHECK_COST_CENTS, { step: "read_back_fix", job_id: jobId });
+                const fixedFound = await readTextInImage(LOVABLE_API_KEY, fixedUrl);
+                const fixedOk = textsMatch(exactTexts, fixedFound);
+                if (fixedOk || fixedFound.length) { images = fixedImages; found = fixedFound; ok = fixedOk; fixed = true; }
+              }
+            }
+          }
+          textCheck = { checked: true, ok, expected: exactTexts, found, fixed };
+        }
+      } catch (e) {
+        console.warn("image-gen text check incomplete:", e instanceof Error ? e.message : e);
+        textCheck = { checked: false, expected: exactTexts };
+      }
+    }
+
     if (succeeded) {
       const resultUrl = images[0]?.image_url?.url || images[0]?.url || (typeof images[0] === "string" ? images[0] : null);
       const libraryId = resultUrl ? await ensureLibraryImage(admin, {
@@ -319,7 +405,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         text: textOut, images, tier: chosenTier, model: usedModel,
         cost_cents: IMAGE_GEN_COST_CENTS, attempts: attemptsDone, job_id: jobId,
-        library_id: libraryId,
+        library_id: libraryId, text_check: textCheck,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (trial === "trial") await releaseTrial(admin, user.id, "image");
