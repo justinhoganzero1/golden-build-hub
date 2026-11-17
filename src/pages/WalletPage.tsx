@@ -164,6 +164,20 @@ const WalletPage = () => {
           <p className="text-xs text-muted-foreground mt-3">Paid AI tools deduct coins automatically. Admin bypasses charges.</p>
         </div>
 
+        {!loading && balanceCents < 100 && (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 mb-5" role="status">
+            <p className="text-sm font-bold text-foreground">Running low</p>
+            <p className="text-xs text-muted-foreground mt-1">Top up now so Oracle's replies, pictures, videos and spelling checks don't stop halfway.</p>
+            <button
+              onClick={() => buyCoins(10)}
+              disabled={checkingOut === 10}
+              className="mt-3 rounded-xl bg-primary text-primary-foreground text-xs font-bold px-4 py-2 disabled:opacity-60"
+            >
+              {checkingOut === 10 ? "Opening…" : "Top up $10"}
+            </button>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-border bg-card p-5 mb-5">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-4 h-4 text-primary" />
@@ -270,6 +284,7 @@ const WalletPage = () => {
           <h2 className="text-sm font-bold text-foreground">What uses coins</h2>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
             <li>Oracle AI chat replies, voice, images, video, narration and phone calls.</li>
+            <li>Spelling checks on words inside pictures: about 1 cent per check, plus one extra picture if Oracle has to fix the lettering.</li>
             <li>You pay the real service cost plus 20%. Nothing else.</li>
             <li>Free tools (planners, trackers, diary, calendar, games) never use coins.</li>
           </ul>
