@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMembership } from "@/hooks/useMembership";
+import { useAuth } from "@/contexts/AuthContext";
+import { markGeminiSetupDone } from "@/hooks/useGeminiSetupGate";
 import officeBackdrop from "@/assets/oracle-office-empty.jpg";
 
 type Step = { id: string; oracleSays: string; notice: string };
@@ -57,6 +59,7 @@ const AiKeySetupPage = () => {
   const [params] = useSearchParams();
   const fixMode = params.get("fix") === "1";
   const { plan } = useMembership();
+  const { user, signOut } = useAuth();
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "tap" | "voice" | "key">(null);
@@ -103,6 +106,7 @@ const AiKeySetupPage = () => {
     setKeyError(null);
     try {
       await setupCall({ action: "save_key", key: key.trim() });
+      if (user) markGeminiSetupDone(user.id);
       setKey("");
       setReplacing(false);
       toast.success("Your Google key works — Oracle is ready to chat!");
@@ -213,6 +217,13 @@ const AiKeySetupPage = () => {
               </div>
             )}
           </div>
+        )}
+        {!connected && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Connecting your Google key is the last step of setting up your account.{" "}
+            <Link to="/crisis-hub" className="text-primary underline">Need help now?</Link>{" · "}
+            <button type="button" className="text-primary underline" onClick={() => void signOut()}>Sign out</button>
+          </p>
         )}
         <div ref={bottom} />
       </section>

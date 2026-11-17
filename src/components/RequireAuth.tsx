@@ -5,6 +5,8 @@ import { useMembership } from "@/hooks/useMembership";
 import { memberPageAccess } from '@/lib/memberPageAccess';
 import { pagePlan } from "@/lib/plans";
 import { useBirthdayGate } from "@/hooks/useBirthdayGate";
+import { useGeminiSetupGate } from "@/hooks/useGeminiSetupGate";
+import { geminiSetupNeeded, GEMINI_SETUP_PATH } from "@/lib/geminiSetupGate";
 
 /**
  * Every app page needs a signed-in account. The member's plan then decides the page:
@@ -29,6 +31,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const location = useLocation();
   const { plan, loading: mLoading } = useMembership();
   const birthday = useBirthdayGate();
+  const gemini = useGeminiSetupGate();
 
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
@@ -37,6 +40,11 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   if (birthday.needed) return <Navigate to="/age-required" state={{ from: location }} replace />;
 
   const path = location.pathname;
+  // Every member connects their own Google Gemini key before using the app.
+  if (gemini.loading) return <Spinner />;
+  if (geminiSetupNeeded({ isOwner: gemini.isOwner, path, verifiedAt: gemini.verifiedAt })) {
+    return <Navigate to={GEMINI_SETUP_PATH} state={{ from: location }} replace />;
+  }
   if (pagePlan(path) === "free") return <>{children}</>;
   if (mLoading) return <Spinner />;
   if (memberPageAccess({ signedIn: true, plan, path }) === 'upgrade') {
