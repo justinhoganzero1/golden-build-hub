@@ -46,7 +46,7 @@ export default function OracleToolsMenu({ children }: { children?: ReactNode }) 
         <input aria-label="Search Oracle tools" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search tools…" className="w-full min-w-0 py-2 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
       </label>
       <div className="grid grid-cols-2 gap-1.5">
-        {filtered.map(t => <Button type="button" variant="outline" key={t.path} onClick={() => { setOpen(false); navigate(t.path, { state: { oracleWorkspace: true } }); }} className="h-auto min-h-11 rounded-md justify-start whitespace-normal text-left text-sm p-2.5">{t.label}</Button>)}
+        {filtered.map(t => <Button type="button" variant="outline" key={`${t.label}:${t.path}`} onClick={() => { setOpen(false); navigate(t.path, { state: { oracleWorkspace: true } }); }} className="h-auto min-h-11 rounded-md justify-start whitespace-normal text-left text-sm p-2.5">{t.label}</Button>)}
       </div>
       {!filtered.length && <p className="text-xs py-3">No tools found.</p>}
     </div>}

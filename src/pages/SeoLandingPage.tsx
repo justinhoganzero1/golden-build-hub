@@ -1,4 +1,6 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { SEO_TOOL_DESTINATIONS } from "@/lib/toolDestinations";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -551,7 +553,17 @@ const SAFETY_FAQ = {
   a: "No. Oracle is AI support, not a person, health professional, therapist or emergency service. In an emergency call 000 in Australia or 911 in the US. The Crisis Hub is always free.",
 };
 
+// These pages are adverts for search visitors. A signed-in member is taken
+// straight to the real tool instead (keeping the Oracle overlay state).
 export default function SeoLandingPage() {
+  const location = useLocation();
+  const { user } = useAuth();
+  const destination = SEO_TOOL_DESTINATIONS[location.pathname] ?? "/oracle";
+  if (user) return <Navigate to={destination} replace state={location.state} />;
+  return <SeoLandingContent />;
+}
+
+function SeoLandingContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const variant = VARIANTS[location.pathname] ?? VARIANTS["/ai-chat-companion"];

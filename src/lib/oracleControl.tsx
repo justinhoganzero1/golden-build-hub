@@ -19,6 +19,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { toolDestination } from "@/lib/toolDestinations";
 
 export interface OracleRoute {
   label: string;
@@ -29,7 +30,7 @@ export interface OracleRoute {
 }
 
 // One row per real route in App.tsx. Aliases are the spoken / typed names.
-export const ROUTE_REGISTRY: OracleRoute[] = [
+const RAW_ROUTE_REGISTRY: OracleRoute[] = [
   { label: "Dashboard", path: "/dashboard", aliases: ["dashboard", "home screen", "home", "main menu", "modules", "grid"] },
   { label: "Oracle", path: "/oracle", aliases: ["oracle", "talk to you", "chat with you"] },
   { label: "App Builder", path: "/app-builder", aliases: ["app builder", "build an app", "make an app", "build apps", "make apps", "ai coder", "code builder"] },
@@ -110,6 +111,10 @@ export const ROUTE_REGISTRY: OracleRoute[] = [
   { label: "Terms of Service", path: "/terms-of-service", aliases: ["terms", "terms of service", "tos"] },
 ];
 
+// Marketing-page paths are swapped for the real tool, so the tools menu and
+// Oracle's "open X" never land members on a website advert page.
+export const ROUTE_REGISTRY: OracleRoute[] = RAW_ROUTE_REGISTRY.map(r => ({ ...r, path: toolDestination(r.path) }));
+
 export type OracleCommand =
   | { kind: "nav"; path: string; label: string }
   | { kind: "click"; selector: string }
@@ -128,7 +133,7 @@ export function resolveOracleCommand(text: string): OracleCommand | null {
   // Marker form takes precedence so the LLM can always force-trigger a command.
   const navMarker = lower.match(/\[\[\s*nav\s+(\/[^\]\s]+)\s*\]\]/i);
   if (navMarker) {
-    const path = navMarker[1];
+    const path = toolDestination(navMarker[1]);
     const route = ROUTE_REGISTRY.find(r => r.path === path.split("?")[0].split("#")[0]);
     return { kind: "nav", path, label: route?.label || path };
   }
@@ -227,7 +232,7 @@ export function OracleControlListener() {
       try {
         switch (cmd.kind) {
           case "nav": {
-            navigate(cmd.path);
+            navigate(toolDestination(cmd.path));
             break;
           }
           case "click": {

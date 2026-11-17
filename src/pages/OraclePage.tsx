@@ -12,7 +12,7 @@ import { getCurrentPlan, notifyPlanRequired, notifyWalletInsufficient } from "@/
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useScribe } from "@elevenlabs/react";
 import { useMute } from "@/contexts/MuteContext";
 import { Button } from "@/components/ui/button";
@@ -1687,6 +1687,19 @@ const OraclePage = () => {
     toast.success(`Unlocked: ${mod.label}`, { action: { label: "Open", onClick: () => navigate(mod.path) }, duration: 10000 });
     try { speakAsAgent(line, oracleName); } catch { /* speech is optional */ }
   }, [user?.id, oracleName, speakAsAgent, navigate]);
+
+  // Tools menu shortcuts open Oracle with ?ask=<starter>: the starter is placed
+  // in the composer for the member to finish and send — nothing is sent or
+  // charged automatically.
+  const routeLocation = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(routeLocation.search);
+    const ask = params.get("ask");
+    if (!ask) return;
+    setInput(ask.slice(0, 500));
+    params.delete("ask");
+    navigate(`${routeLocation.pathname}${params.toString() ? `?${params}` : ""}`, { replace: true, state: routeLocation.state });
+  }, [routeLocation.search, routeLocation.pathname, routeLocation.state, navigate]);
 
   const toggleMic = async () => {
     if (alwaysListenRef.current) {
