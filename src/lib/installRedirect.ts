@@ -63,6 +63,67 @@ export const downloadApk = (): void => {
   a.remove();
 };
 
+export interface ApkDownloadProgress {
+  loaded: number;
+  /** Total size in bytes, or null when the server didn't send a length. */
+  total: number | null;
+}
+
+export interface ApkDownloadResult {
+  ok: boolean;
+  /** True when the in-page download failed and the browser's own downloader took over. */
+  fellBack: boolean;
+}
+
+/**
+ * Downloads the .apk in-page with live progress, then saves it as
+ * oracle-lunar.apk. Lets the UI show a "this can take a few minutes" popup
+ * that vanishes the moment the file is done. If the streamed download fails
+ * (very old browser, blocked fetch), the browser's own downloader takes over
+ * and the result is reported as a fallback so the flow can continue.
+ */
+export const downloadApkWithProgress = async (
+  onProgress: (p: ApkDownloadProgress) => void,
+  signal?: AbortSignal,
+): Promise<ApkDownloadResult> => {
+  if (!ANDROID_APK_URL || typeof document === "undefined") return { ok: false, fellBack: false };
+  const url = `${ANDROID_APK_DOWNLOAD_URL}?v=${ANDROID_APK_VERSION}`;
+  try {
+    const res = await fetch(url, { signal, cache: "no-store" });
+    if (!res.ok || !res.body) throw new Error(`download failed: ${res.status}`);
+    const totalHeader = res.headers.get("content-length");
+    const total = totalHeader ? Number(totalHeader) : null;
+    const reader = res.body.getReader();
+    const chunks: BlobPart[] = [];
+    let loaded = 0;
+    onProgress({ loaded, total });
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.byteLength;
+      onProgress({ loaded, total });
+    }
+    const blob = new Blob(chunks, { type: "application/vnd.android.package-archive" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "oracle-lunar.apk";
+    a.rel = "noopener noreferrer";
+    a.setAttribute("data-auth-allow", "");
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Give the browser a minute to hand the file to its download manager.
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    return { ok: true, fellBack: false };
+  } catch {
+    if (signal?.aborted) return { ok: false, fellBack: false };
+    downloadApk();
+    return { ok: true, fellBack: true };
+  }
+};
+
 /** Returns the best native store URL for the current device, or null. */
 export const getNativeStoreUrl = (): string | null => {
   if (typeof navigator === "undefined") return null;

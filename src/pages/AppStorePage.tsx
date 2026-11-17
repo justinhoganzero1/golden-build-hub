@@ -7,12 +7,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ApkDownloadDialog from "@/components/ApkDownloadDialog";
+import ApkDownloadProgress from "@/components/ApkDownloadProgress";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { detectInstallPlatform, trackInstallEvent } from "@/lib/installAnalytics";
 import {
-  PUBLIC_URL, checkApkAvailable, downloadApk, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
+  PUBLIC_URL, checkApkAvailable, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
 } from "@/lib/installRedirect";
 import { FREE_FEATURES, PLANS } from "@/lib/plans";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ export default function AppStorePage() {
   const [platform, setPlatform] = useState<Platform>("unknown");
   const [apkReady, setApkReady] = useState(false);
   const [apkOpen, setApkOpen] = useState(false);
+  const [apkDownloading, setApkDownloading] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [viewer, setViewer] = useState<number | null>(null);
@@ -99,10 +101,10 @@ export default function AppStorePage() {
       return;
     }
     if (isAndroidDevice() && apkReady) {
-      // Start the real app download right away, then show the finishing steps.
+      // Start the real app download with a "can take a few minutes" popup;
+      // when it vanishes, the finishing steps open.
       trackInstallEvent("download_start", "android", "store-page");
-      downloadApk();
-      setApkOpen(true);
+      setApkDownloading(true);
       return;
     }
     const storeUrl = getNativeStoreUrl();
@@ -403,6 +405,14 @@ export default function AppStorePage() {
       </Dialog>
 
       <InstallHelpDialog open={helpOpen} onOpenChange={setHelpOpen} platform={platform} />
+      <ApkDownloadProgress
+        open={apkDownloading}
+        onDone={() => {
+          setApkDownloading(false);
+          setApkOpen(true);
+        }}
+        onCancel={() => setApkDownloading(false)}
+      />
       <ApkDownloadDialog open={apkOpen} onOpenChange={setApkOpen} downloadStarted />
     </div>
   );

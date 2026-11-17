@@ -19,10 +19,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
-  downloadApk,
   hasDirectApk,
   isAndroidDevice,
 } from "@/lib/installRedirect";
+import ApkDownloadProgress from "@/components/ApkDownloadProgress";
 import { trackInstallEvent } from "@/lib/installAnalytics";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +63,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
   const apkReady = hasDirectApk();
   const [phase, setPhase] = useState<Phase>("intro");
   const [stepIdx, setStepIdx] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   // Reset state every time the dialog opens.
   useEffect(() => {
@@ -75,11 +76,16 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
   const startDownload = () => {
     if (!apkReady) return;
     trackInstallEvent("download_start", "android");
-    downloadApk();
-    // Hand off to the in-app guided checklist.
+    // Show the "can take a few minutes" popup; it vanishes when the file is
+    // saved and hands off to the guided checklist.
+    setDownloading(true);
+  };
+
+  const downloadFinished = () => {
+    setDownloading(false);
     trackInstallEvent("guide_open", "android");
     setPhase("guide");
-    setStepIdx(0); // the download still has to finish before the file can be opened
+    setStepIdx(0);
   };
 
   const completeStep = () => {
@@ -232,7 +238,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
                 Close
               </Button>
               {stepIdx <= 1 && apkReady && (
-                <Button variant="outline" onClick={() => { trackInstallEvent("download_start", "android", "retry"); downloadApk(); }}>
+                <Button variant="outline" onClick={() => { trackInstallEvent("download_start", "android", "retry"); setDownloading(true); }}>
                   <Download className="h-4 w-4 mr-1.5" />
                   Download again
                 </Button>
@@ -256,6 +262,11 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
           )}
         </DialogFooter>
       </DialogContent>
+      <ApkDownloadProgress
+        open={downloading}
+        onDone={downloadFinished}
+        onCancel={() => setDownloading(false)}
+      />
     </Dialog>
   );
 };
