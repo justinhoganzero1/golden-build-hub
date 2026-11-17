@@ -27,6 +27,7 @@ import LivingAvatar from "@/components/LivingAvatar";
 import adPresenter from "@/assets/avatars/oracle-ad-presenter.png.asset.json";
 import adPresenterPreview from "@/assets/avatars/oracle-ad-presenter-preview.jpg";
 import OracleArtifactViewer from "@/components/oracle/OracleArtifactViewer";
+import { extractFileText, documentHtml } from "@/lib/fileText";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PhoneOff, MessageSquare, Info } from "lucide-react";
@@ -420,7 +421,7 @@ const OraclePage = () => {
       });
       const mediaType = file.type.startsWith("video") ? "video"
         : file.type.startsWith("audio") ? "audio"
-        : file.type.startsWith("image") ? "image" : "image";
+        : file.type.startsWith("image") ? "image" : "document";
       try {
         await saveMedia.mutateAsync({
           media_type: mediaType,
@@ -433,7 +434,9 @@ const OraclePage = () => {
       if (mediaType === "image") { try { lastAttachedImageRef.current = await toSmallDataUrl(file); } catch { /* not readable */ } }
       toast.success(`Attached ${file.name} — sent to ${oracleName}`);
       const sizeKb = Math.round(file.size / 1024);
-      const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If the image shows clothing or an outfit, you can offer to wear it — they just need to say "wear this". If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
+      const fileText = await extractFileText(file);
+      const textPart = fileText ? `\n\n--- FILE CONTENTS (read this carefully and use it) ---\n${fileText}\n--- END FILE CONTENTS ---\nYou CAN read this file. If it relates to a document the user asked for (CV, resume, cover letter, letter, report), use these details directly and only ask for what is still missing.` : "";
+      const prompt = `[The user just attached a file to chat]\nName: ${file.name}\nType: ${file.type || "unknown"}\nSize: ${sizeKb} KB${textPart}\nIt is now saved to their Media Library. Acknowledge it warmly, then ask the user what they'd like you to do with it (analyze, edit, build something from it, save for later, etc.). If it's an image and they want it transformed, suggest navigating to the Photography Hub. If the image shows clothing or an outfit, you can offer to wear it — they just need to say "wear this". If they want to build an app from it, offer the App Builder. Ask one focused follow-up question.`;
       await sendMessage(prompt);
     } catch (err: any) {
       toast.error(err?.message || "Upload failed");
@@ -2419,7 +2422,7 @@ const OraclePage = () => {
             .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
             .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
             .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
-            .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
+            .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
       const flushSpeakableSentences = (final = false) => {
         // Premium video replies replace device speech: the filmed answer speaks instead.
@@ -2515,7 +2518,7 @@ const OraclePage = () => {
       // Parse creation markers before cleaning the assistant text. The cleaned
       // display below removes those markers, but this raw string is what tells
       // the client to run the real generator.
-      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):([\s\S]+?)\]\]/gi)];
       const recodeMarkers = [...oracleContent.matchAll(/\[\[RECODE:([\s\S]+?)\]\]/gi)];
 
       // ── Operator control markers in Oracle's reply (NAV/CLICK/FILL/SCROLL/BACK/OPEN) ──
@@ -2560,7 +2563,7 @@ const OraclePage = () => {
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
-        .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|APP|VIDEO):[\s\S]+?\]\]/g, "")
+        .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
         .replace(/\[\[WEB:[\s\S]+?\]\]/gi, "")
         .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
         .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
@@ -2645,6 +2648,37 @@ const OraclePage = () => {
                 try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved?.id || saved; } catch {}
                 askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
+            })();
+          } else if (kind === "DOC") {
+            toast.success("Putting your document together now…");
+            (async () => {
+              let draft = "";
+              try {
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-chat`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ agent: "lyra", messages: [{ role: "user", content: `Write the complete, finished document described below in clean markdown. Use '# ' for the person's name or document title, '## ' for section headings, '- ' for bullet points. For a CV/resume: contact line, professional summary, skills, experience (newest first, role, employer, dates, achievement bullets), education, extras. Use ONLY facts given in the brief; never invent employers, dates, numbers or qualifications — leave a short [add …] placeholder if something is missing. Output only the document.\n\nBrief and all details:\n${prompt}` }] }),
+                });
+                if (!r.ok) throw new Error(await r.text().catch(() => `HTTP ${r.status}`));
+                const raw = r.body ? await new Response(r.body).text() : await r.text();
+                draft = raw.split("\n").map((line) => {
+                  if (!line.startsWith("data: ")) return "";
+                  const d = line.slice(6).trim();
+                  if (!d || d === "[DONE]") return "";
+                  try { return JSON.parse(d).choices?.[0]?.delta?.content || ""; } catch { return ""; }
+                }).join("").trim();
+              } catch (e) { console.error("GEN_DOC failed", e); }
+              if (!draft) { toast.error("I couldn't finish that document — please ask me again"); return; }
+              const heading = (/^#\s+(.+)$/m.exec(draft)?.[1] || prompt).replace(/[*#]/g, "").trim().slice(0, 60);
+              const title = `Document: ${heading}`;
+              const html = documentHtml(heading, draft);
+              const dataUrl = `data:text/html;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(html)))}`;
+              let savedId: string | undefined;
+              try {
+                const saved: any = await saveMedia.mutateAsync({ media_type: "document", title, url: dataUrl, source_page: "oracle-document", metadata: { kind: "document", prompt: prompt.slice(0, 2000), body: draft.slice(0, 20000), mime: "text/html" } as any });
+                savedId = saved?.id || saved;
+              } catch (err) { console.error("Oracle document save failed", err); toast.error("Document written, but the Library save failed"); }
+              askOpenChoice({ kind: "story", body: draft, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
             })();
           } else if (kind === "STORY" || kind === "POEM") {
             // Actually WRITE it here in the chat and save it to the Library —
