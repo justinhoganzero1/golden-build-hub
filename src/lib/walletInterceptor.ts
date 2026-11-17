@@ -26,6 +26,10 @@ export function installWalletInterceptor() {
           typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
         if (url.includes("/functions/v1/")) {
           const body = await res.clone().json().catch(() => null);
+          if (body?.error === "upgrade_required" && body?.paywall) {
+            notifyPlanRequired({ requiredPlan: body.kind === "video" ? "pro" : "plus", message: body.message });
+            return res;
+          }
           if (body?.error === "plan_required") {
             notifyPlanRequired({ requiredPlan: body.required_plan === "pro" ? "pro" : "plus", message: body.message });
             return res;

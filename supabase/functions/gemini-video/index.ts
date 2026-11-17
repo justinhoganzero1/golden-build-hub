@@ -9,6 +9,7 @@ import { VIDEO_MODEL, videoDuration, parseVideoJob } from "../_shared/videoContr
 import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { z } from "npm:zod@3.25.76";
+import { trialDecision, releaseTrial, paywallResponse, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
 const bodySchema = z.object({ job_id: z.string().uuid().optional(), request_key: z.string().uuid().optional(), image_url: z.string().max(12000000).optional(), prompt: z.string().max(4096).default("Cinematic motion, natural subject movement"), duration: z.number().int().min(3).max(10).optional(), ratio: z.enum(["16:9", "9:16"]).optional() });
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -53,13 +54,16 @@ serve(async req => {
     if (error) throw error;
     if (input.job_id && !saved) return json({ error: "Video job not found" }, 404);
     if (!saved) {
-      const seconds = videoDuration(input.duration);
+      // Free plan: one 8-second trial video, then the paywall. Paid plans use the wallet.
+      const trial = await trialDecision(client, auth.user.id, "video", isOwner);
+      if (trial === "paywall") return paywallResponse("video", corsHeaders);
+      const seconds = trial === "trial" ? TRIAL_VIDEO_SECONDS : videoDuration(input.duration);
       const estimatedCents = PER_SECOND_CENTS * seconds;
       const image = input.image_url ? await imageInput(input.image_url) : undefined;
       const requestId = input.request_key || crypto.randomUUID();
       // Reserve funds before any provider work. The owner is exempt from billing.
       let transactionId: string | null = null;
-      if (!isOwner) {
+      if (!isOwner && trial === "paid") {
         try {
           const authorization = await authorizeAI(auth.user.id, requestId, "gemini-video", "lovable-ai-gateway", VIDEO_MODEL, estimatedCents, { seconds });
           transactionId = authorization.transaction_id;
@@ -71,6 +75,7 @@ serve(async req => {
       const { data: created, error: insertError } = await client.from("member_video_jobs").insert({ id: requestId, user_id: auth.user.id, request_key: requestId, source: "gemini-video", status: "starting", billing_transaction_id: transactionId, estimated_provider_cents: estimatedCents }).select("*").single();
       if (insertError) {
         if (transactionId) await cancelAI(transactionId, "duplicate_request").catch(() => undefined);
+        if (trial === "trial") await releaseTrial(client, auth.user.id, "video");
         return json({ error: "Video request already started. Resume its saved job." }, 409);
       }
       saved = created;
@@ -90,6 +95,7 @@ serve(async req => {
           await client.from("member_video_jobs").update({ billing_transaction_id: null }).eq("id", saved.id);
           saved.billing_transaction_id = null;
         }
+        if (trial === "trial" && !(submitError instanceof GatewayError && submitError.outcome === "unknown")) await releaseTrial(client, auth.user.id, "video");
         throw submitError;
       }
     }

@@ -49,3 +49,9 @@
 - [ ] Setup step: member adds their own Google Gemini key, with a clear consent notice that Google may use their AI data — waits on Juzzy's answers (age, required/optional, fallback, plan)
 - [ ] Oracle guides the member step by step in the chat to get the key; member approves each step by tap or voice
 - [ ] Keep a permanent consent record (what they agreed to, when, by tap or voice) for legal needs
+
+## Free trial (2026-11-17)
+- [x] App is 18+ everywhere (sign-up, birthday step, store page, database)
+- [x] Free members: 3 trial pictures + 1 eight-second trial video, then instant upgrade pop-up
+- [ ] Card-on-file step before the trial (not built yet — trial currently open to every Free account)
+- [ ] Oracle's in-chat Gemini key setup screen with tap/voice "I agree" (server side ready)

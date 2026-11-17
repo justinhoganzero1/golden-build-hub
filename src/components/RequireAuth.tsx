@@ -32,7 +32,7 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
 
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/sign-in" state={{ from: location }} replace />;
-  // Google sign-ups skip the form's birthday question; ask it once here (16+).
+  // Google sign-ups skip the form's birthday question; ask it once here (18+).
   if (birthday.loading) return <Spinner />;
   if (birthday.needed) return <Navigate to="/age-required" state={{ from: location }} replace />;
 

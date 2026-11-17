@@ -188,7 +188,7 @@ export default function AppStorePage() {
           <section className="mt-6 flex items-stretch overflow-x-auto rounded-xl border border-border/60 bg-card/40 py-3 text-center [scrollbar-width:none]">
             {[
               { top: "Free", bottom: "to install" },
-              { top: "16+", bottom: "Rated for 16+" },
+              { top: "18+", bottom: "Rated for 18+" },
               { top: `A$${PLANS.plus.monthlyAud}`, bottom: "Plus per month" },
               { top: <MonitorSmartphone className="mx-auto h-5 w-5" />, bottom: "Any device" },
             ].map((s, i) => (

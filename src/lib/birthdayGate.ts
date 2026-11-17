@@ -1,9 +1,9 @@
 /**
  * Birthday step for accounts that skipped the sign-up birthday question.
  * Email sign-ups enter a birthday on the form; Google sign-ups don't, so
- * they are asked once before using the app. Oracle Lunar is 16+.
+ * they are asked once before using the app. Oracle Lunar is 18+.
  */
-export const MIN_AGE = 16;
+export const MIN_AGE = 18;
 
 type AuthUserLike = {
   app_metadata?: { provider?: string; providers?: string[] } | null;
@@ -27,7 +27,7 @@ export function latestAllowedBirthday(today: Date = new Date()): string {
 
 export type BirthdayCheck = "ok" | "missing" | "invalid" | "too-young";
 
-/** Checks a YYYY-MM-DD birthday against the 16+ rule. */
+/** Checks a YYYY-MM-DD birthday against the 18+ rule. */
 export function checkBirthday(dob: string, today: Date = new Date()): BirthdayCheck {
   if (!dob) return "missing";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob) || isNaN(new Date(dob).getTime())) return "invalid";

@@ -116,14 +116,14 @@ const SignInPage = () => {
     try {
       if (isSignUp) {
         if (isOwnerAccess) { toast.error("Owner access is sign-in only."); return; }
-        // Hard 16+ age gate at signup
+        // Hard 18+ age gate (Google Gemini terms) at signup
         if (!dob) { toast.error("Date of birth is required."); return; }
         const dobDate = new Date(dob);
         if (isNaN(dobDate.getTime())) { toast.error("Please enter a valid date of birth."); return; }
         const today = new Date();
-        const sixteenYearsAgo = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
+        const sixteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
         if (dobDate > sixteenYearsAgo) {
-          toast.error("You must be at least 16 years old to use Oracle Lunar.");
+          toast.error("You must be at least 18 years old to use Oracle Lunar.");
           return;
         }
         // Human check — must answer the maths question correctly
@@ -296,16 +296,16 @@ const SignInPage = () => {
                   <span className="oracle-signin-inline-label">Birthday</span>
                   <input
                     type="date"
-                    aria-label="Date of birth (must be 16 or over)"
+                    aria-label="Date of birth (must be 18 or over)"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    max={new Date(new Date().getFullYear() - 16, new Date().getMonth(), new Date().getDate())
+                    max={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())
                       .toISOString().slice(0, 10)}
                     min="1900-01-01"
                     required
                   />
                 </label>
-                <p className="oracle-signin-hint">Oracle Lunar is for people aged 16 and over.</p>
+                <p className="oracle-signin-hint">Oracle Lunar is for people aged 18 and over.</p>
               </div>
 
               <label className="oracle-signin-field">

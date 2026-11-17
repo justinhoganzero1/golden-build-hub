@@ -5,12 +5,12 @@ const today = new Date(2026, 10, 13); // 13 Nov 2026
 const google = { app_metadata: { provider: "google", providers: ["google"] } };
 const email = { app_metadata: { provider: "email", providers: ["email"] } };
 
-describe("birthday step (16+)", () => {
-  it("lets someone who turned 16 today in", () => {
-    expect(checkBirthday("2010-11-13", today)).toBe("ok");
+describe("birthday step (18+)", () => {
+  it("lets someone who turned 18 today in", () => {
+    expect(checkBirthday("2008-11-13", today)).toBe("ok");
   });
-  it("blocks someone who turns 16 tomorrow", () => {
-    expect(checkBirthday("2010-11-14", today)).toBe("too-young");
+  it("blocks someone who turns 18 tomorrow", () => {
+    expect(checkBirthday("2008-11-14", today)).toBe("too-young");
   });
   it("rejects an empty or silly birthday", () => {
     expect(checkBirthday("", today)).toBe("missing");

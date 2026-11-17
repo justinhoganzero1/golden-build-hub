@@ -1484,6 +1484,27 @@ export type Database = {
         }
         Relationships: []
       }
+      free_trial_usage: {
+        Row: {
+          images_used: number
+          updated_at: string
+          user_id: string
+          videos_used: number
+        }
+        Insert: {
+          images_used?: number
+          updated_at?: string
+          user_id: string
+          videos_used?: number
+        }
+        Update: {
+          images_used?: number
+          updated_at?: string
+          user_id?: string
+          videos_used?: number
+        }
+        Relationships: []
+      }
       global_sound_signatures: {
         Row: {
           action: string
@@ -5174,6 +5195,10 @@ export type Database = {
         Args: { _session_id: string; _user_id: string }
         Returns: number
       }
+      claim_free_trial: {
+        Args: { _kind: string; _user_id: string }
+        Returns: boolean
+      }
       claim_next_living_gif: {
         Args: { _worker_id: string }
         Returns: {
@@ -5365,6 +5390,10 @@ export type Database = {
         Returns: boolean
       }
       reimagined_login_allowed: { Args: { _ip_hash: string }; Returns: boolean }
+      release_free_trial: {
+        Args: { _kind: string; _user_id: string }
+        Returns: undefined
+      }
       resolve_ai_tier: { Args: { _user_id: string }; Returns: string }
       retry_failed_scene: { Args: { _scene_id: string }; Returns: boolean }
       run_daily_safety_check: { Args: never; Returns: string }

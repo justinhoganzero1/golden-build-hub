@@ -176,6 +176,13 @@
       "when": 1794791697872,
       "tag": "0024_gemini_key_setup_and_adults_only",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794877591864,
+      "tag": "0025_free_trial_allowance",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { trialDecision, releaseTrial, paywallResponse } from "../_shared/freeTrial.ts";
 import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { OWNER_EMAIL } from "../_shared/requireAuth.ts";
 
@@ -214,7 +215,13 @@ serve(async (req) => {
       .single();
     const jobId = job?.id;
 
-    try {
+    // Free plan: up to 3 trial pictures, then the paywall. Paid plans use the wallet.
+    const trial = await trialDecision(admin, user.id, "image", ownerBypass);
+    if (trial === "paywall") {
+      if (jobId) await admin.from("image_generation_jobs").update({ status: "failed", error: "upgrade_required", attempts: 0, completed_at: new Date().toISOString() }).eq("id", jobId);
+      return paywallResponse("image", corsHeaders);
+    }
+    if (trial === "paid") try {
       await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage, tier: chosenTier });
     } catch (e) {
       if (e instanceof InsufficientCoinsError) {
@@ -247,6 +254,7 @@ serve(async (req) => {
     let attemptsDone = 0;
 
     for (let i = 0; i < fullChain.length; i++) {
+      if (trial === "trial" && i >= 3) break; // keep trial pictures cheap
       const model = fullChain[i];
       attemptsDone++;
       try {
@@ -314,6 +322,7 @@ serve(async (req) => {
         library_id: libraryId,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    if (trial === "trial") await releaseTrial(admin, user.id, "image");
 
     const creditsExhausted = lastStatus === 402;
     if (creditsExhausted && jobId) {

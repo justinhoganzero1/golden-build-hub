@@ -62,6 +62,11 @@ export async function handleEdgeInsufficient(err: any): Promise<boolean> {
     } else if (err && typeof err === "object") {
       body = err;
     }
+    // Free trial used up (3 pictures / 1 video): show the upgrade paywall straight away.
+    if (body?.error === "upgrade_required" && body?.paywall) {
+      notifyPlanRequired({ requiredPlan: body.kind === "video" ? "pro" : "plus", message: body.message });
+      return true;
+    }
     if (body?.error === "plan_required") {
       notifyPlanRequired({ requiredPlan: body.required_plan === "pro" ? "pro" : "plus", message: body.message });
       return true;
