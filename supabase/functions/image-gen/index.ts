@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { trialDecision, releaseTrial, paywallResponse } from "../_shared/freeTrial.ts";
+import { trialDecision, releaseTrial, paywallResponse, isTrialBlocked } from "../_shared/freeTrial.ts";
 import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { OWNER_EMAIL } from "../_shared/requireAuth.ts";
 
@@ -215,11 +215,11 @@ serve(async (req) => {
       .single();
     const jobId = job?.id;
 
-    // Free plan: up to 3 trial pictures, then the paywall. Paid plans use the wallet.
+    // Free plan: card-verified 7-day trial of 3 pictures, then the paywall. Paid plans use the wallet.
     const trial = await trialDecision(admin, user.id, "image", ownerBypass);
-    if (trial === "paywall") {
-      if (jobId) await admin.from("image_generation_jobs").update({ status: "failed", error: "upgrade_required", attempts: 0, completed_at: new Date().toISOString() }).eq("id", jobId);
-      return paywallResponse("image", corsHeaders);
+    if (isTrialBlocked(trial)) {
+      if (jobId) await admin.from("image_generation_jobs").update({ status: "failed", error: trial === "card_required" ? "card_required" : "upgrade_required", attempts: 0, completed_at: new Date().toISOString() }).eq("id", jobId);
+      return paywallResponse("image", corsHeaders, trial);
     }
     if (trial === "paid") try {
       await chargeAI(user.id, "image_gen", IMAGE_GEN_COST_CENTS, { has_input_image: !!inputImage, tier: chosenTier });

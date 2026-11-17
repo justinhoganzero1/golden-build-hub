@@ -38,23 +38,23 @@ type Phase = "intro" | "guide" | "result";
 const STEPS = [
   {
     key: "download",
-    title: "Tap Download .apk",
-    body: "The file (~18 MB) saves to your Downloads folder.",
+    title: "Let the download finish",
+    body: 'A bar appears at the bottom of the screen. If it says "File might be harmful", tap Download anyway. Wait until it says Open (about 19 MB — under a minute on Wi-Fi).',
   },
   {
     key: "open",
     title: "Open the file",
-    body: "Tap the download notification, or open it from your Downloads folder.",
+    body: "Tap Open on that bar, or open oracle-lunar.apk from your Downloads folder (Files app → Downloads).",
   },
   {
     key: "allow",
     title: 'Allow "unknown apps" (one time)',
-    body: 'Android may ask: "Allow this browser to install apps?" → tap Settings → Allow.',
+    body: 'Android may ask: "Allow this browser to install apps?" → tap Settings → turn on Allow → press Back.',
   },
   {
     key: "install",
     title: "Tap Install, then Open",
-    body: 'You may see "Play Protect doesn\'t recognise this app" → tap Install anyway. We are safe.',
+    body: 'You may see "Play Protect doesn\'t recognise this app" → tap More details → Install anyway. We are safe.',
   },
 ] as const;
 
@@ -68,7 +68,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
   useEffect(() => {
     if (open) {
       setPhase(downloadStarted ? "guide" : "intro");
-      setStepIdx(downloadStarted ? 1 : 0);
+      setStepIdx(0);
     }
   }, [open, downloadStarted]);
 
@@ -79,7 +79,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
     // Hand off to the in-app guided checklist.
     trackInstallEvent("guide_open", "android");
     setPhase("guide");
-    setStepIdx(1); // step 0 (download) is already done
+    setStepIdx(0); // the download still has to finish before the file can be opened
   };
 
   const completeStep = () => {
@@ -104,7 +104,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" data-auth-allow>
+      <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto" data-auth-allow>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Smartphone className="h-5 w-5 text-primary" />
@@ -210,7 +210,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
           </div>
         )}
 
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
           {phase === "intro" && (
             <>
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -231,8 +231,14 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
+              {stepIdx <= 1 && apkReady && (
+                <Button variant="outline" onClick={() => { trackInstallEvent("download_start", "android", "retry"); downloadApk(); }}>
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Download again
+                </Button>
+              )}
               <Button onClick={completeStep} className="bg-primary hover:bg-primary/90">
-                {stepIdx >= STEPS.length - 1 ? "I'm installed" : "I did this — next"}
+                {stepIdx >= STEPS.length - 1 ? "I'm installed" : stepIdx === 0 ? "It finished — next" : "I did this — next"}
               </Button>
             </>
           )}

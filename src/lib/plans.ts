@@ -109,7 +109,7 @@ const FREE_PAGES = [
   "/wallet", "/credit", "/profile", "/settings", "/my-account", "/terms-of-service", "/privacy-policy",
   "/module-shop", "/creators", "/store", "/referral", "/suggestion-box", "/inbox", "/personal-vault", "/vault",
   "/my-apps", "/purchase-success", "/unlock-success", "/movie-payment-success", "/diagnostics",
-  "/consent", "/age-required", "/verify-phone", "/owner-dashboard", "/admin",
+  "/consent", "/age-required", "/trial-card", "/ai-key-setup", "/verify-phone", "/owner-dashboard", "/admin",
   // The fictional insurance demo has its own separate access rules.
   "/reimagined-insurance", "/workcover-reimagined", "/claims-app", "/claims-assistant",
 ];

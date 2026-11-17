@@ -40,14 +40,21 @@ export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXX
 export const ANDROID_APK_URL =
   "https://tpkpfkcnqdyrzpqdoqnp.supabase.co/storage/v1/object/public/app-downloads/oracle-lunar.apk";
 export const ANDROID_APK_VERSION = "1.0.6";
+/**
+ * What the Install button actually downloads: the same file, served with the
+ * Android app label and a ".apk" name. Straight from storage it is labelled as
+ * a generic file, which some phones saved as ".bin" or never finished opening.
+ */
+export const ANDROID_APK_DOWNLOAD_URL =
+  "https://tpkpfkcnqdyrzpqdoqnp.supabase.co/functions/v1/app-download";
 
 /** Starts the real Android app download. Call it straight from a tap so the browser allows it. */
 export const downloadApk = (): void => {
   if (!ANDROID_APK_URL || typeof document === "undefined") return;
   const a = document.createElement("a");
   // Version tag stops phones/TVs getting an older cached copy.
-  a.href = `${ANDROID_APK_URL}?v=${ANDROID_APK_VERSION}`;
-  a.download = `oracle-lunar-${ANDROID_APK_VERSION}.apk`;
+  a.href = `${ANDROID_APK_DOWNLOAD_URL}?v=${ANDROID_APK_VERSION}`;
+  a.download = "oracle-lunar.apk";
   a.rel = "noopener noreferrer";
   // Visitors download the app before they have an account, so the guest sign-in gate must let this through.
   a.setAttribute("data-auth-allow", "");

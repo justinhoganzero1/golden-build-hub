@@ -71,7 +71,7 @@ export function geminiProblemFrom(status: number, body: string): GeminiKeyProble
   const b = String(body || "").toLowerCase();
   if (b.includes("location is not supported") || b.includes("user location") || b.includes("failed_precondition")) return "region";
   if (status === 429 || b.includes("resource_exhausted") || b.includes("quota")) return "quota";
-  if (status === 400 && (b.includes("api key not valid") || b.includes("api_key_invalid"))) return "invalid";
+  if (status === 400 && (b.includes("api key not valid") || b.includes("valid api key") || b.includes("api_key_invalid") || b.includes("api key expired"))) return "invalid";
   if (status === 401 || status === 403) return "invalid";
   return "unavailable";
 }

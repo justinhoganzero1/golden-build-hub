@@ -183,6 +183,13 @@
       "when": 1794877591864,
       "tag": "0025_free_trial_allowance",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794944838942,
+      "tag": "0026_trial_card_checks",
+      "breakpoints": true
     }
   ]
 }

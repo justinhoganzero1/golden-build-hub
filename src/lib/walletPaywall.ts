@@ -2,6 +2,8 @@
 // Any code that gets `{ insufficient: true }` back from wallet_charge_ai
 // should call notifyWalletInsufficient() to raise the top-up modal.
 
+import { handleAccessReply } from "./aiAccessEvents";
+
 export type WalletInsufficientDetail = {
   service?: string;
   requiredCents?: number;
@@ -62,6 +64,7 @@ export async function handleEdgeInsufficient(err: any): Promise<boolean> {
     } else if (err && typeof err === "object") {
       body = err;
     }
+    if (handleAccessReply(body)) return true;
     // Free trial used up (3 pictures / 1 video): show the upgrade paywall straight away.
     if (body?.error === "upgrade_required" && body?.paywall) {
       notifyPlanRequired({ requiredPlan: body.kind === "video" ? "pro" : "plus", message: body.message });

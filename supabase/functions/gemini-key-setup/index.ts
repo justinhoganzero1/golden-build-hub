@@ -6,7 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import {
-  CONSENT_VERSION, REQUIRED_STEP_IDS, consentStep, isVoiceYes, looksLikeGeminiKey, GEMINI_PROBLEM_MESSAGES,
+  CONSENT_VERSION, CONSENT_STEPS, GEMINI_KEY_PAGE, GEMINI_TERMS_PAGE, REQUIRED_STEP_IDS, consentStep, isVoiceYes, looksLikeGeminiKey, GEMINI_PROBLEM_MESSAGES,
 } from "../_shared/geminiConsent.ts";
 import { callMemberGemini, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 
@@ -44,6 +44,10 @@ serve(async (req) => {
       ]);
       return json({
         consent_version: CONSENT_VERSION,
+        // The setup screen shows these exact words, so the stored record always matches the screen.
+        steps: CONSENT_STEPS,
+        key_page: GEMINI_KEY_PAGE,
+        terms_page: GEMINI_TERMS_PAGE,
         agreed_steps: steps,
         has_key: !!(keyRow?.gemini_key && String(keyRow.gemini_key).trim().length > 10),
         verified: !!setup?.gemini_verified_at && setup?.consent_version === CONSENT_VERSION,

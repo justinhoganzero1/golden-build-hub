@@ -3882,6 +3882,39 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_card_checks: {
+        Row: {
+          card_brand: string | null
+          card_fingerprint_hash: string
+          card_last4: string | null
+          checkout_session_id: string
+          stripe_env: string
+          trial_ends_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          card_brand?: string | null
+          card_fingerprint_hash: string
+          card_last4?: string | null
+          checkout_session_id: string
+          stripe_env: string
+          trial_ends_at: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          card_brand?: string | null
+          card_fingerprint_hash?: string
+          card_last4?: string | null
+          checkout_session_id?: string
+          stripe_env?: string
+          trial_ends_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       usage_events: {
         Row: {
           created_at: string

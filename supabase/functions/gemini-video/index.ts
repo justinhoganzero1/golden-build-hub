@@ -9,7 +9,7 @@ import { VIDEO_MODEL, videoDuration, parseVideoJob } from "../_shared/videoContr
 import { authorizeAI, settleAI, cancelAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { z } from "npm:zod@3.25.76";
-import { trialDecision, releaseTrial, paywallResponse, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
+import { trialDecision, releaseTrial, paywallResponse, isTrialBlocked, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
 const bodySchema = z.object({ job_id: z.string().uuid().optional(), request_key: z.string().uuid().optional(), image_url: z.string().max(12000000).optional(), prompt: z.string().max(4096).default("Cinematic motion, natural subject movement"), duration: z.number().int().min(3).max(10).optional(), ratio: z.enum(["16:9", "9:16"]).optional() });
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -56,7 +56,7 @@ serve(async req => {
     if (!saved) {
       // Free plan: one 8-second trial video, then the paywall. Paid plans use the wallet.
       const trial = await trialDecision(client, auth.user.id, "video", isOwner);
-      if (trial === "paywall") return paywallResponse("video", corsHeaders);
+      if (isTrialBlocked(trial)) return paywallResponse("video", corsHeaders, trial);
       const seconds = trial === "trial" ? TRIAL_VIDEO_SECONDS : videoDuration(input.duration);
       const estimatedCents = PER_SECOND_CENTS * seconds;
       const image = input.image_url ? await imageInput(input.image_url) : undefined;

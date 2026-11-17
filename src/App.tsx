@@ -268,6 +268,8 @@ const MCPServerPage = lazy(() => import("./pages/MCPServerPage"));
 
 const EbookCoverStudioPage = lazy(() => import("./pages/EbookCoverStudioPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
+const TrialCardPage = lazy(() => import("./pages/TrialCardPage"));
+const AiKeySetupPage = lazy(() => import("./pages/AiKeySetupPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
@@ -306,6 +308,8 @@ const WalletPaywallModal = lazy(() => import("./components/WalletPaywallModal"))
 const PlanUpgradeModal = lazy(() => import("./components/PlanUpgradeModal"));
 const WalletTopupReturn = lazy(() => import("./components/WalletTopupReturn"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
+const TrialCardDialog = lazy(() => import("./components/TrialCardDialog"));
+const GeminiKeyAlarm = lazy(() => import("./components/GeminiKeyAlarm"));
 const SiteFooter = lazy(() => import("./components/SiteFooter"));
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -356,6 +360,8 @@ const OracleApp = () => (
               <Suspense fallback={null}><PlanUpgradeModal /></Suspense>
               <Suspense fallback={null}><WalletTopupReturn /></Suspense>
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
+              <Suspense fallback={null}><TrialCardDialog /></Suspense>
+              <Suspense fallback={null}><GeminiKeyAlarm /></Suspense>
 
               <Suspense fallback={<Loading />}>
                 <OracleWorkspace><Routes>
@@ -466,6 +472,8 @@ const OracleApp = () => (
 
                   <Route path="/verify-phone" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
+                  <Route path="/trial-card" element={<RequireAuth><ErrorBoundary pageName="Free Trial"><TrialCardPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/ai-key-setup" element={<RequireAuth><ErrorBoundary pageName="Google Key Setup"><AiKeySetupPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />

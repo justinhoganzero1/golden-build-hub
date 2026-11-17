@@ -46,12 +46,15 @@
 - [ ] Google Play for TV — waits on Play Console listing (TV needs its own Google review)
 
 ## Member's own Gemini key (2026-11-16)
-- [ ] Setup step: member adds their own Google Gemini key, with a clear consent notice that Google may use their AI data — waits on Juzzy's answers (age, required/optional, fallback, plan)
-- [ ] Oracle guides the member step by step in the chat to get the key; member approves each step by tap or voice
-- [ ] Keep a permanent consent record (what they agreed to, when, by tap or voice) for legal needs
+- [x] Setup step: member adds their own Google Gemini key, with a clear consent notice that Google may use their AI data
+- [x] Oracle guides the member step by step to get the key; member approves each step by tap or voice
+- [x] Keep a permanent consent record (what they agreed to, when, by tap or voice) for legal needs
 
 ## Free trial (2026-11-17)
 - [x] App is 18+ everywhere (sign-up, birthday step, store page, database)
 - [x] Free members: 3 trial pictures + 1 eight-second trial video, then instant upgrade pop-up
-- [ ] Card-on-file step before the trial (not built yet — trial currently open to every Free account)
-- [ ] Oracle's in-chat Gemini key setup screen with tap/voice "I agree" (server side ready)
+- [x] $0 card check before the trial (one trial per card, 7 days) + trial page with picture/video maker
+- [x] Oracle-guided Gemini key setup screen with tap/voice "I agree" + full-screen key alarm (siren, horn, huge buttons)
+- [x] Website Android download: file now arrives labelled as an installable app; steps wait for the download to finish
+- [ ] Make Gemini key setup a forced step right after sign-up — waits on Juzzy (currently asked when Oracle chat needs it)
+- [ ] Publish so the download fix and trial go live on oraclelunar.com — waits on Juzzy saying publish

@@ -9,6 +9,7 @@
 // which uses fetch internally — so the "add $10 and keep going" modal always shows.
 
 import { notifyPlanRequired, notifyWalletInsufficient } from "./walletPaywall";
+import { handleAccessReply } from "./aiAccessEvents";
 
 let installed = false;
 
@@ -26,6 +27,8 @@ export function installWalletInterceptor() {
           typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
         if (url.includes("/functions/v1/")) {
           const body = await res.clone().json().catch(() => null);
+          // Free-trial card check or the member's Google key: their own pop-ups, never the wallet modal.
+          if (handleAccessReply(body)) return res;
           if (body?.error === "upgrade_required" && body?.paywall) {
             notifyPlanRequired({ requiredPlan: body.kind === "video" ? "pro" : "plus", message: body.message });
             return res;

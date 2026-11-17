@@ -173,6 +173,11 @@ const MembershipPage = () => {
             <ul className="space-y-2 text-sm">{FREE_FEATURES.map(f => <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{f}</li>)}</ul>
             <p className="text-xs text-muted-foreground">No AI, voice, image or video features — those cost money to run.</p>
             <Button disabled variant="outline" className="w-full">{plan === "free" ? "Your plan" : "Included"}</Button>
+            {plan === "free" && (
+              <Button asChild variant="secondary" className="w-full">
+                <Link to="/trial-card">Free trial: 3 pictures + 1 video ($0 card check)</Link>
+              </Button>
+            )}
           </section>
           {(["plus", "pro"] as const).map(id => {
             const p = PLANS[id];
