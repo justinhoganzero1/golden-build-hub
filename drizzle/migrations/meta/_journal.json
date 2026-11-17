@@ -197,6 +197,13 @@
       "when": 1794946286996,
       "tag": "0027_trial_identity_marks",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794951465451,
+      "tag": "0028_lock_member_files_and_links",
+      "breakpoints": true
     }
   ]
 }
