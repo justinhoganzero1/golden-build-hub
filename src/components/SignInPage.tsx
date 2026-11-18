@@ -3,6 +3,7 @@ import { Mail, Lock, ArrowRight, Shield, Eye, EyeOff, CalendarDays, Check } from
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { isNativeApp, startNativeGoogleSignIn } from "@/lib/nativeGoogleAuth";
 import { toast } from "sonner";
 import { trackAiDiscovery } from "@/lib/aiDiscovery";
 import officeBackdrop from "@/assets/oracle-office-empty.jpg";
@@ -189,6 +190,12 @@ const SignInPage = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
+      // Installed app: Google blocks sign-in inside the app, so it happens in Chrome
+      // and the session is handed back (see nativeGoogleAuth).
+      if (isNativeApp()) {
+        await startNativeGoogleSignIn();
+        return;
+      }
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });

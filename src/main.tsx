@@ -42,6 +42,12 @@ const initNative = async () => {
         } catch { /* mic stays on its normal path */ }
       }
 
+      // Google sign-in happens in Chrome and comes back through the app link.
+      try {
+        const { installNativeAuthReturn } = await import("./lib/nativeGoogleAuth");
+        await installNativeAuthReturn();
+      } catch { /* email sign-in still works */ }
+
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       await StatusBar.setStyle({ style: Style.Dark });
       // Full screen: the app draws under the bars; MainActivity keeps them hidden

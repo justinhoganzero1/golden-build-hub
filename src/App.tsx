@@ -176,6 +176,7 @@ const DashboardPage = lazy(loaders["/dashboard"]);
 // the public welcome page (Oracle video + pitch) instead of a bare sign-in wall.
 const PublicWelcomePage = lazy(() => import("./pages/PublicWelcomePage"));
 const AppStorePage = lazy(() => import("./pages/AppStorePage"));
+const NativeAuthPage = lazy(() => import("./pages/NativeAuthPage"));
 // Opened from the installed home-screen icon (not a browser tab).
 const isInstalledApp = () =>
   typeof window !== "undefined" &&
@@ -469,6 +470,7 @@ const OracleApp = () => (
                   <Route path="/investor" element={<RequireAuth><ErrorBoundary pageName="Investor"><InvestorPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/creators" element={<RequireAuth><ErrorBoundary pageName="Creators"><CreatorsPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/sign-in" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
+                  <Route path="/native-auth" element={<ErrorBoundary pageName="App sign-in"><NativeAuthPage /></ErrorBoundary>} />
                   <Route path="/auth" element={<ErrorBoundary pageName="Sign In"><SignInPage /></ErrorBoundary>} />
                   <Route path="/.lovable/oauth/consent" element={<ErrorBoundary pageName="OAuth Consent"><OAuthConsentPage /></ErrorBoundary>} />
                   <Route path="/settings/authorizations" element={<RequireAuth><ErrorBoundary pageName="Connected Apps"><OAuthAuthorizationsPage /></ErrorBoundary></RequireAuth>} />
