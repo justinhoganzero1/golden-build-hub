@@ -12,6 +12,8 @@ import { PublishSellControls, defaultPublishSellState, type PublishSellState } f
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import RegenerateAppWizard, { APP_STYLES, type AppRegenPlan } from "@/components/appbuilder/RegenerateAppWizard";
 import { notifyWalletInsufficient } from "@/lib/walletPaywall";
+import AppPurposeIntake from "@/components/appbuilder/AppPurposeIntake";
+import type { BuildPurpose } from "@/lib/appBuilderPurpose";
 
 const TOOLS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tools`;
 const AUTONOMOUS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/app-builder-autonomous`;
@@ -54,6 +56,9 @@ const AppBuilderPage = () => {
   const [visualRefs, setVisualRefs] = useState<{ url: string; title?: string; desktop?: string; mobile?: string }[]>([]);
   const [auditSources, setAuditSources] = useState<{ url: string; title?: string; source?: string }[]>([]);
   const [learnLinks, setLearnLinks] = useState("");
+  // Oracle asks at the start: building for yourself, or to sell?
+  const [buildPurpose, setBuildPurpose] = useState<BuildPurpose | null>(null);
+  const [intakeOpen, setIntakeOpen] = useState(true);
   const [showProgress, setShowProgress] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -339,6 +344,7 @@ const AppBuilderPage = () => {
           currentCode: opts.scanOnly ? undefined : (currentCode || undefined),
           inspirationUrls: links,
           mode: opts.scanOnly ? "scan" : undefined,
+          purpose: buildPurpose || undefined,
           priorScan: opts.useScan ? { visualBrief: opts.useScan.visualBrief, siteAudit: opts.useScan.siteAudit } : undefined,
         }),
       });
@@ -406,7 +412,9 @@ const AppBuilderPage = () => {
       if (!code) throw new Error("Pipeline finished without code");
 
       const chatText = [
-        "Done — shipped end-to-end from one command: market recon → architect → backend → frontend → flesh-out → copy → assets → marketing → smoke test → ship-ready pass.",
+        buildPurpose === "personal"
+          ? "Done — your own app is ready to use: no prices, no adverts, your data stays on your device."
+          : "Done — shipped end-to-end from one command: market recon → architect → backend → frontend → flesh-out → copy → assets → marketing → smoke test → ship-ready pass.",
         siteAudit ? "\n\n🔍 Complaints & gaps fixed in your app:\n" + siteAudit.slice(0, 900) : "",
         visualBrief ? "\n\n🎨 Website look (from real pictures of the site):\n" + visualBrief.slice(0, 900) : "",
         marketBrief ? "\n\n🔎 Competitive brief (live web research):\n" + marketBrief.slice(0, 900) : "",
@@ -682,6 +690,18 @@ const AppBuilderPage = () => {
 
       {/* Chat */}
       <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4" style={{ maxHeight: previewProject ? "calc(100vh - 520px)" : "calc(100vh - 240px)" }}>
+        {intakeOpen && !isBuilding && messages.length <= 1 && (
+          <AppPurposeIntake
+            purpose={buildPurpose}
+            busy={isBuilding}
+            onChoosePurpose={(p) => {
+              setBuildPurpose(p);
+              speak(p === "personal" ? "Lovely. A few quick questions so I get your app exactly right." : "Great. A few quick questions about the app you want to sell.");
+            }}
+            onBuild={(prompt) => { setIntakeOpen(false); sendMessage(prompt); }}
+            onSkip={() => setIntakeOpen(false)}
+          />
+        )}
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "assistant" && (
@@ -848,9 +868,26 @@ const AppBuilderPage = () => {
             <RefreshCw className="w-3.5 h-3.5" /> Regenerate ENTIRE app
           </button>
         </div>
-        <div className="mb-2">
-          <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="text-muted-foreground">Building for:</span>
+          {(["personal", "sell"] as const).map(p => (
+            <button key={p} type="button" aria-pressed={buildPurpose === p}
+              onClick={() => setBuildPurpose(p)}
+              className={`px-2.5 py-1 rounded-full border ${buildPurpose === p ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+              {p === "personal" ? "Me" : "To sell"}
+            </button>
+          ))}
         </div>
+        {buildPurpose === "sell" ? (
+          <div className="mb-2">
+            <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
+          </div>
+        ) : (
+          <details className="mb-2 rounded-xl border border-border bg-background/60 px-3 py-2">
+            <summary className="text-[11px] text-muted-foreground cursor-pointer">Share or sell later (optional)</summary>
+            <div className="mt-2"><PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" /></div>
+          </details>
+        )}
 
         <div className="mb-2 rounded-xl border border-border bg-background/60 p-2.5 space-y-2">
           <label htmlFor="learn-links" className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">

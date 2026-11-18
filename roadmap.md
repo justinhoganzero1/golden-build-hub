@@ -81,3 +81,5 @@
 - [x] "Scan first" button, then "Build my app from this scan" without paying for the scan twice
 - [x] No marketing tools for members (no contact finding, proposals, emails or client demo links)
 - [ ] Publish so members get it on oraclelunar.com — waits on Juzzy saying publish
+- [x] Shop wording fixed: sellers keep 80%
+- [x] Start card: Oracle asks "for yourself or to sell?" then tailored questions; own-use apps have no prices/adverts

@@ -11,6 +11,7 @@ import {
   extractInspirationUrls, summariseBranding, scanKind, guessScanName, complaintQueries, cleanPriorScan,
   type SiteSnapshot,
 } from "./visualSnapshot.ts";
+import { resolvePurpose } from "./purpose.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -265,7 +266,7 @@ serve(async (req) => {
     });
   }
 
-  let payload: { prompt?: string; images?: string[]; currentCode?: string; inspirationUrls?: string[]; mode?: string; priorScan?: unknown } = {};
+  let payload: { prompt?: string; images?: string[]; currentCode?: string; inspirationUrls?: string[]; mode?: string; priorScan?: unknown; purpose?: string } = {};
   try {
     payload = await req.json();
   } catch {
@@ -280,6 +281,12 @@ serve(async (req) => {
   const inspirationUrls = extractInspirationUrls(userPrompt, Array.isArray(payload.inspirationUrls) ? payload.inspirationUrls : []);
 
   const priorScan = cleanPriorScan(payload.priorScan);
+  // Own use (default) vs an app to sell — shapes every stage below.
+  const purpose = resolvePurpose(payload.purpose, userPrompt);
+  const personal = purpose === "personal";
+  const purposeBlock = personal
+    ? "PURPOSE: this app is for the member's OWN use (or their family/team). No prices, paywalls, checkout, adverts, testimonials, marketing pages or store listing. Focus on making their own daily task fast, private and delightful.\n\n"
+    : "PURPOSE: the member is building this app TO SELL. Include positioning, pricing, a paywall/checkout stub and launch-ready marketing copy.\n\n";
   const scanOnly = payload.mode === "scan";
   if ((payload.mode === "visual_only" || scanOnly) && inspirationUrls.length === 0) {
     return new Response(JSON.stringify({ error: "No public website link found" }), {
@@ -430,7 +437,7 @@ Never suggest copying brand names, logos, slogans, wording or photos.`,
         let marketBrief = "";
         let marketSources: { url: string; title?: string }[] = [];
         try {
-          send("stage", { stage: "market", message: "Market recon — scanning the top 10 competing apps & real user reviews…" });
+          send("stage", { stage: "market", message: personal ? "Looking at the top 10 similar apps & what their users wish they did…" : "Market recon — scanning the top 10 competing apps & real user reviews…" });
           const queriesRaw = await callAI({
             apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "minimal",
             system: `Turn the user's app idea into EXACTLY 3 web-search queries, one per line, no numbering, no quotes:
@@ -451,8 +458,7 @@ Each query max 12 words.`,
 - Top 10 competitors (name + what they do well), only as many as the research supports
 - TOP 8 recurring user complaints / 1-star themes (quote the pain, be specific)
 - Features users repeatedly beg for and don't get
-- Pricing norms in this category
-- THE WEDGE: 5 concrete decisions this new app must make to beat every competitor listed
+${personal ? "- Best-loved features worth borrowing (as ideas, never copied)\n- THE WEDGE: 5 concrete decisions that make this app nicer to use every day than any of them" : "- Pricing norms in this category\n- THE WEDGE: 5 concrete decisions this new app must make to beat every competitor listed"}
 Only use what is supported by the research. No invented product names.`,
               user: raw,
             });
@@ -475,19 +481,18 @@ Only use what is supported by the research. No invented product names.`,
           system: `You are a principal software architect. The user gives ONE command; you design the WHOLE ship-ready product from it — do not ask questions, do not leave TODOs, assume and decide everything.
 Output ONLY a concise, dense spec (no preamble, no closing) covering:
 - App name & tagline
-- Positioning: how this beats each competitor named in the competitive brief (one line each)
+${personal ? "- Why it suits this member better than the similar apps in the brief (one line each)" : "- Positioning: how this beats each competitor named in the competitive brief (one line each)"}
 - Core user flows (numbered, max 8)
 - Page sections / routes
 - Data model (fields per entity)
 - Backend endpoints / mock APIs (since output must be single-file HTML, design as in-page JS modules + localStorage persistence)
 - Third-party APIs needed (Stripe, Web Speech, etc.)
 - Visual style (colors, typography, motion)
-- Monetization model + price point
-- Onboarding, empty states, and the "first 60 seconds" experience
+${personal ? "- Privacy & data: stays on the device (localStorage), with backup export/import\n" : "- Monetization model + price point\n"}- Onboarding, empty states, and the "first 60 seconds" experience
 - If a SITE & APP AUDIT is given: a "Fixes" line mapping every must-fix item and customer complaint to a concrete feature
 - If the app serves a business with customers: BOTH a customer side and an owner/staff dashboard (bookings/orders/customers/stats/settings) with clearly fictional sample data
 Keep under 650 words. Markdown bullet form.`,
-          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${visualBlock}${auditBlock}${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
+          user: `${purposeBlock}USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${visualBlock}${auditBlock}${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
           images: [...images, ...visualImages].slice(0, 4),
         });
         send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
@@ -503,12 +508,12 @@ Keep under 650 words. Markdown bullet form.`,
 Include:
 - LocalStorage-backed data store with CRUD helpers per entity
 - Mock REST-style async functions (api.get/post/put/delete) returning Promises
-- Stripe Checkout helper stub (window.openCheckout) if monetized
+${personal ? "- Backup helpers: export all data as a JSON file and import it back" : "- Stripe Checkout helper stub (window.openCheckout) if monetized"}
 - Auth stub (sign in/up via localStorage or Supabase if hinted)
 - Analytics queue (window.track)
 - Error/event bus
 Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
-            user: `ARCHITECTURE:\n${architecture}`,
+            user: `${purposeBlock}ARCHITECTURE:\n${architecture}`,
           }),
           callAI({
             apiKey, userId: auth.user.id,
@@ -519,11 +524,11 @@ Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
 - Section order with one-line purpose each
 - Hero headline + subhead, primary CTA label
 - 3-6 feature cards (title + 1-line value prop)
-- 3 testimonial stubs, 4 FAQ Q/A
+${personal ? "- 4 short \"how to\" tips for the member (no testimonials, no sales pitch)" : "- 3 testimonial stubs, 4 FAQ Q/A"}
 - Empty/error/loading state copy
 - Footer links
 Markdown bullets, < 400 words, no preamble.`,
-            user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}${auditBlock}USER REQUEST:\n${userPrompt}`,
+            user: `${purposeBlock}ARCHITECTURE:\n${architecture}\n\n${visualBlock}${auditBlock}USER REQUEST:\n${userPrompt}`,
           }),
         ]);
         send("stage", { stage: "backend", message: "Backend + Design plan complete" });
@@ -544,10 +549,10 @@ Requirements:
 - Include the backend <script> EXACTLY as given, then a <script id="app"> that renders all sections defined in the architecture
 - Include all routes/sections (single-page nav)
 - Include floating "Ask AI" chat bubble stub
-- Include social share, paywall UI if monetized
-- <meta name="oracle-lunar-app-config" content='{"paid":...,"price":"...","play_ready":true,"pwa":true,"social":true,"ai":true,"version":3}'>
+${personal ? "- NO paywall, pricing, checkout, adverts or marketing landing page — open straight into the working app" : "- Include social share, paywall UI if monetized"}
+- <meta name="oracle-lunar-app-config" content='{"purpose":"${purpose}","paid":${personal ? "false" : "..."},"price":"...","play_ready":true,"pwa":true,"social":true,"ai":true,"version":3}'>
 Output ONLY the complete HTML document, no markdown fences, no commentary.`,
-          user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}DESIGN & COPY PLAN:\n${designPlan}\n\nBACKEND SCRIPT:\n${backend}`,
+          user: `${purposeBlock}ARCHITECTURE:\n${architecture}\n\n${visualBlock}DESIGN & COPY PLAN:\n${designPlan}\n\nBACKEND SCRIPT:\n${backend}`,
         });
         let code = extractCode(frontend) || frontend.trim();
         if (!/<!doctype/i.test(code)) {
@@ -567,7 +572,7 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
           reasoning: "high",
           system: `You are a product designer + copywriter + senior engineer. Take the HTML and FLESH IT OUT to production quality:
 - Replace ALL placeholder text with real, on-brand, useful copy
-- Add hero, features grid, testimonials, FAQ, CTA, footer (only those that fit the app)
+${personal ? "- This is a personal-use app: open straight into the tool, no hero/testimonials/pricing/marketing sections; add a short help panel instead" : "- Add hero, features grid, testimonials, FAQ, CTA, footer (only those that fit the app)"}
 - Wire every button to real handlers using the backend
 - Add micro-interactions (hover, focus, smooth transitions, loading states)
 - Add empty states, error states, toasts
@@ -587,7 +592,7 @@ Output ONLY the complete updated HTML document. No markdown fences. No commentar
           apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "medium",
           system: `You are a senior conversion copywriter. Scan the HTML and REPLACE every weak, generic, or placeholder phrase with sharp, specific, on-brand copy that a paying customer would respect.
 ZERO TOLERANCE for: "Lorem ipsum", "Your text here", "Placeholder", "Sample", "TODO", "Coming soon" (unless the feature is genuinely roadmap), "Lipsum", "Click here", "Learn more" without context, single-word buttons that aren't action verbs, vague headlines like "Welcome to our app".
-Add: real testimonials with names + roles + cities, real-sounding company stats, concrete benefits with numbers, clear CTAs ("Start my 7-day trial", "Book a free 15-min consult"), founder note, trust line.
+${personal ? "This is a PERSONAL-USE app: write friendly, plain, helpful labels and tips. NO testimonials, company stats, sales CTAs, trials or pricing." : "Add: real testimonials with names + roles + cities, real-sounding company stats, concrete benefits with numbers, clear CTAs (\"Start my 7-day trial\", \"Book a free 15-min consult\"), founder note, trust line."}
 Never reuse wording, slogans, brand or product names from any inspiration website — all copy must be original.
 Preserve ALL existing JS, IDs, classes, structure, and the <meta name="oracle-lunar-app-config"> tag. Only rewrite visible text content.
 Output ONLY the complete HTML document. No fences. No commentary.`,
@@ -617,7 +622,8 @@ Preserve all other markup, scripts, and IDs. Output ONLY the complete HTML docum
         send("stage", { stage: "assets", message: "Images, icons, and OG art in place" });
         send("partial", { code });
 
-        // === STAGE 4d: MARKETING agent — Play Store listing baked in ===
+        // === STAGE 4d: MARKETING agent — Play Store listing baked in (apps to sell only) ===
+        if (!personal) {
         send("stage", { stage: "marketing", message: "Marketing agent generating Play Store listing + share assets…" });
         const marketing = await callAI({
           apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "low",
@@ -635,6 +641,7 @@ Output ONLY valid JSON. No markdown.`,
         } catch { /* ignore bad JSON */ }
         send("stage", { stage: "marketing", message: "Play Store listing embedded (visible in the published HTML)" });
         send("partial", { code });
+        }
 
         // === STAGE 5+: SMOKE TEST → FIX loop ===
         for (let attempt = 1; attempt <= MAX_FIX_LOOPS; attempt++) {
@@ -729,10 +736,20 @@ Output ONLY the complete fixed HTML document. No markdown fences. No commentary.
         // === STAGE 6: SHIP-READY HARDENING ===
         // Last pass: everything that stands between "demo" and "you can put this
         // in front of paying users / submit it to a store today".
-        send("stage", { stage: "ship", message: "Ship-ready pass — onboarding, legal, SEO, PWA, analytics, payments…" });
+        send("stage", { stage: "ship", message: personal ? "Ready-to-use pass — onboarding, backup, privacy, offline, install on your phone…" : "Ship-ready pass — onboarding, legal, SEO, PWA, analytics, payments…" });
         const shipped = await callAI({
           apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "high",
-          system: `You are a launch engineer. Take the HTML and make it SHIP-READY — a real product a stranger could use and pay for today. Add anything missing:
+          system: personal ? `You are a senior engineer finishing a PERSONAL-USE app for one member (and maybe their family/team). Make it READY TO USE EVERY DAY. Add anything missing:
+- First-run guided setup and a "how it works" help panel
+- Working settings, backup export/import (JSON file) and delete-my-data control (localStorage backed)
+- Installable PWA (manifest data URL, icons, offline-safe service worker), apple-touch-icon; works offline
+- Accessibility: keyboard nav, focus rings, aria labels, colour contrast, prefers-reduced-motion
+- Error handling, offline banner, loading states, toast system
+- A short privacy note saying data stays on this device
+- A version string and build date in the footer
+Do NOT add pricing, paywalls, checkout, adverts, analytics trackers, cookie banners, testimonials or marketing pages.
+Preserve all existing working logic, IDs, and the oracle-lunar-app-config meta (bump its "version" and add "ship_ready":true).
+Output ONLY the complete HTML document. No fences. No commentary.` : `You are a launch engineer. Take the HTML and make it SHIP-READY — a real product a stranger could use and pay for today. Add anything missing:
 - First-run onboarding / guided empty state, and a persistent "how it works" entry point
 - Working settings, data export, and delete-my-data control (localStorage backed)
 - Privacy Policy, Terms, and Contact sections (real readable copy, in-page routes/modals)
@@ -757,7 +774,9 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
         try {
           shipChecklist = await callAI({
             apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "low",
-            system: `You are a launch manager. Output a SHIP CHECKLIST for this app in markdown: what is already DONE inside the build (tick list) and the SHORT list of things only a human can do (domain, store account, real Stripe keys, screenshots). Max 250 words. No preamble.`,
+            system: personal
+              ? `Output a short READY-TO-USE CHECKLIST in markdown for a personal app: what is already DONE inside the build (tick list) and 2-4 simple next steps for the member (e.g. "Add it to your phone's home screen", "Make a backup each week"). Max 180 words. Plain words. No preamble.`
+              : `You are a launch manager. Output a SHIP CHECKLIST for this app in markdown: what is already DONE inside the build (tick list) and the SHORT list of things only a human can do (domain, store account, real Stripe keys, screenshots). Max 250 words. No preamble.`,
             user: `HTML HEAD + CONFIG:\n${code.slice(0, 12000)}`,
           });
         } catch { /* optional */ }
@@ -771,6 +790,7 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
           visualBrief: visualBrief.slice(0, 2500),
           siteAudit: siteAudit.slice(0, 3500),
           shipChecklist: shipChecklist.slice(0, 2000),
+          purpose,
           sources: marketSources,
         });
         controller.close();

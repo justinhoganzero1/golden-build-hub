@@ -19,7 +19,7 @@ interface Props {
 /**
  * Reusable opt-in publish + sell box.
  * Lets a creator tick to share to the Public Library and (optionally)
- * list it in the Creators Shop with a price (creator keeps 70%).
+ * list it in the Creators Shop with a price (creator keeps 80%, paid into their wallet).
  */
 export const PublishSellControls = ({
   value,
@@ -81,7 +81,7 @@ export const PublishSellControls = ({
             <ShoppingBag className="w-3.5 h-3.5 text-amber-400" /> Sell this {kind}
           </span>
           <span className="block text-[11px] text-muted-foreground">
-            List it in the Creators Shop. You keep 70% of every sale.
+            List it in the Creators Shop. You keep 80% of every sale, paid into your wallet.
           </span>
         </span>
       </label>
