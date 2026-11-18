@@ -183,6 +183,19 @@ export function cleanTextForSpeech(input: string): string {
   return text.trim();
 }
 
+/** Tidy text for the phone's free voice while keeping the punctuation that gives it natural intonation. */
+export function cleanTextForDeviceSpeech(input: string): string {
+  let text = stripMarkdownUrlsAndEmoji(input)
+    .replace(/[*_`~]/g, "")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[-•]\s+/gm, "")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'");
+  text = text.replace(/([^.!?:;,\s])\s*\n+\s*/g, "$1. ").replace(/\s*\n+\s*/g, " ");
+  text = applyPhoneticReplacements(text);
+  return text.replace(/\s{2,}/g, " ").trim();
+}
+
 /**
  * Preserve and enrich punctuation for premium neural TTS so rhythm,
  * breath pauses, and prosody (rises/falls) sound human.

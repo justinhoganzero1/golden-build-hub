@@ -3,11 +3,11 @@ import { uploadCreationFile, rememberPendingVideo, listPendingVideos, forgetPend
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, mergeQueuedSpeech, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { PrefetchedSpeech, playOracleAudio, playOracleAudioBlob } from "@/lib/oracleAudioPlayback";
-import { chooseOracleDeviceVoice, naturalDeviceSpeechText } from "@/lib/oracleDeviceVoice";
+import { chooseOracleDeviceVoice, deviceToneForMood, naturalDeviceSpeechText, shapeDeviceSpeech } from "@/lib/oracleDeviceVoice";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
+import { cleanTextForDeviceSpeech, cleanTextForPremiumSpeech, cleanTextForSpeech } from "@/lib/utils";
 import { Send, Mic, Users, Volume2, VolumeX, Settings2, LayoutGrid, Eye, X, Plus, UserPlus, Edit2, Crown, Bomb, Paperclip, Gavel } from "lucide-react";
 import { getCurrentPlan, notifyPlanRequired, notifyWalletInsufficient } from "@/lib/walletPaywall";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -885,7 +885,8 @@ const OraclePage = () => {
     const utterance = new SpeechSynthesisUtterance("Hi there! It’s lovely to hear from you. What shall we make today?");
     const voice = window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice) || chooseOracleDeviceVoice(window.speechSynthesis.getVoices());
     if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
-    utterance.rate = 1; utterance.pitch = 1; utterance.volume = 1;
+    const [tone] = shapeDeviceSpeech(utterance.text, "bright");
+    utterance.rate = tone?.rate ?? 1; utterance.pitch = tone?.pitch ?? 1; utterance.volume = 1;
     utterance.onerror = () => toast.error("Sound could not start. Check your device volume and tap again.");
     window.speechSynthesis.speak(utterance);
   };
@@ -1109,6 +1110,30 @@ const OraclePage = () => {
       if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
         toast.error("Device speech is not available in this browser."); resolve(); return;
       }
+      if (agentName === oracleName) {
+        // Oracle's free voice: one utterance per sentence, each with its own lift, queued
+        // together so the phone plays them back-to-back without network gaps.
+        const phrases = shapeDeviceSpeech(fullText, deviceToneForMood(currentMood(moodHistoryRef.current)?.mood));
+        if (!phrases.length) { resolve(); return; }
+        const voice = (deviceVoice ? window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice) : undefined) || getVoiceForAgent(agentName);
+        if (speechTokenRef.current !== myToken) { resolve(); return; }
+        let finished = false;
+        const finish = () => { if (finished) return; finished = true; setIsSpeaking(false); resolve(); };
+        phrases.forEach((phrase, i) => {
+          const u = new SpeechSynthesisUtterance(phrase.text);
+          u.lang = voice?.lang ?? "en-AU";
+          if (voice) u.voice = voice;
+          u.pitch = phrase.pitch; u.rate = phrase.rate; u.volume = 1;
+          u.onstart = () => {
+            if (speechTokenRef.current !== myToken) { try { window.speechSynthesis.cancel(); } catch {} finish(); return; }
+            setIsSpeaking(true);
+          };
+          u.onerror = finish;
+          if (i === phrases.length - 1) u.onend = finish;
+          window.speechSynthesis.speak(u);
+        });
+        return;
+      }
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.lang = "en-US";
       utterance.rate = 1;
@@ -1151,6 +1176,7 @@ const OraclePage = () => {
     }
     let premiumClean = cleanTextForPremiumSpeech(next.text);
     let browserClean = cleanTextForSpeech(next.text);
+    let deviceClean = cleanTextForDeviceSpeech(next.text);
     isSpeakingQueueRef.current = true;
 
     try {
@@ -1171,11 +1197,11 @@ const OraclePage = () => {
             blushTimerRef.current = window.setTimeout(() => setBlush(null), kind === "fart" ? 6000 : 2500);
           }
           const sorry = embarrassedLine(kind);
-          if (sorry) { premiumClean = `${sorry} ${premiumClean}`.trim(); browserClean = `${sorry} ${browserClean}`.trim(); }
+          if (sorry) { premiumClean = `${sorry} ${premiumClean}`.trim(); browserClean = `${sorry} ${browserClean}`.trim(); deviceClean = `${sorry} ${deviceClean}`.trim(); }
         }
         // Free accounts hear Oracle's free device voice; her premium voice is a paid-plan feature.
         await routeOracleSpeech(getCurrentPlan() === "free" ? "device" : speechModeRef.current,
-          () => speakWithBrowserTTS(browserClean, oracleName),
+          () => speakWithBrowserTTS(deviceClean || browserClean, oracleName),
           async () => {
             const tokenBefore = speechTokenRef.current;
             schedulePrefetch();
@@ -1186,7 +1212,7 @@ const OraclePage = () => {
             }
             // The phone's voice is only a last resort, and never repeats words already heard.
             if (!result.ok && !result.started && browserClean && speechTokenRef.current === tokenBefore && !mutedRef.current) {
-              await speakWithBrowserTTS(browserClean, oracleName);
+              await speakWithBrowserTTS(deviceClean || browserClean, oracleName);
             }
           });
       } else if (browserClean) await speakWithBrowserTTS(browserClean, next.agentName);
