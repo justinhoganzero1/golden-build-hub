@@ -1,4 +1,5 @@
-import { generateMemberVideo } from "@/lib/videoGeneration";
+import { generateMemberVideo, VideoPendingError } from "@/lib/videoGeneration";
+import { uploadCreationFile, rememberPendingVideo, listPendingVideos, forgetPendingVideo } from "@/lib/oracleCreationFiles";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
 import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
 import { playOracleAudio } from "@/lib/oracleAudioPlayback";
@@ -383,6 +384,28 @@ const OraclePage = () => {
   const [uploading, setUploading] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+
+  // Finish videos that were still filming when the member last left Oracle.
+  // Only polls the saved job (no new generation); the server files it in the Library.
+  useEffect(() => {
+    if (!user?.id) return;
+    const pending = listPendingVideos(user.id);
+    if (!pending.length) return;
+    let alive = true;
+    (async () => {
+      for (const p of pending) {
+        if (!alive) return;
+        try {
+          const v = await generateMemberVideo({ job_id: p.jobId, prompt: p.prompt });
+          forgetPendingVideo(user.id, p.jobId);
+          if (v?.video_url) toast.success("Your video is ready — it's in your Library.", { action: { label: "Open", onClick: () => navigate(v.media_id ? `/media-library?item=${v.media_id}` : "/media-library") } });
+        } catch (e) {
+          if (!(e instanceof VideoPendingError)) forgetPendingVideo(user.id, p.jobId);
+        }
+      }
+    })();
+    return () => { alive = false; };
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Oracle "step aside" — when she shows generated media she fades out, then fades back in
   // when the media ends (video) or after ~20s (image). Trigger via:
@@ -2451,7 +2474,7 @@ const OraclePage = () => {
             .replace(/\[\[NAVIGATE:[^\]]+\]\]/g, "")
             .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
             .replace(/\[\[BACKGROUND:[^\]]+\]\]/g, "")
-            .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
+            .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|VOICE|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
         ));
       const flushSpeakableSentences = (final = false) => {
         // Premium video replies replace device speech: the filmed answer speaks instead.
@@ -2547,7 +2570,7 @@ const OraclePage = () => {
       // Parse creation markers before cleaning the assistant text. The cleaned
       // display below removes those markers, but this raw string is what tells
       // the client to run the real generator.
-      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):([\s\S]+?)\]\]/gi)];
+      const creationMarkers = [...oracleContent.matchAll(/\[\[GEN_(IMAGE|MUSIC|SFX|VOICE|STORY|POEM|DOC|APP|VIDEO):([\s\S]+?)\]\]/gi)];
       const recodeMarkers = [...oracleContent.matchAll(/\[\[RECODE:([\s\S]+?)\]\]/gi)];
 
       // ── Operator control markers in Oracle's reply (NAV/CLICK/FILL/SCROLL/BACK/OPEN) ──
@@ -2592,7 +2615,7 @@ const OraclePage = () => {
       let cleanedOracleContent = oracleContent
         .replace(/\[\[MEMORY:\w+:.+?\]\]/g, "")
         .replace(/\[\[FREE_TRIAL:.+?\]\]/g, "")
-        .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
+        .replace(/\[\[GEN_(?:IMAGE|MUSIC|SFX|VOICE|STORY|POEM|DOC|APP|VIDEO):[\s\S]+?\]\]/g, "")
         .replace(/\[\[WEB:[\s\S]+?\]\]/gi, "")
         .replace(/\[\[UNLOCK:[^\]]*\]\]/gi, "")
         .replace(/\[\[RECODE:[\s\S]+?\]\]/g, "")
@@ -2653,11 +2676,16 @@ const OraclePage = () => {
                   headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
                   body: JSON.stringify({ prompt, duration_seconds: 30 }),
                 });
-                if (!r.ok) throw new Error("music failed");
+                if (r.status === 402) { notifyWalletInsufficient({ service: "music" }); return; }
+                if (!r.ok || !(r.headers.get("content-type") || "").startsWith("audio")) throw new Error("music failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
                 let savedId: string | undefined;
-                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt } }); savedId = saved?.id || saved; } catch {}
+                try {
+                  const stored = user ? await uploadCreationFile(blob, user.id, `music-${prompt}`, "mp3") : null;
+                  const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Music: ${prompt.slice(0, 60)}`, url: stored || dataUrl, source_page: "oracle-music", metadata: { kind: "music", prompt, mime: "audio/mpeg" } });
+                  savedId = saved?.id || saved;
+                } catch (err) { console.error("Oracle music library save failed", err); toast.error("Track made, but the Library save failed"); }
                 askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("Music generation failed"); }
             })();
@@ -2670,13 +2698,42 @@ const OraclePage = () => {
                   headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
                   body: JSON.stringify({ prompt, duration_seconds: 6, prompt_influence: 0.5 }),
                 });
-                if (!r.ok) throw new Error("sfx failed");
+                if (r.status === 402) { notifyWalletInsufficient({ service: "sfx" }); return; }
+                if (!r.ok || !(r.headers.get("content-type") || "").startsWith("audio")) throw new Error("sfx failed");
                 const blob = await r.blob();
                 const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
                 let savedId: string | undefined;
-                try { const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt } }); savedId = saved?.id || saved; } catch {}
+                try {
+                  const stored = user ? await uploadCreationFile(blob, user.id, `sfx-${prompt}`, "mp3") : null;
+                  const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `SFX: ${prompt.slice(0, 60)}`, url: stored || dataUrl, source_page: "oracle-sfx", metadata: { kind: "sfx", prompt, mime: "audio/mpeg" } });
+                  savedId = saved?.id || saved;
+                } catch (err) { console.error("Oracle sfx library save failed", err); toast.error("Sound made, but the Library save failed"); }
                 askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) { console.error(e); toast.error("SFX generation failed"); }
+            })();
+          } else if (kind === "VOICE") {
+            // Narration / voice-over: reads the given words aloud as an audio file and saves it.
+            toast.success("Recording that narration…");
+            (async () => {
+              try {
+                const words = prompt.slice(0, 2500);
+                const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${getEdgeAuthTokenSync()}` },
+                  body: JSON.stringify({ text: words }),
+                });
+                if (r.status === 402) { notifyWalletInsufficient({ service: "voice" }); return; }
+                if (!r.ok || !(r.headers.get("content-type") || "").startsWith("audio")) throw new Error("narration failed");
+                const blob = await r.blob();
+                const dataUrl: string = await new Promise((res, rej) => { const fr = new FileReader(); fr.onloadend = () => res(fr.result as string); fr.onerror = rej; fr.readAsDataURL(blob); });
+                let savedId: string | undefined;
+                try {
+                  const stored = user ? await uploadCreationFile(blob, user.id, `narration-${words}`, "mp3") : null;
+                  const saved: any = await saveMedia.mutateAsync({ media_type: "audio", title: `Narration: ${words.slice(0, 60)}`, url: stored || dataUrl, source_page: "oracle-voice", metadata: { kind: "narration", text: words, mime: "audio/mpeg" } });
+                  savedId = saved?.id || saved;
+                } catch (err) { console.error("Oracle narration library save failed", err); toast.error("Narration made, but the Library save failed"); }
+                askOpenChoice({ kind: "audio", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
+              } catch (e) { console.error(e); toast.error("Narration failed — please try again"); }
             })();
           } else if (kind === "DOC") {
             toast.success("Putting your document together now…");
@@ -2785,6 +2842,7 @@ const OraclePage = () => {
                 let buffer = "";
                 let code = "";
                 let architecture = "";
+                let buildError: { message: string; code?: string } | null = null;
                 while (true) {
                   const { done, value } = await reader.read();
                   if (done) break;
@@ -2794,24 +2852,28 @@ const OraclePage = () => {
                     const block = buffer.slice(0, idx).trim();
                     buffer = buffer.slice(idx + 2);
                     if (!block.startsWith("data:")) continue;
-                    try {
-                      const evt = JSON.parse(block.slice(5).trim());
-                      if (evt.event === "done") { code = evt.code || ""; architecture = evt.architecture || ""; }
-                      else if (evt.event === "error") throw new Error(evt.message || "Build error");
-                    } catch { /* ignore parse */ }
+                    let evt: any;
+                    try { evt = JSON.parse(block.slice(5).trim()); } catch { continue; }
+                    if (evt.event === "done") { code = evt.code || ""; architecture = evt.architecture || ""; }
+                    else if (evt.event === "error") buildError = { message: evt.message || "Build error", code: evt.code };
                   }
                 }
+                if (buildError?.code === "insufficient_coins") { notifyWalletInsufficient({ service: "app-builder" }); return; }
+                if (buildError?.code === "plan_required") { toast.error(buildError.message); return; }
+                if (buildError) throw new Error(buildError.message);
                 if (!code) throw new Error("Pipeline finished without code");
                 const dataUrl = `data:text/html;charset=utf-8;base64,${btoa(unescape(encodeURIComponent(code)))}`;
                 let savedId: string | undefined;
-                const saved: any = await saveMedia.mutateAsync({
-                  media_type: "app" as any,
-                  title: `App: ${prompt.slice(0, 60)}`,
-                  url: dataUrl,
-                  source_page: "app-builder",
-                  metadata: { kind: "app", prompt, architecture: architecture.slice(0, 1500), built_by: "oracle-marker" } as any,
-                });
-                savedId = saved?.id || saved;
+                try {
+                  const saved: any = await saveMedia.mutateAsync({
+                    media_type: "app" as any,
+                    title: `App: ${prompt.slice(0, 60)}`,
+                    url: dataUrl,
+                    source_page: "app-builder",
+                    metadata: { kind: "app", prompt, architecture: architecture.slice(0, 1500), built_by: "oracle-marker" } as any,
+                  });
+                  savedId = saved?.id || saved;
+                } catch (err) { console.error("Oracle app library save failed", err); toast.error("App built, but the Library save failed — download it from the preview"); }
                 askOpenChoice({ kind: "app", url: dataUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/app-builder" });
               } catch (e) {
                 console.error("GEN_APP build failed", e);
@@ -2854,6 +2916,12 @@ const OraclePage = () => {
                 } catch (err) { console.error("Oracle video library save failed", err); }
                 askOpenChoice({ kind: "video", url: videoUrl, libraryId: savedId, deepPath: savedId ? `/media-library?item=${savedId}` : "/media-library" });
               } catch (e) {
+                if (e instanceof VideoPendingError) {
+                  // Still filming: keep polling the same saved job later — never start a new (paid) one.
+                  if (user) rememberPendingVideo(user.id, e.jobId, prompt);
+                  toast("Your video is still being filmed. It will appear in your Library when it's ready.");
+                  return;
+                }
                 console.error("GEN_VIDEO animate failed", e);
                 try {
                   await saveMedia.mutateAsync({ media_type: "image", title: `Video frame: ${prompt.slice(0, 60)}`, url: imgUrl, source_page: "oracle-video-fallback", metadata: { kind: "image", prompt } });

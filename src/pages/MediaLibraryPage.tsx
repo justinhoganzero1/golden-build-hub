@@ -659,7 +659,7 @@ const MediaLibraryPage = () => {
           {selected && isLibraryApp(selected) && <>
             <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-border">
               <Button variant="outline" onClick={() => setSelected(null)}><ArrowRight className="h-4 w-4 rotate-180 mr-2" />Back to Library</Button>
-              <Button variant="outline" onClick={handleDownloadSelected}><Download className="h-4 w-4 mr-2" />Download app</Button>
+              <Button variant="outline" onClick={handleDownloadSelected}><Download className="h-4 w-4 mr-2" />{selected.media_type === "document" ? "Download" : "Download app"}</Button>
               <Button variant="outline" onClick={openShare} disabled={preparingShare}><Share2 className="h-4 w-4 mr-2" />{preparingShare ? "Preparing…" : "Share"}</Button>
             </div>
             <LibraryAppViewer item={selected} />
@@ -684,9 +684,10 @@ const MediaLibraryPage = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className="text-center">
+                  <div className="text-center w-full px-4">
                     <Music className="w-12 h-12 text-primary mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground">Audio file</p>
+                    <p className="text-xs text-muted-foreground mb-3">Audio file</p>
+                    {selected.url && <audio controls preload="metadata" src={selected.url} className="w-full" aria-label={`Play ${readableLibraryTitle(selected.title) || "audio"}`} />}
                   </div>
                 )}
               </div>

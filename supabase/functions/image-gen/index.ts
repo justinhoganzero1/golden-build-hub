@@ -66,6 +66,22 @@ async function sha256(input: string): Promise<string> {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+async function storeImageFile(admin: any, userId: string, url: string): Promise<string | null> {
+  const m = /^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/i.exec(url || "");
+  if (!m) return null;
+  try {
+    const bytes = Uint8Array.from(atob(m[3]), (c) => c.charCodeAt(0));
+    const ext = m[2].toLowerCase() === "jpeg" ? "jpg" : m[2].toLowerCase();
+    const path = `${userId}/library/oracle/${crypto.randomUUID()}-image.${ext}`;
+    const { error } = await admin.storage.from("photography-assets").upload(path, bytes, { contentType: m[1].toLowerCase(), upsert: false });
+    if (error) { console.error("image-gen file store failed:", error.message); return null; }
+    return `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/photography-assets/${path}`;
+  } catch (e) {
+    console.error("image-gen file store unexpected:", e);
+    return null;
+  }
+}
+
 async function ensureLibraryImage(admin: any, opts: {
   userId: string;
   prompt: string;
@@ -90,13 +106,16 @@ async function ensureLibraryImage(admin: any, opts: {
     if (existing?.id) return existing.id;
 
     const cleanTitle = opts.prompt.replace(/\s+/g, " ").trim().slice(0, 60) || "Oracle image";
+    // Keep big pictures out of the Library row: store the file in the member's own
+    // private folder and save a permanent reference (signed when opened).
+    const storedUrl = await storeImageFile(admin, opts.userId, opts.url);
     const { data, error } = await admin
       .from("user_media")
       .insert({
         user_id: opts.userId,
         media_type: "image",
         title: `Image: ${cleanTitle}`,
-        url: opts.url,
+        url: storedUrl || opts.url,
         source_page: "oracle-image",
         metadata: {
           kind: "image",

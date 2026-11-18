@@ -83,3 +83,11 @@
 - [ ] Publish so members get it on oraclelunar.com — waits on Juzzy saying publish
 - [x] Shop wording fixed: sellers keep 80%
 - [x] Start card: Oracle asks "for yourself or to sell?" then tailored questions; own-use apps have no prices/adverts
+
+## Oracle makes everything and saves it (2026-11-18)
+- [x] New: voice narrations (read-aloud audio files) saved to Library
+- [x] Music, sound effects, narrations and pictures saved as real files (not giant text blobs)
+- [x] Library plays audio; Oracle's documents (CVs, plans, checklists) open in the Library
+- [x] App builds from Oracle: real error messages, top-up prompt, separate save warning
+- [x] Videos still filming finish later and land in the Library
+- [x] Publish

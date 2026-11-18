@@ -4,7 +4,10 @@ import { parseStorageUrl } from "@/lib/signedStorageUrl";
 import { Button } from "@/components/ui/button";
 
 export function isLibraryApp(item: any) {
-  return item?.media_type === "app" || /\.html?$/i.test(item?.metadata?.filename || item?.title || "");
+  if (item?.media_type === "app" || /\.html?$/i.test(item?.metadata?.filename || item?.title || "")) return true;
+  // Printable documents Oracle writes (CVs, letters, plans) are saved as HTML pages;
+  // browsers refuse to open data: pages in a new tab, so they open in this viewer instead.
+  return item?.media_type === "document" && (item?.metadata?.mime === "text/html" || /^data:text\/html[;,]/i.test(String(item?.url || "")));
 }
 
 export default function LibraryAppViewer({ item }: { item: any }) {
