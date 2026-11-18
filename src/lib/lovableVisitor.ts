@@ -74,9 +74,20 @@ export const WEB_LANDING = "/ad?v=funny&from=web";
  * Decides where a signed-out browser visitor on the home page goes first.
  * Returns the ad path once per tab, or null to show the normal page.
  */
-export function landingAdPath(input: { ua: string; alreadyShown: boolean; fromLovable: boolean }): string | null {
-  if (input.alreadyShown || isBotUserAgent(input.ua)) return null;
+export function landingAdPath(input: { ua: string; alreadyShown: boolean; fromLovable: boolean; fromSearch?: boolean }): string | null {
+  // Search visitors (Google etc.) go straight to the download page.
+  if (input.alreadyShown || input.fromSearch || isBotUserAgent(input.ua)) return null;
   return input.fromLovable ? LOVABLE_LANDING : WEB_LANDING;
+}
+
+const SEARCH_HOST = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|yahoo\.[a-z.]+|ecosia\.org|search\.brave\.com|startpage\.com|yandex\.[a-z.]+|baidu\.com)$/i;
+
+/** True when the visitor clicked through from a search engine (web or the Google phone app). */
+export function cameFromSearch(referrer: string): boolean {
+  const r = (referrer || "").trim();
+  if (!r) return false;
+  if (/^android-app:\/\/com\.google\.android\.(googlequicksearchbox|gm)/i.test(r)) return true;
+  return SEARCH_HOST.test(hostOf(r));
 }
 
 /** Reads the current browser visit for the home page. */
@@ -88,5 +99,10 @@ export function currentLandingAd(): string | null {
   } catch {
     /* storage blocked */
   }
-  return landingAdPath({ ua: navigator.userAgent, alreadyShown: shown, fromLovable: isLovableVisit() });
+  return landingAdPath({
+    ua: navigator.userAgent,
+    alreadyShown: shown,
+    fromLovable: isLovableVisit(),
+    fromSearch: cameFromSearch(document.referrer),
+  });
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Check, ChevronDown, Download, Globe, Laptop, Lock, Mail, MonitorSmartphone,
@@ -59,7 +59,8 @@ type Platform = ReturnType<typeof detectInstallPlatform>;
 const isInAppBrowser = () =>
   typeof navigator !== "undefined" && /FBAN|FBAV|Instagram|Line\/|TikTok|Snapchat|LinkedInApp|Twitter/i.test(navigator.userAgent);
 
-export default function AppStorePage() {
+/** extra: page-specific sections shown under the listing (used by the search pages). */
+export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
@@ -373,6 +374,8 @@ export default function AppStorePage() {
           </section>
         </aside>
       </main>
+
+      {extra}
 
       <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
         Oracle is an AI. Presenter footage is AI-generated. ·{" "}

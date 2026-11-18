@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { MessageCircle, Heart, Mic, Shield, Sparkles, Check } from "lucide-react";
 import LeadMagnetWidget from "@/components/LeadMagnetWidget";
 import RealSocialProof from "@/components/RealSocialProof";
+import AppStorePage from "@/pages/AppStorePage";
 
 interface SeoVariant {
   path: string;
@@ -553,7 +554,9 @@ const SAFETY_FAQ = {
   a: "No. Oracle is AI support, not a person, health professional, therapist or emergency service. In an emergency call 000 in Australia or 911 in the US. The Crisis Hub is always free.",
 };
 
-// These pages are adverts for search visitors. A signed-in member is taken
+// These pages are adverts for search visitors. They open on the same
+// download listing as /download (identical for people and Google), with the
+// page's own topic and questions underneath. A signed-in member is taken
 // straight to the real tool instead (keeping the Oracle overlay state).
 export default function SeoLandingPage() {
   const location = useLocation();
@@ -567,6 +570,8 @@ function SeoLandingContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const variant = VARIANTS[location.pathname] ?? VARIANTS["/ai-chat-companion"];
+  // "Get the app" scrolls back up to the Install button on this same page.
+  const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   const faqs = [...variant.faqs, PRICING_FAQ, ...(variant.safety ? [SAFETY_FAQ] : [])];
 
   const jsonLd = [
@@ -602,18 +607,19 @@ function SeoLandingContent() {
         path={variant.path}
         jsonLd={jsonLd}
       />
-      <main className="min-h-screen bg-background text-foreground">
-        {/* Hero */}
-        <section className="container mx-auto px-4 pt-16 pb-12 text-center max-w-4xl">
+      <AppStorePage extra={
+      <div className="text-foreground border-t border-border/60">
+        {/* Topic */}
+        <section className="container mx-auto px-4 pt-12 pb-12 text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-6">
             <Sparkles className="w-4 h-4" /> Free to download · Plans from A$9.99/mo
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {variant.h1}
-          </h1>
+          </h2>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{variant.tagline}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
-            <Button size="lg" onClick={() => navigate("/")} className="text-base">
+            <Button size="lg" onClick={toTop} className="text-base">
               <MessageCircle className="w-5 h-5 mr-2" /> Get the app
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/ad")}>
@@ -681,7 +687,7 @@ function SeoLandingContent() {
         <section className="container mx-auto px-4 py-16 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to meet your AI companion?</h2>
           <p className="text-muted-foreground mb-6">Free to download. Chat with Oracle from A$9.99 a month.</p>
-          <Button size="lg" onClick={() => navigate("/")}>
+          <Button size="lg" onClick={toTop}>
             <MessageCircle className="w-5 h-5 mr-2" /> Get the app
           </Button>
         </section>
@@ -726,7 +732,8 @@ function SeoLandingContent() {
             ))}
           </nav>
         </section>
-      </main>
+      </div>
+      } />
     </>
   );
 }
