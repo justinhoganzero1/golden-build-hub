@@ -1,5 +1,47 @@
 // Use the gesture-unlocked element on every browser; unsupported MP3 streaming
 // falls back to buffered playback without making another paid synthesis call.
+export const STREAM_START_SECONDS = 0.5;
+
+/**
+ * Plays audio that was fully downloaded while the previous sentence was still
+ * speaking, so the next sentence starts straight away with no gap or stutter.
+ */
+export async function playOracleAudioBlob(
+  audio: HTMLAudioElement,
+  blob: Blob,
+  isLive: () => boolean,
+  onSpeaking: (speaking: boolean) => void,
+): Promise<boolean> {
+  if (!blob || blob.size < 100 || !isLive()) return false;
+  const objectUrl = URL.createObjectURL(blob);
+  let watchdog: ReturnType<typeof setInterval> | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const ended = new Promise<void>((resolve, reject) => {
+      audio.onended = () => resolve();
+      audio.onerror = () => reject(new Error("Audio playback failed"));
+      timeout = setTimeout(() => reject(new Error("Playback stalled")), 90000);
+      watchdog = setInterval(() => { if (!isLive()) reject(new Error("Playback cancelled")); }, 100);
+    });
+    void ended.catch(() => {});
+    audio.src = objectUrl;
+    await audio.play();
+    onSpeaking(true);
+    await ended;
+    return isLive();
+  } catch {
+    return false;
+  } finally {
+    audio.pause();
+    audio.onended = null;
+    audio.onerror = null;
+    if (watchdog) clearInterval(watchdog);
+    if (timeout) clearTimeout(timeout);
+    URL.revokeObjectURL(objectUrl);
+    onSpeaking(false);
+  }
+}
+
 export async function playOracleAudio(
   audio: HTMLAudioElement,
   response: Response,
@@ -52,8 +94,9 @@ export async function playOracleAudio(
             buffer.addEventListener("error", () => reject(new Error("Invalid audio stream")), { once: true });
             buffer.appendBuffer(value as BufferSource);
           });
-          // Start from decoded audio time, not a large byte threshold.
-          if (buffer.buffered.length && buffer.buffered.end(0) >= 0.15) await start();
+          // Start once about half a second is decoded: a tiny head start made her
+          // voice stutter on phone networks when the next bytes arrived late.
+          if (buffer.buffered.length && buffer.buffered.end(0) >= STREAM_START_SECONDS) await start();
         }
         if (!isLive()) throw new Error("Playback cancelled");
         if (source.readyState === "open") source.endOfStream();
