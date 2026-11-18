@@ -9,6 +9,7 @@ import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts"
 import { PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { loadMemberGemini, memberHasPaidPlan, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { memberChatAccess } from "../_shared/freeTrial.ts";
 
 
 
@@ -101,8 +102,11 @@ serve(async (req) => {
         admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
         if (userId && !isAdmin) {
           if (cfg.keyColumn === "gemini_key") {
-            // Lyra runs on the member's own Gemini key from setup. Plan still required.
-            if (!(await memberHasPaidPlan(admin, userId))) return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+            // Lyra runs on the member's own Gemini key from setup. A paid plan or the 7-day
+            // free trial is required (Oracle's documents/stories use this during the trial; it costs
+            // nothing but the member's own Google key).
+            const access = await memberChatAccess(admin, userId, authedUser.created_at ?? null);
+            if (access === "none") return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
             const g = await loadMemberGemini(admin, userId);
             if (!g.key || !g.verified) return geminiKeyRequiredResponse(corsHeaders);
             userKey = g.key;

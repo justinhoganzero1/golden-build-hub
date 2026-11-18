@@ -70,7 +70,7 @@ function unauthorized(message: string, status = 401, extra: Record<string, unkno
 }
 
 export type AuthResult =
-  | { user: { id: string; email: string | null }; response?: undefined }
+  | { user: { id: string; email: string | null; created_at?: string | null }; response?: undefined }
   | { user?: undefined; response: Response };
 
 export async function requireUser(req: Request): Promise<AuthResult> {
@@ -99,7 +99,7 @@ export async function requireUser(req: Request): Promise<AuthResult> {
     await auditLog({ user_id: data.user.id, email: data.user.email ?? null, ip, path, event_type: "auth_required", reason: "anonymous_user" });
     return { response: unauthorized("auth_required") };
   }
-  return { user: { id: data.user.id, email: data.user.email ?? null } };
+  return { user: { id: data.user.id, email: data.user.email ?? null, created_at: data.user.created_at ?? null } };
 }
 
 export async function requireOwner(req: Request): Promise<AuthResult> {

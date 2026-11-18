@@ -98,6 +98,7 @@ import ThinkingIndicator from "@/components/ThinkingIndicator";
 import OracleWelcome from "@/components/oracle/OracleWelcome";
 import ProductionProgress, { playReadyChime } from "@/components/oracle/ProductionProgress";
 import { welcomeKey } from "@/lib/productionStages";
+import { isTrialPaidCreation, readChatAccess, scriptedOracleReply, trialPaidReply } from "@/lib/oracleTrial";
 import { handleAccessReply } from "@/lib/aiAccessEvents";
 import { discoveryNote, loadUnlocks, modulesForText, moduleForPath, needsGuidedUnlock, unlockMarkers, unlockPaths, type DiscoverableModule } from "@/lib/oracleDiscovery";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
@@ -215,6 +216,10 @@ function wantsComputerOperatorMode(text: string): boolean {
 
 const OraclePage = () => {
   const navigate = useNavigate();
+  // After the trial, the Plus pop-up shows once per visit; Oracle's simple replies carry on after that.
+  const planNudgeShownRef = useRef(false);
+  // Last chat level the server reported; the instant app-build shortcut is skipped once we know they're on the trial or Free.
+  const chatAccessRef = useRef<"paid" | "trial" | "none" | null>(null);
   const { user } = useAuth();
   const { isMuted, setMuted } = useMute();
   const { data: userAvatars = [] } = useUserAvatars();
@@ -1935,13 +1940,19 @@ const OraclePage = () => {
     // Free plan after the 7-day trial: the server answers plan_required and Oracle replies kindly
     // with the upgrade offer (see the oracle-chat reply handling below). During the trial, Free
     // members chat with her full knowledge on their own Gemini key.
-    const freePlanReply = () => {
-      const reply = "I'd love to keep chatting properly with you! Your 7-day free trial has finished, and my full conversations are part of Plus now. Until then, your calendar, library and safety pages are all yours for free.";
+    const freePlanReply = (reason: "trial_over" | "key_out" = "trial_over") => {
+      // Simple scripted Oracle (no AI, no cost): still opens free pages like the calendar or Library.
+      const { reply, path } = scriptedOracleReply(text, reason);
       // The member's own message is already on screen by the time the server answers.
+      setShowChat(true);
       setMessages(prev => [...prev,
         { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: reply }]);
       if (!isMuted) speakAsAgent(reply, oracleName);
-      notifyPlanRequired({ requiredPlan: "plus", message: "Chatting with Oracle is part of Plus. Upgrade to talk with her any time." });
+      if (path) { setTimeout(() => navigate(path), 900); return; }
+      if (reason === "trial_over" && !planNudgeShownRef.current) {
+        planNudgeShownRef.current = true;
+        notifyPlanRequired({ requiredPlan: "plus", message: "Chatting with Oracle is part of Plus. Upgrade to talk with her any time." });
+      }
     };
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
     const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);
@@ -2206,7 +2217,8 @@ const OraclePage = () => {
     // planning + ordering", "make a working e-commerce store", "create a finished app".
     // Runs the multi-agent architect→backend→frontend→flesh→smoke pipeline in the
     // background and saves the finished single-file HTML site straight to the Library.
-    const buildMatch = isIntroTrigger ? null : text.match(
+    // Trial/free members go through the normal chat, where Oracle explains app builds are Pro.
+    const buildMatch = isIntroTrigger || chatAccessRef.current === "trial" || chatAccessRef.current === "none" ? null : text.match(
       /\b(?:build|make|create|generate|design|develop|code|put together|spin up|whip up|finish)(?:\s+(?:me|us))?\s+(?:a|an|the|my|our|some)\s+(?:complete\s+|full\s+|finished\s+|working\s+|whole\s+|entire\s+|production\s+|real\s+|live\s+)?(?:personal\s+\w+\s+)?(web ?site|website|web\s*app|webapp|app|application|landing\s*page|online\s+store|store|shop|portal|dashboard|platform|saas|tool|page|site)\b([\s\S]*)/i
     );
     if (buildMatch) {
@@ -2229,6 +2241,13 @@ const OraclePage = () => {
           });
           if (!resp.ok || !resp.body) {
             const t = await resp.text().catch(() => "");
+            // Not on Pro (e.g. free trial): Oracle says so kindly instead of a failed-build error.
+            if (resp.status === 402 && /plan_required/.test(t)) {
+              const reply = trialPaidReply("APP");
+              setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: reply }]);
+              if (!isMuted) speakAsAgent(reply, oracleName);
+              return;
+            }
             throw new Error(t || `HTTP ${resp.status}`);
           }
           const reader = resp.body.getReader();
@@ -2487,6 +2506,7 @@ const OraclePage = () => {
         }
         // Free plan with the 7-day trial over: kind reply + upgrade offer (silent for the automatic intro).
         if (oracleResp.status === 402 && err?.error === "plan_required") {
+          chatAccessRef.current = "none";
           if (!isIntroTrigger) freePlanReply();
           setIsLoading(false);
           return;
@@ -2494,6 +2514,8 @@ const OraclePage = () => {
         // Gemini key not connected or refused by Google: the key pop-up explains the fix.
         if (handleAccessReply(err)) {
           if (!isIntroTrigger) setInput(text);
+          // Google key out of credit: Oracle keeps going in her simple free mode until it's topped up.
+          if (!isIntroTrigger && err?.error === "gemini_key_problem" && err?.reason === "quota") freePlanReply("key_out");
           setIsLoading(false);
           return;
         }
@@ -2522,6 +2544,16 @@ const OraclePage = () => {
         setIsLoading(false);
         return;
       }
+
+      // Trial members: Oracle does everything paying members get, except paid-plan creations.
+      const chatAccess = readChatAccess(oracleResp.headers.get("X-Oracle-Chat-Access"));
+      chatAccessRef.current = chatAccess;
+      const sayTrialPaid = (kind: string) => {
+        const reply = trialPaidReply(kind);
+        setShowChat(true);
+        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: reply }]);
+        if (!isMuted) speakAsAgent(reply, oracleName);
+      };
 
       // Read server-reported usage headers (only present for free-tier users)
       try {
@@ -2680,7 +2712,8 @@ const OraclePage = () => {
 
       // ── Live web research: [[WEB: query]] → cited answer with pictures ──
       const webMatch = oracleContent.match(/\[\[WEB:([\s\S]+?)\]\]/i);
-      if (webMatch) {
+      if (webMatch && chatAccess === "trial") sayTrialPaid("WEB");
+      else if (webMatch) {
         const query = webMatch[1].trim().slice(0, 300);
         const webId = `web-${Date.now()}`;
         setMessages(prev => [...prev, { id: webId, role: "assistant", sender: oracleName, emoji: "🌐", color: "#38bdf8", content: `🌐 *Searching the web for “${query}”…*` }]);
@@ -2727,6 +2760,7 @@ const OraclePage = () => {
           const key = kind + "::" + prompt;
           if (fired.has(key) || !prompt) continue;
           fired.add(key);
+          if (isTrialPaidCreation(chatAccess, kind)) { sayTrialPaid(kind); continue; }
 
           if (kind === "IMAGE") {
             toast.success("Painting that for you…");

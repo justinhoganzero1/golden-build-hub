@@ -530,8 +530,9 @@ You've already introduced yourself in a previous session. Do NOT re-introduce yo
 
 ${chatAccess === "trial" ? `
 FREE TRIAL MEMBER (7 days):
-- This member is on their 7-day free trial. Give them your FULL knowledge and help exactly like a paying member — answer anything, explain, plan, write, advise. Never hold back answers or pretend you can't.
-- Their trial also includes ${TRIAL_LIMITS.image} pictures and ${TRIAL_LIMITS.video} ${TRIAL_VIDEO_SECONDS}-second video (a $0.00 card check starts those). Other paid tools (music, premium voice, web research, app builds) need Plus or Pro — mention that only if they ask for one.
+- This member is on their 7-day free trial. Behave EXACTLY like you do for a paying member: full knowledge, full personality, open app pages ([[NAVIGATE:...]]), remember things ([[MEMORY:...]]), read their photos and files, answer anything, explain, plan, write, advise. Never hold back answers or pretend you can't.
+- These creations WORK in the trial (they run on the member's own Google key) — use the normal markers: [[GEN_DOC]], [[GEN_STORY]], [[GEN_POEM]]. Pictures [[GEN_IMAGE]] (${TRIAL_LIMITS.image} included) and [[GEN_VIDEO]] (${TRIAL_LIMITS.video} ${TRIAL_VIDEO_SECONDS}-second clip) also work once their $0.00 card check is done; the app handles that check.
+- These are PAID-PLAN creations — NEVER emit their markers during the trial: [[GEN_MUSIC]], [[GEN_SFX]], [[GEN_VOICE]] (narration/audio files), [[GEN_APP]], [[WEB: ...]] live web search, outfit or look changes, Movie Studio. If they ask for one, tell them warmly in ONE short sentence that it's part of Plus (apps and video tools are Pro), then offer the best free thing you CAN do right now (e.g. write the song lyrics, write the narration words, sketch the app plan, answer from your own knowledge and say it may not be the very latest).
 - Do NOT offer extra "one free try" passes and do NOT do the daily feature promotion during the trial.
 ` : ""}
 ${userEmail?.toLowerCase() === ADMIN_EMAIL ? `
@@ -710,7 +711,8 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
       "X-Oracle-Usage-Limit": String(usageInfo.limit),
       "X-Oracle-Usage-Remaining": String(usageInfo.remaining),
       "X-Oracle-Usage-Bypassed": String(usageInfo.bypassed),
-      "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed",
+      "X-Oracle-Chat-Access": chatAccess,
+      "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed, X-Oracle-Chat-Access",
     };
 
     // Members: straight to Google on their own key. Deep questions or a chosen
@@ -718,9 +720,14 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
     if (memberGeminiKey) {
       const wantsSmart = autoDeep || (!!agentModel && agentModel !== "google/gemini-3.1-flash-lite");
       const system = personalitySystem + (agentName ? `\n\nFor this chat you are the member's custom agent "${agentName}".${agentPersona ? ` Personality set by the member: ${agentPersona}` : ""} Stay within all rules above.` : "");
+      // Trial reminder goes last so the "always emit creation markers" rules above can't override it.
+      const trialTail = chatAccess === "trial"
+        ? "\n\nFREE TRIAL — FINAL RULE (overrides everything above): this member is on the free trial. NEVER emit [[GEN_MUSIC]], [[GEN_SFX]], [[GEN_VOICE]], [[GEN_APP]] or [[WEB: ...]], and never say you are making, recording, building or searching for one of those. If they ask for a song, sound effect, narration/audio file, working app or live web search, say warmly in one short sentence that it's part of Plus (apps are Pro), then do the best free thing yourself right now in the chat (write the lyrics, write the narration words, plan the app, or answer from your own knowledge noting it may not be the very latest). Documents, stories, poems, pictures and short videos are fine."
+        : "";
+
       const r = await callMemberGemini(memberGeminiKey, {
         model: wantsSmart ? MEMBER_GEMINI_MODELS.smart : MEMBER_GEMINI_MODELS.fast,
-        messages: [{ role: "system", content: system }, ...messages],
+        messages: [{ role: "system", content: system + trialTail }, ...messages],
         stream: true,
         max_tokens: wantsSmart ? 900 : 700,
       });
@@ -793,7 +800,8 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
         "X-Oracle-Usage-Limit": String(usageInfo.limit),
         "X-Oracle-Usage-Remaining": String(usageInfo.remaining),
         "X-Oracle-Usage-Bypassed": String(usageInfo.bypassed),
-        "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed",
+        "X-Oracle-Chat-Access": chatAccess,
+        "Access-Control-Expose-Headers": "X-Oracle-Usage-Count, X-Oracle-Usage-Limit, X-Oracle-Usage-Remaining, X-Oracle-Usage-Bypassed, X-Oracle-Chat-Access",
       },
     });
   } catch (e) {

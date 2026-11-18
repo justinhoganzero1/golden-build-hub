@@ -36,6 +36,16 @@ export function chatTrialOpen(opts: { signedUpAt: string | null; cardTrialEndsAt
 
 export type ChatAccess = "paid" | "trial" | "none";
 
+/**
+ * What Oracle may create for a trial member. Creations that run on the member's own
+ * Gemini key (documents, stories, poems) are open; pictures/video use the card-checked
+ * trial allowance; everything that costs real money (music, sound effects, narration
+ * files, app builds, live web research) is Plus/Pro — Oracle explains instead.
+ * Mirrored in src/lib/oracleTrial.ts.
+ */
+export const TRIAL_OPEN_CREATIONS = ["DOC", "STORY", "POEM", "IMAGE", "VIDEO"] as const;
+export const TRIAL_PAID_CREATIONS = ["MUSIC", "SFX", "VOICE", "APP"] as const;
+
 /** Paid plan → full chat; otherwise the 7-day trial window; otherwise the free scripted chat only. */
 export async function memberChatAccess(admin: Admin, userId: string, signedUpAt: string | null): Promise<ChatAccess> {
   const [{ data: plan }, { data: card }] = await Promise.all([
