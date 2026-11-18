@@ -2939,6 +2939,84 @@ export type Database = {
         }
         Relationships: []
       }
+      pitch_projects: {
+        Row: {
+          audit: Json | null
+          business_name: string | null
+          business_url: string
+          contacts: Json | null
+          created_at: string
+          deck: Json | null
+          demo_enabled: boolean
+          demo_expires_at: string | null
+          demo_html: string | null
+          demo_last_viewed_at: string | null
+          demo_token: string | null
+          demo_views: number
+          email: Json | null
+          id: string
+          offer_price: string | null
+          owner_id: string
+          reviews: Json | null
+          snapshot: Json | null
+          status: string
+          step: string | null
+          step_error: string | null
+          step_started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit?: Json | null
+          business_name?: string | null
+          business_url: string
+          contacts?: Json | null
+          created_at?: string
+          deck?: Json | null
+          demo_enabled?: boolean
+          demo_expires_at?: string | null
+          demo_html?: string | null
+          demo_last_viewed_at?: string | null
+          demo_token?: string | null
+          demo_views?: number
+          email?: Json | null
+          id?: string
+          offer_price?: string | null
+          owner_id: string
+          reviews?: Json | null
+          snapshot?: Json | null
+          status?: string
+          step?: string | null
+          step_error?: string | null
+          step_started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit?: Json | null
+          business_name?: string | null
+          business_url?: string
+          contacts?: Json | null
+          created_at?: string
+          deck?: Json | null
+          demo_enabled?: boolean
+          demo_expires_at?: string | null
+          demo_html?: string | null
+          demo_last_viewed_at?: string | null
+          demo_token?: string | null
+          demo_views?: number
+          email?: Json | null
+          id?: string
+          offer_price?: string | null
+          owner_id?: string
+          reviews?: Json | null
+          snapshot?: Json | null
+          status?: string
+          step?: string | null
+          step_error?: string | null
+          step_started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plan_credit_grants: {
         Row: {
           amount_cents: number
