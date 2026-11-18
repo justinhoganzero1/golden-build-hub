@@ -175,7 +175,7 @@ const MembershipPage = () => {
             <Button disabled variant="outline" className="w-full">{plan === "free" ? "Your plan" : "Included"}</Button>
             {plan === "free" && (
               <Button asChild variant="secondary" className="w-full">
-                <Link to="/trial-card">Free trial: 3 pictures + 1 video ($0 card check)</Link>
+                <Link to="/trial-card">Free trial: 3 pictures + 1 video (no card needed)</Link>
               </Button>
             )}
           </section>

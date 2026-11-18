@@ -1484,6 +1484,30 @@ export type Database = {
         }
         Relationships: []
       }
+      free_trial_starts: {
+        Row: {
+          blocked: boolean
+          blocked_by: string | null
+          created_at: string
+          trial_ends_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked?: boolean
+          blocked_by?: string | null
+          created_at?: string
+          trial_ends_at: string
+          user_id: string
+        }
+        Update: {
+          blocked?: boolean
+          blocked_by?: string | null
+          created_at?: string
+          trial_ends_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       free_trial_usage: {
         Row: {
           images_used: number

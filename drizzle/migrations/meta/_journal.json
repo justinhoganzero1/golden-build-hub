@@ -218,6 +218,13 @@
       "when": 1794964788222,
       "tag": "0030_pitch_assets_owner_read",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1794987282928,
+      "tag": "0031_free_trial_starts",
+      "breakpoints": true
     }
   ]
 }

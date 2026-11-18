@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TRIAL_DAYS, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS, trialEndsAt, trialGate } from "../../supabase/functions/_shared/freeTrial";
+import { TRIAL_DAYS, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS, laterEnd, trialEndsAt, trialGate } from "../../supabase/functions/_shared/freeTrial";
 
 const now = new Date("2026-11-18T00:00:00Z");
 
@@ -9,13 +9,22 @@ describe("free trial rules", () => {
     expect(TRIAL_VIDEO_SECONDS).toBe(8);
   });
 
-  it("lasts 7 days from the card check", () => {
+  it("lasts 7 days from sign-up", () => {
     expect(TRIAL_DAYS).toBe(7);
     expect(trialEndsAt(now).toISOString()).toBe("2026-11-25T00:00:00.000Z");
   });
 
-  it("needs a verified card before a Free member can use it", () => {
-    expect(trialGate({ isOwner: false, plan: "free", trialEndsAt: null, now })).toBe("card_required");
+  it("never asks for a card: a Free member inside 7 days can use it", () => {
+    expect(trialGate({ isOwner: false, plan: "free", trialEndsAt: trialEndsAt(now).toISOString(), now })).toBe("claim");
+  });
+
+  it("refuses a second trial for the same person on another account", () => {
+    expect(trialGate({ isOwner: false, plan: "free", trialEndsAt: trialEndsAt(now).toISOString(), blocked: true, now })).toBe("duplicate");
+  });
+
+  it("uses the later end date when an older card-checked trial exists", () => {
+    expect(laterEnd("2026-11-20T00:00:00.000Z", "2026-11-25T00:00:00.000Z")).toBe("2026-11-25T00:00:00.000Z");
+    expect(laterEnd("2026-11-20T00:00:00.000Z", null)).toBe("2026-11-20T00:00:00.000Z");
   });
 
   it("is open inside the 7 days and closed after", () => {

@@ -1,14 +1,14 @@
-// Card check for the free trial: $0.00 is charged. A verified card unlocks
-// 3 pictures + 1 eight-second video for 7 days, once per card.
-// - start:   opens Stripe's card form (setup mode, nothing charged)
-// - confirm: reads the finished form straight from Stripe and starts the trial
-// - status:  trial state for the signed-in member
+// Free trial status. Since 2026-11-18 there is NO card check: every Free account gets
+// 3 pictures + 1 eight-second video for the first 7 days after sign-up, once per person
+// (hashed email/device/internet-address marks). Older card-checked trials still count.
+// - status:  starts the trial on first check-in and returns its state
+// - start/confirm: legacy card-check actions, kept only so old links don't break
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { safeOrigin } from "../_shared/origin.ts";
 import { type StripeEnv, createStripeClient, resolveOrCreateCustomer } from "../_shared/stripe.ts";
-import { TRIAL_DAYS, TRIAL_LIMITS, trialEndsAt } from "../_shared/freeTrial.ts";
-import { collectMarks, findOtherTrial, rememberTrialMarks, requestIp, TRIAL_USED_MESSAGE } from "../_shared/trialIdentity.ts";
+import { TRIAL_DAYS, TRIAL_LIMITS, trialEndsAt, ensureTrialStart, laterEnd, type TrialStart } from "../_shared/freeTrial.ts";
+import { collectMarks, rememberTrialMarks, requestIp, TRIAL_USED_MESSAGE } from "../_shared/trialIdentity.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -43,18 +43,25 @@ Deno.serve(async (req) => {
     const [{ data: isAdmin }] = await Promise.all([admin.rpc("has_role", { _user_id: user.id, _role: "admin" })]);
     const exempt = !!isAdmin;
     const marks = collectMarks({ email: user.email, deviceId: body?.device_id, ip: requestIp(req) });
-    // A trial account's devices and addresses are remembered every time it checks in.
+    const isFree = !plan || plan === "free";
+    // No card needed: the first check-in starts the 7-day trial (or records it as already used elsewhere).
+    let start: TrialStart | null = null;
+    if (isFree && !exempt) {
+      start = await ensureTrialStart(admin, user, { deviceId: body?.device_id, ip: requestIp(req) })
+        .catch((e: unknown) => { console.error("trial start:", e); return null; });
+    }
     if (card && !exempt) await rememberTrialMarks(admin, user.id, marks).catch((e: unknown) => console.error("trial marks:", e));
-    const usedElsewhere = !card && !exempt && (!plan || plan === "free") ? await findOtherTrial(admin, user.id, marks) : null;
+    const usedElsewhere = !card && !!start?.blocked;
+    const endsAt = laterEnd(start?.trial_ends_at, card?.trial_ends_at);
     const status = () => ({
-      trial_blocked: !!usedElsewhere,
+      trial_blocked: usedElsewhere,
       trial_blocked_message: usedElsewhere ? TRIAL_USED_MESSAGE : null,
       plan: plan ?? "free",
       card_verified: !!card,
       card_brand: card?.card_brand ?? null,
       card_last4: card?.card_last4 ?? null,
-      trial_ends_at: card?.trial_ends_at ?? null,
-      trial_open: !!card && new Date(card.trial_ends_at).getTime() > Date.now(),
+      trial_ends_at: endsAt,
+      trial_open: !usedElsewhere && !!endsAt && new Date(endsAt).getTime() > Date.now(),
       images_left: Math.max(0, TRIAL_LIMITS.image - (usage?.images_used ?? 0)),
       videos_left: Math.max(0, TRIAL_LIMITS.video - (usage?.videos_used ?? 0)),
       trial_days: TRIAL_DAYS,
