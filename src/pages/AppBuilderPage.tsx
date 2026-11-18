@@ -1,7 +1,7 @@
 import { getEdgeAuthTokenSync } from "@/lib/edgeAuth";
 import { useState, useRef, useEffect, useCallback } from "react";
 import SEO from "@/components/SEO";
-import { Wrench, Code, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink, RefreshCw, Palette } from "lucide-react";
+import { Wrench, Code, X, Loader2, Download, Send, Bot, User, Globe, Rocket, CreditCard, DollarSign, Mic, MicOff, Volume2, VolumeX, Paperclip, Image as ImageIcon, ClipboardPaste, Play, ExternalLink, RefreshCw, Palette, ScanSearch, Link2, Hammer } from "lucide-react";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { toast } from "sonner";
 import { useUserMedia } from "@/hooks/useUserAvatars";
@@ -21,7 +21,8 @@ const BUILDER_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
 
 interface Attachment { id: string; name: string; type: string; dataUrl: string; size: number; }
 interface AppProject { id: string; name: string; type: string; description: string; code: string; created: string; mediaId?: string; isPaid?: boolean; pricePoint?: string; }
-interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; attachments?: Attachment[]; }
+interface ScanResult { visualBrief: string; siteAudit: string; sites: string[]; prompt: string; }
+interface ChatMessage { role: "user" | "assistant"; content: string; code?: string; attachments?: Attachment[]; scan?: ScanResult; }
 
 // Strip emojis/markdown/urls for clean TTS
 const cleanForSpeech = (text: string) =>
@@ -42,7 +43,7 @@ const AppBuilderPage = () => {
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "I'm your Master App Builder Oracle — full coding brain, voice, ears, and eyes.\n\nYou can:\n• Type, paste, or speak\n• Attach screenshots, images, or files\n• Paste a screen-print directly (Ctrl/Cmd+V)\n• I'll talk back through your speaker\n\nPaste a website link and I'll take desktop + phone pictures of it, study its look like a designer, then build an original app in that style (never copying its name, logo, words or photos).\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or \"Make me an app for plumbers inspired by https://example.com\"." }
+    { role: "assistant", content: "I'm your Master App Builder Oracle — full coding brain, voice, ears, and eyes.\n\nYou can:\n• Type, paste, or speak\n• Attach screenshots, images, or files\n• Paste a screen-print directly (Ctrl/Cmd+V)\n• I'll talk back through your speaker\n\nLearn from any website or app: paste its link (or a Google Play / App Store link) in the \"Learn from\" box. I'll take desktop + phone pictures, read what real customers complain about (Google, Trustpilot, Facebook, app store reviews, Reddit), find what's missing, then build an original app that fixes all of it — never copying its name, logo, words or photos.\n\nTap \"Scan first\" to see the findings before you build.\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or \"Make me an app for plumbers inspired by https://example.com\"." }
   ]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -51,6 +52,8 @@ const AppBuilderPage = () => {
   const [buildStages, setBuildStages] = useState<{ stage: string; message: string; ok?: boolean }[]>([]);
   const [livePartial, setLivePartial] = useState<string>("");
   const [visualRefs, setVisualRefs] = useState<{ url: string; title?: string; desktop?: string; mobile?: string }[]>([]);
+  const [auditSources, setAuditSources] = useState<{ url: string; title?: string; source?: string }[]>([]);
+  const [learnLinks, setLearnLinks] = useState("");
   const [showProgress, setShowProgress] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -291,30 +294,38 @@ const AppBuilderPage = () => {
   }, [user, publishSell]);
 
   // ===== Send (autonomous multi-stage pipeline) =====
-  const sendMessage = async (overridePrompt?: string, styleOverrideId?: string) => {
+  const sendMessage = async (overridePrompt?: string, styleOverrideId?: string, opts: { scanOnly?: boolean; useScan?: ScanResult } = {}) => {
     const styleForBuild = APP_STYLES.find(s => s.id === (styleOverrideId || appStyleId)) || APP_STYLES[0];
     const trimmed = (overridePrompt ?? input).trim();
-    if ((!trimmed && attachments.length === 0) || isBuilding) return;
+    const links = opts.useScan ? opts.useScan.sites : learnLinks.split(/[\s,]+/).map(l => l.trim()).filter(Boolean).slice(0, 2);
+    if (opts.scanOnly && links.length === 0) { toast.error("Paste a website or app link in the \"Learn from\" box first"); return; }
+    if ((!trimmed && attachments.length === 0 && !opts.scanOnly) || isBuilding) return;
     if (trimmed) {
       const mod = (await import("@/lib/contentSafety")).moderatePrompt(trimmed);
       if (!mod.ok) { toast.error(mod.reason || "Prompt blocked"); return; }
     }
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed || "(see attached)", attachments: attachments.length ? attachments : undefined };
+    const userMsg: ChatMessage = {
+      role: "user",
+      content: opts.scanOnly ? `Scan ${links.join(" and ")}${trimmed ? ` — ${trimmed}` : ""}` : (trimmed || "(see attached)"),
+      attachments: attachments.length ? attachments : undefined,
+    };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     const sentAttachments = attachments;
     setAttachments([]);
     setIsBuilding(true);
-    setBuildStages([{ stage: "init", message: "Spinning up autonomous build pipeline…" }]);
+    setBuildStages([{ stage: "init", message: opts.scanOnly ? "Starting the website/app scan…" : "Spinning up autonomous build pipeline…" }]);
     setLivePartial("");
     setVisualRefs([]);
+    setAuditSources([]);
     setShowProgress(true);
 
     let code = "";
     let architecture = "";
     let marketBrief = "";
     let visualBrief = "";
+    let siteAudit = "";
     let shipChecklist = "";
     let errorMsg = "";
 
@@ -325,7 +336,10 @@ const AppBuilderPage = () => {
         body: JSON.stringify({
           prompt: `${trimmed}\n\nVISUAL STYLE (apply across the whole app — layout, colour, imagery, typography): ${styleForBuild.label} — ${styleForBuild.suffix}.`,
           images: sentAttachments.filter(a => a.type.startsWith("image/")).map(a => a.dataUrl),
-          currentCode: currentCode || undefined,
+          currentCode: opts.scanOnly ? undefined : (currentCode || undefined),
+          inspirationUrls: links,
+          mode: opts.scanOnly ? "scan" : undefined,
+          priorScan: opts.useScan ? { visualBrief: opts.useScan.visualBrief, siteAudit: opts.useScan.siteAudit } : undefined,
         }),
       });
       if (!resp.ok || !resp.body) {
@@ -352,6 +366,9 @@ const AppBuilderPage = () => {
               setBuildStages(prev => [...prev, { stage: evt.stage, message: evt.message }]);
             } else if (evt.event === "visual_refs" && Array.isArray(evt.sites)) {
               setVisualRefs(evt.sites.filter((x: any) => x && typeof x.url === "string").slice(0, 2));
+            } else if (evt.event === "site_audit") {
+              if (typeof evt.audit === "string") siteAudit = evt.audit;
+              if (Array.isArray(evt.sources)) setAuditSources(evt.sources.filter((x: any) => x && typeof x.url === "string" && /^https?:\/\//.test(x.url)).slice(0, 10));
             } else if (evt.event === "partial" && typeof evt.code === "string") {
               setLivePartial(evt.code);
             } else if (evt.event === "done") {
@@ -359,6 +376,7 @@ const AppBuilderPage = () => {
               architecture = evt.architecture || "";
               marketBrief = evt.marketBrief || "";
               visualBrief = evt.visualBrief || "";
+              siteAudit = evt.siteAudit || siteAudit;
               shipChecklist = evt.shipChecklist || "";
             } else if (evt.event === "error") {
               errorMsg = evt.message || "Build error";
@@ -372,10 +390,24 @@ const AppBuilderPage = () => {
         }
       }
       if (errorMsg) throw new Error(errorMsg);
+      if (opts.scanOnly) {
+        if (!visualBrief && !siteAudit) throw new Error("Couldn't read that website or app — check the link");
+        const scan: ScanResult = { visualBrief, siteAudit, sites: links, prompt: trimmed };
+        const text = [
+          "Scan finished. Here's what I found:",
+          siteAudit ? "\n\n🔍 What's missing & what customers complain about:\n" + siteAudit.slice(0, 2500) : "",
+          visualBrief ? "\n\n🎨 The look (from real pictures):\n" + visualBrief.slice(0, 1200) : "",
+          "\n\nTap \"Build my app from this scan\" when you're ready — I'll reuse this scan so you don't pay for it twice.",
+        ].join("");
+        setMessages(prev => [...prev, { role: "assistant", content: text, scan }]);
+        speak("Scan finished. Have a look at what customers complain about, then tap build when you're ready.");
+        return;
+      }
       if (!code) throw new Error("Pipeline finished without code");
 
       const chatText = [
         "Done — shipped end-to-end from one command: market recon → architect → backend → frontend → flesh-out → copy → assets → marketing → smoke test → ship-ready pass.",
+        siteAudit ? "\n\n🔍 Complaints & gaps fixed in your app:\n" + siteAudit.slice(0, 900) : "",
         visualBrief ? "\n\n🎨 Website look (from real pictures of the site):\n" + visualBrief.slice(0, 900) : "",
         marketBrief ? "\n\n🔎 Competitive brief (live web research):\n" + marketBrief.slice(0, 900) : "",
         architecture ? "\n\n🏗 Architecture summary:\n" + architecture.slice(0, 500) : "",
@@ -420,7 +452,9 @@ const AppBuilderPage = () => {
       toast.success("App built & saved to Library!");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Build failed";
-      const errText = `Sorry, the autonomous build hit an error: ${msg}. Try again or simplify the request.`;
+      const errText = opts.scanOnly
+        ? `Sorry, the scan hit a problem: ${msg}. Check the link and try again.`
+        : `Sorry, the autonomous build hit an error: ${msg}. Try again or simplify the request.`;
       setMessages(prev => [...prev, { role: "assistant", content: errText }]);
       speak("Build hit an error. Please try again.");
       toast.error("Build failed — try again");
@@ -546,9 +580,19 @@ const AppBuilderPage = () => {
                   ))}
                 </div>
               )}
+              {auditSources.length > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Customer reviews read</p>
+                  {auditSources.map((s) => (
+                    <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="block rounded-lg border border-border bg-card/40 px-2 py-1.5 text-[11px] text-foreground hover:border-primary/50 break-words">
+                      {s.source && <span className="text-primary/80 font-semibold mr-1">{s.source}:</span>}{s.title || s.url}
+                    </a>
+                  ))}
+                </div>
+              )}
               {!isBuilding && (
                 <button onClick={() => setShowProgress(false)} className="w-full mt-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-                  Open my finished app
+                  {livePartial ? "Open my finished app" : "See the results"}
                 </button>
               )}
             </div>
@@ -660,6 +704,19 @@ const AppBuilderPage = () => {
                   ))}
                 </div>
               )}
+              {msg.scan && (
+                <button
+                  onClick={() => {
+                    const scan = msg.scan!;
+                    const base = input.trim() || scan.prompt || `Build me a better app than ${scan.sites.join(" and ")} that fixes every complaint and gap found in the scan`;
+                    sendMessage(base, undefined, { useScan: scan });
+                  }}
+                  disabled={isBuilding}
+                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50"
+                >
+                  <Hammer className="w-4 h-4" /> Build my app from this scan
+                </button>
+              )}
               {msg.code && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
@@ -700,7 +757,7 @@ const AppBuilderPage = () => {
                   );
                 })}
               </ol>
-              <p className="text-[10px] text-muted-foreground mt-2 italic">Architect → Backend → Frontend → Flesh-out → Smoke test → Auto-fix loop. No interruptions until done.</p>
+              <p className="text-[10px] text-muted-foreground mt-2 italic">Look → Complaints → Audit → Market → Architect → Build → Smoke test → Auto-fix. No interruptions until done.</p>
             </div>
           </div>
         )}
@@ -793,6 +850,32 @@ const AppBuilderPage = () => {
         </div>
         <div className="mb-2">
           <PublishSellControls value={publishSell} onChange={setPublishSell} kind="app" />
+        </div>
+
+        <div className="mb-2 rounded-xl border border-border bg-background/60 p-2.5 space-y-2">
+          <label htmlFor="learn-links" className="text-[11px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+            <Link2 className="w-3.5 h-3.5" /> Learn from a website or app (optional)
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <input
+              id="learn-links"
+              value={learnLinks}
+              onChange={e => setLearnLinks(e.target.value)}
+              placeholder="Paste up to 2 links — websites, Google Play or App Store pages"
+              className="flex-1 min-w-0 basis-56 px-3 py-2 bg-input border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+              disabled={isBuilding}
+              inputMode="url"
+            />
+            <button
+              type="button"
+              onClick={() => sendMessage(undefined, undefined, { scanOnly: true })}
+              disabled={isBuilding || !learnLinks.trim()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary/50 bg-primary/10 text-primary text-xs font-bold disabled:opacity-40"
+            >
+              <ScanSearch className="w-3.5 h-3.5" /> Scan first
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Pictures of the look, real customer complaints and what's missing — your new app fixes them all, in an original design.</p>
         </div>
 
         <div className="flex items-end gap-2">

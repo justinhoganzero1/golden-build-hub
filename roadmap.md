@@ -74,3 +74,10 @@
 - [x] Glossy presentation + proposal email (opens in Juzzy's own email)
 - [x] Client demo link on oraclelunar.com: watermark, 7-day expiry, on/off switch, view count
 - [ ] Publish so client demo links work on oraclelunar.com — waits on Juzzy saying publish
+
+## Members' App Builder upgrade (2026-11-18)
+- [x] "Learn from a website or app" box (websites, Google Play, App Store links)
+- [x] Reads real customer complaints (Google, Trustpilot, Facebook, ProductReview, app stores, Reddit) + gap audit feeding the build
+- [x] "Scan first" button, then "Build my app from this scan" without paying for the scan twice
+- [x] No marketing tools for members (no contact finding, proposals, emails or client demo links)
+- [ ] Publish so members get it on oraclelunar.com — waits on Juzzy saying publish

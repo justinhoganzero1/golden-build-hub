@@ -7,7 +7,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, PlanRequiredError } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
-import { extractInspirationUrls, summariseBranding, type SiteSnapshot } from "./visualSnapshot.ts";
+import {
+  extractInspirationUrls, summariseBranding, scanKind, guessScanName, complaintQueries, cleanPriorScan,
+  type SiteSnapshot,
+} from "./visualSnapshot.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +39,7 @@ function looksLikeHacking(q: string): boolean {
   return HACK_PATTERNS.some((re) => re.test(q));
 }
 
-async function webResearch(query: string): Promise<{ summary: string; sources: { url: string; title?: string }[] }> {
+async function webResearch(query: string, userId?: string): Promise<{ summary: string; sources: { url: string; title?: string }[] }> {
   const FIRECRAWL = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL) return { summary: "(web research unavailable — no FIRECRAWL_API_KEY)", sources: [] };
   if (looksLikeHacking(query)) {
@@ -49,6 +52,10 @@ async function webResearch(query: string): Promise<{ summary: string; sources: {
       body: JSON.stringify({ query, limit: 4, scrapeOptions: { formats: ["markdown"] } }),
     });
     const d = await r.json().catch(() => ({}));
+    // Members pay their own search cost (+ margin, applied by the wallet).
+    if (r.ok && userId) {
+      await chargeAI(userId, "app-builder-autonomous", PROVIDER_RATES.firecrawl_search_5_pages, { provider: "firecrawl", kind: "web_search" });
+    }
     const arr = d?.data || d?.web?.results || [];
     const sources = (Array.isArray(arr) ? arr : []).slice(0, 4).map((s: any) => ({
       url: s.url, title: s.title,
@@ -57,6 +64,7 @@ async function webResearch(query: string): Promise<{ summary: string; sources: {
     const summary = sources.map((s: any, i: number) => `[${i + 1}] ${s.title || s.url}\n${s.url}\n${s.md}`).join("\n\n---\n\n") || "(no results)";
     return { summary, sources: sources.map(({ url, title }) => ({ url, title })) };
   } catch (e) {
+    if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
     return { summary: `(web research failed: ${e instanceof Error ? e.message : String(e)})`, sources: [] };
   }
 }
@@ -105,6 +113,61 @@ async function snapshotSite(url: string): Promise<SiteSnapshot> {
     brandingNote: summariseBranding(d.branding),
     textSample: String(d.markdown || "").slice(0, 3000),
   };
+}
+
+// ───────── Complaint scan (what real customers dislike) ─────────
+// Searches public reviews (Google, Trustpilot, Facebook, ProductReview, Reddit,
+// Google Play / App Store) for each site or app the member wants to learn from.
+// No contact details are collected — that belongs to the owner-only Pitch Machine.
+type ReviewItem = { source: string; site: string; url: string; title?: string; text: string };
+
+async function searchComplaints(snaps: SiteSnapshot[], userId: string): Promise<ReviewItem[]> {
+  const FIRECRAWL = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL) return [];
+  const perSite = snaps.length > 1 ? 3 : 5;
+  const jobs = snaps.flatMap((s) => {
+    const name = guessScanName(s.title, s.url);
+    return complaintQueries(name, s.url).slice(0, perSite).map((q) => ({ ...q, site: name }));
+  });
+  const results = await Promise.allSettled(jobs.map(async (q) => {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 45_000);
+    try {
+      const r = await fetch("https://api.firecrawl.dev/v2/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${FIRECRAWL}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q.query, limit: 3, scrapeOptions: { formats: ["markdown"], onlyMainContent: true } }),
+        signal: ctl.signal,
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(`search ${r.status}`);
+      await chargeAI(userId, "app-builder-autonomous", PROVIDER_RATES.firecrawl_search_5_pages, { provider: "firecrawl", kind: "complaint_search" });
+      const arr = d?.data?.web || d?.data || [];
+      return { q, arr: Array.isArray(arr) ? arr : [] };
+    } finally {
+      clearTimeout(timer);
+    }
+  }));
+  const items: ReviewItem[] = [];
+  const seen = new Set<string>();
+  for (const res of results) {
+    if (res.status === "rejected") {
+      if (res.reason instanceof InsufficientCoinsError || res.reason instanceof PlanRequiredError) throw res.reason;
+      continue;
+    }
+    for (const s of res.value.arr) {
+      if (!s?.url || seen.has(s.url)) continue;
+      seen.add(s.url);
+      items.push({
+        source: res.value.q.source,
+        site: res.value.q.site,
+        url: String(s.url),
+        title: s.title ? String(s.title).slice(0, 200) : undefined,
+        text: String(s.markdown || s.description || "").replace(/\s+/g, " ").slice(0, 2000),
+      });
+    }
+  }
+  return items.slice(0, 18);
 }
 
 // Allow-list of CDN hosts the builder may add to <script> / <link> tags.
@@ -202,7 +265,7 @@ serve(async (req) => {
     });
   }
 
-  let payload: { prompt?: string; images?: string[]; currentCode?: string; inspirationUrls?: string[]; mode?: string } = {};
+  let payload: { prompt?: string; images?: string[]; currentCode?: string; inspirationUrls?: string[]; mode?: string; priorScan?: unknown } = {};
   try {
     payload = await req.json();
   } catch {
@@ -216,7 +279,9 @@ serve(async (req) => {
   const currentCode = (payload.currentCode || "").slice(0, 12000);
   const inspirationUrls = extractInspirationUrls(userPrompt, Array.isArray(payload.inspirationUrls) ? payload.inspirationUrls : []);
 
-  if (payload.mode === "visual_only" && inspirationUrls.length === 0) {
+  const priorScan = cleanPriorScan(payload.priorScan);
+  const scanOnly = payload.mode === "scan";
+  if ((payload.mode === "visual_only" || scanOnly) && inspirationUrls.length === 0) {
     return new Response(JSON.stringify({ error: "No public website link found" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -241,12 +306,20 @@ serve(async (req) => {
         // Takes real desktop + phone pictures of any website the member names,
         // then a vision model studies them like a designer. The result guides
         // every later stage, with strict rules to avoid copying protected work.
-        let visualBrief = "";
+        let visualBrief = priorScan?.visualBrief || "";
         let visualImages: string[] = [];
         let siteSummary = "";
-        if (inspirationUrls.length) {
-          send("stage", { stage: "visual", message: `Taking desktop + phone pictures of ${inspirationUrls.length === 1 ? "the website" : `${inspirationUrls.length} websites`}…` });
-          const snaps: SiteSnapshot[] = [];
+        let siteAudit = priorScan?.siteAudit || "";
+        const snaps: SiteSnapshot[] = [];
+        if (priorScan) {
+          send("stage", { stage: "visual", message: "Using your earlier website/app scan — no need to pay for it twice" });
+          siteSummary = (visualBrief.match(/## What the site does[^\n]*\n([\s\S]*?)\n##/)?.[1] || "").trim().slice(0, 400);
+        }
+        if (inspirationUrls.length && !priorScan) {
+          const kinds = inspirationUrls.map(scanKind);
+          const what = kinds.every((k) => k !== "website") ? (kinds.length === 1 ? "the app's store page" : "the apps' store pages")
+            : inspirationUrls.length === 1 ? "the website" : `${inspirationUrls.length} websites/apps`;
+          send("stage", { stage: "visual", message: `Taking desktop + phone pictures of ${what}…` });
           for (const url of inspirationUrls) {
             try {
               const snap = await snapshotSite(url);
@@ -288,6 +361,57 @@ List the specific brand names, logos, slogans, taglines, copywriting, product na
             }
           }
         }
+
+        // === STAGE -0.5: COMPLAINTS + GAP AUDIT ===
+        // Reads what real customers say about the site/app (reviews, store
+        // ratings, forums), then audits the pictures + text for what is missing,
+        // so the member's new app fixes every pain point from day one.
+        if (snaps.length && !siteAudit && payload.mode !== "visual_only") {
+          let reviews: ReviewItem[] = [];
+          try {
+            send("stage", { stage: "complaints", message: "Reading real customer reviews & complaints (Google, Trustpilot, Facebook, app stores, Reddit)…" });
+            reviews = await searchComplaints(snaps, auth.user.id);
+            send("stage", { stage: "complaints", message: reviews.length ? `Found ${reviews.length} review pages to learn from` : "No public reviews found — auditing the design only" });
+          } catch (e) {
+            if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
+            send("stage", { stage: "complaints", message: `Review scan skipped (${e instanceof Error ? e.message.slice(0, 120) : "error"})` });
+          }
+          try {
+            send("stage", { stage: "audit", message: "Auditing what's missing, broken or frustrating…" });
+            const reviewText = reviews.map((r, i) => `[${i + 1}] (${r.source} — about ${r.site}) ${r.url}\n${r.title ? r.title + "\n" : ""}${r.text}`).join("\n\n").slice(0, 20000);
+            const siteText = snaps.map((s, i) => `SITE/APP ${i + 1}: ${s.url} (${scanKind(s.url).replace("_", " ")})${s.title ? ` — "${s.title}"` : ""}\nText sample (understanding only):\n${(s.textSample || "").slice(0, 2000)}`).join("\n\n");
+            siteAudit = await callAI({
+              apiKey, userId: auth.user.id, model: VISION_MODEL,
+              system: `You are a senior UX researcher and product strategist helping a member build a BETTER app than the website(s)/app(s) shown. Study the screenshots like a designer and the review text like a customer researcher. Output a SITE & APP AUDIT in markdown (< 500 words, no preamble) with these headings:
+## Score (current experience out of 10, one line why)
+## What works (keep the idea, not the wording)
+## What's missing (features, pages, info, phone experience, accessibility, trust signals)
+## What customers complain about (each: the pain in plain words — source name; ONLY from the review text supplied, never invented; review titles, star ratings and snippets count; ignore results about a different business or staff/job reviews; if nothing negative was found, say so)
+## Must-fix list for the new app (6-10 concrete features or design decisions that answer every complaint and gap)
+## Who uses it (customers, and the owner/staff side if it is a business)
+Never suggest copying brand names, logos, slogans, wording or photos.`,
+              user: `${siteText}\n\nWHAT PEOPLE SAY ONLINE:\n${reviewText || "(no reviews found)"}\n\nMEMBER'S REQUEST:\n${userPrompt}`,
+              images: visualImages,
+            });
+            const complaintSources = reviews.slice(0, 10).map((r) => ({ url: r.url, title: r.title || r.site, source: r.source }));
+            send("site_audit", { audit: siteAudit.slice(0, 3500), sources: complaintSources });
+            send("stage", { stage: "audit", message: "Audit ready — complaints and gaps turned into a must-fix list", detail: siteAudit.slice(0, 600) });
+          } catch (e) {
+            if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
+            send("stage", { stage: "audit", message: `Audit skipped (${e instanceof Error ? e.message.slice(0, 120) : "error"})` });
+            siteAudit = "";
+          }
+        }
+        const auditBlock = siteAudit
+          ? `SITE & APP AUDIT (real customer complaints + gaps of the website/app the member wants to beat — the new app MUST solve every item in its must-fix list):\n${siteAudit}\n\n`
+          : "";
+
+        // Scan-only mode: the member checks the website/app first, then decides to build.
+        if (scanOnly) {
+          send("done", { code: "", visualBrief: visualBrief.slice(0, 3000), siteAudit: siteAudit.slice(0, 3500), sites: inspirationUrls });
+          controller.close();
+          return;
+        }
         const visualBlock = visualBrief
           ? `VISUAL DESIGN BRIEF (from real screenshots of the inspiration website — follow its style and quality, obey its LEGAL ADAPTATION rules: never reuse its brand name, logo, wording, photos or trademarks):\n${visualBrief}\n\n`
           : "";
@@ -317,7 +441,7 @@ Each query max 12 words.`,
             user: `${userPrompt || "a general purpose app"}${siteSummary ? `\n\nThe inspiration website does: ${siteSummary}` : ""}`,
           });
           const queries = queriesRaw.split("\n").map((q) => q.replace(/^[\d.\-*\s]+/, "").trim()).filter(Boolean).slice(0, 3);
-          const results = await Promise.all(queries.map((q) => webResearch(q)));
+          const results = await Promise.all(queries.map((q) => webResearch(q, auth.user.id)));
           marketSources = results.flatMap((r) => r.sources).slice(0, 10);
           const raw = results.map((r, i) => `### ${queries[i]}\n${r.summary}`).join("\n\n").slice(0, 24000);
           if (marketSources.length) {
@@ -338,6 +462,7 @@ Only use what is supported by the research. No invented product names.`,
             send("stage", { stage: "market", message: "No live sources — building from category best-practice knowledge" });
           }
         } catch (e) {
+          if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
           send("stage", { stage: "market", message: `Market recon skipped (${e instanceof Error ? e.message : "error"})` });
         }
 
@@ -359,8 +484,10 @@ Output ONLY a concise, dense spec (no preamble, no closing) covering:
 - Visual style (colors, typography, motion)
 - Monetization model + price point
 - Onboarding, empty states, and the "first 60 seconds" experience
-Keep under 600 words. Markdown bullet form.`,
-          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${visualBlock}${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
+- If a SITE & APP AUDIT is given: a "Fixes" line mapping every must-fix item and customer complaint to a concrete feature
+- If the app serves a business with customers: BOTH a customer side and an owner/staff dashboard (bookings/orders/customers/stats/settings) with clearly fictional sample data
+Keep under 650 words. Markdown bullet form.`,
+          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${visualBlock}${auditBlock}${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
           images: [...images, ...visualImages].slice(0, 4),
         });
         send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
@@ -396,7 +523,7 @@ Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
 - Empty/error/loading state copy
 - Footer links
 Markdown bullets, < 400 words, no preamble.`,
-            user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}USER REQUEST:\n${userPrompt}`,
+            user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}${auditBlock}USER REQUEST:\n${userPrompt}`,
           }),
         ]);
         send("stage", { stage: "backend", message: "Backend + Design plan complete" });
@@ -447,7 +574,7 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
 - Ensure 60fps and no layout shift
 - Keep file size reasonable
 Output ONLY the complete updated HTML document. No markdown fences. No commentary.`,
-          user: `${visualBlock ? visualBlock + "Match that visual style closely (layout, palette, typography, imagery type) while keeping everything original.\n\n" : ""}CURRENT HTML (improve in place):\n${code}`,
+          user: `${visualBlock ? visualBlock + "Match that visual style closely (layout, palette, typography, imagery type) while keeping everything original.\n\n" : ""}${auditBlock ? auditBlock + "Make sure every must-fix item is a visible, working feature.\n\n" : ""}CURRENT HTML (improve in place):\n${code}`,
         });
         const fleshedCode = extractCode(fleshed) || fleshed.trim();
         if (/<!doctype/i.test(fleshedCode)) code = fleshedCode;
@@ -557,7 +684,7 @@ FAIL
             });
             const query = queryRaw.split("\n")[0].trim().replace(/^["']|["']$/g, "").slice(0, 200);
             if (query) {
-              const research = await webResearch(query);
+              const research = await webResearch(query, auth.user.id);
               researchBlock = research.summary;
               researchSources = research.sources;
               send("stage", {
@@ -568,6 +695,7 @@ FAIL
               });
             }
           } catch (e) {
+            if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
             send("stage", { stage: "research", message: `Research skipped (${e instanceof Error ? e.message : "error"})` });
           }
 
@@ -641,6 +769,7 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
           architecture: architecture.slice(0, 1200),
           marketBrief: marketBrief.slice(0, 1500),
           visualBrief: visualBrief.slice(0, 2500),
+          siteAudit: siteAudit.slice(0, 3500),
           shipChecklist: shipChecklist.slice(0, 2000),
           sources: marketSources,
         });
