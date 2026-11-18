@@ -40,7 +40,7 @@ import { addReading, currentMood, detectMood, moodNote, type MoodReading } from 
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
 import OracleLookPicker from "@/components/oracle/OracleLookPicker";
 import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLook";
-import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, pickHumanSound, playHumanSound, saveSoundPrefs, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
+import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, pickHumanSound, planMidReplyBreaths, playHumanSound, saveSoundPrefs, wantsNervousGiggle, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
 import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
@@ -1113,25 +1113,44 @@ const OraclePage = () => {
       if (agentName === oracleName) {
         // Oracle's free voice: one utterance per sentence, each with its own lift, queued
         // together so the phone plays them back-to-back without network gaps.
-        const phrases = shapeDeviceSpeech(fullText, deviceToneForMood(currentMood(moodHistoryRef.current)?.mood));
+        const mood = currentMood(moodHistoryRef.current)?.mood ?? null;
+        const phrases = shapeDeviceSpeech(fullText, deviceToneForMood(mood ?? undefined));
         if (!phrases.length) { resolve(); return; }
         const voice = (deviceVoice ? window.speechSynthesis.getVoices().find(v => v.voiceURI === deviceVoice) : undefined) || getVoiceForAgent(agentName);
         if (speechTokenRef.current !== myToken) { resolve(); return; }
         let finished = false;
         const finish = () => { if (finished) return; finished = true; setIsSpeaking(false); resolve(); };
-        phrases.forEach((phrase, i) => {
-          const u = new SpeechSynthesisUtterance(phrase.text);
-          u.lang = voice?.lang ?? "en-AU";
-          if (voice) u.voice = voice;
-          u.pitch = phrase.pitch; u.rate = phrase.rate; u.volume = 1;
-          u.onstart = () => {
-            if (speechTokenRef.current !== myToken) { try { window.speechSynthesis.cancel(); } catch {} finish(); return; }
-            setIsSpeaking(true);
-          };
-          u.onerror = finish;
-          if (i === phrases.length - 1) u.onend = finish;
-          window.speechSynthesis.speak(u);
-        });
+        const isLive = () => speechTokenRef.current === myToken && !mutedRef.current;
+        // Soft breaths between some sentences, like a person pausing for air. Sentences
+        // between breaths are still queued together so there are no other gaps.
+        const breathAt = planMidReplyBreaths(phrases.length, soundPrefsRef.current, mood);
+        const groups: typeof phrases[] = [];
+        phrases.forEach((phrase, i) => { if (i === 0 || breathAt.has(i)) groups.push([]); groups[groups.length - 1].push(phrase); });
+        const gender = lookRef.current?.choice.gender ?? "woman";
+        let gi = 0;
+        const speakNextGroup = async () => {
+          if (gi >= groups.length || !isLive()) { finish(); return; }
+          if (gi > 0) {
+            const url = humanSoundUrl("breath", gender);
+            if (url) await playHumanSound(url, isLive, { volume: 0.7 });
+            if (!isLive()) { finish(); return; }
+          }
+          const group = groups[gi++];
+          group.forEach((phrase, i) => {
+            const u = new SpeechSynthesisUtterance(phrase.text);
+            u.lang = voice?.lang ?? "en-AU";
+            if (voice) u.voice = voice;
+            u.pitch = phrase.pitch; u.rate = phrase.rate; u.volume = 1;
+            u.onstart = () => {
+              if (speechTokenRef.current !== myToken) { try { window.speechSynthesis.cancel(); } catch {} finish(); return; }
+              setIsSpeaking(true);
+            };
+            u.onerror = finish;
+            if (i === group.length - 1) u.onend = () => { void speakNextGroup(); };
+            window.speechSynthesis.speak(u);
+          });
+        };
+        void speakNextGroup();
         return;
       }
       const utterance = new SpeechSynthesisUtterance(fullText);
@@ -1195,6 +1214,12 @@ const OraclePage = () => {
             if (blushTimerRef.current) window.clearTimeout(blushTimerRef.current);
             setBlush(kind === "fart" ? "full" : "soft");
             blushTimerRef.current = window.setTimeout(() => setBlush(null), kind === "fart" ? 6000 : 2500);
+            // A nervous little giggle while she goes red.
+            const giggle = wantsNervousGiggle(kind) ? humanSoundUrl("laugh", lookRef.current?.choice.gender ?? "woman") : null;
+            if (giggle) {
+              await playHumanSound(giggle, () => speechTokenRef.current === soundToken && !mutedRef.current, { volume: 0.8 });
+              if (speechTokenRef.current !== soundToken || mutedRef.current) return;
+            }
           }
           const sorry = embarrassedLine(kind);
           if (sorry) { premiumClean = `${sorry} ${premiumClean}`.trim(); browserClean = `${sorry} ${browserClean}`.trim(); deviceClean = `${sorry} ${deviceClean}`.trim(); }
@@ -3357,9 +3382,9 @@ const OraclePage = () => {
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
         </div>
         <div className="space-y-2 rounded-lg border border-border p-3">
-          <label className="flex items-center justify-between gap-3 text-sm"><span>Human sounds<span className="block text-xs text-muted-foreground">Breaths, sighs and giggles as she talks</span></span>
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Human sounds<span className="block text-xs text-muted-foreground">Breaths, sighs and giggles as she talks, even between sentences</span></span>
             <Switch checked={soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, human: v })} aria-label="Human sounds" /></label>
-          <label className="flex items-center justify-between gap-3 text-sm"><span>Cheeky sounds<span className="block text-xs text-muted-foreground">The odd burp, and a very rare fart (she gets embarrassed)</span></span>
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Cheeky sounds<span className="block text-xs text-muted-foreground">The odd burp, and now and then a fart (she goes red and giggles)</span></span>
             <Switch checked={soundPrefs.cheeky} disabled={!soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, cheeky: v })} aria-label="Cheeky sounds" /></label>
         </div>
         <OracleLookPicker current={look} onChange={applyLook} />
