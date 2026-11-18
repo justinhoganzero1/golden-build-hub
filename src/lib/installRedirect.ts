@@ -39,7 +39,7 @@ export const APP_STORE_URL = "";    // e.g. "https://apps.apple.com/app/idXXXXXX
 // Upload your built file as `oracle-lunar.apk` to make this URL live.
 export const ANDROID_APK_URL =
   "https://tpkpfkcnqdyrzpqdoqnp.supabase.co/storage/v1/object/public/app-downloads/oracle-lunar.apk";
-export const ANDROID_APK_VERSION = "1.0.7";
+export const ANDROID_APK_VERSION = "1.0.8";
 /**
  * What the Install button actually downloads: the same file, served with the
  * Android app label and a ".apk" name. Straight from storage it is labelled as

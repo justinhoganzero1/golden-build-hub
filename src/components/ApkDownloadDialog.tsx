@@ -33,7 +33,31 @@ interface ApkDownloadDialogProps {
   downloadStarted?: boolean;
 }
 
-type Phase = "intro" | "guide" | "result";
+type Phase = "intro" | "guide" | "result" | "help";
+
+/** What Android said when the install failed, with the fix for each. */
+export const INSTALL_PROBLEMS = [
+  {
+    key: "not_installed",
+    message: '"App not installed"',
+    fix: "An older Oracle Lunar is in the way. Press and hold the Oracle Lunar icon → Uninstall (this only removes the old app; your account and Library stay safe online). Then open oracle-lunar.apk from Downloads again.",
+  },
+  {
+    key: "parse_error",
+    message: '"There was a problem parsing the package"',
+    fix: "The file didn't finish downloading properly. Delete oracle-lunar.apk from Downloads, then tap Download again below on Wi-Fi.",
+  },
+  {
+    key: "play_protect",
+    message: '"Blocked by Play Protect" or "Unsafe app blocked"',
+    fix: "Tap More details (or the small arrow), then Install anyway. It's Google's warning for any app that isn't from the Play Store yet.",
+  },
+  {
+    key: "wont_open",
+    message: "It installed, but closes or stays blank when opened",
+    fix: "Turn the phone off and on, then open Oracle Lunar again. If it still won't open, use the web app instead: close this, tap Install at the top of the page and choose Install when Chrome asks.",
+  },
+] as const;
 
 const STEPS = [
   {
@@ -92,6 +116,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
     if (open) {
       setPhase(downloadStarted ? "guide" : "intro");
       setStepIdx(0);
+      setProblem(null);
     }
   }, [open, downloadStarted]);
 
@@ -127,7 +152,13 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
 
   const reportFailure = () => {
     trackInstallEvent("install_failure", "android");
-    onOpenChange(false);
+    setPhase("help");
+  };
+
+  const [problem, setProblem] = useState<string | null>(null);
+  const pickProblem = (key: string) => {
+    setProblem(key);
+    trackInstallEvent("install_failure", "android", `problem:${key}`);
   };
 
   return (
@@ -139,11 +170,13 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
             {phase === "intro" && "Install Oracle Lunar on Android"}
             {phase === "guide" && "Almost there — follow these steps"}
             {phase === "result" && "Did the install work?"}
+            {phase === "help" && "Let's fix it — what did Android say?"}
           </DialogTitle>
           <DialogDescription>
             {phase === "intro" && "One tap to download, guided steps after — no Play Store account needed."}
             {phase === "guide" && "Tap each step as you complete it on your phone."}
             {phase === "result" && "Your feedback helps us make this smoother."}
+            {phase === "help" && "Tap the message that looks most like what you saw."}
           </DialogDescription>
         </DialogHeader>
 
@@ -241,6 +274,31 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
           </div>
         )}
 
+        {/* HELP PHASE — the fix for the exact message Android showed */}
+        {phase === "help" && (
+          <ul className="space-y-2" data-testid="install-help">
+            {INSTALL_PROBLEMS.map((p) => {
+              const picked = problem === p.key;
+              return (
+                <li key={p.key}>
+                  <button
+                    type="button"
+                    onClick={() => pickProblem(p.key)}
+                    aria-expanded={picked}
+                    className={cn(
+                      "w-full text-left rounded-lg border p-3 transition-all",
+                      picked ? "border-primary bg-primary/10 shadow-md" : "border-border bg-muted/20",
+                    )}
+                  >
+                    <p className="font-semibold text-sm text-foreground">{p.message}</p>
+                    {picked && <p className="text-xs text-muted-foreground mt-1">{p.fix}</p>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
         <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
           {phase === "intro" && (
             <>
@@ -270,6 +328,23 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
               )}
               <Button onClick={completeStep} className="bg-primary hover:bg-primary/90">
                 {stepIdx >= STEPS.length - 1 ? "I'm installed" : stepIdx === 0 ? "It finished — next" : "I did this — next"}
+              </Button>
+            </>
+          )}
+          {phase === "help" && (
+            <>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              {apkReady && (
+                <Button variant="outline" onClick={() => { trackInstallEvent("download_start", "android", "retry-help"); setDownloading(true); }}>
+                  <Download className="h-4 w-4 mr-1.5" />
+                  Download again
+                </Button>
+              )}
+              <Button onClick={reportSuccess} className="bg-primary hover:bg-primary/90">
+                <ThumbsUp className="h-4 w-4 mr-1.5" />
+                That fixed it
               </Button>
             </>
           )}
