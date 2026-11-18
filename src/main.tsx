@@ -8,9 +8,13 @@ import RecoveryMonitor from "./components/RecoveryMonitor";
 import "./index.css";
 import { installWalletInterceptor } from "./lib/walletInterceptor";
 import { installTvNavigation } from "./lib/tvMode";
+import { installImmersiveFullscreen } from "./lib/immersiveFullscreen";
 
 // Google TV / Android TV: remote arrow keys move a visible highlight, OK presses.
 installTvNavigation();
+
+// Phones/tablets in the browser: first tap hides the browser and phone bars.
+installImmersiveFullscreen();
 
 // Any paid AI call that comes back 402 raises the "add $10 and keep going" modal.
 installWalletInterceptor();
@@ -40,7 +44,10 @@ const initNative = async () => {
 
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: "#080808" });
+      // Full screen: the app draws under the bars; MainActivity keeps them hidden
+      // until the person swipes in from the top or bottom edge.
+      try { await StatusBar.setOverlaysWebView({ overlay: true }); } catch { /* older shells */ }
+      try { await StatusBar.hide(); } catch { /* bar stays */ }
 
       const { SplashScreen } = await import("@capacitor/splash-screen");
       await SplashScreen.hide();

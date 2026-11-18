@@ -3,11 +3,20 @@
   "short_name": "Oracle Lunar",
   "description": "All-in-one AI companion for wellness, productivity, creativity, safety, and more. Chat with Oracle AI, build avatars, manage your life — all in one place.",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "background_color": "#080808",
   "theme_color": "#FFAA00",
   "orientation": "portrait-primary",
-  "categories": ["lifestyle", "productivity", "health", "entertainment"],
+  "categories": [
+    "lifestyle",
+    "productivity",
+    "health",
+    "entertainment"
+  ],
   "lang": "en",
   "dir": "ltr",
   "scope": "/",
