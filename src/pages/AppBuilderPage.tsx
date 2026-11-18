@@ -42,7 +42,7 @@ const AppBuilderPage = () => {
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [previewProject, setPreviewProject] = useState<AppProject | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "I'm your Master App Builder Oracle — full coding brain, voice, ears, and eyes.\n\nYou can:\n• Type, paste, or speak\n• Attach screenshots, images, or files\n• Paste a screen-print directly (Ctrl/Cmd+V)\n• I'll talk back through your speaker\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or paste a screenshot and say \"clone this\"." }
+    { role: "assistant", content: "I'm your Master App Builder Oracle — full coding brain, voice, ears, and eyes.\n\nYou can:\n• Type, paste, or speak\n• Attach screenshots, images, or files\n• Paste a screen-print directly (Ctrl/Cmd+V)\n• I'll talk back through your speaker\n\nPaste a website link and I'll take desktop + phone pictures of it, study its look like a designer, then build an original app in that style (never copying its name, logo, words or photos).\n\nTry: \"Build me a paid meditation app for $4.99/mo\" or \"Make me an app for plumbers inspired by https://example.com\"." }
   ]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -50,6 +50,7 @@ const AppBuilderPage = () => {
   const [currentCode, setCurrentCode] = useState<string | null>(null);
   const [buildStages, setBuildStages] = useState<{ stage: string; message: string; ok?: boolean }[]>([]);
   const [livePartial, setLivePartial] = useState<string>("");
+  const [visualRefs, setVisualRefs] = useState<{ url: string; title?: string; desktop?: string; mobile?: string }[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -307,11 +308,13 @@ const AppBuilderPage = () => {
     setIsBuilding(true);
     setBuildStages([{ stage: "init", message: "Spinning up autonomous build pipeline…" }]);
     setLivePartial("");
+    setVisualRefs([]);
     setShowProgress(true);
 
     let code = "";
     let architecture = "";
     let marketBrief = "";
+    let visualBrief = "";
     let shipChecklist = "";
     let errorMsg = "";
 
@@ -347,12 +350,15 @@ const AppBuilderPage = () => {
             const evt = JSON.parse(json);
             if (evt.event === "stage") {
               setBuildStages(prev => [...prev, { stage: evt.stage, message: evt.message }]);
+            } else if (evt.event === "visual_refs" && Array.isArray(evt.sites)) {
+              setVisualRefs(evt.sites.filter((x: any) => x && typeof x.url === "string").slice(0, 2));
             } else if (evt.event === "partial" && typeof evt.code === "string") {
               setLivePartial(evt.code);
             } else if (evt.event === "done") {
               code = evt.code || "";
               architecture = evt.architecture || "";
               marketBrief = evt.marketBrief || "";
+              visualBrief = evt.visualBrief || "";
               shipChecklist = evt.shipChecklist || "";
             } else if (evt.event === "error") {
               errorMsg = evt.message || "Build error";
@@ -370,6 +376,7 @@ const AppBuilderPage = () => {
 
       const chatText = [
         "Done — shipped end-to-end from one command: market recon → architect → backend → frontend → flesh-out → copy → assets → marketing → smoke test → ship-ready pass.",
+        visualBrief ? "\n\n🎨 Website look (from real pictures of the site):\n" + visualBrief.slice(0, 900) : "",
         marketBrief ? "\n\n🔎 Competitive brief (live web research):\n" + marketBrief.slice(0, 900) : "",
         architecture ? "\n\n🏗 Architecture summary:\n" + architecture.slice(0, 500) : "",
         shipChecklist ? "\n\n🚀 Ship checklist:\n" + shipChecklist.slice(0, 900) : "",
@@ -525,6 +532,20 @@ const AppBuilderPage = () => {
                   </div>
                 );
               })}
+              {visualRefs.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Website pictures studied</p>
+                  {visualRefs.map((v) => (
+                    <div key={v.url} className="rounded-lg border border-border bg-card/40 p-2 space-y-1.5">
+                      <div className="text-[11px] text-foreground truncate" title={v.url}>{v.title || v.url}</div>
+                      <div className="flex gap-2 items-start">
+                        {v.desktop && <img src={v.desktop} alt={`Desktop picture of ${v.url}`} className="w-2/3 rounded border border-border object-cover object-top max-h-28" loading="lazy" />}
+                        {v.mobile && <img src={v.mobile} alt={`Phone picture of ${v.url}`} className="w-1/3 rounded border border-border object-cover object-top max-h-28" loading="lazy" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!isBuilding && (
                 <button onClick={() => setShowProgress(false)} className="w-full mt-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold">
                   Open my finished app

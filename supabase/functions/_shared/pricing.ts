@@ -59,6 +59,8 @@ export const PROVIDER_RATES = {
   lovable_ai_gemini_flash_per_call: 1,
   // Firecrawl search + scrape of up to 5 pages (~5–10 credits)
   firecrawl_search_5_pages: 2,
+  // Firecrawl desktop + phone screenshots and branding of one website (~5–8 credits)
+  firecrawl_visual_snapshot_per_site: 2,
   lovable_ai_gemini_pro_per_call: 3,
   lovable_ai_gpt5_per_call: 5,
   lovable_ai_image_gen_per_image: 4,

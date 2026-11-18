@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, PlanRequiredError } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { extractInspirationUrls, summariseBranding, type SiteSnapshot } from "./visualSnapshot.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +59,52 @@ async function webResearch(query: string): Promise<{ summary: string; sources: {
   } catch (e) {
     return { summary: `(web research failed: ${e instanceof Error ? e.message : String(e)})`, sources: [] };
   }
+}
+
+// ───────────── Visual website snapshot (Firecrawl screenshots) ─────────────
+// Takes real desktop + phone pictures of a website the member names, so the
+// builder can SEE its visual style instead of guessing from text alone.
+const VISION_MODEL = "google/gemini-3.8-flash";
+
+async function firecrawlScrape(body: Record<string, unknown>): Promise<any> {
+  const FIRECRAWL = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL) throw new Error("website pictures unavailable");
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 60_000);
+  try {
+    const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${FIRECRAWL}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: ctl.signal,
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d?.success === false) throw new Error(`Firecrawl ${r.status}: ${String(d?.error || "").slice(0, 200)}`);
+    return d?.data || {};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function snapshotSite(url: string): Promise<SiteSnapshot> {
+  const [desk, mob] = await Promise.allSettled([
+    firecrawlScrape({ url, formats: [{ type: "screenshot", fullPage: false }, "branding", "markdown"], onlyMainContent: false, waitFor: 1500 }),
+    firecrawlScrape({ url, formats: [{ type: "screenshot", fullPage: false }], mobile: true, waitFor: 1500 }),
+  ]);
+  const d = desk.status === "fulfilled" ? desk.value : {};
+  const m = mob.status === "fulfilled" ? mob.value : {};
+  if (!d.screenshot && !m.screenshot) {
+    const why = desk.status === "rejected" ? String(desk.reason?.message || desk.reason) : "no picture returned";
+    throw new Error(why);
+  }
+  return {
+    url,
+    title: d?.metadata?.title || m?.metadata?.title,
+    desktop: typeof d.screenshot === "string" ? d.screenshot : undefined,
+    mobile: typeof m.screenshot === "string" ? m.screenshot : undefined,
+    brandingNote: summariseBranding(d.branding),
+    textSample: String(d.markdown || "").slice(0, 3000),
+  };
 }
 
 // Allow-list of CDN hosts the builder may add to <script> / <link> tags.
@@ -155,7 +202,7 @@ serve(async (req) => {
     });
   }
 
-  let payload: { prompt?: string; images?: string[]; currentCode?: string } = {};
+  let payload: { prompt?: string; images?: string[]; currentCode?: string; inspirationUrls?: string[]; mode?: string } = {};
   try {
     payload = await req.json();
   } catch {
@@ -167,7 +214,14 @@ serve(async (req) => {
   const userPrompt = (payload.prompt || "").slice(0, 8000);
   const images = Array.isArray(payload.images) ? payload.images.slice(0, 4) : [];
   const currentCode = (payload.currentCode || "").slice(0, 12000);
+  const inspirationUrls = extractInspirationUrls(userPrompt, Array.isArray(payload.inspirationUrls) ? payload.inspirationUrls : []);
 
+  if (payload.mode === "visual_only" && inspirationUrls.length === 0) {
+    return new Response(JSON.stringify({ error: "No public website link found" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (!userPrompt && images.length === 0 && !currentCode) {
     return new Response(JSON.stringify({ error: "Empty prompt" }), {
       status: 400,
@@ -183,6 +237,68 @@ serve(async (req) => {
       };
 
       try {
+        // === STAGE -1: VISUAL WEBSITE ASSESSMENT ===
+        // Takes real desktop + phone pictures of any website the member names,
+        // then a vision model studies them like a designer. The result guides
+        // every later stage, with strict rules to avoid copying protected work.
+        let visualBrief = "";
+        let visualImages: string[] = [];
+        let siteSummary = "";
+        if (inspirationUrls.length) {
+          send("stage", { stage: "visual", message: `Taking desktop + phone pictures of ${inspirationUrls.length === 1 ? "the website" : `${inspirationUrls.length} websites`}…` });
+          const snaps: SiteSnapshot[] = [];
+          for (const url of inspirationUrls) {
+            try {
+              const snap = await snapshotSite(url);
+              await chargeAI(auth.user.id, "app-builder-autonomous", PROVIDER_RATES.firecrawl_visual_snapshot_per_site, { provider: "firecrawl", kind: "website_snapshot", url });
+              snaps.push(snap);
+            } catch (e) {
+              if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
+              send("stage", { stage: "visual", message: `Couldn't photograph ${url} (${e instanceof Error ? e.message.slice(0, 120) : "error"})` });
+            }
+          }
+          if (snaps.length) {
+            send("visual_refs", { sites: snaps.map((s) => ({ url: s.url, title: s.title, desktop: s.desktop, mobile: s.mobile })) });
+            visualImages = snaps.flatMap((s) => [s.desktop, s.mobile]).filter((x): x is string => !!x).slice(0, 4);
+            send("stage", { stage: "visual", message: "Studying the pictures like a designer — style, layout, colours, photos…" });
+            const notes = snaps.map((s, i) => `SITE ${i + 1}: ${s.url}${s.title ? ` — "${s.title}"` : ""}\nMeasured branding: ${s.brandingNote || "(none)"}\nPage text sample (for understanding only, NEVER reuse):\n${s.textSample || "(none)"}`).join("\n\n");
+            try {
+              visualBrief = await callAI({
+                apiKey, userId: auth.user.id, model: VISION_MODEL,
+                system: `You are a senior visual designer and IP-aware creative director. You are shown real screenshots (desktop, then phone) of website(s) the client likes as INSPIRATION. Study the PICTURES, not just the text. Output a VISUAL DESIGN BRIEF in markdown (< 550 words, no preamble) with these headings:
+## What the site does (1-2 lines, plain words)
+## What the pictures show (identify the photos/illustrations: subjects, people, products, scenes, mood, lighting)
+## Art style & feel (e.g. minimal, luxury, playful, corporate, 3D, glassmorphism, flat illustration)
+## Layout (hero structure, grid, section order, density, whitespace, navigation, phone layout differences)
+## Colour palette (5-6 hex values with roles, read from the pictures + measured branding)
+## Typography (heading/body style: serif/sans/geometric, weight, size contrast — suggest free Google Font equivalents)
+## Components (buttons, cards, forms, icons, borders, shadows, corner radius)
+## Motion cues (only if inferable)
+## LEGAL ADAPTATION — what we must NOT copy
+List the specific brand names, logos, slogans, taglines, copywriting, product names, photos, illustrations, mascots and any distinctive trade dress seen. State that the new app takes only the general style, layout principles and quality bar, and uses 100% original name, logo, wording and imagery, with a palette shifted enough to avoid confusion with the original brand.`,
+                user: `${notes}\n\nCLIENT REQUEST:\n${userPrompt}`,
+                images: visualImages,
+              });
+              siteSummary = (visualBrief.match(/## What the site does[^\n]*\n([\s\S]*?)\n##/)?.[1] || "").trim().slice(0, 400);
+              send("stage", { stage: "visual", message: "Visual design brief ready — style captured, brand assets excluded", detail: visualBrief.slice(0, 600) });
+            } catch (e) {
+              if (e instanceof InsufficientCoinsError || e instanceof PlanRequiredError) throw e;
+              send("stage", { stage: "visual", message: `Picture study skipped (${e instanceof Error ? e.message.slice(0, 120) : "error"})` });
+              visualImages = [];
+            }
+          }
+        }
+        const visualBlock = visualBrief
+          ? `VISUAL DESIGN BRIEF (from real screenshots of the inspiration website — follow its style and quality, obey its LEGAL ADAPTATION rules: never reuse its brand name, logo, wording, photos or trademarks):\n${visualBrief}\n\n`
+          : "";
+
+        // Look-only mode: stop after the website study (used for quick checks).
+        if (payload.mode === "visual_only") {
+          send("done", { code: "", visualBrief: visualBrief.slice(0, 2500), sites: inspirationUrls });
+          controller.close();
+          return;
+        }
+
         // === STAGE 0: MARKET RECON ===
         // Scours the live web for the competing apps in this category and, most
         // importantly, what real users COMPLAIN about in their reviews — so the
@@ -190,15 +306,15 @@ serve(async (req) => {
         let marketBrief = "";
         let marketSources: { url: string; title?: string }[] = [];
         try {
-          send("stage", { stage: "market", message: "Market recon — scanning competing apps & real user reviews…" });
+          send("stage", { stage: "market", message: "Market recon — scanning the top 10 competing apps & real user reviews…" });
           const queriesRaw = await callAI({
             apiKey, userId: auth.user.id, model: MODEL_FAST, reasoning: "minimal",
             system: `Turn the user's app idea into EXACTLY 3 web-search queries, one per line, no numbering, no quotes:
-1) best existing apps in this category (competitors)
+1) top 10 best existing apps in this industry (competitors)
 2) user reviews / complaints / 1-star feedback about those apps
 3) missing features users are asking for in this category
 Each query max 12 words.`,
-            user: userPrompt || "a general purpose app",
+            user: `${userPrompt || "a general purpose app"}${siteSummary ? `\n\nThe inspiration website does: ${siteSummary}` : ""}`,
           });
           const queries = queriesRaw.split("\n").map((q) => q.replace(/^[\d.\-*\s]+/, "").trim()).filter(Boolean).slice(0, 3);
           const results = await Promise.all(queries.map((q) => webResearch(q)));
@@ -208,7 +324,7 @@ Each query max 12 words.`,
             marketBrief = await callAI({
               apiKey, userId: auth.user.id, model: MODEL_PRIMARY, reasoning: "medium",
               system: `You are a competitive product strategist. From the raw web research, output a tight COMPETITIVE BRIEF (< 450 words, markdown bullets, no preamble):
-- Top competitors (name + what they do well)
+- Top 10 competitors (name + what they do well), only as many as the research supports
 - TOP 8 recurring user complaints / 1-star themes (quote the pain, be specific)
 - Features users repeatedly beg for and don't get
 - Pricing norms in this category
@@ -244,8 +360,8 @@ Output ONLY a concise, dense spec (no preamble, no closing) covering:
 - Monetization model + price point
 - Onboarding, empty states, and the "first 60 seconds" experience
 Keep under 600 words. Markdown bullet form.`,
-          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
-          images,
+          user: `USER REQUEST (single command — flesh it out completely):\n${userPrompt}\n\n${visualBlock}${marketBrief ? `COMPETITIVE BRIEF (live web research — build to beat these):\n${marketBrief}\n\n` : ""}${currentCode ? "EXISTING CODE TO ITERATE ON (preserve intent):\n" + currentCode.slice(0, 4000) : ""}`,
+          images: [...images, ...visualImages].slice(0, 4),
         });
         send("stage", { stage: "architect", message: "Architecture ready", detail: architecture.slice(0, 600) });
 
@@ -280,7 +396,7 @@ Output ONE <script id="backend"> ... </script> block ONLY. No commentary.`,
 - Empty/error/loading state copy
 - Footer links
 Markdown bullets, < 400 words, no preamble.`,
-            user: `ARCHITECTURE:\n${architecture}\n\nUSER REQUEST:\n${userPrompt}`,
+            user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}USER REQUEST:\n${userPrompt}`,
           }),
         ]);
         send("stage", { stage: "backend", message: "Backend + Design plan complete" });
@@ -296,7 +412,7 @@ Requirements:
 - <!DOCTYPE html> with <html lang="en">
 - Proper SEO <head>: title, meta description, Open Graph, Twitter, JSON-LD WebApplication schema
 - PWA manifest as data: URL link, basic service worker registration with inline blob
-- TailwindCSS via CDN (https://cdn.tailwindcss.com) configured for dark glass theme (bg #0a0a0a, primary gold #f59e0b)
+- TailwindCSS via CDN (https://cdn.tailwindcss.com) configured with the palette and fonts from the VISUAL DESIGN BRIEF if one is given; otherwise a dark glass theme (bg #0a0a0a, primary gold #f59e0b)
 - Mobile-first responsive layout, semantic HTML (header/main/section/footer), accessible (aria, alt)
 - Include the backend <script> EXACTLY as given, then a <script id="app"> that renders all sections defined in the architecture
 - Include all routes/sections (single-page nav)
@@ -304,7 +420,7 @@ Requirements:
 - Include social share, paywall UI if monetized
 - <meta name="oracle-lunar-app-config" content='{"paid":...,"price":"...","play_ready":true,"pwa":true,"social":true,"ai":true,"version":3}'>
 Output ONLY the complete HTML document, no markdown fences, no commentary.`,
-          user: `ARCHITECTURE:\n${architecture}\n\nDESIGN & COPY PLAN:\n${designPlan}\n\nBACKEND SCRIPT:\n${backend}`,
+          user: `ARCHITECTURE:\n${architecture}\n\n${visualBlock}DESIGN & COPY PLAN:\n${designPlan}\n\nBACKEND SCRIPT:\n${backend}`,
         });
         let code = extractCode(frontend) || frontend.trim();
         if (!/<!doctype/i.test(code)) {
@@ -331,7 +447,7 @@ Output ONLY the complete HTML document, no markdown fences, no commentary.`,
 - Ensure 60fps and no layout shift
 - Keep file size reasonable
 Output ONLY the complete updated HTML document. No markdown fences. No commentary.`,
-          user: `CURRENT HTML (improve in place):\n${code}`,
+          user: `${visualBlock ? visualBlock + "Match that visual style closely (layout, palette, typography, imagery type) while keeping everything original.\n\n" : ""}CURRENT HTML (improve in place):\n${code}`,
         });
         const fleshedCode = extractCode(fleshed) || fleshed.trim();
         if (/<!doctype/i.test(fleshedCode)) code = fleshedCode;
@@ -345,6 +461,7 @@ Output ONLY the complete updated HTML document. No markdown fences. No commentar
           system: `You are a senior conversion copywriter. Scan the HTML and REPLACE every weak, generic, or placeholder phrase with sharp, specific, on-brand copy that a paying customer would respect.
 ZERO TOLERANCE for: "Lorem ipsum", "Your text here", "Placeholder", "Sample", "TODO", "Coming soon" (unless the feature is genuinely roadmap), "Lipsum", "Click here", "Learn more" without context, single-word buttons that aren't action verbs, vague headlines like "Welcome to our app".
 Add: real testimonials with names + roles + cities, real-sounding company stats, concrete benefits with numbers, clear CTAs ("Start my 7-day trial", "Book a free 15-min consult"), founder note, trust line.
+Never reuse wording, slogans, brand or product names from any inspiration website — all copy must be original.
 Preserve ALL existing JS, IDs, classes, structure, and the <meta name="oracle-lunar-app-config"> tag. Only rewrite visible text content.
 Output ONLY the complete HTML document. No fences. No commentary.`,
           user: `HTML:\n${code}`,
@@ -364,9 +481,9 @@ Replace with real working URLs from these CDNs ONLY (allow-listed):
 - https://picsum.photos/seed/<keyword>/<w>/<h>  (deterministic stock)
 - https://api.dicebear.com/7.x/avataaars/svg?seed=<name>  (avatars)
 - https://api.iconify.design/<set>/<icon>.svg  (icons)
-Pick subjects that match the app theme. Add descriptive alt text on every image. Ensure favicon, og:image, apple-touch-icon, and a manifest icon are all set (data: SVG is fine for favicon if needed).
+Pick subjects that match the app theme${visualBrief ? " and the kind of pictures described in the visual brief (same mood and type, never the original photos or logos)" : ""}. Add descriptive alt text on every image. Ensure favicon, og:image, apple-touch-icon, and a manifest icon are all set (data: SVG is fine for favicon if needed).
 Preserve all other markup, scripts, and IDs. Output ONLY the complete HTML document.`,
-          user: `HTML:\n${code}`,
+          user: `${visualBrief ? `VISUAL BRIEF (picture style to match):\n${visualBrief.slice(0, 2500)}\n\n` : ""}HTML:\n${code}`,
         });
         const assetCode = extractCode(assetPass) || assetPass.trim();
         if (/<!doctype/i.test(assetCode)) code = assetCode;
@@ -523,6 +640,7 @@ Output ONLY the complete HTML document. No fences. No commentary.`,
           code,
           architecture: architecture.slice(0, 1200),
           marketBrief: marketBrief.slice(0, 1500),
+          visualBrief: visualBrief.slice(0, 2500),
           shipChecklist: shipChecklist.slice(0, 2000),
           sources: marketSources,
         });
