@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { libraryQueueKey, canDrainLibraryQueue } from "@/lib/libraryQueueScope";
+import { makeTinyPreview, tinyPreviewKind } from "@/lib/tinyPreview";
 
 /**
  * Universal "save to user library" helper.
@@ -160,6 +161,18 @@ export async function saveToLibrary(input: SaveToLibraryInput): Promise<string |
     try {
       window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: savedId } }));
     } catch { /* noop */ }
+
+    // New pictures/videos get a tiny tile snapshot in the background, so the
+    // save itself is never slowed down.
+    const previewKind = tinyPreviewKind(input.media_type);
+    if (savedId && previewKind && !input.thumbnail_url) {
+      const rowId = savedId;
+      void makeTinyPreview(input.url, previewKind).then(async (thumb) => {
+        if (!thumb) return;
+        await supabase.from("user_media").update({ thumbnail_url: thumb } as any).eq("id", rowId);
+        try { window.dispatchEvent(new CustomEvent("library:updated", { detail: { id: rowId } })); } catch { /* noop */ }
+      }).catch(() => {});
+    }
     return savedId;
   } catch (e) {
     console.warn("[saveToLibrary] unexpected", e);

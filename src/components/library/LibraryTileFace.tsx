@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getThumbnailUrl } from "@/lib/thumbnail";
 import { supabase } from "@/integrations/supabase/client";
+import { makeTinyPreview, type TinyPreviewKind } from "@/lib/tinyPreview";
 
 /**
  * Ultra-light tile face for library grids.
@@ -26,6 +27,8 @@ interface Props {
   mediaId?: string | null;
   /** only image-like rows are worth backfilling. */
   canBackfill?: boolean;
+  /** New items: store a tiny YouTube-style snapshot (video frame or picture). */
+  snapshotKind?: TinyPreviewKind | null;
 }
 
 const LibraryTileFace = ({
@@ -36,6 +39,7 @@ const LibraryTileFace = ({
   fallback = null,
   mediaId = null,
   canBackfill = false,
+  snapshotKind = null,
 }: Props) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -79,6 +83,15 @@ const LibraryTileFace = ({
       if (!source) { if (!cancelled) setFailed(true); return; }
 
       let out: string | null = null;
+      if (!src && snapshotKind) {
+        // New pictures/videos: a tiny snapshot of what's inside, kept forever.
+        out = await makeTinyPreview(source, snapshotKind);
+        if (cancelled) return;
+        if (!out) { setFailed(true); return; }
+        setThumb(out);
+        if (mediaId) supabase.from("user_media").update({ thumbnail_url: out }).eq("id", mediaId).then(() => {});
+        return;
+      }
       try {
         out = await getThumbnailUrl(source, size);
       } catch { /* handled below */ }
@@ -94,7 +107,7 @@ const LibraryTileFace = ({
 
     run();
     return () => { cancelled = true; };
-  }, [visible, src, size, mediaId, canBackfill]);
+  }, [visible, src, size, mediaId, canBackfill, snapshotKind]);
 
   if ((!src && !(mediaId && canBackfill)) || failed) return <div ref={ref} className={`w-full h-full ${className}`}>{fallback}</div>;
 

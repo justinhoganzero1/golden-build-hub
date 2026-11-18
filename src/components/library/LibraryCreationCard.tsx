@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import LibraryTileFace from "./LibraryTileFace";
 import { parseStorageUrl } from "@/lib/signedStorageUrl";
+import { tinyPreviewKind, wantsTinyPreview } from "@/lib/tinyPreview";
 
 export function readableLibraryTitle(title: string | null | undefined) {
   return (title || "Untitled creation").replace(/\.(html?|pdf|zip|webm|mp4|epub|txt)$/i, "").replace(/_/g, " ").replace(/\bv(\d+)\b/gi, "version $1").trim();
@@ -78,6 +79,7 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
   const imageLike = ["image", "gif"].includes(item.media_type);
   const video = item.media_type === "video";
   const thumb = item.thumbnail_url || metadata.thumbnail || metadata.screenshot || metadata.cover;
+  const snapshotKind = wantsTinyPreview(item) ? tinyPreviewKind(item.media_type) : null;
   const Icon = imageLike ? Image : isApp ? Globe : item.media_type === "audio" ? Music : FileText;
   const kind = isApp ? "App" : imageLike ? "Image" : video ? "Video" : item.media_type === "audio" ? "Audio" : item.media_type === "story" ? "Book" : item.media_type === "text" ? "Saved conversation" : "Document";
   const previewHtml = html ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:;">${html}<style>html{scrollbar-width:none}body{animation:none!important}*[style*="opacity: 0"]{opacity:1!important}</style>` : "";
@@ -85,8 +87,8 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
     <div ref={ref} className="min-w-0">
       <Button variant="ghost" onClick={onOpen} disabled={busy} aria-label={`Open ${title}`} className="group w-full h-full flex flex-col items-stretch justify-start p-0 whitespace-normal overflow-hidden rounded-lg border border-border bg-card text-left hover:bg-card hover:border-primary">
         <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted shrink-0">
-          {imageLike || thumb ? (
-            <LibraryTileFace src={thumb} alt={title} size={640} mediaId={item.id} canBackfill={imageLike} fallback={<div className="h-full flex items-center justify-center"><Icon className="h-12 w-12 text-muted-foreground" /></div>} />
+          {imageLike || thumb || snapshotKind ? (
+            <LibraryTileFace src={thumb} alt={title} size={640} mediaId={item.id} canBackfill={imageLike || !!snapshotKind} snapshotKind={snapshotKind} fallback={<div className="h-full flex items-center justify-center"><Icon className="h-12 w-12 text-muted-foreground" /></div>} />
           ) : isApp && previewHtml ? (
             <iframe title={`${title} preview`} sandbox="" srcDoc={previewHtml} tabIndex={-1} className="w-[200%] h-[200%] scale-50 origin-top-left border-0 pointer-events-none" />
           ) : (
@@ -95,7 +97,7 @@ export default function LibraryCreationCard({ item, collection, busy, onOpen }: 
               <p className="text-sm text-muted-foreground">{isApp ? "Saved app" : kind}</p>
             </div>
           )}
-          {video && <Play className="absolute inset-0 m-auto h-10 w-10 text-primary" />}
+          {video && <span aria-hidden className="absolute inset-0 m-auto flex h-14 w-14 items-center justify-center rounded-full bg-background/70 backdrop-blur-sm"><Play className="h-7 w-7 text-primary" /></span>}
         </div>
         <div className="w-full p-4 space-y-2 border-t border-border">
           <p className="text-base font-semibold text-foreground break-words line-clamp-3 min-h-12">{title}</p>

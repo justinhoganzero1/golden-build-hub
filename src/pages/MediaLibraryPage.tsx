@@ -1,6 +1,7 @@
 import { Camera, Image, Video, Music, Grid, List, Search, Play, Download, Trash2, Eye, Share2, Sparkles, Palette, User, MessageSquare, Mic, Film, FileText, BookOpen, FolderOpen, Star, Clock, ArrowRight, Wand2, Globe, Layers, Globe2, ShoppingBag, DollarSign, CheckSquare, Square, X } from "lucide-react";
 import SEO from "@/components/SEO";
 import LibraryTileFace from "@/components/library/LibraryTileFace";
+import { tinyPreviewKind, wantsTinyPreview } from "@/lib/tinyPreview";
 import LibraryCreationCard, { readableLibraryTitle } from "@/components/library/LibraryCreationCard";
 import LibraryAppViewer, { isLibraryApp } from "@/components/library/LibraryAppViewer";
 import ResilientVideo from "@/components/ResilientVideo";
@@ -603,7 +604,7 @@ const MediaLibraryPage = () => {
                   {selectMode && (checkedIds.has(m.id) ? <CheckSquare className="w-5 h-5 shrink-0 text-destructive" /> : <Square className="w-5 h-5 shrink-0 text-muted-foreground" />)}
                   {isImageLike(m) || isVideoLike(m) ? (
                     <div className="w-14 h-14 rounded-xl overflow-hidden border border-border shrink-0">
-                      <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m)} />
+                      <LibraryTileFace src={previewSrc(m)} alt={m.title} size={96} mediaId={m.id} canBackfill={isImageLike(m) || wantsTinyPreview(m)} snapshotKind={wantsTinyPreview(m) ? tinyPreviewKind(m.media_type) : null} fallback={<div className="w-full h-full flex items-center justify-center">{getMediaIcon(m.media_type)}</div>} />
                     </div>
                   ) : (
                     <div className="holo-card w-14 h-14 rounded-xl border border-primary/25 flex items-center justify-center">
