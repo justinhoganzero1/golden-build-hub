@@ -98,7 +98,7 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
     }
     // Inside the editor preview or another web address the install offer can't work.
     if (!isOnProductionHost()) {
-      openProductionSite("/");
+      openProductionSite("/download");
       return;
     }
     if (isAndroidDevice() && apkReady) {

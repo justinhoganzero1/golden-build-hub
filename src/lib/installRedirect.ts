@@ -179,15 +179,30 @@ export const openProductionSite = (path = "/"): void => {
     ? path
     : `https://${PUBLIC_HOST}${path.startsWith("/") ? path : `/${path}`}`;
 
-  // 1. Break out of the editor iframe to top-level navigation.
+  // 1. Inside the editor preview the frame is sandboxed: top navigation and
+  // window.open are blocked, and navigating the frame itself strands the
+  // visitor on a Lovable page. A real anchor opened in a new tab is the one
+  // escape the sandbox allows.
+  let inIframe = false;
   try {
-    const top = window.top as Window | null;
-    if (top && top !== window.self) {
-      top.location.href = target;
-      return;
-    }
+    inIframe = window.self !== window.top;
   } catch {
-    /* cross-origin → fall through */
+    inIframe = true;
+  }
+  if (inIframe) {
+    try {
+      const a = document.createElement("a");
+      a.href = target;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.setAttribute("data-auth-allow", "");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return;
+    } catch {
+      /* fall through */
+    }
   }
 
   // 2. Try a fresh tab so the user keeps the editor preview open.
