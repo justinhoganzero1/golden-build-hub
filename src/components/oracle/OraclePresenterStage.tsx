@@ -141,9 +141,12 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
     else if (state === "thinking") setThinkingPlayed(true);
   };
 
+  // Phones keep full-bleed "cover"; wider screens (tablets, desktop) switch to
+  // "contain" so the whole presenter is visible instead of a cropped close-up.
+  const framing = "h-full w-full object-cover object-center [@media(min-aspect-ratio:3/5)]:object-contain";
   return <div className="absolute inset-0 overflow-hidden" data-testid="oracle-presenter-stage">
     <div ref={body} data-testid="oracle-talking-body" data-talking={talking ? "true" : undefined} className="absolute inset-0 origin-[50%_65%] will-change-transform">
-    <img src={image || portrait} alt="Oracle AI presenter" className="h-full w-full object-cover object-center" />
+    <img src={image || portrait} alt="Oracle AI presenter" className={framing} />
     {plan && !failed && (
       <video
         ref={video}
@@ -158,12 +161,12 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
         preload="auto"
         onEnded={plan.loop ? undefined : handleEnded}
         onError={() => setFailed(true)}
-        className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+        className={`absolute inset-0 motion-reduce:hidden ${framing}`}
       />
     )}
     {/* Matches the framing of whatever is showing (still portrait or filmed clip), so the flush lands on her cheeks. */}
     <img src={plan && !failed && !image ? blushClipOverlay : blushOverlay} alt="" aria-hidden data-testid="oracle-blush" data-blush={blush ?? undefined}
-      className={`pointer-events-none absolute inset-0 h-full w-full object-cover object-center mix-blend-multiply transition-opacity duration-700 ${blush === "full" ? "opacity-100" : blush === "soft" ? "opacity-50" : "opacity-0"}`} />
+      className={`pointer-events-none absolute inset-0 mix-blend-multiply transition-opacity duration-700 ${framing} ${blush === "full" ? "opacity-100" : blush === "soft" ? "opacity-50" : "opacity-0"}`} />
     </div>
     <div className="absolute inset-0 oracle-stage-shade" />
     {replyVideoUrl && (playBlocked || failed) && <div className="absolute inset-0 flex items-center justify-center z-20">
