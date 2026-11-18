@@ -127,3 +127,66 @@ export async function playOracleAudio(
     onSpeaking(false);
   }
 }
+/**
+ * Oracle's next sentences, downloading in the background while she is still
+ * talking. When it's their turn they play from what has already arrived and
+ * keep streaming the rest, so she never waits for the whole run to finish.
+ */
+export class PrefetchedSpeech {
+  private chunks: Uint8Array[] = [];
+  private waiters: Array<() => void> = [];
+  done = false;
+  failed = false;
+  /** true once real audio started arriving; false if the request failed. */
+  readonly ready: Promise<boolean>;
+
+  constructor(response: Promise<Response | null>) {
+    this.ready = response.then((r) => {
+      if (!r?.body) { this.finish(true); return false; }
+      void this.pump(r.body.getReader());
+      return true;
+    }).catch(() => { this.finish(true); return false; });
+  }
+
+  private notify() {
+    const w = this.waiters; this.waiters = [];
+    for (const fn of w) fn();
+  }
+
+  private finish(failed: boolean) {
+    if (failed) this.failed = true;
+    this.done = true;
+    this.notify();
+  }
+
+  private async pump(reader: ReadableStreamDefaultReader<Uint8Array>) {
+    let failed = false;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value?.byteLength) { this.chunks.push(value); this.notify(); }
+      }
+    } catch {
+      failed = true;
+    }
+    this.finish(failed);
+  }
+
+  get complete() { return this.done && !this.failed && this.chunks.length > 0; }
+
+  blob(): Blob { return new Blob(this.chunks as BlobPart[], { type: "audio/mpeg" }); }
+
+  /** What has arrived so far, then the rest as it comes. */
+  toResponse(): Response {
+    let i = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull: async (controller) => {
+        while (i >= this.chunks.length && !this.done) await new Promise<void>((r) => this.waiters.push(r));
+        if (i < this.chunks.length) controller.enqueue(this.chunks[i++]);
+        else controller.close();
+      },
+    });
+    return new Response(stream, { headers: { "Content-Type": "audio/mpeg" } });
+  }
+}

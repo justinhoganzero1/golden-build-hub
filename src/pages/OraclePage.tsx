@@ -1,8 +1,8 @@
 import { generateMemberVideo, VideoPendingError } from "@/lib/videoGeneration";
 import { uploadCreationFile, rememberPendingVideo, listPendingVideos, forgetPendingVideo } from "@/lib/oracleCreationFiles";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
-import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
-import { playOracleAudio } from "@/lib/oracleAudioPlayback";
+import { VOICE_FINAL_PAUSE_MS, VOICE_INTERIM_PAUSE_MS, mergeQueuedSpeech, takeSpeakablePrefix } from "@/lib/oracleVoiceTiming";
+import { PrefetchedSpeech, playOracleAudio, playOracleAudioBlob } from "@/lib/oracleAudioPlayback";
 import { chooseOracleDeviceVoice, naturalDeviceSpeechText } from "@/lib/oracleDeviceVoice";
 import { readDraft, writeDraft, recoveryFor } from "@/lib/recovery";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -842,7 +842,18 @@ const OraclePage = () => {
     return voice;
   }, [agents, oracleName]);
 
-  const speechQueueRef = useRef<Array<{ text: string; agentName: string }>>([]);
+  // `audio` = Oracle's voice for this run, already downloading while the
+  // previous sentence plays, so the next one starts with no gap.
+  const speechQueueRef = useRef<Array<{ text: string; agentName: string; audio?: PrefetchedSpeech; controller?: AbortController }>>([]);
+  const prefetchTimerRef = useRef<number | null>(null);
+  const oracleNameRef = useRef(oracleName);
+  oracleNameRef.current = oracleName;
+  /** Empties the waiting sentences and stops any voice still downloading for them. */
+  const clearSpeechQueue = () => {
+    for (const item of speechQueueRef.current) item.controller?.abort();
+    speechQueueRef.current = [];
+    if (prefetchTimerRef.current) { window.clearTimeout(prefetchTimerRef.current); prefetchTimerRef.current = null; }
+  };
   const isSpeakingQueueRef = useRef(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -859,7 +870,7 @@ const OraclePage = () => {
   };
   const testSpeaker = () => {
     cancelCurrentSpeech();
-    speechQueueRef.current = [];
+    clearSpeechQueue();
     enableVoiceOutput();
     if (!window.speechSynthesis) {
       toast.error("This browser cannot play the voice check.");
@@ -927,100 +938,148 @@ const OraclePage = () => {
 
   // Premium ElevenLabs TTS for the Oracle — uses the EXACT voice + settings
   // the user tuned in Voice Studio so the Oracle sounds identical to the preview.
-  const speakWithElevenLabs = useCallback(async (text: string): Promise<boolean> => {
+  // One premium voice request. Retries once only when the server reports the
+  // request never reached a paid synthesis (nothing billed), so members are
+  // never charged twice and Oracle rarely slips into the phone's voice.
+  const fetchPremiumSpeech = useCallback(async (text: string, signal: AbortSignal): Promise<Response | null> => {
+    const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
+    const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null), lookRef.current?.choice.gender);
+    if (!masterVoiceId) return null;
+    let masterSettings: Record<string, unknown> | null = null;
+    try {
+      const raw = storedMasterVoice?.settings
+        ? JSON.stringify(storedMasterVoice.settings)
+        : (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice-settings") : null);
+      if (raw) masterSettings = JSON.parse(raw);
+    } catch {}
+    // Keep Oracle's voice stable: no speech-therapist rewrite here.
+    const prepared = text.replace(/\s{3,}/g, "  ").trim();
+    if (!prepared) return null;
+    const rawModelId = (masterSettings?.model_id as string | undefined) || undefined;
+    const savedModelId = rawModelId === "eleven_multilingual_v2" ? undefined : rawModelId;
+    // SPEED: Turbo v2.5 starts her voice ~1.5s sooner than Multilingual v2 with the same cloned voice.
+    const modelId = savedModelId || "eleven_turbo_v2_5";
+    const body = JSON.stringify({
+      text: prepared,
+      voiceId: masterVoiceId,
+      fast: true,
+      outputFormat: "mp3_44100_128",
+      modelId,
+      settings: masterSettings
+        ? {
+            stability: masterSettings.stability,
+            similarity_boost: masterSettings.similarity_boost,
+            style: masterSettings.style,
+            use_speaker_boost: masterSettings.use_speaker_boost,
+            speed: masterSettings.speed,
+          }
+        : { stability: 0.45, similarity_boost: 0.9, style: 0.55, use_speaker_boost: true, speed: 0.92 },
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (signal.aborted) return null;
+      let retry = false;
+      try {
+        const response = await fetch(ELEVENLABS_TTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await requireEdgeAuthToken()}` },
+          signal,
+          body,
+        });
+        const contentType = response.headers.get("Content-Type") || "";
+        if (response.ok && response.body && !contentType.includes("application/json")) return response;
+        if (response.ok && contentType.includes("application/json")) {
+          const info = await response.json().catch(() => null) as { error?: string } | null;
+          // These replies are sent before any charge is kept.
+          retry = ["NETWORK_ERROR", "TTS_FAILED", "INTERNAL_ERROR", "NO_AUDIO"].includes(info?.error || "");
+        }
+      } catch {
+        // A dropped connection before any reply: nothing was delivered to bill.
+        retry = !signal.aborted;
+      }
+      if (!retry) return null;
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return null;
+  }, []);
+
+  // Premium voice for Oracle, streamed as it arrives. `started` tells the queue
+  // whether any words were already heard, so a hiccup never replays the same
+  // sentence in a different voice.
+  const speakWithElevenLabs = useCallback(async (text: string): Promise<{ ok: boolean; started: boolean }> => {
     const controller = new AbortController();
     speechRequestRef.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 30_000);
+    let started = false;
     try {
-      // Do not substitute a different voice for the actual ad recording.
-      const storedMasterVoice = typeof localStorage !== "undefined" ? getStoredOracleMasterVoice() : null;
-      const masterVoiceId = resolveOraclePremiumVoice(storedMasterVoice?.id || (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice") : null), lookRef.current?.choice.gender);
-      if (!masterVoiceId) return false;
-      let masterSettings: Record<string, unknown> | null = null;
-      try {
-        const raw = storedMasterVoice?.settings
-          ? JSON.stringify(storedMasterVoice.settings)
-          : (typeof localStorage !== "undefined" ? localStorage.getItem("oracle-lunar-voice-settings") : null);
-        if (raw) masterSettings = JSON.parse(raw);
-      } catch {}
-
-      // Keep Oracle's voice stable. Do NOT run the speech-therapist rewrite here,
-      // because it can alter pacing/phrasing and make the same saved voice sound
-      // like a different person on some devices.
-      const prepared = text.replace(/\s{3,}/g, "  ").trim();
-      if (!prepared) return false;
-      // Snapshot the token at the moment we start. If anything else cancels or
-      // queues a new utterance, our token will no longer match the live one
-      // and we abort gracefully — guaranteeing only ONE voice ever plays.
       const myToken = speechTokenRef.current;
       const isLive = () => speechTokenRef.current === myToken;
-
-      const hasSSML = false;
-      const hasCustomMaster = !!masterSettings;
-
-      // Always favor the saved Oracle voice configuration so playback stays
-      // consistent and we never slip into a different-sounding fallback voice.
-      // Premium by default: full multilingual engine at broadcast bitrate so
-      // Oracle sounds like the ad, not like a low-latency sketch voice. A
-      // saved flash/turbo model is honoured only when deliberately picked.
-      // The old Multilingual default (auto-saved by Voice Studio) is upgraded to the faster engine.
-      const rawModelId = (masterSettings?.model_id as string | undefined) || undefined;
-      const savedModelId = rawModelId === "eleven_multilingual_v2" ? undefined : rawModelId;
-      // SPEED: Turbo v2.5 starts her voice ~1.5s sooner than Multilingual v2 with the same cloned voice.
-      const modelId = savedModelId || "eleven_turbo_v2_5";
-
-      const response = await fetch(ELEVENLABS_TTS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${await requireEdgeAuthToken()}` },
-        signal: controller.signal,
-        body: JSON.stringify({
-          text: prepared,
-          voiceId: masterVoiceId,
-          fast: true,
-          outputFormat: "mp3_44100_128",
-          modelId,
-          settings: hasCustomMaster
-            ? {
-                // Use the user's tuned values verbatim — no caps, no overrides
-                stability: masterSettings?.stability,
-                similarity_boost: masterSettings?.similarity_boost,
-                style: masterSettings?.style,
-                use_speaker_boost: masterSettings?.use_speaker_boost,
-                speed: masterSettings?.speed,
-              }
-            : {
-                // Defaults only when nothing was saved — matched to the ad's
-                // delivery: expressive but steady, unhurried pacing.
-                stability: 0.45,
-                similarity_boost: 0.9,
-                style: 0.55,
-                use_speaker_boost: true,
-                speed: 0.92,
-              },
-        }),
-      });
+      const response = await fetchPremiumSpeech(text, controller.signal);
       window.clearTimeout(timeout);
-      if (!response.ok || !response.body || !isLive() || mutedRef.current) return false;
-      const contentType = response.headers.get("Content-Type") || "";
-      if (contentType.includes("application/json")) return false;
-
+      if (!response || !isLive() || mutedRef.current) {
+        if (response) void response.body?.cancel().catch(() => {});
+        return { ok: false, started };
+      }
       const audio = playbackAudioRef.current ?? new Audio();
       playbackAudioRef.current = audio;
       currentAudioRef.current = audio;
       audio.volume = 0.95;
       audio.playbackRate = 1.0;
-      const played = await playOracleAudio(audio, response, () => isLive() && !mutedRef.current, setIsSpeaking);
+      const played = await playOracleAudio(audio, response, () => isLive() && !mutedRef.current, (on) => { if (on) started = true; setIsSpeaking(on); });
       if (currentAudioRef.current === audio) currentAudioRef.current = null;
-      return played;
+      return { ok: played, started };
     } catch (err) {
       console.warn("Premium TTS error:", err);
       setIsSpeaking(false);
-      return false;
+      return { ok: false, started };
     } finally {
       window.clearTimeout(timeout);
       if (speechRequestRef.current === controller) speechRequestRef.current = null;
     }
+  }, [fetchPremiumSpeech]);
+
+  // Plays a run that started downloading while the last sentence was speaking:
+  // fully arrived → plays straight through; still arriving → streams on from
+  // the part already here, so there is no silent wait between sentences.
+  const playPrefetchedSpeech = useCallback(async (pending: PrefetchedSpeech): Promise<{ ok: boolean; started: boolean }> => {
+    const myToken = speechTokenRef.current;
+    const isLive = () => speechTokenRef.current === myToken && !mutedRef.current;
+    const hasAudio = await pending.ready;
+    if (!hasAudio || !isLive()) return { ok: false, started: false };
+    const audio = playbackAudioRef.current ?? new Audio();
+    playbackAudioRef.current = audio;
+    currentAudioRef.current = audio;
+    audio.volume = 0.95;
+    audio.playbackRate = 1.0;
+    let started = false;
+    const onSpeaking = (on: boolean) => { if (on) started = true; setIsSpeaking(on); };
+    const played = pending.complete
+      ? await playOracleAudioBlob(audio, pending.blob(), isLive, onSpeaking)
+      : await playOracleAudio(audio, pending.toResponse(), isLive, onSpeaking);
+    if (currentAudioRef.current === audio) currentAudioRef.current = null;
+    return { ok: played, started };
   }, []);
+
+  const premiumVoiceActive = () => getCurrentPlan() !== "free" && speechModeRef.current === "premium";
+
+  // While Oracle is talking, start downloading her next sentences (joined into
+  // one run) so they are ready the moment she finishes — no silent gaps.
+  const schedulePrefetch = () => {
+    if (prefetchTimerRef.current) return;
+    prefetchTimerRef.current = window.setTimeout(() => {
+      prefetchTimerRef.current = null;
+      if (mutedRef.current || premiumVideoRef.current || !isSpeakingQueueRef.current || !premiumVoiceActive()) return;
+      const q = speechQueueRef.current;
+      const name = oracleNameRef.current;
+      if (!q.length || q[0].audio || q[0].agentName !== name) return;
+      const head = q.shift()!;
+      const { text, taken } = mergeQueuedSpeech(head.text, q, name);
+      q.splice(0, taken);
+      const clean = cleanTextForPremiumSpeech(text);
+      if (!clean) return;
+      const controller = new AbortController();
+      q.unshift({ text, agentName: name, audio: new PrefetchedSpeech(fetchPremiumSpeech(clean, controller.signal)), controller });
+    }, 350);
+  };
 
   // Stable per-agent pitch — picked once and reused, so the same agent
   // never sounds like a different person between utterances.
@@ -1078,6 +1137,12 @@ const OraclePage = () => {
     cancelCurrentSpeech();
     const next = speechQueueRef.current.shift();
     if (!next) return;
+    if (!next.audio && next.agentName === oracleName) {
+      // Speak waiting sentences together so her voice flows instead of restarting.
+      const merged = mergeQueuedSpeech(next.text, speechQueueRef.current, oracleName);
+      speechQueueRef.current.splice(0, merged.taken);
+      next.text = merged.text;
+    }
     let premiumClean = cleanTextForPremiumSpeech(next.text);
     let browserClean = cleanTextForSpeech(next.text);
     isSpeakingQueueRef.current = true;
@@ -1087,7 +1152,7 @@ const OraclePage = () => {
       if (isOracle) {
         // A breath, sigh or giggle before she talks — and now and then a burp or a
         // very rare fart, then an embarrassed "excuse me" and a blush. Free device clips.
-        const kind = pickHumanSound(next.text, soundStateRef.current, soundPrefsRef.current, currentMood(moodHistoryRef.current)?.mood ?? null);
+        const kind = next.audio ? null : pickHumanSound(next.text, soundStateRef.current, soundPrefsRef.current, currentMood(moodHistoryRef.current)?.mood ?? null);
         soundStateRef.current = nextSoundState(soundStateRef.current, kind);
         const soundUrl = kind ? humanSoundUrl(kind, lookRef.current?.choice.gender ?? "woman") : null;
         if (kind && soundUrl) {
@@ -1107,8 +1172,16 @@ const OraclePage = () => {
           () => speakWithBrowserTTS(browserClean, oracleName),
           async () => {
             const tokenBefore = speechTokenRef.current;
-            const ok = premiumClean ? await speakWithElevenLabs(premiumClean) : false;
-            if (!ok && browserClean && speechTokenRef.current === tokenBefore) await speakWithBrowserTTS(browserClean, oracleName);
+            schedulePrefetch();
+            let result = next.audio ? await playPrefetchedSpeech(next.audio) : { ok: false, started: false };
+            // Prepared audio missing: ask for her real voice live before anything else.
+            if (!result.ok && !result.started && premiumClean && speechTokenRef.current === tokenBefore && !mutedRef.current) {
+              result = await speakWithElevenLabs(premiumClean);
+            }
+            // The phone's voice is only a last resort, and never repeats words already heard.
+            if (!result.ok && !result.started && browserClean && speechTokenRef.current === tokenBefore && !mutedRef.current) {
+              await speakWithBrowserTTS(browserClean, oracleName);
+            }
           });
       } else if (browserClean) await speakWithBrowserTTS(browserClean, next.agentName);
     } catch (err) {
@@ -1121,11 +1194,12 @@ const OraclePage = () => {
       echoCooldownUntilRef.current = Date.now() + 600;
       processSpeechQueue();
     }
-  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
+  }, [isMuted, isOwner, oracleName, speakWithElevenLabs, playPrefetchedSpeech, speakWithBrowserTTS, cancelCurrentSpeech, subLoading, tier]);
 
   const speakAsAgent = useCallback((text: string, agentName: string = oracleName) => {
     if (isMuted || !text || premiumVideoRef.current) return;
     speechQueueRef.current.push({ text, agentName });
+    if (isSpeakingQueueRef.current && agentName === oracleName) schedulePrefetch();
     processSpeechQueue();
   }, [isMuted, processSpeechQueue, oracleName]);
 
@@ -1260,7 +1334,7 @@ const OraclePage = () => {
 
   useEffect(() => {
       if (isMuted) {
-        speechQueueRef.current = [];
+        clearSpeechQueue();
         cancelCurrentSpeech();
       }
   }, [isMuted, cancelCurrentSpeech]);
@@ -1871,7 +1945,7 @@ const OraclePage = () => {
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
     const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);
     if (outfitCmd) {
-      cancelCurrentSpeech(); speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+      cancelCurrentSpeech(); clearSpeechQueue(); isSpeakingQueueRef.current = false;
       setShowChat(true);
       const say = (content: string) => {
         setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content }]);
@@ -2340,7 +2414,7 @@ const OraclePage = () => {
       moodHistoryRef.current = addReading(moodHistoryRef.current, detectMood(text));
       if (guidedUnlock) announceUnlocked(unlockPaths(user?.id, modulesForText(text).map(m => m.path)));
     }
-    speechQueueRef.current = [];
+    clearSpeechQueue();
     isSpeakingQueueRef.current = false;
     setIsLoading(true);
     const controller = new AbortController();
@@ -3106,7 +3180,7 @@ const OraclePage = () => {
   const stopOracle = () => {
     abortRef.current?.abort();
     if (isListeningRef.current) toggleMic();
-    speechQueueRef.current = []; isSpeakingQueueRef.current = false;
+    clearSpeechQueue(); isSpeakingQueueRef.current = false;
     cancelCurrentSpeech(); mutedRef.current = true; setMuted(true);
   };
   const latest = messages[messages.length - 1];
@@ -3162,7 +3236,7 @@ const OraclePage = () => {
       <div className="oracle-dock relative z-10 shrink-0">
         {(isLoading || debateActive || isListening) && <p role="status" className="mb-2 text-center text-xs text-foreground">{debateActive ? "Agents working…" : isLoading ? "Oracle is thinking…" : wakeActive ? "Listening…" : "Microphone paused"}</p>}
         <OraclePromptBox input={input} onInput={setInput} onSend={() => sendMessage(input)} onStop={stopOracle} busy={isLoading || debateActive} listening={isListening} muted={isMuted} uploading={uploading} onMic={toggleMic}
-          onSpeaker={() => { if (isMuted) testSpeaker(); else { mutedRef.current = true; speechQueueRef.current = []; cancelCurrentSpeech(); setMuted(true); } }}
+          onSpeaker={() => { if (isMuted) testSpeaker(); else { mutedRef.current = true; clearSpeechQueue(); cancelCurrentSpeech(); setMuted(true); } }}
           onAttach={() => uploadInputRef.current?.click()} onSettings={() => setVoiceOptionsOpen(true)} tools={
           <OracleToolsMenu>
           <Button
