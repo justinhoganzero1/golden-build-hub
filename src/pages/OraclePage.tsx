@@ -1210,10 +1210,10 @@ const OraclePage = () => {
           const soundToken = speechTokenRef.current;
           await playHumanSound(soundUrl, () => speechTokenRef.current === soundToken && !mutedRef.current);
           if (speechTokenRef.current !== soundToken || mutedRef.current) return;
-          if (kind === "burp" || kind === "fart") {
+          if (kind === "burp" || kind === "fart" || kind === "hiccup") {
             if (blushTimerRef.current) window.clearTimeout(blushTimerRef.current);
             setBlush(kind === "fart" ? "full" : "soft");
-            blushTimerRef.current = window.setTimeout(() => setBlush(null), kind === "fart" ? 6000 : 2500);
+            blushTimerRef.current = window.setTimeout(() => setBlush(null), kind === "fart" ? 6000 : kind === "hiccup" ? 1800 : 2500);
             // A nervous little giggle while she goes red.
             const giggle = wantsNervousGiggle(kind) ? humanSoundUrl("laugh", lookRef.current?.choice.gender ?? "woman") : null;
             if (giggle) {
@@ -3382,9 +3382,9 @@ const OraclePage = () => {
           {videoReplyPending && <span className="text-xs text-muted-foreground">Filming her answer… (1–3 min)</span>}
         </div>
         <div className="space-y-2 rounded-lg border border-border p-3">
-          <label className="flex items-center justify-between gap-3 text-sm"><span>Human sounds<span className="block text-xs text-muted-foreground">Breaths, sighs and giggles as she talks, even between sentences</span></span>
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Human sounds<span className="block text-xs text-muted-foreground">Breaths, sighs, giggles and one little hiccup as she talks</span></span>
             <Switch checked={soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, human: v })} aria-label="Human sounds" /></label>
-          <label className="flex items-center justify-between gap-3 text-sm"><span>Cheeky sounds<span className="block text-xs text-muted-foreground">The odd burp, and now and then a fart (she goes red and giggles)</span></span>
+          <label className="flex items-center justify-between gap-3 text-sm"><span>Cheeky sounds<span className="block text-xs text-muted-foreground">A burp and a fart early on, then the odd one later (she goes red and giggles)</span></span>
             <Switch checked={soundPrefs.cheeky} disabled={!soundPrefs.human} onCheckedChange={v => updateSoundPrefs({ ...soundPrefs, cheeky: v })} aria-label="Cheeky sounds" /></label>
         </div>
         <OracleLookPicker current={look} onChange={applyLook} />
