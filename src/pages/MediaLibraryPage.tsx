@@ -343,6 +343,19 @@ const MediaLibraryPage = () => {
     }
   };
 
+  // One-tap delete on a tile: only the member's own items, after a confirm.
+  const handleDeleteOne = async (m: { id: string; title?: string | null; user_id?: string | null }) => {
+    if (!user?.id || m.user_id !== user.id) { toast.info("You can only delete your own creations."); return; }
+    if (!confirm(`Delete "${readableLibraryTitle(m.title)}" from your library?`)) return;
+    try {
+      await deleteLibraryRows([m.id], user.id);
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["user-media"] });
+    } catch (e: any) {
+      toast.error("Couldn't delete: " + (e?.message || "please try again"));
+    }
+  };
+
   const handleWipeAll = async () => {
     if (mediaItems.length === 0) {
       toast.info("Your library is already empty.");
@@ -392,7 +405,7 @@ const MediaLibraryPage = () => {
             </p>
           </div>
           <button onClick={handleWipeAll}
-            title="Delete every item in my library"
+            title="Delete every item in my library" aria-label="Delete everything in my library"
             className="p-2.5 rounded-xl bg-card border border-border hover:border-destructive/60 hover:text-destructive transition-all">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -404,6 +417,12 @@ const MediaLibraryPage = () => {
           <Button variant="outline" size="icon" aria-label={view === "grid" ? "Show list" : "Show grid"} onClick={() => { setView(view === "grid" ? "list" : "grid"); revealResults(); }}
             className="p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 transition-all">
             {view === "grid" ? <List className="w-4 h-4 text-primary" /> : <Grid className="w-4 h-4 text-primary" />}
+          </Button>
+        </div>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => { setSelectMode(true); revealResults(); }}
+            aria-label="Delete items" className="rounded-xl border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive">
+            <Trash2 className="w-4 h-4" /> Delete items
           </Button>
         </div>
       </div>
@@ -577,7 +596,17 @@ const MediaLibraryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {paged.map((m: any) => {
               const collection = COLLECTIONS.find(c => c.key === getCollectionKey(m.source_page, m.media_type, m.metadata))?.label || "Other";
-              if (!selectMode) return <LibraryCreationCard key={m.id} item={m} collection={collection} busy={openingId === m.id} onOpen={() => void openItem(m)} />;
+              if (!selectMode) return (
+                <div key={m.id} className="relative">
+                  <LibraryCreationCard item={m} collection={collection} busy={openingId === m.id} onOpen={() => void openItem(m)} />
+                  {m.user_id === user?.id && (
+                    <button type="button" onClick={() => void handleDeleteOne(m)} aria-label={`Delete ${readableLibraryTitle(m.title)}`}
+                      className="absolute top-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/85 backdrop-blur text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              );
               const mine = m.user_id === user?.id;
               const on = checkedIds.has(m.id);
               return (
@@ -596,7 +625,8 @@ const MediaLibraryPage = () => {
               const colKey = getCollectionKey(m.source_page, m.media_type, m.metadata);
               const col = COLLECTIONS.find(c => c.key === colKey) || COLLECTIONS[COLLECTIONS.length - 1];
               return (
-                <button key={m.id} onClick={() => {
+                <div key={m.id} className="flex items-center gap-2">
+                <button onClick={() => {
                     if (!selectMode) return void openItem(m);
                     if (m.user_id === user?.id) toggleChecked(m.id); else toast.info("You can only delete your own creations.");
                   }} disabled={openingId === m.id} aria-pressed={selectMode ? checkedIds.has(m.id) : undefined}
@@ -622,6 +652,13 @@ const MediaLibraryPage = () => {
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </button>
+                {!selectMode && m.user_id === user?.id && (
+                  <button type="button" onClick={() => void handleDeleteOne(m)} aria-label={`Delete ${readableLibraryTitle(m.title)}`}
+                    className="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                </div>
               );
             })}
           </div>

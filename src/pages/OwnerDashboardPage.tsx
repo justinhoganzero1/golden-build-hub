@@ -45,6 +45,30 @@ const OwnerDashboardPage = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersSubTab, setUsersSubTab] = useState<"online" | "offline">("online");
   const [usersSearch, setUsersSearch] = useState("");
+  // Delete-member confirm box (owner only; the server re-checks the admin role and blocks admin accounts).
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; email: string } | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
+  const confirmDeleteUser = async () => {
+    if (!deleteTarget || deletingUser) return;
+    setDeletingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { userId: deleteTarget.id, confirmEmail: deleteTarget.email },
+      });
+      if (error) {
+        const res: Response | undefined = (error as any)?.context;
+        const detail = res && typeof res.clone === "function" ? await res.clone().json().catch(() => null) : null;
+        throw new Error(detail?.message || error.message);
+      }
+      setUsersList(prev => prev.filter(u => u.id !== deleteTarget.id));
+      toast.success(`Deleted ${deleteTarget.email}${(data as any)?.cancelled_plans ? " and stopped their paid plan" : ""}`);
+      setDeleteTarget(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't delete that member.");
+    } finally {
+      setDeletingUser(false);
+    }
+  };
   // Failed sign-ups tab
   const [failedSignups, setFailedSignups] = useState<Array<{ id: string; email: string | null; reason: string; error_code: string | null; created_at: string }>>([]);
   const [failedSignupsLoading, setFailedSignupsLoading] = useState(false);
@@ -634,7 +658,7 @@ const OwnerDashboardPage = () => {
     { key: "marketing", label: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
     { key: "advertising", label: "Ads", icon: <Globe className="w-4 h-4" /> },
     { key: "advertisers", label: "Advertisers", icon: <Megaphone className="w-4 h-4" /> },
-    { key: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { key: "users", label: "Active Users", icon: <Users className="w-4 h-4" /> },
     { key: "trials", label: "Trial Users", icon: <Zap className="w-4 h-4" /> },
     { key: "failed-signups", label: "Failed Sign-ups", icon: <XCircle className="w-4 h-4" /> },
     { key: "sources", label: "Traffic Sources", icon: <TrendingUp className="w-4 h-4" /> },
@@ -947,6 +971,16 @@ const OwnerDashboardPage = () => {
               </div>
               <p className="text-[10px] text-gray-500 mt-2">Refreshes every 30 seconds. Only you can see this. Tap any number for details.</p>
             </div>
+
+            <button type="button" onClick={() => setTab("users")}
+              className="w-full flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 text-left hover:border-cyan-500/40 transition">
+              <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-300"><Users className="w-5 h-5" /></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">Active Users</p>
+                <p className="text-[11px] text-gray-400">See who's online, give credits, or delete a member.</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </button>
 
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3">
@@ -1782,6 +1816,7 @@ const OwnerDashboardPage = () => {
                               </span>
                             </td>
                             <td className="py-2 pr-3 text-right">
+                              <div className="flex gap-1.5 justify-end items-center">
                               {u.free_for_life ? (
                                 <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">💎 Free For Life</span>
                               ) : (
@@ -1800,6 +1835,16 @@ const OwnerDashboardPage = () => {
                                   </button>
                                 </div>
                               )}
+                              {u.id !== user?.id && u.email && (
+                                <button
+                                  onClick={() => setDeleteTarget({ id: u.id, email: u.email })}
+                                  aria-label={`Delete ${u.email}`}
+                                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-red-500/15 text-red-300 border border-red-500/40 hover:bg-red-500/30 inline-flex items-center gap-1"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1813,6 +1858,26 @@ const OwnerDashboardPage = () => {
             </div>
           </div>
         )}
+
+        <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o && !deletingUser) setDeleteTarget(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Delete this member?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <p className="font-semibold break-all">{deleteTarget?.email}</p>
+              <p className="text-muted-foreground">Their account, Library, saved Gemini key and Oracle memories are removed for good. If they have a paid plan, it is cancelled first so they are never charged again. Payment records are kept. This can't be undone.</p>
+              <div className="flex gap-2 justify-end pt-1">
+                <button type="button" disabled={deletingUser} onClick={() => setDeleteTarget(null)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold border border-border">Cancel</button>
+                <button type="button" disabled={deletingUser} onClick={() => void confirmDeleteUser()}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-destructive text-destructive-foreground inline-flex items-center gap-1">
+                  <Trash2 className="w-3.5 h-3.5" /> {deletingUser ? "Deleting…" : "Delete forever"}
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {tab === "failed-signups" && (
           <div className="space-y-4">
