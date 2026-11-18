@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { detectInstallPlatform, trackInstallEvent } from "@/lib/installAnalytics";
 import {
-  PUBLIC_URL, checkApkAvailable, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite,
+  PUBLIC_URL, checkApkAvailable, getNativeStoreUrl, isAndroidDevice, isOnProductionHost, openProductionSite, pickAndroidInstallRoute,
 } from "@/lib/installRedirect";
 import { FREE_FEATURES, PLANS } from "@/lib/plans";
 import { toast } from "sonner";
@@ -90,6 +90,13 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
     return () => io.disconnect();
   }, []);
 
+  const startApkDownload = () => {
+    // Start the real app download with a "can take a few minutes" popup;
+    // when it vanishes, the finishing steps open.
+    trackInstallEvent("download_start", "android", "store-page");
+    setApkDownloading(true);
+  };
+
   const handleInstall = async () => {
     trackInstallEvent("click", platform, "store-page");
     if (isStandalone || installed) {
@@ -101,11 +108,19 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
       openProductionSite("/download");
       return;
     }
-    if (isAndroidDevice() && apkReady) {
-      // Start the real app download with a "can take a few minutes" popup;
-      // when it vanishes, the finishing steps open.
-      trackInstallEvent("download_start", "android", "store-page");
-      setApkDownloading(true);
+    const androidRoute = isAndroidDevice() ? pickAndroidInstallRoute(canInstall, apkReady) : null;
+    if (androidRoute === "instant") {
+      // Chrome's own one-tap install: no "unknown apps" block, no settings.
+      const outcome = await install();
+      if (outcome === "accepted") {
+        trackInstallEvent("installed", "android", "store-page");
+        toast.success("Oracle Lunar is installing — look for her icon with your apps.");
+        return;
+      }
+      if (outcome === "dismissed") return;
+    }
+    if (androidRoute === "apk" || (androidRoute === "instant" && apkReady)) {
+      startApkDownload();
       return;
     }
     const storeUrl = getNativeStoreUrl();
@@ -217,6 +232,11 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
               {deviceLine}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">No sign-in needed to download — you create your account inside the app.</p>
+            {platform === "android" && canInstall && apkReady && !isStandalone && !installed && (
+              <button type="button" onClick={startApkDownload} className="mt-1 block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                Prefer the Android app file instead? Download it
+              </button>
+            )}
             <Link to="/sign-in" className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <Globe className="h-3.5 w-3.5" />Or use it right here in your browser
             </Link>

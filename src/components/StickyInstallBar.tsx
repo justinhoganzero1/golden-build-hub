@@ -46,6 +46,11 @@ const StickyInstallBar = () => {
     // 1) Android + we host a direct .apk → open the safety dialog and let the
     //    user sideload the real native app from our portal.
     if (isAndroidDevice() && hasDirectApk()) {
+      // One-tap Chrome install first — it avoids Android's "unknown apps" block.
+      if (canInstall) {
+        const outcome = await install();
+        if (outcome !== "unavailable") return;
+      }
       setApkOpen(true);
       return;
     }

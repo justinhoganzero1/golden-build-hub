@@ -232,3 +232,13 @@ export const bounceIfNotProduction = (path = "/"): boolean => {
   openProductionSite(path);
   return true;
 };
+
+export type AndroidInstallRoute = "instant" | "apk" | "guide";
+
+/**
+ * Android visitors get Chrome's one-tap install when the browser offers it,
+ * because the downloaded .apk always triggers Android's "unknown apps" block
+ * and most people tap Cancel there. The .apk stays available as the fallback.
+ */
+export const pickAndroidInstallRoute = (canInstantInstall: boolean, apkReady: boolean): AndroidInstallRoute =>
+  canInstantInstall ? "instant" : apkReady ? "apk" : "guide";

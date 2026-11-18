@@ -45,3 +45,18 @@ describe("openProductionSite", () => {
     expect(openSpy).toHaveBeenCalledWith(`https://${PUBLIC_HOST}/`, "_blank");
   });
 });
+
+describe("pickAndroidInstallRoute", () => {
+  it("uses the warning-free one-tap install whenever Chrome offers it, even if the app file exists", async () => {
+    const { pickAndroidInstallRoute } = await import("./installRedirect");
+    expect(pickAndroidInstallRoute(true, true)).toBe("instant");
+  });
+  it("falls back to the Android app file when one-tap install isn't offered", async () => {
+    const { pickAndroidInstallRoute } = await import("./installRedirect");
+    expect(pickAndroidInstallRoute(false, true)).toBe("apk");
+  });
+  it("shows the manual steps when neither is available", async () => {
+    const { pickAndroidInstallRoute } = await import("./installRedirect");
+    expect(pickAndroidInstallRoute(false, false)).toBe("guide");
+  });
+});

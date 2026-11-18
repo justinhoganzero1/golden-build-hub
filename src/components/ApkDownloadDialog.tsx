@@ -48,8 +48,8 @@ const STEPS = [
   },
   {
     key: "allow",
-    title: 'Allow "unknown apps" (one time)',
-    body: 'Android may ask: "Allow this browser to install apps?" → tap Settings → turn on Allow → press Back.',
+    title: 'Android blocks it? Tap Settings — not Cancel',
+    body: 'If it says your phone "isn\'t allowed to install unknown apps from this source", tap Settings → turn on "Allow from this source" → press Back. Then tap Install. You only do this once.',
   },
   {
     key: "install",
@@ -57,6 +57,28 @@ const STEPS = [
     body: 'You may see "Play Protect doesn\'t recognise this app" → tap More details → Install anyway. We are safe.',
   },
 ] as const;
+
+/** Picture of Android's block message with the right button circled. */
+const TapSettingsCard = () => (
+  <div className="rounded-lg border-2 border-primary bg-primary/10 p-3 space-y-2" data-testid="tap-settings-card">
+    <p className="font-semibold text-sm text-foreground">
+      Important: when Android shows this, tap <span className="text-primary">Settings</span> — not Cancel
+    </p>
+    <div className="rounded-2xl bg-card border border-border p-3 text-xs text-muted-foreground shadow-inner" aria-hidden>
+      <p className="font-semibold text-foreground mb-1">Chrome</p>
+      <p>For your security, your phone currently isn't allowed to install unknown apps from this source…</p>
+      <div className="mt-2 flex justify-end gap-4 font-semibold">
+        <span className="opacity-50 line-through">Cancel</span>
+        <span className="rounded-full px-2 py-0.5 text-primary ring-2 ring-primary animate-pulse">Settings ←</span>
+      </div>
+    </div>
+    <p className="text-xs text-muted-foreground">
+      Then switch on <b className="text-foreground">Allow from this source</b>, press <b className="text-foreground">Back</b>, and tap <b className="text-foreground">Install</b>.
+      It's a normal Android safety check for apps not from the Play Store, and you only do it once.
+      Tapped Cancel by mistake? Open <b className="text-foreground">oracle-lunar.apk</b> from your Downloads again.
+    </p>
+  </div>
+);
 
 const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkDownloadDialogProps) => {
   const onAndroid = isAndroidDevice();
@@ -153,6 +175,8 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
               </div>
             </div>
 
+            <TapSettingsCard />
+
             {!onAndroid && (
               <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground italic">
                 You appear to be on a computer or iPhone — you can still download
@@ -169,6 +193,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
         )}
 
         {/* GUIDE PHASE — step-by-step checklist */}
+        {phase === "guide" && <TapSettingsCard />}
         {phase === "guide" && (
           <ol className="space-y-2">
             {STEPS.map((s, i) => {
