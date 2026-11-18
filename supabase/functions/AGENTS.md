@@ -1,0 +1,2 @@
+# supabase/functions rules
+- Every text-AI edge function calls installNoRepeatRule() (_shared/noRepeat.ts), which appends the describe-once/no-repeated-jokes rule to chat-completions requests (image requests skipped) and the Responses helper; finished non-streamed prose also passes removeRepeatedSentences, so new AI features get the rule from one place. Code/classifier functions (oracle-coder, app-builder-autonomous, ai-moderate) are excluded because repeated lines are normal there.
