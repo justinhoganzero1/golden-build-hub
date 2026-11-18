@@ -21,6 +21,31 @@ export function trialGate(opts: { isOwner: boolean; plan: string | null; trialEn
   return now.getTime() < new Date(opts.trialEndsAt).getTime() ? "claim" : "expired";
 }
 
+/**
+ * Oracle chat during the 7-day trial runs on the member's own Gemini key (never the
+ * platform's AI or the wallet), so it opens from sign-up — no card needed — and stays
+ * open while a card-checked trial is still running.
+ */
+export function chatTrialOpen(opts: { signedUpAt: string | null; cardTrialEndsAt: string | null; now?: Date }): boolean {
+  const now = (opts.now ?? new Date()).getTime();
+  const signup = opts.signedUpAt ? new Date(opts.signedUpAt).getTime() : NaN;
+  const card = opts.cardTrialEndsAt ? new Date(opts.cardTrialEndsAt).getTime() : NaN;
+  const ends = Math.max(Number.isFinite(signup) ? signup + TRIAL_DAYS * 86_400_000 : 0, Number.isFinite(card) ? card : 0);
+  return now < ends;
+}
+
+export type ChatAccess = "paid" | "trial" | "none";
+
+/** Paid plan → full chat; otherwise the 7-day trial window; otherwise the free scripted chat only. */
+export async function memberChatAccess(admin: Admin, userId: string, signedUpAt: string | null): Promise<ChatAccess> {
+  const [{ data: plan }, { data: card }] = await Promise.all([
+    admin.rpc("member_plan", { _user_id: userId }),
+    admin.from("trial_card_checks").select("trial_ends_at").eq("user_id", userId).maybeSingle(),
+  ]);
+  if (plan && plan !== "free") return "paid";
+  return chatTrialOpen({ signedUpAt, cardTrialEndsAt: card?.trial_ends_at ?? null }) ? "trial" : "none";
+}
+
 export const isTrialBlocked = (t: TrialOutcome): t is TrialBlock => t !== "paid" && t !== "trial";
 
 export async function trialDecision(admin: Admin, userId: string, kind: TrialKind, isOwner = false): Promise<TrialOutcome> {

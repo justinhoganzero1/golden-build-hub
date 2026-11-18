@@ -98,6 +98,7 @@ import ThinkingIndicator from "@/components/ThinkingIndicator";
 import OracleWelcome from "@/components/oracle/OracleWelcome";
 import ProductionProgress, { playReadyChime } from "@/components/oracle/ProductionProgress";
 import { welcomeKey } from "@/lib/productionStages";
+import { handleAccessReply } from "@/lib/aiAccessEvents";
 import { discoveryNote, loadUnlocks, modulesForText, moduleForPath, needsGuidedUnlock, unlockMarkers, unlockPaths, type DiscoverableModule } from "@/lib/oracleDiscovery";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 import { formatWebAnswer } from "@/lib/oracleWeb";
@@ -1931,17 +1932,17 @@ const OraclePage = () => {
     if (!isIntroTrigger && pending && /^(?:yes|yeah|yep|show me|show it|let me see|open it)(?: please)?[.!?]*$/i.test(text.trim())) {
       cancelCurrentSpeech(); setViewingArtifact(pending); return;
     }
-    // Free plan: Oracle's AI replies are a paid-plan feature. Answer kindly for free and offer the upgrade.
-    if (getCurrentPlan() === "free") {
-      if (isIntroTrigger) return;
-      const reply = "I'd love to chat properly with you! My full conversations are part of Plus — it comes with monthly AI credit so we can talk, create and explore together. Until then, your calendar, library and safety pages are all yours for free.";
+    // Free plan after the 7-day trial: the server answers plan_required and Oracle replies kindly
+    // with the upgrade offer (see the oracle-chat reply handling below). During the trial, Free
+    // members chat with her full knowledge on their own Gemini key.
+    const freePlanReply = () => {
+      const reply = "I'd love to keep chatting properly with you! Your 7-day free trial has finished, and my full conversations are part of Plus now. Until then, your calendar, library and safety pages are all yours for free.";
+      // The member's own message is already on screen by the time the server answers.
       setMessages(prev => [...prev,
-        { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
         { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "🔮", color: "#9b87f5", content: reply }]);
       if (!isMuted) speakAsAgent(reply, oracleName);
       notifyPlanRequired({ requiredPlan: "plus", message: "Chatting with Oracle is part of Plus. Upgrade to talk with her any time." });
-      return;
-    }
+    };
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
     const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);
     if (outfitCmd) {
@@ -2482,6 +2483,18 @@ const OraclePage = () => {
         if (oracleResp.status === 401) {
           setInput(text);
           toast.error("Please sign in again. Your message is still here.");
+          return;
+        }
+        // Free plan with the 7-day trial over: kind reply + upgrade offer (silent for the automatic intro).
+        if (oracleResp.status === 402 && err?.error === "plan_required") {
+          if (!isIntroTrigger) freePlanReply();
+          setIsLoading(false);
+          return;
+        }
+        // Gemini key not connected or refused by Google: the key pop-up explains the fix.
+        if (handleAccessReply(err)) {
+          if (!isIntroTrigger) setInput(text);
+          setIsLoading(false);
           return;
         }
         // Server-enforced free daily limit reached

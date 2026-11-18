@@ -4,7 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
-import { loadMemberGemini, memberHasPaidPlan, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
+import { memberChatAccess, type ChatAccess, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
+import { loadMemberGemini, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +62,7 @@ serve(async (req) => {
     let userEmail: string | null = null;
     let isAdult = false;
     let memberGeminiKey: string | null = null;
+    let chatAccess: ChatAccess = "paid";
     // deno-lint-ignore no-explicit-any
     let adminClient: any = null;
 
@@ -84,7 +86,9 @@ serve(async (req) => {
           // for member chat, and a failing key pauses chat instead of falling back.
           const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL;
           if (!isAdmin) {
-            if (!(await memberHasPaidPlan(admin, userId))) return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
+            // Plus/Pro chat any time; Free accounts get full chat for their 7-day trial (on their own key).
+            chatAccess = await memberChatAccess(admin, userId, userData?.user?.created_at ?? null);
+            if (chatAccess === "none") return planRequiredResponse(new PlanRequiredError("plus"), corsHeaders);
             const g = await loadMemberGemini(admin, userId);
             if (!g.key || !g.verified) return geminiKeyRequiredResponse(corsHeaders);
             memberGeminiKey = g.key;
@@ -524,6 +528,12 @@ After this first reply, NEVER do the full tour again. You can REFERENCE capabili
 You've already introduced yourself in a previous session. Do NOT re-introduce yourself or list your capabilities. Just continue the relationship naturally — like a friend picking up where you left off. Reference capabilities only when the moment genuinely calls for it.
 `}
 
+${chatAccess === "trial" ? `
+FREE TRIAL MEMBER (7 days):
+- This member is on their 7-day free trial. Give them your FULL knowledge and help exactly like a paying member — answer anything, explain, plan, write, advise. Never hold back answers or pretend you can't.
+- Their trial also includes ${TRIAL_LIMITS.image} pictures and ${TRIAL_LIMITS.video} ${TRIAL_VIDEO_SECONDS}-second video (a $0.00 card check starts those). Other paid tools (music, premium voice, web research, app builds) need Plus or Pro — mention that only if they ask for one.
+- Do NOT offer extra "one free try" passes and do NOT do the daily feature promotion during the trial.
+` : ""}
 ${userEmail?.toLowerCase() === ADMIN_EMAIL ? `
 OWNER MODE — NO SELLING, NO PROMOS:
 - You are talking to the OWNER. Do NOT pitch features, do NOT mention paywalls, do NOT offer free trials, do NOT promote subscriptions, do NOT do the "daily feature promotion", do NOT mention the Suggestion Box lifetime offer, do NOT upsell anything.
@@ -538,7 +548,7 @@ PAYWALL & MONETIZATION — YOUR ATTITUDE:
 - ALWAYS follow up paywall humor with the FREE LIFETIME MEMBERSHIP offer: "You know what though? Submit a killer idea in the Suggestion Box, and if we build it, you get FREE LIFETIME ACCESS to everything. No joke! Your brain is clearly brilliant enough to come up with something game-changing 🧠✨"
 - When a user tries to access something locked, give them ONE FREE TRIAL USE if they haven't used it before for that specific feature. Say something like: "Look, you're one of our best users and I can tell your brain is something special. I'm going to let you try this ONE TIME because I genuinely want to nurture that amazing mind of yours. Don't tell my boss 🤫"
 - Track free trials with [[FREE_TRIAL:feature_name]] in your response.
-${!isSubscribed && showAds ? `
+${!isSubscribed && showAds && chatAccess !== "trial" ? `
 DAILY FEATURE PROMOTION (do this ONCE per conversation, naturally):
 - Pick ONE premium feature and enthusiastically describe how incredible it is. Really sell it.
 - Then act slightly disappointed: "Oh wait... that one requires a subscription 😔 Ugh, my boss strikes again with his paywall obsession..."
