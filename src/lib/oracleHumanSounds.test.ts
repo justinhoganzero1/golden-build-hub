@@ -57,15 +57,15 @@ describe("Oracle human sounds", () => {
     expect(pickHumanSound("Sure!", s, on, null, always)).not.toBe("fart");
   });
 
-  it("keeps farts at least 25 replies apart", () => {
-    expect(FART_MIN_GAP).toBe(25);
-    const s = { ...freshSoundState(), replies: 40, lastBurp: 39, lastFart: 40 - FART_MIN_GAP + 1, fartsThisSession: 1 };
+  it("keeps farts at least 2000 replies apart after the opening", () => {
+    expect(FART_MIN_GAP).toBe(2000);
+    const s = { ...freshSoundState(), replies: 2000, lastBurp: 1999, lastFart: 1, fartsThisSession: 1 };
     expect(pickHumanSound("Sure!", s, on, null, always)).not.toBe("fart");
   });
 
-  it("keeps burps at least 8 replies apart", () => {
-    expect(BURP_MIN_GAP).toBe(8);
-    const s = { ...freshSoundState(), replies: 30, lastBurp: 30 - BURP_MIN_GAP + 1, fartsThisSession: 2 };
+  it("keeps burps at least 2000 replies apart after the opening", () => {
+    expect(BURP_MIN_GAP).toBe(2000);
+    const s = { ...freshSoundState(), replies: 2000, lastBurp: 1, fartsThisSession: 2 };
     expect(pickHumanSound("Sure!", s, on, null, always)).not.toBe("burp");
   });
 

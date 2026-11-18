@@ -21,12 +21,11 @@ export const OPENING_MS = 120_000;
 export const OPENING_BURP_REPLY = 1;
 export const OPENING_FART_AFTER_BURP = 2;
 export const OPENING_FART_HURRY_MS = 75_000;
-/** After the opening: burp about 1 in 12 replies, never closer than 8 replies apart. */
-export const BURP_CHANCE = 1 / 12;
-export const BURP_MIN_GAP = 8;
-/** After the opening: fart about 1 in 35 replies, at least 25 replies apart, at most 2 per visit. */
-export const FART_CHANCE = 1 / 35;
-export const FART_MIN_GAP = 25;
+/** After the opening: burp and fart only about once every 2,000 replies, so they stay a rare surprise. */
+export const BURP_CHANCE = 1 / 2000;
+export const BURP_MIN_GAP = 2000;
+export const FART_CHANCE = 1 / 2000;
+export const FART_MIN_GAP = 2000;
 export const FART_MAX_PER_VISIT = 2;
 /** One little hiccup per visit, somewhere between her 6th and 10th reply. */
 export const HICCUP_FIRST_REPLY = 5;

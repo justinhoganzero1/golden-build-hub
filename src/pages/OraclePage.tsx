@@ -1132,7 +1132,7 @@ const OraclePage = () => {
           if (gi >= groups.length || !isLive()) { finish(); return; }
           if (gi > 0) {
             const url = humanSoundUrl("breath", gender);
-            if (url) await playHumanSound(url, isLive, { volume: 0.7 });
+            if (url) await playHumanSound(url, isLive, { volume: 0.08 });
             if (!isLive()) { finish(); return; }
           }
           const group = groups[gi++];
@@ -1208,7 +1208,7 @@ const OraclePage = () => {
         const soundUrl = kind ? humanSoundUrl(kind, lookRef.current?.choice.gender ?? "woman") : null;
         if (kind && soundUrl) {
           const soundToken = speechTokenRef.current;
-          await playHumanSound(soundUrl, () => speechTokenRef.current === soundToken && !mutedRef.current);
+          await playHumanSound(soundUrl, () => speechTokenRef.current === soundToken && !mutedRef.current, { volume: kind === "breath" ? 0.08 : kind === "sigh" ? 0.3 : 1 });
           if (speechTokenRef.current !== soundToken || mutedRef.current) return;
           if (kind === "burp" || kind === "fart" || kind === "hiccup") {
             if (blushTimerRef.current) window.clearTimeout(blushTimerRef.current);
