@@ -83,7 +83,7 @@ serve(async (req) => {
       if (missing.length) return json({ error: "consent_missing", missing }, 400);
       const key = String(body?.key || "").trim();
       if (!looksLikeGeminiKey(key)) {
-        return json({ error: "bad_format", message: "That doesn't look like a Google Gemini key. It should start with AIza." }, 400);
+        return json({ error: "bad_format", message: "That doesn't look like a Google Gemini key. It should start with AIza or AQ." }, 400);
       }
       // One tiny real request proves the key works and can reach Oracle's model.
       const test = await callMemberGemini(key, {

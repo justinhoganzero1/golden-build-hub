@@ -59,9 +59,14 @@ export function isVoiceYes(words: string): boolean {
   return / (yes|yeah|yep|yup|i agree|agree|agreed|i do|i understand|i confirm|confirm|okay|ok|sure|correct) /.test(t);
 }
 
-/** Google AI Studio keys start with "AIza" followed by about 35 letters, digits, - or _. */
+/**
+ * Google AI Studio keys: classic keys start with "AIza"; newer "auth keys"
+ * start with "AQ." (letters, digits, -, _ and dots). Google's real test call
+ * in setup is the final proof either way.
+ */
 export function looksLikeGeminiKey(key: string): boolean {
-  return /^AIza[0-9A-Za-z_-]{30,60}$/.test(String(key || "").trim());
+  const k = String(key || "").trim();
+  return /^AIza[0-9A-Za-z_-]{30,60}$/.test(k) || /^AQ\.[0-9A-Za-z_.-]{30,250}$/.test(k);
 }
 
 export type GeminiKeyProblem = "invalid" | "quota" | "region" | "unavailable";

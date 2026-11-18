@@ -79,6 +79,6 @@ export async function callMemberGemini(
   }
   if (resp.ok) return { ok: true, response: resp };
   const text = await resp.text().catch(() => "");
-  console.warn("member gemini refused:", resp.status, text.slice(0, 200).replace(/AIza[0-9A-Za-z_-]+/g, "[key]"));
+  console.warn("member gemini refused:", resp.status, text.slice(0, 200).replace(/AIza[0-9A-Za-z_-]+|AQ\.[0-9A-Za-z_.-]+/g, "[key]"));
   return { ok: false, problem: geminiProblemFrom(resp.status, text) };
 }

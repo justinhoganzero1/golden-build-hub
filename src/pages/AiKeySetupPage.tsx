@@ -194,7 +194,7 @@ const AiKeySetupPage = () => {
                 <Button variant="outline" className="w-full" onClick={() => openOutside(status.key_page)}>
                   <ExternalLink className="mr-1.5 h-4 w-4" />Open Google AI Studio
                 </Button>
-                <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Paste your key (starts with AIza)"
+                <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="Paste your key (starts with AIza or AQ.)"
                   autoComplete="off" autoCapitalize="off" spellCheck={false} aria-label="Your Google Gemini key" />
                 {keyError && <p role="alert" className="text-sm text-destructive">{keyError}</p>}
                 <Button className="w-full" onClick={() => void saveKey()} disabled={busy === "key" || key.trim().length < 20}>
