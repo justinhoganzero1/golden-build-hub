@@ -5,6 +5,8 @@ import { requestIp } from "../_shared/trialIdentity.ts";
 import { chargeAI, getUserFromRequest, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { OWNER_EMAIL } from "../_shared/requireAuth.ts";
 import { wantsTextInImage, parseJsonLoose, cleanTexts, exactTextInstruction, textsMatch } from "./textCheck.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const TEXT_CHECK_MODEL = "google/gemini-3.8-flash";

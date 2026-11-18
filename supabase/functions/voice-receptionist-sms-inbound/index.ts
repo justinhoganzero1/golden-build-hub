@@ -2,6 +2,8 @@
 // and (optionally) lets the AI agent auto-reply.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { verifyTwilioRequest } from "../_shared/twilioSignature.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

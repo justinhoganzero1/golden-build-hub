@@ -3,6 +3,8 @@ import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { promptData } from "../_shared/chatMessages.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

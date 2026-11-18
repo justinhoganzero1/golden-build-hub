@@ -10,6 +10,8 @@ import { PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { loadMemberGemini, memberHasPaidPlan, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { memberChatAccess } from "../_shared/freeTrial.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 
 

@@ -9,6 +9,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 
 const corsHeaders = {

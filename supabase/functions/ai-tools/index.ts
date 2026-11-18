@@ -4,6 +4,8 @@ import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
+import { installNoRepeatRule, removeRepeatedSentences } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 
@@ -145,7 +147,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ result: content }), {
+    return new Response(JSON.stringify({ result: removeRepeatedSentences(content) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

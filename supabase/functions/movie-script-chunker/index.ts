@@ -6,6 +6,8 @@ import { ELEVENLABS_VOICES } from "../_shared/voice-pool.ts";
 import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 import { chargeAI, InsufficientCoinsError } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

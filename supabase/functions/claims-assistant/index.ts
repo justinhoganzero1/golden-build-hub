@@ -4,6 +4,8 @@ import { checkJailbreak } from "../_shared/jailbreakGuard.ts";
 import { AiGatewayError, aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 

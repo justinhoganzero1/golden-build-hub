@@ -5,6 +5,8 @@ import { requireUser, enforceRateLimit } from "../_shared/requireAuth.ts";
 import { aiGatewayErrorResponse } from "../_shared/aiStatus.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const ADMIN_EMAIL = "justinbretthogan@gmail.com";
 

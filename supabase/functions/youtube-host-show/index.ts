@@ -5,6 +5,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { mapAiGatewayStatus } from "../_shared/aiStatus.ts";
 import { chargeAI, InsufficientCoinsError, insufficientCoinsResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

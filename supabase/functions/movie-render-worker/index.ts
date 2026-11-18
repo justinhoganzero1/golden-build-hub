@@ -12,6 +12,8 @@ import { requireInternalOrOwner } from "../_shared/internalAuth.ts";
 //   - Auto-queues YouTube publish when project completes (if user has token)
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { markupCents, PROVIDER_RATES } from "../_shared/pricing.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

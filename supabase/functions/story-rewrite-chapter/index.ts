@@ -4,6 +4,7 @@ import { authorizeAI, cancelAI, InsufficientCoinsError, insufficientCoinsRespons
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { requireUser, enforceRateLimit, OWNER_EMAIL } from "../_shared/requireAuth.ts";
 import { createOpenAIResponsesCall } from "../_shared/openai-responses.ts";
+import { removeRepeatedSentences } from "../_shared/noRepeat.ts";
 import { getLovableAiGatewayResponseHeaders } from "../_shared/ai-run-id.ts";
 
 const MODEL = "openai/gpt-6-astra";
@@ -162,7 +163,7 @@ Write the complete replacement chapter now. Aim for 1,800–2,200 words. Finish 
 
           if (pending) controller.enqueue(encoder.encode(`${JSON.stringify({ type: "delta", delta: pending })}\n`));
 
-          text = cleanProse(text);
+          text = removeRepeatedSentences(cleanProse(text));
           const words = countWords(text);
           const runId = runIdFetch.getRunId();
           if (billingTransactionId) {

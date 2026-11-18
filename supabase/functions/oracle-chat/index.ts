@@ -6,6 +6,8 @@ import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredRespon
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { memberChatAccess, type ChatAccess, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
 import { loadMemberGemini, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
+import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
