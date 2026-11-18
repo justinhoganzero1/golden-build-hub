@@ -35,3 +35,5 @@ verify_jwt = true
 
 [functions.record-arrival]
 verify_jwt = false
+[functions.pitch-demo]
+verify_jwt = false

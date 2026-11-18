@@ -974,6 +974,7 @@ const OwnerDashboardPage = () => {
                   { label: "Send Campaign", action: () => setTab("marketing"), icon: <Mail className="w-4 h-4" /> },
                   { label: "Manage Ads", action: () => setTab("advertising"), icon: <Globe className="w-4 h-4" /> },
                   { label: "Marketing Studio", action: () => navigate("/marketing-hub"), icon: <Megaphone className="w-4 h-4" /> },
+                  { label: "Client Pitch Machine", action: () => navigate("/admin/pitch-machine"), icon: <Sparkles className="w-4 h-4" /> },
                 ].map((qa, i) => (
                   <button key={i} onClick={qa.action} className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-xs hover:border-yellow-500/30 transition-all">
                     {qa.icon} {qa.label}

@@ -65,3 +65,12 @@
 - [x] Oracle reads words in pictures and understands photos and GIFs
 - [x] Words in pictures Oracle makes are proofread, checked and corrected (videos keep the checked starting picture)
 - [x] Wallet top-up reminder + running-low top-up; test banner removed; live payments confirmed
+
+## Client Pitch Machine (2026-11-18)
+- [x] Owner-only page: scan a business website (desktop + phone pictures, colours/fonts, contact details)
+- [x] Review scan: Google reviews/Maps, Trustpilot, Facebook, ProductReview via web search
+- [x] AI audit: complaints, what's missing, design brief, app idea
+- [x] Build offline demo: new website + customer app + owner panel
+- [x] Glossy presentation + proposal email (opens in Juzzy's own email)
+- [x] Client demo link on oraclelunar.com: watermark, 7-day expiry, on/off switch, view count
+- [ ] Publish so client demo links work on oraclelunar.com — waits on Juzzy saying publish

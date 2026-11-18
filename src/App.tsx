@@ -94,6 +94,7 @@ const loaders = {
   "/voice-receptionist": () => import("./pages/VoiceReceptionistPage"),
   "/admin/voice-receptionist": () => import("./pages/admin/VoiceReceptionistAdminPage"),
   "/admin/payouts": () => import("./pages/admin/AdminPayoutsPage"),
+  "/admin/pitch-machine": () => import("./pages/admin/PitchMachinePage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
@@ -251,6 +252,8 @@ const AdminEditorPage = lazy(loaders["/admin/editor"]);
 const VoiceReceptionistPage = lazy(loaders["/voice-receptionist"]);
 const VoiceReceptionistAdminPage = lazy(loaders["/admin/voice-receptionist"]);
 const AdminPayoutsPage = lazy(loaders["/admin/payouts"]);
+const PitchMachinePage = lazy(loaders["/admin/pitch-machine"]);
+const PitchDemoPage = lazy(() => import("./pages/PitchDemoPage"));
 const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
 const AdminAuthAuditPage = lazy(() => import("./pages/AdminAuthAuditPage"));
@@ -376,6 +379,7 @@ const OracleApp = () => (
                   <Route path="/oracle-preview" element={<Navigate to="/oracle" replace />} />
                   <Route path="/ad" element={<ErrorBoundary pageName="Ad"><AdPage /></ErrorBoundary>} />
                   <Route path="/watch" element={<ErrorBoundary pageName="Shared video"><WatchPage /></ErrorBoundary>} />
+                  <Route path="/demo/:token" element={<ErrorBoundary pageName="Client demo"><PitchDemoPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/vault" element={<RequireAuth><ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary></RequireAuth>} />
@@ -445,6 +449,7 @@ const OracleApp = () => (
                   <Route path="/admin/editor" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Editor"><AdminEditorPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/voice-receptionist" element={<ErrorBoundary pageName="Voice Receptionist"><VoiceReceptionistPage /></ErrorBoundary>} />
                   <Route path="/admin/voice-receptionist" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Voice Receptionist Admin"><VoiceReceptionistAdminPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/pitch-machine" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Client Pitch Machine"><PitchMachinePage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/payouts" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Payouts"><AdminPayoutsPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/oauth/google/callback" element={<ErrorBoundary pageName="Google OAuth Callback"><GoogleOAuthCallback /></ErrorBoundary>} />
                   <Route path="/admin/usage-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />

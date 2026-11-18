@@ -4,7 +4,9 @@
 export const DEMO_DAYS = 7;
 
 const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,24}/gi;
-const PHONE_RE = /(?:\+?\d[\d\s().-]{7,}\d)/g;
+// Phone numbers must look dialable: start with +, 0, ( or 13/18 (AU), so
+// image IDs and other long digit runs in page code are ignored.
+const PHONE_RE = /(?<![\w/=.-])(?:\+\d{1,3}[\s.-]?|\(0\d\)\s?|0\d[\s.-]?|1[38]00[\s.-]?|13[\s.-]?)\d[\d\s.-]{5,12}\d(?![\w/])/g;
 const JUNK_EMAIL = /(example\.|sentry|wixpress|@2x|\.png|\.jpg|\.jpeg|\.gif|\.webp|\.svg|noreply|no-reply|domain\.com|email\.com|yourname|u003e)/i;
 
 export interface FoundContacts {
@@ -27,7 +29,8 @@ export function extractContacts(markdown: string, links: string[] = [], base?: s
     const m = /^tel:(.+)$/i.exec(l || "");
     if (m) phones.add(decodeURIComponent(m[1]).replace(/\s+/g, " ").trim());
   }
-  for (const m of text.matchAll(PHONE_RE)) {
+  const plain = text.replace(/!?\[[^\]]*\]\([^)]*\)/g, " ").replace(/https?:\/\/\S+/g, " ");
+  for (const m of plain.matchAll(PHONE_RE)) {
     const digits = m[0].replace(/\D/g, "");
     if (digits.length >= 8 && digits.length <= 15 && !/^(19|20)\d{6}$/.test(digits)) phones.add(m[0].replace(/\s+/g, " ").trim());
   }
