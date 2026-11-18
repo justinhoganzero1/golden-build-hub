@@ -1,4 +1,3 @@
-import { currentLandingAd } from "./lib/lovableVisitor";
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -187,12 +186,10 @@ const RootRoute = () => {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (user) return <Navigate to="/oracle" replace />;
-  // The installed app greets with Oracle instead of the ad.
+  // The installed app greets with Oracle instead of the store listing.
   if (isInstalledApp()) return <PublicWelcomePage />;
-  // Browser visitors (from Lovable or anywhere online) watch the funny ad first, once per visit;
-  // search robots still get the store listing.
-  const landing = currentLandingAd();
-  if (landing) return <Navigate to={landing} replace />;
+  // Every signed-out browser visitor lands straight on the Play Store-style
+  // download page; the funny ad stays reachable only at its own /ad link.
   return <AppStorePage />;
 };
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
