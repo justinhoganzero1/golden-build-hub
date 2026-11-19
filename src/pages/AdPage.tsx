@@ -241,6 +241,17 @@ export default function AdPage() {
         <Download className="h-5 w-5" /> Download the app — free
       </Link>
 
+      <a
+        href={videoUrl}
+        download={funny ? "oracle-lunar-funny-ad.mp4" : "oracle-lunar-ad.mp4"}
+        className="mt-3 inline-flex items-center justify-center gap-2 rounded-full px-6 py-2 text-sm font-medium border border-[hsl(var(--gold)/0.5)] text-foreground hover:bg-[hsl(var(--gold)/0.1)] transition-colors"
+      >
+        <Download className="h-4 w-4" /> Save this video to my device
+      </a>
+      <p className="mt-1 text-xs text-muted-foreground text-center max-w-xs">
+        To post on Instagram or TikTok: save it, open the app, tap + and pick it from your gallery.
+      </p>
+
       <Link
         to="/"
         onClick={(e) => {

@@ -1,8 +1,9 @@
+import { downloadFileFromUrl } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { fileMimeType } from "@/lib/sharedMedia";
 import { systemShare, systemShareAvailable, webShareAllowed } from "@/lib/systemShare";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText } from "lucide-react";
+import { Copy, Mail, Phone, Share2, Check, ExternalLink, MessageCircle, Facebook, Twitter, Send, Linkedin, Link2, AlertTriangle, HelpCircle, LogIn, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const FB_SIGNIN_KEY = "oracle-lunar-fb-signed-in";
@@ -436,6 +437,22 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
   // Platforms without a public share intent — copy text + open the app/site so user can paste.
   const shareCopyAndOpen = async (provider: string, target: string) => {
     const message = `${shareText} ${shareUrl}`;
+    // With a real file, hand the file itself over so it shows up inside the other app.
+    if (fileUrl) {
+      let file: File | undefined;
+      try { file = await loadFile(); } catch { file = undefined; }
+      if (file) {
+        const outcome = await systemShare({ title, text: shareText, file });
+        if (outcome === "shared") { toast.success(`Pick ${provider} in the list to post it.`); return; }
+        saveFileToDevice(file);
+      } else {
+        await downloadFileFromUrl(fileUrl, fileNameFinal);
+      }
+      await robustCopy(message);
+      toast.success(`Saved to your device — in ${provider}, tap + and pick it from your gallery. Caption copied.`, { duration: 8000 });
+      setTimeout(() => void robustOpen(target), 1200);
+      return;
+    }
     const ok = await robustCopy(message);
     if (ok) {
       toast.success(`${provider}: link copied — paste it in your post.`);
@@ -537,6 +554,18 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, fileUrl, hasNativeShare]);
 
+  const saveFileToDevice = (file: File) => {
+    const u = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = u; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 30_000);
+  };
+  const downloadOnly = async () => {
+    if (!fileUrl) return;
+    try { saveFileToDevice(await loadFile()); toast.success("Saved to your device."); }
+    catch { const r = await downloadFileFromUrl(fileUrl, fileNameFinal); if (r === "failed") toast.error("Couldn't save the file."); }
+  };
+
   // Send the actual file through the phone's share sheet (Messages, email, WhatsApp…).
   // Falls back to sharing the watch link when the device can't attach files.
   const shareFile = async () => {
@@ -598,7 +627,17 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
             />
           </div>
 
-          {/* Native Share */}
+          {fileUrl && (
+            <button onClick={downloadOnly} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-all">
+              <Download className="w-5 h-5 text-primary" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-foreground">Save to my device</p>
+                <p className="text-[10px] text-muted-foreground">Then post it from your gallery in any app</p>
+              </div>
+            </button>
+          )}
+
+                    {/* Native Share */}
           {hasNativeShare && (
             <button onClick={nativeShare} className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary transition-all">
               <ExternalLink className="w-5 h-5 text-primary" />
@@ -798,7 +837,7 @@ const ShareDialog = ({ open, onOpenChange, title, url, imageUrl, description, fi
           </div>
 
           <p className="text-[11px] text-muted-foreground">
-            Some platforms (Instagram, TikTok, YouTube) don't allow direct web posting — we copy your link and open the app so you can paste it into your post.
+            Some platforms (Instagram, TikTok, YouTube) don't allow direct web posting — we save the file to your device (or open your share list) so you can pick it inside the app.
           </p>
 
           {/* Email */}
