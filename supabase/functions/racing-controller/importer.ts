@@ -8,7 +8,7 @@ import { chunk, audit, markProvider } from "./common.ts";
 const SOURCE = "owner-import";
 const norm = (s: string) => s.trim().toLowerCase();
 
-async function nameMap(sb: SupabaseClient, table: "racing_horses" | "racing_jockeys" | "racing_trainers", names: string[], extra: (n: string) => Record<string, unknown> = () => ({})) {
+export async function nameMap(sb: SupabaseClient, table: "racing_horses" | "racing_jockeys" | "racing_trainers", names: string[], extra: (n: string) => Record<string, unknown> = () => ({})) {
   const map = new Map<string, string>();
   const unique = [...new Set(names.filter(Boolean).map((n) => n.trim()))];
   for (const c of chunk(unique, 150)) {

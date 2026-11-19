@@ -170,6 +170,7 @@ export function DailyReportScreen({ settings, tz }: { settings: any; tz: string 
         </Panel>
       )}
 
+      <AddCoveragePanel today={today} onAdded={() => { refresh(); }} />
       <Panel title={<span className="inline-flex items-center gap-2"><Tv className="h-4 w-4" />Broadcast coverage today</span>}>
         <Table head={["Venue", "Network", "Channel", "Streaming", "Coverage starts", "Races", "Status", "Counts?"]} empty="No broadcast schedule stored for today."
           rows={(report?.coverage ?? []).map((c: any) => [c.venue, c.network, c.channel, c.platform ?? "—", c.starts_at ? formatInZone(c.starts_at, tz, { timeStyle: "short" }) : "—",
@@ -193,6 +194,42 @@ export function DailyReportScreen({ settings, tz }: { settings: any; tz: string 
       </Panel>
       <p className="text-center text-xs text-muted-foreground">Oracle Racing never places bets. Prices shown are indicative, not secured. Gamble responsibly — Gambling Help Online 1800 858 858.</p>
     </div>
+  );
+}
+
+const CHANNELS = ["Channel 7", "7two", "7mate", "Seven regional", "Racing.com", "7plus"];
+function AddCoveragePanel({ today, onAdded }: { today: string; onAdded: () => void }) {
+  const meetings = useRacingTable("today-meetings", () => supabase.from("racing_meetings").select("id,racecourse_id,racecourse:racing_racecourses(name,country_code)").eq("meeting_date", today), [today]);
+  const [form, setForm] = useState({ racecourse_id: "", channel: "7two", status: "scheduled", races: "", source_url: "" });
+  const [saving, setSaving] = useState(false);
+  const list = (meetings.data ?? []).filter((m: any) => m.racecourse?.country_code === "AU");
+  const parse = (v: string) => [...new Set(v.split(/[,\s]+/).flatMap((p) => { const m = p.match(/^(\d{1,2})(?:-(\d{1,2}))?$/); if (!m) return []; const a = +m[1], b = m[2] ? +m[2] : a; return Array.from({ length: Math.abs(b - a) + 1 }, (_, i) => Math.min(a, b) + i); }))].filter((n) => n >= 1 && n <= 15);
+  const save = async () => {
+    if (!form.racecourse_id) { toast.error("Pick a meeting first."); return; }
+    if (form.source_url && !/^https:\/\//i.test(form.source_url)) { toast.error("The source link must start with https://"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("racing_broadcasts").upsert({
+      broadcast_date: today, racecourse_id: form.racecourse_id, network: form.channel === "Racing.com" ? "Racing.com" : "Seven Network", channel: form.channel,
+      platform: form.channel === "7plus" ? "7plus" : null, status: form.status, race_numbers: parse(form.races), source: "owner-entry", source_url: form.source_url || null, verified: false, updated_at: new Date().toISOString(),
+    }, { onConflict: "broadcast_date,racecourse_id,channel" });
+    setSaving(false);
+    if (error) toast.error(error.message); else { toast.success("Coverage saved. Press Refresh to re-run today's report."); onAdded(); }
+  };
+  const sel = "mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm";
+  return (
+    <Panel title="Add today's broadcast coverage">
+      <p className="mb-2 text-xs text-muted-foreground">Check the official Seven, 7plus or Racing.com guide, then add each covered meeting here. Oracle never assumes a race is televised.</p>
+      {!list.length ? <Empty>No Australian meetings stored for today yet.</Empty> : (
+        <div className="grid gap-2 md:grid-cols-5">
+          <label className="text-sm">Meeting<select aria-label="Meeting" className={sel} value={form.racecourse_id} onChange={(e) => setForm({ ...form, racecourse_id: e.target.value })}><option value="">Choose…</option>{list.map((m: any) => <option key={m.id} value={m.racecourse_id}>{m.racecourse?.name}</option>)}</select></label>
+          <label className="text-sm">Channel<select aria-label="Channel" className={sel} value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>{CHANNELS.map((c) => <option key={c}>{c}</option>)}</select></label>
+          <label className="text-sm">Status<select aria-label="Coverage status" className={sel} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>{Object.entries(CHANNEL_STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+          <label className="text-sm">Races (blank = all)<input aria-label="Races covered" className={sel} placeholder="e.g. 3-8" value={form.races} onChange={(e) => setForm({ ...form, races: e.target.value })} /></label>
+          <label className="text-sm">Guide link (optional)<input aria-label="Guide link" className={sel} placeholder="https://" value={form.source_url} onChange={(e) => setForm({ ...form, source_url: e.target.value })} /></label>
+        </div>
+      )}
+      <Button size="sm" className="mt-2" disabled={saving || !list.length} onClick={save}>{saving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}Save coverage</Button>
+    </Panel>
   );
 }
 

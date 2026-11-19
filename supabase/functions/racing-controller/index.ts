@@ -15,6 +15,8 @@ import { analyseClip } from "./vision.ts";
 import { analyseRace, type Stage } from "./analysis.ts";
 import { trainModels } from "./lab.ts";
 import { importRaces, importForm, importBroadcasts } from "./importer.ts";
+import { puntersEdgeConfigured, syncCard, syncPrices, syncResults, PE } from "./puntersedge.ts";
+import { localDate } from "../_shared/racingSelection.ts";
 import { dailyScan, recheckSelections, settleDecisions, backtestRules, dailyTick } from "./daily.ts";
 import { raceReport } from "./report.ts";
 
@@ -51,6 +53,7 @@ const body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("daily_scan") }),
   z.object({ action: z.literal("recheck") }),
   z.object({ action: z.literal("backtest_rules") }),
+  z.object({ action: z.literal("pe_sync"), step: z.enum(["card", "prices", "results"]) }),
 ]);
 
 function db(): SupabaseClient {
@@ -132,6 +135,18 @@ async function runDiscovery(sb: SupabaseClient, trigger: string) {
   const providers = (await connectedRacingProviders(sb)).filter((p) => p.category === "racing_data" || p.category === "markets");
   const usable = providers.filter((p) => p.has_credentials && p.adapter_ready);
   const runId = await startRun(sb, "discovery", "Find races worldwide", trigger);
+  if (puntersEdgeConfigured()) {
+    try {
+      const card: any = await syncCard(sb);
+      const { count: upcoming } = await sb.from("racing_races").select("id", { count: "exact", head: true }).eq("provider_id", PE).gte("start_time_utc", new Date().toISOString());
+      await finishRun(sb, runId, "succeeded", { upcoming: upcoming ?? 0, ...(card.skipped ? { note: "Card loaded within the last 3 hours (saving credits)." } : card),
+        reason: `${upcoming ?? 0} upcoming Australian thoroughbred race(s) from PuntersEdge (Racing Australia acceptances). Other countries need another licensed feed.` });
+      return { ok: true };
+    } catch (e) {
+      await finishRun(sb, runId, "failed", {}, (e as Error).message.slice(0, 400));
+      return { ok: false };
+    }
+  }
   const { count: imported } = await sb.from("racing_races").select("id", { count: "exact", head: true }).eq("provider_id", "owner-import").gte("start_time_utc", new Date().toISOString());
   if (!usable.length && imported) {
     await finishRun(sb, runId, "succeeded", { upcoming_imported: imported, reason: `${imported} upcoming race(s) from your imported data. No paid racing feed is connected, so only imported races are known.` });
@@ -315,6 +330,7 @@ async function status(sb: SupabaseClient) {
     const { data } = await sb.from("racing_engine_runs").select("*").eq("engine", e).order("started_at", { ascending: false }).limit(1).maybeSingle();
     runs[e] = data ?? null;
   }
+  if (puntersEdgeConfigured()) credSet.add(PE);
   return { providers: (full ?? []).map((p) => ({ ...p, has_credentials: credSet.has(p.id) })), runs };
 }
 
@@ -382,7 +398,14 @@ Deno.serve(async (req) => {
     if (input.action === "daily_scan") return json(await dailyScan(sb, actor, "manual"));
     if (input.action === "recheck") { const r = await recheckSelections(sb); const s2 = await settleDecisions(sb); return json({ ok: true, ...r, ...s2 }); }
     if (input.action === "backtest_rules") return json(await backtestRules(sb, actor));
-
+    if (input.action === "pe_sync") {
+      if (!puntersEdgeConfigured()) return json({ error: "not_connected" }, 400);
+      const r = input.step === "card" ? await syncCard(sb, { force: true })
+        : input.step === "prices" ? await syncPrices(sb)
+        : await syncResults(sb, localDate("Australia/Sydney"), true);
+      await sb.from("racing_audit_log").insert({ actor, action: "pe_sync", detail: { step: input.step, ...r } });
+      return json({ ok: true, ...r });
+    }
     if (input.action === "analyse_clip") {
       const r = await analyseClip(sb, actor, input.video_id, input.frames);
       const { status: code, ...rest } = r as any;

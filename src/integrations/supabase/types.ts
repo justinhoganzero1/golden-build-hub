@@ -4064,6 +4064,7 @@ export type Database = {
           race_number: number
           runners_count: number | null
           selected: boolean
+          start_time_local: string | null
           start_time_utc: string
           status: string
           suitability_reasons: Json
@@ -4089,6 +4090,7 @@ export type Database = {
           race_number: number
           runners_count?: number | null
           selected?: boolean
+          start_time_local?: string | null
           start_time_utc: string
           status?: string
           suitability_reasons?: Json
@@ -4114,6 +4116,7 @@ export type Database = {
           race_number?: number
           runners_count?: number | null
           selected?: boolean
+          start_time_local?: string | null
           start_time_utc?: string
           status?: string
           suitability_reasons?: Json

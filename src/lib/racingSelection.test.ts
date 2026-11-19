@@ -120,3 +120,25 @@ describe("$1 flat-bet back-test", () => {
     expect(flatBetStats([{ decided_at: "a", odds: 3, won: true }], 10).returns).toBe(2.8);
   });
 });
+
+import { localClock, canonicalVenue, australianZoneFor, summarisePrices } from "../../supabase/functions/_shared/racingPuntersEdge";
+describe("PuntersEdge feed helpers", () => {
+  it("reads race-card clock times", () => {
+    expect(localClock("2:55PM")).toBe("14:55");
+    expect(localClock("12:10PM")).toBe("12:10");
+    expect(localClock("12:05AM")).toBe("00:05");
+  });
+  it("matches venue names to stored racecourses", () => {
+    expect(canonicalVenue("randwick")).toBe("Royal Randwick");
+    expect(canonicalVenue("mornington")).toBe("Mornington");
+  });
+  it("works out the venue's time zone from the start time (Queensland has no daylight saving)", () => {
+    expect(australianZoneFor("2026-11-19T03:55:00Z", "14:55")).toBe("Australia/Sydney");
+    expect(australianZoneFor("2026-11-19T02:55:00Z", "12:55")).toBe("Australia/Brisbane");
+    expect(australianZoneFor("2026-11-19T06:00:00Z", "14:00")).toBe("Australia/Perth");
+  });
+  it("uses the best fresh price and ignores stale bookmakers", () => {
+    const s = summarisePrices([{ key: "a", win_price: 3.2 }, { key: "b", win_price: 3.6 }, { key: "c", win_price: 9, stale: true }]);
+    expect(s.best).toBe(3.6); expect(s.bestBook).toBe("b"); expect(s.books).toBe(2); expect(s.median).toBe(3.4);
+  });
+});

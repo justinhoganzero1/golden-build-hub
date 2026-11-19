@@ -456,6 +456,7 @@ export function ProvidersScreen({ tz }: { tz: string }) {
               {p.notes && <p className="md:col-span-2">{p.notes}</p>}
               {p.docs_url && <a className="text-primary underline md:col-span-2" href={p.docs_url} target="_blank" rel="noreferrer">Provider website</a>}
             </div>
+            {p.id === "puntersedge" && <PeSyncButton connected={p.has_credentials} onDone={refresh} />}
             {(p.credential_fields ?? []).length > 0 && (
               editing === p.id ? (
                 <div className="mt-3 space-y-2">
@@ -479,6 +480,26 @@ export function ProvidersScreen({ tz }: { tz: string }) {
       </div>
     </Panel>
     </div>
+  );
+}
+
+function PeSyncButton({ connected, onDone }: { connected: boolean; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  if (!connected) return <p className="mt-2 text-xs text-muted-foreground">Not connected yet.</p>;
+  const run = async () => {
+    setBusy(true);
+    try {
+      const card = await callController({ action: "pe_sync", step: "card" });
+      const prices = await callController({ action: "pe_sync", step: "prices" });
+      const results = await callController({ action: "pe_sync", step: "results" });
+      toast.success(`Loaded ${card?.races ?? 0} races (${card?.runners ?? 0} runners), priced ${prices?.priced ?? 0} runners, ${results?.results ?? 0} new results`);
+      onDone();
+    } catch (e) { toast.error((e as Error).message.slice(0, 220)); } finally { setBusy(false); }
+  };
+  return (
+    <Button size="sm" className="mt-3" disabled={busy} onClick={run}>
+      {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1 h-3.5 w-3.5" />}Load today's races and prices now (about 8 credits)
+    </Button>
   );
 }
 

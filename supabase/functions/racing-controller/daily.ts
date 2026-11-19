@@ -10,6 +10,7 @@ import {
 } from "../_shared/racingSelection.ts";
 import { analyseRace, latestValidatedModels, priceOf } from "./analysis.ts";
 import { audit, chunk, fetchAll } from "./common.ts";
+import { puntersEdgeConfigured, syncCard, syncPrices, syncResults } from "./puntersedge.ts";
 
 const TIME_BUDGET_MS = 100_000;
 const MAX_RACES = 60;
@@ -36,6 +37,10 @@ export async function dailyScan(sb: SupabaseClient, actor: string, trigger: stri
   const problems: string[] = [];
 
   try {
+    if (puntersEdgeConfigured()) {
+      try { await syncCard(sb, { withinMinutes: 30 }); await syncPrices(sb); }
+      catch (e) { problems.push(`PuntersEdge: ${(e as Error).message.slice(0, 200)}`); }
+    }
     const { data: bc } = await sb.from("racing_broadcasts").select("*, racecourse:racing_racecourses(id,name,timezone)").eq("broadcast_date", today).order("starts_at");
     const coverage = (bc ?? []).map((b: any) => ({ venue: b.racecourse?.name, network: b.network, channel: b.channel, platform: b.platform, starts_at: b.starts_at, status: b.status, races: b.race_numbers, counts: broadcastCounts(b.status), verified: b.verified, source_url: b.source_url }));
     const live = (bc ?? []).filter((b: any) => broadcastCounts(b.status));
@@ -59,10 +64,14 @@ export async function dailyScan(sb: SupabaseClient, actor: string, trigger: stri
       meetings.add(meeting.id);
       for (const r of list) if (r.race_code === "thoroughbred" && r.status !== "abandoned" && !races.has(r.id)) races.set(r.id, { ...r, venue, channel: b.channel });
     }
-    const eligible = [...races.values()].sort((a, b) => (a.start_time_utc < b.start_time_utc ? -1 : 1));
+    const sortedAll = [...races.values()].sort((a, b) => (a.start_time_utc < b.start_time_utc ? -1 : 1));
+    // Races already run can't be selected; they are reported as skipped, not as missing data.
+    const nowMs = Date.now();
+    const alreadyRun = sortedAll.filter((r) => Date.parse(r.start_time_utc) <= nowMs || r.status === "finished");
+    const eligible = sortedAll.filter((r) => !alreadyRun.includes(r));
     if (eligible.length > MAX_RACES) problems.push(`${eligible.length} races found; only the first ${MAX_RACES} were analysed.`);
 
-    let fully = 0, analysed = 0, qualifyingRaces = 0, qualifyingSel = 0, skipped = 0, modelVersion: string | null = null;
+    let fully = 0, analysed = 0, qualifyingRaces = 0, qualifyingSel = 0, skipped = alreadyRun.length, modelVersion: string | null = null;
     const decisions: any[] = [];
     const now = new Date().toISOString();
     for (const race of eligible.slice(0, MAX_RACES)) {
@@ -104,6 +113,7 @@ export async function dailyScan(sb: SupabaseClient, actor: string, trigger: stri
       if (error) throw new Error(error.message);
       saved.push(...(data ?? []));
     }
+    if (!eligible.length && alreadyRun.length && !problems.length) problems.push(`All ${alreadyRun.length} broadcast race(s) have already run today.`);
     const status = reportStatus({ eligibleRaces: eligible.length, fullyAnalysedRaces: fully, qualifying: qualifyingSel, dataProblems: problems.length });
     const { data: provs } = await sb.from("racing_providers").select("last_success_at").in("category", ["racing_data", "markets", "broadcast"]).not("last_success_at", "is", null).order("last_success_at", { ascending: false }).limit(1);
     await sb.from("racing_daily_reports").update({
@@ -135,6 +145,11 @@ export async function recheckSelections(sb: SupabaseClient) {
   const { data: rep } = await sb.from("racing_daily_reports").select("id").eq("report_date", today).neq("status", "in_progress").order("started_at", { ascending: false }).limit(1).maybeSingle();
   if (!rep) return { checked: 0, withdrawn: 0 };
   const { data: list } = await sb.from("racing_selection_decisions").select("*").eq("report_id", rep.id).eq("decision", "qualified").is("withdrawn_at", null);
+  const upcoming = (list ?? []).filter((d) => Date.parse(d.race_start_utc) > Date.now());
+  if (upcoming.length && puntersEdgeConfigured()) {
+    try { await syncPrices(sb, [...new Set(upcoming.map((d) => d.venue).filter(Boolean))] as string[], Math.max(5, Number(settings?.odds_refresh_minutes ?? 15)) - 1); }
+    catch (e) { console.error("price recheck", (e as Error).message); }
+  }
   let withdrawn = 0;
   const now = new Date();
   for (const d of list ?? []) {
@@ -242,5 +257,13 @@ export async function dailyTick(sb: SupabaseClient) {
     if (!count) await dailyScan(sb, "scheduler", "schedule");
   }
   await recheckSelections(sb);
+  if (puntersEdgeConfigured()) {
+    const sydney = localDate("Australia/Sydney");
+    try {
+      if (localTime("Australia/Sydney") >= "13:00") await syncResults(sb, sydney);
+      const y = localDate("Australia/Sydney", new Date(Date.now() - 86_400_000));
+      await syncResults(sb, y, false, 1440);
+    } catch (e) { console.error("results sync", (e as Error).message); }
+  }
   await settleDecisions(sb);
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.racing_races ADD COLUMN IF NOT EXISTS start_time_local text;

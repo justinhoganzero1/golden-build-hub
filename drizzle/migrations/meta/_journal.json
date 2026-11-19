@@ -260,6 +260,13 @@
       "when": 1795058328720,
       "tag": "0036_racing_daily_broadcast",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795059836846,
+      "tag": "0037_racing_race_local_clock",
+      "breakpoints": true
     }
   ]
 }
