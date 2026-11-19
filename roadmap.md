@@ -114,4 +114,5 @@
 - [x] $3.00 minimum win price (raise-only, locked in database), value and confidence rules, honest data-unavailable vs no-winner status
 - [x] Broadcast schedule import (thoroughbred only; replays/unconfirmed never count), official/estimated parade times
 - [x] Auto scan on first open each day + daily scan time, price re-checks, withdrawals, alerts, results settling, $1 flat-bet back-test
-- [ ] Licensed Seven/7plus TV-guide feed and live odds feed — waits on Juzzy choosing/subscribing (import works meanwhile)
+- [ ] Licensed Seven/7plus TV-guide feed — waits on Juzzy (import works meanwhile)
+- [ ] Connect PuntersEdge (fields, prices, results) — waiting on secure key entry
