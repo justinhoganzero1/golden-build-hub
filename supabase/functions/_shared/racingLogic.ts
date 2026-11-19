@@ -95,3 +95,15 @@ export function scorePrediction(predicted: string[], actual: string[]) {
   }
   return { winnerHit, top2Hit, top3Hit, exactaHit, rankCorrelation };
 }
+
+/**
+ * Statistics-only baseline used for back-test trials: rank runners by their
+ * pre-race betting price (shortest first). It is the market's opinion, not a
+ * trained model, and serves as the bar any real Oracle model must beat.
+ */
+export function marketBaselineRank<T extends { id: string; odds: number | null; saddlecloth: number }>(runners: T[]): string[] {
+  return [...runners]
+    .filter((r) => r.odds != null && Number.isFinite(r.odds) && (r.odds as number) > 1)
+    .sort((a, b) => (a.odds as number) - (b.odds as number) || a.saddlecloth - b.saddlecloth)
+    .map((r) => r.id);
+}

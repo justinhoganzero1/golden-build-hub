@@ -239,6 +239,13 @@
       "when": 1795054044502,
       "tag": "0033_oracle_racing_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795055326729,
+      "tag": "0034_racing_videos_owner_only",
+      "breakpoints": true
     }
   ]
 }

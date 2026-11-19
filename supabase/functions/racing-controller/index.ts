@@ -11,6 +11,7 @@ import { z } from "npm:zod@3.25.76";
 import { requireOwner } from "../_shared/requireAuth.ts";
 import { hasSchedulerToken } from "../_shared/internalAuth.ts";
 import { suitabilityScore, selectRaces, raceDayJobs, scorePrediction, type SelectionMode } from "../_shared/racingLogic.ts";
+import { generateResponse, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.9";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +29,65 @@ const body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("tick") }),
   z.object({ action: z.literal("save_credentials"), provider_id: z.string().min(1).max(60), values: z.record(z.string().max(500)) }),
   z.object({ action: z.literal("clear_credentials"), provider_id: z.string().min(1).max(60) }),
+  z.object({
+    action: z.literal("analyse_clip"),
+    video_id: z.string().uuid(),
+    frames: z.array(z.string().startsWith("data:image/jpeg;base64,").max(400_000)).min(1).max(8),
+  }),
 ]);
+
+const VISION_MODEL = "openai/gpt-6-astra" as const;
+const PARADE_RULES = `You are Oracle Racing's paddock vision engine. You are shown still frames from ONE short clip the owner filmed of horses parading before a race.
+Describe only what is visible. Never guess a horse's name, never predict a winner, never invent anything you cannot see.
+For each horse you can see clearly, report: a visible label (saddlecloth number if readable, otherwise colours/position), calmness (calm / alert / on edge / agitated), visible sweating (none / light / heavy / unclear), coat (shining / normal / dull / unclear), walk (relaxed and even / short or choppy / unclear), and one short plain-English note.
+Also rate overall clip quality (good / fair / poor) and your confidence from 0 to 1.
+Reply with JSON only, shaped like {"quality":"fair","confidence":0.5,"overall":"...","horses":[{"label":"...","calmness":"...","sweating":"...","coat":"...","walk":"...","note":"..."}]}`;
+
+function outputText(res: unknown): string {
+  const r = res as { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
+  if (typeof r.output_text === "string" && r.output_text) return r.output_text;
+  const parts: string[] = [];
+  for (const item of r.output ?? []) for (const c of item.content ?? []) if (c.type === "output_text" && c.text) parts.push(c.text);
+  return parts.join("");
+}
+
+/** Owner-uploaded parade clip → AI observations (labelled interpretation, never a prediction). */
+async function analyseClip(sb: SupabaseClient, actor: string, videoId: string, frames: string[]) {
+  const { data: video } = await sb.from("racing_video_sources").select("id,race_id,kind,storage_path").eq("id", videoId).maybeSingle();
+  if (!video || !video.storage_path) return { error: "unknown_clip", status: 404 };
+  const content: any[] = [{ type: "input_text", text: `${frames.length} frames from the clip, in time order.` }];
+  for (const f of frames) content.push({ type: "input_image", image_url: f, detail: "auto" });
+  let parsed: any;
+  try {
+    const res = await generateResponse({ model: VISION_MODEL, instructions: PARADE_RULES, input: [{ role: "user", content }], reasoning: { effort: "low" } } as any, { maxRetries: 0 });
+    const text = outputText(res);
+    const m = text.match(/\{[\s\S]*\}/);
+    parsed = m ? JSON.parse(m[0]) : null;
+  } catch (e) {
+    const msg = e instanceof GatewayError ? `${e.code}: ${e.message}` : (e as Error).message;
+    console.error("racing analyse_clip", msg);
+    return { error: "analysis_failed", detail: msg.slice(0, 200), status: 502 };
+  }
+  if (!parsed || !Array.isArray(parsed.horses)) return { error: "analysis_unreadable", status: 502 };
+  const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+  const quality = ["good", "fair", "poor"].includes(parsed.quality) ? parsed.quality : "unclear";
+  const now = new Date().toISOString();
+  const rows = parsed.horses.slice(0, 30).map((h: any) => ({
+    video_id: video.id, race_id: video.race_id, observed_at: now, available: true, confidence,
+    objective_measures: {
+      label: String(h.label ?? "").slice(0, 80), calmness: String(h.calmness ?? "unclear").slice(0, 30),
+      sweating: String(h.sweating ?? "unclear").slice(0, 30), coat: String(h.coat ?? "unclear").slice(0, 30),
+      walk: String(h.walk ?? "unclear").slice(0, 40), source: "owner_upload", frames: frames.length,
+    },
+    ai_interpretation: String(h.note ?? "").slice(0, 400),
+  }));
+  if (!rows.length) rows.push({ video_id: video.id, race_id: video.race_id, observed_at: now, available: false, confidence, objective_measures: { source: "owner_upload", frames: frames.length }, ai_interpretation: String(parsed.overall ?? "No horse was clear enough to describe.").slice(0, 400) });
+  await sb.from("racing_visual_observations").insert(rows);
+  await sb.from("racing_video_sources").update({ quality, identification_confidence: confidence }).eq("id", video.id);
+  await sb.from("racing_providers").update({ status: "connected", last_success_at: now, last_checked_at: now, updated_at: now }).eq("id", "owner-uploads");
+  await sb.from("racing_audit_log").insert({ actor, action: "clip_analysed", detail: { video: video.id, horses: rows.length, quality } });
+  return { ok: true, horses: rows.length, quality, confidence, overall: String(parsed.overall ?? "").slice(0, 400) };
+}
 
 function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -149,7 +208,13 @@ async function runVisionEngine(sb: SupabaseClient, engine: "paddock_vision" | "r
     });
     return;
   }
-  await finishRun(sb, runId, "waiting_for_data", { footage: count, reason: "Footage is stored; frame analysis is switched on in the vision stage." });
+  const { count: observed } = await sb.from("racing_visual_observations").select("id", { count: "exact", head: true }).not("video_id", "is", null);
+  await finishRun(sb, runId, observed ? "succeeded" : "waiting_for_data", {
+    footage: count, observations: observed ?? 0,
+    reason: observed
+      ? `${count} clip(s) stored, ${observed} horse observation(s) made. These are AI interpretations and do not change finishing orders until tested.`
+      : "Footage is stored; press Analyse on a clip to read it.",
+  });
 }
 
 // ---------- Master: suitability, selection, race-day jobs ----------
@@ -309,6 +374,12 @@ Deno.serve(async (req) => {
       }).eq("id", provider.id);
       await sb.from("racing_audit_log").insert({ actor, action: "credentials_saved", detail: { provider: provider.id, fields: Object.keys(values) } });
       return json({ ok: true });
+    }
+
+    if (input.action === "analyse_clip") {
+      const r = await analyseClip(sb, actor, input.video_id, input.frames);
+      const { status: code, ...rest } = r as any;
+      return json(rest, code ?? 200);
     }
 
     if (input.action === "tick") {

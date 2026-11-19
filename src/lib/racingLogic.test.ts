@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { suitabilityScore, selectRaces, raceDayJobs, usableBeforeRace, scorePrediction } from "../../supabase/functions/_shared/racingLogic";
+import { suitabilityScore, selectRaces, raceDayJobs, usableBeforeRace, scorePrediction, marketBaselineRank } from "../../supabase/functions/_shared/racingLogic";
 
 const full = { runners: 10, runnersWithForm: 10, runnersWithJockey: 10, hasOfficialTrackRating: true, hasRecentWeather: true, hasPaddockVideo: true, hasTrainingVideo: true, modelValidated: true };
 
@@ -48,5 +48,15 @@ describe("prediction scoring", () => {
     expect(s.winnerHit).toBe(true);
     expect(s.exactaHit).toBe(true);
     expect(s.top3Hit).toBe(false);
+  });
+});
+
+describe("market baseline back-test ranking", () => {
+  it("puts the shortest price first and breaks ties by saddlecloth number", () => {
+    const order = marketBaselineRank([
+      { id: "b", odds: 11, saddlecloth: 24 }, { id: "a", odds: 5.5, saddlecloth: 1 },
+      { id: "c", odds: 11, saddlecloth: 2 }, { id: "x", odds: null, saddlecloth: 3 },
+    ]);
+    expect(order).toEqual(["a", "c", "b"]);
   });
 });

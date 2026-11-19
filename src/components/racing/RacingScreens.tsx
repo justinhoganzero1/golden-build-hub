@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Play, RefreshCw, KeyRound, Trash2 } from "lucide-react";
+import { Loader2, Play, RefreshCw, KeyRound, Trash2, Eye, ScanEye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Panel, StatusBadge, Empty, Stat, Evidence, Table } from "./RacingUi";
 import {
   ENGINE_INFO, callController, useControllerStatus, useRacingTable, useRacingRefresh, formatInZone, countdown, ago,
 } from "./racingData";
+import { ParadeClipUpload, analyseStoredClip, RACING_VIDEO_BUCKET } from "./ParadeClipUpload";
 
 const RACE_SELECT = "id,race_number,name,start_time_utc,distance_m,race_class,runners_count,status,data_completeness,suitability_score,suitability_reasons,has_paddock_video,has_training_video,selected,meeting:racing_meetings(track_rating,racecourse:racing_racecourses(id,name,country_code,timezone))";
 const NO_PROVIDER = "No races yet. Oracle only shows real races from a licensed racing data provider — connect one under Data Providers.";
@@ -179,6 +180,7 @@ export function RaceAnalysisScreen({ tz, raceId, onPick }: { tz: string; raceId:
           <Panel title="Runners">
             <Table head={["No.", "Horse", "Barrier", "Weight", "Jockey", "Trainer", "Status"]} empty="No field received yet." rows={(runners.data ?? []).map((u: any) => [u.saddlecloth, u.horse?.name, u.barrier ?? "—", u.weight_kg ? `${u.weight_kg} kg` : "—", u.jockey?.name ?? "—", u.trainer?.name ?? "—", u.scratched ? "Scratched" : "Running"])} />
           </Panel>
+          <ParadeClipUpload races={[]} fixedRaceId={race.id} tz={tz} />
           <Panel title="Prediction history (permanent)">
             <Table head={["Stage", "Status", "Model", "Evidence up to", "Explanation"]} empty="No predictions recorded for this race." rows={(preds.data ?? []).filter((p: any) => p.race_id === race.id).map((p: any) => [p.stage, p.status, p.model_version, formatInZone(p.evidence_cutoff, tz), p.explanation])} />
           </Panel>
@@ -238,19 +240,62 @@ export function PeopleScreen() {
 }
 
 // ---------- 8-10. Vision screens ----------
-export function VisionScreen({ engine, kinds, title, rules }: { engine: string; kinds: string[]; title: string; rules: string[] }) {
+async function signedClipUrl(path: string) {
+  const { data, error } = await supabase.storage.from(RACING_VIDEO_BUCKET).createSignedUrl(path, 3600);
+  if (error || !data?.signedUrl) throw new Error(error?.message ?? "Couldn't open the clip.");
+  return data.signedUrl;
+}
+
+export function VisionScreen({ engine, kinds, title, rules, tz = "Australia/Brisbane" }: { engine: string; kinds: string[]; title: string; rules: string[]; tz?: string }) {
   const status = useControllerStatus();
+  const refresh = useRacingRefresh();
   const run = status.data?.runs?.[engine];
-  const videos = useRacingTable("videos-" + engine, () => supabase.from("racing_video_sources").select("id,kind,source_url,recorded_at,quality,identification_confidence,licence_note,horse:racing_horses(name)").in("kind", kinds).order("recorded_at", { ascending: false }).limit(100));
+  const paddock = engine === "paddock_vision";
+  const races = useUpcomingRaces();
+  const [busy, setBusy] = useState<string | null>(null);
+  const videos = useRacingTable("videos-" + engine, () => supabase.from("racing_video_sources").select("id,kind,source_url,storage_path,recorded_at,quality,identification_confidence,licence_note,horse:racing_horses(name)").in("kind", kinds).order("recorded_at", { ascending: false }).limit(100));
+  const ids = (videos.data ?? []).map((v: any) => v.id);
+  const obs = useRacingTable("clip-obs-" + engine, () => supabase.from("racing_visual_observations").select("id,video_id,observed_at,available,objective_measures,ai_interpretation,confidence").in("video_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]).order("observed_at", { ascending: false }).limit(200), [ids.join(",")]);
+  const analysed = new Set((obs.data ?? []).map((o: any) => o.video_id));
+  const watch = async (path: string) => {
+    try { window.open(await signedClipUrl(path), "_blank", "noopener"); } catch (e) { toast.error((e as Error).message); }
+  };
+  const analyse = async (v: any) => {
+    setBusy(v.id);
+    try {
+      const r = await analyseStoredClip(v.id, await signedClipUrl(v.storage_path));
+      toast.success(`Read ${r?.horses ?? 0} horse(s) · clip quality ${r?.quality ?? "unclear"}`);
+      refresh();
+    } catch (e) { toast.error((e as Error).message.slice(0, 200)); } finally { setBusy(null); }
+  };
   return (
     <div className="space-y-4">
       <Panel title={title} right={<StatusBadge status={run?.status} />}>
         <p className="text-sm text-muted-foreground">{run?.detail?.reason ?? "Not run yet."}</p>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">{rules.map((r) => <li key={r}>{r}</li>)}</ul>
       </Panel>
+      {paddock && <ParadeClipUpload races={races.data ?? []} tz={tz} />}
       <Panel title="Authorised footage">
-        <Table head={["Horse", "Type", "Recorded", "Quality", "ID confidence", "Licence"]} empty="No authorised footage connected." rows={(videos.data ?? []).map((v: any) => [v.horse?.name ?? "Unidentified", v.kind, v.recorded_at ?? "—", v.quality ?? "—", v.identification_confidence ?? "—", v.licence_note ?? "—"])} />
+        <Table head={["Horse", "Type", "Recorded", "Quality", "ID confidence", "Licence", ""]} empty="No authorised footage connected." rows={(videos.data ?? []).map((v: any) => [
+          v.horse?.name ?? "Unidentified", v.kind, v.recorded_at ? formatInZone(v.recorded_at, tz, { dateStyle: "short", timeStyle: "short" }) : "—", v.quality ?? "—",
+          v.identification_confidence ?? "—", v.licence_note ?? "—",
+          v.storage_path ? (
+            <div key="a" className="flex flex-wrap gap-1">
+              <Button size="sm" variant="outline" onClick={() => watch(v.storage_path)}><Eye className="mr-1 h-3.5 w-3.5" />Watch</Button>
+              {!analysed.has(v.id) && <Button size="sm" variant="outline" disabled={!!busy} onClick={() => analyse(v)}>{busy === v.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <ScanEye className="mr-1 h-3.5 w-3.5" />}Analyse</Button>}
+            </div>
+          ) : "—",
+        ])} />
       </Panel>
+      {(obs.data ?? []).length > 0 && (
+        <Panel title="What Oracle saw" right={<Evidence kind="ai" />}>
+          <Table head={["Horse", "Calmness", "Sweating", "Coat", "Walk", "Note", "Confidence"]} empty="" rows={(obs.data ?? []).map((o: any) => {
+            const m = o.objective_measures ?? {};
+            return [m.label || "—", m.calmness ?? "—", m.sweating ?? "—", m.coat ?? "—", m.walk ?? "—", o.ai_interpretation ?? "—", o.confidence != null ? `${Math.round(Number(o.confidence) * 100)}%` : "—"];
+          })} />
+          <p className="mt-2 text-xs text-muted-foreground">These are AI descriptions of still pictures. They don't change finishing orders until tested against past results.</p>
+        </Panel>
+      )}
     </div>
   );
 }

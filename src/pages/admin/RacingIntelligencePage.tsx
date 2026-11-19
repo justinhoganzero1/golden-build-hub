@@ -59,19 +59,19 @@ export default function RacingIntelligencePage() {
         {screen === "race" && <RaceAnalysisScreen tz={tz} raceId={raceId} onPick={setRaceId} />}
         {screen === "horses" && <HorsesScreen />}
         {screen === "people" && <PeopleScreen />}
-        {screen === "paddock" && <VisionScreen engine="paddock_vision" kinds={["paddock"]} title="Live paddock vision" rules={[
+        {screen === "paddock" && <VisionScreen tz={tz} engine="paddock_vision" kinds={["paddock"]} title="Live paddock vision" rules={[
           "Identifies each horse by saddlecloth number, race details and verified reference information.",
           "Separates objective measurements (stride, symmetry, sweating) from AI interpretations.",
           "Never claims to diagnose internal health from ordinary video.",
           "Unclear, missing or wrongly identified footage is marked unavailable.",
         ]} />}
-        {screen === "training" && <VisionScreen engine="training_vision" kinds={["training", "trial", "warmup", "owner_upload"]} title="Training footage intelligence" rules={[
+        {screen === "training" && <VisionScreen tz={tz} engine="training_vision" kinds={["training", "trial", "warmup", "owner_upload"]} title="Training footage intelligence" rules={[
           "Only authorised APIs, licensed archives, permitted embeds and your own recordings — never scraped or protected footage.",
           "Records source, date, activity type, identification confidence and footage quality.",
           "Builds a movement profile comparing each horse against itself over time.",
           "If no footage exists, Oracle says so.",
         ]} />}
-        {screen === "live" && <VisionScreen engine="race_vision" kinds={["race"]} title="Live race vision" rules={[
+        {screen === "live" && <VisionScreen tz={tz} engine="race_vision" kinds={["race"]} title="Live race vision" rules={[
           "Tracks starts, position changes, pace and finishing effort where authorised live video exists.",
           "Footage recorded after a race is used only for learning — never as evidence for that race's prediction.",
         ]} />}
