@@ -86,7 +86,7 @@ async function analyseClip(sb: SupabaseClient, actor: string, videoId: string, f
   await sb.from("racing_video_sources").update({ quality, identification_confidence: confidence }).eq("id", video.id);
   await sb.from("racing_providers").update({ status: "connected", last_success_at: now, last_checked_at: now, updated_at: now }).eq("id", "owner-uploads");
   await sb.from("racing_audit_log").insert({ actor, action: "clip_analysed", detail: { video: video.id, horses: rows.length, quality } });
-  return { ok: true, horses: rows.length, quality, confidence, overall: String(parsed.overall ?? "").slice(0, 400) };
+  return { ok: true, horses: rows.filter((x: any) => x.available).length, quality, confidence, overall: String(parsed.overall ?? "").slice(0, 400) };
 }
 
 function db(): SupabaseClient {
@@ -208,7 +208,7 @@ async function runVisionEngine(sb: SupabaseClient, engine: "paddock_vision" | "r
     });
     return;
   }
-  const { count: observed } = await sb.from("racing_visual_observations").select("id", { count: "exact", head: true }).not("video_id", "is", null);
+  const { count: observed } = await sb.from("racing_visual_observations").select("id", { count: "exact", head: true }).not("video_id", "is", null).eq("available", true);
   await finishRun(sb, runId, observed ? "succeeded" : "waiting_for_data", {
     footage: count, observations: observed ?? 0,
     reason: observed

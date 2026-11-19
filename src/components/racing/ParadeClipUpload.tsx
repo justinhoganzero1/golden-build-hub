@@ -45,7 +45,7 @@ export function ParadeClipUpload({ races, fixedRaceId, tz }: { races: any[]; fix
       if (analyse) {
         setBusy("Oracle is reading the clip…");
         const r = await analyseStoredClip(row.id, file);
-        toast.success(`Read ${r?.horses ?? 0} horse(s) · clip quality ${r?.quality ?? "unclear"}`);
+        toast.success(r?.horses ? `Read ${r.horses} horse(s) · clip quality ${r?.quality ?? "unclear"}` : "Oracle couldn't see a horse clearly in that clip.");
       }
       setFile(null);
       if (input.current) input.current.value = "";

@@ -264,7 +264,7 @@ export function VisionScreen({ engine, kinds, title, rules, tz = "Australia/Bris
     setBusy(v.id);
     try {
       const r = await analyseStoredClip(v.id, await signedClipUrl(v.storage_path));
-      toast.success(`Read ${r?.horses ?? 0} horse(s) · clip quality ${r?.quality ?? "unclear"}`);
+      toast.success(r?.horses ? `Read ${r.horses} horse(s) · clip quality ${r?.quality ?? "unclear"}` : "Oracle couldn't see a horse clearly in that clip.");
       refresh();
     } catch (e) { toast.error((e as Error).message.slice(0, 200)); } finally { setBusy(null); }
   };
@@ -315,7 +315,7 @@ export function PredictionsScreen({ tz }: { tz: string }) {
           {(p.rankings ?? []).length > 0 && (
             <ol className="mt-2 list-decimal pl-5">
               {[...p.rankings].sort((a: any, b: any) => a.predicted_rank - b.predicted_rank).map((x: any) => (
-                <li key={x.predicted_rank}>{x.runner?.horse?.name} — win {Math.round((x.p_win ?? 0) * 100)}%, top 3 {Math.round((x.p_top3 ?? 0) * 100)}%</li>
+                <li key={x.predicted_rank}>{x.runner?.horse?.name}{x.p_win != null && ` — win ${Math.round(x.p_win * 100)}%`}{x.p_top3 != null && `, top 3 ${Math.round(x.p_top3 * 100)}%`}</li>
               ))}
             </ol>
           )}
