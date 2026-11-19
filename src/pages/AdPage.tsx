@@ -8,9 +8,14 @@ import adWebm from "@/assets/videos/oracle-lunar-ad-clear-audio.webm.asset.json"
 import adPoster from "@/assets/videos/oracle-lunar-ad-poster.jpg.asset.json";
 import funnyVideo from "@/assets/videos/oracle-lunar-funny-cut.mp4.asset.json";
 import funnyPoster from "@/assets/videos/oracle-lunar-funny-poster.jpg.asset.json";
+import ad2Video from "@/assets/videos/oracle-lunar-ad2.mp4.asset.json";
+import ad2Poster from "@/assets/videos/oracle-lunar-ad2-poster.jpg.asset.json";
 
 const AD_URL = (adVideo as { url: string }).url;
 const FUNNY_URL = (funnyVideo as { url: string }).url;
+const AD2_URL = (ad2Video as { url: string }).url;
+
+type AdChoice = "main" | "ad2" | "funny";
 
 /**
  * Public ad page. The portrait video is sized to fit the phone screen so its
@@ -19,8 +24,10 @@ const FUNNY_URL = (funnyVideo as { url: string }).url;
  */
 export default function AdPage() {
   const [params, setParams] = useSearchParams();
-  const funny = params.get("v") === "funny";
-  const videoUrl = funny ? FUNNY_URL : AD_URL;
+  const vParam = params.get("v");
+  const choice: AdChoice = vParam === "funny" ? "funny" : vParam === "ad2" ? "ad2" : "main";
+  const funny = choice === "funny";
+  const videoUrl = choice === "funny" ? FUNNY_URL : choice === "ad2" ? AD2_URL : AD_URL;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -70,11 +77,16 @@ export default function AdPage() {
   };
 
   useEffect(() => {
-    document.title = funny ? "Oracle Lunar — The Funny Ad" : "Oracle Lunar — Watch the Ad";
+    document.title =
+      choice === "funny"
+        ? "Oracle Lunar — The Funny Ad"
+        : choice === "ad2"
+          ? "Oracle Lunar — The Second Ad"
+          : "Oracle Lunar — Watch the Ad";
     setStarted(false);
     setFailed(false);
     setEnded(false);
-  }, [funny]);
+  }, [choice]);
 
   const play = async () => {
     const v = videoRef.current;
@@ -116,17 +128,18 @@ export default function AdPage() {
 
       <div className="mt-4 flex gap-2" role="tablist" aria-label="Choose an ad">
         {[
-          { key: false, label: "The ad" },
-          { key: true, label: "The funny ad 😂" },
+          { key: "main" as AdChoice, label: "The ad" },
+          { key: "ad2" as AdChoice, label: "The second ad" },
+          { key: "funny" as AdChoice, label: "The funny ad 😂" },
         ].map((t) => (
           <button
             key={t.label}
             type="button"
             role="tab"
-            aria-selected={funny === t.key}
-            onClick={() => setParams(t.key ? { v: "funny" } : {}, { replace: true })}
+            aria-selected={choice === t.key}
+            onClick={() => setParams(t.key === "main" ? {} : { v: t.key }, { replace: true })}
             className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-colors ${
-              funny === t.key
+              choice === t.key
                 ? "bg-[hsl(var(--gold))] text-[hsl(var(--accent-foreground))] border-transparent"
                 : "border-[hsl(var(--gold)/0.4)] text-muted-foreground hover:text-foreground"
             }`}
@@ -143,7 +156,7 @@ export default function AdPage() {
           data-ignore-app-mute
           controls={started}
           playsInline
-          poster={funny ? funnyPoster.url : adPoster.url}
+          poster={choice === "funny" ? funnyPoster.url : choice === "ad2" ? ad2Poster.url : adPoster.url}
           preload="metadata"
           onPlay={(e) => {
             // Never let a saved app-wide mute silence the ad.
@@ -157,7 +170,7 @@ export default function AdPage() {
           className="h-full w-full object-contain bg-background"
         >
           <source src={videoUrl} type="video/mp4" />
-          {!funny && <source src={adWebm.url} type="video/webm" onError={() => setFailed(true)} />}
+          {choice === "main" && <source src={adWebm.url} type="video/webm" onError={() => setFailed(true)} />}
         </video>
 
         {!started && !failed && (
@@ -243,7 +256,7 @@ export default function AdPage() {
 
       <a
         href={videoUrl}
-        download={funny ? "oracle-lunar-funny-ad.mp4" : "oracle-lunar-ad.mp4"}
+        download={choice === "funny" ? "oracle-lunar-funny-ad.mp4" : choice === "ad2" ? "oracle-lunar-ad2.mp4" : "oracle-lunar-ad.mp4"}
         className="mt-3 inline-flex items-center justify-center gap-2 rounded-full px-6 py-2 text-sm font-medium border border-[hsl(var(--gold)/0.5)] text-foreground hover:bg-[hsl(var(--gold)/0.1)] transition-colors"
       >
         <Download className="h-4 w-4" /> Save this video to my device
@@ -266,7 +279,7 @@ export default function AdPage() {
       </Link>
 
       <p className="mt-3 text-xs text-muted-foreground text-center max-w-xs">
-        Share this page: {funny ? "oraclelunar.com/ad?v=funny" : "oraclelunar.com/ad"} · Download: oraclelunar.com/download
+        Share this page: {choice === "funny" ? "oraclelunar.com/ad?v=funny" : choice === "ad2" ? "oraclelunar.com/ad?v=ad2" : "oraclelunar.com/ad"} · Download: oraclelunar.com/download
       </p>
     </div>
   );
