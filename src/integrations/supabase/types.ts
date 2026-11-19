@@ -923,6 +923,42 @@ export type Database = {
         }
         Relationships: []
       }
+      client_crash_reports: {
+        Row: {
+          app_kind: string | null
+          created_at: string
+          id: string
+          message: string
+          page: string
+          path: string | null
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_kind?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          page: string
+          path?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_kind?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          page?: string
+          path?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       connect_accounts: {
         Row: {
           contact_email: string | null

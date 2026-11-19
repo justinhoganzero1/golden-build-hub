@@ -1,16 +1,23 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isStaleAppError, reloadForFreshApp, reportCrash } from "@/lib/crashReport";
 
 interface Props { children: ReactNode; fallbackLevel?: number; pageName?: string }
-interface State { hasError: boolean }
+interface State { hasError: boolean; message: string }
 /** Never remount a failed paid action automatically or erase member caches. */
 class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false };
-  static getDerivedStateFromError(): State { return { hasError: true }; }
-  componentDidCatch(_error: Error, _info: ErrorInfo) {
-    console.error("Oracle page recovery needed", this.props.pageName ?? "App");
+  state: State = { hasError: false, message: "" };
+  static getDerivedStateFromError(error: unknown): State {
+    return { hasError: true, message: String((error as Error)?.message ?? error ?? "").slice(0, 160) };
+  }
+  componentDidCatch(error: Error, _info: ErrorInfo) {
+    console.error("Oracle page recovery needed", this.props.pageName ?? "App", error);
     window.dispatchEvent(new Event("oracle:page-error"));
+    void reportCrash(this.props.pageName ?? "App", error);
+    // An old copy of the app asked for a piece a newer publish replaced:
+    // loading the fresh app fixes it (page loading only — no paid action replays).
+    if (isStaleAppError(String(error?.message ?? ""))) reloadForFreshApp();
   }
   render() {
     if (!this.state.hasError) return this.props.children;
@@ -21,10 +28,15 @@ class ErrorBoundary extends Component<Props, State> {
           <h1 className="text-lg font-bold text-foreground">This page couldn’t continue</h1>
           <p className="text-sm text-muted-foreground">Your device’s saved drafts have not been cleared. Check any payment or generation result before repeating it.</p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Button onClick={() => this.setState({ hasError: false })}><RefreshCw className="w-4 h-4 mr-2" />Reopen page</Button>
+            <Button onClick={() => this.setState({ hasError: false, message: "" })}><RefreshCw className="w-4 h-4 mr-2" />Reopen page</Button>
             <Button variant="outline" onClick={() => window.location.assign("/")}><Home className="w-4 h-4 mr-2" />Home</Button>
             <Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>
           </div>
+          {this.state.message && (
+            <p className="text-[11px] leading-snug text-muted-foreground/70 break-words">
+              Problem code ({this.props.pageName ?? "App"}): {this.state.message}
+            </p>
+          )}
         </div>
       </main>
     );

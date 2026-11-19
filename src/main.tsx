@@ -9,6 +9,7 @@ import "./index.css";
 import { installWalletInterceptor } from "./lib/walletInterceptor";
 import { installTvNavigation } from "./lib/tvMode";
 import { installImmersiveFullscreen } from "./lib/immersiveFullscreen";
+import { reloadForFreshApp } from "./lib/crashReport";
 
 // Google TV / Android TV: remote arrow keys move a visible highlight, OK presses.
 installTvNavigation();
@@ -18,6 +19,12 @@ installImmersiveFullscreen();
 
 // Any paid AI call that comes back 402 raises the "add $10 and keep going" modal.
 installWalletInterceptor();
+
+// After a new publish, an open older copy of the app can ask for page pieces
+// that no longer exist. Load the fresh app once instead of showing an error.
+window.addEventListener("vite:preloadError", (event) => {
+  if (reloadForFreshApp()) event.preventDefault();
+});
 
 // A background paid call that runs out of credits (402) must never blank the screen.
 window.addEventListener("unhandledrejection", (event) => {
