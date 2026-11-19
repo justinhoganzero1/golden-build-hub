@@ -11,7 +11,11 @@ import { z } from "npm:zod@3.25.76";
 import { requireOwner } from "../_shared/requireAuth.ts";
 import { hasSchedulerToken } from "../_shared/internalAuth.ts";
 import { suitabilityScore, selectRaces, raceDayJobs, scorePrediction, type SelectionMode } from "../_shared/racingLogic.ts";
-import { generateResponse, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.9";
+import { analyseClip } from "./vision.ts";
+import { analyseRace, type Stage } from "./analysis.ts";
+import { trainModels } from "./lab.ts";
+import { importRaces, importForm } from "./importer.ts";
+import { raceReport } from "./report.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -34,60 +38,16 @@ const body = z.discriminatedUnion("action", [
     video_id: z.string().uuid(),
     frames: z.array(z.string().startsWith("data:image/jpeg;base64,").max(400_000)).min(1).max(8),
   }),
+  z.object({
+    action: z.literal("import_data"),
+    kind: z.enum(["races", "form"]),
+    verified: z.boolean().default(false),
+    rows: z.array(z.record(z.string().max(200))).min(1).max(1500),
+  }),
+  z.object({ action: z.literal("analyse_race"), race_id: z.string().uuid() }),
+  z.object({ action: z.literal("race_report"), race_id: z.string().uuid() }),
+  z.object({ action: z.literal("train_models") }),
 ]);
-
-const VISION_MODEL = "openai/gpt-6-astra" as const;
-const PARADE_RULES = `You are Oracle Racing's paddock vision engine. You are shown still frames from ONE short clip the owner filmed of horses parading before a race.
-Describe only what is visible. Never guess a horse's name, never predict a winner, never invent anything you cannot see.
-For each horse you can see clearly, report: a visible label (saddlecloth number if readable, otherwise colours/position), calmness (calm / alert / on edge / agitated), visible sweating (none / light / heavy / unclear), coat (shining / normal / dull / unclear), walk (relaxed and even / short or choppy / unclear), and one short plain-English note.
-Also rate overall clip quality (good / fair / poor) and your confidence from 0 to 1.
-Reply with JSON only, shaped like {"quality":"fair","confidence":0.5,"overall":"...","horses":[{"label":"...","calmness":"...","sweating":"...","coat":"...","walk":"...","note":"..."}]}`;
-
-function outputText(res: unknown): string {
-  const r = res as { output_text?: string; output?: Array<{ content?: Array<{ type?: string; text?: string }> }> };
-  if (typeof r.output_text === "string" && r.output_text) return r.output_text;
-  const parts: string[] = [];
-  for (const item of r.output ?? []) for (const c of item.content ?? []) if (c.type === "output_text" && c.text) parts.push(c.text);
-  return parts.join("");
-}
-
-/** Owner-uploaded parade clip → AI observations (labelled interpretation, never a prediction). */
-async function analyseClip(sb: SupabaseClient, actor: string, videoId: string, frames: string[]) {
-  const { data: video } = await sb.from("racing_video_sources").select("id,race_id,kind,storage_path").eq("id", videoId).maybeSingle();
-  if (!video || !video.storage_path) return { error: "unknown_clip", status: 404 };
-  const content: any[] = [{ type: "input_text", text: `${frames.length} frames from the clip, in time order.` }];
-  for (const f of frames) content.push({ type: "input_image", image_url: f, detail: "auto" });
-  let parsed: any;
-  try {
-    const res = await generateResponse({ model: VISION_MODEL, instructions: PARADE_RULES, input: [{ role: "user", content }], reasoning: { effort: "low" } } as any, { maxRetries: 0 });
-    const text = outputText(res);
-    const m = text.match(/\{[\s\S]*\}/);
-    parsed = m ? JSON.parse(m[0]) : null;
-  } catch (e) {
-    const msg = e instanceof GatewayError ? `${e.code}: ${e.message}` : (e as Error).message;
-    console.error("racing analyse_clip", msg);
-    return { error: "analysis_failed", detail: msg.slice(0, 200), status: 502 };
-  }
-  if (!parsed || !Array.isArray(parsed.horses)) return { error: "analysis_unreadable", status: 502 };
-  const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
-  const quality = ["good", "fair", "poor"].includes(parsed.quality) ? parsed.quality : "unclear";
-  const now = new Date().toISOString();
-  const rows = parsed.horses.slice(0, 30).map((h: any) => ({
-    video_id: video.id, race_id: video.race_id, observed_at: now, available: true, confidence,
-    objective_measures: {
-      label: String(h.label ?? "").slice(0, 80), calmness: String(h.calmness ?? "unclear").slice(0, 30),
-      sweating: String(h.sweating ?? "unclear").slice(0, 30), coat: String(h.coat ?? "unclear").slice(0, 30),
-      walk: String(h.walk ?? "unclear").slice(0, 40), source: "owner_upload", frames: frames.length,
-    },
-    ai_interpretation: String(h.note ?? "").slice(0, 400),
-  }));
-  if (!rows.length) rows.push({ video_id: video.id, race_id: video.race_id, observed_at: now, available: false, confidence, objective_measures: { source: "owner_upload", frames: frames.length }, ai_interpretation: String(parsed.overall ?? "No horse was clear enough to describe.").slice(0, 400) });
-  await sb.from("racing_visual_observations").insert(rows);
-  await sb.from("racing_video_sources").update({ quality, identification_confidence: confidence }).eq("id", video.id);
-  await sb.from("racing_providers").update({ status: "connected", last_success_at: now, last_checked_at: now, updated_at: now }).eq("id", "owner-uploads");
-  await sb.from("racing_audit_log").insert({ actor, action: "clip_analysed", detail: { video: video.id, horses: rows.length, quality } });
-  return { ok: true, horses: rows.filter((x: any) => x.available).length, quality, confidence, overall: String(parsed.overall ?? "").slice(0, 400) };
-}
 
 function db(): SupabaseClient {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -168,6 +128,11 @@ async function runDiscovery(sb: SupabaseClient, trigger: string) {
   const providers = (await connectedRacingProviders(sb)).filter((p) => p.category === "racing_data" || p.category === "markets");
   const usable = providers.filter((p) => p.has_credentials && p.adapter_ready);
   const runId = await startRun(sb, "discovery", "Find races worldwide", trigger);
+  const { count: imported } = await sb.from("racing_races").select("id", { count: "exact", head: true }).eq("provider_id", "owner-import").gte("start_time_utc", new Date().toISOString());
+  if (!usable.length && imported) {
+    await finishRun(sb, runId, "succeeded", { upcoming_imported: imported, reason: `${imported} upcoming race(s) from your imported data. No paid racing feed is connected, so only imported races are known.` });
+    return { ok: true };
+  }
   if (!usable.length) {
     const pending = providers.filter((p) => p.has_credentials && !p.adapter_ready).map((p) => p.name);
     await finishRun(sb, runId, "awaiting_configuration", {
@@ -184,15 +149,23 @@ async function runDiscovery(sb: SupabaseClient, trigger: string) {
 }
 
 // ---------- Engines 2 and 5: data-driven analysis ----------
+// Per-race analysis runs on race-day jobs and "Analyse now"; the hourly run reports what evidence exists.
 async function runDataEngine(sb: SupabaseClient, engine: "historical" | "dynamics", trigger: string) {
-  const runId = await startRun(sb, engine, engine === "historical" ? "Analyse past performances" : "Jockeys, trainers, breeding, pace", trigger);
-  const { count: runners } = await sb.from("racing_runners").select("id", { count: "exact", head: true });
+  const runId = await startRun(sb, engine, engine === "historical" ? "Past performances available for analysis" : "Jockey, trainer, breeding and pace evidence", trigger);
   const { count: perfs } = await sb.from("racing_performances").select("id", { count: "exact", head: true });
-  if (!runners || !perfs) {
-    await finishRun(sb, runId, "waiting_for_data", { runners: runners ?? 0, performances: perfs ?? 0, reason: "No race fields or past performances stored yet." });
+  const { count: horses } = await sb.from("racing_horses").select("id", { count: "exact", head: true });
+  const extra = engine === "dynamics"
+    ? { with_jockey: (await sb.from("racing_performances").select("id", { count: "exact", head: true }).not("jockey_id", "is", null)).count ?? 0,
+        with_pace: (await sb.from("racing_performances").select("id", { count: "exact", head: true }).not("sectionals->settled", "is", null)).count ?? 0,
+        with_sire: (await sb.from("racing_horses").select("id", { count: "exact", head: true }).not("sire", "is", null)).count ?? 0 }
+    : {};
+  const { data: last } = await sb.from("racing_engine_assessments").select("created_at").eq("engine", engine).order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (!perfs) {
+    await finishRun(sb, runId, "waiting_for_data", { performances: 0, horses: horses ?? 0, ...extra, reason: "No past performances stored yet. Import form or connect a racing data service." });
     return;
   }
-  await finishRun(sb, runId, "waiting_for_data", { runners, performances: perfs, reason: "Analysis model is built once a data provider supplies enough history to test." });
+  await finishRun(sb, runId, "succeeded", { performances: perfs, horses: horses ?? 0, ...extra, last_race_analysis: last?.created_at ?? null,
+    reason: `${perfs} past runs for ${horses} horses ready. Each selected race is analysed on race day (morning, 30 and 10 minutes before, final at 5).` });
 }
 
 // ---------- Engines 3, 6, 7: vision ----------
@@ -223,8 +196,8 @@ async function runMaster(sb: SupabaseClient, trigger: string) {
   const now = new Date();
   const horizon = new Date(now.getTime() + 3 * 86_400_000);
   const { data: settings } = await sb.from("racing_settings").select("*").eq("id", 1).single();
-  const { data: model } = await sb.from("racing_model_versions").select("id,validated_metrics").neq("id", "suitability-v1");
-  const modelValidated = (model ?? []).some((m) => m.validated_metrics && Object.keys(m.validated_metrics).length > 0);
+  const { count: validatedCount } = await sb.from("racing_model_versions").select("id", { count: "exact", head: true }).eq("status", "validated");
+  const modelValidated = (validatedCount ?? 0) > 0;
   const { data: races } = await sb.from("racing_races")
     .select("id,start_time_utc,has_paddock_video,has_training_video,meeting:racing_meetings(track_rating,racecourse_id)")
     .gte("start_time_utc", now.toISOString()).lte("start_time_utc", horizon.toISOString()).eq("status", "scheduled");
@@ -235,7 +208,7 @@ async function runMaster(sb: SupabaseClient, trigger: string) {
     const list = runners ?? [];
     let withForm = 0;
     for (const ru of list) {
-      const { count } = await sb.from("racing_performances").select("id", { count: "exact", head: true }).eq("horse_id", ru.horse_id).eq("verified", true);
+      const { count } = await sb.from("racing_performances").select("id", { count: "exact", head: true }).eq("horse_id", ru.horse_id).not("finish_position", "is", null);
       if ((count ?? 0) >= 3) withForm++;
     }
     const meeting = (r as any).meeting;
@@ -259,18 +232,27 @@ async function runMaster(sb: SupabaseClient, trigger: string) {
 
   // Process due jobs (bounded).
   const { data: due } = await sb.from("racing_jobs").select("id,race_id,kind,attempts").eq("status", "pending").lte("due_at", now.toISOString()).order("due_at").limit(25);
-  let processed = 0;
+  let processed = 0, analysed = 0;
   for (const job of due ?? []) {
     processed++;
     try {
-      if (job.kind === "t5") {
-        const { data: race } = await sb.from("racing_races").select("start_time_utc").eq("id", job.race_id).single();
-        await sb.from("racing_predictions").insert({
-          race_id: job.race_id, model_version: "ensemble-untrained", stage: "final", status: "insufficient_data",
-          evidence_cutoff: new Date(Math.min(now.getTime(), new Date(race!.start_time_utc).getTime())).toISOString(),
-          explanation: "No tested prediction model yet, so no finishing order was published.",
-          limitations: "Oracle only publishes finishing orders once a model has been tested on past races without future information.",
-        });
+      const stageOf: Record<string, Stage> = { morning: "morning", t30: "t30", t10: "t10", t5: "final" };
+      if (stageOf[job.kind]) {
+        if (analysed >= 8 && job.kind !== "t5") { processed--; continue; } // keep each pass bounded; the next pass picks it up
+        analysed++;
+        const r = await analyseRace(sb, job.race_id, stageOf[job.kind]);
+        if ((r as any).error && job.kind === "t5") {
+          const { data: race } = await sb.from("racing_races").select("start_time_utc").eq("id", job.race_id).single();
+          await sb.from("racing_predictions").insert({
+            race_id: job.race_id, model_version: "ensemble-untrained", stage: "final", status: "insufficient_data",
+            evidence_cutoff: new Date(Math.min(now.getTime(), new Date(race!.start_time_utc).getTime())).toISOString(),
+            explanation: "No field was available, so no finishing order was published.", limitations: (r as any).message ?? "Missing race field.",
+          });
+        }
+      }
+      if (job.kind === "t20") {
+        const { count } = await sb.from("racing_video_sources").select("id", { count: "exact", head: true }).eq("race_id", job.race_id).eq("kind", "paddock");
+        await sb.from("racing_jobs").update({ last_error: count ? `${count} paddock clip(s) linked.` : "No paddock footage linked for this race." }).eq("id", job.id);
       }
       if (job.kind === "post") {
         const { data: result } = await sb.from("racing_results").select("official_order").eq("race_id", job.race_id).maybeSingle();
@@ -375,6 +357,22 @@ Deno.serve(async (req) => {
       await sb.from("racing_audit_log").insert({ actor, action: "credentials_saved", detail: { provider: provider.id, fields: Object.keys(values) } });
       return json({ ok: true });
     }
+
+    if (input.action === "import_data") {
+      const r = input.kind === "races" ? await importRaces(sb, actor, input.rows, input.verified) : await importForm(sb, actor, input.rows, input.verified);
+      return json(r, r.ok ? 200 : 400);
+    }
+    if (input.action === "analyse_race") {
+      const r = await analyseRace(sb, input.race_id, "manual");
+      await sb.from("racing_audit_log").insert({ actor, action: "race_analysed", detail: { race: input.race_id, predicted: !!(r as any).prediction } });
+      return json(r, (r as any).error ? 400 : 200);
+    }
+    if (input.action === "race_report") {
+      const r = await raceReport(sb, actor, input.race_id);
+      const { status: code, ...rest } = r as any;
+      return json(rest, code ?? 200);
+    }
+    if (input.action === "train_models") return json(await trainModels(sb, actor));
 
     if (input.action === "analyse_clip") {
       const r = await analyseClip(sb, actor, input.video_id, input.frames);

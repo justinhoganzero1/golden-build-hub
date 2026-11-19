@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { extractVideoFrames } from "@/lib/videoFrames";
-import { callController, useRacingRefresh, formatInZone } from "./racingData";
+import { callController, useRacingRefresh, useRacingTable, formatInZone } from "./racingData";
 import { Panel } from "./RacingUi";
 
 export const RACING_VIDEO_BUCKET = "racing-videos";
@@ -16,8 +16,20 @@ export async function analyseStoredClip(videoId: string, source: File | string) 
   return callController({ action: "analyse_clip", video_id: videoId, frames });
 }
 
-export function ParadeClipUpload({ races, fixedRaceId, tz }: { races: any[]; fixedRaceId?: string; tz: string }) {
+const CLIP_KINDS = [
+  ["paddock", "Parade / mounting yard (before the race)"],
+  ["training", "Trackwork or gallop"],
+  ["trial", "Barrier trial"],
+  ["warmup", "Warm-up"],
+  ["race", "Race replay (after the race — learning only)"],
+] as const;
+
+export function ParadeClipUpload({ races, fixedRaceId, tz, defaultKind = "paddock" }: { races: any[]; fixedRaceId?: string; tz: string; defaultKind?: string }) {
   const refresh = useRacingRefresh();
+  const [kind, setKind] = useState<string>(defaultKind);
+  const [horseQ, setHorseQ] = useState("");
+  const [horseId, setHorseId] = useState("");
+  const horses = useRacingTable("upload-horses", () => supabase.from("racing_horses").select("id,name").ilike("name", `%${horseQ}%`).order("name").limit(30), [horseQ]);
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [raceId, setRaceId] = useState(fixedRaceId ?? "");
@@ -32,15 +44,15 @@ export function ParadeClipUpload({ races, fixedRaceId, tz }: { races: any[]; fix
     try {
       setBusy("Uploading clip…");
       const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "mp4";
-      const path = `parade/${crypto.randomUUID()}.${ext}`;
+      const path = `${kind}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from(RACING_VIDEO_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw new Error(upErr.message);
       const { data: row, error } = await supabase.from("racing_video_sources").insert({
-        provider_id: "owner-uploads", race_id: race || null, kind: "paddock", storage_path: path,
+        provider_id: "owner-uploads", race_id: race || null, horse_id: horseId || null, kind, storage_path: path,
         recorded_at: new Date(file.lastModified || Date.now()).toISOString(), licence_note: "Your own recording",
       }).select("id").single();
       if (error) throw new Error(error.message);
-      if (race) await supabase.from("racing_races").update({ has_paddock_video: true, updated_at: new Date().toISOString() }).eq("id", race);
+      if (race && kind !== "race") await supabase.from("racing_races").update({ ...(kind === "paddock" ? { has_paddock_video: true } : { has_training_video: true }), updated_at: new Date().toISOString() }).eq("id", race);
       toast.success("Clip saved privately");
       if (analyse) {
         setBusy("Oracle is reading the clip…");
@@ -57,15 +69,29 @@ export function ParadeClipUpload({ races, fixedRaceId, tz }: { races: any[]; fix
   };
 
   return (
-    <Panel title="Upload a parade clip">
+    <Panel title="Upload a clip">
       <p className="mb-3 text-xs text-muted-foreground">
-        Use your own recording, filmed at the track. Clips stay private to you. Keep them under {MAX_CLIP_MB} MB (about 30 seconds).
-        Oracle reads a few still pictures and describes what it can see. That's an AI view, not a tip.
+        Use your own recordings. Clips stay private to you. Keep them under {MAX_CLIP_MB} MB (about 30 seconds).
+        Oracle reads a few still pictures and describes what it can see. That's an AI view, not a tip. Race replays are only used for learning, never for that race's prediction.
       </p>
       <div className="space-y-3">
         <input ref={input} type="file" accept="video/*" aria-label="Choose parade clip"
           className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-3 file:py-2 file:text-primary-foreground"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <label className="block text-sm">What kind of clip?
+          <select className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
+            {CLIP_KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm">Which horse? (optional — best for single-horse training clips)
+          <input className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" placeholder="Type to search horses" value={horseQ} onChange={(e) => { setHorseQ(e.target.value); setHorseId(""); }} />
+          {horseQ && !horseId && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {(horses.data ?? []).map((h: any) => <Button key={h.id} type="button" size="sm" variant="outline" onClick={() => { setHorseId(h.id); setHorseQ(h.name); }}>{h.name}</Button>)}
+              {!(horses.data ?? []).length && <span className="text-xs text-muted-foreground">No stored horse by that name.</span>}
+            </div>
+          )}
+        </label>
         {!fixedRaceId && (
           <label className="block text-sm">Which race is it for? (optional)
             <select className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" value={raceId} onChange={(e) => setRaceId(e.target.value)}>

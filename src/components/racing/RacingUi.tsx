@@ -42,8 +42,8 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
 }
 
 /** Labels that keep verified facts, estimates, AI views and missing data apart. */
-export function Evidence({ kind }: { kind: "verified" | "estimated" | "ai" | "unavailable" }) {
-  const text = { verified: "Verified", estimated: "Estimated", ai: "AI interpretation", unavailable: "Unavailable" }[kind];
+export function Evidence({ kind }: { kind: "verified" | "estimated" | "ai" | "unavailable" | "imported" }) {
+  const text = { verified: "Verified", estimated: "Estimated", ai: "AI interpretation", unavailable: "Unavailable", imported: "Imported, not verified" }[kind];
   return <span className="rounded border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{text}</span>;
 }
 

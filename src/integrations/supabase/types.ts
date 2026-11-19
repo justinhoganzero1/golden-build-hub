@@ -3506,6 +3506,11 @@ export type Database = {
           description: string
           id: string
           method: string
+          parameters: Json
+          scenario: string | null
+          status: string
+          test_metrics: Json
+          trained_at: string | null
           validated_metrics: Json
         }
         Insert: {
@@ -3513,6 +3518,11 @@ export type Database = {
           description: string
           id: string
           method: string
+          parameters?: Json
+          scenario?: string | null
+          status?: string
+          test_metrics?: Json
+          trained_at?: string | null
           validated_metrics?: Json
         }
         Update: {
@@ -3520,6 +3530,11 @@ export type Database = {
           description?: string
           id?: string
           method?: string
+          parameters?: Json
+          scenario?: string | null
+          status?: string
+          test_metrics?: Json
+          trained_at?: string | null
           validated_metrics?: Json
         }
         Relationships: []

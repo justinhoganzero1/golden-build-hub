@@ -57,7 +57,7 @@ export default function RacingIntelligencePage() {
         {screen === "calendar" && <CalendarScreen tz={tz} />}
         {screen === "discovery" && <DiscoveryScreen tz={tz} />}
         {screen === "race" && <RaceAnalysisScreen tz={tz} raceId={raceId} onPick={setRaceId} />}
-        {screen === "horses" && <HorsesScreen />}
+        {screen === "horses" && <HorsesScreen tz={tz} />}
         {screen === "people" && <PeopleScreen />}
         {screen === "paddock" && <VisionScreen tz={tz} engine="paddock_vision" kinds={["paddock"]} title="Live paddock vision" rules={[
           "Identifies each horse by saddlecloth number, race details and verified reference information.",

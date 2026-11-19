@@ -98,3 +98,13 @@
 - [x] Stage 1: data provider admin screen (secure key entry, honest "awaiting configuration")
 - [ ] Stage 2+: racing data provider adapter — waits on Juzzy choosing/subscribing to a licensed racing data provider
 - [ ] Stage 6–7: paddock / race / training video — waits on licensed video access (owner-uploaded clips can be analysed first)
+
+## Oracle Racing — full engines (2026-11-19)
+- [x] Import race data you're allowed to use (races/fields/results + past form lines) so engines can run before a paid feed
+- [x] Engine 2 historical form maths (no future leakage), Engine 4 condition cross-check, Engine 5 jockey/trainer/breeding/pace
+- [x] Vision engines: parade, training, barrier trial, race replay uploads; horse-by-horse history over time
+- [x] Master brain: trainable model + calibration, top 2/3/4 chances, only used once it beats the betting market on unseen races
+- [x] Laboratory: train & test button, A/B/C/D comparison, by country / race type, calibration
+- [x] Race-day jobs run the engines and save evidence; Analyse now button; Oracle race report (AI, plain English)
+- [x] Horse profiles with charts, jockey/trainer stats, live vs back-test accuracy split
+- [ ] Paid racing data feed — waits on Juzzy choosing and subscribing

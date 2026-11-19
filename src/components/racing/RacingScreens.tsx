@@ -9,6 +9,7 @@ import {
   ENGINE_INFO, callController, useControllerStatus, useRacingTable, useRacingRefresh, formatInZone, countdown, ago,
 } from "./racingData";
 import { ParadeClipUpload, analyseStoredClip, RACING_VIDEO_BUCKET } from "./ParadeClipUpload";
+import { DataImportPanel, RaceEnginePanel, HorseInsights, PeopleStatsPanel } from "./RacingDeep";
 
 const RACE_SELECT = "id,race_number,name,start_time_utc,distance_m,race_class,runners_count,status,data_completeness,suitability_score,suitability_reasons,has_paddock_video,has_training_video,selected,meeting:racing_meetings(track_rating,racecourse:racing_racecourses(id,name,country_code,timezone))";
 const NO_PROVIDER = "No races yet. Oracle only shows real races from a licensed racing data provider — connect one under Data Providers.";
@@ -156,33 +157,55 @@ export function RecommendedScreen({ tz, onOpenRace }: { tz: string; onOpenRace: 
 
 // ---------- 5. Race analysis ----------
 export function RaceAnalysisScreen({ tz, raceId, onPick }: { tz: string; raceId: string | null; onPick: (id: string) => void }) {
-  const races = useUpcomingRaces();
-  const race = (races.data ?? []).find((r: any) => r.id === raceId);
-  const runners = useRacingTable("runners", () => supabase.from("racing_runners").select("id,saddlecloth,barrier,weight_kg,scratched,horse:racing_horses(id,name),jockey:racing_jockeys(name),trainer:racing_trainers(name)").eq("race_id", raceId ?? "00000000-0000-0000-0000-000000000000").order("saddlecloth"), [raceId]);
+  const [past, setPast] = useState(false);
+  const upcoming = useUpcomingRaces();
+  const pastRaces = useRacingTable("races-past", () => supabase.from("racing_races").select(RACE_SELECT).lt("start_time_utc", new Date().toISOString()).order("start_time_utc", { ascending: false }).limit(300), [past]);
+  const races = past ? pastRaces : upcoming;
+  const race = [...(upcoming.data ?? []), ...(pastRaces.data ?? [])].find((r: any) => r.id === raceId);
+  const runners = useRacingTable("runners", () => supabase.from("racing_runners").select("id,saddlecloth,barrier,weight_kg,scratched,odds,horse:racing_horses(id,name),jockey:racing_jockeys(name),trainer:racing_trainers(name)").eq("race_id", raceId ?? "00000000-0000-0000-0000-000000000000").order("saddlecloth"), [raceId]);
   const preds = useLatestPredictions();
   return (
     <div className="space-y-4">
-      <Panel title="Choose a race">
-        {!(races.data ?? []).length ? <Empty>{NO_PROVIDER}</Empty> : (
+      <Panel title="Choose a race" right={
+        <div className="flex gap-1">
+          <Button size="sm" variant={past ? "outline" : "default"} onClick={() => setPast(false)}>Upcoming</Button>
+          <Button size="sm" variant={past ? "default" : "outline"} onClick={() => setPast(true)}>Past</Button>
+        </div>}>
+        {!(races.data ?? []).length ? <Empty>{past ? "No past races stored. Import results under Data Providers." : NO_PROVIDER}</Empty> : (
           <select className="w-full rounded-lg border border-border bg-background p-2 text-sm" value={raceId ?? ""} onChange={(e) => onPick(e.target.value)}>
             <option value="">Select a race…</option>
-            {(races.data ?? []).map((r: any) => <option key={r.id} value={r.id}>{formatInZone(r.start_time_utc, tz, { dateStyle: "short", timeStyle: "short" })} · {courseOf(r)?.name} R{r.race_number}</option>)}
+            {(races.data ?? []).map((r: any) => <option key={r.id} value={r.id}>{formatInZone(r.start_time_utc, tz, { dateStyle: "short", timeStyle: "short" })} · {courseOf(r)?.name} R{r.race_number}{r.name ? ` · ${r.name}` : ""}</option>)}
           </select>
         )}
       </Panel>
       {race && (
         <>
-          <Panel title={`${courseOf(race)?.name} — Race ${race.race_number}`} right={<span className="text-xs text-muted-foreground">Suitability {race.suitability_score ?? "—"}</span>}>
+          <Panel title={`${courseOf(race)?.name} — Race ${race.race_number}${race.name ? ` · ${race.name}` : ""}`} right={<span className="text-xs text-muted-foreground">Suitability {race.suitability_score ?? "—"}</span>}>
+            <p className="mb-2 text-xs text-muted-foreground">{formatInZone(race.start_time_utc, courseOf(race)?.timezone || tz)} local · {race.distance_m ? `${race.distance_m} m` : "distance unknown"} · {race.race_class ?? "class unknown"} · track {race.meeting?.track_rating ?? "not rated"}</p>
             <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
               {((race.suitability_reasons as string[] | null) ?? []).map((x: string, i: number) => <li key={i}>{x}</li>)}
             </ul>
           </Panel>
           <Panel title="Runners">
-            <Table head={["No.", "Horse", "Barrier", "Weight", "Jockey", "Trainer", "Status"]} empty="No field received yet." rows={(runners.data ?? []).map((u: any) => [u.saddlecloth, u.horse?.name, u.barrier ?? "—", u.weight_kg ? `${u.weight_kg} kg` : "—", u.jockey?.name ?? "—", u.trainer?.name ?? "—", u.scratched ? "Scratched" : "Running"])} />
+            <Table head={["No.", "Horse", "Barrier", "Weight", "Jockey", "Trainer", "Price", "Status"]} empty="No field received yet." rows={(runners.data ?? []).map((u: any) => [u.saddlecloth, u.horse?.name, u.barrier ?? "—", u.weight_kg ? `${u.weight_kg} kg` : "—", u.jockey?.name ?? "—", u.trainer?.name ?? "—", u.odds?.pre_race_win ? `$${u.odds.pre_race_win}` : "—", u.scratched ? "Scratched" : "Running"])} />
           </Panel>
+          <RaceEnginePanel raceId={race.id} tz={tz} />
           <ParadeClipUpload races={[]} fixedRaceId={race.id} tz={tz} />
           <Panel title="Prediction history (permanent)">
-            <Table head={["Stage", "Status", "Model", "Evidence up to", "Explanation"]} empty="No predictions recorded for this race." rows={(preds.data ?? []).filter((p: any) => p.race_id === race.id).map((p: any) => [p.stage, p.status, p.model_version, formatInZone(p.evidence_cutoff, tz), p.explanation])} />
+            {!(preds.data ?? []).filter((p: any) => p.race_id === race.id).length ? <Empty>No predictions recorded for this race.</Empty> : (preds.data ?? []).filter((p: any) => p.race_id === race.id).map((p: any) => (
+              <div key={p.id} className="mb-3 rounded-xl border border-border bg-background/50 p-3 text-sm">
+                <p className="font-semibold">{p.stage} · {p.status} · {p.model_version}{p.analytical_confidence != null ? ` · analytical confidence ${Math.round(p.analytical_confidence)}%` : ""}</p>
+                <p className="text-xs text-muted-foreground">Evidence up to {formatInZone(p.evidence_cutoff, tz)}</p>
+                {p.explanation && <p className="mt-1 text-xs">{p.explanation}</p>}
+                {(p.rankings ?? []).length > 0 && (
+                  <ol className="mt-2 list-decimal pl-5 text-xs">
+                    {[...p.rankings].sort((a: any, b: any) => a.predicted_rank - b.predicted_rank).slice(0, 8).map((x: any) => (
+                      <li key={x.predicted_rank}>{x.runner?.horse?.name}{x.p_win != null && ` — win ${Math.round(x.p_win * 100)}%`}{x.p_top3 != null && `, top 3 ${Math.round(x.p_top3 * 100)}%`}{x.p_top4 != null && `, top 4 ${Math.round(x.p_top4 * 100)}%`}</li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
           </Panel>
         </>
       )}
@@ -191,7 +214,7 @@ export function RaceAnalysisScreen({ tz, raceId, onPick }: { tz: string; raceId:
 }
 
 // ---------- 6. Horses ----------
-export function HorsesScreen() {
+export function HorsesScreen({ tz = "Australia/Brisbane" }: { tz?: string }) {
   const [q, setQ] = useState("");
   const [pick, setPick] = useState<string | null>(null);
   const horses = useRacingTable("horses", () => supabase.from("racing_horses").select("id,name,country_code,foaled,sex,sire,dam,dam_sire,breeder").ilike("name", `%${q}%`).order("name").limit(100), [q]);
@@ -209,14 +232,15 @@ export function HorsesScreen() {
       </Panel>
       {horse && (
         <>
-          <Panel title={horse.name} right={<Evidence kind="verified" />}>
+          <Panel title={horse.name}>
             <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
               <p>Foaled: {horse.foaled ?? "—"}</p><p>Sex: {horse.sex ?? "—"}</p><p>Sire: {horse.sire ?? "—"}</p><p>Dam: {horse.dam ?? "—"}</p>
               <p>Dam sire: {horse.dam_sire ?? "—"}</p><p>Breeder: {horse.breeder ?? "—"}</p><p>Country: {horse.country_code ?? "—"}</p>
             </div>
           </Panel>
+          <HorseInsights horseId={horse.id} tz={tz} />
           <Panel title="Past performances">
-            <Table head={["Date", "Course", "Distance", "Surface", "Track", "Finish", "Margin", "Time", "Source"]} empty="No past runs stored." rows={(perfs.data ?? []).map((p: any) => [p.race_date, p.racecourse?.name ?? "—", p.distance_m ? `${p.distance_m} m` : "—", p.surface ?? "—", p.track_rating ?? "—", p.finish_position ? `${p.finish_position}/${p.field_size ?? "?"}` : "—", p.margin_lengths ?? "—", p.race_time_s ?? "—", <Evidence key="e" kind={p.verified ? "verified" : "estimated"} />])} />
+            <Table head={["Date", "Course", "Distance", "Surface", "Track", "Finish", "Margin", "Time", "Source"]} empty="No past runs stored." rows={(perfs.data ?? []).map((p: any) => [p.race_date, p.racecourse?.name ?? "—", p.distance_m ? `${p.distance_m} m` : "—", p.surface ?? "—", p.track_rating ?? "—", p.finish_position ? `${p.finish_position}/${p.field_size ?? "?"}` : "—", p.margin_lengths ?? "—", p.race_time_s ?? "—", <Evidence key="e" kind={p.verified ? "verified" : "imported"} />])} />
           </Panel>
           <Panel title="Parade-ring and training observations">
             <Table head={["When", "Available", "Observation", "Confidence"]} empty="No footage observations. Shown as unavailable, never guessed." rows={(obs.data ?? []).map((o: any) => [o.observed_at ?? "—", o.available ? "Yes" : "No", <span key="i">{o.ai_interpretation ?? "—"} <Evidence kind="ai" /></span>, o.confidence ?? "—"])} />
@@ -229,12 +253,19 @@ export function HorsesScreen() {
 
 // ---------- 7. Jockeys and trainers ----------
 export function PeopleScreen() {
-  const jockeys = useRacingTable("jockeys", () => supabase.from("racing_jockeys").select("id,name,country_code").order("name").limit(300));
-  const trainers = useRacingTable("trainers", () => supabase.from("racing_trainers").select("id,name,country_code").order("name").limit(300));
+  const [q, setQ] = useState("");
+  const [pick, setPick] = useState<{ kind: "jockey" | "trainer"; id: string; name: string } | null>(null);
+  const jockeys = useRacingTable("jockeys", () => supabase.from("racing_jockeys").select("id,name,country_code").ilike("name", `%${q}%`).order("name").limit(300), [q]);
+  const trainers = useRacingTable("trainers", () => supabase.from("racing_trainers").select("id,name,country_code").ilike("name", `%${q}%`).order("name").limit(300), [q]);
+  const pickBtn = (kind: "jockey" | "trainer", r: any) => <button key={r.id} className="text-left text-primary underline-offset-2 hover:underline" onClick={() => setPick({ kind, id: r.id, name: r.name })}>{r.name}</button>;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Panel title="Jockeys"><Table head={["Name", "Country"]} empty="No jockeys stored yet." rows={(jockeys.data ?? []).map((j: any) => [j.name, j.country_code ?? "—"])} /></Panel>
-      <Panel title="Trainers"><Table head={["Name", "Country"]} empty="No trainers stored yet." rows={(trainers.data ?? []).map((t: any) => [t.name, t.country_code ?? "—"])} /></Panel>
+    <div className="space-y-4">
+      <Input placeholder="Search jockeys and trainers" value={q} onChange={(e) => setQ(e.target.value)} />
+      {pick && <PeopleStatsPanel kind={pick.kind} id={pick.id} name={pick.name} />}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Panel title="Jockeys"><Table head={["Name", "Country"]} empty="No jockeys stored yet." rows={(jockeys.data ?? []).map((j: any) => [pickBtn("jockey", j), j.country_code ?? "—"])} /></Panel>
+        <Panel title="Trainers"><Table head={["Name", "Country"]} empty="No trainers stored yet." rows={(trainers.data ?? []).map((t: any) => [pickBtn("trainer", t), t.country_code ?? "—"])} /></Panel>
+      </div>
     </div>
   );
 }
@@ -274,7 +305,7 @@ export function VisionScreen({ engine, kinds, title, rules, tz = "Australia/Bris
         <p className="text-sm text-muted-foreground">{run?.detail?.reason ?? "Not run yet."}</p>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">{rules.map((r) => <li key={r}>{r}</li>)}</ul>
       </Panel>
-      {paddock && <ParadeClipUpload races={races.data ?? []} tz={tz} />}
+      <ParadeClipUpload key={engine} races={races.data ?? []} tz={tz} defaultKind={paddock ? "paddock" : engine === "race_vision" ? "race" : "training"} />
       <Panel title="Authorised footage">
         <Table head={["Horse", "Type", "Recorded", "Quality", "ID confidence", "Licence", ""]} empty="No authorised footage connected." rows={(videos.data ?? []).map((v: any) => [
           v.horse?.name ?? "Unidentified", v.kind, v.recorded_at ? formatInZone(v.recorded_at, tz, { dateStyle: "short", timeStyle: "short" }) : "—", v.quality ?? "—",
@@ -289,9 +320,10 @@ export function VisionScreen({ engine, kinds, title, rules, tz = "Australia/Bris
       </Panel>
       {(obs.data ?? []).length > 0 && (
         <Panel title="What Oracle saw" right={<Evidence kind="ai" />}>
-          <Table head={["Horse", "Calmness", "Sweating", "Coat", "Walk", "Note", "Confidence"]} empty="" rows={(obs.data ?? []).map((o: any) => {
+          <Table head={["Horse", "What Oracle saw", "Note", "Confidence"]} empty="" rows={(obs.data ?? []).map((o: any) => {
             const m = o.objective_measures ?? {};
-            return [m.label || "—", m.calmness ?? "—", m.sweating ?? "—", m.coat ?? "—", m.walk ?? "—", o.ai_interpretation ?? "—", o.confidence != null ? `${Math.round(Number(o.confidence) * 100)}%` : "—"];
+            const facts = Object.entries(m).filter(([k]) => !["source", "kind", "frames", "label", "learning_only"].includes(k)).map(([k, v]) => `${k}: ${v}`).join(" · ");
+            return [m.label || "—", facts || "—", o.ai_interpretation ?? "—", o.confidence != null ? `${Math.round(Number(o.confidence) * 100)}%` : "—"];
           })} />
           <p className="mt-2 text-xs text-muted-foreground">These are AI descriptions of still pictures. They don't change finishing orders until tested against past results.</p>
         </Panel>
@@ -325,47 +357,8 @@ export function PredictionsScreen({ tz }: { tz: string }) {
   );
 }
 
-// ---------- 12. Laboratory ----------
-export function LabScreen() {
-  const models = useRacingTable("models", () => supabase.from("racing_model_versions").select("*").order("created_at"));
-  const acc = useRacingTable("accuracy", () => supabase.from("racing_accuracy").select("scenario,winner_hit,top2_hit,top3_hit,exacta_hit,rank_correlation"));
-  const scen = ["A", "B", "C", "D"].map((s) => {
-    const rows = (acc.data ?? []).filter((a: any) => a.scenario === s);
-    const pct = (k: string) => rows.length ? `${Math.round((rows.filter((r: any) => r[k]).length / rows.length) * 100)}%` : "—";
-    return [s, { A: "Statistics only", B: "Statistics + paddock vision", C: "Statistics + training footage", D: "Full seven engines" }[s], rows.length, pct("winner_hit"), pct("top2_hit"), pct("top3_hit"), pct("exacta_hit")];
-  });
-  return (
-    <div className="space-y-4">
-      <Panel title="Model versions">
-        <Table head={["Version", "Method", "What it does", "Tested results"]} empty="No models." rows={(models.data ?? []).map((m: any) => [m.id, m.method, m.description, Object.keys(m.validated_metrics ?? {}).length ? JSON.stringify(m.validated_metrics) : "Not tested yet"])} />
-      </Panel>
-      <Panel title="Does vision really help? (A/B/C/D comparison)">
-        <Table head={["Scenario", "Engines used", "Races", "Winner", "Top 2", "Top 3", "Exacta"]} empty="" rows={scen} />
-        <p className="mt-2 text-xs text-muted-foreground">Back-testing only uses information that existed before each race. Original predictions are never changed after results.</p>
-      </Panel>
-    </div>
-  );
-}
-
-// ---------- 13. Accuracy ----------
-export function AccuracyScreen() {
-  const acc = useRacingTable("accuracy-full", () => supabase.from("racing_accuracy").select("id,winner_hit,top2_hit,top3_hit,exacta_hit,rank_correlation,brier_score,computed_at"));
-  const rows = acc.data ?? [];
-  const pct = (k: string) => rows.length ? `${Math.round((rows.filter((r: any) => r[k]).length / rows.length) * 100)}%` : "—";
-  const avg = rows.filter((r: any) => r.rank_correlation != null);
-  return (
-    <Panel title="Performance and accuracy">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Stat label="Races scored" value={rows.length} />
-        <Stat label="Winner right" value={pct("winner_hit")} />
-        <Stat label="Top three right" value={pct("top3_hit")} />
-        <Stat label="Exacta right" value={pct("exacta_hit")} />
-        <Stat label="Order match" value={avg.length ? (avg.reduce((a: number, r: any) => a + Number(r.rank_correlation), 0) / avg.length).toFixed(2) : "—"} hint="Rank correlation, 1 = perfect" />
-      </div>
-      {!rows.length && <div className="mt-3"><Empty>No scored races yet. Results are compared automatically after each locked prediction.</Empty></div>}
-    </Panel>
-  );
-}
+// ---------- 12-13. Laboratory and accuracy live in RacingDeep ----------
+export { LabScreen, AccuracyScreen } from "./RacingDeep";
 
 // ---------- 14. Control room ----------
 export function ControlRoomScreen() {
@@ -440,6 +433,8 @@ export function ProvidersScreen({ tz }: { tz: string }) {
     } catch (e) { toast.error((e as Error).message.slice(0, 200)); } finally { setSaving(false); }
   };
   return (
+    <div className="space-y-4">
+    <DataImportPanel />
     <Panel title="API and data providers">
       <p className="mb-3 text-xs text-muted-foreground">Keys are stored on the server only and never shown again. Oracle never invents a working connection — unconnected sources stay "Awaiting configuration".</p>
       <div className="space-y-3">
@@ -483,6 +478,7 @@ export function ProvidersScreen({ tz }: { tz: string }) {
         ))}
       </div>
     </Panel>
+    </div>
   );
 }
 
