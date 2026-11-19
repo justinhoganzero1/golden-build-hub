@@ -51,4 +51,3 @@
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
 - Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (timezone country, no IP) use site_arrivals.
-- Oracle Racing math (features, conditional-logit model, CSV import) lives in pure _shared/racing*.ts tested by Vitest; the controller only publishes finishing orders from a model validated on time-ordered unseen races that beats the market, and past races never use current weather, to prevent leakage.
