@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { saveToLibrary } from "@/lib/saveToLibrary";
+import { shrinkAvatarImage } from "@/lib/avatarImage";
 
 export interface UserAvatar {
   id: string;
@@ -29,11 +30,15 @@ export function useUserAvatars() {
       const { data, error } = await supabase
         .from("user_avatars")
         .select("*")
+        // Only this account's avatars (owner accounts could otherwise pull
+        // every member's pictures onto the device).
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as UserAvatar[];
     },
     enabled: !!user,
+    staleTime: 5 * 60_000,
   });
 
   return query;
@@ -57,7 +62,7 @@ export function useCreateAvatar() {
       if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("user_avatars")
-        .insert({ ...avatar, user_id: user.id })
+        .insert({ ...avatar, image_url: await shrinkAvatarImage(avatar.image_url), user_id: user.id })
         .select()
         .single();
       if (error) throw error;
