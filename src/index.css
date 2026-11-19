@@ -2305,3 +2305,32 @@ html.tv-mode, html.tv-mode body { cursor: none; }
 .gemini-alarm-backdrop { background: hsl(var(--background)); isolation: isolate; }
 .gemini-alarm-btn-topup { background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
 .gemini-alarm-btn-upgrade { background: hsl(var(--destructive)) !important; color: hsl(var(--destructive-foreground)) !important; border-color: hsl(var(--destructive)) !important; }
+
+/* Oracle Racing Intelligence (owner-only) — deep black and metallic gold, scoped to the racing section. */
+.racing-theme {
+  --background: 0 0% 3%;
+  --foreground: 43 30% 92%;
+  --card: 30 8% 7%;
+  --card-foreground: 43 30% 92%;
+  --popover: 30 8% 7%;
+  --popover-foreground: 43 30% 92%;
+  --primary: 44 88% 56%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 35 10% 12%;
+  --secondary-foreground: 44 70% 80%;
+  --muted: 30 6% 12%;
+  --muted-foreground: 40 12% 62%;
+  --accent: 40 75% 42%;
+  --accent-foreground: 0 0% 4%;
+  --border: 42 45% 22%;
+  --input: 30 8% 12%;
+  --ring: 44 88% 56%;
+  --racing-ok: 145 60% 50%;
+  --racing-wait: 38 95% 55%;
+  --racing-bad: 0 75% 60%;
+  --racing-gold-text: linear-gradient(135deg, hsl(46 100% 82%), hsl(42 85% 50%) 35%, hsl(48 100% 88%) 55%, hsl(38 80% 40%) 80%, hsl(46 100% 74%));
+}
+.racing-gold-text { background: var(--racing-gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.racing-pulse { animation: racing-pulse 2.2s ease-in-out infinite; }
+@keyframes racing-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .racing-pulse { animation: none; } }

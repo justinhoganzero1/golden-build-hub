@@ -94,6 +94,7 @@ const loaders = {
   "/admin/voice-receptionist": () => import("./pages/admin/VoiceReceptionistAdminPage"),
   "/admin/payouts": () => import("./pages/admin/AdminPayoutsPage"),
   "/admin/pitch-machine": () => import("./pages/admin/PitchMachinePage"),
+  "/admin/racing": () => import("./pages/admin/RacingIntelligencePage"),
   "/avatar-gallery": () => import("./pages/AvatarGalleryPage"),
   "/privacy-policy": () => import("./pages/PrivacyPolicyPage"),
   "/terms-of-service": () => import("./pages/TermsOfServicePage"),
@@ -251,6 +252,7 @@ const VoiceReceptionistPage = lazy(loaders["/voice-receptionist"]);
 const VoiceReceptionistAdminPage = lazy(loaders["/admin/voice-receptionist"]);
 const AdminPayoutsPage = lazy(loaders["/admin/payouts"]);
 const PitchMachinePage = lazy(loaders["/admin/pitch-machine"]);
+const RacingIntelligencePage = lazy(loaders["/admin/racing"]);
 const PitchDemoPage = lazy(() => import("./pages/PitchDemoPage"));
 const GoogleOAuthCallback = lazy(() => import("./pages/GoogleOAuthCallback"));
 const AdminUsageAuditPage = lazy(() => import("./pages/AdminUsageAuditPage"));
@@ -448,6 +450,7 @@ const OracleApp = () => (
                   <Route path="/voice-receptionist" element={<ErrorBoundary pageName="Voice Receptionist"><VoiceReceptionistPage /></ErrorBoundary>} />
                   <Route path="/admin/voice-receptionist" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Voice Receptionist Admin"><VoiceReceptionistAdminPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/pitch-machine" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Client Pitch Machine"><PitchMachinePage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
+                  <Route path="/admin/racing" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Oracle Racing"><RacingIntelligencePage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/admin/payouts" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Admin Payouts"><AdminPayoutsPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />
                   <Route path="/oauth/google/callback" element={<ErrorBoundary pageName="Google OAuth Callback"><GoogleOAuthCallback /></ErrorBoundary>} />
                   <Route path="/admin/usage-audit" element={<RequireAuth><RequireAdmin><ErrorBoundary pageName="Usage Audit"><AdminUsageAuditPage /></ErrorBoundary></RequireAdmin></RequireAuth>} />

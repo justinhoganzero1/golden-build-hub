@@ -91,3 +91,10 @@
 - [x] App builds from Oracle: real error messages, top-up prompt, separate save warning
 - [x] Videos still filming finish later and land in the Library
 - [x] Publish
+
+## Oracle Racing Intelligence (owner-only, 2026-11-19)
+- [x] Stage 1: own section in Owner Dashboard, black-and-gold screens (all 16), racing database, control room with real engine status
+- [x] Stage 1: real weather engine (free Open-Meteo) for major racecourses + automatic scheduled runs
+- [x] Stage 1: data provider admin screen (secure key entry, honest "awaiting configuration")
+- [ ] Stage 2+: racing data provider adapter — waits on Juzzy choosing/subscribing to a licensed racing data provider
+- [ ] Stage 6–7: paddock / race / training video — waits on licensed video access (owner-uploaded clips can be analysed first)
