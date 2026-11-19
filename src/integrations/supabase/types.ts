@@ -3218,6 +3218,68 @@ export type Database = {
         }
         Relationships: []
       }
+      racing_broadcasts: {
+        Row: {
+          broadcast_date: string
+          channel: string
+          created_at: string
+          id: string
+          network: string
+          platform: string | null
+          race_code: string
+          race_numbers: number[]
+          racecourse_id: string
+          source: string
+          source_url: string | null
+          starts_at: string | null
+          status: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          broadcast_date: string
+          channel: string
+          created_at?: string
+          id?: string
+          network: string
+          platform?: string | null
+          race_code?: string
+          race_numbers?: number[]
+          racecourse_id: string
+          source?: string
+          source_url?: string | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          broadcast_date?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          network?: string
+          platform?: string | null
+          race_code?: string
+          race_numbers?: number[]
+          racecourse_id?: string
+          source?: string
+          source_url?: string | null
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "racing_broadcasts_racecourse_id_fkey"
+            columns: ["racecourse_id"]
+            isOneToOne: false
+            referencedRelation: "racing_racecourses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       racing_countries: {
         Row: {
           code: string
@@ -3236,6 +3298,66 @@ export type Database = {
           created_at?: string
           data_notes?: string | null
           name?: string
+        }
+        Relationships: []
+      }
+      racing_daily_reports: {
+        Row: {
+          coverage: Json
+          created_at: string
+          data_retrieved_at: string | null
+          finished_at: string | null
+          id: string
+          meetings_analysed: number
+          model_version: string | null
+          problems: Json
+          qualifying_races: number
+          qualifying_selections: number
+          races_analysed: number
+          report_date: string
+          settings_snapshot: Json
+          skipped_races: number
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          coverage?: Json
+          created_at?: string
+          data_retrieved_at?: string | null
+          finished_at?: string | null
+          id?: string
+          meetings_analysed?: number
+          model_version?: string | null
+          problems?: Json
+          qualifying_races?: number
+          qualifying_selections?: number
+          races_analysed?: number
+          report_date: string
+          settings_snapshot?: Json
+          skipped_races?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          coverage?: Json
+          created_at?: string
+          data_retrieved_at?: string | null
+          finished_at?: string | null
+          id?: string
+          meetings_analysed?: number
+          model_version?: string | null
+          problems?: Json
+          qualifying_races?: number
+          qualifying_selections?: number
+          races_analysed?: number
+          report_date?: string
+          settings_snapshot?: Json
+          skipped_races?: number
+          started_at?: string
+          status?: string
+          trigger?: string
         }
         Relationships: []
       }
@@ -3538,6 +3660,47 @@ export type Database = {
           validated_metrics?: Json
         }
         Relationships: []
+      }
+      racing_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: string
+          race_id: string | null
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: string
+          race_id?: string | null
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: string
+          race_id?: string | null
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "racing_notifications_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "racing_races"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       racing_performances: {
         Row: {
@@ -3893,9 +4056,11 @@ export type Database = {
           id: string
           meeting_id: string
           name: string | null
+          parade_time_utc: string | null
           prize_money: number | null
           provider_id: string | null
           race_class: string | null
+          race_code: string
           race_number: number
           runners_count: number | null
           selected: boolean
@@ -3916,9 +4081,11 @@ export type Database = {
           id?: string
           meeting_id: string
           name?: string | null
+          parade_time_utc?: string | null
           prize_money?: number | null
           provider_id?: string | null
           race_class?: string | null
+          race_code?: string
           race_number: number
           runners_count?: number | null
           selected?: boolean
@@ -3939,9 +4106,11 @@ export type Database = {
           id?: string
           meeting_id?: string
           name?: string | null
+          parade_time_utc?: string | null
           prize_money?: number | null
           provider_id?: string | null
           race_class?: string | null
+          race_code?: string
           race_number?: number
           runners_count?: number | null
           selected?: boolean
@@ -4076,31 +4245,195 @@ export type Database = {
           },
         ]
       }
+      racing_selection_decisions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          decided_at: string
+          decision: string
+          expected_value: number | null
+          finish_position: number | null
+          horse_name: string | null
+          id: string
+          implied_prob: number | null
+          is_backtest: boolean
+          jockey_id: string | null
+          latest_odds: number | null
+          latest_odds_at: string | null
+          market_prob: number | null
+          min_odds_applied: number
+          model_version: string | null
+          odds_at_decision: number | null
+          odds_kind: string
+          odds_source: string | null
+          oracle_prob: number | null
+          payout: number | null
+          prediction_id: string | null
+          profit: number | null
+          race_id: string
+          race_number: number | null
+          race_start_utc: string | null
+          reasons: string[]
+          report_id: string | null
+          runner_id: string
+          settled_at: string | null
+          starting_price: number | null
+          venue: string | null
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string
+          decision: string
+          expected_value?: number | null
+          finish_position?: number | null
+          horse_name?: string | null
+          id?: string
+          implied_prob?: number | null
+          is_backtest?: boolean
+          jockey_id?: string | null
+          latest_odds?: number | null
+          latest_odds_at?: string | null
+          market_prob?: number | null
+          min_odds_applied?: number
+          model_version?: string | null
+          odds_at_decision?: number | null
+          odds_kind?: string
+          odds_source?: string | null
+          oracle_prob?: number | null
+          payout?: number | null
+          prediction_id?: string | null
+          profit?: number | null
+          race_id: string
+          race_number?: number | null
+          race_start_utc?: string | null
+          reasons?: string[]
+          report_id?: string | null
+          runner_id: string
+          settled_at?: string | null
+          starting_price?: number | null
+          venue?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string
+          decision?: string
+          expected_value?: number | null
+          finish_position?: number | null
+          horse_name?: string | null
+          id?: string
+          implied_prob?: number | null
+          is_backtest?: boolean
+          jockey_id?: string | null
+          latest_odds?: number | null
+          latest_odds_at?: string | null
+          market_prob?: number | null
+          min_odds_applied?: number
+          model_version?: string | null
+          odds_at_decision?: number | null
+          odds_kind?: string
+          odds_source?: string | null
+          oracle_prob?: number | null
+          payout?: number | null
+          prediction_id?: string | null
+          profit?: number | null
+          race_id?: string
+          race_number?: number | null
+          race_start_utc?: string | null
+          reasons?: string[]
+          report_id?: string | null
+          runner_id?: string
+          settled_at?: string | null
+          starting_price?: number | null
+          venue?: string | null
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "racing_selection_decisions_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "racing_predictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "racing_selection_decisions_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "racing_races"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "racing_selection_decisions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "racing_daily_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "racing_selection_decisions_runner_id_fkey"
+            columns: ["runner_id"]
+            isOneToOne: false
+            referencedRelation: "racing_runners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       racing_settings: {
         Row: {
           automation_enabled: boolean
+          betting_deduction_pct: number
           controller_lock_until: string | null
           custom_count: number
+          daily_scan_time: string
           display_timezone: string
           id: number
+          min_confidence: number
+          min_expected_value: number
+          min_win_odds: number
+          notification_prefs: Json
+          odds_refresh_minutes: number
+          parade_lead_minutes: number
           selection_mode: string
           updated_at: string
         }
         Insert: {
           automation_enabled?: boolean
+          betting_deduction_pct?: number
           controller_lock_until?: string | null
           custom_count?: number
+          daily_scan_time?: string
           display_timezone?: string
           id?: number
+          min_confidence?: number
+          min_expected_value?: number
+          min_win_odds?: number
+          notification_prefs?: Json
+          odds_refresh_minutes?: number
+          parade_lead_minutes?: number
           selection_mode?: string
           updated_at?: string
         }
         Update: {
           automation_enabled?: boolean
+          betting_deduction_pct?: number
           controller_lock_until?: string | null
           custom_count?: number
+          daily_scan_time?: string
           display_timezone?: string
           id?: number
+          min_confidence?: number
+          min_expected_value?: number
+          min_win_odds?: number
+          notification_prefs?: Json
+          odds_refresh_minutes?: number
+          parade_lead_minutes?: number
           selection_mode?: string
           updated_at?: string
         }

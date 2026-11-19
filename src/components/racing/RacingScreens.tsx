@@ -484,11 +484,21 @@ export function ProvidersScreen({ tz }: { tz: string }) {
 
 // ---------- 16. Settings ----------
 export function SettingsScreen({ settings, onSaved, tz }: { settings: any; onSaved: () => void; tz: string }) {
-  const [form, setForm] = useState(() => ({ display_timezone: settings?.display_timezone ?? "Australia/Brisbane", selection_mode: settings?.selection_mode ?? "top10", custom_count: settings?.custom_count ?? 10, automation_enabled: settings?.automation_enabled ?? true }));
+  const [form, setForm] = useState(() => ({
+    display_timezone: settings?.display_timezone ?? "Australia/Brisbane", selection_mode: settings?.selection_mode ?? "top10", custom_count: settings?.custom_count ?? 10, automation_enabled: settings?.automation_enabled ?? true,
+    min_win_odds: Number(settings?.min_win_odds ?? 3), min_confidence: Number(settings?.min_confidence ?? 60), min_expected_value: Number(settings?.min_expected_value ?? 0.05) * 100,
+    odds_refresh_minutes: settings?.odds_refresh_minutes ?? 15, daily_scan_time: settings?.daily_scan_time ?? "07:00", parade_lead_minutes: settings?.parade_lead_minutes ?? 15,
+    betting_deduction_pct: Number(settings?.betting_deduction_pct ?? 0), notification_prefs: { ...(settings?.notification_prefs ?? {}) } as Record<string, boolean>,
+  }));
   const audit = useRacingTable("audit", () => supabase.from("racing_audit_log").select("id,actor,action,detail,created_at").order("created_at", { ascending: false }).limit(30));
   const zones = ["Australia/Brisbane", "Australia/Sydney", "Australia/Melbourne", "Australia/Adelaide", "Australia/Perth", "Pacific/Auckland", "Asia/Hong_Kong", "Asia/Tokyo", "Asia/Dubai", "Europe/London", "Europe/Dublin", "Europe/Paris", "America/New_York", "America/Los_Angeles", "UTC"];
   const save = async () => {
-    const { error } = await supabase.from("racing_settings").update({ ...form, custom_count: Math.max(1, Number(form.custom_count) || 1), updated_at: new Date().toISOString() }).eq("id", 1);
+    if (!(Number(form.min_win_odds) >= 3)) { toast.error("The minimum win price can't go below $3.00."); return; }
+    const { error } = await supabase.from("racing_settings").update({
+      ...form, custom_count: Math.max(1, Number(form.custom_count) || 1), min_win_odds: Math.round(Number(form.min_win_odds) * 100) / 100,
+      min_confidence: Number(form.min_confidence), min_expected_value: Number(form.min_expected_value) / 100, odds_refresh_minutes: Number(form.odds_refresh_minutes),
+      parade_lead_minutes: Number(form.parade_lead_minutes), betting_deduction_pct: Number(form.betting_deduction_pct), updated_at: new Date().toISOString(),
+    }).eq("id", 1);
     if (error) toast.error(error.message); else { toast.success("Settings saved"); onSaved(); }
   };
   return (
@@ -515,7 +525,41 @@ export function SettingsScreen({ settings, onSaved, tz }: { settings: any; onSav
             Run the engines automatically
           </label>
         </div>
+        <h3 className="mt-5 text-sm font-semibold text-primary">Daily selection rules</h3>
+        <div className="mt-2 grid gap-3 md:grid-cols-3">
+          <label className="text-sm">Minimum win price ($, never below 3.00)
+            <Input type="number" min={3} step={0.1} value={form.min_win_odds} onChange={(e) => setForm({ ...form, min_win_odds: Number(e.target.value) })} />
+          </label>
+          <label className="text-sm">Minimum confidence (0–100)
+            <Input type="number" min={0} max={100} value={form.min_confidence} onChange={(e) => setForm({ ...form, min_confidence: Number(e.target.value) })} />
+          </label>
+          <label className="text-sm">Minimum value (% per $1, above)
+            <Input type="number" min={0} max={500} step={0.5} value={form.min_expected_value} onChange={(e) => setForm({ ...form, min_expected_value: Number(e.target.value) })} />
+          </label>
+          <label className="text-sm">Re-check prices every (minutes)
+            <Input type="number" min={5} max={240} value={form.odds_refresh_minutes} onChange={(e) => setForm({ ...form, odds_refresh_minutes: Number(e.target.value) })} />
+          </label>
+          <label className="text-sm">Daily scan time (your time zone)
+            <Input type="time" value={form.daily_scan_time} onChange={(e) => setForm({ ...form, daily_scan_time: e.target.value })} />
+          </label>
+          <label className="text-sm">Estimated parade (minutes before start)
+            <Input type="number" min={1} max={60} value={form.parade_lead_minutes} onChange={(e) => setForm({ ...form, parade_lead_minutes: Number(e.target.value) })} />
+          </label>
+          <label className="text-sm">Betting deductions on winnings (%)
+            <Input type="number" min={0} max={50} step={0.5} value={form.betting_deduction_pct} onChange={(e) => setForm({ ...form, betting_deduction_pct: Number(e.target.value) })} />
+          </label>
+        </div>
+        <h3 className="mt-5 text-sm font-semibold text-primary">Alerts</h3>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {([["report_ready", "Daily racing report ready"], ["new_selection", "New qualifying selection"], ["parade_soon", "Parade approaching"], ["odds_below_floor", "Price drops below the minimum"], ["scratched", "Horse scratched"], ["time_changed", "Race time changed"], ["withdrawn", "Selection withdrawn"], ["jockey_changed", "Jockey change"]] as const).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.notification_prefs[k] !== false} onChange={(e) => setForm({ ...form, notification_prefs: { ...form.notification_prefs, [k]: e.target.checked } })} />
+              {label}
+            </label>
+          ))}
+        </div>
         <Button className="mt-3" onClick={save}>Save settings</Button>
+        <p className="mt-2 text-xs text-muted-foreground">Every change is recorded in the audit history below. Automatic checks run hourly; while the Daily Report is open, prices are re-checked at your chosen frequency.</p>
         <p className="mt-3 text-xs text-muted-foreground">Oracle Racing is an analysis tool. It never places bets or makes payments, and predictions are never guarantees.</p>
       </Panel>
       <Panel title="Audit history">

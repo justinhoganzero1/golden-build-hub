@@ -1,7 +1,8 @@
 // Oracle Racing — saves spreadsheet rows the owner is allowed to use.
 // Existing records are matched by name/date and reused, never duplicated.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
-import { normaliseRaceRows, normaliseFormRows, raceKey, zonedToUtc, defaultTimezone, type RaceRow, type FormRow } from "../_shared/racingImport.ts";
+import { normaliseRaceRows, normaliseFormRows, normaliseBroadcastRows, raceKey, zonedToUtc, defaultTimezone, type RaceRow, type FormRow } from "../_shared/racingImport.ts";
+import { normaliseBroadcastStatus, parseRaceList } from "../_shared/racingSelection.ts";
 import { chunk, audit, markProvider } from "./common.ts";
 
 const SOURCE = "owner-import";
@@ -71,7 +72,9 @@ export async function importRaces(sb: SupabaseClient, actor: string, raw: Array<
     } else if (f.track_rating) await sb.from("racing_meetings").update({ track_rating: f.track_rating }).eq("id", meeting.id);
     const finished = group.some((r) => r.finish_position != null);
     const start = zonedToUtc(f.date, f.start_time, f.timezone || course.timezone || defaultTimezone(f.country));
-    const raceFields = { name: f.race_name, start_time_utc: start, distance_m: f.distance_m, race_class: f.race_class, surface: f.surface, runners_count: group.filter((r) => !r.scratched).length, status: finished ? "finished" : "scheduled", provider_id: SOURCE, updated_at: new Date().toISOString() };
+    const tz = f.timezone || course.timezone || defaultTimezone(f.country);
+    const parade = group.find((r) => r.parade_time)?.parade_time;
+    const raceFields = { name: f.race_name, start_time_utc: start, ...(parade ? { parade_time_utc: zonedToUtc(f.date, parade, tz) } : {}), distance_m: f.distance_m, race_class: f.race_class, surface: f.surface, runners_count: group.filter((r) => !r.scratched).length, status: finished ? "finished" : "scheduled", provider_id: SOURCE, updated_at: new Date().toISOString() };
     let { data: race } = await sb.from("racing_races").select("id").eq("meeting_id", meeting!.id).eq("race_number", f.race_number).maybeSingle();
     if (!race) {
       const ins = await sb.from("racing_races").insert({ meeting_id: meeting!.id, race_number: f.race_number, ...raceFields }).select("id").single();
@@ -82,7 +85,7 @@ export async function importRaces(sb: SupabaseClient, actor: string, raw: Array<
     const runnerRows = group.map((r) => ({
       race_id: race!.id, horse_id: horses.get(norm(r.horse))!, jockey_id: r.jockey ? jockeys.get(norm(r.jockey)) ?? null : null, trainer_id: r.trainer ? trainers.get(norm(r.trainer)) ?? null : null,
       saddlecloth: r.saddlecloth, barrier: r.barrier, weight_kg: r.weight_kg, scratched: r.scratched,
-      odds: r.odds != null ? { pre_race_win: r.odds, source: SOURCE } : {}, updated_at: new Date().toISOString(),
+      odds: r.odds != null ? { pre_race_win: r.odds, source: SOURCE, kind: finished ? "unknown" : "indicative", updated_at: new Date().toISOString() } : {}, updated_at: new Date().toISOString(),
     }));
     const { data: savedRunners, error: re } = await sb.from("racing_runners").upsert(runnerRows, { onConflict: "race_id,horse_id" }).select("id,horse_id");
     if (re) throw new Error(re.message);
@@ -139,4 +142,24 @@ export async function importForm(sb: SupabaseClient, actor: string, raw: Array<R
   await markProvider(sb, SOURCE, true);
   await audit(sb, actor, "data_imported", { kind: "form", rows: rows.length, performances: toSave.length, skipped_duplicates: rows.length - toSave.length, verified });
   return { ok: true, rows: rows.length, performances: toSave.length, duplicates: rows.length - toSave.length, coursesCreated, problems: problems.slice(0, 20) };
+}
+
+export async function importBroadcasts(sb: SupabaseClient, actor: string, raw: Array<Record<string, string>>, verified: boolean) {
+  const { rows, problems } = normaliseBroadcastRows(raw);
+  if (!rows.length) return { ok: false, problems, broadcasts: 0 };
+  const { map: courses, created: coursesCreated, unknown } = await courseMap(sb, rows);
+  for (const u of unknown) problems.push(`New racecourse "${u}" needs a country code — its broadcast rows were skipped.`);
+  const now = new Date().toISOString();
+  const save = rows.filter((r) => courses.has(norm(r.racecourse))).map((r) => {
+    const c = courses.get(norm(r.racecourse))!;
+    return {
+      broadcast_date: r.date, racecourse_id: c.id, network: r.network, channel: r.channel, platform: r.platform,
+      starts_at: r.broadcast_start ? zonedToUtc(r.date, r.broadcast_start, r.timezone || c.timezone || defaultTimezone(r.country)) : null,
+      status: normaliseBroadcastStatus(r.status), race_numbers: parseRaceList(r.races), source: "owner-import", source_url: r.source_url, verified, updated_at: now,
+    };
+  });
+  for (const c of chunk(save, 300)) { const { error } = await sb.from("racing_broadcasts").upsert(c, { onConflict: "broadcast_date,racecourse_id,channel" }); if (error) throw new Error(error.message); }
+  await markProvider(sb, "owner-broadcast", true);
+  await audit(sb, actor, "data_imported", { kind: "broadcast", rows: rows.length, broadcasts: save.length, verified });
+  return { ok: true, rows: rows.length, broadcasts: save.length, coursesCreated, problems: problems.slice(0, 20) };
 }

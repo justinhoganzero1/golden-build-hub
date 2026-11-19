@@ -253,6 +253,13 @@
       "when": 1795056296429,
       "tag": "0035_racing_engines_models",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795058328720,
+      "tag": "0036_racing_daily_broadcast",
+      "breakpoints": true
     }
   ]
 }

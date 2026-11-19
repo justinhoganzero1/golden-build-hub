@@ -27,12 +27,15 @@ export function parseCsv(text: string): Array<Record<string, string>> {
   return rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? "").trim()])));
 }
 
-export const RACE_COLUMNS = ["date", "racecourse", "country", "race_number", "race_name", "start_time", "timezone", "distance_m", "surface", "track_rating", "race_class", "horse", "saddlecloth", "barrier", "weight_kg", "jockey", "trainer", "sire", "dam", "odds", "finish_position", "margin", "race_time_s", "settled", "scratched"] as const;
+export const RACE_COLUMNS = ["date", "racecourse", "country", "race_number", "race_name", "start_time", "timezone", "distance_m", "surface", "track_rating", "race_class", "horse", "saddlecloth", "barrier", "weight_kg", "jockey", "trainer", "sire", "dam", "odds", "finish_position", "margin", "race_time_s", "settled", "scratched", "parade_time", "code"] as const;
 export const FORM_COLUMNS = ["horse", "date", "racecourse", "country", "distance_m", "surface", "track_rating", "race_class", "finish_position", "field_size", "margin", "race_time_s", "weight_kg", "barrier", "jockey", "trainer", "settled", "sire", "dam"] as const;
 
-export function templateCsv(kind: "races" | "form"): string {
+export const BROADCAST_COLUMNS = ["date", "racecourse", "country", "network", "channel", "platform", "broadcast_start", "timezone", "status", "races", "code", "source_url"] as const;
+
+export function templateCsv(kind: "races" | "form" | "broadcast"): string {
+  if (kind === "broadcast") return BROADCAST_COLUMNS.join(",") + "\n2026-11-21,Flemington,AU,Seven Network,7two,7plus,12:00,Australia/Melbourne,scheduled,3-9,thoroughbred,https://example.com/official-tv-guide\n";
   if (kind === "form") return FORM_COLUMNS.join(",") + "\nExample Horse,2025-10-18,Caulfield,AU,2400,turf,Good 4,Group 1,1,18,0,148.9,54,8,Jamie Melham,Tony & C McEvoy,3,Example Sire,Example Dam\n";
-  return RACE_COLUMNS.join(",") + "\n2025-11-04,Flemington,AU,7,Melbourne Cup,15:00,Australia/Melbourne,3200,turf,Soft 5,Group 1,Half Yours,14,8,53,Jamie Melham,Tony & C McEvoy,,,7.5,1,0,202.46,6,\n";
+  return RACE_COLUMNS.join(",") + "\n2025-11-04,Flemington,AU,7,Melbourne Cup,15:00,Australia/Melbourne,3200,turf,Soft 5,Group 1,Half Yours,14,8,53,Jamie Melham,Tony & C McEvoy,,,7.5,1,0,202.46,6,,,thoroughbred\n";
 }
 
 const num = (v?: string) => { if (v == null || v === "") return null; const n = Number(String(v).replace(/[$,\s]/g, "").replace(/kg$|m$|L$/i, "")); return Number.isFinite(n) ? n : null; };
@@ -79,6 +82,7 @@ export interface RaceRow {
   start_time: string | null; timezone: string | null; distance_m: number | null; surface: string | null; track_rating: string | null; race_class: string | null;
   horse: string; saddlecloth: number | null; barrier: number | null; weight_kg: number | null; jockey: string | null; trainer: string | null;
   sire: string | null; dam: string | null; odds: number | null; finish_position: number | null; margin: number | null; race_time_s: number | null; settled: number | null; scratched: boolean;
+  parade_time: string | null;
 }
 export interface FormRow {
   horse: string; date: string; racecourse: string | null; country: string | null; distance_m: number | null; surface: string | null; track_rating: string | null; race_class: string | null;
@@ -93,6 +97,7 @@ export function normaliseRaceRows(raw: Array<Record<string, string>>): { rows: R
   raw.forEach((r, i) => {
     const date = normaliseDate(r.date), horse = text(r.horse ?? r.horse_name, 80), course = text(r.racecourse ?? r.track ?? r.venue, 80), rn = int(r.race_number ?? r.race);
     if (!date || !horse || !course || rn == null) { problems.push(`Row ${i + 2}: needs date, racecourse, race_number and horse.`); return; }
+    if (!isThoroughbredCode(r.code ?? r.race_code)) { problems.push(`Row ${i + 2}: only thoroughbred racing is accepted (got "${r.code ?? r.race_code}").`); return; }
     const scratched = /^(y|yes|true|1|scr|scratched)$/i.test(String(r.scratched ?? "")) || /^scr/i.test(String(r.finish_position ?? ""));
     rows.push({
       date, racecourse: course, country: countryCode(r.country), race_number: rn, race_name: text(r.race_name, 120),
@@ -102,6 +107,7 @@ export function normaliseRaceRows(raw: Array<Record<string, string>>): { rows: R
       jockey: text(r.jockey, 80), trainer: text(r.trainer, 80), sire: text(r.sire, 80), dam: text(r.dam, 80),
       odds: num(r.odds ?? r.price ?? r.sp), finish_position: scratched ? null : normaliseFinish(r.finish_position ?? r.finish ?? r.place),
       margin: num(r.margin), race_time_s: num(r.race_time_s ?? r.time), settled: int(r.settled), scratched,
+      parade_time: /^\d{1,2}:\d{2}/.test(r.parade_time ?? "") ? r.parade_time!.slice(0, 5) : null,
     });
   });
   return { rows, problems };
@@ -124,3 +130,28 @@ export function normaliseFormRows(raw: Array<Record<string, string>>): { rows: F
 }
 
 export const raceKey = (r: Pick<RaceRow, "date" | "racecourse" | "race_number">) => `${r.date}|${r.racecourse.toLowerCase()}|${r.race_number}`;
+
+const isThoroughbredCode = (code?: string) => { const c = String(code ?? "").trim().toLowerCase(); return !c || /^(thoroughbred|gallops?|horse racing|tb|flat|jumps?)$/.test(c); };
+
+export interface BroadcastRow {
+  date: string; racecourse: string; country: string | null; network: string; channel: string; platform: string | null;
+  broadcast_start: string | null; timezone: string | null; status: string; races: string; source_url: string | null;
+}
+
+/** Broadcast schedule rows. Non-thoroughbred coverage is refused. */
+export function normaliseBroadcastRows(raw: Array<Record<string, string>>): { rows: BroadcastRow[]; problems: string[] } {
+  const rows: BroadcastRow[] = [], problems: string[] = [];
+  raw.forEach((r, i) => {
+    const date = normaliseDate(r.date), course = text(r.racecourse ?? r.venue ?? r.track, 80), channel = text(r.channel, 60);
+    if (!date || !course || !channel) { problems.push(`Row ${i + 2}: needs date, racecourse and channel.`); return; }
+    if (!isThoroughbredCode(r.code ?? r.race_code)) { problems.push(`Row ${i + 2}: only thoroughbred racing is included (got "${r.code ?? r.race_code}").`); return; }
+    const url = text(r.source_url ?? r.source, 300);
+    rows.push({
+      date, racecourse: course, country: countryCode(r.country) ?? "AU", network: text(r.network, 60) ?? "Seven Network", channel,
+      platform: text(r.platform, 60), broadcast_start: /^\d{1,2}:\d{2}/.test(r.broadcast_start ?? r.start ?? "") ? String(r.broadcast_start ?? r.start).slice(0, 5) : null,
+      timezone: text(r.timezone, 60), status: String(r.status ?? "").trim(), races: String(r.races ?? r.race_numbers ?? "").trim(),
+      source_url: url && /^https:\/\//i.test(url) ? url : null,
+    });
+  });
+  return { rows, problems };
+}

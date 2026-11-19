@@ -14,7 +14,8 @@ import { suitabilityScore, selectRaces, raceDayJobs, scorePrediction, type Selec
 import { analyseClip } from "./vision.ts";
 import { analyseRace, type Stage } from "./analysis.ts";
 import { trainModels } from "./lab.ts";
-import { importRaces, importForm } from "./importer.ts";
+import { importRaces, importForm, importBroadcasts } from "./importer.ts";
+import { dailyScan, recheckSelections, settleDecisions, backtestRules, dailyTick } from "./daily.ts";
 import { raceReport } from "./report.ts";
 
 const cors = {
@@ -40,13 +41,16 @@ const body = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("import_data"),
-    kind: z.enum(["races", "form"]),
+    kind: z.enum(["races", "form", "broadcast"]),
     verified: z.boolean().default(false),
     rows: z.array(z.record(z.string().max(200))).min(1).max(1500),
   }),
   z.object({ action: z.literal("analyse_race"), race_id: z.string().uuid() }),
   z.object({ action: z.literal("race_report"), race_id: z.string().uuid() }),
   z.object({ action: z.literal("train_models") }),
+  z.object({ action: z.literal("daily_scan") }),
+  z.object({ action: z.literal("recheck") }),
+  z.object({ action: z.literal("backtest_rules") }),
 ]);
 
 function db(): SupabaseClient {
@@ -359,7 +363,9 @@ Deno.serve(async (req) => {
     }
 
     if (input.action === "import_data") {
-      const r = input.kind === "races" ? await importRaces(sb, actor, input.rows, input.verified) : await importForm(sb, actor, input.rows, input.verified);
+      const r = input.kind === "races" ? await importRaces(sb, actor, input.rows, input.verified)
+        : input.kind === "broadcast" ? await importBroadcasts(sb, actor, input.rows, input.verified)
+        : await importForm(sb, actor, input.rows, input.verified);
       return json(r, r.ok ? 200 : 400);
     }
     if (input.action === "analyse_race") {
@@ -373,6 +379,9 @@ Deno.serve(async (req) => {
       return json(rest, code ?? 200);
     }
     if (input.action === "train_models") return json(await trainModels(sb, actor));
+    if (input.action === "daily_scan") return json(await dailyScan(sb, actor, "manual"));
+    if (input.action === "recheck") { const r = await recheckSelections(sb); const s2 = await settleDecisions(sb); return json({ ok: true, ...r, ...s2 }); }
+    if (input.action === "backtest_rules") return json(await backtestRules(sb, actor));
 
     if (input.action === "analyse_clip") {
       const r = await analyseClip(sb, actor, input.video_id, input.frames);
@@ -384,6 +393,7 @@ Deno.serve(async (req) => {
       const { data: settings } = await sb.from("racing_settings").select("automation_enabled").eq("id", 1).single();
       if (!settings?.automation_enabled) return json({ ok: true, paused: true });
       const ran = await withLock(sb, () => runAll(sb, scheduler ? "schedule" : "manual"));
+      try { await dailyTick(sb); } catch (e) { console.error("daily tick", (e as Error).message); }
       return json({ ok: true, ran });
     }
 

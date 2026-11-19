@@ -17,7 +17,7 @@ const toPerf = (p: any): Perf => ({ ...p, settled: p?.sectionals?.settled ?? nul
 // ---------- Import ----------
 export function DataImportPanel() {
   const refresh = useRacingRefresh();
-  const [kind, setKind] = useState<"races" | "form">("races");
+  const [kind, setKind] = useState<"races" | "form" | "broadcast">("races");
   const [verified, setVerified] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
@@ -25,7 +25,7 @@ export function DataImportPanel() {
     const blob = new Blob([templateCsv(kind)], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = kind === "races" ? "oracle-racing-races-template.csv" : "oracle-racing-form-template.csv";
+    a.download = `oracle-racing-${kind}-template.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -48,7 +48,7 @@ export function DataImportPanel() {
       for (let i = 0; i < batches.length; i++) {
         setBusy(`Saving part ${i + 1} of ${batches.length}…`);
         const r = await callController({ action: "import_data", kind, verified, rows: batches[i] });
-        for (const k of ["rows", "races", "runners", "results", "performances", "duplicates", "coursesCreated"]) if (typeof r?.[k] === "number") total[k] = (total[k] ?? 0) + r[k];
+        for (const k of ["rows", "races", "runners", "results", "performances", "broadcasts", "duplicates", "coursesCreated"]) if (typeof r?.[k] === "number") total[k] = (total[k] ?? 0) + r[k];
         problems.push(...(r?.problems ?? []));
       }
       setResult({ ...total, problems });
@@ -65,8 +65,16 @@ export function DataImportPanel() {
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant={kind === "races" ? "default" : "outline"} onClick={() => setKind("races")}>Races, fields & results</Button>
         <Button size="sm" variant={kind === "form" ? "default" : "outline"} onClick={() => setKind("form")}>Past form lines</Button>
+        <Button size="sm" variant={kind === "broadcast" ? "default" : "outline"} onClick={() => setKind("broadcast")}>Broadcast schedule</Button>
         <Button size="sm" variant="outline" onClick={download}><Download className="mr-1 h-3.5 w-3.5" />Template</Button>
       </div>
+      {kind === "broadcast" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Today's Seven Network racing coverage (Channel 7, 7two, regional Seven, Racing.com, 7plus): venue, channel, start time, which races, and status —
+          confirmed_live, scheduled, replay or unconfirmed. Only thoroughbred racing is accepted. Replays and unconfirmed rows are shown but never count as broadcast races.
+        </p>
+      )}
+      {kind === "races" && <p className="mt-2 text-xs text-muted-foreground">Add a parade_time column (local time) when the official mounting-yard time is known; otherwise Oracle shows a clearly labelled estimate. Re-import a race to update prices and scratchings.</p>}
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} />
         This comes from an official or licensed source (marks it Verified)

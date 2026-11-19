@@ -10,9 +10,10 @@ import {
   DashboardScreen, CalendarScreen, DiscoveryScreen, RecommendedScreen, RaceAnalysisScreen, HorsesScreen, PeopleScreen,
   VisionScreen, PredictionsScreen, LabScreen, AccuracyScreen, ControlRoomScreen, ProvidersScreen, SettingsScreen,
 } from "@/components/racing/RacingScreens";
+import { DailyReportScreen } from "@/components/racing/RacingDaily";
 
 const SCREENS = [
-  ["recommended", "Recommended Races"], ["dashboard", "Global Dashboard"], ["calendar", "Racing Calendar"], ["discovery", "Race Discovery"],
+  ["daily", "Daily Report"], ["recommended", "Recommended Races"], ["dashboard", "Global Dashboard"], ["calendar", "Racing Calendar"], ["discovery", "Race Discovery"],
   ["race", "Race Analysis"], ["horses", "Horse Profiles"], ["people", "Jockeys & Trainers"], ["paddock", "Live Paddock Vision"],
   ["training", "Training Footage"], ["live", "Live Race Vision"], ["predictions", "Predicted Orders"], ["lab", "Prediction Laboratory"],
   ["accuracy", "Accuracy"], ["control", "Control Room"], ["providers", "Data Providers"], ["settings", "Settings"],
@@ -21,7 +22,7 @@ type ScreenId = typeof SCREENS[number][0];
 
 export default function RacingIntelligencePage() {
   const navigate = useNavigate();
-  const [screen, setScreen] = useState<ScreenId>("recommended");
+  const [screen, setScreen] = useState<ScreenId>("daily");
   const [raceId, setRaceId] = useState<string | null>(null);
   const refresh = useRacingRefresh();
   const settingsQ = useRacingTable("settings", () => supabase.from("racing_settings").select("*").eq("id", 1));
@@ -37,7 +38,7 @@ export default function RacingIntelligencePage() {
         <div className="relative mx-auto max-w-7xl px-4 pb-6 pt-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/owner-dashboard")}><ArrowLeft className="mr-1 h-4 w-4" />Owner Dashboard</Button>
           <h1 className="racing-gold-text mt-4 text-4xl font-black tracking-[0.18em] md:text-6xl">ORACLE RACING</h1>
-          <p className="mt-1 text-sm font-semibold tracking-[0.3em] text-primary md:text-base">GLOBAL RACING INTELLIGENCE</p>
+          <p className="mt-1 text-sm font-semibold tracking-[0.3em] text-primary md:text-base">DAILY BROADCAST RACING INTELLIGENCE</p>
           <p className="mt-2 text-sm text-muted-foreground">Seven Intelligence Engines. One Predictive Brain. Global Racing Coverage.</p>
         </div>
       </header>
@@ -52,6 +53,7 @@ export default function RacingIntelligencePage() {
       </nav>
 
       <main className="mx-auto max-w-7xl px-4 pb-16">
+        {screen === "daily" && settings && <DailyReportScreen settings={settings} tz={tz} />}
         {screen === "recommended" && <RecommendedScreen tz={tz} onOpenRace={openRace} />}
         {screen === "dashboard" && <DashboardScreen tz={tz} />}
         {screen === "calendar" && <CalendarScreen tz={tz} />}
