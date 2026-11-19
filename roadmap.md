@@ -108,3 +108,10 @@
 - [x] Race-day jobs run the engines and save evidence; Analyse now button; Oracle race report (AI, plain English)
 - [x] Horse profiles with charts, jockey/trainer stats, live vs back-test accuracy split
 - [ ] Paid racing data feed — waits on Juzzy choosing and subscribing
+
+## Oracle Racing — daily broadcast report (2026-11-19)
+- [x] Daily Report opening screen: status banner, counts, coverage, next race countdown, selection cards, every-horse record
+- [x] $3.00 minimum win price (raise-only, locked in database), value and confidence rules, honest data-unavailable vs no-winner status
+- [x] Broadcast schedule import (thoroughbred only; replays/unconfirmed never count), official/estimated parade times
+- [x] Auto scan on first open each day + daily scan time, price re-checks, withdrawals, alerts, results settling, $1 flat-bet back-test
+- [ ] Licensed Seven/7plus TV-guide feed and live odds feed — waits on Juzzy choosing/subscribing (import works meanwhile)
