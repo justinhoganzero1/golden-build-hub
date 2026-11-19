@@ -51,3 +51,4 @@
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
 - Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (timezone country, no IP) use site_arrivals.
+- Android release APKs are signed with the Files android-release upload keystore (the cert installed phones already trust); the .lovable/android-signing key is a different cert, and a mismatched signature makes Android refuse the update.
