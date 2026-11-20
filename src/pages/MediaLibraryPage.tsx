@@ -811,7 +811,7 @@ const MediaLibraryPage = () => {
                         <ShoppingBag className="w-4 h-4 text-amber-500 shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground">Sell in Creators Shop</p>
-                          <p className="text-[10px] text-muted-foreground">You keep 80%, Oracle Lunar 20%.</p>
+                          <p className="text-[10px] text-muted-foreground">You keep 80% after a 20% service charge.</p>
                         </div>
                       </div>
                       <Switch

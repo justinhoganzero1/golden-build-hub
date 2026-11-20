@@ -119,7 +119,7 @@ const FounderSeatsPage = () => {
         {mySeat && !myListing && (
           <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
             <p className="font-bold text-foreground">Sell my seat #{mySeat}</p>
-            <p className="text-xs text-muted-foreground">Oracle Lunar keeps a 20% fee; you get 80%. To be paid out, connect your payout account in the <Link to="/creators" className="text-primary underline">Creator Studio</Link>. When it sells, your badge and Vault move to the buyer.</p>
+            <p className="text-xs text-muted-foreground">A 20% service charge applies; you get 80%. To be paid out, connect your payout account in the <Link to="/creators" className="text-primary underline">Creator Studio</Link>. When it sells, your badge and Vault move to the buyer.</p>
             <div className="flex gap-2 max-w-sm">
               <Input type="number" min={1} step="0.01" placeholder="Price in A$" value={price} onChange={(e) => setPrice(e.target.value)} />
               <Button onClick={listSeat} disabled={busy === "list"}>List it</Button>

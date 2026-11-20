@@ -425,7 +425,7 @@ export default function RealmBuilderPage() {
                       />
                     </div>
                     <p className="text-[10px] text-white/40 mt-1">
-                      You keep 70% ({(parseFloat(priceUsd || "0") * 0.7).toFixed(2)} USD). Platform fee 30% via Stripe Connect.
+                      You keep 70% ({(parseFloat(priceUsd || "0") * 0.7).toFixed(2)} USD). 30% service charge, paid via Stripe Connect.
                     </p>
                   </div>
                 )}
