@@ -232,6 +232,7 @@ export function rateFootage(f: RightsInput, today = new Date().toISOString().sli
   if (f.permission_expiry && f.permission_expiry < today) return "red";
   if (f.source_kind === "nasa_video") return "green"; // US Government public domain (NASA media guidelines)
   if ((f.approval_status === "approved" || f.approval_status === "public_domain") && f.commercial_use && f.editing_allowed) return "green"; // licence-verified (e.g. Commons PD / CC BY)
+  if (f.source_kind === "youtube_clip") return "amber"; // real story clip: plays in YouTube's own player with a credit banner, never copied
   if (f.source_kind === "youtube_rss") return "amber"; // official channel: embed via YouTube's own player only
   return f.approval_status === "approved" ? "amber" : "red";
 }

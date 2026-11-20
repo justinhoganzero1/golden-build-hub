@@ -1,8 +1,8 @@
 // Story-by-story production line: content → analysis → sectioned script → licensed visuals → ready to broadcast.
 // Bounded per run (a few stories), single-flight via the news lock, and every step leaves an honest status.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
-import { VERIFICATION_LABEL, looksLikeSpaceStory, nasaQuery, rateFootage, brisbaneClock, type Verification } from "../_shared/newsLogic.ts";
-import { normaliseSections, normaliseVisualQueries, commonsLicence, isRelevant, readyToBroadcast, shouldExpire, canRetry, MAX_ATTEMPTS, NEWS_WINDOW_HOURS, type ScriptSection, type VisualQuery } from "../_shared/newsPipeline.ts";
+import { VERIFICATION_LABEL, looksLikeSpaceStory, nasaQuery, rateFootage, brisbaneClock, titleTokens, similarity, type Verification } from "../_shared/newsLogic.ts";
+import { normaliseSections, normaliseVisualQueries, commonsLicence, isRelevant, readyToBroadcast, shouldExpire, canRetry, topTrending, pickStoryClips, MAX_ATTEMPTS, NEWS_WINDOW_HOURS, TOP_STORIES, type ScriptSection, type VisualQuery } from "../_shared/newsPipeline.ts";
 import { removeRepeatedSentences } from "../_shared/noRepeat.ts";
 import { askAI, fetchText, parseJson, USER_AGENT } from "./common.ts";
 import { extractFor } from "./analyse.ts";
@@ -166,10 +166,48 @@ async function nasaVisual(sb: SupabaseClient, story: any, q: VisualQuery): Promi
   return false;
 }
 
+/** Real clips of the actual story from any YouTube channel. Shown only through YouTube's own player with a credit banner — never downloaded. */
+async function youtubeStoryClips(sb: SupabaseClient, story: any): Promise<{ added: number; note: string }> {
+  const key = Deno.env.get("YOUTUBE_API_KEY");
+  if (!key) return { added: 0, note: "Real story clips: YouTube search key missing" };
+  const q = String(story.headline).replace(/[‘’'"“”:|–—-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 12).join(" ");
+  const params = new URLSearchParams({
+    part: "snippet", type: "video", q, maxResults: "20", order: "relevance", videoEmbeddable: "true", safeSearch: "moderate",
+    publishedAfter: new Date(Date.now() - 4 * 86400_000).toISOString(), key,
+  });
+  const r = await fetchText(`https://www.googleapis.com/youtube/v3/search?${params}`, 10_000);
+  if (!r.ok) return { added: 0, note: `Real story clips: YouTube answered ${r.status || r.text.slice(0, 80)}` };
+  let items: any[] = [];
+  try { items = JSON.parse(r.text)?.items ?? []; } catch { return { added: 0, note: "Real story clips: YouTube reply unreadable" }; }
+  const decode = (t: string) => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  const cands = items.map((it) => {
+    const title = decode(String(it.snippet?.title ?? ""));
+    return { videoId: String(it.id?.videoId ?? ""), title, channel: decode(String(it.snippet?.channelTitle ?? "")), live: it.snippet?.liveBroadcastContent ?? null, tokens: titleTokens(title), thumb: it.snippet?.thumbnails?.high?.url ?? it.snippet?.thumbnails?.medium?.url ?? null };
+  });
+  const picks = pickStoryClips(titleTokens(story.headline), cands, similarity);
+  let added = 0;
+  for (const p of picks) {
+    const thumb = cands.find((c) => c.videoId === p.videoId)?.thumb ?? null;
+    const embed = `https://www.youtube-nocookie.com/embed/${p.videoId}`;
+    const row = {
+      story_id: story.id, source_kind: "youtube_clip", url: `https://www.youtube.com/watch?v=${p.videoId}`, embed_url: embed, media_url: embed, thumbnail_url: thumb,
+      title: p.title.slice(0, 300), creator: p.channel, copyright_owner: p.channel, licence: "Standard YouTube Licence — shown through YouTube's own player, not copied",
+      commercial_use: false, editing_allowed: false, attribution: p.channel.slice(0, 200), approval_status: "embed_only", source_org: p.channel.slice(0, 120),
+      notes: "Real clip of this story. Plays in YouTube's player with the Oracle Lunar credit banner and a spoken thank-you; can't go into a filmed or downloaded video.",
+      section: null, media_type: "video", playback_status: "ok",
+    };
+    const { error } = await sb.from("news_footage").upsert({ ...row, rating: rateFootage({ ...row, permission_expiry: null }) }, { onConflict: "story_id,url", ignoreDuplicates: true });
+    if (!error) added++;
+  }
+  return { added, note: added ? `Real story clips: ${picks.map((p) => p.channel).join(", ")}` : "Real story clips: none matched the story closely enough" };
+}
+
 export async function researchVisuals(sb: SupabaseClient, story: any, queries: VisualQuery[]) {
   await setStage(sb, story.id, "searching_footage");
   const notes: string[] = [];
   let videos = 0, images = 0;
+  const yt = await youtubeStoryClips(sb, story).catch((e) => ({ added: 0, note: `Real story clips: ${(e as Error).message}` }));
+  videos += yt.added; notes.push(yt.note);
   const space = looksLikeSpaceStory(`${story.headline} ${story.summary ?? ""}`);
   for (const q of queries.slice(0, 4)) {
     if (space && await nasaVisual(sb, story, q)) { videos++; notes.push(`"${q.query}": NASA video`); continue; }
@@ -230,12 +268,14 @@ export async function advancePipeline(sb: SupabaseClient, opts: { limit: number;
       opts.limit = Math.min(opts.limit, left);
     }
     const since = new Date(Date.now() - NEWS_WINDOW_HOURS * 3600_000).toISOString();
-    const { data: fresh } = await sb.from("news_stories").select("*").eq("production_status", "discovered").neq("status", "dismissed").neq("verification", "corrected_or_withdrawn").gte("last_updated", since).order("importance", { ascending: false }).limit(opts.limit);
+    // Only the top ten trending stories in the world get produced.
+    const { data: recent } = await sb.from("news_stories").select("*").gte("last_updated", since).neq("status", "dismissed").neq("production_status", "expired").order("importance", { ascending: false }).limit(60);
+    const fresh = topTrending(recent ?? [], TOP_STORIES).filter((s: any) => s.production_status === "discovered").slice(0, opts.limit);
     const { data: failed } = await sb.from("news_stories").select("*").eq("production_status", "failed").gte("last_updated", since).limit(20);
     const retry = (failed ?? []).filter((s: any) => canRetry(s));
     todo = [...retry, ...(fresh ?? [])].slice(0, opts.limit);
   }
-  if (!todo.length) return { produced: 0, expired, note: "No stories waiting — the queue is clear." };
+  if (!todo.length) return { produced: 0, expired, note: "The top ten trending stories are already produced — nothing waiting." };
   const results = [];
   for (const st of todo) results.push(await produceStory(sb, st));
   return { produced: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, expired, results };

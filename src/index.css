@@ -21,6 +21,10 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 3%;
     --founder: 205 90% 62%;
     --founder-foreground: 0 0% 100%;
+    /* Oracle News credit banner (red, white and blue) */
+    --news-red: 0 70% 46%;
+    --news-white: 0 0% 100%;
+    --news-blue: 222 70% 30%;
 
     --secondary: 0 0% 12%;
     --secondary-foreground: 45 100% 50%;

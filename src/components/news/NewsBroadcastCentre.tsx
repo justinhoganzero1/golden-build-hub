@@ -15,7 +15,8 @@ import { callNews } from "@/lib/newsApi";
 import { chooseOracleDeviceVoice, shapeDeviceSpeech } from "@/lib/oracleDeviceVoice";
 import { SCENE, shotRect, CAMERA_MOVE_SECONDS, type NewsroomShot, type Rect } from "@/lib/newsroomScene";
 import { ChromaKeyer, drawNewsroom, type ScreenItem } from "@/components/youtube/newsroomRenderer";
-import { STAGE_LABEL, planSectionVisuals, type PlannedVisual, type ScriptSection, type Stage, type Visual } from "../../../supabase/functions/_shared/newsPipeline";
+import { STAGE_LABEL, planSectionVisuals, topTrending, thanksLine, TOP_STORIES, type PlannedVisual, type ScriptSection, type Stage, type Visual } from "../../../supabase/functions/_shared/newsPipeline";
+import { CreditBanner, drawCreditBanner, clipPlayerUrl } from "./CreditBanner";
 import studioLoop from "@/assets/newsroom/newsroom-studio-loop.mp4";
 import studioStill from "@/assets/newsroom/newsroom-studio.jpg";
 import deskLayer from "@/assets/newsroom/newsroom-desk-branded.webp";
@@ -53,6 +54,8 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   const [health, setHealth] = useState<Row | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [voiceOk, setVoiceOk] = useState<boolean | null>(null);
+  const [clip, setClip] = useState<{ url: string; credit: string } | null>(null);
+  const creditRef = useRef<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layers = useRef<{ bg: HTMLVideoElement | null; still: HTMLImageElement | null; desk: HTMLImageElement | null; host: { canvas: HTMLCanvasElement; aspect: number } | null }>({ bg: null, still: null, desk: null, host: null });
@@ -72,9 +75,9 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 48 * 3600_000).toISOString();
     const [st, f, cfg, last] = await Promise.all([
-      supabase.from("news_stories").select("id,headline,category,region,importance,verification,production_status,production_error,production_attempts,production_updated_at,script_sections,content_checked,broadcast_count,last_broadcast_at,public_at,last_updated")
+      supabase.from("news_stories").select("id,headline,category,region,importance,verification,status,production_status,production_error,production_attempts,production_updated_at,script_sections,content_checked,broadcast_count,last_broadcast_at,public_at,last_updated")
         .gte("last_updated", since).neq("production_status", "expired").order("importance", { ascending: false }).limit(80),
-      supabase.from("news_footage").select("id,story_id,section,media_type,media_url,thumbnail_url,rating,playback_status,title,attribution,licence,source_org,url").not("media_url", "is", null).order("created_at", { ascending: false }).limit(200),
+      supabase.from("news_footage").select("id,story_id,section,media_type,media_url,embed_url,source_kind,thumbnail_url,rating,playback_status,title,attribution,licence,source_org,url").not("media_url", "is", null).order("created_at", { ascending: false }).limit(200),
       supabase.from("news_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("news_stories").select("headline,last_broadcast_at").not("last_broadcast_at", "is", null).order("last_broadcast_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
@@ -86,7 +89,9 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   useEffect(() => { void load(); const t = setInterval(() => void load(), 30_000); return () => clearInterval(t); }, [load]);
 
   const categories = useMemo(() => ["all", ...new Set(stories.map((s) => s.category).filter(Boolean))], [stories]);
-  const queue = useMemo(() => stories.filter((s) => s.production_status === "ready_to_broadcast" && !skipped.has(s.id) && (catFilter === "all" || s.category === catFilter)), [stories, skipped, catFilter]);
+  // Only the top ten trending stories in the world are broadcast.
+  const topIds = useMemo(() => new Set(topTrending(stories as Array<Row & { importance: number | null }>, TOP_STORIES).map((s) => s.id as string)), [stories]);
+  const queue = useMemo(() => stories.filter((s) => topIds.has(s.id) && s.production_status === "ready_to_broadcast" && !skipped.has(s.id) && (catFilter === "all" || s.category === catFilter)), [stories, topIds, skipped, catFilter]);
   const visualsFor = useCallback((id: string) => visuals.filter((v) => v.story_id === id), [visuals]);
 
   // ── studio layers + draw loop ──
@@ -115,6 +120,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
         headline: headlineRef.current, caption: null /* house rule: no subtitles */, nameLine: nameLineRef.current,
         colors: { gold: css("--primary", "#d4af37"), fg: css("--foreground", "#f5f5f5"), bg: css("--background", "#0b0f14"), shade: css("--secondary", "#16202a"), teal: css("--accent", "#2dd4bf") },
       });
+      drawCreditBanner(ctx, creditRef.current, c.width, c.height);
     };
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); v.pause(); v.removeAttribute("src"); window.speechSynthesis?.cancel(); };
@@ -129,8 +135,16 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   /** Puts a section's visual on the wall monitor; any failure drops straight to the fallback. */
   const showVisual = async (plan: PlannedVisual, story: Row, section: ScriptSection, spare: PlannedVisual[]) => {
     const graphic = (): ScreenItem => ({ kind: "text", title: `${section.label}: ${story.headline}` });
+    // A real clip of the story: cut to it full screen in YouTube's player, credit banner along the bottom.
+    if (plan.kind === "embed") {
+      const credit = plan.credit ?? "the original broadcaster";
+      setClip((cur) => (cur?.url === plan.url ? cur : { url: plan.url, credit }));
+      creditRef.current = credit; setMonitor(`Clip — ${credit}`);
+      return;
+    }
+    setClip(null);
     const tryOne = (pv: PlannedVisual): Promise<ScreenItem | null> => new Promise((resolve) => {
-      if (pv.kind === "graphic" || failedMedia.current.has(pv.url)) return resolve(null);
+      if (pv.kind === "graphic" || pv.kind === "embed" || failedMedia.current.has(pv.url)) return resolve(null);
       const fail = () => { failedMedia.current.add(pv.url); resolve(null); };
       const timer = setTimeout(fail, 6000);
       if (pv.kind === "image") {
@@ -145,9 +159,9 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
     });
     for (const pv of [plan, ...spare]) {
       const item = await tryOne(pv);
-      if (item) { screenRef.current = item; setMonitor(pv.kind === "graphic" ? "Graphic" : `${pv.kind === "video" ? "Video" : "Photo"}${pv.credit ? ` — ${pv.credit}` : ""}`); return; }
+      if (item && pv.kind !== "graphic") { screenRef.current = item; creditRef.current = pv.credit; setMonitor(`${pv.kind === "video" ? "Video" : "Photo"}${pv.credit ? ` — ${pv.credit}` : ""}`); return; }
     }
-    screenRef.current = graphic(); setMonitor(`Graphic — ${section.label}`);
+    screenRef.current = graphic(); creditRef.current = null; setMonitor(`Graphic — ${section.label}`);
   };
 
   /** Speaks one phrase list with the device voice; resolves when finished or cancelled. */
@@ -181,7 +195,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
     if (!sections.length) return true;
     const vis = visualsFor(story.id).map((v) => ({ ...v, playback_status: failedMedia.current.has(v.media_url) ? "failed" : v.playback_status })) as Visual[];
     const plan = planSectionVisuals(sections, vis);
-    const spare = plan.filter((p) => p.kind !== "graphic");
+    const spare = plan.filter((p) => p.kind === "video" || p.kind === "image");
     headlineRef.current = story.headline;
     const sources: string[] = story.script_sections?.attribution ?? [];
     nameLineRef.current = `Oracle · Source: ${sources.slice(0, 2).join(", ") || "Oracle News"}`;
@@ -195,6 +209,13 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
       await showVisual(plan[i], story, s, spare.filter((p) => p !== plan[i]));
       await speak(s.text, run);
       if (runRef.current !== run) return false;
+      // Thank whoever made the clip once it finishes, like a real newsreader.
+      const pv = plan[i]; const nx = plan[i + 1];
+      if (pv?.kind === "embed" && !(nx?.kind === "embed" && nx.url === pv.url)) {
+        await speak(thanksLine(pv.credit), run);
+        if (runRef.current !== run) return false;
+        setClip(null); creditRef.current = null;
+      }
     }
     if (record) {
       await callNews("mark_broadcast", { story_id: story.id, status: "broadcast_complete" }).catch(() => null);
@@ -204,7 +225,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   };
 
   const stopAll = () => { runRef.current++; window.speechSynthesis?.cancel(); speakingRef.current = false; };
-  const resetScreen = () => { screenRef.current = { kind: "text", title: "Oracle News" }; headlineRef.current = "Oracle News"; nameLineRef.current = "Oracle · Oracle News"; moveCamera("wide"); setMonitor("Studio"); setCurrent(null); };
+  const resetScreen = () => { setClip(null); creditRef.current = null; screenRef.current = { kind: "text", title: "Oracle News" }; headlineRef.current = "Oracle News"; nameLineRef.current = "Oracle · Oracle News"; moveCamera("wide"); setMonitor("Studio"); setCurrent(null); };
 
   /** Automatic broadcast: plays ready stories in priority order until the broadcast length is used. */
   const startBroadcast = async (fromStory?: Row, fromSection = 0) => {
@@ -218,8 +239,8 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
     while (runRef.current === run) {
       if (!story) {
         await load();
-        const { data } = await supabase.from("news_stories").select("id,headline,category,script_sections,production_status,importance").eq("production_status", "ready_to_broadcast").order("importance", { ascending: false }).limit(20);
-        story = (data ?? []).find((s) => !done.has(s.id) && !skippedRef.current.has(s.id) && (catFilter === "all" || s.category === catFilter));
+        const { data } = await supabase.from("news_stories").select("id,headline,category,region,status,verification,script_sections,production_status,importance").gte("last_updated", new Date(Date.now() - 48 * 3600_000).toISOString()).neq("production_status", "expired").order("importance", { ascending: false }).limit(60);
+        story = topTrending(data ?? [], TOP_STORIES).filter((s) => s.production_status === "ready_to_broadcast").find((s) => !done.has(s.id) && !skippedRef.current.has(s.id) && (catFilter === "all" || s.category === catFilter));
       }
       if (!story) {
         // Nothing ready: produce the next story instead of sitting idle (daily limit applies).
@@ -282,7 +303,8 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
   };
   const sendToStudio = (story: Row) => {
     const secs: ScriptSection[] = story.script_sections?.sections ?? [];
-    const media = visualsFor(story.id).filter((v) => v.rating === "green" && v.media_url && v.playback_status !== "failed").map((v) => ({ kind: v.media_type === "image" ? "image" as const : "video" as const, url: v.media_url }));
+    // Borrowed clips only play in their own player, so they can't be filmed into a video file.
+    const media = visualsFor(story.id).filter((v) => v.rating === "green" && v.media_url && !v.embed_url && v.playback_status !== "failed").map((v) => ({ kind: v.media_type === "image" ? "image" as const : "video" as const, url: v.media_url }));
     onSendToStudio?.({ title: story.headline, script: secs.map((s) => s.text).join("\n\n"), media });
   };
 
@@ -313,11 +335,19 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
         <div className="p-2 rounded-xl bg-primary/10"><Radio className="w-6 h-6 text-primary" /></div>
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-primary">Oracle News — Broadcast Control Centre</h2>
-          <p className="text-xs text-muted-foreground">Every story goes through its own production line, then Oracle reads it at the desk while the screen behind her shows licensed footage, a photo or a news graphic. Owner only. Live playback uses this device's free voice; her photo moves with the voice but her mouth doesn't.</p>
+          <p className="text-xs text-muted-foreground">Oracle covers the top {TOP_STORIES} trending stories in the world. When a real clip of the story exists she cuts to it with the credit banner along the bottom and thanks whoever made it. Owner only. Live playback uses this device's free voice; her mouth doesn't move. Borrowed clips play in YouTube's own player, so they show live and on the website but can't be filmed into a video file.</p>
         </div>
       </div>
 
-      <canvas ref={canvasRef} width={SCENE.width} height={SCENE.height} className="w-full rounded-xl border border-border bg-background aspect-video" aria-label="Oracle News live studio" />
+      <div className="relative w-full rounded-xl overflow-hidden border border-border bg-background aspect-video">
+        <canvas ref={canvasRef} width={SCENE.width} height={SCENE.height} className="absolute inset-0 w-full h-full" aria-label="Oracle News live studio" />
+        {clip && (
+          <div className="absolute inset-0 bg-background">
+            <iframe key={clip.url} src={clipPlayerUrl(clip.url, { autoplay: true, muted: true })} title={`News clip from ${clip.credit}`} className="absolute inset-0 w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" />
+            <CreditBanner credit={clip.credit} className="absolute left-[3%] right-[3%] bottom-[2%] pointer-events-none" />
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {mode === "idle" || paused
@@ -376,6 +406,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={stageVariant(s.production_status)}>{STAGE_LABEL[s.production_status as Stage] ?? s.production_status}</Badge>
                   {s.public_at && <Badge variant="outline"><Globe className="w-3 h-3 mr-1" />On website</Badge>}
+                  {topIds.has(s.id) && <Badge variant="outline">Top {TOP_STORIES}</Badge>}
                   <span className="text-[10px] text-muted-foreground">{s.category ?? "general"} · score {s.importance} · {vis.length} visual{vis.length === 1 ? "" : "s"}{s.broadcast_count ? ` · aired ${s.broadcast_count}×` : ""}</span>
                 </div>
                 <p className="text-sm">{s.headline}</p>
@@ -389,6 +420,16 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
                   {s.content_checked?.note && <p className="text-[10px] text-muted-foreground">{s.content_checked.note}</p>}
                   {(s.content_checked?.sources ?? []).map((src: Row) => <p key={src.url} className="text-[10px]"><a className="text-primary underline" href={src.url} target="_blank" rel="noreferrer">{src.publisher}</a> · {when(src.published_at)}</p>)}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {visualsFor(s.id).filter((v) => v.source_kind === "youtube_clip" && v.rating !== "red").map((v) => (
+                      <div key={v.id} className="rounded border border-primary/50 p-1 space-y-1">
+                        <a href={v.url} target="_blank" rel="noreferrer" className="block relative">
+                          {v.thumbnail_url ? <img src={v.thumbnail_url} alt={v.title} className="w-full aspect-video object-cover rounded" loading="lazy" /> : <div className="w-full aspect-video rounded bg-secondary" />}
+                          <CreditBanner compact credit={v.attribution ?? "YouTube"} className="absolute left-1 right-1 bottom-1 pointer-events-none" />
+                        </a>
+                        <p className="text-[9px] text-muted-foreground line-clamp-2">Real clip · {v.title}</p>
+                        <div className="flex gap-1"><a href={v.url} target="_blank" rel="noreferrer" className="text-[9px] text-primary underline">Source</a><button type="button" className="text-[9px] text-destructive underline ml-auto" onClick={() => void act("remove", "remove_visual", { footage_id: v.id })}>Wrong clip — remove</button></div>
+                      </div>
+                    ))}
                     {vis.map((v) => (
                       <div key={v.id} className="rounded border border-border p-1 space-y-1">
                         {v.media_type === "image" ? <img src={v.media_url} alt={v.title} className="w-full aspect-video object-cover rounded" loading="lazy" /> : <video src={v.media_url} muted playsInline controls preload="metadata" className="w-full aspect-video rounded" />}
@@ -397,7 +438,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
                       </div>
                     ))}
                   </div>
-                  {!vis.length && secs.length > 0 && <p className="text-[10px] text-muted-foreground">No licensed footage found — the monitor will show news graphics for this story.</p>}
+                  {!vis.length && !visualsFor(s.id).some((v) => v.source_kind === "youtube_clip" && v.rating !== "red") && secs.length > 0 && <p className="text-[10px] text-muted-foreground">No licensed footage found — the monitor will show news graphics for this story.</p>}
                   <div className="flex flex-wrap gap-2">
                     {b("Preview Story", <Eye className="w-4 h-4 mr-1" />, () => void preview(s), !secs.length)}
                     {b("Broadcast from here", <Play className="w-4 h-4 mr-1" />, () => void startBroadcast(s), !PLAYABLE.includes(s.production_status))}
@@ -413,7 +454,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
           );
         })}
         {stories.filter((s) => s.production_status === "discovered").length > 0 && (
-          <p className="text-[11px] text-muted-foreground">{stories.filter((s) => s.production_status === "discovered").length} more discovered stories are waiting their turn (highest score first, {settings?.pipeline_daily_cap ?? 10} a day). Stories older than 36 hours are closed off as "not used".</p>
+          <p className="text-[11px] text-muted-foreground">Only the top {TOP_STORIES} trending stories get produced and broadcast; {stories.filter((s) => s.production_status === "discovered" && !topIds.has(s.id)).length} others are outside the top {TOP_STORIES} right now (up to {settings?.pipeline_daily_cap ?? 10} written a day). Stories older than 36 hours are closed off as "not used".</p>
         )}
       </div>
       {voiceOk === false && <p className="text-xs text-destructive">This browser has no speech voice, so the presenter can't speak here. Try Chrome on your phone or computer.</p>}

@@ -87,3 +87,63 @@ describe("production queue", () => {
     expect(canRetry({ production_status: "failed", production_attempts: 3, production_updated_at: null }, now)).toBe(false);
   });
 });
+
+import { topTrending, thanksLine, pickStoryClips, TOP_STORIES } from "../../supabase/functions/_shared/newsPipeline";
+import { titleTokens, similarity, rateFootage } from "../../supabase/functions/_shared/newsLogic";
+
+describe("real story clips and the top ten", () => {
+  const sec = normaliseSections({ ...full, where_when: "In Canberra on Thursday the package was tabled in parliament." })!;
+  const clip = { id: "c1", section: null, media_type: "video" as const, media_url: "https://www.youtube-nocookie.com/embed/abc", embed_url: "https://www.youtube-nocookie.com/embed/abc", source_kind: "youtube_clip", rating: "amber", playback_status: "ok", attribution: "Sky News Australia" };
+
+  it("runs the real clip behind every section except the intro and closing", () => {
+    const plan = planSectionVisuals(sec, [clip]);
+    expect(plan[0].kind).toBe("graphic");
+    expect(plan.slice(1, -1).every((p) => p.kind === "embed" && p.credit === "Sky News Australia")).toBe(true);
+    expect(plan[plan.length - 1].kind).toBe("graphic");
+  });
+  it("never uses a clip the owner removed", () => {
+    expect(planSectionVisuals(sec, [{ ...clip, rating: "red" }]).some((p) => p.kind === "embed")).toBe(false);
+  });
+  it("thanks whoever made the clip by name", () => {
+    expect(thanksLine("Sky News Australia")).toBe("Our thanks to Sky News Australia for that footage.");
+  });
+  it("story clips are embed-only (amber), never green for filmed downloads", () => {
+    expect(rateFootage({ source_kind: "youtube_clip", commercial_use: false, editing_allowed: false, approval_status: "embed_only", permission_expiry: null })).toBe("amber");
+  });
+  it("only keeps clips whose title matches the actual story, one per channel", () => {
+    const head = titleTokens("Albanese meets Putin envoy at G20 summit in Rio");
+    const c = (videoId: string, title: string, channel: string) => ({ videoId, title, channel, live: "none", tokens: titleTokens(title) });
+    const picks = pickStoryClips(head, [
+      c("a", "Albanese and Putin envoy clash at G20 summit", "ABC News"),
+      c("b", "Albanese Putin envoy G20 summit talks", "ABC News"),
+      c("d", "Cute cat compilation", "Cats"),
+      c("e", "G20 summit: Albanese meets Putin envoy", "Sky News"),
+      c("f", "Albanese meets Putin envoy at G20 summit in Rio", "Random Reuploads 24/7"),
+    ], similarity);
+    expect(picks.map((p) => p.videoId)).toEqual(expect.arrayContaining(["e"]));
+    expect(picks.some((p) => p.videoId === "f")).toBe(false);
+    expect(picks).toHaveLength(2);
+    expect(new Set(picks.map((p) => p.channel)).size).toBe(2);
+    expect(picks.some((p) => p.videoId === "d")).toBe(false);
+  });
+  it("puts real news broadcasters ahead of random channels", () => {
+    const head = titleTokens("Xi praises Albanese over Australia China relations turnaround");
+    const c = (videoId: string, title: string, channel: string) => ({ videoId, title, channel, live: "none", tokens: titleTokens(title) });
+    const picks = pickStoryClips(head, [
+      c("r", "Xi praises Albanese: Australia China relations turnaround explained", "Random Daily Brief"),
+      c("s", "Xi praises Albanese on China relations", "Sky News Australia"),
+    ], similarity);
+    expect(picks[0].channel).toBe("Sky News Australia");
+  });
+  it("keeps only the top ten trending stories, worldwide (no home-country bonus)", () => {
+    const stories = Array.from({ length: 15 }, (_, i) => ({ id: `s${i}`, importance: 100 - i, region: "intl", status: "new", verification: "corroborated", production_status: "discovered" }));
+    stories.push({ id: "au", importance: 95.5, region: "au", status: "new", verification: "corroborated", production_status: "discovered" }); // 83.5 without bonus
+    stories.push({ id: "gone", importance: 999, region: "intl", status: "dismissed", verification: "corroborated", production_status: "discovered" });
+    const top = topTrending(stories);
+    expect(TOP_STORIES).toBe(10);
+    expect(top).toHaveLength(10);
+    expect(top.map((s) => s.id)).not.toContain("au");
+    expect(top.map((s) => s.id)).not.toContain("gone");
+    expect(top[0].id).toBe("s0");
+  });
+});

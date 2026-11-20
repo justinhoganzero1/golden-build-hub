@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
     const [{ data: items }, { data: srcs }, { data: vis }] = await Promise.all([
       storyIds.length ? sb.from("news_items").select("story_id,title,url,published_at,source_id").in("story_id", storyIds) : Promise.resolve({ data: [] as any[] }),
       sb.from("news_sources").select("id,name"),
-      body.id ? sb.from("news_footage").select("story_id,section,media_type,media_url,thumbnail_url,title,url,licence,attribution,source_org").eq("story_id", body.id).eq("rating", "green").not("media_url", "is", null) : Promise.resolve({ data: [] as any[] }),
+      body.id ? sb.from("news_footage").select("story_id,section,media_type,media_url,embed_url,source_kind,thumbnail_url,title,url,licence,attribution,source_org").eq("story_id", body.id).or("rating.eq.green,and(source_kind.eq.youtube_clip,rating.eq.amber)").not("media_url", "is", null) : Promise.resolve({ data: [] as any[] }),
     ]);
     const name = new Map((srcs ?? []).map((s: any) => [s.id, s.name]));
     const stories = (data ?? []).map((s: any) => ({

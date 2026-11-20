@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { CreditBanner, clipPlayerUrl } from "@/components/news/CreditBanner";
 import { VERIFICATION_LABEL, type Verification } from "../../supabase/functions/_shared/newsLogic";
 
 type Row = Record<string, any>;
@@ -80,7 +81,16 @@ const NewsPublicPage = () => {
               <h1 className="text-2xl font-bold leading-tight">{story.headline}</h1>
             </div>
             {(story.visuals ?? [])[0] && (() => {
-              const v = story.visuals[0];
+              const v = [...story.visuals].sort((a: Row, b: Row) => Number(!!b.embed_url) - Number(!!a.embed_url))[0];
+              if (v.embed_url) return (
+                <figure className="space-y-1">
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-secondary">
+                    <iframe src={clipPlayerUrl(v.embed_url)} title={`News clip from ${v.attribution}`} className="absolute inset-0 w-full h-full" allow="encrypted-media; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" loading="lazy" />
+                  </div>
+                  <CreditBanner credit={v.attribution ?? "YouTube"} className="rounded-md overflow-hidden" />
+                  <figcaption className="text-[10px] text-muted-foreground">Thanks to {v.attribution} for this clip · <a href={v.url} target="_blank" rel="noreferrer" className="underline">watch on YouTube</a></figcaption>
+                </figure>
+              );
               return (
                 <figure className="space-y-1">
                   {v.media_type === "image" ? <img src={v.media_url} alt={v.title} className="w-full rounded-xl aspect-video object-cover" loading="lazy" /> : <video src={v.media_url} controls muted playsInline preload="metadata" className="w-full rounded-xl aspect-video" />}
