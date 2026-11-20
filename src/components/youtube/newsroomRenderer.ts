@@ -1,6 +1,6 @@
 // Draws one frame of the newsroom template onto a canvas.
 // Layers (back to front): studio loop → wall screen content → host (green keyed) → desk → lower third.
-import { DESK_RECT, SCENE, SCREEN_RECT, hostRect, type Rect } from "@/lib/newsroomScene";
+import { DESK_RECT, HOST_ANCHOR, INTERVIEW_ANCHOR, SCENE, SCREEN_RECT, hostRect, type Rect, type Speaker } from "@/lib/newsroomScene";
 import { wrapText } from "@/lib/youtubeHost";
 
 /** Removes a green-screen background, softening edges and stripping green spill. */
@@ -58,6 +58,11 @@ export interface NewsroomFrame {
   headline: string;
   caption: string | null;
   colors: { gold: string; fg: string; bg: string; shade: string; teal: string };
+  /** Interview: the reporter stands beside the host; whoever is speaking moves with the voice. */
+  guest?: { img: CanvasImageSource; aspect: number; energy: number } | null;
+  speaker?: Speaker;
+  /** Overrides the name line of the lower third (e.g. the reporter's name and topic). */
+  nameLine?: string;
 }
 
 function cover(ctx: CanvasRenderingContext2D, src: CanvasImageSource, sw: number, sh: number, r: Rect) {
@@ -107,14 +112,26 @@ export function drawNewsroom(ctx: CanvasRenderingContext2D, f: NewsroomFrame) {
   if (f.bg) ctx.drawImage(f.bg, 0, 0, SCENE.width, SCENE.height);
   else { ctx.fillStyle = f.colors.bg; ctx.fillRect(0, 0, SCENE.width, SCENE.height); }
   drawScreen(ctx, f);
-  if (f.host) {
-    const hr = hostRect(f.hostAspect);
-    // A still photo breathes and sways a little with the voice; a lip-synced clip moves by itself.
-    const sway = f.lipSynced ? 0 : Math.sin(f.t * 0.7) * 1.2 + Math.sin(f.t * 2.1) * f.level * 1.5;
-    const breathe = f.lipSynced ? 1 : 1 + Math.sin(f.t * 1.6) * 0.004 + f.level * 0.006;
+  const person = (img: CanvasImageSource, aspect: number, cx: number, talking: boolean, energy: number, phase: number, scale = 1) => {
+    const full = hostRect(aspect, cx);
+    // Scaled people keep their feet on the same line behind the desk.
+    const hr = { x: cx - (full.w * scale) / 2, y: full.y + full.h * (1 - scale), w: full.w * scale, h: full.h * scale };
+    // A still photo breathes and sways a little; only the person talking reacts to the voice.
+    const lvl = talking ? f.level * energy : 0;
+    const sway = Math.sin(f.t * 0.7 + phase) * 1.2 + Math.sin(f.t * 2.1 + phase) * lvl * 1.5;
+    const breathe = 1 + Math.sin(f.t * 1.6 + phase) * 0.004 + lvl * 0.006;
     const w = hr.w * breathe, h = hr.h * breathe;
-    ctx.drawImage(f.host, hr.x + sway - (w - hr.w) / 2, hr.y - (h - hr.h), w, h);
+    ctx.drawImage(img, hr.x + sway - (w - hr.w) / 2, hr.y - (h - hr.h), w, h);
+  };
+  const interview = !!f.guest;
+  if (f.host) {
+    const cx = interview ? INTERVIEW_ANCHOR.hostCx : HOST_ANCHOR.cx;
+    if (f.lipSynced && !interview) {
+      const hr = hostRect(f.hostAspect, cx);
+      ctx.drawImage(f.host, hr.x, hr.y, hr.w, hr.h);
+    } else person(f.host, f.hostAspect, cx, !interview || f.speaker !== "reporter", 1, 0);
   }
+  if (f.guest) person(f.guest.img, f.guest.aspect, INTERVIEW_ANCHOR.guestCx, f.speaker === "reporter", f.guest.energy, 1.7, 0.88);
   if (f.desk) ctx.drawImage(f.desk, DESK_RECT.x, DESK_RECT.y, DESK_RECT.w, DESK_RECT.h);
   ctx.restore();
 
@@ -128,7 +145,7 @@ export function drawNewsroom(ctx: CanvasRenderingContext2D, f: NewsroomFrame) {
   const top = wrapText(f.headline || f.showName || "Tonight", (tall ? 560 : 660) * u, (s) => ctx.measureText(s).width, 1)[0] || "";
   ctx.fillText(top, 64 * u, barY + 28 * u);
   ctx.fillStyle = f.colors.fg; ctx.font = `500 ${16 * u}px system-ui, sans-serif`;
-  ctx.fillText([f.anchorName, f.showName].filter(Boolean).join(" · "), 64 * u, barY + 52 * u);
+  ctx.fillText(f.nameLine ?? [f.anchorName, f.showName].filter(Boolean).join(" · "), 64 * u, barY + 52 * u);
   ctx.fillStyle = "#c62828"; ctx.fillRect(40 * u, 36 * u, 64 * u, 26 * u);
   ctx.fillStyle = "#ffffff"; ctx.font = `700 ${15 * u}px system-ui, sans-serif`; ctx.fillText("LIVE", 54 * u, 55 * u);
 

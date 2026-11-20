@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -17,23 +18,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAvatars } from "@/hooks/useUserAvatars";
 import { narrateText, NarrationError } from "@/lib/storyNarration";
+import { REPORTERS, draftInterview, encodeWav, formatTurns, parseInterview, reporterById, timeTurns, type ReporterId } from "@/lib/newsroomReporters";
 import { uploadCreationFile } from "@/lib/oracleCreationFiles";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
 import { requireEdgeAuthToken } from "@/lib/edgeAuth";
 import { canvasSizeFor, lineAt, pickRecorderType, slideBeats, splitSentences, timeSentences, type HostFormat, type TimedLine } from "@/lib/youtubeHost";
-import { cameraAt, planShots, segmentAt, type ShotSegment } from "@/lib/newsroomScene";
+import { cameraAt, planInterviewShots, planShots, segmentAt, type ShotSegment, type SpokenLine } from "@/lib/newsroomScene";
 import { ChromaKeyer, drawNewsroom, type ScreenItem } from "./newsroomRenderer";
 import studioLoop from "@/assets/newsroom/newsroom-studio-loop.mp4";
 import studioStill from "@/assets/newsroom/newsroom-studio.jpg";
 import deskLayer from "@/assets/newsroom/newsroom-desk.webp";
 import presenterGreen from "@/assets/newsroom/newsroom-host-green.jpg";
+import jackGreen from "@/assets/newsroom/reporter-jack-green.jpg";
+import miaGreen from "@/assets/newsroom/reporter-mia-green.jpg";
+import jackCard from "@/assets/newsroom/reporter-jack-card.webp";
+import miaCard from "@/assets/newsroom/reporter-mia-card.webp";
+
+const REPORTER_PICS: Record<ReporterId, string> = { jack: jackGreen, mia: miaGreen };
+const REPORTER_CARDS: Record<ReporterId, string> = { jack: jackCard, mia: miaCard };
 
 interface Props { script: string; title: string; channelName: string; voiceId: string | null; voiceName: string | null }
 
 interface Template {
   showName: string; anchorName: string; format: HostFormat; captions: boolean;
   host: string; greenHosts: Record<string, string>;
+  /** Interview guest: one of the built-in reporters, or null for a solo episode. */
+  reporter: ReporterId | null;
 }
 interface LipClip { jobId: string; scriptHash: string; url?: string; billedCents?: number }
 
@@ -80,7 +91,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   const uid = user?.id ?? "";
   const { data: avatars = [] } = useUserAvatars() as { data?: Array<{ id: string; name: string; image_url: string | null }> };
 
-  const [tpl, setTpl] = useState<Template>(() => ({ showName: "", anchorName: "Oracle", format: "youtube", captions: true, host: PRESENTER, greenHosts: {} }));
+  const [tpl, setTpl] = useState<Template>(() => ({ showName: "", anchorName: "Oracle", format: "youtube", captions: true, host: PRESENTER, greenHosts: {}, reporter: null }));
   const [tplLoaded, setTplLoaded] = useState(false);
   const [preparingHost, setPreparingHost] = useState(false);
   const [pendingHost, setPendingHost] = useState<{ src: string; name: string } | null>(null);
@@ -89,7 +100,8 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   const [makingPics, setMakingPics] = useState(false);
   const [narrating, setNarrating] = useState(false);
   const [narrationPct, setNarrationPct] = useState(0);
-  const [audio, setAudio] = useState<{ url: string; blob: Blob; script: string; seconds: number } | null>(null);
+  const [audio, setAudio] = useState<{ url: string; blob: Blob; script: string; seconds: number; lines?: SpokenLine[] } | null>(null);
+  const [interviewText, setInterviewText] = useState("");
   const [scriptHash, setScriptHash] = useState("");
   const [lip, setLip] = useState<LipClip | null>(null);
   const [lipQuote, setLipQuote] = useState<{ total_cents: number; seconds: number } | null>(null);
@@ -108,16 +120,22 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   const deskRef = useRef<HTMLImageElement | null>(null);
   const hostStillRef = useRef<{ canvas: HTMLCanvasElement; aspect: number } | null>(null);
   const hostGreenRef = useRef<HTMLImageElement | null>(null);
+  const guestRef = useRef<{ canvas: HTMLCanvasElement; aspect: number } | null>(null);
   const lipVideoRef = useRef<HTMLVideoElement | null>(null);
   const liveKeyer = useRef<ChromaKeyer | null>(null);
   const screenEls = useRef<Map<string, HTMLImageElement | HTMLVideoElement>>(new Map());
-  const filmRef = useRef<{ lines: TimedLine[]; segs: ShotSegment[]; level: number; stop?: () => void }>({ lines: [], segs: [], level: 0 });
+  const filmRef = useRef<{ lines: Array<TimedLine | SpokenLine>; segs: ShotSegment[]; level: number; stop?: () => void }>({ lines: [], segs: [], level: 0 });
 
   const beats = useMemo(() => slideBeats(script, 8), [script]);
   const size = canvasSizeFor(tpl.format);
   const hostSrc = tpl.host === PRESENTER ? presenterGreen : tpl.greenHosts[tpl.host] || presenterGreen;
-  const lipMatches = !!lip?.url && lip.scriptHash === scriptHash && lipReady;
-  const voiceStale = !!audio && audio.script !== script;
+  const reporter = reporterById(tpl.reporter);
+  const interview = !!reporter;
+  const turns = useMemo(() => (reporter ? parseInterview(interviewText, reporter, tpl.anchorName) : []), [reporter, interviewText, tpl.anchorName]);
+  /** What the voice step reads: the script, or the interview with who says each line. */
+  const spokenKey = interview ? `${reporter!.id}|${tpl.anchorName}|${interviewText}` : script;
+  const lipMatches = !interview && !!lip?.url && lip.scriptHash === scriptHash && lipReady;
+  const voiceStale = !!audio && audio.script !== spokenKey;
 
   // ── Template: load once per account, save on change ──
   useEffect(() => {
@@ -159,6 +177,30 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
     }).catch(() => toast.error("Couldn't load that host picture."));
     return () => { alive = false; };
   }, [hostSrc]);
+
+  useEffect(() => {
+    guestRef.current = null;
+    if (!reporter) return;
+    let alive = true;
+    loadImage(REPORTER_PICS[reporter.id]).then((img) => {
+      if (!alive) return;
+      const aspect = img.naturalWidth / img.naturalHeight;
+      guestRef.current = { canvas: new ChromaKeyer(480).key(img, aspect), aspect };
+    }).catch(() => toast.error("Couldn't load the reporter picture."));
+    return () => { alive = false; };
+  }, [reporter?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const draftFromScript = (r = reporter) => {
+    if (!r) return;
+    const t = draftInterview(script, r, tpl.showName);
+    setInterviewText(t.length ? formatTurns(t, r, tpl.anchorName) : "");
+  };
+  const chooseReporter = (id: ReporterId | null) => {
+    setTpl((t) => ({ ...t, reporter: id }));
+    const r = reporterById(id);
+    if (r) draftFromScript(r);
+  };
+  useEffect(() => { if (reporter && !interviewText && script.trim()) draftFromScript(); }, [reporter?.id, script]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Screen media elements (member pictures/clips and AI pictures).
   useEffect(() => {
@@ -239,10 +281,14 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
     const lv = lipVideoRef.current;
     const useLip = live && lipMatches && lv && lv.readyState >= 2 && liveKeyer.current;
     if (useLip) { aspect = lv.videoWidth / lv.videoHeight; host = liveKeyer.current!.key(lv, aspect); }
-    const cur = lineAt(f.lines, t);
+    const cur = lineAt(f.lines, t) as (TimedLine & { speaker?: SpokenLine["speaker"] }) | null;
+    const g = interview ? guestRef.current : null;
+    const speaker = cur?.speaker ?? "host";
     drawNewsroom(ctx, {
-      t, camera: cameraAt(segs, t, tpl.format), bg: bgVideoRef.current ?? bgStillRef.current, desk: deskRef.current,
-      host, hostAspect: aspect, level: live ? f.level : 0, lipSynced: !!useLip,
+      t, camera: cameraAt(segs, t, tpl.format, interview ? "interview" : "solo"), bg: bgVideoRef.current ?? bgStillRef.current, desk: deskRef.current,
+      host, hostAspect: aspect, level: live ? f.level : 0.35, lipSynced: !!useLip,
+      guest: g && reporter ? { img: g.canvas, aspect: g.aspect, energy: reporter.energy } : null, speaker,
+      nameLine: interview && reporter ? (speaker === "reporter" ? `${reporter.name} · ${reporter.genre} reporter` : [tpl.anchorName, tpl.showName].filter(Boolean).join(" · ")) : undefined,
       screen: screenFor(seg?.beat ?? 0), showName: tpl.showName, anchorName: tpl.anchorName,
       headline: beats[seg?.beat ?? 0] || tpl.showName || title, caption: tpl.captions && live && cur ? cur.text : null, colors: colors(),
     });
@@ -251,16 +297,22 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   // Idle preview: rehearses the camera moves on a loop with 3-second lines.
   useEffect(() => {
     if (filming) return;
-    const sentences = splitSentences(script).slice(0, 10);
-    const lines = sentences.length ? sentences.map((s, i) => ({ text: s, start: i * 3, end: i * 3 + 3 })) : [{ text: "", start: 0, end: 12 }];
+    let lines: Array<TimedLine | SpokenLine>;
+    if (interview && turns.length) {
+      lines = turns.slice(0, 10).map((tn, i) => ({ text: tn.text, start: i * 3, end: i * 3 + 3, speaker: tn.speaker }));
+      filmRef.current.segs = planInterviewShots(lines as SpokenLine[], beats.length);
+    } else {
+      const sentences = splitSentences(script).slice(0, 10);
+      lines = sentences.length ? sentences.map((s, i) => ({ text: s, start: i * 3, end: i * 3 + 3 })) : [{ text: "", start: 0, end: 12 }];
+      filmRef.current.segs = planShots(lines, beats.length);
+    }
     filmRef.current.lines = lines;
-    filmRef.current.segs = planShots(lines, beats.length);
     const total = lines[lines.length - 1].end;
     let raf = 0; const start = performance.now();
     const loop = () => { draw(((performance.now() - start) / 1000) % total, false); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [filming, script, beats, tpl, aiPics, screenMedia, lipMatches]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filming, script, beats, tpl, aiPics, screenMedia, lipMatches, turns, interview]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Host choices ──
   const chooseHost = (src: string, name: string) => {
@@ -316,7 +368,49 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   };
 
   // ── Voice ──
+  const makeInterviewVoice = async () => {
+    if (!reporter || !turns.length) { toast.error("Write the interview first."); return; }
+    setNarrating(true); setNarrationPct(0); setResult(null); setSavedId(null);
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    const ac: AudioContext = new AC();
+    try {
+      const buffers: AudioBuffer[] = [];
+      for (let i = 0; i < turns.length; i++) {
+        const tn = turns[i];
+        const opts = tn.speaker === "reporter"
+          ? { voiceId: reporter.voiceId, settings: reporter.voiceSettings }
+          : voiceId ? { voiceId } : undefined;
+        const bytes = await narrateText(tn.text, (p) => setNarrationPct(Math.round(((i + p / 100) / turns.length) * 100)), opts);
+        const copy = new Uint8Array(bytes as Uint8Array).buffer;
+        buffers.push(await ac.decodeAudioData(copy));
+      }
+      const rate = buffers[0]?.sampleRate || 44100;
+      const gap = Math.round(rate * 0.35);
+      const total = buffers.reduce((n, b) => n + Math.round(b.duration * rate) + gap, 0);
+      const out = new Float32Array(total);
+      const spans: Array<{ start: number; end: number }> = [];
+      let pos = 0;
+      for (const b of buffers) {
+        const n = Math.round(b.duration * rate);
+        const chans = Array.from({ length: b.numberOfChannels }, (_, c) => b.getChannelData(c));
+        const step = b.sampleRate / rate;
+        for (let i = 0; i < n; i++) {
+          const k = Math.min(b.length - 1, Math.floor(i * step));
+          let v = 0; for (const ch of chans) v += ch[k]; out[pos + i] = v / chans.length;
+        }
+        spans.push({ start: pos / rate, end: (pos + n) / rate });
+        pos += n + gap;
+      }
+      const blob = encodeWav(out, rate);
+      setAudio({ url: URL.createObjectURL(blob), blob, script: spokenKey, seconds: total / rate, lines: timeTurns(turns, spans) });
+      toast.success(`Voices ready for you and ${reporter.firstName}. Charged to your wallet.`);
+    } catch (e) {
+      toast.error(e instanceof NarrationError ? e.message : "Couldn't make the voices. Nothing was saved.");
+    } finally { setNarrating(false); void ac.close(); }
+  };
+
   const makeVoice = async () => {
+    if (interview) return makeInterviewVoice();
     if (!script.trim()) { toast.error("Write or generate a script first."); return; }
     setNarrating(true); setNarrationPct(0); setResult(null); setSavedId(null);
     try {
@@ -379,9 +473,14 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
     if (lv) { lv.currentTime = 0; lv.muted = false; }
     await new Promise<void>((res) => { if (master.readyState >= 1) res(); else { master.onloadedmetadata = () => res(); master.onerror = () => res(); } });
     const duration = master.duration || audio?.seconds || 1;
-    const lines = timeSentences(splitSentences(script), duration);
-    filmRef.current.lines = lines;
-    filmRef.current.segs = planShots(lines, beats.length);
+    if (interview && audio?.lines?.length) {
+      filmRef.current.lines = audio.lines;
+      filmRef.current.segs = planInterviewShots(audio.lines, beats.length);
+    } else {
+      const lines = timeSentences(splitSentences(script), duration);
+      filmRef.current.lines = lines;
+      filmRef.current.segs = planShots(lines, beats.length);
+    }
     screenEls.current.forEach((el) => { if (el instanceof HTMLVideoElement) { el.currentTime = 0; void el.play().catch(() => null); } });
 
     const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -440,7 +539,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
       const id = await saveToLibrary({
         media_type: "video", title: `${title || tpl.showName || "Newsroom episode"} (${tpl.format === "shorts" ? "Shorts" : "YouTube"})`, url,
         source_page: "/youtube-show-studio",
-        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "default", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", mime_type: result.blob.type },
+        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "default", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", reporter: reporter ? `${reporter.name} (${reporter.genre})` : null, mime_type: result.blob.type },
       });
       setSavedId(id || "queued");
       toast.success("Saved to your Library.");
@@ -483,6 +582,43 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
               </Button>
               <Button size="sm" variant="outline" onClick={() => setPendingHost(null)} disabled={preparingHost}>Cancel</Button>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs font-medium">Interview a reporter (optional)</p>
+        <p className="text-[11px] text-muted-foreground">Pick a reporter to stand beside your host. Each has their own news topic, voice and personality. Your host asks the questions; the reporter covers each point of your script.</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <button type="button" onClick={() => chooseReporter(null)} aria-pressed={!reporter} disabled={filming || narrating}
+            className={`rounded-xl border-2 p-3 text-left text-xs ${!reporter ? "border-primary bg-primary/10" : "border-border"}`}>
+            <span className="font-semibold block">Just the host</span>
+            <span className="text-muted-foreground">Solo episode, no guest.</span>
+          </button>
+          {REPORTERS.map((r) => (
+            <button key={r.id} type="button" onClick={() => chooseReporter(r.id)} disabled={filming || narrating} aria-pressed={tpl.reporter === r.id} aria-label={`Interview ${r.name}, ${r.genre} reporter`}
+              className={`rounded-xl border-2 p-2 text-left text-xs flex gap-2 items-start ${tpl.reporter === r.id ? "border-primary bg-primary/10" : "border-border"}`}>
+              <img src={REPORTER_CARDS[r.id]} alt={r.name} className="w-12 h-16 rounded-lg object-cover object-top shrink-0" />
+              <span className="min-w-0">
+                <span className="font-semibold block">{r.name}</span>
+                <span className="text-primary block">{r.genre}</span>
+                <span className="text-muted-foreground block">{r.personality}</span>
+                <span className="text-muted-foreground block">Voice: {r.voiceName}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+        {reporter && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">Interview script. Start each line with <strong>{tpl.anchorName || "Host"}:</strong> or <strong>{reporter.firstName}:</strong> to say who speaks.</p>
+              <Button size="sm" variant="outline" onClick={() => draftFromScript()} disabled={!script.trim()}>
+                <Wand2 className="w-4 h-4 mr-1" /> Write it from my script
+              </Button>
+            </div>
+            <Textarea value={interviewText} onChange={(e) => setInterviewText(e.target.value)} rows={8} className="text-xs"
+              placeholder={`${tpl.anchorName || "Host"}: Joining me is ${reporter.name}.\n\n${reporter.firstName}: ${reporter.intro}`} />
+            <p className="text-[10px] text-muted-foreground">{turns.filter((t) => t.speaker === "host").length} lines for your host · {turns.filter((t) => t.speaker === "reporter").length} for {reporter.firstName}. Writing it is free.</p>
           </div>
         )}
       </div>
@@ -533,11 +669,13 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
 
       <div className="space-y-2">
         <p className="text-xs font-medium">3. Make the host's voice</p>
-        <p className="text-[11px] text-muted-foreground">Voice: {voiceName || "Default narrator"}. Charged to your wallet.</p>
+        <p className="text-[11px] text-muted-foreground">
+          {reporter ? `Host voice: ${voiceName || "Default narrator"} · ${reporter.firstName}'s voice: ${reporter.voiceName}. Charged to your wallet.` : `Voice: ${voiceName || "Default narrator"}. Charged to your wallet.`}
+        </p>
         <div className="flex flex-wrap gap-2 items-center">
-          <Button size="sm" onClick={makeVoice} disabled={narrating || filming || !script.trim()}>
+          <Button size="sm" onClick={makeVoice} disabled={narrating || filming || (interview ? !turns.length : !script.trim())}>
             {narrating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mic className="w-4 h-4 mr-1" />}
-            {narrating ? `Making voice ${narrationPct}%` : audio ? "Remake voice" : "Make voice"}
+            {narrating ? `Making voice ${narrationPct}%` : audio ? (interview ? "Remake voices" : "Remake voice") : (interview ? "Make voices" : "Make voice")}
           </Button>
           {audio && <audio src={audio.url} controls className="h-9 max-w-full" />}
         </div>
@@ -546,6 +684,9 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
 
       <div className="space-y-2">
         <p className="text-xs font-medium">4. Real lip-sync (optional)</p>
+        {interview ? (
+          <p className="text-[11px] text-muted-foreground">Lip-sync is for solo episodes. In an interview, your host and {reporter!.firstName} are photos that move gently when they talk — their mouths don't move.</p>
+        ) : (<>
         <p className="text-[11px] text-muted-foreground">
           Without lip-sync your host is a photo that moves gently with her voice. With lip-sync, a lip-sync service turns her picture into a video whose mouth moves with her voice. The price depends on the length of the voice and comes from your wallet. Pro plan.
         </p>
@@ -557,6 +698,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
             {lipBusy ? "Making lip-sync…" : lipQuote ? `Add lip-sync · ${money(lipQuote.total_cents)}` : "Add lip-sync"}
           </Button>
         )}
+        </>)}
       </div>
 
       <div className="space-y-2">
