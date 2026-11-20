@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Download, Loader2, Mic, Save, Upload, Video, Square } from "lucide-react";
+import { Camera, Download, Loader2, Mic, Save, Share2, Upload, Video, Square } from "lucide-react";
+import { shareMadeFile } from "@/lib/shareFile";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
   const [filmPct, setFilmPct] = useState(0);
   const [result, setResult] = useState<{ blob: Blob; url: string; ext: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -368,6 +370,13 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
               <a href={result.url} download={`${(title || "youtube-episode").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${result.ext}`}>
                 <Download className="w-4 h-4 mr-1" /> Download
               </a>
+            </Button>
+            <Button size="sm" variant="outline" disabled={sharing} onClick={async () => {
+              setSharing(true);
+              try { await shareMadeFile(result.blob, `${(title || "youtube-episode").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${result.ext}`, title || "Oracle Lunar episode"); }
+              finally { setSharing(false); }
+            }}>
+              {sharing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Share2 className="w-4 h-4 mr-1" />} Share
             </Button>
             <Button size="sm" onClick={save} disabled={saving || !!savedId}>
               {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}

@@ -3,7 +3,8 @@
 // wide, close-up, two-shot and screen shots, and staff move at desks in the background.
 // Settings are saved per account so the same template is ready every time.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, ImagePlus, Loader2, Mic, Save, Sparkles, Square, Video, Wand2 } from "lucide-react";
+import { Download, ImagePlus, Loader2, Mic, Save, Share2, Sparkles, Square, Video, Wand2 } from "lucide-react";
+import { shareMadeFile } from "@/lib/shareFile";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
   const [filmPct, setFilmPct] = useState(0);
   const [result, setResult] = useState<{ blob: Blob; url: string; ext: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -728,6 +730,13 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" asChild>
               <a href={result.url} download={`${(title || "newsroom-episode").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${result.ext}`}><Download className="w-4 h-4 mr-1" /> Download</a>
+            </Button>
+            <Button size="sm" variant="outline" disabled={sharing} onClick={async () => {
+              setSharing(true);
+              try { await shareMadeFile(result.blob, `${(title || "newsroom-episode").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.${result.ext}`, title || "Oracle Lunar episode"); }
+              finally { setSharing(false); }
+            }}>
+              {sharing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Share2 className="w-4 h-4 mr-1" />} Share
             </Button>
             <Button size="sm" onClick={save} disabled={saving || !!savedId}>
               {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
