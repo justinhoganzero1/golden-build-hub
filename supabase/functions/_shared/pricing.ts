@@ -46,6 +46,9 @@ export const PROVIDER_RATES = {
   heygen_avatar_per_minute: 50,
   heygen_photo_avatar_flat: 25,
 
+  // Replicate lip-sync (prunaai/p-video-avatar) is priced per output second in USD with a
+  // live AUD rate — see _shared/lipsyncPricing.ts.
+
   // Replicate upscaling
   replicate_upscale_4x: 2,
   replicate_upscale_8x: 4,

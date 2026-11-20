@@ -1,6 +1,6 @@
 // YouTube Host Studio — pure helpers (layout sizes, caption timing, slide beats).
-// The on-camera host is an animated photo (gentle sway + breathing), never
-// presented as lip-synced, because no verified lip-sync engine is wired in.
+// In the simple layouts the host is an animated photo (gentle sway + breathing), never
+// presented as lip-synced; real lip-sync lives in the newsroom template (host-lipsync).
 
 export type HostFormat = "youtube" | "shorts";
 export type HostLayout = "full" | "corner";

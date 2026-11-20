@@ -1619,6 +1619,69 @@ export type Database = {
         }
         Relationships: []
       }
+      host_lipsync_jobs: {
+        Row: {
+          aud_per_usd: number
+          created_at: string
+          error: string | null
+          id: string
+          output_seconds: number | null
+          prediction_id: string | null
+          provider_cost_cents: number | null
+          request_key: string
+          requested_seconds: number
+          resolution: string
+          script_hash: string | null
+          status: string
+          storage_path: string | null
+          total_billed_cents: number | null
+          transaction_id: string | null
+          updated_at: string
+          usd_per_second: number
+          user_id: string
+        }
+        Insert: {
+          aud_per_usd: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          output_seconds?: number | null
+          prediction_id?: string | null
+          provider_cost_cents?: number | null
+          request_key: string
+          requested_seconds: number
+          resolution?: string
+          script_hash?: string | null
+          status?: string
+          storage_path?: string | null
+          total_billed_cents?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          usd_per_second: number
+          user_id: string
+        }
+        Update: {
+          aud_per_usd?: number
+          created_at?: string
+          error?: string | null
+          id?: string
+          output_seconds?: number | null
+          prediction_id?: string | null
+          provider_cost_cents?: number | null
+          request_key?: string
+          requested_seconds?: number
+          resolution?: string
+          script_hash?: string | null
+          status?: string
+          storage_path?: string | null
+          total_billed_cents?: number | null
+          transaction_id?: string | null
+          updated_at?: string
+          usd_per_second?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       image_generation_jobs: {
         Row: {
           attempts: number

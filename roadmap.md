@@ -116,3 +116,10 @@
 - [x] Auto scan on first open each day + daily scan time, price re-checks, withdrawals, alerts, results settling, $1 flat-bet back-test
 - [ ] Licensed Seven/7plus TV-guide feed — waits on Juzzy (import works meanwhile)
 - [x] Connect PuntersEdge: daily AU thoroughbred card, best bookmaker prices, official track ratings, results (credit-throttled)
+
+## YouTube newsroom host (2026-11-20)
+- [x] Newsroom studio template (desk, big screen behind host, background desks with moving people), reusable
+- [x] Camera moves: wide, close-up on host, zoom into the big screen and back
+- [x] Big screen shows what she talks about (text cards, member pictures/clips, or AI pictures)
+- [x] Real lip-sync for the host, priced at service cost + 20% from the member's wallet (built)
+- [ ] First real lip-sync clip — waits on Juzzy adding credit to the Replicate account

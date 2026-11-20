@@ -15,6 +15,7 @@ import {
   type HostFormat, type HostLayout, type TimedLine,
 } from "@/lib/youtubeHost";
 import oraclePortrait from "@/assets/avatars/oracle-futuristic-office.jpg";
+import NewsroomHostStudio from "./NewsroomHostStudio";
 
 interface Props {
   script: string;
@@ -51,7 +52,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-const YouTubeHostStudio = ({ script, title, channelName, voiceId, voiceName }: Props) => {
+const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Props) => {
   const { user } = useAuth();
   const { data: avatars = [] } = useUserAvatars() as { data?: Array<{ id: string; name: string; image_url: string | null }> };
   const [hostSrc, setHostSrc] = useState<string>(oraclePortrait);
@@ -376,6 +377,34 @@ const YouTubeHostStudio = ({ script, title, channelName, voiceId, voiceName }: P
           {result.ext === "webm" && <p className="text-[11px] text-muted-foreground">This browser films in WebM. YouTube accepts it as-is.</p>}
         </div>
       )}
+    </Card>
+  );
+};
+
+type StudioStyle = "newsroom" | "simple";
+const STYLE_KEY = "oracle-lunar:youtube-host-style";
+
+/** Newsroom (like the ad) is the default; the original simple layouts stay available. */
+const YouTubeHostStudio = (props: Props) => {
+  const [style, setStyle] = useState<StudioStyle>(() => {
+    try { return localStorage.getItem(STYLE_KEY) === "simple" ? "simple" : "newsroom"; } catch { return "newsroom"; }
+  });
+  const pick = (s: StudioStyle) => { setStyle(s); try { localStorage.setItem(STYLE_KEY, s); } catch { /* ignore */ } };
+  const choice = (active: boolean) => `px-3 py-1.5 rounded-lg border text-xs ${active ? "border-primary bg-primary/10 text-primary" : "border-border"}`;
+  const toggle = (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Studio style">
+      <button type="button" className={choice(style === "newsroom")} onClick={() => pick("newsroom")}>Newsroom studio</button>
+      <button type="button" className={choice(style === "simple")} onClick={() => pick("simple")}>Simple</button>
+    </div>
+  );
+  if (style === "simple") return <div className="space-y-2">{toggle}<SimpleHostStudio {...props} /></div>;
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Camera className="w-4 h-4 text-primary" /> Host on camera
+      </div>
+      {toggle}
+      <NewsroomHostStudio {...props} />
     </Card>
   );
 };
