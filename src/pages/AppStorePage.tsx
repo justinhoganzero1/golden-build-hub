@@ -239,7 +239,7 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
                 Prefer the Android app file instead? Download it
               </button>
             )}
-            <Link to="/sign-in" className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+            <Link to={user ? "/oracle" : "/sign-in"} className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <Globe className="h-3.5 w-3.5" />Or use it right here in your browser
             </Link>
           </section>

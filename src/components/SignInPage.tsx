@@ -196,6 +196,9 @@ const SignInPage = () => {
         await startNativeGoogleSignIn();
         return;
       }
+      // Google returns to the home address, which shows the store page in a
+      // browser; this note sends the person back here to finish routing them.
+      try { sessionStorage.setItem("oracle-oauth-return", window.location.search || "?"); } catch { /* private mode */ }
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { recordSiteArrival } from "@/lib/siteArrival";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -174,8 +174,8 @@ const PortalLandingPage = lazy(loaders["/"]);
 const WelcomePage = lazy(loaders["/welcome"]);
 const DashboardPage = lazy(loaders["/dashboard"]);
 
-// Root route: signed-in users go straight to Oracle; signed-out visitors get
-// the public welcome page (Oracle video + pitch) instead of a bare sign-in wall.
+// Root route: browser visitors always get the store-style download page; the
+// installed app opens Oracle (signed in) or the welcome page (signed out).
 const PublicWelcomePage = lazy(() => import("./pages/PublicWelcomePage"));
 const AppStorePage = lazy(() => import("./pages/AppStorePage"));
 const NativeAuthPage = lazy(() => import("./pages/NativeAuthPage"));
@@ -187,12 +187,21 @@ const isInstalledApp = () =>
     (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() === true);
 const RootRoute = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <Loading />;
-  if (user) return <Navigate to="/oracle" replace />;
+  if (user) {
+    // Just back from Google sign-in: finish on the sign-in screen, which routes them on.
+    let oauthReturn: string | null = null;
+    try { oauthReturn = sessionStorage.getItem("oracle-oauth-return"); sessionStorage.removeItem("oracle-oauth-return"); } catch { /* private mode */ }
+    if (oauthReturn) return <Navigate to={`/sign-in${oauthReturn === "?" ? "" : oauthReturn}`} replace />;
+    // Installed app, or a Home button pressed inside the app (not a fresh visit
+    // from the internet): go to Oracle instead of the store page.
+    if (isInstalledApp() || location.key !== "default") return <Navigate to="/oracle" replace />;
+  }
   // The installed app greets with Oracle instead of the store listing.
   if (isInstalledApp()) return <PublicWelcomePage />;
-  // Every signed-out browser visitor lands straight on the Play Store-style
-  // download page; the funny ad stays reachable only at its own /ad link.
+  // Every browser visitor — signed in or not — lands on the Play Store-style
+  // download page ("Open app" takes members to Oracle); the funny ad stays at /ad.
   return <AppStorePage />;
 };
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
