@@ -8,8 +8,8 @@ import adWebm from "@/assets/videos/oracle-lunar-ad-clear-audio.webm.asset.json"
 import adPoster from "@/assets/videos/oracle-lunar-ad-poster.jpg.asset.json";
 import funnyVideo from "@/assets/videos/oracle-lunar-funny-cut.mp4.asset.json";
 import funnyPoster from "@/assets/videos/oracle-lunar-funny-poster.jpg.asset.json";
-import ad2Video from "@/assets/videos/oracle-lunar-ad2b.mp4.asset.json";
-import ad2Poster from "@/assets/videos/oracle-lunar-ad2b-poster.jpg.asset.json";
+import ad2Video from "@/assets/videos/oracle-lunar-ad2c.mp4.asset.json";
+import ad2Poster from "@/assets/videos/oracle-lunar-ad2c-poster.jpg.asset.json";
 
 const AD_URL = (adVideo as { url: string }).url;
 const FUNNY_URL = (funnyVideo as { url: string }).url;

@@ -27,8 +27,8 @@ import shotCalendar from "@/assets/store/shot-calendar.jpg";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import listeningClip from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClip from "@/assets/avatars/oracle-clip-greeting.webm";
-import adVideo from "@/assets/videos/oracle-lunar-ad2b-web.mp4.asset.json";
-import adPoster from "@/assets/videos/oracle-lunar-ad2b-poster.jpg.asset.json";
+import adVideo from "@/assets/videos/oracle-lunar-ad2c-web.mp4.asset.json";
+import adPoster from "@/assets/videos/oracle-lunar-ad2c-poster.jpg.asset.json";
 
 /**
  * Public front door laid out like an app-store listing. Visitors install the
