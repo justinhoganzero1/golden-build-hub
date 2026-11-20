@@ -2344,10 +2344,17 @@ html.tv-mode, html.tv-mode body { cursor: none; }
   transform: perspective(1200px) translateY(-3px) translateZ(4px) !important;
 }
 @media (hover: none), (pointer: coarse) {
+  /* Phones: completely flat — no 3D layers at all, so very tall panels can
+     never tip, sink or glitch on the phone's graphics chip. */
+  .holo-tile,
+  .holo-card,
   .holo-tile:hover,
   .holo-tile:active,
   .holo-card:hover,
   .holo-card:active {
-    transform: perspective(1200px) translateY(-3px) translateZ(4px) !important;
+    transform: translateY(-3px) !important;
+    transform-style: flat !important;
+    perspective: none !important;
+    will-change: auto !important;
   }
 }
