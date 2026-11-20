@@ -2892,10 +2892,15 @@ export type Database = {
           file_path: string | null
           id: string
           licence: string | null
+          media_type: string
+          media_url: string | null
           notes: string | null
           permission_expiry: string | null
+          playback_status: string
           rating: string
+          section: string | null
           source_kind: string
+          source_org: string | null
           story_id: string | null
           thumbnail_url: string | null
           title: string
@@ -2914,10 +2919,15 @@ export type Database = {
           file_path?: string | null
           id?: string
           licence?: string | null
+          media_type?: string
+          media_url?: string | null
           notes?: string | null
           permission_expiry?: string | null
+          playback_status?: string
           rating?: string
+          section?: string | null
           source_kind: string
+          source_org?: string | null
           story_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -2936,10 +2946,15 @@ export type Database = {
           file_path?: string | null
           id?: string
           licence?: string | null
+          media_type?: string
+          media_url?: string | null
           notes?: string | null
           permission_expiry?: string | null
+          playback_status?: string
           rating?: string
+          section?: string | null
           source_kind?: string
+          source_org?: string | null
           story_id?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -3046,6 +3061,7 @@ export type Database = {
       news_settings: {
         Row: {
           au_share: number
+          auto_pipeline: boolean
           breaking_priority: boolean
           categories: string[]
           duration_minutes: number
@@ -3053,12 +3069,14 @@ export type Database = {
           last_daily_steps: Json
           lock_until: string | null
           mode: string
+          pipeline_daily_cap: number
           story_count: number
           timezone: string
           updated_at: string
         }
         Insert: {
           au_share?: number
+          auto_pipeline?: boolean
           breaking_priority?: boolean
           categories?: string[]
           duration_minutes?: number
@@ -3066,12 +3084,14 @@ export type Database = {
           last_daily_steps?: Json
           lock_until?: string | null
           mode?: string
+          pipeline_daily_cap?: number
           story_count?: number
           timezone?: string
           updated_at?: string
         }
         Update: {
           au_share?: number
+          auto_pipeline?: boolean
           breaking_priority?: boolean
           categories?: string[]
           duration_minutes?: number
@@ -3079,6 +3099,7 @@ export type Database = {
           last_daily_steps?: Json
           lock_until?: string | null
           mode?: string
+          pipeline_daily_cap?: number
           story_count?: number
           timezone?: string
           updated_at?: string
@@ -3139,18 +3160,27 @@ export type Database = {
       news_stories: {
         Row: {
           analysed_at: string | null
+          broadcast_count: number
           category: string
           cluster_key: string
           conflicts: string | null
+          content_checked: Json | null
           first_seen: string
           footage_terms: string | null
           headline: string
           id: string
           importance: number
           is_breaking: boolean
+          last_broadcast_at: string | null
           last_updated: string
           official_count: number
+          production_attempts: number
+          production_error: string | null
+          production_status: string
+          production_updated_at: string | null
+          public_at: string | null
           region: string
+          script_sections: Json | null
           source_count: number
           status: string
           summary: string | null
@@ -3159,18 +3189,27 @@ export type Database = {
         }
         Insert: {
           analysed_at?: string | null
+          broadcast_count?: number
           category?: string
           cluster_key: string
           conflicts?: string | null
+          content_checked?: Json | null
           first_seen?: string
           footage_terms?: string | null
           headline: string
           id?: string
           importance?: number
           is_breaking?: boolean
+          last_broadcast_at?: string | null
           last_updated?: string
           official_count?: number
+          production_attempts?: number
+          production_error?: string | null
+          production_status?: string
+          production_updated_at?: string | null
+          public_at?: string | null
           region?: string
+          script_sections?: Json | null
           source_count?: number
           status?: string
           summary?: string | null
@@ -3179,18 +3218,27 @@ export type Database = {
         }
         Update: {
           analysed_at?: string | null
+          broadcast_count?: number
           category?: string
           cluster_key?: string
           conflicts?: string | null
+          content_checked?: Json | null
           first_seen?: string
           footage_terms?: string | null
           headline?: string
           id?: string
           importance?: number
           is_breaking?: boolean
+          last_broadcast_at?: string | null
           last_updated?: string
           official_count?: number
+          production_attempts?: number
+          production_error?: string | null
+          production_status?: string
+          production_updated_at?: string | null
+          public_at?: string | null
           region?: string
+          script_sections?: Json | null
           source_count?: number
           status?: string
           summary?: string | null

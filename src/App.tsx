@@ -302,6 +302,7 @@ const AdminAiAnalyticsPage = lazy(() => import("./pages/AdminAiAnalyticsPage"));
 const AdminAiHealthPage = lazy(() => import("./pages/AdminAiHealthPage"));
 const AdPage = lazy(() => import("./pages/AdPage"));
 const WatchPage = lazy(() => import("./pages/WatchPage"));
+const NewsPublicPage = lazy(() => import("./pages/NewsPublicPage"));
 const UnlockSuccessPage = lazy(() => import("./pages/UnlockSuccessPage"));
 const StorefrontPage = lazy(() => import("./pages/StorefrontPage"));
 const AppsStorefrontPage = lazy(() => import("./pages/AppsStorefrontPage"));
@@ -390,6 +391,8 @@ const OracleApp = () => (
                   <Route path="/oracle-preview" element={<Navigate to="/oracle" replace />} />
                   <Route path="/ad" element={<ErrorBoundary pageName="Ad"><AdPage /></ErrorBoundary>} />
                   <Route path="/watch" element={<ErrorBoundary pageName="Shared video"><WatchPage /></ErrorBoundary>} />
+                  <Route path="/news" element={<ErrorBoundary pageName="Oracle News"><NewsPublicPage /></ErrorBoundary>} />
+                  <Route path="/news/:id" element={<ErrorBoundary pageName="Oracle News story"><NewsPublicPage /></ErrorBoundary>} />
                   <Route path="/demo/:token" element={<ErrorBoundary pageName="Client demo"><PitchDemoPage /></ErrorBoundary>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />

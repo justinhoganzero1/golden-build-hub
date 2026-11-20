@@ -21,6 +21,7 @@ import { trackEvent } from "@/lib/analytics";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import NewsControlRoom, { type ProducePayload } from "@/components/news/NewsControlRoom";
 import NewsArchive from "@/components/news/NewsArchive";
+import NewsBroadcastCentre, { type StudioPayload } from "@/components/news/NewsBroadcastCentre";
 import { callNews } from "@/lib/newsApi";
 import type { NewsroomSavedInfo } from "@/components/youtube/NewsroomHostStudio";
 
@@ -74,7 +75,7 @@ const YouTubeShowStudioPage = () => {
   const [studioOpen, setStudioOpen] = useState(false);
   const { data: savedVoices = [] } = useSavedVoices();
   const { isAdmin } = useIsAdmin();
-  const [newsFootage, setNewsFootage] = useState<ProducePayload["footage"] | undefined>(undefined);
+  const [newsFootage, setNewsFootage] = useState<Array<{ kind: "image" | "video"; url: string }> | undefined>(undefined);
   const [newsBroadcastId, setNewsBroadcastId] = useState<string | null>(null);
   const [newsRefresh, setNewsRefresh] = useState(0);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -85,6 +86,15 @@ const YouTubeShowStudioPage = () => {
     setNewsFootage(p.footage);
     setNewsBroadcastId(p.broadcastId);
     toast.success(`Loaded into the newsroom studio${p.footage.length ? ` with ${p.footage.length} approved clip${p.footage.length > 1 ? "s" : ""}` : ""}. Make the voice, film it, then save it.`);
+    setTimeout(() => hostRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+  };
+
+  // Broadcast Control Centre → film a single produced story in the newsroom studio.
+  const filmStory = (p: StudioPayload) => {
+    setState((s) => ({ ...s, script: p.script, showTitle: p.title, topic: p.title, channelName: s.channelName || "Oracle News" }));
+    setNewsFootage(p.media);
+    setNewsBroadcastId(null);
+    toast.success(`Story loaded into the newsroom studio${p.media.length ? ` with ${p.media.length} licensed visual${p.media.length > 1 ? "s" : ""}` : ""}.`);
     setTimeout(() => hostRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
   };
 
@@ -278,6 +288,7 @@ Rules:
           </header>
 
           {/* Oracle News Intelligence — automation comes first */}
+          {isAdmin && <NewsBroadcastCentre onSendToStudio={filmStory} />}
           {isAdmin && <NewsControlRoom onProduce={produceNews} refreshKey={newsRefresh} />}
           <NewsArchive alwaysShow={isAdmin} refreshKey={newsRefresh} />
 

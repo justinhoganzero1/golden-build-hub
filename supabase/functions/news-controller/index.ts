@@ -12,6 +12,8 @@ import { scanSources, checkSources } from "./scan.ts";
 import { analyseStories } from "./analyse.ts";
 import { findFootage } from "./footage.ts";
 import { generateScript } from "./script.ts";
+import { advancePipeline, regenerateScript, retryFootage, expireOldStories } from "./pipeline.ts";
+import { healthCheck } from "./health.ts";
 
 installNoRepeatRule();
 
@@ -51,6 +53,15 @@ const Body = z.discriminatedUnion("action", [
     action: z.literal("add_footage"), story_id: z.string().uuid().nullable(), url: z.string().url().startsWith("https://").max(500), title: z.string().min(2).max(300),
     creator: z.string().max(200).optional(), copyright_owner: z.string().max(200).optional(), licence: z.string().max(300).optional(),
   }),
+  z.object({ action: z.literal("public_news"), id: z.string().uuid().optional() }),
+  z.object({ action: z.literal("advance_pipeline"), story_ids: ids, limit: z.number().int().min(1).max(3).default(1), respect_cap: z.boolean().optional() }),
+  z.object({ action: z.literal("regenerate_script"), story_id: z.string().uuid() }),
+  z.object({ action: z.literal("retry_footage"), story_id: z.string().uuid() }),
+  z.object({ action: z.literal("mark_broadcast"), story_id: z.string().uuid(), status: z.enum(["presenter_speaking", "broadcast_complete", "ready_to_broadcast"]) }),
+  z.object({ action: z.literal("remove_visual"), footage_id: z.string().uuid() }),
+  z.object({ action: z.literal("set_public"), story_id: z.string().uuid(), public: z.boolean() }),
+  z.object({ action: z.literal("save_pipeline"), auto_pipeline: z.boolean(), pipeline_daily_cap: z.number().int().min(0).max(40) }),
+  z.object({ action: z.literal("health_check") }),
   z.object({ action: z.literal("toggle_source"), source_id: z.string().uuid(), enabled: z.boolean() }),
   z.object({
     action: z.literal("add_source"), name: z.string().min(2).max(100), url: z.string().url().startsWith("https://").max(400),
@@ -84,6 +95,8 @@ async function tick(sb: ReturnType<typeof db>, trigger: string) {
   const step = dailyStepDue(new Date(), done, settings?.mode ?? "approval");
   const out: Record<string, unknown> = {};
   out.scan = await runStep(sb, "scan", trigger, () => scanSources(sb)); // also flags breaking news every hour
+  // Story-by-story production: 2 stories an hour, capped per day in Settings.
+  out.pipeline = await runStep(sb, "pipeline", trigger, () => advancePipeline(sb, { limit: 2, respectCap: true })).catch((e) => ({ error: (e as Error).message }));
   const today = brisbaneClock(new Date()).date;
   if (step === "research") {
     out.analyse = await runStep(sb, "analyse", trigger, () => analyseStories(sb)).catch((e) => ({ error: (e as Error).message }));
@@ -127,6 +140,29 @@ Deno.serve(async (req) => {
       out.push({ ...b, video_path: undefined, video_url: signed?.data?.signedUrl ?? null });
     }
     return json({ broadcasts: out });
+  }
+
+  // Public news pages on oraclelunar.com: only stories the owner put on the website.
+  if (body.action === "public_news") {
+    let q = sb.from("news_stories").select("id,headline,category,region,verification,script_sections,public_at,first_seen,last_updated").not("public_at", "is", null).order("public_at", { ascending: false });
+    q = body.id ? q.eq("id", body.id) : q.limit(40);
+    const { data, error } = await q;
+    if (error) return json({ error: error.message }, 500);
+    const storyIds = (data ?? []).map((s: any) => s.id);
+    const [{ data: items }, { data: srcs }, { data: vis }] = await Promise.all([
+      storyIds.length ? sb.from("news_items").select("story_id,title,url,published_at,source_id").in("story_id", storyIds) : Promise.resolve({ data: [] as any[] }),
+      sb.from("news_sources").select("id,name"),
+      body.id ? sb.from("news_footage").select("story_id,section,media_type,media_url,thumbnail_url,title,url,licence,attribution,source_org").eq("story_id", body.id).eq("rating", "green").not("media_url", "is", null) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const name = new Map((srcs ?? []).map((s: any) => [s.id, s.name]));
+    const stories = (data ?? []).map((s: any) => ({
+      id: s.id, headline: s.headline, category: s.category, region: s.region, verification: s.verification, published_at: s.public_at, updated_at: s.last_updated,
+      sections: body.id ? (s.script_sections?.sections ?? []) : undefined,
+      teaser: (s.script_sections?.sections ?? []).find((x: any) => x.key === "what_happened")?.text?.slice(0, 220) ?? null,
+      sources: body.id ? (items ?? []).filter((i: any) => i.story_id === s.id).slice(0, 6).map((i: any) => ({ title: i.title, url: i.url, publisher: name.get(i.source_id) ?? null, published_at: i.published_at })) : undefined,
+      visuals: body.id ? (vis ?? []).map((v: any) => ({ ...v, story_id: undefined })) : undefined,
+    }));
+    return new Response(JSON.stringify({ stories }), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } });
   }
 
   if (body.action === "tick") {
@@ -206,6 +242,41 @@ Deno.serve(async (req) => {
         const rating = rateFootage({ ...row, permission_expiry: null });
         const { error } = await sb.from("news_footage").insert({ ...row, rating });
         return error ? json({ error: error.message }, 400) : json({ ok: true, rating });
+      }
+      case "advance_pipeline": {
+        const lim = body.limit;
+        const ids2 = body.story_ids; const cap = !!body.respect_cap;
+        return json(await withLock(sb, () => runStep(sb, "pipeline", "owner", () => advancePipeline(sb, { limit: lim, storyIds: ids2, respectCap: cap }))));
+      }
+      case "regenerate_script": { const id = body.story_id; return json(await runStep(sb, "regenerate_script", "owner", () => regenerateScript(sb, id))); }
+      case "retry_footage": { const id = body.story_id; return json(await runStep(sb, "retry_footage", "owner", () => retryFootage(sb, id))); }
+      case "mark_broadcast": {
+        const now = new Date().toISOString();
+        if (body.status === "broadcast_complete") {
+          const { data: st } = await sb.from("news_stories").select("broadcast_count").eq("id", body.story_id).single();
+          await sb.from("news_stories").update({ production_status: "broadcast_complete", production_updated_at: now, last_broadcast_at: now, broadcast_count: (st?.broadcast_count ?? 0) + 1 }).eq("id", body.story_id);
+        } else {
+          await sb.from("news_stories").update({ production_status: body.status, production_updated_at: now }).eq("id", body.story_id).in("production_status", ["ready_to_broadcast", "presenter_speaking", "broadcast_complete"]);
+        }
+        return json({ ok: true });
+      }
+      case "remove_visual": {
+        await sb.from("news_footage").update({ rating: "red", approval_status: "denied", notes: "Removed by the owner as not relevant or not suitable.", updated_at: new Date().toISOString() }).eq("id", body.footage_id);
+        return json({ ok: true });
+      }
+      case "set_public": {
+        const { data: st } = await sb.from("news_stories").select("script_sections,production_status").eq("id", body.story_id).single();
+        if (body.public && !(st?.script_sections as any)?.sections?.length) return json({ error: "This story has no finished script yet, so it can't go on the website." }, 400);
+        await sb.from("news_stories").update({ public_at: body.public ? new Date().toISOString() : null }).eq("id", body.story_id);
+        return json({ ok: true });
+      }
+      case "save_pipeline": {
+        await sb.from("news_settings").update({ auto_pipeline: body.auto_pipeline, pipeline_daily_cap: body.pipeline_daily_cap, updated_at: new Date().toISOString() }).eq("id", 1);
+        return json({ ok: true });
+      }
+      case "health_check": {
+        await expireOldStories(sb);
+        return json(await runStep(sb, "health_check", "owner", () => healthCheck(sb)));
       }
       case "toggle_source": {
         await sb.from("news_sources").update({ enabled: body.enabled }).eq("id", body.source_id);

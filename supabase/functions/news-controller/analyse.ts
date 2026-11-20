@@ -6,7 +6,7 @@ import { refreshStories } from "./scan.ts";
 
 const MAX_STORIES = 8;
 
-async function extractFor(sb: SupabaseClient, item: { id: string; url: string; extract: string | null }) {
+export async function extractFor(sb: SupabaseClient, item: { id: string; url: string; extract: string | null }) {
   if (item.extract) return item.extract;
   try {
     const robots = await robotsFor(item.url);

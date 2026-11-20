@@ -125,3 +125,13 @@
 - [x] First real lip-sync clip (Replicate credit added; 3-second test clip made)
 - [x] Lip-sync for interviews: separate clips for host and reporter, both mouths move
 - [x] No subtitles on filmed episodes (house rule)
+
+## Newsroom automation + website growth (2026-11-21)
+- [x] Story-by-story production line with 10 statuses, retries and error details
+- [x] Sectioned presenter scripts (intro, what/where/who, background, figures, why it matters, what next, closing) with sources
+- [x] Licensed footage search (NASA + Wikimedia Commons) with licence, source and section on every visual; graphic fallback
+- [x] Broadcast Control Centre: live presenter, monitor switching, start/pause/resume/skip/replay/preview/regenerate/retry
+- [x] Health checker (newsroom stages, website pages, download link, search setup)
+- [x] Public Oracle News pages (/news) — stories appear only when Juzzy taps "Publish to website"
+- [ ] Marketing content planner — not built this round (social post drafts already exist)
+- [ ] Publish so the newsroom upgrade and /news go live — waits on Juzzy saying publish

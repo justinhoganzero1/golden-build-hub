@@ -288,6 +288,13 @@
       "when": 1795158260682,
       "tag": "0040_news_story_footage_terms",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795212877461,
+      "tag": "0041_news_story_pipeline",
+      "breakpoints": true
     }
   ]
 }
