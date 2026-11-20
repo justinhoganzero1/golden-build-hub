@@ -10,9 +10,9 @@ interface SEOProps {
 }
 
 const SITE = "https://oraclelunar.com";
-const DEFAULT_TITLE = "ORACLE LUNAR — Free AI Companion, Friend & Voice Chat";
+const DEFAULT_TITLE = "Oracle Lunar — AI Companion App with Voice, Story Writer & App Builder";
 const DEFAULT_DESC =
-  "ORACLE LUNAR — your free AI companion. Voice chat, AI friend, tutor, mind & wellness. 24/7 support. Install free today.";
+  "Oracle Lunar is an AI companion app: talk to Oracle, your AI best friend, by voice, plus a story writer, app builder, pictures and music. Free download, 7-day trial.";
 const DEFAULT_IMAGE = `${SITE}/icons/icon-512.png`;
 
 export default function SEO({

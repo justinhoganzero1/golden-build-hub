@@ -122,6 +122,8 @@ const loaders = {
   "/ai-boyfriend": () => import("./pages/SeoLandingPage"),
   "/character-ai-alternative": () => import("./pages/SeoLandingPage"),
   "/replika-alternative": () => import("./pages/SeoLandingPage"),
+  "/kindroid-alternative": () => import("./pages/SeoLandingPage"),
+  "/nomi-ai-alternative": () => import("./pages/SeoLandingPage"),
   "/ai-therapist-free": () => import("./pages/SeoLandingPage"),
   "/ai-tutor-free": () => import("./pages/SeoLandingPage"),
   "/free-ai-voice-chat": () => import("./pages/SeoLandingPage"),
@@ -503,6 +505,8 @@ const OracleApp = () => (
                   <Route path="/ai-boyfriend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/character-ai-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/replika-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/kindroid-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
+                  <Route path="/nomi-ai-alternative" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-therapist-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-tutor-free" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-ai-voice-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />

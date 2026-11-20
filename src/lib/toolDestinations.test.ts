@@ -26,3 +26,12 @@ describe("tool menu destinations", () => {
     expect(toolDestination("/ai-image-generator-free")).toBe("/photography-hub");
   });
 });
+
+describe("competitor comparison pages", () => {
+  it("lists the Kindroid and Nomi pages as website advert pages that open Oracle for members", () => {
+    expect(seoPaths).toContain("/kindroid-alternative");
+    expect(seoPaths).toContain("/nomi-ai-alternative");
+    expect(toolDestination("/kindroid-alternative")).toBe("/oracle");
+    expect(toolDestination("/nomi-ai-alternative")).toBe("/oracle");
+  });
+});

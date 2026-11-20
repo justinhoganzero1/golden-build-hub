@@ -13,6 +13,8 @@ export const SEO_TOOL_DESTINATIONS: Record<string, string> = {
   "/ai-boyfriend": "/oracle",
   "/character-ai-alternative": "/oracle",
   "/replika-alternative": "/oracle",
+  "/kindroid-alternative": "/oracle",
+  "/nomi-ai-alternative": "/oracle",
   "/ai-companion-app": "/oracle",
   "/replika-vs-oracle-lunar": "/oracle",
   "/chatgpt-alternative": "/oracle",

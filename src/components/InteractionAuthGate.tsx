@@ -43,7 +43,7 @@ const PUBLIC_PATH_PREFIXES = [
 // SEO landing pages ("try it, no signup" acquisition funnels) must allow typing.
 const PUBLIC_EXACT_PATHS = new Set<string>([
   "/ai-chat-companion", "/ai-friend", "/free-ai-chat", "/ai-girlfriend", "/ai-boyfriend",
-  "/character-ai-alternative", "/replika-alternative", "/ai-therapist-free", "/ai-tutor-free",
+  "/character-ai-alternative", "/replika-alternative", "/kindroid-alternative", "/nomi-ai-alternative", "/ai-therapist-free", "/ai-tutor-free",
   "/free-ai-voice-chat", "/ai-app-builder", "/ai-image-generator-free", "/ai-video-generator",
   "/ai-music-generator", "/ai-coder", "/ai-3d-app-builder", "/ai-name-generator",
   "/ai-tagline-generator", "/ai-business-idea-generator", "/ai-horoscope-free", "/ai-logo-ideas",

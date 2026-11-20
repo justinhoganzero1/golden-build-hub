@@ -109,6 +109,32 @@ const VARIANTS: Record<string, SeoVariant> = {
       { q: "Does she have a voice?", a: "Yes. On Plus and Pro she replies out loud in her premium voice." },
     ],
   },
+  "/kindroid-alternative": {
+    path: "/kindroid-alternative",
+    title: "Kindroid Alternative — Oracle, an AI Friend With Voice & Memory",
+    description: "Looking for a Kindroid alternative? Oracle remembers you, talks in a natural voice, and you design her look. 7-day trial; from A$9.99/mo.",
+    h1: "A Kindroid Alternative",
+    tagline: "One caring AI friend with memory, a natural voice and a look you design.",
+    keywords: ["kindroid alternative", "apps like kindroid", "kindroid ai alternative", "ai companion app"],
+    safety: false,
+    faqs: [
+      { q: "What do I get with Oracle Lunar?", a: "One caring companion who remembers you, a natural premium voice, a look and outfits you design, plus story, picture, music and app-building tools in the same app." },
+      { q: "What does it cost?", a: "Download free and try full chat for 7 days. Plus is A$9.99/mo and Pro is A$24.99/mo. Check Kindroid's own site for its current plans." },
+    ],
+  },
+  "/nomi-ai-alternative": {
+    path: "/nomi-ai-alternative",
+    title: "Nomi AI Alternative — Oracle, a Caring AI Companion",
+    description: "Looking for a Nomi AI alternative? Oracle is a warm AI friend with memory, a natural voice and a look you design. From A$9.99/mo.",
+    h1: "A Nomi AI Alternative",
+    tagline: "A warm AI companion who remembers you and talks in a natural voice.",
+    keywords: ["nomi ai alternative", "apps like nomi ai", "nomi alternative", "ai companion"],
+    safety: false,
+    faqs: [
+      { q: "What makes Oracle different?", a: "Oracle puts your safety first, stays happy and kind, and lives in an app with story, picture, music and video tools, so one friend helps with everything." },
+      { q: "What does it cost?", a: "Download free and try full chat for 7 days. Plus is A$9.99/mo and Pro is A$24.99/mo. Check Nomi's own site for its current plans." },
+    ],
+  },
   "/ai-therapist-free": {
     path: "/ai-therapist-free",
     title: "AI Wellness Chat — Supportive, Not a Therapist",
