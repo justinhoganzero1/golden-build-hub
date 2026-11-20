@@ -28,7 +28,7 @@ import { cameraAt, planInterviewShots, planShots, segmentAt, type ShotSegment, t
 import { ChromaKeyer, drawNewsroom, type ScreenItem } from "./newsroomRenderer";
 import studioLoop from "@/assets/newsroom/newsroom-studio-loop.mp4";
 import studioStill from "@/assets/newsroom/newsroom-studio.jpg";
-import deskLayer from "@/assets/newsroom/newsroom-desk.webp";
+import deskLayer from "@/assets/newsroom/newsroom-desk-branded.webp";
 import presenterGreen from "@/assets/newsroom/newsroom-host-green.jpg";
 import jackGreen from "@/assets/newsroom/reporter-jack-green.jpg";
 import miaGreen from "@/assets/newsroom/reporter-mia-green.jpg";
