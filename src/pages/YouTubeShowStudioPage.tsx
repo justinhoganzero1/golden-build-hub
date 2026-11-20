@@ -418,9 +418,14 @@ Rules:
             <div className="flex items-center gap-2 text-sm font-semibold">
               <Mic className="w-4 h-4 text-primary" /> Host narration voice
             </div>
+            <p className="text-[11px] text-muted-foreground">
+              {state.voiceId
+                ? <>Using <span className="text-foreground font-medium">{state.voiceName || "your saved voice"}</span>.</>
+                : <>Default: the <span className="text-foreground font-medium">Oracle ad voice</span> — the same voice from the adverts.</>}
+            </p>
             {savedVoices.length === 0 ? (
               <div className="text-xs text-muted-foreground">
-                No saved voices yet.{" "}
+                Want a different one?{" "}
                 <Link to="/voice-studio" className="text-primary underline">Open Voice Studio</Link> to build a host voice.
               </div>
             ) : (
@@ -440,6 +445,11 @@ Rules:
                   );
                 })}
               </div>
+            )}
+            {state.voiceId && (
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => update({ voiceId: null, voiceName: null })}>
+                Back to the Oracle ad voice
+              </Button>
             )}
           </Card>
 

@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAvatars } from "@/hooks/useUserAvatars";
 import { narrateText, NarrationError } from "@/lib/storyNarration";
+import { ORACLE_AD_VOICE_ID } from "@/lib/oraclePresenter";
 import { REPORTERS, draftInterview, encodeWav, formatTurns, parseInterview, reporterById, timeTurns, type ReporterId } from "@/lib/newsroomReporters";
 import { uploadCreationFile } from "@/lib/oracleCreationFiles";
 import { saveToLibrary } from "@/lib/saveToLibrary";
@@ -391,7 +392,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
         const tn = turns[i];
         const opts = tn.speaker === "reporter"
           ? { voiceId: reporter.voiceId, settings: reporter.voiceSettings }
-          : voiceId ? { voiceId } : undefined;
+          : { voiceId: voiceId || ORACLE_AD_VOICE_ID };
         const bytes = await narrateText(tn.text, (p) => setNarrationPct(Math.round(((i + p / 100) / turns.length) * 100)), opts);
         const copy = new Uint8Array(bytes as Uint8Array).buffer;
         buffers.push(await ac.decodeAudioData(copy));
@@ -426,7 +427,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
     if (!script.trim()) { toast.error("Write or generate a script first."); return; }
     setNarrating(true); setNarrationPct(0); setResult(null); setSavedId(null);
     try {
-      const bytes = await narrateText(script, setNarrationPct, voiceId ? { voiceId } : undefined);
+      const bytes = await narrateText(script, setNarrationPct, { voiceId: voiceId || ORACLE_AD_VOICE_ID });
       const blob = new Blob([bytes as BlobPart], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
       const seconds = await new Promise<number>((res) => { const a = new Audio(url); a.onloadedmetadata = () => res(a.duration || 0); a.onerror = () => res(0); });
@@ -551,7 +552,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       const id = await saveToLibrary({
         media_type: "video", title: `${title || tpl.showName || "Newsroom episode"} (${tpl.format === "shorts" ? "Shorts" : "YouTube"})`, url,
         source_page: "/youtube-show-studio",
-        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "default", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", reporter: reporter ? `${reporter.name} (${reporter.genre})` : null, mime_type: result.blob.type },
+        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "Oracle ad voice", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", reporter: reporter ? `${reporter.name} (${reporter.genre})` : null, mime_type: result.blob.type },
       });
       setSavedId(id || "queued");
       toast.success("Saved to your Library.");
@@ -683,7 +684,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       <div className="space-y-2">
         <p className="text-xs font-medium">3. Make the host's voice</p>
         <p className="text-[11px] text-muted-foreground">
-          {reporter ? `Host voice: ${voiceName || "Default narrator"} · ${reporter.firstName}'s voice: ${reporter.voiceName}. Charged to your wallet.` : `Voice: ${voiceName || "Default narrator"}. Charged to your wallet.`}
+          {reporter ? `Host voice: ${voiceName || "Oracle ad voice"} · ${reporter.firstName}'s voice: ${reporter.voiceName}. Charged to your wallet.` : `Voice: ${voiceName || "Oracle ad voice"}. Charged to your wallet.`}
         </p>
         <div className="flex flex-wrap gap-2 items-center">
           <Button size="sm" onClick={makeVoice} disabled={narrating || filming || (interview ? !turns.length : !script.trim())}>
