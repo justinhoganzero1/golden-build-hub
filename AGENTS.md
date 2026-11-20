@@ -47,7 +47,7 @@
 - Oracle: fastest chat model, stronger low-reasoning for deep questions, low-latency TTS; speed first.
 - Shop sales credit creators' wallets via idempotent credit_creator_sale; cash payouts exclude wallet-credited sales, so nothing pays twice.
 - New members get Oracle's free scripted welcome; apps soft-unlock via oracleDiscovery ([[UNLOCK:/path]]); safety pages stay open and "Show me everything" escapes.
-- Signed-out / → AppStorePage (ad only at /ad), installed → PublicWelcomePage, signed-in → Oracle; /download always AppStorePage. Install CTAs use installRedirect (no dead hosts).
+- Every browser visitor to / → AppStorePage (ad only at /ad), installed → PublicWelcomePage; /download always AppStorePage. Install CTAs use installRedirect (no dead hosts).
 - App look = final theme layer in index.css; body avoids @apply (Tailwind copies rules naming applied classes onto body).
 - Oracle human sounds: bundled clips (oracleHumanSounds), free, obey mute, none in serious moods.
 - Owner Dashboard figures drill into whitelisted owner-only admin-drilldown metrics; paid = live money only; arrivals (timezone country, no IP) use site_arrivals.
