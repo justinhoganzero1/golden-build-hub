@@ -156,7 +156,7 @@ const MindHubPage = () => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const speak = useCallback((text: string) => {
-    if ("speechSynthesis" in window) {
+    if (window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(cleanTextForSpeech(text));
       u.rate = 0.85; u.pitch = 0.95; u.volume = 1;

@@ -128,6 +128,7 @@ const ALL_APP_QUESTIONS = APP_REGEN_QUESTIONS.flatMap(g => g.items);
 
 function speak(text: string) {
   try {
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1;

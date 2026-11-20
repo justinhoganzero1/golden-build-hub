@@ -154,7 +154,7 @@ const CrisisHubPage = () => {
         }
       }
       setAiMessage(content);
-      if (content && "speechSynthesis" in window) {
+      if (content && window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined") {
         const u = new SpeechSynthesisUtterance(cleanTextForSpeech(content));
         u.rate = 1; u.volume = 1;
         window.speechSynthesis.speak(u);

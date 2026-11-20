@@ -787,7 +787,7 @@ const OraclePage = () => {
   const voiceMapRef = useRef<Map<string, SpeechSynthesisVoice>>(new Map());
   const getVoiceForAgent = useCallback((agentName: string): SpeechSynthesisVoice | undefined => {
     if (voiceMapRef.current.has(agentName)) return voiceMapRef.current.get(agentName);
-    const allVoices = window.speechSynthesis.getVoices();
+    const allVoices = window.speechSynthesis?.getVoices?.() ?? [];
     const englishVoices = allVoices.filter(v => v.lang.startsWith("en"));
     if (agentName === oracleName) {
       const voice = chooseOracleDeviceVoice(allVoices);
@@ -1385,8 +1385,11 @@ const OraclePage = () => {
   };
 
   useEffect(() => {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    // Some TV and in-app browsers have no device voice at all; skip quietly.
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.getVoices();
+    synth.onvoiceschanged = () => synth.getVoices();
   }, []);
 
   useEffect(() => {
