@@ -63,7 +63,8 @@ Deno.serve(async (req) => {
 
     if (action === "quote") {
       const seconds = Math.min(LIPSYNC_MAX_SECONDS, Math.max(1, Number(body.seconds) || 0));
-      return json({ quote: quoteLipsync(seconds, resolution, await audPerUsd()), model: LIPSYNC_MODEL });
+      const q = quoteLipsync(seconds, resolution, await audPerUsd());
+      return json({ quote: { seconds: q.seconds, total_cents: q.total_cents } });
     }
 
     if (action === "start") {
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
           disable_prompt_upsampling: true,
         });
         await db.from("host_lipsync_jobs").update({ prediction_id: pred.id, transaction_id: txId, status: "running", updated_at: new Date().toISOString() }).eq("id", job.id);
-        return json({ job_id: job.id, status: "running", quote });
+        return json({ job_id: job.id, status: "running", quote: { seconds: quote.seconds, total_cents: quote.total_cents } });
       } catch (e) {
         console.error("lipsync start failed", e);
         await cancelAI(txId, "provider_start_failed").catch(() => null);

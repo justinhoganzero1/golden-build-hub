@@ -108,7 +108,7 @@ export function SwarmAgentsButton({ currentInput, onResult }: SwarmAgentsButtonP
                 <span className="font-semibold">≈ ${(estimateCents / 100).toFixed(2)}</span>
               </div>
               <p className="text-muted-foreground mt-1">
-                Charged from your wallet at cost plus the platform margin, and only for the agents that actually run.
+                Charged from your wallet, and only for the agents that actually run.
               </p>
             </div>
           </div>

@@ -87,7 +87,7 @@ export const MovieCostEstimator = ({
         <span className="text-lg font-bold text-primary">{formatCentsAsCoins(estimateCents)} coins</span>
       </div>
       <p className="text-[10px] text-muted-foreground">
-        Includes provider cost + 5% platform fee. Refunded per-scene if render fails.
+        Full price. Refunded per-scene if render fails.
       </p>
     </Card>
   );

@@ -76,7 +76,7 @@ export default function MyAgentsSection() {
             </tbody>
           </table>
         )}
-        <p className="text-[10px] text-muted-foreground mt-2">Cost is an estimate of what a member pays (AI cost + 20%). Your owner account isn't charged.</p>
+        <p className="text-[10px] text-muted-foreground mt-2">Cost is an estimate of what each reply costs.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-2 mt-2 min-w-0">

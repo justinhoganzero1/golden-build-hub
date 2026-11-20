@@ -285,7 +285,7 @@ const WalletPage = () => {
           <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
             <li>Oracle AI chat replies, voice, images, video, narration and phone calls.</li>
             <li>Spelling checks on words inside pictures: about 1 cent per check, plus one extra picture if Oracle has to fix the lettering.</li>
-            <li>You pay the real service cost plus 20%. Nothing else.</li>
+            <li>You only pay for what you use. You see the price before anything is charged.</li>
             <li>Free tools (planners, trackers, diary, calendar, games) never use coins.</li>
           </ul>
           <a href="/get-started" className="inline-block text-xs font-semibold text-primary underline">New here? See the step-by-step guide</a>

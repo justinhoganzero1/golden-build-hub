@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id)
         .maybeSingle();
       return json({
-        ...p,
+        total_cents: p.total_cents,
         balance_cents: wallet?.balance_cents ?? 0,
         sufficient: (wallet?.balance_cents ?? 0) >= p.total_cents,
       });
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
-      ...p,
+      total_cents: p.total_cents,
       billing_transaction_id: authorization.transaction_id,
       duplicate: authorization.duplicate,
       new_balance_cents: settled.new_balance_cents,

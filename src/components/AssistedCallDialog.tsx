@@ -12,7 +12,7 @@ interface Props {
 const AssistedCallDialog = ({ destination, destinationLabel, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [phone, setPhone] = useState("");
-  const [estimate, setEstimate] = useState<{ total: number; cpm: number } | null>(null);
+  const [estimate, setEstimate] = useState<{ total: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchEstimate = async () => {
@@ -22,7 +22,7 @@ const AssistedCallDialog = ({ destination, destinationLabel, trigger }: Props) =
         body: { destination, user_phone: phone || "+61400000000", action: "estimate" },
       });
       if (error) throw error;
-      setEstimate({ total: data.total_per_minute_cents, cpm: data.twilio_cost_per_minute_cents });
+      setEstimate({ total: data.total_per_minute_cents });
     } catch (e: any) {
       toast.error(e.message ?? "Could not fetch estimate");
     } finally {
@@ -83,15 +83,7 @@ const AssistedCallDialog = ({ destination, destinationLabel, trigger }: Props) =
 
             {estimate && (
               <div className="rounded-lg bg-secondary/50 border border-border p-3 mb-4 text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Twilio cost</span>
-                  <span>AU ${(estimate.cpm / 100).toFixed(2)}/min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Service fee (+50%)</span>
-                  <span>AU ${((estimate.total - estimate.cpm) / 100).toFixed(2)}/min</span>
-                </div>
-                <div className="flex justify-between font-bold text-primary border-t border-border pt-1 mt-1">
+                <div className="flex justify-between font-bold text-primary">
                   <span>You pay</span>
                   <span>AU ${(estimate.total / 100).toFixed(2)}/min</span>
                 </div>

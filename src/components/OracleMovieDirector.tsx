@@ -289,7 +289,7 @@ export default function OracleMovieDirector({ open, onOpenChange, onComplete }: 
                 className="text-center"
               />
               <p className="text-[10px] text-center text-muted-foreground">
-                Each render is billed from your wallet at <strong>provider cost + 5% platform fee</strong> + a small service charge. You'll see the exact total before exporting.
+                Each render is billed from your wallet. You'll see the full price before exporting.
               </p>
             </div>
 

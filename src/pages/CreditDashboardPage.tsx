@@ -176,7 +176,7 @@ const CreditDashboardPage = () => {
         <section className="rounded-xl border border-border bg-card p-4">
           <h2 className="text-lg font-semibold">What each feature costs</h2>
           <p className="mb-4 text-xs text-muted-foreground">
-            You pay exactly what the AI costs, plus a flat 20%. Nothing else.
+            You only pay for what you use. Each price below is the full price.
           </p>
 
           <div className="space-y-5">

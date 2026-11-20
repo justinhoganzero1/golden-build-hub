@@ -52,7 +52,7 @@ export const MovieQualityPicker = ({ value, onChange, durationMin, isAdmin, isFr
         })}
       </div>
       <p className="text-[10px] text-muted-foreground">
-        All prices include +5% provider markup. You can pause or cancel mid-render — you only pay for completed scenes.
+        All prices are the full price. You can pause or cancel mid-render — you only pay for completed scenes.
       </p>
     </div>
   );

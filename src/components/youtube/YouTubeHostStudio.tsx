@@ -331,7 +331,7 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
       <div className="space-y-2">
         <p className="text-xs font-medium">2. Make the host's voice</p>
         <p className="text-[11px] text-muted-foreground">
-          Voice: {voiceName || "Default narrator"}. This uses premium voice and is charged to your wallet at cost plus our margin.
+          Voice: {voiceName || "Default narrator"}. This uses premium voice and is charged to your wallet.
         </p>
         <div className="flex flex-wrap gap-2 items-center">
           <Button size="sm" onClick={makeVoice} disabled={narrating || filming || !script.trim()}>

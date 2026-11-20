@@ -86,8 +86,6 @@ Deno.serve(async (req) => {
       return json({
         destination,
         tier,
-        twilio_cost_per_minute_cents: twilioCpm,
-        service_fee_per_minute_cents: totalCpm - twilioCpm,
         total_per_minute_cents: totalCpm,
         total_per_minute_aud: (totalCpm / 100).toFixed(2),
         note: "Final charge metered per second once the call ends.",

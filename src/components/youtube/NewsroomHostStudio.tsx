@@ -92,7 +92,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   const [audio, setAudio] = useState<{ url: string; blob: Blob; script: string; seconds: number } | null>(null);
   const [scriptHash, setScriptHash] = useState("");
   const [lip, setLip] = useState<LipClip | null>(null);
-  const [lipQuote, setLipQuote] = useState<{ total_cents: number; provider_cost_cents: number; platform_fee_cents: number; seconds: number } | null>(null);
+  const [lipQuote, setLipQuote] = useState<{ total_cents: number; seconds: number } | null>(null);
   const [lipConfirm, setLipConfirm] = useState(false);
   const [lipBusy, setLipBusy] = useState(false);
   const [lipReady, setLipReady] = useState(false);
@@ -533,7 +533,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
 
       <div className="space-y-2">
         <p className="text-xs font-medium">3. Make the host's voice</p>
-        <p className="text-[11px] text-muted-foreground">Voice: {voiceName || "Default narrator"}. Charged to your wallet at cost plus our margin.</p>
+        <p className="text-[11px] text-muted-foreground">Voice: {voiceName || "Default narrator"}. Charged to your wallet.</p>
         <div className="flex flex-wrap gap-2 items-center">
           <Button size="sm" onClick={makeVoice} disabled={narrating || filming || !script.trim()}>
             {narrating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mic className="w-4 h-4 mr-1" />}
@@ -547,7 +547,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
       <div className="space-y-2">
         <p className="text-xs font-medium">4. Real lip-sync (optional)</p>
         <p className="text-[11px] text-muted-foreground">
-          Without lip-sync your host is a photo that moves gently with her voice. With lip-sync, a lip-sync service turns her picture into a video whose mouth moves with her voice. You pay what the service charges for the length of the voice, plus our 20% margin, from your wallet. Pro plan.
+          Without lip-sync your host is a photo that moves gently with her voice. With lip-sync, a lip-sync service turns her picture into a video whose mouth moves with her voice. The price depends on the length of the voice and comes from your wallet. Pro plan.
         </p>
         {lipMatches ? (
           <p className="text-[11px] text-primary">Lip-sync ready{lip?.billedCents != null ? ` · charged ${money(lip.billedCents)}` : ""}. Filming will use it.</p>
@@ -593,7 +593,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
             <AlertDialogTitle>Add real lip-sync?</AlertDialogTitle>
             <AlertDialogDescription>
               {lipQuote
-                ? `Your voice is ${Math.round(lipQuote.seconds)} seconds. The lip-sync service costs ${money(lipQuote.provider_cost_cents)}, plus our 20% margin of ${money(lipQuote.platform_fee_cents)} — about ${money(lipQuote.total_cents)} in total from your wallet. You're charged for the exact length of the finished clip, and nothing if it fails.`
+                ? `Your voice is ${Math.round(lipQuote.seconds)} seconds. It costs about ${money(lipQuote.total_cents)} from your wallet. You're charged for the exact length of the finished clip, and nothing if it fails.`
                 : "Checking the price…"}
             </AlertDialogDescription>
           </AlertDialogHeader>

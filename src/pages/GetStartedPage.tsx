@@ -44,7 +44,7 @@ const GetStartedPage = () => (
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="font-bold text-foreground flex items-center gap-2"><Coins className="w-4 h-4 text-primary" /> Uses coins</p>
           <ul className="mt-2 text-xs text-muted-foreground list-disc pl-4 space-y-1">{paid.map((f) => <li key={f}>{f}</li>)}</ul>
-          <p className="mt-2 text-[11px] text-muted-foreground">You pay the real service cost plus 20%. A$1 = 5.37 coins.</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">You only pay for what you use. A$1 = 5.37 coins.</p>
         </div>
       </div>
     </div>

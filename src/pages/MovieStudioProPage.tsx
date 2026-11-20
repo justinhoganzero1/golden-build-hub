@@ -110,7 +110,7 @@ const MovieStudioProPage = () => {
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             <Lock className="w-3 h-3 inline mr-1" />
-            Every export is billed in <strong>coins</strong> (provider cost + 5% platform fee for Runway video & ElevenLabs voiceover) plus a small Lovable compute charge. Minimum {formatUsdAsCoins(0.25)} coins per render. You see the exact total before exporting — no surprise fees.
+            Every export is billed in <strong>coins</strong>. Minimum {formatUsdAsCoins(0.25)} coins per render. You see the exact total before exporting — no surprise fees.
           </p>
         </Card>
 
@@ -139,7 +139,7 @@ const MovieStudioProPage = () => {
           {!ownsMovieStudio && !isAdmin && (
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                💎 <strong className="text-primary">{formatUsdAsCoins(1)}-coin Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render coin charges still apply (we have to pay Runway + ElevenLabs).{" "}
+                💎 <strong className="text-primary">{formatUsdAsCoins(1)}-coin Movie Studio Lifetime Unlock</strong> lifts every cap on this app forever — long films, HD, 4K upscale, 1-click YouTube. Per-render coin charges still apply.{" "}
                 <button onClick={() => navigate("/subscribe")} className="text-primary underline">See plans</button>
               </p>
             </div>

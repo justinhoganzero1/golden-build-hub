@@ -199,7 +199,7 @@ const MembershipPage = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          When your monthly credit runs out, top up your <Link to="/wallet" className="underline">wallet</Link> and keep going. AI is charged at cost plus a small service fee.
+          When your monthly credit runs out, top up your <Link to="/wallet" className="underline">wallet</Link> and keep going. You only pay for what you use.
         </p>
 
         {hasSubscription && (
