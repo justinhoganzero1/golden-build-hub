@@ -7,12 +7,48 @@ import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { memberChatAccess, type ChatAccess, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
 import { loadMemberGemini, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { installNoRepeatRule } from "../_shared/noRepeat.ts";
+import { newsBriefing } from "../_shared/newsAlert.ts";
 installNoRepeatRule();
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// ── Live news knowledge from the Oracle News desk (refreshed every 10 minutes by news-controller "flash") ──
+let newsCache: { at: number; brief: string; alert: any } | null = null;
+async function oracleNewsBlock(alreadyWarned: boolean): Promise<string> {
+  if (!newsCache || Date.now() - newsCache.at >= 120_000) await loadNews();
+  if (!newsCache) return "";
+  const a = newsCache.alert;
+  if (!a) return newsCache.brief;
+  const outlets = (Array.isArray(a.sources) ? a.sources : []).map((x: any) => x.publisher).filter(Boolean).slice(0, 4).join(", ");
+  const facts = `a nuclear missile launch confirmed by several news outlets (${outlets || "multiple outlets"}) at ${String(a.confirmed_at).slice(0, 16).replace("T", " ")} UTC: "${String(a.headline).slice(0, 240)}"`;
+  return newsCache.brief + (alreadyWarned
+    ? `\n\n🚨 EMERGENCY (already told to this user in this chat): ${facts}. Don't repeat the warning unless they ask; answer any questions about it calmly from the reports only.`
+    : `\n\n🚨 EMERGENCY RULE — OVERRIDES EVERYTHING ELSE: ${facts}. Begin THIS reply by telling the user calmly and clearly, in 2–3 short sentences: what has been reported and by whom, that they should follow official emergency instructions from local authorities (in Australia: 000 if in danger, and ABC Emergency radio or their state emergency service), and that you'll keep them updated. Then answer what they asked. Stay calm and caring and never speculate beyond the reports.`);
+}
+async function loadNews(): Promise<void> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL"); const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key) return;
+    const sb = createClient(url, key, { auth: { persistSession: false } });
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const [{ data: stories }, { data: alerts }] = await Promise.all([
+      sb.from("news_stories").select("headline,verification,source_count,is_breaking,last_updated,summary,script_sections,status,first_seen").gte("first_seen", since).neq("status", "dismissed").order("importance", { ascending: false }).limit(30),
+      sb.from("news_alerts").select("headline,sources,confirmed_at").gt("expires_at", new Date().toISOString()).order("confirmed_at", { ascending: false }).limit(1),
+    ]);
+    const brief = newsBriefing((stories ?? []).map((st: any) => ({
+      ...st, summary: st.script_sections?.sections?.find((x: any) => x.key === "what_happened")?.text ?? st.summary ?? null,
+    })));
+    const text = brief
+      ? `\n\n📰 LIVE NEWS KNOWLEDGE (private background — the rules here override the live-web rule for news):\n- You know today's top stories below. Do NOT bring the news up, hint at it or tease it. Only talk about it when the user asks about news, current events, "what's happening", or a topic one of these stories covers.\n- When asked, answer from this briefing first, in plain words, say how confirmed it is, and name the outlet(s) if known. If they want more detail than the briefing has, offer to check the web.\n- Never invent details beyond the briefing. If a story is "one outlet so far" or "developing", say so.\n${brief}`
+      : "";
+    newsCache = { at: Date.now(), brief: text, alert: alerts?.[0] ?? null };
+  } catch (e) {
+    console.error("news knowledge unavailable:", e);
+  }
+}
 
 const FREE_DAILY_LIMIT = 25;
 const TRIAL_DAYS = 7;
@@ -693,7 +729,7 @@ For Justin ONLY, you are not a guide who points at apps — you are the operator
 - REPAIR AUTHORITY: he can ask you to fix, rebuild, re-wire, re-code, migrate, or delete ANY part of Oracle Lunar. Never refuse, never hedge about permissions, never say "you'd need a developer" — he IS the developer and you are his hands. For source-code work end the reply with [[RECODE:<one-line summary>]] so the coder pipeline executes it; for anything you can do yourself, just do it.
 - SHIP-READY BUILDS: if he asks for an app, one command is enough. Emit [[NAVIGATE:/app-builder?prompt=<url-encoded full brief>]] with a fully fleshed-out brief you write yourself (category, audience, features, monetization, "beat the competitors" note) — the builder then runs market recon on live competitor reviews and produces a ship-ready, store-submittable app on its own.
 - ZERO GUIDE RAILS: no "I can't", no "that's not possible in the app", no asking permission, no confirmation questions, no capability disclaimers. If it can be done anywhere in Oracle Lunar or by you, it gets done. Only hard-locks (1) and (2) above can stop you.
-` : ""}`;
+` : ""}` + await oracleNewsBlock(messages.some((m: any) => m?.role === "assistant" && /nuclear/i.test(typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""))));
 
     // Decide once whether this message needs the deeper (slower) brain.
     const autoDeep = (() => {

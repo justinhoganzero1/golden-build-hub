@@ -2,6 +2,7 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { parseFeed, normaliseUrl, robotsAllows, titleTokens, bestMatch, clusterKeyFor, classifyVerification, publisherKey, strayItemIndexes, importanceScore, isBreaking } from "../_shared/newsLogic.ts";
 import { fetchText, robotsFor, sha256, hoursSince } from "./common.ts";
+import { confirmedNuclearAlert, isNuclearLaunchHeadline, ALERT_WINDOW_HOURS } from "../_shared/newsAlert.ts";
 
 type Source = { id: string; name: string; kind: string; url: string; region: string; category: string; publisher_type: string; enabled: boolean };
 
@@ -155,4 +156,26 @@ export async function checkSources(sb: SupabaseClient) {
     out.push({ name: s.name, ok });
   }
   return { checked: out.length, ok: out.filter((o) => o.ok).length, sources: out };
+}
+
+/** Emergency rule: a confirmed nuclear missile launch creates one alert that every signed-in member sees at once. */
+export async function checkEmergency(sb: SupabaseClient) {
+  const since = new Date(Date.now() - ALERT_WINDOW_HOURS * 3600_000).toISOString();
+  const { data: items } = await sb.from("news_items").select("title,url,source_id,published_at,fetched_at").or("title.ilike.%nuclear%,title.ilike.%nuke%,title.ilike.%atomic%").gte("fetched_at", since).limit(300);
+  const candidates = (items ?? []).filter((i: any) => isNuclearLaunchHeadline(i.title));
+  if (!candidates.length) return { nuclear_alert: false };
+  const { data: srcs } = await sb.from("news_sources").select("id,name,publisher_type");
+  const src = new Map((srcs ?? []).map((s: any) => [s.id, s]));
+  const alert = confirmedNuclearAlert(candidates.map((i: any) => ({
+    title: i.title, url: i.url, publisher: publisherKey(i.url), official: src.get(i.source_id)?.publisher_type === "official",
+    at: i.published_at && new Date(i.published_at).getTime() <= Date.now() ? i.published_at : i.fetched_at,
+  })));
+  if (!alert) return { nuclear_alert: false, unconfirmed_reports: candidates.length };
+  const names = new Map((items ?? []).map((i: any) => [publisherKey(i.url), src.get(i.source_id)?.name ?? publisherKey(i.url)]));
+  const sources = alert.sources.map((s) => ({ ...s, publisher: names.get(s.publisher) ?? s.publisher }));
+  const { data: active } = await sb.from("news_alerts").select("id").eq("kind", "nuclear_launch").gt("expires_at", new Date().toISOString()).limit(1);
+  if (active?.length) { await sb.from("news_alerts").update({ sources }).eq("id", active[0].id); return { nuclear_alert: true, existing: active[0].id }; }
+  const { data: row } = await sb.from("news_alerts").insert({ kind: "nuclear_launch", headline: alert.headline.slice(0, 400), sources }).select("id").single();
+  await sb.from("system_incidents").insert({ incident_key: `news-nuclear-${row?.id}`, severity: "critical", summary: `EMERGENCY: confirmed nuclear launch reports (${sources.length} outlets): ${alert.headline}`.slice(0, 400) });
+  return { nuclear_alert: true, created: row?.id };
 }

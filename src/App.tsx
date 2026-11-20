@@ -325,6 +325,7 @@ const WalletTopupReturn = lazy(() => import("./components/WalletTopupReturn"));
 const ApiKeyReminder = lazy(() => import("./components/ApiKeyReminder"));
 const TrialCardDialog = lazy(() => import("./components/TrialCardDialog"));
 const GeminiKeyAlarm = lazy(() => import("./components/GeminiKeyAlarm"));
+const EmergencyNewsAlert = lazy(() => import("./components/EmergencyNewsAlert"));
 const SiteFooter = lazy(() => import("./components/SiteFooter"));
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -377,6 +378,7 @@ const OracleApp = () => (
               <Suspense fallback={null}><ApiKeyReminder /></Suspense>
               <Suspense fallback={null}><TrialCardDialog /></Suspense>
               <Suspense fallback={null}><GeminiKeyAlarm /></Suspense>
+              <Suspense fallback={null}><EmergencyNewsAlert /></Suspense>
 
               <Suspense fallback={<Loading />}>
                 <OracleWorkspace><Routes>

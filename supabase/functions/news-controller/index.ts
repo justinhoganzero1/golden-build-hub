@@ -8,7 +8,7 @@ import { hasSchedulerToken } from "../_shared/internalAuth.ts";
 import { installNoRepeatRule } from "../_shared/noRepeat.ts";
 import { dailyStepDue, brisbaneClock, rateFootage } from "../_shared/newsLogic.ts";
 import { db, startRun, finishRun } from "./common.ts";
-import { scanSources, checkSources } from "./scan.ts";
+import { scanSources, checkSources, checkEmergency } from "./scan.ts";
 import { analyseStories } from "./analyse.ts";
 import { findFootage } from "./footage.ts";
 import { generateScript } from "./script.ts";
@@ -26,6 +26,7 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
 const ids = z.array(z.string().uuid()).max(12).optional();
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("tick") }),
+  z.object({ action: z.literal("flash") }),
   z.object({ action: z.literal("archive"), q: z.string().max(100).optional() }),
   z.object({ action: z.literal("scan") }),
   z.object({ action: z.literal("check_sources") }),
@@ -95,6 +96,7 @@ async function tick(sb: ReturnType<typeof db>, trigger: string) {
   const step = dailyStepDue(new Date(), done, settings?.mode ?? "approval");
   const out: Record<string, unknown> = {};
   out.scan = await runStep(sb, "scan", trigger, () => scanSources(sb)); // also flags breaking news every hour
+  out.emergency = await checkEmergency(sb).catch((e) => ({ error: (e as Error).message }));
   // Story-by-story production: 2 stories an hour, capped per day in Settings.
   out.pipeline = await runStep(sb, "pipeline", trigger, () => advancePipeline(sb, { limit: 2, respectCap: true })).catch((e) => ({ error: (e as Error).message }));
   const today = brisbaneClock(new Date()).date;
@@ -163,6 +165,20 @@ Deno.serve(async (req) => {
       visuals: body.id ? (vis ?? []).map((v: any) => ({ ...v, story_id: undefined })) : undefined,
     }));
     return new Response(JSON.stringify({ stories }), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } });
+  }
+
+  // Every 10 minutes: fresh headlines for Oracle's chat knowledge + the nuclear-launch emergency check. No AI used.
+  if (body.action === "flash") {
+    const scheduler = await hasSchedulerToken(req).catch(() => false);
+    if (!scheduler) { const o = await requireOwner(req); if (o.response) return o.response; }
+    try {
+      const r = await withLock(sb, async () => {
+        const scan = await scanSources(sb);
+        const emergency = await checkEmergency(sb);
+        return { scanned: scan.scanned, ok: scan.ok, added: scan.added, new_stories: scan.new_stories, emergency };
+      });
+      return json(r);
+    } catch (e) { return json({ error: (e as Error).message }, 500); }
   }
 
   if (body.action === "tick") {

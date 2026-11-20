@@ -2816,6 +2816,36 @@ export type Database = {
         }
         Relationships: []
       }
+      news_alerts: {
+        Row: {
+          confirmed_at: string
+          created_at: string
+          expires_at: string
+          headline: string
+          id: string
+          kind: string
+          sources: Json
+        }
+        Insert: {
+          confirmed_at?: string
+          created_at?: string
+          expires_at?: string
+          headline: string
+          id?: string
+          kind: string
+          sources?: Json
+        }
+        Update: {
+          confirmed_at?: string
+          created_at?: string
+          expires_at?: string
+          headline?: string
+          id?: string
+          kind?: string
+          sources?: Json
+        }
+        Relationships: []
+      }
       news_broadcasts: {
         Row: {
           approved_at: string | null
