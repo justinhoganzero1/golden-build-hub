@@ -183,7 +183,8 @@ const LiveVisionPage = () => {
         toast.warning("Oracle voice failed — using your device voice instead.", { id: "tts-failed" });
       }
     } catch {}
-    // fallback
+    // fallback (some TV browsers have no device voice)
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") return;
     const u = new SpeechSynthesisUtterance(clean);
     u.rate = 1; u.volume = 1;
     window.speechSynthesis.speak(u);

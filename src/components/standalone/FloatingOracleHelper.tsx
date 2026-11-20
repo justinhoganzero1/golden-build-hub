@@ -73,6 +73,7 @@ export const FloatingOracleHelper = ({ appName }: { appName: string }) => {
       const ct = resp.headers.get("content-type") || "";
       if (ct.includes("application/json")) {
         // Premium TTS gated — fall back silently to browser voice
+        if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") return;
         const u = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(u);
