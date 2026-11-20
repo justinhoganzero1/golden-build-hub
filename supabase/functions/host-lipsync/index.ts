@@ -103,7 +103,10 @@ Deno.serve(async (req) => {
         const [image, audio] = await Promise.all([signed(body.image_path), signed(body.audio_path)]);
         const pred = await createPrediction({
           image, audio, resolution,
-          video_prompt: "A friendly TV news presenter talking to camera with natural head movement and blinking. The plain solid green background stays exactly the same.",
+          // Interview tracks are silent while the other person speaks: they listen with lips closed.
+          video_prompt: body.listening === true
+            ? "A friendly TV news presenter in a studio interview. Talks naturally while their voice plays; during silence they listen quietly with lips closed, small nods and blinking. The plain solid green background stays exactly the same."
+            : "A friendly TV news presenter talking to camera with natural head movement and blinking. The plain solid green background stays exactly the same.",
           negative_prompt: "background change, camera movement, zoom, text, subtitles, watermark, scene change, extra people",
           disable_prompt_upsampling: true,
         });

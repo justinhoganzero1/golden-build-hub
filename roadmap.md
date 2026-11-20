@@ -122,4 +122,6 @@
 - [x] Camera moves: wide, close-up on host, zoom into the big screen and back
 - [x] Big screen shows what she talks about (text cards, member pictures/clips, or AI pictures)
 - [x] Real lip-sync for the host, priced at service cost + 20% from the member's wallet (built)
-- [ ] First real lip-sync clip — waits on Juzzy adding credit to the Replicate account
+- [x] First real lip-sync clip (Replicate credit added; 3-second test clip made)
+- [x] Lip-sync for interviews: separate clips for host and reporter, both mouths move
+- [x] No subtitles on filmed episodes (house rule)

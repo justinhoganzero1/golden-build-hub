@@ -59,7 +59,8 @@ export interface NewsroomFrame {
   caption: string | null;
   colors: { gold: string; fg: string; bg: string; shade: string; teal: string };
   /** Interview: the reporter stands beside the host; whoever is speaking moves with the voice. */
-  guest?: { img: CanvasImageSource; aspect: number; energy: number } | null;
+  /** lipSynced: the image is a frame of the person's own lip-sync clip, so it isn't swayed. */
+  guest?: { img: CanvasImageSource; aspect: number; energy: number; lipSynced?: boolean } | null;
   speaker?: Speaker;
   /** Overrides the name line of the lower third (e.g. the reporter's name and topic). */
   nameLine?: string;
@@ -112,7 +113,7 @@ export function drawNewsroom(ctx: CanvasRenderingContext2D, f: NewsroomFrame) {
   if (f.bg) ctx.drawImage(f.bg, 0, 0, SCENE.width, SCENE.height);
   else { ctx.fillStyle = f.colors.bg; ctx.fillRect(0, 0, SCENE.width, SCENE.height); }
   drawScreen(ctx, f);
-  const person = (img: CanvasImageSource, aspect: number, cx: number, talking: boolean, energy: number, phase: number, scale = 1) => {
+  const person = (img: CanvasImageSource, aspect: number, cx: number, talking: boolean, energy: number, phase: number, scale = 1, video = false) => {
     const full = hostRect(aspect, cx);
     // Scaled people keep their feet on the same line behind the desk.
     const hr = { x: cx - (full.w * scale) / 2, y: full.y + full.h * (1 - scale), w: full.w * scale, h: full.h * scale };
@@ -121,17 +122,15 @@ export function drawNewsroom(ctx: CanvasRenderingContext2D, f: NewsroomFrame) {
     const sway = Math.sin(f.t * 0.7 + phase) * 1.2 + Math.sin(f.t * 2.1 + phase) * lvl * 1.5;
     const breathe = 1 + Math.sin(f.t * 1.6 + phase) * 0.004 + lvl * 0.006;
     const w = hr.w * breathe, h = hr.h * breathe;
+    if (video) { ctx.drawImage(img, hr.x, hr.y, hr.w, hr.h); return; }
     ctx.drawImage(img, hr.x + sway - (w - hr.w) / 2, hr.y - (h - hr.h), w, h);
   };
   const interview = !!f.guest;
   if (f.host) {
     const cx = interview ? INTERVIEW_ANCHOR.hostCx : HOST_ANCHOR.cx;
-    if (f.lipSynced && !interview) {
-      const hr = hostRect(f.hostAspect, cx);
-      ctx.drawImage(f.host, hr.x, hr.y, hr.w, hr.h);
-    } else person(f.host, f.hostAspect, cx, !interview || f.speaker !== "reporter", 1, 0);
+    person(f.host, f.hostAspect, cx, !interview || f.speaker !== "reporter", 1, 0, 1, f.lipSynced);
   }
-  if (f.guest) person(f.guest.img, f.guest.aspect, INTERVIEW_ANCHOR.guestCx, f.speaker === "reporter", f.guest.energy, 1.7, 0.88);
+  if (f.guest) person(f.guest.img, f.guest.aspect, INTERVIEW_ANCHOR.guestCx, f.speaker === "reporter", f.guest.energy, 1.7, 0.88, !!f.guest.lipSynced);
   if (f.desk) ctx.drawImage(f.desk, DESK_RECT.x, DESK_RECT.y, DESK_RECT.w, DESK_RECT.h);
   ctx.restore();
 

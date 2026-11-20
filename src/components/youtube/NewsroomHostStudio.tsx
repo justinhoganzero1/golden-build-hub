@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -23,7 +22,7 @@ import { REPORTERS, draftInterview, encodeWav, formatTurns, parseInterview, repo
 import { uploadCreationFile } from "@/lib/oracleCreationFiles";
 import { saveToLibrary } from "@/lib/saveToLibrary";
 import { generateImage, InsufficientCreditsError } from "@/lib/imageGen";
-import { requireEdgeAuthToken } from "@/lib/edgeAuth";
+import { callLipsync, money, useLipClip } from "./useLipClip";
 import { canvasSizeFor, lineAt, pickRecorderType, slideBeats, splitSentences, timeSentences, type HostFormat, type TimedLine } from "@/lib/youtubeHost";
 import { cameraAt, planInterviewShots, planShots, segmentAt, type ShotSegment, type SpokenLine } from "@/lib/newsroomScene";
 import { ChromaKeyer, drawNewsroom, type ScreenItem } from "./newsroomRenderer";
@@ -54,7 +53,6 @@ interface Template {
   /** Interview guest: one of the built-in reporters, or null for a solo episode. */
   reporter: ReporterId | null;
 }
-interface LipClip { jobId: string; scriptHash: string; url?: string; billedCents?: number }
 
 const templateKey = (uid: string) => `oracle-lunar:newsroom-template:${uid}`;
 const lipKey = (uid: string) => `oracle-lunar:newsroom-lipsync:${uid}`;
@@ -68,7 +66,6 @@ async function sha(text: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).slice(0, 16).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-const money = (cents: number) => `A$${(cents / 100).toFixed(2)}`;
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
     const img = new Image();
@@ -85,21 +82,12 @@ async function fileToDataUrl(file: File, max = 1024): Promise<string> {
   return c.toDataURL("image/jpeg", 0.9);
 }
 
-async function callLipsync(body: Record<string, unknown>) {
-  const token = await requireEdgeAuthToken();
-  const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/host-lipsync`, {
-    method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body),
-  });
-  const data = await r.json().catch(() => ({}));
-  return { ok: r.ok, status: r.status, data };
-}
-
 const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, presetScreenMedia, onSaved }: Props) => {
   const { user } = useAuth();
   const uid = user?.id ?? "";
   const { data: avatars = [] } = useUserAvatars() as { data?: Array<{ id: string; name: string; image_url: string | null }> };
 
-  const [tpl, setTpl] = useState<Template>(() => ({ showName: "", anchorName: "Oracle", format: "youtube", captions: true, host: PRESENTER, greenHosts: {}, reporter: null }));
+  const [tpl, setTpl] = useState<Template>(() => ({ showName: "", anchorName: "Oracle", format: "youtube", captions: false, host: PRESENTER, greenHosts: {}, reporter: null }));
   const [tplLoaded, setTplLoaded] = useState(false);
   const [preparingHost, setPreparingHost] = useState(false);
   const [pendingHost, setPendingHost] = useState<{ src: string; name: string } | null>(null);
@@ -108,14 +96,14 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
   const [makingPics, setMakingPics] = useState(false);
   const [narrating, setNarrating] = useState(false);
   const [narrationPct, setNarrationPct] = useState(0);
-  const [audio, setAudio] = useState<{ url: string; blob: Blob; script: string; seconds: number; lines?: SpokenLine[] } | null>(null);
+  const [audio, setAudio] = useState<{ url: string; blob: Blob; script: string; seconds: number; lines?: SpokenLine[]; tracks?: { host: Blob; reporter: Blob } } | null>(null);
   const [interviewText, setInterviewText] = useState("");
   const [scriptHash, setScriptHash] = useState("");
-  const [lip, setLip] = useState<LipClip | null>(null);
-  const [lipQuote, setLipQuote] = useState<{ total_cents: number; seconds: number } | null>(null);
+  const hostLip = useLipClip(uid ? lipKey(uid) : "", "Host");
+  const guestLip = useLipClip(uid ? `${lipKey(uid)}:reporter` : "", "Reporter");
+  const [lipQuote, setLipQuote] = useState<{ total_cents: number; seconds: number; clips: number } | null>(null);
   const [lipConfirm, setLipConfirm] = useState(false);
-  const [lipBusy, setLipBusy] = useState(false);
-  const [lipReady, setLipReady] = useState(false);
+  const [lipStarting, setLipStarting] = useState(false);
   const [filming, setFilming] = useState(false);
   const [filmPct, setFilmPct] = useState(0);
   const [result, setResult] = useState<{ blob: Blob; url: string; ext: string } | null>(null);
@@ -129,8 +117,8 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
   const hostStillRef = useRef<{ canvas: HTMLCanvasElement; aspect: number } | null>(null);
   const hostGreenRef = useRef<HTMLImageElement | null>(null);
   const guestRef = useRef<{ canvas: HTMLCanvasElement; aspect: number } | null>(null);
-  const lipVideoRef = useRef<HTMLVideoElement | null>(null);
   const liveKeyer = useRef<ChromaKeyer | null>(null);
+  const guestKeyer = useRef<ChromaKeyer | null>(null);
   const screenEls = useRef<Map<string, HTMLImageElement | HTMLVideoElement>>(new Map());
   const filmRef = useRef<{ lines: Array<TimedLine | SpokenLine>; segs: ShotSegment[]; level: number; stop?: () => void }>({ lines: [], segs: [], level: 0 });
 
@@ -142,17 +130,21 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
   const turns = useMemo(() => (reporter ? parseInterview(interviewText, reporter, tpl.anchorName) : []), [reporter, interviewText, tpl.anchorName]);
   /** What the voice step reads: the script, or the interview with who says each line. */
   const spokenKey = interview ? `${reporter!.id}|${tpl.anchorName}|${interviewText}` : script;
-  const lipMatches = !interview && !!lip?.url && lip.scriptHash === scriptHash && lipReady;
+  const hostLipOk = !!hostLip.lip?.url && hostLip.lip.scriptHash === scriptHash && hostLip.ready;
+  const guestLipOk = interview && !!guestLip.lip?.url && guestLip.lip.scriptHash === scriptHash && guestLip.ready;
+  /** Every person on screen has a finished lip-sync clip for this exact voice. */
+  const lipMatches = interview ? hostLipOk && guestLipOk : hostLipOk;
+  const billedTotal = (hostLip.lip?.billedCents ?? 0) + (interview ? guestLip.lip?.billedCents ?? 0 : 0);
+  const lipBusy = lipStarting || hostLip.busy || (interview && guestLip.busy);
   const voiceStale = !!audio && audio.script !== spokenKey;
+  const lipQuoteFits = !!lipQuote && lipQuote.clips === (interview ? 2 : 1) && (!interview || !!audio?.tracks);
 
   // ── Template: load once per account, save on change ──
   useEffect(() => {
     if (!uid) return;
     try {
       const saved = JSON.parse(localStorage.getItem(templateKey(uid)) || "null");
-      if (saved && typeof saved === "object") setTpl((t) => ({ ...t, ...saved, greenHosts: saved.greenHosts || {} }));
-      const l = JSON.parse(localStorage.getItem(lipKey(uid)) || "null");
-      if (l?.jobId) setLip(l);
+      if (saved && typeof saved === "object") setTpl((t) => ({ ...t, ...saved, captions: false, greenHosts: saved.greenHosts || {} }));
     } catch { /* ignore */ }
     setTplLoaded(true);
   }, [uid]);
@@ -160,7 +152,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
     if (uid && tplLoaded) try { localStorage.setItem(templateKey(uid), JSON.stringify(tpl)); } catch { /* full */ }
   }, [tpl, uid, tplLoaded]);
   useEffect(() => { if (!tpl.showName && (title || channelName)) setTpl((t) => ({ ...t, showName: channelName || title })); }, [title, channelName]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { void sha(`${script}|${voiceId || ""}|${tpl.host}`).then(setScriptHash); }, [script, voiceId, tpl.host]);
+  useEffect(() => { void sha(`${spokenKey}|${voiceId || ""}|${tpl.host}`).then(setScriptHash); }, [spokenKey, voiceId, tpl.host]);
 
   // ── Studio layers ──
   useEffect(() => {
@@ -171,6 +163,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
     loadImage(studioStill).then((i) => { bgStillRef.current = i; }).catch(() => null);
     loadImage(deskLayer).then((i) => { deskRef.current = i; }).catch(() => null);
     liveKeyer.current = new ChromaKeyer(480);
+    guestKeyer.current = new ChromaKeyer(480);
     return () => { v.pause(); v.removeAttribute("src"); };
   }, []);
 
@@ -229,45 +222,6 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
     });
   }, [screenMedia, aiPics]);
 
-  // Resume a lip-sync clip that was paid for earlier (no new charge).
-  useEffect(() => {
-    if (!lip?.jobId || lip.url) return;
-    let stop = false;
-    const poll = async () => {
-      for (let i = 0; i < 120 && !stop; i++) {
-        const { ok, data } = await callLipsync({ action: "status", job_id: lip.jobId }).catch(() => ({ ok: false, data: {} as any }));
-        if (ok && data.status === "succeeded" && data.url) {
-          const next = { ...lip, url: data.url, billedCents: data.total_billed_cents };
-          setLip(next); setLipBusy(false);
-          toast.success(`Lip-sync ready. Charged ${money(data.total_billed_cents ?? 0)}.`);
-          return;
-        }
-        if (ok && (data.status === "failed" || data.error === "not_found")) {
-          setLipBusy(false); setLip(null); try { localStorage.removeItem(lipKey(uid)); } catch { /* */ }
-          toast.error(data.message || "Lip-sync didn't finish. Nothing was charged.");
-          return;
-        }
-        if (!ok && data?.error === "not_found") { setLip(null); setLipBusy(false); return; }
-        await new Promise((r) => setTimeout(r, 5000));
-      }
-      setLipBusy(false);
-    };
-    setLipBusy(true); void poll();
-    return () => { stop = true; };
-  }, [lip?.jobId]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (uid && lip) try { localStorage.setItem(lipKey(uid), JSON.stringify({ jobId: lip.jobId, scriptHash: lip.scriptHash })); } catch { /* */ } }, [lip, uid]);
-
-  // Load the finished lip-sync clip.
-  useEffect(() => {
-    setLipReady(false);
-    if (!lip?.url) { lipVideoRef.current = null; return; }
-    const v = document.createElement("video");
-    v.crossOrigin = "anonymous"; v.src = lip.url; v.playsInline = true; v.preload = "auto"; v.muted = true;
-    v.onloadeddata = () => { lipVideoRef.current = v; setLipReady(true); };
-    v.onerror = () => toast.error("Couldn't open the lip-sync clip. Try again in a moment.");
-    v.load();
-  }, [lip?.url]);
-
   const colors = () => ({
     gold: css("--primary", "#d4af37"), fg: css("--foreground", "#f5f5f5"), bg: css("--background", "#0b0f14"),
     shade: css("--secondary", "#16202a"), teal: css("--accent", "#2dd4bf"),
@@ -291,19 +245,25 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
     const seg = segs.length ? segs[segmentAt(segs, t)] : null;
     let host: CanvasImageSource | null = hostStillRef.current?.canvas ?? null;
     let aspect = hostStillRef.current?.aspect ?? 0.53;
-    const lv = lipVideoRef.current;
-    const useLip = live && lipMatches && lv && lv.readyState >= 2 && liveKeyer.current;
+    const lv = hostLip.videoRef.current;
+    const useLip = live && hostLipOk && lv && lv.readyState >= 2 && liveKeyer.current;
     if (useLip) { aspect = lv.videoWidth / lv.videoHeight; host = liveKeyer.current!.key(lv, aspect); }
+    const gv = guestLip.videoRef.current;
+    const useGuestLip = live && guestLipOk && gv && gv.readyState >= 2 && guestKeyer.current;
     const cur = lineAt(f.lines, t) as (TimedLine & { speaker?: SpokenLine["speaker"] }) | null;
     const g = interview ? guestRef.current : null;
     const speaker = cur?.speaker ?? "host";
     drawNewsroom(ctx, {
       t, camera: cameraAt(segs, t, tpl.format, interview ? "interview" : "solo"), bg: bgVideoRef.current ?? bgStillRef.current, desk: deskRef.current,
       host, hostAspect: aspect, level: live ? f.level : 0.35, lipSynced: !!useLip,
-      guest: g && reporter ? { img: g.canvas, aspect: g.aspect, energy: reporter.energy } : null, speaker,
+      guest: g && reporter
+        ? (useGuestLip
+          ? { img: guestKeyer.current!.key(gv, gv.videoWidth / gv.videoHeight), aspect: gv.videoWidth / gv.videoHeight, energy: reporter.energy, lipSynced: true }
+          : { img: g.canvas, aspect: g.aspect, energy: reporter.energy })
+        : null, speaker,
       nameLine: interview && reporter ? (speaker === "reporter" ? `${reporter.name} · ${reporter.genre} reporter` : [tpl.anchorName, tpl.showName].filter(Boolean).join(" · ")) : undefined,
       screen: screenFor(seg?.beat ?? 0), showName: tpl.showName, anchorName: tpl.anchorName,
-      headline: beats[seg?.beat ?? 0] || tpl.showName || title, caption: tpl.captions && live && cur ? cur.text : null, colors: colors(),
+      headline: beats[seg?.beat ?? 0] || tpl.showName || title, caption: null /* house rule: no subtitles */, colors: colors(),
     });
   };
 
@@ -401,22 +361,32 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       const gap = Math.round(rate * 0.35);
       const total = buffers.reduce((n, b) => n + Math.round(b.duration * rate) + gap, 0);
       const out = new Float32Array(total);
+      // Separate tracks per person (silence while the other one talks) for lip-sync.
+      const hostOut = new Float32Array(total);
+      const reporterOut = new Float32Array(total);
       const spans: Array<{ start: number; end: number }> = [];
       let pos = 0;
-      for (const b of buffers) {
+      for (let bi = 0; bi < buffers.length; bi++) {
+        const b = buffers[bi];
+        const own = turns[bi].speaker === "reporter" ? reporterOut : hostOut;
         const n = Math.round(b.duration * rate);
         const chans = Array.from({ length: b.numberOfChannels }, (_, c) => b.getChannelData(c));
         const step = b.sampleRate / rate;
         for (let i = 0; i < n; i++) {
           const k = Math.min(b.length - 1, Math.floor(i * step));
-          let v = 0; for (const ch of chans) v += ch[k]; out[pos + i] = v / chans.length;
+          let v = 0; for (const ch of chans) v += ch[k]; out[pos + i] = v / chans.length; own[pos + i] = out[pos + i];
         }
         spans.push({ start: pos / rate, end: (pos + n) / rate });
         pos += n + gap;
       }
       const blob = encodeWav(out, rate);
-      setAudio({ url: URL.createObjectURL(blob), blob, script: spokenKey, seconds: total / rate, lines: timeTurns(turns, spans) });
+      const seconds = total / rate;
+      setAudio({ url: URL.createObjectURL(blob), blob, script: spokenKey, seconds, lines: timeTurns(turns, spans), tracks: { host: encodeWav(hostOut, rate), reporter: encodeWav(reporterOut, rate) } });
       toast.success(`Voices ready for you and ${reporter.firstName}. Charged to your wallet.`);
+      if (seconds > 0) {
+        const q = await callLipsync({ action: "quote", seconds });
+        if (q.ok) setLipQuote({ total_cents: q.data.quote.total_cents * 2, seconds: q.data.quote.seconds, clips: 2 });
+      }
     } catch (e) {
       toast.error(e instanceof NarrationError ? e.message : "Couldn't make the voices. Nothing was saved.");
     } finally { setNarrating(false); void ac.close(); }
@@ -435,7 +405,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       toast.success("Host voice ready. Charged to your wallet.");
       if (seconds > 0) {
         const q = await callLipsync({ action: "quote", seconds });
-        if (q.ok) setLipQuote(q.data.quote);
+        if (q.ok) setLipQuote({ ...q.data.quote, clips: 1 });
       }
     } catch (e) {
       toast.error(e instanceof NarrationError ? e.message : "Couldn't make the voice. Nothing was saved.");
@@ -443,47 +413,68 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
   };
 
   // ── Lip-sync (paid, confirmed) ──
+  /** Uploads one person's picture + voice and starts their clip. Returns the job id, or null (with a message) on failure. */
+  const startOneLip = async (imageSrc: string, voice: Blob, ext: "mp3" | "wav", listening: boolean): Promise<string | null> => {
+    const imgBlob = await fetch(imageSrc).then((r) => r.blob());
+    const audioPath = `${uid}/library/oracle/lipsync-input-${crypto.randomUUID()}.${ext}`;
+    const imagePath = `${uid}/library/oracle/lipsync-input-${crypto.randomUUID()}.jpg`;
+    const up1 = await supabase.storage.from("photography-assets").upload(audioPath, voice, { contentType: ext === "wav" ? "audio/wav" : "audio/mpeg" });
+    const up2 = await supabase.storage.from("photography-assets").upload(imagePath, imgBlob, { contentType: imgBlob.type || "image/jpeg" });
+    if (up1.error || up2.error) throw new Error("upload");
+    const { ok, status, data } = await callLipsync({
+      action: "start", audio_path: audioPath, image_path: imagePath, seconds: audio!.seconds,
+      request_key: crypto.randomUUID(), script_hash: scriptHash, listening,
+    });
+    if (ok) return data.job_id as string;
+    if (status === 402 && data.error === "plan_required") toast.error("Lip-sync is part of the Pro plan.");
+    else if (status === 402) toast.error("Not enough in your wallet. Top up to use lip-sync.");
+    else toast.error(data.message || "Lip-sync didn't start. Nothing was charged.");
+    return null;
+  };
   const startLipsync = async () => {
     setLipConfirm(false);
     if (!audio || !uid) return;
-    setLipBusy(true);
+    setLipStarting(true);
     try {
-      const hostBlob = await fetch(hostSrc).then((r) => r.blob());
-      const audioPath = `${uid}/library/oracle/lipsync-input-${crypto.randomUUID()}.mp3`;
-      const imagePath = `${uid}/library/oracle/lipsync-input-${crypto.randomUUID()}.jpg`;
-      const up1 = await supabase.storage.from("photography-assets").upload(audioPath, audio.blob, { contentType: "audio/mpeg" });
-      const up2 = await supabase.storage.from("photography-assets").upload(imagePath, hostBlob, { contentType: hostBlob.type || "image/jpeg" });
-      if (up1.error || up2.error) throw new Error("upload");
-      const { ok, status, data } = await callLipsync({
-        action: "start", audio_path: audioPath, image_path: imagePath, seconds: audio.seconds,
-        request_key: crypto.randomUUID(), script_hash: scriptHash,
-      });
-      if (!ok) {
-        setLipBusy(false);
-        if (status === 402 && data.error === "plan_required") toast.error("Lip-sync is part of the Pro plan.");
-        else if (status === 402) toast.error(`Not enough in your wallet. Top up to use lip-sync.`);
-        else toast.error(data.message || "Lip-sync didn't start. Nothing was charged.");
-        return;
+      if (interview && reporter && audio.tracks) {
+        if (!hostLipOk) {
+          const id = await startOneLip(hostSrc, audio.tracks.host, "wav", true);
+          if (!id) return;
+          hostLip.setLip({ jobId: id, scriptHash });
+        }
+        if (!guestLipOk) {
+          const id = await startOneLip(REPORTER_PICS[reporter.id], audio.tracks.reporter, "wav", true);
+          if (!id) return;
+          guestLip.setLip({ jobId: id, scriptHash });
+        }
+        toast.info(`Lip-sync started for your host and ${reporter.firstName}. It usually takes a few minutes — you can keep working.`);
+      } else {
+        const id = await startOneLip(hostSrc, audio.blob, "mp3", false);
+        if (!id) return;
+        hostLip.setLip({ jobId: id, scriptHash });
+        toast.info("Lip-sync started. It usually takes a minute or two — you can keep working.");
       }
-      setLip({ jobId: data.job_id, scriptHash });
-      toast.info("Lip-sync started. It usually takes a minute or two — you can keep working.");
     } catch {
-      setLipBusy(false);
       toast.error("Couldn't send the voice for lip-sync. Nothing was charged.");
-    }
+    } finally { setLipStarting(false); }
   };
 
   // ── Film ──
   const film = async () => {
     const canvas = canvasRef.current;
-    const lv = lipMatches ? lipVideoRef.current : null;
+    const lv = !interview && hostLipOk ? hostLip.videoRef.current : null;
     if (!canvas || (!audio && !lv)) return;
+    // Interview lip-sync clips play silently alongside the voice track, kept in step every frame.
+    const followers = interview && lipMatches
+      ? [hostLip.videoRef.current, guestLip.videoRef.current].filter((v): v is HTMLVideoElement => !!v)
+      : [];
     const type = pickRecorderType((t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t));
     if (!type || !canvas.captureStream) { toast.error("This browser can't record video. Try Chrome on a computer or phone."); return; }
 
     setFilming(true); setFilmPct(0); setResult(null); setSavedId(null);
     const master: HTMLMediaElement = lv ?? new Audio(audio!.url);
     if (lv) { lv.currentTime = 0; lv.muted = false; }
+    followers.forEach((v) => { v.pause(); v.muted = true; v.currentTime = 0; });
     await new Promise<void>((res) => { if (master.readyState >= 1) res(); else { master.onloadedmetadata = () => res(); master.onerror = () => res(); } });
     const duration = master.duration || audio?.seconds || 1;
     if (interview && audio?.lines?.length) {
@@ -513,6 +504,9 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       analyser.getByteTimeDomainData(data);
       let sum = 0; for (const v of data) { const d = (v - 128) / 128; sum += d * d; }
       filmRef.current.level = filmRef.current.level * 0.7 + Math.min(1, Math.sqrt(sum / data.length) * 4) * 0.3;
+      for (const v of followers) {
+        if (master.currentTime < (v.duration || 0) && Math.abs(v.currentTime - master.currentTime) > 0.2) v.currentTime = master.currentTime;
+      }
       draw(master.currentTime, true);
       setFilmPct(Math.min(100, Math.round((master.currentTime / duration) * 100)));
       raf = requestAnimationFrame(loop);
@@ -523,6 +517,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       rec.start(1000);
       raf = requestAnimationFrame(loop);
       await master.play();
+      followers.forEach((v) => { void v.play().catch(() => null); });
       await new Promise<void>((res) => { master.onended = () => res(); master.onpause = () => res(); });
       await new Promise((r) => setTimeout(r, 400));
       cancelAnimationFrame(raf);
@@ -538,6 +533,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       stream.getTracks().forEach((t) => t.stop());
       void ac.close();
       if (lv) lv.muted = true;
+      followers.forEach((v) => v.pause());
       filmRef.current.stop = undefined;
       setFilming(false);
     }
@@ -552,7 +548,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
       const id = await saveToLibrary({
         media_type: "video", title: `${title || tpl.showName || "Newsroom episode"} (${tpl.format === "shorts" ? "Shorts" : "YouTube"})`, url,
         source_page: "/youtube-show-studio",
-        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "Oracle ad voice", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", reporter: reporter ? `${reporter.name} (${reporter.genre})` : null, mime_type: result.blob.type },
+        metadata: { kind: "youtube_host", layout: "newsroom", format: tpl.format, voice: voiceName || "Oracle ad voice", host: lipMatches ? "lip-synced" : "animated photo (no lip-sync)", reporter_lipsync: interview ? lipMatches : undefined, reporter: reporter ? `${reporter.name} (${reporter.genre})` : null, mime_type: result.blob.type },
       });
       setSavedId(id || "queued");
       toast.success("Saved to your Library.");
@@ -654,9 +650,6 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
             <button type="button" className={choice(tpl.format === "shorts")} onClick={() => setTpl((t) => ({ ...t, format: "shorts" }))}>Shorts (tall)</button>
           </div>
         </div>
-        <label className="flex items-center gap-2 text-xs">
-          <Switch checked={tpl.captions} onCheckedChange={(v) => setTpl((t) => ({ ...t, captions: v }))} /> Captions
-        </label>
       </div>
 
       <div className={`mx-auto rounded-xl overflow-hidden border border-border bg-muted ${tpl.format === "shorts" ? "max-w-[260px]" : "w-full"}`}>
@@ -698,21 +691,22 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
 
       <div className="space-y-2">
         <p className="text-xs font-medium">4. Real lip-sync (optional)</p>
-        {interview ? (
-          <p className="text-[11px] text-muted-foreground">Lip-sync is for solo episodes. In an interview, your host and {reporter!.firstName} are photos that move gently when they talk — their mouths don't move.</p>
-        ) : (<>
         <p className="text-[11px] text-muted-foreground">
-          Without lip-sync your host is a photo that moves gently with her voice. With lip-sync, a lip-sync service turns her picture into a video whose mouth moves with her voice. The price depends on the length of the voice and comes from your wallet. Pro plan.
+          {interview
+            ? `Without lip-sync, your host and ${reporter!.firstName} are photos that move gently when they talk — their mouths don't move. With lip-sync, a lip-sync service makes two clips, one for each of them, so both mouths move with their own voice. The price covers both clips, depends on the length of the voices and comes from your wallet. Pro plan.`
+            : "Without lip-sync your host is a photo that moves gently with her voice. With lip-sync, a lip-sync service turns her picture into a video whose mouth moves with her voice. The price depends on the length of the voice and comes from your wallet. Pro plan."}
         </p>
         {lipMatches ? (
-          <p className="text-[11px] text-primary">Lip-sync ready{lip?.billedCents != null ? ` · charged ${money(lip.billedCents)}` : ""}. Filming will use it.</p>
+          <p className="text-[11px] text-primary">Lip-sync ready{billedTotal > 0 ? ` · charged ${money(billedTotal)}` : ""}. Filming will use it.</p>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => setLipConfirm(true)} disabled={!audio || voiceStale || lipBusy || filming || !lipQuote}>
+          <Button size="sm" variant="outline" onClick={() => setLipConfirm(true)} disabled={!audio || voiceStale || lipBusy || filming || !lipQuoteFits}>
             {lipBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Video className="w-4 h-4 mr-1" />}
-            {lipBusy ? "Making lip-sync…" : lipQuote ? `Add lip-sync · ${money(lipQuote.total_cents)}` : "Add lip-sync"}
+            {lipBusy ? "Making lip-sync…" : lipQuoteFits ? `Add lip-sync · ${money(lipQuote!.total_cents)}` : "Add lip-sync"}
           </Button>
         )}
-        </>)}
+        {interview && audio && !audio.tracks && !voiceStale && (
+          <p className="text-[11px] text-muted-foreground">Remake the voices once so each person gets their own lip-sync track.</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -749,7 +743,9 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, pr
             <AlertDialogTitle>Add real lip-sync?</AlertDialogTitle>
             <AlertDialogDescription>
               {lipQuote
-                ? `Your voice is ${Math.round(lipQuote.seconds)} seconds. It costs about ${money(lipQuote.total_cents)} from your wallet. You're charged for the exact length of the finished clip, and nothing if it fails.`
+                ? (lipQuote.clips === 2
+                  ? `The interview is ${Math.round(lipQuote.seconds)} seconds, so two clips are made (your host and ${reporter?.firstName ?? "the reporter"}). It costs about ${money(lipQuote.total_cents)} from your wallet. You're charged for the exact length of each finished clip, and nothing for a clip that fails.`
+                  : `Your voice is ${Math.round(lipQuote.seconds)} seconds. It costs about ${money(lipQuote.total_cents)} from your wallet. You're charged for the exact length of the finished clip, and nothing if it fails.`)
                 : "Checking the price…"}
             </AlertDialogDescription>
           </AlertDialogHeader>

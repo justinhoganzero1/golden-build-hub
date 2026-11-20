@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAvatars } from "@/hooks/useUserAvatars";
 import { narrateText, NarrationError } from "@/lib/storyNarration";
@@ -62,7 +61,7 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
   const [hostSrc, setHostSrc] = useState<string>(oraclePortrait);
   const [format, setFormat] = useState<HostFormat>("youtube");
   const [layout, setLayout] = useState<HostLayout>("corner");
-  const [captions, setCaptions] = useState(true);
+  const captions = false; // house rule: no subtitles on filmed episodes
   const [narrating, setNarrating] = useState(false);
   const [narrationPct, setNarrationPct] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -287,7 +286,7 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
         <Camera className="w-4 h-4 text-primary" /> Host on camera
       </div>
       <p className="text-xs text-muted-foreground">
-        Your host appears on screen reading your script, with captions and your episode points. The host is an animated photo that moves gently with the voice — it is not lip-synced.
+        Your host appears on screen reading your script, with your episode points. The host is an animated photo that moves gently with the voice — it is not lip-synced.
       </p>
 
       <div className="space-y-2">
@@ -323,9 +322,6 @@ const SimpleHostStudio = ({ script, title, channelName, voiceId, voiceName }: Pr
             <button type="button" className={choice(layout === "full")} onClick={() => setLayout("full")}>Full screen</button>
           </div>
         </div>
-        <label className="flex items-center gap-2 text-xs self-end">
-          <Switch checked={captions} onCheckedChange={setCaptions} /> Captions
-        </label>
       </div>
 
       <div className={`mx-auto rounded-xl overflow-hidden border border-border bg-muted ${format === "shorts" ? "max-w-[260px]" : "w-full"}`}>
