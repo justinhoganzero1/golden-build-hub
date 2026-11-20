@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Youtube, Search, Sparkles, Mic, Film, Image as ImageIcon, ExternalLink, Plus, Trash2, Loader2, Tv, Megaphone } from "lucide-react";
 import { Link } from "react-router-dom";
 import UniversalBackButton from "@/components/UniversalBackButton";
@@ -18,6 +18,11 @@ import { generateImage } from "@/lib/imageGen";
 import { getEdgeAuthToken } from "@/lib/edgeAuth";
 import { isClipPreviewOpen, toggleClipPreview } from "@/lib/youtubeClipPreview";
 import { trackEvent } from "@/lib/analytics";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import NewsControlRoom, { type ProducePayload } from "@/components/news/NewsControlRoom";
+import NewsArchive from "@/components/news/NewsArchive";
+import { callNews } from "@/lib/newsApi";
+import type { NewsroomSavedInfo } from "@/components/youtube/NewsroomHostStudio";
 
 interface YTItem {
   videoId: string | null;
@@ -68,6 +73,36 @@ const YouTubeShowStudioPage = () => {
   const [previewClipUrl, setPreviewClipUrl] = useState<string | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
   const { data: savedVoices = [] } = useSavedVoices();
+  const { isAdmin } = useIsAdmin();
+  const [newsFootage, setNewsFootage] = useState<ProducePayload["footage"] | undefined>(undefined);
+  const [newsBroadcastId, setNewsBroadcastId] = useState<string | null>(null);
+  const [newsRefresh, setNewsRefresh] = useState(0);
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  // Oracle News → load the approved script and green footage into the newsroom studio.
+  const produceNews = (p: ProducePayload) => {
+    setState((s) => ({ ...s, script: p.script, showTitle: p.title, topic: p.title, channelName: s.channelName || "Oracle News" }));
+    setNewsFootage(p.footage);
+    setNewsBroadcastId(p.broadcastId);
+    toast.success(`Loaded into the newsroom studio${p.footage.length ? ` with ${p.footage.length} approved clip${p.footage.length > 1 ? "s" : ""}` : ""}. Make the voice, film it, then save it.`);
+    setTimeout(() => hostRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+  };
+
+  // After the filmed bulletin is saved to the Library, attach it to the broadcast.
+  const attachNewsVideo = async (info: NewsroomSavedInfo) => {
+    if (!newsBroadcastId) return;
+    const ext = info.ext === "mp4" ? "mp4" : "webm";
+    const path = `broadcasts/${newsBroadcastId}.${ext}`;
+    try {
+      const up = await supabase.storage.from("news-footage").upload(path, info.blob, { contentType: info.blob.type || `video/${ext}`, upsert: true });
+      if (up.error) throw new Error(up.error.message);
+      await callNews("attach_video", { broadcast_id: newsBroadcastId, video_path: path, library_id: info.libraryId, duration_seconds: info.seconds > 0 ? info.seconds : undefined });
+      toast.success("Bulletin attached to Oracle News — press Publish Broadcast when you're happy.");
+      setNewsRefresh((n) => n + 1);
+    } catch (e) {
+      toast.error(`Saved to your Library, but attaching to Oracle News failed: ${(e as Error).message}`);
+    }
+  };
 
 
 
@@ -241,6 +276,10 @@ Rules:
               </p>
             </div>
           </header>
+
+          {/* Oracle News Intelligence — automation comes first */}
+          {isAdmin && <NewsControlRoom onProduce={produceNews} refreshKey={newsRefresh} />}
+          <NewsArchive alwaysShow={isAdmin} refreshKey={newsRefresh} />
 
           {/* Channel + Show identity */}
           <Card className="p-4 space-y-3">
@@ -427,13 +466,18 @@ Rules:
           </Card>
 
           {/* Host on camera */}
-          <YouTubeHostStudio
-            script={state.script}
-            title={state.showTitle || state.topic}
-            channelName={state.channelName}
-            voiceId={state.voiceId}
-            voiceName={state.voiceName}
-          />
+          <div ref={hostRef} className="scroll-mt-16">
+            <YouTubeHostStudio
+              script={state.script}
+              title={state.showTitle || state.topic}
+              channelName={state.channelName}
+              voiceId={state.voiceId}
+              voiceName={state.voiceName}
+              presetScreenMedia={newsFootage}
+              onSaved={newsBroadcastId ? attachNewsVideo : undefined}
+              forceNewsroom={!!newsBroadcastId}
+            />
+          </div>
 
           {/* Produce */}
           <Card className="p-4 space-y-3">

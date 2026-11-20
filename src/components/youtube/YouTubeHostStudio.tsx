@@ -15,7 +15,7 @@ import {
   type HostFormat, type HostLayout, type TimedLine,
 } from "@/lib/youtubeHost";
 import oraclePortrait from "@/assets/avatars/oracle-futuristic-office.jpg";
-import NewsroomHostStudio from "./NewsroomHostStudio";
+import NewsroomHostStudio, { type NewsroomSavedInfo } from "./NewsroomHostStudio";
 
 interface Props {
   script: string;
@@ -23,6 +23,10 @@ interface Props {
   channelName: string;
   voiceId: string | null;
   voiceName: string | null;
+  presetScreenMedia?: Array<{ kind: "image" | "video"; url: string }>;
+  onSaved?: (info: NewsroomSavedInfo) => void;
+  /** Force the newsroom layout (used when Oracle News loads a broadcast). */
+  forceNewsroom?: boolean;
 }
 
 function cssColor(name: string, fallback: string, alpha = 1): string {
@@ -397,7 +401,7 @@ const YouTubeHostStudio = (props: Props) => {
       <button type="button" className={choice(style === "simple")} onClick={() => pick("simple")}>Simple</button>
     </div>
   );
-  if (style === "simple") return <div className="space-y-2">{toggle}<SimpleHostStudio {...props} /></div>;
+  if (style === "simple" && !props.forceNewsroom) return <div className="space-y-2">{toggle}<SimpleHostStudio {...props} /></div>;
   return (
     <Card className="p-4 space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold">

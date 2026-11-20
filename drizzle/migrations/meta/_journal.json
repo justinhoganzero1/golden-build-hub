@@ -274,6 +274,20 @@
       "when": 1795145572852,
       "tag": "0038_create_host_lipsync_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795157287774,
+      "tag": "0039_oracle_news_intelligence",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795158260682,
+      "tag": "0040_news_story_footage_terms",
+      "breakpoints": true
     }
   ]
 }

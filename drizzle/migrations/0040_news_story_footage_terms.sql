@@ -1,0 +1,1 @@
+ALTER TABLE public.news_stories ADD COLUMN footage_terms text;

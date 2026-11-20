@@ -2816,6 +2816,389 @@ export type Database = {
         }
         Relationships: []
       }
+      news_broadcasts: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          edition_date: string
+          error: string | null
+          footage_ids: string[]
+          id: string
+          kind: string
+          library_id: string | null
+          produced_at: string | null
+          published_at: string | null
+          script: string
+          sources: Json
+          status: string
+          story_ids: string[]
+          thumbnail_url: string | null
+          title: string
+          video_path: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          edition_date: string
+          error?: string | null
+          footage_ids?: string[]
+          id?: string
+          kind?: string
+          library_id?: string | null
+          produced_at?: string | null
+          published_at?: string | null
+          script?: string
+          sources?: Json
+          status?: string
+          story_ids?: string[]
+          thumbnail_url?: string | null
+          title: string
+          video_path?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          edition_date?: string
+          error?: string | null
+          footage_ids?: string[]
+          id?: string
+          kind?: string
+          library_id?: string | null
+          produced_at?: string | null
+          published_at?: string | null
+          script?: string
+          sources?: Json
+          status?: string
+          story_ids?: string[]
+          thumbnail_url?: string | null
+          title?: string
+          video_path?: string | null
+        }
+        Relationships: []
+      }
+      news_footage: {
+        Row: {
+          approval_status: string
+          attribution: string | null
+          commercial_use: boolean
+          copyright_owner: string | null
+          created_at: string
+          creator: string | null
+          editing_allowed: boolean
+          embed_url: string | null
+          file_path: string | null
+          id: string
+          licence: string | null
+          notes: string | null
+          permission_expiry: string | null
+          rating: string
+          source_kind: string
+          story_id: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          approval_status?: string
+          attribution?: string | null
+          commercial_use?: boolean
+          copyright_owner?: string | null
+          created_at?: string
+          creator?: string | null
+          editing_allowed?: boolean
+          embed_url?: string | null
+          file_path?: string | null
+          id?: string
+          licence?: string | null
+          notes?: string | null
+          permission_expiry?: string | null
+          rating?: string
+          source_kind: string
+          story_id?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          approval_status?: string
+          attribution?: string | null
+          commercial_use?: boolean
+          copyright_owner?: string | null
+          created_at?: string
+          creator?: string | null
+          editing_allowed?: boolean
+          embed_url?: string | null
+          file_path?: string | null
+          id?: string
+          licence?: string | null
+          notes?: string | null
+          permission_expiry?: string | null
+          rating?: string
+          source_kind?: string
+          story_id?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_footage_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "news_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_items: {
+        Row: {
+          extract: string | null
+          fetched_at: string
+          guid_hash: string
+          id: string
+          published_at: string | null
+          source_id: string
+          story_id: string | null
+          summary: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          extract?: string | null
+          fetched_at?: string
+          guid_hash: string
+          id?: string
+          published_at?: string | null
+          source_id: string
+          story_id?: string | null
+          summary?: string | null
+          title: string
+          url: string
+        }
+        Update: {
+          extract?: string | null
+          fetched_at?: string
+          guid_hash?: string
+          id?: string
+          published_at?: string | null
+          source_id?: string
+          story_id?: string | null
+          summary?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_items_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_items_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "news_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      news_runs: {
+        Row: {
+          detail: Json
+          error: string | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          step: string
+          trigger: string
+        }
+        Insert: {
+          detail?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          step: string
+          trigger?: string
+        }
+        Update: {
+          detail?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          step?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      news_settings: {
+        Row: {
+          au_share: number
+          breaking_priority: boolean
+          categories: string[]
+          duration_minutes: number
+          id: number
+          last_daily_steps: Json
+          lock_until: string | null
+          mode: string
+          story_count: number
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          au_share?: number
+          breaking_priority?: boolean
+          categories?: string[]
+          duration_minutes?: number
+          id?: number
+          last_daily_steps?: Json
+          lock_until?: string | null
+          mode?: string
+          story_count?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          au_share?: number
+          breaking_priority?: boolean
+          categories?: string[]
+          duration_minutes?: number
+          id?: number
+          last_daily_steps?: Json
+          lock_until?: string | null
+          mode?: string
+          story_count?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_sources: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          id: string
+          items_last: number
+          kind: string
+          last_error: string | null
+          last_ok_at: string | null
+          last_scan_at: string | null
+          last_status: string
+          name: string
+          publisher_type: string
+          region: string
+          url: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          items_last?: number
+          kind?: string
+          last_error?: string | null
+          last_ok_at?: string | null
+          last_scan_at?: string | null
+          last_status?: string
+          name: string
+          publisher_type?: string
+          region?: string
+          url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          items_last?: number
+          kind?: string
+          last_error?: string | null
+          last_ok_at?: string | null
+          last_scan_at?: string | null
+          last_status?: string
+          name?: string
+          publisher_type?: string
+          region?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      news_stories: {
+        Row: {
+          analysed_at: string | null
+          category: string
+          cluster_key: string
+          conflicts: string | null
+          first_seen: string
+          footage_terms: string | null
+          headline: string
+          id: string
+          importance: number
+          is_breaking: boolean
+          last_updated: string
+          official_count: number
+          region: string
+          source_count: number
+          status: string
+          summary: string | null
+          update_count: number
+          verification: string
+        }
+        Insert: {
+          analysed_at?: string | null
+          category?: string
+          cluster_key: string
+          conflicts?: string | null
+          first_seen?: string
+          footage_terms?: string | null
+          headline: string
+          id?: string
+          importance?: number
+          is_breaking?: boolean
+          last_updated?: string
+          official_count?: number
+          region?: string
+          source_count?: number
+          status?: string
+          summary?: string | null
+          update_count?: number
+          verification?: string
+        }
+        Update: {
+          analysed_at?: string | null
+          category?: string
+          cluster_key?: string
+          conflicts?: string | null
+          first_seen?: string
+          footage_terms?: string | null
+          headline?: string
+          id?: string
+          importance?: number
+          is_breaking?: boolean
+          last_updated?: string
+          official_count?: number
+          region?: string
+          source_count?: number
+          status?: string
+          summary?: string | null
+          update_count?: number
+          verification?: string
+        }
+        Relationships: []
+      }
       operation_claims: {
         Row: {
           created_at: string

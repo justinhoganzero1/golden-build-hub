@@ -38,7 +38,14 @@ import miaCard from "@/assets/newsroom/reporter-mia-card.webp";
 const REPORTER_PICS: Record<ReporterId, string> = { jack: jackGreen, mia: miaGreen };
 const REPORTER_CARDS: Record<ReporterId, string> = { jack: jackCard, mia: miaCard };
 
-interface Props { script: string; title: string; channelName: string; voiceId: string | null; voiceName: string | null }
+export interface NewsroomSavedInfo { blob: Blob; ext: string; libraryId: string | null; seconds: number }
+interface Props {
+  script: string; title: string; channelName: string; voiceId: string | null; voiceName: string | null;
+  /** Footage loaded from outside (e.g. Oracle News approved clips); replaces the screen list when it changes. */
+  presetScreenMedia?: Array<{ kind: "image" | "video"; url: string }>;
+  /** Called after the filmed episode is saved to the Library. */
+  onSaved?: (info: NewsroomSavedInfo) => void;
+}
 
 interface Template {
   showName: string; anchorName: string; format: HostFormat; captions: boolean;
@@ -86,7 +93,7 @@ async function callLipsync(body: Record<string, unknown>) {
   return { ok: r.ok, status: r.status, data };
 }
 
-const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: Props) => {
+const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName, presetScreenMedia, onSaved }: Props) => {
   const { user } = useAuth();
   const uid = user?.id ?? "";
   const { data: avatars = [] } = useUserAvatars() as { data?: Array<{ id: string; name: string; image_url: string | null }> };
@@ -202,6 +209,10 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
   };
   useEffect(() => { if (reporter && !interviewText && script.trim()) draftFromScript(); }, [reporter?.id, script]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (presetScreenMedia?.length) setScreenMedia(presetScreenMedia.slice(0, 12));
+  }, [presetScreenMedia]);
+
   // Screen media elements (member pictures/clips and AI pictures).
   useEffect(() => {
     const urls = [...screenMedia.map((m) => m.url), ...Object.values(aiPics)];
@@ -210,6 +221,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
       const m = screenMedia.find((s) => s.url === url);
       if (m?.kind === "video") {
         const v = document.createElement("video");
+        if (/^https?:/i.test(url)) v.crossOrigin = "anonymous"; // keeps the canvas recordable
         v.src = url; v.muted = true; v.loop = true; v.playsInline = true; void v.play().catch(() => null);
         screenEls.current.set(url, v);
       } else loadImage(url).then((img) => screenEls.current.set(url, img)).catch(() => null);
@@ -543,6 +555,7 @@ const NewsroomHostStudio = ({ script, title, channelName, voiceId, voiceName }: 
       });
       setSavedId(id || "queued");
       toast.success("Saved to your Library.");
+      onSaved?.({ blob: result.blob, ext: result.ext, libraryId: id || null, seconds: Math.round(audio?.seconds ?? 0) });
     } catch {
       toast.error("Couldn't save to your Library. Your video is still here — try again or download it.");
     } finally { setSaving(false); }
