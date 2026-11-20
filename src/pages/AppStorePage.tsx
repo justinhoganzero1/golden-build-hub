@@ -27,6 +27,8 @@ import shotCalendar from "@/assets/store/shot-calendar.jpg";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import listeningClip from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClip from "@/assets/avatars/oracle-clip-greeting.webm";
+import adVideo from "@/assets/videos/oracle-lunar-ad2b-web.mp4.asset.json";
+import adPoster from "@/assets/videos/oracle-lunar-ad2b-poster.jpg.asset.json";
 
 /**
  * Public front door laid out like an app-store listing. Visitors install the
@@ -240,6 +242,22 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
             <Link to="/sign-in" className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
               <Globe className="h-3.5 w-3.5" />Or use it right here in your browser
             </Link>
+          </section>
+
+          {/* Video ad — loads only when played, so the page stays quick */}
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">See Oracle in action</h2>
+            <div className="mx-auto mt-3 w-full max-w-[300px] overflow-hidden rounded-2xl border border-border/60 bg-card/40 sm:max-w-[340px]" style={{ aspectRatio: "9 / 16" }}>
+              <video
+                src={adVideo.url}
+                poster={adPoster.url}
+                controls
+                playsInline
+                preload="none"
+                className="h-full w-full object-cover"
+                aria-label="Oracle Lunar video: watch Oracle make a lunch video"
+              />
+            </div>
           </section>
 
           {/* Screenshots */}
