@@ -287,6 +287,12 @@ export function dailyStepDue(now: Date, done: { research?: string; produce?: str
   return null;
 }
 
+/** The one daily news scan runs on the owner's first visit to the news room from 6 am Brisbane; no timed scans. */
+export function dailyOpenScanDue(now: Date, done: { open_scan?: string }): boolean {
+  const { date, hour } = brisbaneClock(now);
+  return hour >= 6 && done.open_scan !== date;
+}
+
 export function nextBroadcastAt(now: Date): Date {
   const { date, hour } = brisbaneClock(now);
   const target = new Date(`${date}T07:00:00+10:00`);

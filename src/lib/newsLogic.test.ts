@@ -143,3 +143,15 @@ describe("strayItemIndexes", () => {
     expect(strayItemIndexes("Xi praises Albanese over China relations turnaround", titles)).toEqual([]);
   });
 });
+
+describe("once-a-day news scan", () => {
+  it("runs only on the first news-room visit from 6am Brisbane", async () => {
+    const { dailyOpenScanDue } = await import("../../supabase/functions/_shared/newsLogic");
+    // 9:52am Brisbane, not scanned today → scan
+    expect(dailyOpenScanDue(new Date("2026-11-20T23:52:00Z"), { open_scan: "2026-11-20" })).toBe(true);
+    // already scanned today → no scan
+    expect(dailyOpenScanDue(new Date("2026-11-20T23:52:00Z"), { open_scan: "2026-11-21" })).toBe(false);
+    // 5:30am Brisbane → too early, no scan
+    expect(dailyOpenScanDue(new Date("2026-11-20T19:30:00Z"), {})).toBe(false);
+  });
+});

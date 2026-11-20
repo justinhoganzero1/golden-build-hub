@@ -15,14 +15,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Oracle's news knowledge: one daily snapshot (6am Brisbane) from the Oracle News desk.
-// The nuclear-launch alert is separate and still checked every few minutes, because it is a safety rule.
+// ── Oracle's news knowledge: one daily snapshot from the Oracle News desk's once-a-day scan
+// (run when the owner first opens the news room from 6am Brisbane). Any nuclear alert comes from that same scan.
 let newsCache: { day: number; brief: string } | null = null;
-let alertCache: { at: number; alert: any } | null = null;
+let alertCache: { at: number; alert: any; scanAt: number | null } | null = null;
 async function oracleNewsBlock(alreadyWarned: boolean): Promise<string> {
-  const day = dailyNewsCutoff();
-  if (!newsCache || newsCache.day !== day) await loadDailyNews(day);
   if (!alertCache || Date.now() - alertCache.at >= 120_000) await loadAlert();
+  const day = alertCache?.scanAt ?? dailyNewsCutoff();
+  if (!newsCache || newsCache.day !== day) await loadDailyNews(day);
   const brief = newsCache?.brief ?? "";
   const a = alertCache?.alert;
   if (!a) return brief;
@@ -47,7 +47,7 @@ async function loadDailyNews(day: number): Promise<void> {
       ...st, summary: st.script_sections?.sections?.find((x: any) => x.key === "what_happened")?.text ?? st.summary ?? null,
     })), new Date(day));
     const text = brief
-      ? `\n\n📰 DAILY NEWS KNOWLEDGE (private background, updated once a day at 6am Brisbane time — the rules here override the live-web rule for news):\n- You know this morning's top stories below. Do NOT bring the news up, hint at it or tease it. Only talk about it when the user asks about news, current events, "what's happening", or a topic one of these stories covers.\n- When asked, answer from this briefing first, in plain words, say it is from this morning's news roundup, say how confirmed it is, and name the outlet(s) if known. If they want newer or more detailed news, offer to check the web.\n- Never invent details beyond the briefing. If a story is "one outlet so far" or "developing", say so.\n${brief}`
+      ? `\n\n📰 DAILY NEWS KNOWLEDGE (private background, updated once a day by the morning news scan — the rules here override the live-web rule for news):\n- You know this morning's top stories below. Do NOT bring the news up, hint at it or tease it. Only talk about it when the user asks about news, current events, "what's happening", or a topic one of these stories covers.\n- When asked, answer from this briefing first, in plain words, say it is from this morning's news roundup, say how confirmed it is, and name the outlet(s) if known. If they want newer or more detailed news, offer to check the web.\n- Never invent details beyond the briefing. If a story is "one outlet so far" or "developing", say so.\n${brief}`
       : "";
     newsCache = { day, brief: text };
   } catch (e) {
@@ -57,9 +57,13 @@ async function loadDailyNews(day: number): Promise<void> {
 async function loadAlert(): Promise<void> {
   try {
     const sb = serviceClient(); if (!sb) return;
-    const { data: alerts } = await sb.from("news_alerts").select("headline,sources,confirmed_at")
-      .gt("expires_at", new Date().toISOString()).order("confirmed_at", { ascending: false }).limit(1);
-    alertCache = { at: Date.now(), alert: alerts?.[0] ?? null };
+    const [{ data: alerts }, { data: cfg }] = await Promise.all([
+      sb.from("news_alerts").select("headline,sources,confirmed_at")
+        .gt("expires_at", new Date().toISOString()).order("confirmed_at", { ascending: false }).limit(1),
+      sb.from("news_settings").select("last_daily_steps").eq("id", 1).maybeSingle(),
+    ]);
+    const scanAt = Date.parse(String((cfg?.last_daily_steps as any)?.open_scan_at ?? ""));
+    alertCache = { at: Date.now(), alert: alerts?.[0] ?? null, scanAt: Number.isFinite(scanAt) ? scanAt : null };
   } catch (e) {
     console.error("news alert check unavailable:", e);
   }

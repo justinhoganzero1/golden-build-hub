@@ -368,7 +368,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
 
       {settings && (
         <div className="rounded-xl border border-border p-3 flex flex-wrap items-center gap-3 text-xs">
-          <label className="flex items-center gap-2"><Switch checked={!!settings.auto_pipeline} onCheckedChange={(v) => { setSettings({ ...settings, auto_pipeline: v }); void act("save", "save_pipeline", { auto_pipeline: v, pipeline_daily_cap: settings.pipeline_daily_cap }); }} /> Produce stories automatically every hour</label>
+          <label className="flex items-center gap-2"><Switch checked={!!settings.auto_pipeline} onCheckedChange={(v) => { setSettings({ ...settings, auto_pipeline: v }); void act("save", "save_pipeline", { auto_pipeline: v, pipeline_daily_cap: settings.pipeline_daily_cap }); }} /> Produce stories during the daily news scan</label>
           <label className="flex items-center gap-2">Daily limit <Input type="number" min={0} max={40} className="w-20 h-8" value={settings.pipeline_daily_cap} onChange={(e) => setSettings({ ...settings, pipeline_daily_cap: Number(e.target.value) })} onBlur={() => void act("save", "save_pipeline", { auto_pipeline: !!settings.auto_pipeline, pipeline_daily_cap: Math.max(0, Math.min(40, settings.pipeline_daily_cap)) })} /></label>
           <label className="flex items-center gap-2">Show
             <select className="rounded-md border border-input bg-background p-1" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>

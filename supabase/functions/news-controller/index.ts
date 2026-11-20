@@ -6,7 +6,7 @@ import { z } from "npm:zod@3.25.76";
 import { requireOwner, requireUser } from "../_shared/requireAuth.ts";
 import { hasSchedulerToken } from "../_shared/internalAuth.ts";
 import { installNoRepeatRule } from "../_shared/noRepeat.ts";
-import { dailyStepDue, brisbaneClock, rateFootage } from "../_shared/newsLogic.ts";
+import { dailyStepDue, dailyOpenScanDue, brisbaneClock, rateFootage } from "../_shared/newsLogic.ts";
 import { db, startRun, finishRun } from "./common.ts";
 import { scanSources, checkSources, checkEmergency } from "./scan.ts";
 import { analyseStories } from "./analyse.ts";
@@ -27,6 +27,7 @@ const ids = z.array(z.string().uuid()).max(12).optional();
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("tick") }),
   z.object({ action: z.literal("flash") }),
+  z.object({ action: z.literal("daily_open") }),
   z.object({ action: z.literal("archive"), q: z.string().max(100).optional() }),
   z.object({ action: z.literal("scan") }),
   z.object({ action: z.literal("check_sources") }),
@@ -167,7 +168,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ stories }), { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } });
   }
 
-  // Every 10 minutes: fresh headlines for Oracle's chat knowledge + the nuclear-launch emergency check. No AI used.
+  // Manual only (no schedule): fresh headlines + the nuclear-launch emergency check. No AI used.
   if (body.action === "flash") {
     const scheduler = await hasSchedulerToken(req).catch(() => false);
     if (!scheduler) { const o = await requireOwner(req); if (o.response) return o.response; }
@@ -176,6 +177,28 @@ Deno.serve(async (req) => {
         const scan = await scanSources(sb);
         const emergency = await checkEmergency(sb);
         return { scanned: scan.scanned, ok: scan.ok, added: scan.added, new_stories: scan.new_stories, emergency };
+      });
+      return json(r);
+    } catch (e) { return json({ error: (e as Error).message }, 500); }
+  }
+
+  // Once a day: the owner's first visit to the news room from 6 am Brisbane runs the only scan of the day
+  // (headlines for Oracle's daily knowledge, the nuclear-launch check, analysis and up to 3 stories produced).
+  if (body.action === "daily_open") {
+    const o = await requireOwner(req); if (o.response) return o.response;
+    try {
+      const { data: settings } = await sb.from("news_settings").select("last_daily_steps").eq("id", 1).single();
+      const done = (settings?.last_daily_steps ?? {}) as Record<string, string>;
+      if (!dailyOpenScanDue(new Date(), done)) return json({ skipped: true, note: "Today's news scan is already done." });
+      const r = await withLock(sb, async () => {
+        const out: Record<string, unknown> = {};
+        out.scan = await runStep(sb, "scan", "daily_open", () => scanSources(sb));
+        out.emergency = await checkEmergency(sb).catch((e) => ({ error: (e as Error).message }));
+        out.analyse = await runStep(sb, "analyse", "daily_open", () => analyseStories(sb)).catch((e) => ({ error: (e as Error).message }));
+        out.pipeline = await runStep(sb, "pipeline", "daily_open", () => advancePipeline(sb, { limit: 3, respectCap: true })).catch((e) => ({ error: (e as Error).message }));
+        const today = brisbaneClock(new Date()).date;
+        await sb.from("news_settings").update({ last_daily_steps: { ...done, open_scan: today, open_scan_at: new Date().toISOString(), research: today } }).eq("id", 1);
+        return out;
       });
       return json(r);
     } catch (e) { return json({ error: (e as Error).message }, 500); }

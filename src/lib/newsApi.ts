@@ -22,6 +22,7 @@ export function describeResult(action: string, r: any): string {
   if (r.skipped) return r.note ?? "Nothing to do.";
   switch (action) {
     case "scan": return `Checked ${r.scanned} sources (${r.ok} worked). ${r.added} new headlines, ${r.new_stories} new stories, ${r.updated_stories} updated.${r.breaking?.length ? ` Breaking: ${r.breaking.join("; ")}` : ""}`;
+    case "daily_open": return `Today's news scan is done${r.scan ? `: ${r.scan.added ?? 0} new headlines, ${r.scan.new_stories ?? 0} new stories` : ""}. Oracle now knows today's news.`;
     case "check_sources": return `${r.ok} of ${r.checked} sources answered.`;
     case "analyse": return r.note ?? `Analysed ${r.analysed} stories and read ${r.article_texts_read} article pages.`;
     case "find_footage": return r.note ?? `Checked ${r.stories} stories: ${r.nasa} NASA clips saved, ${r.youtube} embeddable videos found. ${(r.notes ?? []).join(" ")}`;

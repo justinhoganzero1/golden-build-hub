@@ -50,6 +50,17 @@ const NewsControlRoom = ({ onProduce, refreshKey = 0 }: Props) => {
     setSources(s.data ?? []); setStories(st.data ?? []); setFootage(f.data ?? []); setBroadcasts(b.data ?? []); setRuns(r.data ?? []); setSettings(cfg.data ?? null);
   }, []);
   useEffect(() => { void load(); }, [load, refreshKey]);
+  // The only news scan of the day runs when Juzzy first opens the news room from 6 am (no timed scans).
+  useEffect(() => {
+    let live = true;
+    setBusy("Today's news scan");
+    callNews("daily_open").then((r) => {
+      if (!live || r?.skipped || r?.busy) return;
+      const text = describeResult("daily_open", r); setMessage(text); toast.success(text.slice(0, 140)); void load();
+    }).catch((e) => { if (live) setMessage((e as Error).message || "Today's news scan didn't finish."); })
+      .finally(() => { if (live) setBusy(null); });
+    return () => { live = false; };
+  }, [load]);
 
   const current = useMemo(() => broadcasts.find((b) => b.id === selectedId) ?? broadcasts.find((b) => b.status !== "published") ?? broadcasts[0] ?? null, [broadcasts, selectedId]);
   const currentFootage = useMemo(() => (current ? footage.filter((f) => current.story_ids?.includes(f.story_id)) : []), [current, footage]);
