@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSavedVoices } from "@/hooks/useSavedVoices";
 import MovieStudio from "@/components/MovieStudio";
+import YouTubeHostStudio from "@/components/youtube/YouTubeHostStudio";
 import { generateImage } from "@/lib/imageGen";
 import { getEdgeAuthToken } from "@/lib/edgeAuth";
 import { isClipPreviewOpen, toggleClipPreview } from "@/lib/youtubeClipPreview";
@@ -424,6 +425,15 @@ Rules:
               The script automatically credits picked clips and includes your shoutouts.
             </p>
           </Card>
+
+          {/* Host on camera */}
+          <YouTubeHostStudio
+            script={state.script}
+            title={state.showTitle || state.topic}
+            channelName={state.channelName}
+            voiceId={state.voiceId}
+            voiceName={state.voiceName}
+          />
 
           {/* Produce */}
           <Card className="p-4 space-y-3">
