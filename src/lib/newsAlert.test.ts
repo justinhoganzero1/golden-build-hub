@@ -51,3 +51,13 @@ describe("Oracle's news briefing", () => {
     expect(newsBriefing([], new Date(now))).toBe("");
   });
 });
+
+describe("Oracle daily news refresh", () => {
+  it("refreshes at 6am Brisbane (20:00 UTC) once a day", async () => {
+    const { dailyNewsCutoff } = await import("../../supabase/functions/_shared/newsAlert");
+    // 9:48am Brisbane Sat = 23:48 UTC Fri → today's 6am Brisbane = 20:00 UTC Fri
+    expect(new Date(dailyNewsCutoff(Date.parse("2026-11-20T23:48:00Z"))).toISOString()).toBe("2026-11-20T20:00:00.000Z");
+    // 5:59am Brisbane Sat = 19:59 UTC Fri → still yesterday's 6am
+    expect(new Date(dailyNewsCutoff(Date.parse("2026-11-20T19:59:00Z"))).toISOString()).toBe("2026-11-19T20:00:00.000Z");
+  });
+});

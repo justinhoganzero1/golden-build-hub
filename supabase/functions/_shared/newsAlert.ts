@@ -47,3 +47,12 @@ export function newsBriefing(stories: BriefStory[], now = new Date()): string {
   });
   return `LATEST NEWS (from the Oracle News desk, checked ${now.toISOString().slice(0, 16).replace("T", " ")} UTC):\n${lines.join("\n")}`;
 }
+
+/** Oracle's news knowledge refreshes once a day, at 6am Brisbane time (20:00 UTC). */
+export const DAILY_NEWS_HOUR_UTC = 20;
+/** Most recent daily news refresh moment at or before `now` (ms). */
+export function dailyNewsCutoff(now = Date.now()): number {
+  const d = new Date(now);
+  const cut = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), DAILY_NEWS_HOUR_UTC);
+  return cut <= now ? cut : cut - 24 * 3600_000;
+}

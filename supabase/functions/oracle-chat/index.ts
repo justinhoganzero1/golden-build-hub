@@ -7,7 +7,7 @@ import { PROVIDER_RATES } from "../_shared/pricing.ts";
 import { memberChatAccess, type ChatAccess, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
 import { loadMemberGemini, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { installNoRepeatRule } from "../_shared/noRepeat.ts";
-import { newsBriefing } from "../_shared/newsAlert.ts";
+import { newsBriefing, dailyNewsCutoff } from "../_shared/newsAlert.ts";
 installNoRepeatRule();
 
 const corsHeaders = {
@@ -15,38 +15,53 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Live news knowledge from the Oracle News desk (refreshed every 10 minutes by news-controller "flash") ──
-let newsCache: { at: number; brief: string; alert: any } | null = null;
+// ── Oracle's news knowledge: one daily snapshot (6am Brisbane) from the Oracle News desk.
+// The nuclear-launch alert is separate and still checked every few minutes, because it is a safety rule.
+let newsCache: { day: number; brief: string } | null = null;
+let alertCache: { at: number; alert: any } | null = null;
 async function oracleNewsBlock(alreadyWarned: boolean): Promise<string> {
-  if (!newsCache || Date.now() - newsCache.at >= 120_000) await loadNews();
-  if (!newsCache) return "";
-  const a = newsCache.alert;
-  if (!a) return newsCache.brief;
+  const day = dailyNewsCutoff();
+  if (!newsCache || newsCache.day !== day) await loadDailyNews(day);
+  if (!alertCache || Date.now() - alertCache.at >= 120_000) await loadAlert();
+  const brief = newsCache?.brief ?? "";
+  const a = alertCache?.alert;
+  if (!a) return brief;
   const outlets = (Array.isArray(a.sources) ? a.sources : []).map((x: any) => x.publisher).filter(Boolean).slice(0, 4).join(", ");
   const facts = `a nuclear missile launch confirmed by several news outlets (${outlets || "multiple outlets"}) at ${String(a.confirmed_at).slice(0, 16).replace("T", " ")} UTC: "${String(a.headline).slice(0, 240)}"`;
-  return newsCache.brief + (alreadyWarned
+  return brief + (alreadyWarned
     ? `\n\n🚨 EMERGENCY (already told to this user in this chat): ${facts}. Don't repeat the warning unless they ask; answer any questions about it calmly from the reports only.`
     : `\n\n🚨 EMERGENCY RULE — OVERRIDES EVERYTHING ELSE: ${facts}. Begin THIS reply by telling the user calmly and clearly, in 2–3 short sentences: what has been reported and by whom, that they should follow official emergency instructions from local authorities (in Australia: 000 if in danger, and ABC Emergency radio or their state emergency service), and that you'll keep them updated. Then answer what they asked. Stay calm and caring and never speculate beyond the reports.`);
 }
-async function loadNews(): Promise<void> {
+function serviceClient() {
+  const url = Deno.env.get("SUPABASE_URL"); const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  return url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+}
+async function loadDailyNews(day: number): Promise<void> {
   try {
-    const url = Deno.env.get("SUPABASE_URL"); const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !key) return;
-    const sb = createClient(url, key, { auth: { persistSession: false } });
-    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
-    const [{ data: stories }, { data: alerts }] = await Promise.all([
-      sb.from("news_stories").select("headline,verification,source_count,is_breaking,last_updated,summary,script_sections,status,first_seen").gte("first_seen", since).neq("status", "dismissed").order("importance", { ascending: false }).limit(30),
-      sb.from("news_alerts").select("headline,sources,confirmed_at").gt("expires_at", new Date().toISOString()).order("confirmed_at", { ascending: false }).limit(1),
-    ]);
+    const sb = serviceClient(); if (!sb) return;
+    const { data: stories } = await sb.from("news_stories")
+      .select("headline,verification,source_count,is_breaking,last_updated,summary,script_sections,status,first_seen")
+      .gte("first_seen", new Date(day - 24 * 3600_000).toISOString()).lte("first_seen", new Date(day).toISOString())
+      .neq("status", "dismissed").order("importance", { ascending: false }).limit(30);
     const brief = newsBriefing((stories ?? []).map((st: any) => ({
       ...st, summary: st.script_sections?.sections?.find((x: any) => x.key === "what_happened")?.text ?? st.summary ?? null,
-    })));
+    })), new Date(day));
     const text = brief
-      ? `\n\n📰 LIVE NEWS KNOWLEDGE (private background — the rules here override the live-web rule for news):\n- You know today's top stories below. Do NOT bring the news up, hint at it or tease it. Only talk about it when the user asks about news, current events, "what's happening", or a topic one of these stories covers.\n- When asked, answer from this briefing first, in plain words, say how confirmed it is, and name the outlet(s) if known. If they want more detail than the briefing has, offer to check the web.\n- Never invent details beyond the briefing. If a story is "one outlet so far" or "developing", say so.\n${brief}`
+      ? `\n\n📰 DAILY NEWS KNOWLEDGE (private background, updated once a day at 6am Brisbane time — the rules here override the live-web rule for news):\n- You know this morning's top stories below. Do NOT bring the news up, hint at it or tease it. Only talk about it when the user asks about news, current events, "what's happening", or a topic one of these stories covers.\n- When asked, answer from this briefing first, in plain words, say it is from this morning's news roundup, say how confirmed it is, and name the outlet(s) if known. If they want newer or more detailed news, offer to check the web.\n- Never invent details beyond the briefing. If a story is "one outlet so far" or "developing", say so.\n${brief}`
       : "";
-    newsCache = { at: Date.now(), brief: text, alert: alerts?.[0] ?? null };
+    newsCache = { day, brief: text };
   } catch (e) {
     console.error("news knowledge unavailable:", e);
+  }
+}
+async function loadAlert(): Promise<void> {
+  try {
+    const sb = serviceClient(); if (!sb) return;
+    const { data: alerts } = await sb.from("news_alerts").select("headline,sources,confirmed_at")
+      .gt("expires_at", new Date().toISOString()).order("confirmed_at", { ascending: false }).limit(1);
+    alertCache = { at: Date.now(), alert: alerts?.[0] ?? null };
+  } catch (e) {
+    console.error("news alert check unavailable:", e);
   }
 }
 
