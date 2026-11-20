@@ -2334,3 +2334,20 @@ html.tv-mode, html.tv-mode body { cursor: none; }
 .racing-pulse { animation: racing-pulse 2.2s ease-in-out infinite; }
 @keyframes racing-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .racing-pulse { animation: none; } }
+
+/* ── Anchored panels ───────────────────────────────────────────────────────
+   Big cards (whole page panels) must never tilt: a few degrees on a very tall
+   card swings it out of view. Phones also keep "hover" stuck after a tap, so
+   touch screens get no tilt at all — tiles and cards stay put.            */
+.holo-card:hover,
+.holo-card:active {
+  transform: perspective(1200px) translateY(-3px) translateZ(4px) !important;
+}
+@media (hover: none), (pointer: coarse) {
+  .holo-tile:hover,
+  .holo-tile:active,
+  .holo-card:hover,
+  .holo-card:active {
+    transform: perspective(1200px) translateY(-3px) translateZ(4px) !important;
+  }
+}
