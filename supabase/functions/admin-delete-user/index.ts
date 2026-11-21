@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
   if (getErr || !target?.user) return json({ error: "not_found", message: "That member no longer exists." }, 404);
   const email = (target.user.email || "").toLowerCase();
   // The owner must confirm the exact account, so a stale list can never delete the wrong person.
-  if (!email || confirmEmail !== email) return json({ error: "confirm_mismatch", message: "The email didn't match that member." }, 400);
+  // Accounts with no email (old guest sign-ins) are confirmed with their exact account ID instead.
+  if (confirmEmail !== (email || userId.toLowerCase())) return json({ error: "confirm_mismatch", message: "The email didn't match that member." }, 400);
 
   const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (isAdmin === true) return json({ error: "protected_account", message: "Admin accounts can't be deleted." }, 403);
