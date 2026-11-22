@@ -29,6 +29,7 @@ import {
   clampInterviewSeconds, type HostConfig, type HostBeat, type InterviewBeat,
 } from "@/lib/movieHost";
 import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 
 
@@ -229,7 +230,7 @@ const MovieStudio = ({ open, onOpenChange, seedImage, seedFrames, seedScript }: 
   // Scene-block billing (sliding scale; admin = free)
   const [blocksProduced, setBlocksProduced] = useState(0); // how many 10-scene blocks already paid/produced this session
   const [payingBlock, setPayingBlock] = useState(false);
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const isAdmin = isOwnerEmail(user?.email);
   // Sliding scale: block 1 = $5, block 2 = $10, blocks 3..20 = +$20 each (30,50,70..370), block 21+ = $1000
   const priceForBlockUSD = (n: number): number => {
     if (n <= 0) return 0;

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { needsGuidedUnlock } from "@/lib/oracleDiscovery";
 import { welcomeKey } from "@/lib/productionStages";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 /**
  * Root route: every visitor — signed in or not — flows straight into the
@@ -17,7 +18,7 @@ const Index = () => {
   useEffect(() => {
     if (loading) return;
     // New members meet Oracle first until they've seen her welcome.
-    const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+    const isOwner = isOwnerEmail(user?.email);
     const newMember = !!user && needsGuidedUnlock(user.created_at, isOwner) && !localStorage.getItem(welcomeKey(user.id));
     navigate(newMember ? "/oracle" : "/dashboard", { replace: true });
   }, [loading, navigate, user]);

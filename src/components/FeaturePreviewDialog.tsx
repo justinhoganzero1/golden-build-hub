@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { bounceIfNotProduction } from "@/lib/installRedirect";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 interface FeaturePreviewDialogProps {
   open: boolean;
@@ -20,7 +21,7 @@ const FeaturePreviewDialog = ({ open, onOpenChange, title, desc, icon: Icon, to 
   const navigate = useNavigate();
   const { user } = useAuth();
   const { subscribed } = useSubscription();
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const isAdmin = isOwnerEmail(user?.email);
   // Fully interactive only when logged in AND a paying member (or admin)
   const isInteractive = !!user && (subscribed || isAdmin);
   // One canonical Oracle: previews always show the real /oracle page, never a legacy stand-in.

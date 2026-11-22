@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 /**
  * Single source of truth for "is this user an admin?".
@@ -28,7 +28,7 @@ export function useIsAdmin() {
       const email = (user.email || "").trim().toLowerCase();
       // STRICT: require BOTH locked owner email AND a DB admin role row.
       // Email alone is never trusted. If either check fails, no admin UI.
-      if (email !== OWNER_EMAIL) {
+      if (!isOwnerEmail(email)) {
         if (!cancelled) { setIsAdmin(false); setLoading(false); }
         return;
       }

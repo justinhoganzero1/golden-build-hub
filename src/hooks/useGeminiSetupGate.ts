@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 // Accounts whose Google key is connected, so pages don't re-check.
 const doneFor = new Set<string>();
 // The owner never sees the step (keeps the owner dashboard one tap away).
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 export function markGeminiSetupDone(userId: string) {
   doneFor.add(userId);
@@ -19,7 +19,7 @@ export function useGeminiSetupGate() {
   useEffect(() => {
     let cancelled = false;
     if (authLoading) return;
-    const isOwner = (user?.email || "").trim().toLowerCase() === OWNER_EMAIL;
+    const isOwner = isOwnerEmail(user?.email);
     if (!user || isOwner || doneFor.has(user.id)) {
       setState({ loading: false, verifiedAt: user && !isOwner ? "done" : null, isOwner });
       return;

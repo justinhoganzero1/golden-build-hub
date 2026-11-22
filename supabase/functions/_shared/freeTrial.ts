@@ -6,6 +6,8 @@ import { collectMarks, findOtherTrial, rememberTrialMarks, TRIAL_USED_MESSAGE } 
 export const TRIAL_LIMITS = { image: 3, video: 1 } as const;
 export const TRIAL_VIDEO_SECONDS = 8;
 export const TRIAL_DAYS = 7;
+/** Free trial pictures/video gift. Off: trial members pay from their wallet (Option A). */
+export const TRIAL_GIFTS_ON = false;
 export type TrialKind = keyof typeof TRIAL_LIMITS;
 export type TrialBlock = "card_required" | "expired" | "used" | "duplicate";
 export type TrialOutcome = "paid" | "trial" | TrialBlock;
@@ -111,6 +113,10 @@ export async function trialDecision(admin: Admin, userId: string, kind: TrialKin
     blocked: start.blocked && !card,
   });
   if (gate !== "claim") return gate;
+  // Option A (Juzzy 2026-11-22): trial members pay for pictures/videos from their own wallet
+  // (provider cost + margin), so the owner never funds them. Flip TRIAL_GIFTS_ON to bring back
+  // the free trial allowance (TRIAL_LIMITS).
+  if (!TRIAL_GIFTS_ON) return "paid";
   const { data: claimed, error } = await admin.rpc("claim_free_trial", { _user_id: userId, _kind: kind });
   if (error) throw new Error(`trial check failed: ${error.message}`);
   return claimed ? "trial" : "used";

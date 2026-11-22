@@ -2,8 +2,8 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 /**
  * Hard gate for admin-only routes (e.g. /owner-dashboard, /admin/*).
@@ -30,7 +30,7 @@ const RequireAdmin = ({ children }: { children: ReactNode }) => {
       if (!user) { if (!cancelled) setState("deny"); return; }
 
       const email = (user.email || "").trim().toLowerCase();
-      if (email !== OWNER_EMAIL) { if (!cancelled) setState("deny"); return; }
+      if (!isOwnerEmail(email)) { if (!cancelled) setState("deny"); return; }
 
       try {
         const { data, error } = await supabase

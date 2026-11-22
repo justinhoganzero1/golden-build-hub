@@ -103,6 +103,7 @@ import { handleAccessReply } from "@/lib/aiAccessEvents";
 import { discoveryNote, loadUnlocks, modulesForText, moduleForPath, needsGuidedUnlock, unlockMarkers, unlockPaths, type DiscoverableModule } from "@/lib/oracleDiscovery";
 import { getActiveAgent, recordAgentReply } from "@/lib/chatAgents";
 import { formatWebAnswer } from "@/lib/oracleWeb";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 const FRIENDS_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-friends-chat`;
 const ORACLE_CODER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-coder`;
 
@@ -287,7 +288,7 @@ const OraclePage = () => {
   useEffect(() => { if (user?.id && !localStorage.getItem(welcomeKey(user.id))) setWelcomeOpen(true); }, [user?.id]);
   const closeWelcome = () => { if (user?.id) localStorage.setItem(welcomeKey(user.id), "1"); setWelcomeOpen(false); };
   // New members unlock apps as Oracle introduces them; older members see everything.
-  const guidedUnlock = needsGuidedUnlock(user?.created_at, user?.email?.toLowerCase() === "justinbretthogan@gmail.com");
+  const guidedUnlock = needsGuidedUnlock(user?.created_at, isOwnerEmail(user?.email));
   const announceUnlocked = (mods: DiscoverableModule[]) => {
     for (const m of mods) toast.success(`Unlocked: ${m.label}`, { action: { label: "Open", onClick: () => navigate(m.path) } });
   };
@@ -389,7 +390,7 @@ const OraclePage = () => {
   }, []);
   const [uploading, setUploading] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
-  const isOwner = user?.email?.toLowerCase() === "justinbretthogan@gmail.com";
+  const isOwner = isOwnerEmail(user?.email);
 
   // Finish videos that were still filming when the member last left Oracle.
   // Only polls the saved job (no new generation); the server files it in the Library.
@@ -703,7 +704,7 @@ const OraclePage = () => {
         const { supabase } = await import("@/integrations/supabase/client");
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        if (user.email?.toLowerCase() === "justinbretthogan@gmail.com") { setUsage(null); return; }
+        if (isOwnerEmail(user.email)) { setUsage(null); return; }
         const today = new Date().toISOString().slice(0, 10);
         const { data } = await supabase
           .from("oracle_chat_usage")
@@ -1994,7 +1995,7 @@ const OraclePage = () => {
     // Free plan after the 7-day trial: the server answers plan_required and Oracle replies kindly
     // with the upgrade offer (see the oracle-chat reply handling below). During the trial, Free
     // members chat with her full knowledge on their own Gemini key.
-    const freePlanReply = (reason: "trial_over" | "key_out" = "trial_over") => {
+    const freePlanReply = (reason: "trial_over" | "key_out" | "no_key" = "trial_over") => {
       // Simple scripted Oracle (no AI, no cost): still opens free pages like the calendar or Library.
       const { reply, path } = scriptedOracleReply(text, reason);
       // The member's own message is already on screen by the time the server answers.
@@ -2570,6 +2571,8 @@ const OraclePage = () => {
           if (!isIntroTrigger) setInput(text);
           // Google key out of credit: Oracle keeps going in her simple free mode until it's topped up.
           if (!isIntroTrigger && err?.error === "gemini_key_problem" && err?.reason === "quota") freePlanReply("key_out");
+          // No key yet (it's optional at sign-up now): Oracle still answers simply and offers the key.
+          if (!isIntroTrigger && err?.error === "gemini_key_required") freePlanReply("no_key");
           setIsLoading(false);
           return;
         }

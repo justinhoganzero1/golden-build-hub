@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import UniversalBackButton from "@/components/UniversalBackButton";
 import { TrendingUp, DollarSign, Mail, User, Send, Trash2, Check, X, MessageSquare, Clock, Star, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 interface Offer {
   id: string;
@@ -22,7 +22,7 @@ interface Offer {
 
 const InvestorPage = () => {
   const { user } = useAuth();
-  const isOwner = user?.email === OWNER_EMAIL;
+  const isOwner = isOwnerEmail(user?.email);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

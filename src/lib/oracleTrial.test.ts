@@ -38,3 +38,12 @@ describe("after the trial Oracle falls back to simple scripted help", () => {
     expect(scriptedOracleReply("explain gravity", "key_out").reply).toMatch(/Google key/);
   });
 });
+
+describe("members without a Google key yet", () => {
+  it("Oracle offers the optional key instead of going silent", () => {
+    expect(scriptedOracleReply("explain gravity", "no_key").reply).toMatch(/Google key/);
+  });
+  it("still opens free pages without a key", () => {
+    expect(scriptedOracleReply("open my calendar", "no_key").path).toBe("/calendar");
+  });
+});

@@ -11,6 +11,7 @@ import {
   Zap, Snowflake, Flame, Camera, Aperture, Wind, Star, Download, Save, X, Undo2,
   Redo2, Crop, Type, Smile, Trees, Building, Heart, Moon, Box
 } from "lucide-react";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 const Photo3DViewer = lazy(() => import("./Photo3DViewer"));
 
@@ -65,7 +66,7 @@ const FILTER_PRESETS = [
 
 const PhotoEditStudio = ({ open, onOpenChange, imageUrl, onSave }: PhotoEditStudioProps) => {
   const { user } = useAuth();
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const isAdmin = isOwnerEmail(user?.email);
   const [tab, setTab] = useState<Tab>("ai");
   const [history, setHistory] = useState<string[]>([imageUrl]);
   const [historyIndex, setHistoryIndex] = useState(0);

@@ -15,6 +15,7 @@ import MediaPickerDialog from "@/components/MediaPickerDialog";
 import SelfieCaptureDialog from "@/components/SelfieCaptureDialog";
 import { downloadFileFromUrl } from "@/lib/utils";
 import { openCheckoutGlobal } from "@/components/payments/CheckoutProvider";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 const STYLES = [
   { value: "3d-4k-realistic", label: "3D 4K Realistic", desc: "Ultra-realistic 3D 4K cinematic render" },
@@ -70,8 +71,7 @@ const AvatarGeneratorPage = () => {
   const setMaster = useSetMasterAvatar();
 
   // Owner detection — only the app owner can create R/X rated avatars
-  const OWNER_EMAIL = "justinbretthogan@gmail.com";
-  const isOwner = user?.email === OWNER_EMAIL;
+  const isOwner = isOwnerEmail(user?.email);
 
   const [selectedStyle, setSelectedStyle] = useState("3d-4k-realistic");
   const [prompt, setPrompt] = useState("");

@@ -45,15 +45,19 @@ const FREE_PAGES: { words: RegExp; path: string; reply: string }[] = [
 ];
 
 export type ScriptedReply = { reply: string; path?: string };
+export type ScriptedReason = "trial_over" | "key_out" | "no_key";
 
 /** Oracle's simple, free fallback replies — no AI, no cost. */
-export function scriptedOracleReply(text: string, reason: "trial_over" | "key_out" = "trial_over"): ScriptedReply {
+export function scriptedOracleReply(text: string, reason: ScriptedReason = "trial_over"): ScriptedReply {
   const t = text.trim();
   for (const page of FREE_PAGES) if (page.words.test(t)) return { reply: page.reply, path: page.path };
   if (/^(hi|hello|hey|g'?day|good (morning|afternoon|evening)|howdy)\b/i.test(t)) {
     return { reply: "Hello, lovely! I'm still right here. I can open your calendar, Library, alarm clock and safety pages for you." };
   }
   if (/\b(thank|thanks|ta|cheers)\b/i.test(t)) return { reply: "Anytime, love. That's what I'm here for." };
+  if (reason === "no_key") {
+    return { reply: "I'd love to chat properly with you! My full brain runs on your own free Google key, and I can walk you through connecting it in about two minutes. Until then I can open your calendar, Library, alarm clock and safety pages." };
+  }
   return reason === "key_out"
     ? { reply: "My thinking power has run out on your Google key, so I'm keeping things simple until it has credit again. I can still open your calendar, Library and safety pages." }
     : { reply: "I'd love to chat properly with you! Your 7-day free trial has finished, and my full brain is part of Plus now. I can still open your calendar, Library, alarm clock and safety pages for free." };

@@ -19,6 +19,7 @@ import { downloadFileFromUrl, isLowPowerMobile } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import FeaturedPhotoPicker from "@/components/admin/FeaturedPhotoPicker";
 import { Drill } from "@/components/admin/DrillDown";
+import { isOwnerEmail as matchesOwnerEmail } from "@/lib/ownerIdentity";
 
 /** When country-aware visit tracking began; older landing visits come from the earlier counter. */
 const VISITOR_CUTOVER = "2026-11-12T12:00:00Z";
@@ -220,10 +221,9 @@ const OwnerDashboardPage = () => {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Hardened admin gate:
-  // 1) Hard email allowlist — ONLY justinbretthogan@gmail.com is permitted, no matter what.
+  // 1) Hard email allowlist — ONLY the owner email is permitted, no matter what.
   // 2) Wait for auth restoration before rendering admin-only panels.
-  const ADMIN_EMAIL = "justinbretthogan@gmail.com";
-  const isOwnerEmail = ((user?.email || "").trim().toLowerCase() === ADMIN_EMAIL);
+  const isOwnerEmail = matchesOwnerEmail(user?.email);
   const hasAdminAccess = isOwnerEmail || isAdmin;
   useEffect(() => {
     if (loading || adminLoading || !isReady) return;
@@ -235,7 +235,7 @@ const OwnerDashboardPage = () => {
 
     // Hard email allowlist — block anyone else immediately, even if RBAC ever leaks.
     const email = (user.email || "").trim().toLowerCase();
-    if (email !== ADMIN_EMAIL) {
+    if (!matchesOwnerEmail(email)) {
       supabase.auth.signOut().finally(() => {
         toast.error("Admin access denied.");
         navigate("/sign-in?redirect=/owner-dashboard&force=1", { replace: true });

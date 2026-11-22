@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { needsBirthdayStep, signedInWithGoogle } from "@/lib/birthdayGate";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 // Remembers per account whether the birthday step is done, so pages don't re-check.
 const doneFor = new Set<string>();
 // The owner account never sees the step (keeps the owner dashboard one tap away).
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 export function markBirthdayDone(userId: string) {
   doneFor.add(userId);
@@ -20,7 +20,7 @@ export function useBirthdayGate() {
   useEffect(() => {
     let cancelled = false;
     if (authLoading) return;
-    const isOwner = (user?.email || "").trim().toLowerCase() === OWNER_EMAIL;
+    const isOwner = isOwnerEmail(user?.email);
     if (!user || isOwner || doneFor.has(user.id) || !signedInWithGoogle(user)) {
       setState({ loading: false, needed: false });
       return;

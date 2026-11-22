@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
 import LowPowerToggle from "@/components/LowPowerToggle";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 interface PairedDevice {
   id: string;
@@ -396,7 +397,7 @@ const SettingsPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    setIsAdmin(user?.email === "justinbretthogan@gmail.com");
+    setIsAdmin(isOwnerEmail(user?.email));
   }, [user]);
 
   // Persist non-theme settings

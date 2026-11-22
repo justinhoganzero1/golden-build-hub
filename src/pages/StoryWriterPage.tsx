@@ -51,6 +51,7 @@ import {
   STORY_CHAPTER_MAX_WORDS,
   validateRewrittenBook,
 } from "@/lib/storyRewrite";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 
 
@@ -111,7 +112,7 @@ const StoryWriterPage = () => {
   const qc = useQueryClient();
   const [params] = useSearchParams();
   const { tier } = useSubscription();
-  const isAdmin = user?.email === "justinbretthogan@gmail.com";
+  const isAdmin = isOwnerEmail(user?.email);
   const canPublish = isAdmin || hasAccess(tier, "monthly");
 
   const [story, setStory] = useState<StoryDoc>({

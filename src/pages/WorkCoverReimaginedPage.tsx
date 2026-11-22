@@ -30,10 +30,10 @@ const SEED: Case[] = [
   {
     id: "WC-24-1031", worker: "Sam Taylor", age: 41, occupation: "Forklift operator", employer: "Riverbend Logistics (fictional)",
     injury: "Lower back strain lifting pallets", injuryDate: daysFrom(-62), status: "Active", capacity: "Suitable duties, no lifting over 5 kg, 4 hrs/day",
-    doctor: "Dr A. Nguyen", manager: "J. Hogan", weeklyCents: 98400, rtwHours: 4,
+    doctor: "Dr A. Nguyen", manager: "J. Harper", weeklyCents: 98400, rtwHours: 4,
     tasks: [
-      { id: "T-1", title: "Call worker about physio progress", owner: "J. Hogan", due: daysFrom(-3), status: "open" },
-      { id: "T-2", title: "Confirm suitable duties with employer", owner: "J. Hogan", due: daysFrom(2), status: "open" },
+      { id: "T-1", title: "Call worker about physio progress", owner: "J. Harper", due: daysFrom(-3), status: "open" },
+      { id: "T-2", title: "Confirm suitable duties with employer", owner: "J. Harper", due: daysFrom(2), status: "open" },
     ],
     docs: [
       { id: "C-1", kind: "certificate", title: "Work capacity certificate #3", date: daysFrom(-30), expires: daysFrom(-2), capacity: "4 hrs/day, no lifting > 5 kg" },
@@ -49,8 +49,8 @@ const SEED: Case[] = [
   {
     id: "WC-24-1088", worker: "Priya Raman", age: 29, occupation: "Aged care nurse", employer: "Sunrise Care Homes (fictional)",
     injury: "Shoulder injury assisting resident transfer", injuryDate: daysFrom(-21), status: "New", capacity: "No capacity for 2 weeks",
-    doctor: "Dr B. Collins", manager: "J. Hogan", weeklyCents: 112000, rtwHours: 0,
-    tasks: [{ id: "T-3", title: "Initial contact with worker within 3 business days", owner: "J. Hogan", due: daysFrom(1), status: "open" }],
+    doctor: "Dr B. Collins", manager: "J. Harper", weeklyCents: 112000, rtwHours: 0,
+    tasks: [{ id: "T-3", title: "Initial contact with worker within 3 business days", owner: "J. Harper", due: daysFrom(1), status: "open" }],
     docs: [{ id: "C-2", kind: "certificate", title: "Work capacity certificate #1", date: daysFrom(-20), expires: daysFrom(5), capacity: "No capacity" }],
     expenses: [{ id: "E-4", provider: "Northside GP", invoice: "NG-14", cents: 8900, serviceDate: daysFrom(-20), receipt: true }],
     notes: [],
@@ -58,8 +58,8 @@ const SEED: Case[] = [
   {
     id: "WC-23-0977", worker: "Lena Brooks", age: 52, occupation: "Retail team leader", employer: "Harbour Fresh Market (fictional)",
     injury: "Wrist fracture from slip on wet floor", injuryDate: daysFrom(-120), status: "Return to work", capacity: "Full hours, light duties",
-    doctor: "Dr C. Patel", manager: "J. Hogan", weeklyCents: 0, rtwHours: 7.6,
-    tasks: [{ id: "T-4", title: "Final review meeting", owner: "J. Hogan", due: daysFrom(9), status: "open" }],
+    doctor: "Dr C. Patel", manager: "J. Harper", weeklyCents: 0, rtwHours: 7.6,
+    tasks: [{ id: "T-4", title: "Final review meeting", owner: "J. Harper", due: daysFrom(9), status: "open" }],
     docs: [{ id: "C-3", kind: "certificate", title: "Work capacity certificate #6", date: daysFrom(-7), expires: daysFrom(21), capacity: "Full hours, light duties" }],
     expenses: [],
     notes: [{ at: daysFrom(-7), text: "Back at work full hours. Very positive." }],

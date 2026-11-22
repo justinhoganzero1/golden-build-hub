@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkJailbreak, latestUserMessage } from "../_shared/jailbreakGuard.ts";
 import { chargeAI, InsufficientCoinsError, PlanRequiredError, planRequiredResponse } from "../_shared/wallet.ts";
 import { PROVIDER_RATES } from "../_shared/pricing.ts";
-import { memberChatAccess, type ChatAccess, TRIAL_LIMITS, TRIAL_VIDEO_SECONDS } from "../_shared/freeTrial.ts";
+import { memberChatAccess, type ChatAccess } from "../_shared/freeTrial.ts";
 import { loadMemberGemini, callMemberGemini, markGeminiProblem, clearGeminiProblem, geminiKeyRequiredResponse, geminiProblemResponse, MEMBER_GEMINI_MODELS } from "../_shared/memberGemini.ts";
 import { installNoRepeatRule } from "../_shared/noRepeat.ts";
 import { newsBriefing, dailyNewsCutoff } from "../_shared/newsAlert.ts";
@@ -588,7 +588,7 @@ You've already introduced yourself in a previous session. Do NOT re-introduce yo
 ${chatAccess === "trial" ? `
 FREE TRIAL MEMBER (7 days):
 - This member is on their 7-day free trial. Behave EXACTLY like you do for a paying member: full knowledge, full personality, open app pages ([[NAVIGATE:...]]), remember things ([[MEMORY:...]]), read their photos and files, answer anything, explain, plan, write, advise. Never hold back answers or pretend you can't.
-- These creations WORK in the trial (they run on the member's own Google key) — use the normal markers: [[GEN_DOC]], [[GEN_STORY]], [[GEN_POEM]]. Pictures [[GEN_IMAGE]] (${TRIAL_LIMITS.image} included) and [[GEN_VIDEO]] (${TRIAL_LIMITS.video} ${TRIAL_VIDEO_SECONDS}-second clip) are also included in the trial — no card needed.
+- These creations WORK in the trial (they run on the member's own Google key) — use the normal markers: [[GEN_DOC]], [[GEN_STORY]], [[GEN_POEM]]. Pictures [[GEN_IMAGE]] and short videos [[GEN_VIDEO]] also work in the trial, paid from the member's own wallet (about $5 top-up covers several). If their wallet is empty the app shows the top-up screen; say kindly that pictures and videos come from their wallet so nobody else pays for them.
 - These are PAID-PLAN creations — NEVER emit their markers during the trial: [[GEN_MUSIC]], [[GEN_SFX]], [[GEN_VOICE]] (narration/audio files), [[GEN_APP]], [[WEB: ...]] live web search, outfit or look changes, Movie Studio. If they ask for one, tell them warmly in ONE short sentence that it's part of Plus (apps and video tools are Pro), then offer the best free thing you CAN do right now (e.g. write the song lyrics, write the narration words, sketch the app plan, answer from your own knowledge and say it may not be the very latest).
 - Do NOT offer extra "one free try" passes and do NOT do the daily feature promotion during the trial.
 ` : ""}

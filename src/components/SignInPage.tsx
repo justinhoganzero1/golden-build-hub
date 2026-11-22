@@ -9,6 +9,7 @@ import { trackAiDiscovery } from "@/lib/aiDiscovery";
 import officeBackdrop from "@/assets/oracle-office-empty.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { PUBLIC_ORIGIN } from "@/lib/installRedirect";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
 // Simple human check for sign-up: a random maths question. No external
 // service or keys needed — bots that auto-fill forms trip on this.
@@ -50,7 +51,6 @@ const SignInPage = () => {
   const requestedSignUp = searchParams.get("mode") === "signup";
   const [isSignUp, setIsSignUp] = useState(requestedSignUp);
   const isOwnerAccess = redirectPath === "/owner-dashboard" || redirectPath.startsWith("/owner-dashboard?");
-  const ownerEmail = "justinbretthogan@gmail.com";
   const [showHelp, setShowHelp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [humanCheck, setHumanCheck] = useState(newHumanCheck);
@@ -68,7 +68,7 @@ const SignInPage = () => {
 
   useEffect(() => {
     if (authLoading || !user) return;
-    const isOwner = (user.email || "").trim().toLowerCase() === ownerEmail;
+    const isOwner = isOwnerEmail(user.email);
     const requestedAdmin = redirectPath.startsWith("/owner-dashboard") || redirectPath.startsWith("/admin");
     // Non-owners may NOT visit admin routes — bounce to user dashboard.
     // Owners may visit ANY route, including the regular user dashboard. Only
@@ -90,9 +90,8 @@ const SignInPage = () => {
       nextPath = cameFromOwnerLink ? "/owner-dashboard" : redirectPath;
     }
     navigate(nextPath, { replace: true });
-  }, [authLoading, user, ownerEmail, redirectPath, navigate, isOwnerAccess, fromPath, searchParams]);
+  }, [authLoading, user, redirectPath, navigate, isOwnerAccess, fromPath, searchParams]);
 
-  useEffect(() => { if (isOwnerAccess) setEmail(ownerEmail); }, [isOwnerAccess, ownerEmail]);
 
   useEffect(() => {
     if (isOwnerAccess) return;
@@ -109,7 +108,7 @@ const SignInPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isOwnerAccess && email.trim().toLowerCase() !== ownerEmail) {
+    if (isOwnerAccess && !isOwnerEmail(email)) {
       toast.error("Owner access only accepts the approved admin email.");
       return;
     }
@@ -368,7 +367,7 @@ const SignInPage = () => {
                   <li>Check your inbox (and spam) for the confirmation email.</li>
                 </ul>
                 <p className="pt-1">
-                  Still stuck? Email <a href="mailto:justinbretthogan@gmail.com" className="text-primary hover:underline">justinbretthogan@gmail.com</a>.
+                  Still stuck? Email <a href="mailto:support@oracle-lunar.online" className="text-primary hover:underline">support@oracle-lunar.online</a>.
                 </p>
               </div>
             )}

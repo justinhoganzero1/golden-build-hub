@@ -6,8 +6,8 @@ import UniversalBackButton from "@/components/UniversalBackButton";
 import StripeConnectPanel from "@/components/StripeConnectPanel";
 import { Code, User, Mail, Send, Trash2, MessageSquare, Sparkles, Globe, Smartphone, Shield, Brain, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { isOwnerEmail } from "@/lib/ownerIdentity";
 
-const OWNER_EMAIL = "justinbretthogan@gmail.com";
 
 interface Comment {
   id: string;
@@ -30,7 +30,7 @@ const skills = [
 
 const CreatorsPage = () => {
   const { user } = useAuth();
-  const isOwner = user?.email === OWNER_EMAIL;
+  const isOwner = isOwnerEmail(user?.email);
   const [comments, setComments] = useState<Comment[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
