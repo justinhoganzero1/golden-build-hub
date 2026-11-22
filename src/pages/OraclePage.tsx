@@ -2568,7 +2568,7 @@ const OraclePage = () => {
         }
         // Gemini key not connected or refused by Google: the key pop-up explains the fix.
         if (handleAccessReply(err)) {
-          if (!isIntroTrigger) setInput(text);
+          if (!isIntroTrigger && err?.error !== "gemini_key_required") setInput(text);
           // Google key out of credit: Oracle keeps going in her simple free mode until it's topped up.
           if (!isIntroTrigger && err?.error === "gemini_key_problem" && err?.reason === "quota") freePlanReply("key_out");
           // No key yet (it's optional at sign-up now): Oracle still answers simply and offers the key.
