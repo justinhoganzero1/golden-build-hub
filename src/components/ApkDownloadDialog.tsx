@@ -38,6 +38,11 @@ type Phase = "intro" | "guide" | "result" | "help";
 /** What Android said when the install failed, with the fix for each. */
 export const INSTALL_PROBLEMS = [
   {
+    key: "auto_blocker",
+    message: '"Blocked by Auto Blocker" (Samsung phones)',
+    fix: "Samsung's Auto Blocker stops apps that aren't from the Play Store or Galaxy Store. Open Settings → Security and privacy → Auto Blocker → turn it Off (you may need your PIN or fingerprint). Then open oracle-lunar.apk from Downloads again. You can turn Auto Blocker back on once Oracle Lunar is installed.",
+  },
+  {
     key: "not_installed",
     message: '"App not installed"',
     fix: "An older Oracle Lunar is in the way. Press and hold the Oracle Lunar icon → Uninstall (this only removes the old app; your account and Library stay safe online). Then open oracle-lunar.apk from Downloads again.",
@@ -61,6 +66,11 @@ export const INSTALL_PROBLEMS = [
 
 const STEPS = [
   {
+    key: "auto_blocker",
+    title: "Samsung phone? Turn off Auto Blocker first",
+    body: 'Samsung phones block apps that aren\'t from the Play Store. Open Settings → Security and privacy → Auto Blocker → turn it Off. You can switch it back on after Oracle Lunar is installed. Not a Samsung? Skip this step.',
+  },
+  {
     key: "download",
     title: "Let the download finish",
     body: 'A bar appears at the bottom of the screen. If it says "File might be harmful", tap Download anyway. Wait until it says Open (about 19 MB — under a minute on Wi-Fi).',
@@ -81,6 +91,17 @@ const STEPS = [
     body: 'You may see "Play Protect doesn\'t recognise this app" → tap More details → Install anyway. We are safe.',
   },
 ] as const;
+
+/** Samsung's Auto Blocker stops every app from outside the stores, before Android's own prompt appears. */
+const AutoBlockerCard = () => (
+  <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 space-y-1" data-testid="auto-blocker-card">
+    <p className="font-semibold text-sm text-foreground">Samsung phone? Turn off Auto Blocker first</p>
+    <p className="text-xs text-muted-foreground">
+      If it says <b className="text-foreground">"Blocked by Auto Blocker"</b>, open <b className="text-foreground">Settings → Security and privacy → Auto Blocker</b> and
+      turn it <b className="text-foreground">Off</b>. Then open oracle-lunar.apk from Downloads again. You can switch it back on after installing.
+    </p>
+  </div>
+);
 
 /** Picture of Android's block message with the right button circled. */
 const TapSettingsCard = () => (
@@ -208,6 +229,7 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
               </div>
             </div>
 
+            <AutoBlockerCard />
             <TapSettingsCard />
 
             {!onAndroid && (
@@ -320,14 +342,14 @@ const ApkDownloadDialog = ({ open, onOpenChange, downloadStarted = false }: ApkD
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
-              {stepIdx <= 1 && apkReady && (
+              {stepIdx <= 2 && apkReady && (
                 <Button variant="outline" onClick={() => { trackInstallEvent("download_start", "android", "retry"); setDownloading(true); }}>
                   <Download className="h-4 w-4 mr-1.5" />
                   Download again
                 </Button>
               )}
               <Button onClick={completeStep} className="bg-primary hover:bg-primary/90">
-                {stepIdx >= STEPS.length - 1 ? "I'm installed" : stepIdx === 0 ? "It finished — next" : "I did this — next"}
+                {stepIdx >= STEPS.length - 1 ? "I'm installed" : stepIdx === 0 ? "Done or not Samsung — next" : stepIdx === 1 ? "It finished — next" : "I did this — next"}
               </Button>
             </>
           )}
