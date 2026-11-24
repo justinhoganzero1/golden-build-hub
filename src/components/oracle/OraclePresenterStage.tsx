@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import fitnessIdleClip from "@/assets/fitness/fitness-idle-glance.mp4.asset.json";
+import studioPortraitUrl from "@/assets/avatars/oracle-studio-portrait.jpg";
+import studioIdleClip from "@/assets/avatars/oracle-studio-idle.mp4.asset.json";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import blushOverlay from "@/assets/avatars/oracle-blush.png";
 import blushClipOverlay from "@/assets/avatars/oracle-blush-clip.png";
@@ -98,8 +100,9 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   // original outfit); a generated reply video still plays on top.
   // The bundled workout outfit has its own filmed silent waiting loop.
   const fitnessLook = !!image && image.includes(fitnessOutfitUrl);
+  const studioLook = !!image && image.includes(studioPortraitUrl);
   const plan: ClipPlan | null = image
-    ? (replyVideoUrl ? { url: replyVideoUrl, audible: true, loop: false } : fitnessLook ? { url: fitnessIdleClip.url, audible: false, loop: true } : null)
+    ? (replyVideoUrl ? { url: replyVideoUrl, audible: true, loop: false } : fitnessLook ? { url: fitnessIdleClip.url, audible: false, loop: true } : studioLook ? { url: studioIdleClip.url, audible: false, loop: true } : null)
     : replyVideoUrl
       ? { url: replyVideoUrl, audible: true, loop: false }
       : cue

@@ -58,3 +58,7 @@ it2("workout gear request changes instantly", () => {
   ex2(p2("change your outfit")?.kind).toBe("ask");
   ex2(p2("wear a red dress")?.kind).toBe("describe");
 });
+
+it2("fitness mode phrasing switches to workout outfit", () => {
+  for (const t of ["fitness mode", "go into fitness instructor mode", "let's work out", "put on your workout gear"]) ex2(p2(t)).toEqual({ kind: "fitness" });
+});

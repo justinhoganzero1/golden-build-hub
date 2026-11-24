@@ -45,7 +45,7 @@ import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSo
 import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
-import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
+import studioPortraitUrl from "@/assets/avatars/oracle-studio-portrait.jpg";
 import fitnessStudioUrl from "@/assets/fitness/fitness-studio-empty.jpg";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
@@ -1286,7 +1286,7 @@ const OraclePage = () => {
     try {
       if (!portraitDataRef.current) {
         // Premium talking clips wear the member's chosen outfit when one is set.
-        const res = await fetch(outfitRef.current?.url || lookRef.current?.url || oraclePortraitUrl);
+        const res = await fetch(outfitRef.current?.url || lookRef.current?.url || studioPortraitUrl);
         const blob = await res.blob();
         portraitDataRef.current = await new Promise<string>((resolve, reject) => {
           const fr = new FileReader();
@@ -3306,7 +3306,7 @@ const OraclePage = () => {
   return <>
     <SEO title="Oracle Lunar — Your AI companion" description="Your Oracle Lunar companion, saved creations and connected tools in one private workspace." path="/oracle" />
     <main className="oracle-call h-[100dvh] flex flex-col relative overflow-hidden bg-background">
-      <OraclePresenterStage userId={user?.id} image={outfit?.url || look?.url} standbyUrl={standby ? standbyLoop.url : undefined} blush={blush} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
+      <OraclePresenterStage userId={user?.id} image={outfit?.url || look?.url || studioPortraitUrl} standbyUrl={standby ? standbyLoop.url : undefined} blush={blush} state={replyVideoUrl ? "speaking" : videoReplyPending ? "thinking" : isSpeaking ? "speaking" : isLoading ? "thinking" : isListening ? "listening" : "idle"} cue={presenterCue} onCueDone={() => setPresenterCue(null)} replyVideoUrl={replyVideoUrl} onReplyVideoDone={() => setReplyVideoUrl(null)} />
       <header className="oracle-header relative z-10 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="font-semibold text-foreground">Oracle <span className="font-normal text-primary">Lunar</span></h1>
