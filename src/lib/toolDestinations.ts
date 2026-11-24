@@ -49,7 +49,7 @@ export const SEO_TOOL_DESTINATIONS: Record<string, string> = {
   "/ai-relationship-advice": askOracle("I'd love some relationship advice about "),
   "/ai-cooking-assistant": askOracle("Give me an easy recipe using "),
   "/ai-travel-planner": askOracle("Plan me a trip to "),
-  "/ai-fitness-coach-free": askOracle("Make me a simple workout plan. My goal is "),
+  "/ai-fitness-coach-free": "/fitness-coach",
   "/ai-investor-pitch": askOracle("Help me write a short investor pitch for my idea: "),
 };
 

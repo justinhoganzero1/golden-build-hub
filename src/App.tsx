@@ -40,6 +40,7 @@ const loaders = {
   "/welcome": () => import("./pages/WelcomePage"),
   "/dashboard": () => import("./pages/DashboardPage"),
   "/mind-hub": () => import("./pages/MindHubPage"),
+  "/fitness-coach": () => import("./pages/FitnessCoachPage"),
   "/crisis-hub": () => import("./pages/CrisisHubPage"),
   "/vault": () => import("./pages/VaultPage"),
   "/oracle": () => import("./pages/OraclePage"),
@@ -206,6 +207,7 @@ const RootRoute = () => {
 };
 const MembershipPage = lazy(() => import("./pages/MembershipPage"));
 const MindHubPage = lazy(loaders["/mind-hub"]);
+const FitnessCoachPage = lazy(loaders["/fitness-coach"]);
 const CrisisHubPage = lazy(loaders["/crisis-hub"]);
 const VaultPage = lazy(loaders["/vault"]);
 const OraclePage = lazy(loaders["/oracle"]);
@@ -401,6 +403,7 @@ const OracleApp = () => (
                   <Route path="/news" element={<ErrorBoundary pageName="Oracle News"><NewsPublicPage /></ErrorBoundary>} />
                   <Route path="/news/:id" element={<ErrorBoundary pageName="Oracle News story"><NewsPublicPage /></ErrorBoundary>} />
                   <Route path="/demo/:token" element={<ErrorBoundary pageName="Client demo"><PitchDemoPage /></ErrorBoundary>} />
+                  <Route path="/fitness-coach" element={<RequireAuth><ErrorBoundary pageName="Fitness Coach"><FitnessCoachPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/mind-hub" element={<RequireAuth><ErrorBoundary pageName="Mind Hub"><MindHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/crisis-hub" element={<RequireAuth freeAccess><ErrorBoundary pageName="Crisis Hub"><CrisisHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/vault" element={<RequireAuth><ErrorBoundary pageName="Vault"><VaultPage /></ErrorBoundary></RequireAuth>} />
