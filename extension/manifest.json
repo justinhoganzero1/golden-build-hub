@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Oracle Lunar",
+  "version": "1.0.0",
+  "description": "Ask Oracle, your AI best friend, from Google search and your toolbar.",
+  "action": { "default_popup": "popup.html", "default_icon": "icon.png" },
+  "icons": { "48": "icon.png", "128": "icon.png" },
+  "content_scripts": [{ "matches": ["https://www.google.com/search*", "https://www.google.com.au/search*"], "js": ["content.js"] }]
+}

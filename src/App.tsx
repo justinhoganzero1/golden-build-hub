@@ -284,6 +284,8 @@ const EbookCoverStudioPage = lazy(() => import("./pages/EbookCoverStudioPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const TrialCardPage = lazy(() => import("./pages/TrialCardPage"));
 const AiKeySetupPage = lazy(() => import("./pages/AiKeySetupPage"));
+const ChatGptViewerPage = lazy(() => import("./pages/ChatGptViewerPage"));
+const ChromeExtensionPage = lazy(() => import("./pages/ChromeExtensionPage"));
 const ChatHistoryImportPage = lazy(() => import("./pages/ChatHistoryImportPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
@@ -386,6 +388,8 @@ const OracleApp = () => (
                   <Route path="/" element={<ErrorBoundary pageName="Root"><RootRoute /></ErrorBoundary>} />
                   <Route path="/index" element={<Navigate to="/" replace />} />
                   {/* Always shows the public store-style website, even when signed in or opened from the installed app. */}
+                  <Route path="/chatgpt-viewer" element={<ErrorBoundary pageName="ChatGPT Viewer"><ChatGptViewerPage /></ErrorBoundary>} />
+                  <Route path="/chrome-extension" element={<ErrorBoundary pageName="Chrome Extension"><ChromeExtensionPage /></ErrorBoundary>} />
                   <Route path="/download" element={<ErrorBoundary pageName="App Store Listing"><AppStorePage /></ErrorBoundary>} />
                   <Route path="/website" element={<ErrorBoundary pageName="Portal"><PortalLandingPage /></ErrorBoundary>} />
                   <Route path="/welcome" element={<RequireAuth><ErrorBoundary pageName="Welcome"><WelcomePage /></ErrorBoundary></RequireAuth>} />

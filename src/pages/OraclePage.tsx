@@ -1,3 +1,4 @@
+import { isChatExportFile, setPendingChatImport } from "@/lib/pendingChatImport";
 import { generateMemberVideo, VideoPendingError } from "@/lib/videoGeneration";
 import { uploadCreationFile, rememberPendingVideo, listPendingVideos, forgetPendingVideo } from "@/lib/oracleCreationFiles";
 import { getEdgeAuthTokenSync, getEdgeAuthToken, requireEdgeAuthToken, EdgeSessionRequiredError } from "@/lib/edgeAuth";
@@ -443,6 +444,7 @@ const OraclePage = () => {
     const file = e.target.files?.[0];
     if (e.target) e.target.value = "";
     if (!file) return;
+    if (isChatExportFile(file)) { setPendingChatImport(file); navigate("/memory-import"); return; }
     if (file.size > 1024 * 1024 * 1024) { toast.error("File too large (max 1 GB)"); return; }
     setUploading(true);
     try {
@@ -3366,7 +3368,7 @@ const OraclePage = () => {
           />
           </OracleToolsMenu>
           } />
-        <input ref={uploadInputRef} type="file" accept="image/*,video/*,audio/*,application/pdf,text/*,.doc,.docx,.txt,.md,.json,.csv" className="hidden" onChange={handleUpload} />
+        <input ref={uploadInputRef} type="file" accept="image/*,video/*,audio/*,application/pdf,text/*,.zip,application/zip,.doc,.docx,.txt,.md,.json,.csv" className="hidden" onChange={handleUpload} />
       </div>
       <Dialog open={voiceOptionsOpen} onOpenChange={setVoiceOptionsOpen}><DialogContent className="oracle-settings">
         <DialogTitle>Oracle settings</DialogTitle>

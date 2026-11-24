@@ -12,6 +12,7 @@ import {
   guessSource, parseExportFile, toImportRows, wantedZipEntry,
   type ImportedConversation, type ImportSource,
 } from "@/lib/chatHistoryImport";
+import { takePendingChatImport } from "@/lib/pendingChatImport";
 
 const LABEL: Record<ImportSource, string> = { chatgpt: "ChatGPT", gemini: "Gemini" };
 const BATCH = 400;
@@ -49,8 +50,9 @@ const ChatHistoryImportPage = () => {
     setCounts(next);
   }, [user]);
   useEffect(() => { void loadCounts(); }, [loadCounts]);
+  const [dropped, setDropped] = useState<File | null>(() => takePendingChatImport());
 
-  const importFiles = async (files: FileList | null) => {
+  const importFiles = async (files: FileList | File[] | null) => {
     if (!files?.length || !user) return;
     setResult(null); setProgress(0);
     try {
@@ -130,6 +132,17 @@ const ChatHistoryImportPage = () => {
           <p className="mt-1 text-xs text-muted-foreground">Google only keeps Gemini chats if "Gemini Apps Activity" was switched on.</p>
           {counts.gemini ? <p className="mt-2 flex items-center gap-1 text-xs text-primary"><CheckCircle2 className="h-3.5 w-3.5" />{counts.gemini.toLocaleString()} Gemini messages remembered</p> : null}
         </div>
+
+        {dropped && (
+          <div className="rounded-lg border border-primary/60 bg-primary/10 p-3 text-sm space-y-2" role="region" aria-label="Chat file ready">
+            <p className="font-semibold text-foreground">Chat history file ready: {dropped.name}</p>
+            <p className="text-muted-foreground">Import it into Oracle's private memory?</p>
+            <div className="flex gap-2">
+              <Button size="sm" disabled={!!busy || !user} onClick={() => { const f = dropped; setDropped(null); void importFiles([f]); }}>Import</Button>
+              <Button size="sm" variant="outline" disabled={!!busy} onClick={() => setDropped(null)}>Not now</Button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <p className="font-semibold text-foreground text-sm">3. Give the ZIP to Oracle</p>
