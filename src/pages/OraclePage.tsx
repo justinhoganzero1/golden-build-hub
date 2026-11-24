@@ -46,6 +46,7 @@ import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
+import fitnessStudioUrl from "@/assets/fitness/fitness-studio-empty.jpg";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
@@ -3337,7 +3338,7 @@ const OraclePage = () => {
         {conversationOpen ? <X /> : <MessageSquare />}
         {!conversationOpen && hasUnread && <span aria-hidden="true" className="oracle-read-chat-dot" />}
       </Button>
-      {conversationOpen && <section ref={scrollRef} aria-label="Oracle conversation" className="oracle-transcript">
+      {conversationOpen && <section ref={scrollRef} aria-label="Oracle conversation" className="oracle-transcript" style={{ backgroundImage: `linear-gradient(hsl(var(--oracle-glass) / .82), hsl(var(--oracle-glass) / .9)), url(${fitnessStudioUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <h2 className="text-sm font-semibold text-primary">Conversation</h2>
         {!messages.length && <p className="mt-5 text-sm text-muted-foreground">No messages yet.</p>}
         {messages.map(msg => <article key={msg.id} className={`oracle-message ${msg.role === "user" ? "oracle-message-user" : ""}`}><p className="mb-2 text-xs font-semibold text-primary">{msg.role === "user" ? "You" : msg.sender}</p>{renderAnswer(msg)}</article>)}

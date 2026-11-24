@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import outfit from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
+import idleClip from "@/assets/fitness/fitness-idle-glance.mp4.asset.json";
+import studio from "@/assets/fitness/fitness-studio-empty.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { talkingPose, poseTransform } from "@/lib/talkingMotion";
 import { EXERCISES, Exercise, formTip, jointAngle, stepReps, RepState } from "@/lib/fitnessForm";
 
 const say = (t: string) => {
@@ -20,6 +24,56 @@ export default function FitnessCoachPage() {
   const stop = useRef<() => void>(() => {});
 
   useEffect(() => () => stop.current(), []);
+
+  // Chat during the workout: the how-to video pauses, Oracle stands and answers.
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [answering, setAnswering] = useState(false);
+  const [tutorialKey, setTutorialKey] = useState(0);
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = body.current;
+    if (!el || !answering) return;
+    let f = 0; const t0 = performance.now();
+    const tick = (n: number) => { el.style.transform = poseTransform(talkingPose((n - t0) / 1000)); f = requestAnimationFrame(tick); };
+    f = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(f); el.style.transform = ""; };
+  }, [answering]);
+
+  async function ask() {
+    const text = question.trim();
+    if (!text || answering) return;
+    setQuestion(""); setAnswer(""); setAnswering(true); setTutorialKey((k) => k + 1); // reload stops the video
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Please sign in to chat with Oracle.");
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages: [{ role: "user", content: `(I'm doing ${EXERCISES[ex].label} with you as my fitness coach.) ${text}` }] }),
+      });
+      if (!resp.ok || !resp.body) throw new Error("Oracle couldn't answer right now.");
+      const reader = resp.body.getReader(); const dec = new TextDecoder();
+      let buf = "", full = "";
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop() || "";
+        for (const l of lines) {
+          if (!l.startsWith("data: ") || l.includes("[DONE]")) continue;
+          try { const c = JSON.parse(l.slice(6)).choices?.[0]?.delta?.content; if (c) { full += c; setAnswer(full); } } catch { /* partial line */ }
+        }
+      }
+      const clean = full.replace(/\[\[[^\]]*\]\]/g, "").trim();
+      setAnswer(clean);
+      await new Promise<void>((res) => {
+        try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(clean); u.onend = () => res(); u.onerror = () => res(); speechSynthesis.speak(u); } catch { res(); }
+      });
+    } catch (e) {
+      setAnswer(e instanceof Error ? e.message : "Oracle couldn't answer right now.");
+    } finally { setAnswering(false); }
+  }
 
   async function start() {
     setLook("fit"); setReps(0); setTip(null); setStatus("Starting camera…");
@@ -67,14 +121,19 @@ export default function FitnessCoachPage() {
 
   const info = EXERCISES[ex];
   return (
-    <main className="min-h-screen p-4 max-w-5xl mx-auto space-y-4 text-foreground">
+    <main className="min-h-screen bg-cover bg-center bg-fixed text-foreground" style={{ backgroundImage: `linear-gradient(hsl(var(--background) / .55), hsl(var(--background) / .8)), url(${studio})` }}>
+     <div className="p-4 max-w-5xl mx-auto space-y-4">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Oracle Fitness Coach</h1>
         <Link to="/oracle" className="text-sm text-muted-foreground underline">Back to Oracle</Link>
       </header>
       <div className="grid md:grid-cols-2 gap-4">
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border">
-          <img src={look === "fit" ? outfit : portrait} alt={look === "fit" ? "Oracle in her workout outfit" : "Oracle"} className="w-full h-[420px] object-cover object-top transition-opacity duration-500" />
+          <div ref={body} className="h-[420px] origin-[50%_65%] will-change-transform">
+            {look === "fit" && !answering
+              ? <video src={idleClip.url} poster={outfit} autoPlay muted loop playsInline aria-label="Oracle waiting in her workout outfit" className="w-full h-full object-cover object-top" />
+              : <img src={look === "fit" ? outfit : portrait} alt={answering ? "Oracle answering you" : "Oracle"} className="w-full h-full object-cover object-top" />}
+          </div>
         </section>
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border relative">
           <video ref={video} muted playsInline className="w-full h-[420px] object-cover -scale-x-100 bg-muted" />
@@ -89,12 +148,20 @@ export default function FitnessCoachPage() {
         ))}
         {running ? <Button variant="destructive" onClick={finish}>Finish workout</Button> : <Button onClick={start}>Start workout</Button>}
       </div>
+      <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); ask(); }}>
+        <div className="flex gap-2">
+          <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask Oracle anything during your workout…" className="flex-1 rounded-xl border border-border bg-background/80 px-3 py-2 text-sm" />
+          <Button type="submit" disabled={answering || !question.trim()}>{answering ? "Answering…" : "Ask"}</Button>
+        </div>
+        {answer && <p className="rounded-xl bg-card/80 backdrop-blur border border-border px-3 py-2 text-sm">{answer}</p>}
+      </form>
       <section className="space-y-2">
         <h2 className="font-semibold">How to do {info.label.toLowerCase()} properly</h2>
         <div className="aspect-video rounded-2xl overflow-hidden border border-border">
-          <iframe className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${info.youtube}?cc_load_policy=0`} title={`${info.label} tutorial`} allow="encrypted-media; picture-in-picture" allowFullScreen />
+          <iframe key={tutorialKey} className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${info.youtube}?cc_load_policy=0`} title={`${info.label} tutorial`} allow="encrypted-media; picture-in-picture" allowFullScreen />
         </div>
       </section>
+     </div>
     </main>
   );
 }
