@@ -32,7 +32,7 @@ import { extractFileText, documentHtml } from "@/lib/fileText";
 import { imageToVisionFrames, withVisionImages } from "@/lib/visionFrames";
 import { artifactAnnouncement, finishedArtifact, resolveSpeechMode, routeOracleSpeech, resolveVideoReplies, resolveOraclePremiumVoice, type OracleArtifact, type OracleSpeechMode } from "@/lib/oraclePresenter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, MessageSquare, Info } from "lucide-react";
+import { PhoneOff, MessageSquare, Info, History as HistoryIcon } from "lucide-react";
 import OraclePromptBox from "@/components/oracle/OraclePromptBox";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import OraclePresenterStage from "@/components/oracle/OraclePresenterStage";
@@ -3398,6 +3398,7 @@ const OraclePage = () => {
         <AgentPicker />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setShowOracleSwap(v => !v)}><Crown />Appearance</Button>
+          <Button variant="outline" onClick={() => { setVoiceOptionsOpen(false); navigate("/memory-import"); }}><HistoryIcon />Import past chats</Button>
           <Button variant="outline" onClick={() => setShowFriendPanel(v => !v)}><Users />Chat agents</Button>
           <OracleImageComposer />
           {usage && <Button variant="outline" onClick={() => navigate("/subscribe", { state: { oracleWorkspace: true } })}>{usage.count} / {usage.limit} messages</Button>}

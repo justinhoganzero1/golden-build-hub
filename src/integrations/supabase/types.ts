@@ -1766,6 +1766,48 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          conversation_title: string | null
+          created_at: string
+          fts: unknown
+          id: string
+          msg_index: number
+          role: string
+          sent_at: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          conversation_title?: string | null
+          created_at?: string
+          fts?: unknown
+          id?: string
+          msg_index: number
+          role: string
+          sent_at?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          conversation_title?: string | null
+          created_at?: string
+          fts?: unknown
+          id?: string
+          msg_index?: number
+          role?: string
+          sent_at?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inquiry_leads: {
         Row: {
           ai_summary: string | null
@@ -7672,6 +7714,17 @@ export type Database = {
       save_story_writer_document: {
         Args: { _metadata: Json; _story_id: string; _title: string }
         Returns: string
+      }
+      search_imported_chats: {
+        Args: { _limit?: number; _query: string; _user_id: string }
+        Returns: {
+          content: string
+          conversation_title: string
+          rank: number
+          role: string
+          sent_at: string
+          source: string
+        }[]
       }
       seller_available_balance: { Args: { user_uuid: string }; Returns: number }
       service_required_plan: { Args: { _service: string }; Returns: string }

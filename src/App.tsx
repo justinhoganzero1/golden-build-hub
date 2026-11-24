@@ -284,6 +284,7 @@ const EbookCoverStudioPage = lazy(() => import("./pages/EbookCoverStudioPage"));
 const AgeRequiredPage = lazy(() => import("./pages/AgeRequiredPage"));
 const TrialCardPage = lazy(() => import("./pages/TrialCardPage"));
 const AiKeySetupPage = lazy(() => import("./pages/AiKeySetupPage"));
+const ChatHistoryImportPage = lazy(() => import("./pages/ChatHistoryImportPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
@@ -497,6 +498,7 @@ const OracleApp = () => (
                   <Route path="/age-required" element={<ErrorBoundary pageName="Age Required"><AgeRequiredPage /></ErrorBoundary>} />
                   <Route path="/trial-card" element={<RequireAuth><ErrorBoundary pageName="Free Trial"><TrialCardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-key-setup" element={<RequireAuth><ErrorBoundary pageName="Google Key Setup"><AiKeySetupPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/memory-import" element={<RequireAuth><ErrorBoundary pageName="Import Past Chats"><ChatHistoryImportPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />

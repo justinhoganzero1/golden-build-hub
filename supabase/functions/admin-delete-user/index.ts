@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
   }
 
   // Remove personal content. Money records and trial marks are deliberately kept.
-  for (const table of ["user_ai_keys", "member_ai_setup", "user_media", "oracle_memories", "agent_chats", "user_agents"]) {
+  for (const table of ["user_ai_keys", "member_ai_setup", "user_media", "oracle_memories", "agent_chats", "user_agents", "imported_chat_messages"]) {
     const { error } = await admin.from(table).delete().eq("user_id", userId);
     if (error) console.warn(`cleanup ${table}:`, error.message);
   }
