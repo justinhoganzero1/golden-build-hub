@@ -3,17 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import fitnessIdleClip from "@/assets/fitness/fitness-idle-glance.mp4.asset.json";
-import studioPortraitUrl from "@/assets/avatars/oracle-studio-portrait.jpg";
-import studioIdleClip from "@/assets/avatars/oracle-studio-idle.mp4.asset.json";
-import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
+// Same filmed clips as always, with the office background swapped for the gold studio.
+import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import blushOverlay from "@/assets/avatars/oracle-blush.png";
 import blushClipOverlay from "@/assets/avatars/oracle-blush-clip.png";
 // Smooth single-take shot locked to the canonical portrait (same face across the angle drift).
-import listeningClipUrl from "@/assets/avatars/oracle-office-listening-smooth.webm";
-import greetingClipUrl from "@/assets/avatars/oracle-clip-greeting.webm";
-import thinkingClipUrl from "@/assets/avatars/oracle-clip-thinking.webm";
+import listeningClip from "@/assets/avatars/oracle-studio-office-listening-smooth.webm.asset.json";
+import greetingClip from "@/assets/avatars/oracle-studio-clip-greeting.webm.asset.json";
+import thinkingClip from "@/assets/avatars/oracle-studio-clip-thinking.webm.asset.json";
 import talkingClipUrl from "@/assets/avatars/oracle-clip-talking.webm";
-import doneClipUrl from "@/assets/avatars/oracle-clip-done.webm";
+import doneClip from "@/assets/avatars/oracle-studio-clip-done.webm.asset.json";
+const listeningClipUrl = listeningClip.url, greetingClipUrl = greetingClip.url, thinkingClipUrl = thinkingClip.url, doneClipUrl = doneClip.url;
 import { talkingPose, poseTransform } from "@/lib/talkingMotion";
 import { choosePresenterClip, presenterHistory, type PresenterClip } from "@/lib/oracleClipSelection";
 
@@ -100,9 +100,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
   // original outfit); a generated reply video still plays on top.
   // The bundled workout outfit has its own filmed silent waiting loop.
   const fitnessLook = !!image && image.includes(fitnessOutfitUrl);
-  const studioLook = !!image && image.includes(studioPortraitUrl);
   const plan: ClipPlan | null = image
-    ? (replyVideoUrl ? { url: replyVideoUrl, audible: true, loop: false } : fitnessLook ? { url: fitnessIdleClip.url, audible: false, loop: true } : studioLook ? { url: studioIdleClip.url, audible: false, loop: true } : null)
+    ? (replyVideoUrl ? { url: replyVideoUrl, audible: true, loop: false } : fitnessLook ? { url: fitnessIdleClip.url, audible: false, loop: true } : null)
     : replyVideoUrl
       ? { url: replyVideoUrl, audible: true, loop: false }
       : cue
