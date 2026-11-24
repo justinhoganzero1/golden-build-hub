@@ -49,3 +49,12 @@ describe("standby video", () => {
     expect(isStandby(0, 180_000)).toBe(true);
   });
 });
+
+import { parseOutfitCommand as p2 } from "./oracleOutfit";
+import { it as it2, expect as ex2 } from "vitest";
+it2("workout gear request changes instantly", () => {
+  ex2(p2("put on your workout gear")?.kind).toBe("fitness");
+  ex2(p2("change into your gym outfit")?.kind).toBe("fitness");
+  ex2(p2("change your outfit")?.kind).toBe("ask");
+  ex2(p2("wear a red dress")?.kind).toBe("describe");
+});

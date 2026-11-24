@@ -46,6 +46,7 @@ import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-standby-loop.webm.asset.json";
 import oraclePortraitUrl from "@/assets/avatars/oracle-futuristic-office.jpg";
+import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
 import AudioClarifyDialog, { intentToPrompt, type AudioIntent } from "@/components/AudioClarifyDialog";
@@ -2022,6 +2023,8 @@ const OraclePage = () => {
       };
       setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text }]);
       if (outfitCmd.kind === "reset") { applyOutfit(null); say("Back in my usual outfit. Feels like home!"); return; }
+      if (outfitCmd.kind === "ask") { say("Sure! What would you like me to wear? Tell me, like \"wear a red dress\", or send a photo and say \"wear this\"."); return; }
+      if (outfitCmd.kind === "fitness") { applyOutfit({ url: fitnessOutfitUrl, label: "Workout outfit", libraryId: null }); say("Workout gear on! Let's get moving."); return; }
       const photo = outfitCmd.kind === "photo" ? lastAttachedImageRef.current : undefined;
       if (outfitCmd.kind === "photo" && !photo) { say("I'd love to! Tap the attach button, take or pick a photo of the outfit, then tell me to wear it."); return; }
       say(outfitCmd.kind === "photo" ? "Ooh, nice pick! Let me go and get changed. Give me about half a minute." : "Ooh, fun! Let me go and get changed. Give me about half a minute.");

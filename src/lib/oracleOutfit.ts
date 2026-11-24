@@ -53,7 +53,7 @@ export async function toSmallDataUrl(src: Blob | string, max = 1024): Promise<st
   } finally { URL.revokeObjectURL(url); }
 }
 
-export type OutfitCommand = { kind: "photo" } | { kind: "describe"; description: string } | { kind: "reset" };
+export type OutfitCommand = { kind: "photo" } | { kind: "describe"; description: string } | { kind: "reset" } | { kind: "fitness" } | { kind: "ask" };
 
 const CLOTHING = /\b(dress|gown|shirt|t-shirt|tee|blouse|jacket|blazer|suit|outfit|clothes|jumper|sweater|hoodie|cardigan|top|jeans|pants|trousers|skirt|shorts|coat|hat|cap|scarf|uniform|costume|overalls|leggings|activewear|tracksuit|kimono|saree|sari)\b/i;
 
@@ -64,6 +64,9 @@ export function parseOutfitCommand(text: string): OutfitCommand | null {
   const lead = String.raw`^(?:hey\s+)?(?:oracle[,\s]+)?(?:please\s+)?(?:can you\s+|could you\s+|would you\s+|will you\s+|i want you to\s+|i'd like you to\s+)?(?:please\s+)?`;
   if (new RegExp(lead + String.raw`(?:go\s+|change\s+|get\s+changed\s+)?back\s+(?:in)?to\s+(?:your\s+)?(?:original|normal|usual|old)\s+(?:outfit|clothes|look)`, "i").test(t)
     || new RegExp(lead + String.raw`wear\s+your\s+(?:original|normal|usual)\s+(?:outfit|clothes)`, "i").test(t)) return { kind: "reset" };
+  // Workout gear: free, uses the bundled fluro-green fitness outfit.
+  if (/\b(fitness|workout|work\s*out|gym|exercise|training|activewear|sports?)\s*(gear|outfit|clothes|kit|wear|set|attire)\b/i.test(t) && /\b(wear|put|change|dress|get|switch|into|on)\b/i.test(t)) return { kind: "fitness" };
+  if (new RegExp(lead + String.raw`(?:change\s+(?:your\s+)?(?:outfit|clothes)|get\s+changed|change\s+clothes|get\s+dressed|dress\s+up)$`, "i").test(t)) return { kind: "ask" };
   const verbs = String.raw`(?:wear|try\s+on|put\s+on|dress\s+(?:yourself\s+|up\s+)?in|change\s+into|get\s+changed\s+into|change\s+(?:your\s+)?(?:outfit|clothes)\s+(?:to|into)|switch\s+(?:your\s+)?(?:outfit|clothes)\s+to)`;
   const m = t.match(new RegExp(lead + verbs + String.raw`\s+(.+)$`, "i"));
   if (!m) return null;
