@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
-import fitnessIdleClip from "@/assets/fitness/fitness-idle-long.mp4.asset.json";
+import fitnessIdleClip from "@/assets/fitness/fitness-idle-light.mp4.asset.json";
 // Same filmed clips as always, with the office background swapped for the gold studio.
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import blushOverlay from "@/assets/avatars/oracle-blush.png";
@@ -129,7 +129,8 @@ export default function OraclePresenterStage({ state, image, userId, cue, onCueD
 
   // Voice level: gentle head-and-shoulder sway while she speaks (no generated
   // clip, no mouth movement — it is a talking motion, not lip-sync).
-  const talking = state === "speaking" && !replyVideoUrl && !cue;
+  // Camera sway removed: the rocking motion made members seasick.
+  const talking = false && state === "speaking" && !replyVideoUrl && !cue;
   const body = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = body.current;

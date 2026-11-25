@@ -377,7 +377,10 @@ const OraclePage = () => {
     speechModeRef.current = selected;
     setSpeechMode(selected);
     setDeviceVoice(localStorage.getItem(`oracle-device-voice:${user.id}`) || "");
-    const savedOutfit = loadOutfit(user.id);
+    // Oracle always opens in her business attire; workout gear is per-visit only.
+    const storedOutfit = loadOutfit(user.id);
+    const savedOutfit = storedOutfit && storedOutfit.url.includes(fitnessOutfitUrl) ? null : storedOutfit;
+    if (storedOutfit && !savedOutfit) saveOutfit(user.id, null);
     outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
     const savedLook = loadLook(user.id);
     lookRef.current = savedLook; setLook(savedLook);
