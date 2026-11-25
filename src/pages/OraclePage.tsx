@@ -318,11 +318,11 @@ const OraclePage = () => {
   const applyLook = (next: OracleLook | null) => {
     lookRef.current = next; setLook(next); portraitDataRef.current = null;
     if (outfitRef.current) { outfitRef.current = null; setOutfit(null); if (user?.id) saveOutfit(user.id, null); }
-    if (user?.id && !saveLook(user.id, next)) toast("New look is on for now, but this device couldn't remember it for next time.");
+    if (user?.id) saveLook(user.id, next);
   };
   const applyOutfit = (next: OracleOutfit | null) => {
     outfitRef.current = next; setOutfit(next); portraitDataRef.current = null;
-    if (user?.id && !saveOutfit(user.id, next)) toast("Outfit is on for now, but this device couldn't remember it for next time.");
+    if (user?.id) saveOutfit(user.id, next);
   };
   // Standby: after 3 minutes with no activity she shows a longer calm loop.
   const [standby, setStandby] = useState(false);
@@ -3248,7 +3248,6 @@ const OraclePage = () => {
             if (!v?.materially_better || typeof v.final !== "string" || !v.final.trim()) return;
             const improved = stripSelfNaming(v.final.trim());
             setMessages(prev => prev.map(m => (m.id === verifyId ? { ...m, content: improved, verified: true } as any : m)));
-            toast.success("I double-checked that with my swarm and improved the answer.");
           } catch (e) {
             // Verification is a bonus pass — never surface its failures.
             console.warn("verify swarm skipped", e);
