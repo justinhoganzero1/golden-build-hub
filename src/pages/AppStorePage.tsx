@@ -241,9 +241,12 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
                 Prefer the Android app file instead? Download it
               </button>
             )}
-            <Link to={user ? "/oracle" : "/sign-in"} className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
-              <Globe className="h-3.5 w-3.5" />Or use it right here in your browser
-            </Link>
+            <Button asChild variant="secondary" size="lg" className="mt-3 h-12 w-full text-base font-semibold sm:max-w-xs">
+              <Link to={user ? "/oracle" : "/sign-in"}>
+                <Sparkles className="mr-2 h-5 w-5" />Try it free — no download
+              </Link>
+            </Button>
+            <p className="mt-1 text-xs text-muted-foreground">Use Oracle right here in your browser with a free account — nothing to install.</p>
           </section>
 
           {/* Video ad — loads only when played, so the page stays quick */}
