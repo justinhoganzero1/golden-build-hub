@@ -379,8 +379,9 @@ const OraclePage = () => {
     setDeviceVoice(localStorage.getItem(`oracle-device-voice:${user.id}`) || "");
     // Oracle always opens in her business attire; workout gear is per-visit only.
     const storedOutfit = loadOutfit(user.id);
-    const savedOutfit = storedOutfit && storedOutfit.url.includes(fitnessOutfitUrl) ? null : storedOutfit;
-    if (storedOutfit && !savedOutfit) saveOutfit(user.id, null);
+    // Every visit opens in her animated business look; picture outfits are per-visit only.
+    const savedOutfit = null as OracleOutfit | null;
+    if (storedOutfit) saveOutfit(user.id, null);
     outfitRef.current = savedOutfit; setOutfit(savedOutfit); portraitDataRef.current = null;
     const savedLook = loadLook(user.id);
     lookRef.current = savedLook; setLook(savedLook);

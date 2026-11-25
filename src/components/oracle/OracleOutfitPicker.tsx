@@ -1,3 +1,4 @@
+import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, Loader2, RotateCcw, Shirt } from "lucide-react";
@@ -13,6 +14,10 @@ export default function OracleOutfitPicker({ current, onChange, basePortraitUrl 
 
   const dress = async (label: string, prompt: string, clothingPhoto?: string) => {
     if (busy) return;
+    // Gym/active wear always uses the free animated workout outfit, never a paid still picture.
+    if (!clothingPhoto && /\b(fitness|workout|work\s*out|gym|exercise|training|active|athletic|sports?|yoga|running)\s*-?\s*(gear|outfit|clothes|kit|wear|set|attire|leggings)\b/i.test(label)) {
+      onChange({ url: fitnessOutfitUrl, label: "Workout outfit", libraryId: null }); toast.success("Workout gear on — free."); return;
+    }
     setBusy(label);
     try {
       const { url, libraryId } = await requestOutfitImage(prompt, clothingPhoto, basePortraitUrl);
