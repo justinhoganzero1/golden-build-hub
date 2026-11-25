@@ -63,7 +63,12 @@ export function parseOutfitCommand(text: string): OutfitCommand | null {
   if (t.length > 300 || t.startsWith("[")) return null;
   const lead = String.raw`^(?:hey\s+)?(?:oracle[,\s]+)?(?:please\s+)?(?:can you\s+|could you\s+|would you\s+|will you\s+|i want you to\s+|i'd like you to\s+)?(?:please\s+)?`;
   if (new RegExp(lead + String.raw`(?:go\s+|change\s+|get\s+changed\s+)?back\s+(?:in)?to\s+(?:your\s+)?(?:original|normal|usual|old)\s+(?:outfit|clothes|look)`, "i").test(t)
-    || new RegExp(lead + String.raw`wear\s+your\s+(?:original|normal|usual)\s+(?:outfit|clothes)`, "i").test(t)) return { kind: "reset" };
+    || new RegExp(lead + String.raw`wear\s+your\s+(?:original|normal|usual)\s+(?:outfit|clothes)`, "i").test(t)
+    || /\b(?:change|go|switch|get)\s+(?:yourself\s+)?back\b/i.test(t)
+    || /\b(?:default|normal|usual|original|business|office|work)\s+(?:outfit|clothes|look|attire|suit|mode|self)\b/i.test(t) && /\b(?:back|wear|put|change|switch|go|return|into)\b/i.test(t)
+    || /\b(?:take\s+off|get\s+out\s+of)\s+(?:the\s+|your\s+|that\s+)?(?:fitness|workout|gym|active|exercise|sports?)/i.test(t)) return { kind: "reset" };
+  // Any request naming gym/active wear uses the free bundled outfit, never a paid picture edit.
+  if (/\b(fitness|workout|work\s*out|gym|exercise|training|active|athletic|sports?|yoga|running)\s*-?\s*(gear|outfit|clothes|kit|wear|set|attire|leggings|stuff)\b/i.test(t) && /\b(wear|put|change|dress|get|switch|into|on)\b/i.test(t)) return { kind: "fitness" };
   // Workout gear: free, uses the bundled fluro-green fitness outfit.
   if (/\b(fitness|workout|work\s*out|gym|exercise|training|activewear|sports?)\s*(gear|outfit|clothes|kit|wear|set|attire)\b/i.test(t) && /\b(wear|put|change|dress|get|switch|into|on)\b/i.test(t)) return { kind: "fitness" };
   if (/\b(fitness|workout|work\s*out|gym|exercise|instructor|trainer|coach)\s*(mode|instructor|trainer|coach)\b/i.test(t)

@@ -62,3 +62,10 @@ it2("workout gear request changes instantly", () => {
 it2("fitness mode phrasing switches to workout outfit", () => {
   for (const t of ["fitness mode", "go into fitness instructor mode", "let's work out", "put on your workout gear"]) ex2(p2(t)).toEqual({ kind: "fitness" });
 });
+
+import { parseOutfitCommand as pc } from "./oracleOutfit";
+import { describe as d2, it as i2, expect as e2 } from "vitest";
+d2("fitness and reset phrasing", () => {
+  i2("active wear uses free fitness outfit", () => { e2(pc("change into your active wear")?.kind).toBe("fitness"); e2(pc("put on your fitness gear please")?.kind).toBe("fitness"); });
+  i2("change back resets", () => { e2(pc("change back")?.kind).toBe("reset"); e2(pc("go back to your default outfit")?.kind).toBe("reset"); e2(pc("take off the gym gear")?.kind).toBe("reset"); });
+});
