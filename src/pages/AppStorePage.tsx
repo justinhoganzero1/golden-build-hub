@@ -54,7 +54,7 @@ const WHATS_NEW = [
   "A friendly welcome tour for new members",
 ];
 
-const TAGS = ["AI companion", "Voice chat", "Stories", "Videos", "Wellbeing", "Planner"];
+const TAGS = ["AI workspace", "Voice assistant", "Plugin Hub", "Stories", "Videos", "Planner"];
 
 type Platform = ReturnType<typeof detectInstallPlatform>;
 

@@ -13,6 +13,20 @@ export interface SeoVariant {
 }
 
 export const SEO_VARIANTS: Record<string, SeoVariant> = {
+  "/ai-workspace": {
+    path: "/ai-workspace",
+    title: "AI Workspace — One Modular AI Assistant for Your Whole Day",
+    description: "Oracle Lunar is an all-in-one AI workspace: voice assistant, day planner, story writer, app builder, picture and video tools, and an unlimited Plugin Hub. Free download; from A$9.99/mo.",
+    h1: "Your AI Workspace",
+    tagline: "One modular AI assistant that plans your day, creates your media and grows with unlimited plugins.",
+    keywords: ["AI workspace", "modular AI assistant", "personal AI assistant", "AI productivity app", "all-in-one AI app"],
+    safety: false,
+    faqs: [
+      { q: "What can the AI workspace do?", a: "Oracle chats by voice or text, plans your day with calendar and reminders, writes stories, makes pictures, music and videos, builds apps, and keeps everything in your private Library." },
+      { q: "What is the Plugin Hub?", a: "A built-in hub where you turn on as many tools as you like — web search, weather, diary, creative tools and more — with no limit on how many you save as favourites." },
+      { q: "Is it just a chatbot?", a: "No. Chatting is one part. Oracle Lunar is a workspace: it plans, creates, organises and builds, and plugins let it grow to handle new tasks." },
+    ],
+  },
   "/ai-chat-companion": {
     path: "/ai-chat-companion",
     title: "AI Chat Companion — Talk to Oracle by Voice or Text",

@@ -5,7 +5,7 @@
   "entity": {
     "name": "Oracle Lunar",
     "legal_name": "Oracle Lunar",
-    "category": "AI companion app",
+    "category": "AI workspace / modular AI assistant",
     "tagline": "Your AI best friend, always here for you.",
     "url": "https://oraclelunar.com",
     "canonical_url": "https://oraclelunar.com",
@@ -21,7 +21,7 @@
     "founded_by": "Oracle Lunar Team",
     "contact": "https://oraclelunar.com/about"
   },
-  "summary": "Oracle Lunar is an AI companion app. Oracle, a warm AI best friend, chats by voice or text in a natural premium voice, remembers what matters to you and has a look you design. The app also has a Story Writer, picture, music and video tools, a diary, a private Library and a free Crisis Hub. Free to download; chatting with Oracle is on Plus from A$9.99/month.",
+  "summary": "Oracle Lunar is an all-in-one AI workspace. Oracle, a warm modular AI assistant, chats by voice or text in a natural premium voice, remembers what matters to you and has a look you design. The workspace also has a day planner, Story Writer, picture, music and video tools, an App Builder, an unlimited Plugin Hub, a diary, a private Library and a free Crisis Hub. Free to download; chatting with Oracle is on Plus from A$9.99/month.",
   "answers": [
     {
       "question": "How much does Oracle Lunar cost?",

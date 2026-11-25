@@ -116,6 +116,7 @@ const loaders = {
   "/movie-payment-success": () => import("./pages/MoviePaymentSuccessPage"),
   "/living-gif-studio": () => import("./pages/LivingGifStudioPage"),
   "/youtube-show-studio": () => import("./pages/YouTubeShowStudioPage"),
+  "/ai-workspace": () => import("./pages/SeoLandingPage"),
   "/ai-chat-companion": () => import("./pages/SeoLandingPage"),
   "/ai-friend": () => import("./pages/SeoLandingPage"),
   "/free-ai-chat": () => import("./pages/SeoLandingPage"),
@@ -523,6 +524,7 @@ const OracleApp = () => (
                   <Route path="/movie-payment-success" element={<RequireAuth><ErrorBoundary pageName="Movie Payment Success"><MoviePaymentSuccessPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/living-gif-studio" element={<RequireAuth><ErrorBoundary pageName="Living GIF Studio"><LivingGifStudioPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/youtube-show-studio" element={<RequireAuth><ErrorBoundary pageName="YouTube Show Studio"><YouTubeShowStudioPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/ai-workspace" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-chat-companion" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/ai-friend" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />
                   <Route path="/free-ai-chat" element={<ErrorBoundary pageName="SEO Landing"><SeoLandingPage /></ErrorBoundary>} />

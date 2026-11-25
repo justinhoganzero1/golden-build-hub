@@ -1,6 +1,6 @@
 # Oracle Lunar
 
-> Your AI best friend, always here for you. Oracle Lunar is an AI companion app: Oracle, a warm AI best friend who chats by voice or text, plus creative tools, a diary, a private Library and a free Crisis Hub.
+> Your AI best friend, always here for you. Oracle Lunar is an all-in-one AI workspace: Oracle, a warm modular AI assistant who chats by voice or text, plus a day planner, creative tools, an App Builder, an unlimited Plugin Hub, a diary, a private Library and a free Crisis Hub.
 
 Canonical website: https://oraclelunar.com
 
