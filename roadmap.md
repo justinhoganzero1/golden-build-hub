@@ -1,4 +1,8 @@
 # Roadmap
+## Fitness video requests
+- [x] Find suitable exercise videos on command and cache public metadata templates across users.
+- [x] Play muted videos on the studio monitor with honest metadata commentary and return to Oracle.
+- [x] Test search, cache reuse and signed-in playback (real lunges video played muted and returned after ending; 16 tests passed).
 ## Plugins Hub and history instructions
 - [x] Add searchable Plugins Hub and unlimited account-scoped favourites in Oracle's tools menu (device-saved; outside-service plugins not yet connected).
 - [x] Add phone-specific ChatGPT export steps matching Juzzy's screenshot.

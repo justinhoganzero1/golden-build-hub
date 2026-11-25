@@ -309,6 +309,13 @@
       "when": 1795478662164,
       "tag": "0043_imported_chat_history",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795583890271,
+      "tag": "0044_fitness_video_templates",
+      "breakpoints": true
     }
   ]
 }

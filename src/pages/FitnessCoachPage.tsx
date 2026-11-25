@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { parseExerciseRequest } from "@/lib/exerciseRequest";
+import { parseFitnessVideoQuery } from "@/lib/exerciseRequest";
+import type { FitnessVideoTemplate } from "../../supabase/functions/_shared/fitnessVideo";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import outfit from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
@@ -12,9 +14,9 @@ import { EXERCISES, Exercise, formTip, jointAngle, stepReps, RepState } from "@/
 
 // Oracle's spoken commentary over the muted how-to clip (free device voice).
 const COMMENTARY: Record<Exercise, string[]> = {
-  squat: ["Watch the monitor. Feet about shoulder width apart.", "See how the hips go back first, like sitting into a chair.", "Chest stays up, knees follow the toes.", "Push through the heels to stand tall. Your turn when you're ready."],
-  pushup: ["Watch the monitor. Hands just wider than your shoulders.", "Body in one straight line, from head to heels.", "Lower your chest nice and slow, elbows angled back.", "Press the floor away. Drop to your knees if you need to, that's fine."],
-  jumping_jack: ["Watch the monitor. Start tall, arms by your sides.", "Jump the feet out as the arms swing overhead.", "Land softly on the balls of your feet.", "Keep a steady rhythm and keep breathing. Your turn when you're ready."],
+  squat: ["Here are some general squat tips. Feet about shoulder width apart.", "Move the hips back, like sitting into a chair.", "Chest stays up, knees follow the toes.", "Push through the heels to stand tall. Your turn when you're ready."],
+  pushup: ["Here are some general push-up tips. Hands just wider than your shoulders.", "Body in one straight line, from head to heels.", "Lower your chest nice and slow, elbows angled back.", "Press the floor away. Drop to your knees if you need to, that's fine."],
+  jumping_jack: ["Here are some general jumping jack tips. Start tall, arms by your sides.", "Jump the feet out as the arms swing overhead.", "Land softly on the balls of your feet.", "Keep a steady rhythm and keep breathing. Your turn when you're ready."],
 };
 
 const say = (t: string) => {
@@ -41,6 +43,13 @@ export default function FitnessCoachPage() {
   const [answer, setAnswer] = useState("");
   const [answering, setAnswering] = useState(false);
   const [tutorialKey, setTutorialKey] = useState(0);
+  const [template, setTemplate] = useState<FitnessVideoTemplate | null>(null);
+  const [finding, setFinding] = useState(false);
+  const searchVersion = useRef(0);
+  const player = useRef<HTMLIFrameElement | null>(null);
+  const commentary = useRef<string[]>([]);
+  const commentaryStarted = useRef(false);
+  useEffect(() => () => { searchVersion.current++; try { speechSynthesis.cancel(); } catch { /* no voice */ } }, []);
   const body = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = body.current;
@@ -58,21 +67,57 @@ export default function FitnessCoachPage() {
   const talkTimers = useRef<number[]>([]);
   const clearTalk = () => { talkTimers.current.forEach(clearTimeout); talkTimers.current = []; };
   useEffect(() => () => clearTalk(), []);
-  function showHow(pick: Exercise = ex) {
-    setEx(pick); setPrompt(null); const exNow = pick;
-    clearTalk(); setTutorialKey((k) => k + 1); setMonitor("back");
+  function showHow(pick: Exercise = ex, chosen: FitnessVideoTemplate | null = null) {
+    searchVersion.current++; setFinding(false);
+    setEx(pick); setTemplate(chosen); setPrompt(null);
+    commentary.current = chosen?.commentary || COMMENTARY[pick]; commentaryStarted.current = false;
+    clearTalk(); try { speechSynthesis.cancel(); } catch { /* no voice */ }
+    setTutorialKey((k) => k + 1); setMonitor("back");
     body.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     talkTimers.current.push(window.setTimeout(() => setMonitor("zoom"), 1200));
-    COMMENTARY[exNow].forEach((line, i) => talkTimers.current.push(window.setTimeout(() => say(line), 1600 + i * 6500)));
+  }
+  async function findVideo(exercise: string) {
+    closeHow(); const version = ++searchVersion.current;
+    setFinding(true); setAnswer("Finding a suitable exercise demonstration…");
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) throw new Error("Please sign in to find a video.");
+      const { data, error } = await supabase.functions.invoke("fitness-video", {
+        body: { exercise }, headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+      });
+      if (error) {
+        let message = "YouTube search is unavailable right now.";
+        if (error instanceof FunctionsHttpError) { try { message = (await error.context.json()).error || message; } catch { /* no detail */ } }
+        throw new Error(message);
+      }
+      if (!data?.template?.video_id) throw new Error(data?.error || "No suitable video was found.");
+      if (version !== searchVersion.current) return;
+      setAnswer(""); showHow(ex, data.template);
+    } catch (e) {
+      if (version !== searchVersion.current) return;
+      const message = e instanceof Error ? e.message : "Video search couldn't finish.";
+      setAnswer(message); say(message);
+    } finally { if (version === searchVersion.current) setFinding(false); }
   }
   // When the YouTube clip ends, zoom back to Oracle and ask what's next.
   const monitorRef = useRef(monitor); monitorRef.current = monitor;
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
-      if (!/youtube\.com$/.test(new URL(e.origin || "http://x").hostname)) return;
+      if (e.origin !== "https://www.youtube.com" || e.source !== player.current?.contentWindow) return;
       let d: { event?: string; info?: unknown } | null = null;
       try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
       const st = d?.event === "onStateChange" ? d.info : d?.event === "infoDelivery" ? (d.info as { playerState?: number } | null)?.playerState : undefined;
+      if (st === 1 && monitorRef.current !== "off" && !commentaryStarted.current) {
+        commentaryStarted.current = true;
+        try {
+          speechSynthesis.cancel();
+          commentary.current.forEach(line => speechSynthesis.speak(new SpeechSynthesisUtterance(line)));
+        } catch { /* device voice unavailable */ }
+      }
+      if (st === 2) { clearTalk(); try { speechSynthesis.cancel(); } catch { /* no voice */ } }
+      if (d?.event === "onError" && monitorRef.current !== "off") {
+        closeHow(); setAnswer("YouTube couldn't play this video here. You can open it on YouTube or ask for another exercise.");
+      }
       if (st === 0 && monitorRef.current !== "off") {
         clearTalk(); setMonitor("off"); setPrompt("OK, what's next?"); say("OK, what's next?");
       }
@@ -83,17 +128,19 @@ export default function FitnessCoachPage() {
   // Opened from Oracle chat with ?show=<exercise>: play that how-to straight away.
   const [params, setParams] = useSearchParams();
   useEffect(() => {
+    const query = params.get("exercise");
     const want = params.get("show") as Exercise | null;
+    if (query) { const t = window.setTimeout(() => { void findVideo(query); }, 700); setParams({}, { replace: true }); return () => clearTimeout(t); }
     if (want && want in EXERCISES) { const t = window.setTimeout(() => showHow(want), 700); setParams({}, { replace: true }); return () => clearTimeout(t); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  function closeHow() { clearTalk(); try { speechSynthesis.cancel(); } catch { /* none */ } setMonitor("off"); }
+  function closeHow() { searchVersion.current++; setFinding(false); clearTalk(); try { speechSynthesis.cancel(); } catch { /* none */ } setMonitor("off"); }
 
   async function ask() {
     const text = question.trim();
-    if (!text || answering) return;
-    const wanted = parseExerciseRequest(text);
-    if (wanted && wanted in EXERCISES) { setQuestion(""); showHow(wanted); return; }
+    if (!text || answering || finding) return;
+    const wanted = parseFitnessVideoQuery(text);
+    if (wanted) { setQuestion(""); void findVideo(wanted); return; }
     closeHow(); setQuestion(""); setAnswer(""); setAnswering(true); setTutorialKey((k) => k + 1); // reload stops the video
     try {
       const { data } = await supabase.auth.getSession();
@@ -102,7 +149,7 @@ export default function FitnessCoachPage() {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/oracle-chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages: [{ role: "user", content: `(I'm doing ${EXERCISES[ex].label} with you as my fitness coach.) ${text}` }] }),
+        body: JSON.stringify({ messages: [{ role: "user", content: `(I'm doing ${template?.exercise_key || EXERCISES[ex].label} with you as my fitness coach.) ${text}` }] }),
       });
       if (!resp.ok || !resp.body) throw new Error("Oracle couldn't answer right now.");
       const reader = resp.body.getReader(); const dec = new TextDecoder();
@@ -130,7 +177,9 @@ export default function FitnessCoachPage() {
     setLook("fit"); setReps(0); setTip(null); setStatus("Starting camera…");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-      const v = video.current!; v.srcObject = stream; await v.play();
+      const v = video.current;
+      if (!v) { stream.getTracks().forEach(t => t.stop()); throw new Error("Camera is not ready."); }
+      v.srcObject = stream; await v.play();
       const { FilesetResolver, PoseLandmarker } = await import("@mediapipe/tasks-vision");
       const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
       const pose = await PoseLandmarker.createFromOptions(files, {
@@ -186,11 +235,15 @@ export default function FitnessCoachPage() {
             {/* Studio monitor: all clips stay cued muted; the chosen one shows and zooms in. */}
             <div data-testid="fitness-monitor" data-state={monitor}
               className={`absolute transition-all duration-1000 ease-in-out rounded-lg overflow-hidden border-4 border-border bg-background shadow-2xl ${monitor === "zoom" ? "inset-0 rounded-none border-0" : "top-4 right-4 w-[42%] aspect-video"} ${monitor === "off" ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-              {(Object.keys(EXERCISES) as Exercise[]).map((k) => {
+              {template && <iframe key={template.video_id + tutorialKey} ref={player} title={`${template.exercise_key} how-to`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+                onLoad={(e) => { const win = e.currentTarget.contentWindow; win?.postMessage(JSON.stringify({ event: "listening", id: "selected" }), "https://www.youtube.com"); ["onStateChange", "onError"].forEach(name => win?.postMessage(JSON.stringify({ event: "command", func: "addEventListener", args: [name] }), "https://www.youtube.com")); }}
+                className={`absolute inset-0 w-full h-full ${monitor === "zoom" ? "" : "pointer-events-none"}`}
+                src={`https://www.youtube.com/embed/${template.video_id}?autoplay=${monitor !== "off" ? 1 : 0}&mute=1&controls=1&fs=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&cc_load_policy=0&playsinline=1&rel=0`} />}
+              {!template && (Object.keys(EXERCISES) as Exercise[]).map((k) => {
                 const id = EXERCISES[k].youtube;
                 const live = monitor !== "off" && k === ex;
-                return <iframe key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
-                  onLoad={(e) => { try { e.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: k }), "*"); } catch { /* none */ } }}
+                return <iframe ref={live ? player : undefined} key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+                  onLoad={(e) => { const win = e.currentTarget.contentWindow; win?.postMessage(JSON.stringify({ event: "listening", id: k }), "https://www.youtube.com"); ["onStateChange", "onError"].forEach(name => win?.postMessage(JSON.stringify({ event: "command", func: "addEventListener", args: [name] }), "https://www.youtube.com")); }}
                   className={`absolute inset-0 w-full h-full ${live && monitor === "zoom" ? "" : "pointer-events-none"} ${live ? "" : "invisible"}`}
                   src={`https://www.youtube.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=1&fs=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
               })}
@@ -205,7 +258,7 @@ export default function FitnessCoachPage() {
               </div>
             )}
             {monitor !== "off" && <Button size="sm" variant="secondary" className="absolute bottom-3 left-3 z-10" onClick={closeHow}>Back to Oracle</Button>}
-            {monitor === "zoom" && <Button size="sm" variant="secondary" className="absolute bottom-3 right-3 z-10" asChild><a href={`https://www.youtube.com/watch?v=${EXERCISES[ex].youtube}`} target="_blank" rel="noopener noreferrer">Full screen on YouTube</a></Button>}
+            {monitor === "zoom" && <Button size="sm" variant="secondary" className="absolute bottom-3 right-3 z-10" asChild><a href={`https://www.youtube.com/watch?v=${template?.video_id || EXERCISES[ex].youtube}`} target="_blank" rel="noopener noreferrer">Full screen on YouTube</a></Button>}
           </div>
         </section>
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border relative">
@@ -222,10 +275,11 @@ export default function FitnessCoachPage() {
         <Button variant="secondary" onClick={() => showHow()}>Show me how</Button>
         {running ? <Button variant="destructive" onClick={finish}>Finish workout</Button> : <Button onClick={start}>Start workout</Button>}
       </div>
+      {template && <p className="text-sm text-muted-foreground">{template.title} · {template.channel_title}</p>}
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); ask(); }}>
         <div className="flex gap-2">
           <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask Oracle anything during your workout…" className="flex-1 rounded-xl border border-border bg-background/80 px-3 py-2 text-sm" />
-          <Button type="submit" disabled={answering || !question.trim()}>{answering ? "Answering…" : "Ask"}</Button>
+          <Button type="submit" disabled={answering || finding || !question.trim()}>{finding ? "Finding…" : answering ? "Answering…" : "Ask"}</Button>
         </div>
         {answer && <p className="rounded-xl bg-card/80 backdrop-blur border border-border px-3 py-2 text-sm">{answer}</p>}
       </form>

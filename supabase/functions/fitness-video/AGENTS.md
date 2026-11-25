@@ -1,0 +1,3 @@
+# Fitness video discovery
+- Reuse seven-day server-written public metadata templates keyed only by exercise; never cache member chats or camera data, because shared speed improvements must not share private information.
+- Rank embeddable exercise instruction deterministically and generate title/source-based general commentary without AI calls; metadata cannot establish moment-by-moment visual observations or certify safety.

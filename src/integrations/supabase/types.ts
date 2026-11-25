@@ -1433,6 +1433,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fitness_video_templates: {
+        Row: {
+          channel_title: string
+          commentary: Json
+          description: string
+          exercise_key: string
+          expires_at: string
+          fetched_at: string
+          title: string
+          video_id: string
+        }
+        Insert: {
+          channel_title: string
+          commentary?: Json
+          description?: string
+          exercise_key: string
+          expires_at?: string
+          fetched_at?: string
+          title: string
+          video_id: string
+        }
+        Update: {
+          channel_title?: string
+          commentary?: Json
+          description?: string
+          exercise_key?: string
+          expires_at?: string
+          fetched_at?: string
+          title?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       founder_payment_fulfillments: {
         Row: {
           created_at: string
