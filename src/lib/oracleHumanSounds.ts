@@ -161,3 +161,19 @@ export function playHumanSound(url: string, isLive: () => boolean, opts: { volum
     audio.play().catch(finish);
   });
 }
+
+export type SoundCommand = { human?: boolean; cheeky?: boolean };
+/** Reads chat requests like "stop farting" or "turn your sounds back on" so Oracle changes her own sound settings. */
+export function parseSoundCommand(text: string): SoundCommand | null {
+  const t = text.toLowerCase();
+  const cheekyWord = /\b(fart\w*|burp\w*|cheeky (?:sound|nois)\w*|toilet (?:sound|nois)\w*|gross (?:sound|nois)\w*|rude (?:sound|nois)\w*)/;
+  const humanWord = /\b(human (?:sound|nois)\w*|(?:all )?(?:your |the |those )?(?:funny |silly |little )?(?:sound effects|sounds|noises)|hiccup\w*|giggl\w*|breath\w*|sigh\w*)\b/;
+  const off = /\b(stop|no more|turn (?:it |them |that )?off|switch (?:it |them |that )?off|disable|quit|don'?t|do not|never|mute|cut (?:it|out)|enough)\b|\boff\b/;
+  const on = /\b(turn (?:it |them |that )?(?:back )?on|switch (?:it |them |that )?(?:back )?on|enable|bring back|start (?:\w+ )?again)\b|\bback on\b/;
+  const cheeky = cheekyWord.test(t), human = humanWord.test(t);
+  if (!cheeky && !human) return null;
+  const isOff = off.test(t), isOn = !isOff && on.test(t);
+  if (!isOff && !isOn) return null;
+  if (cheeky && !human) return { cheeky: isOn };
+  return isOn ? { human: true, cheeky: true } : { human: false };
+}

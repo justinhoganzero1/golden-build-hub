@@ -41,7 +41,7 @@ import { addReading, currentMood, detectMood, moodNote, type MoodReading } from 
 import OracleOutfitPicker from "@/components/oracle/OracleOutfitPicker";
 import OracleLookPicker from "@/components/oracle/OracleLookPicker";
 import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLook";
-import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, pickHumanSound, planMidReplyBreaths, playHumanSound, saveSoundPrefs, wantsNervousGiggle, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
+import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, parseSoundCommand, pickHumanSound, planMidReplyBreaths, playHumanSound, saveSoundPrefs, wantsNervousGiggle, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
 import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
 import standbyLoop from "@/assets/avatars/oracle-studio-standby-seamless.webm.asset.json";
@@ -2017,6 +2017,21 @@ const OraclePage = () => {
         notifyPlanRequired({ requiredPlan: "plus", message: "Chatting with Oracle is part of Plus. Upgrade to talk with her any time." });
       }
     };
+    // Sound settings asked for in the chat ("stop farting", "turn your sounds off") — she changes them herself.
+    const soundCmd = isIntroTrigger ? null : parseSoundCommand(text);
+    if (soundCmd) {
+      const next = { ...soundPrefsRef.current, ...soundCmd };
+      updateSoundPrefs(next); soundPrefsRef.current = next;
+      setShowChat(true);
+      const reply = soundCmd.human === false ? "Done — all my little sounds are switched off. Just ask if you want them back."
+        : soundCmd.cheeky === false ? "Oops, sorry! No more burps or farts — I've switched them off in my settings."
+        : "Sounds are back on!";
+      setMessages(prev => [...prev,
+        { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
+        { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content: reply }]);
+      if (!isMuted) speakAsAgent(reply, oracleName);
+      return;
+    }
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
     const outfitCmd = isIntroTrigger ? null : parseOutfitCommand(text);
     if (outfitCmd) {
