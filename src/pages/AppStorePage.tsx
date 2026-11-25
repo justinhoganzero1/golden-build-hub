@@ -24,6 +24,7 @@ import shotDashboard from "@/assets/store/shot-dashboard.jpg";
 import shotVideos from "@/assets/store/shot-oracle-videos.jpg";
 import shotPlans from "@/assets/store/shot-plans.jpg";
 import shotCalendar from "@/assets/store/shot-calendar.jpg";
+import shotFitness from "@/assets/store/shot-fitness-coach.jpg";
 import portrait from "@/assets/avatars/oracle-futuristic-office.jpg";
 import listeningClip from "@/assets/avatars/oracle-office-listening-smooth.webm";
 import greetingClip from "@/assets/avatars/oracle-clip-greeting.webm";
@@ -39,6 +40,7 @@ import adPoster from "@/assets/videos/oracle-lunar-ad2c-poster.jpg.asset.json";
 
 const SCREENSHOTS = [
   { src: shotChat, alt: "Oracle greets you and asks what you'd like to do" },
+  { src: shotFitness, alt: "Oracle introduces herself as your AI fitness instructor" },
   { src: shotDashboard, alt: "Your Oracle Lunar home with all your tools" },
   { src: shotVideos, alt: "Oracle Videos included in membership" },
   { src: shotCalendar, alt: "Calendar and diary" },
