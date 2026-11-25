@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import outfit from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
-import idleClip from "@/assets/fitness/fitness-idle-long.mp4.asset.json";
+import idleClip from "@/assets/fitness/fitness-idle-light.mp4.asset.json";
 import studio from "@/assets/fitness/fitness-studio-empty.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { talkingPose, poseTransform } from "@/lib/talkingMotion";
@@ -33,7 +33,8 @@ export default function FitnessCoachPage() {
   const body = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = body.current;
-    if (!el || !answering) return;
+    // Camera sway removed: the rocking motion made members seasick.
+    if (!el || !answering || true) return;
     let f = 0; const t0 = performance.now();
     const tick = (n: number) => { el.style.transform = poseTransform(talkingPose((n - t0) / 1000)); f = requestAnimationFrame(tick); };
     f = requestAnimationFrame(tick);
