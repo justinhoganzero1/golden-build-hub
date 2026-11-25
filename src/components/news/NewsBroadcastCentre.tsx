@@ -343,7 +343,7 @@ const NewsBroadcastCentre = ({ onSendToStudio }: Props) => {
         <canvas ref={canvasRef} width={SCENE.width} height={SCENE.height} className="absolute inset-0 w-full h-full" aria-label="Oracle News live studio" />
         {clip && (
           <div className="absolute inset-0 bg-background">
-            <iframe key={clip.url} src={clipPlayerUrl(clip.url, { autoplay: true, muted: true })} title={`News clip from ${clip.credit}`} className="absolute inset-0 w-full h-full" allow="autoplay; encrypted-media; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" />
+            <iframe key={clip.url} src={clipPlayerUrl(clip.url, { autoplay: true, muted: true })} title={`News clip from ${clip.credit}`} className="absolute inset-0 w-full h-full" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
             <CreditBanner credit={clip.credit} className="absolute left-[3%] right-[3%] bottom-[2%] pointer-events-none" />
           </div>
         )}
