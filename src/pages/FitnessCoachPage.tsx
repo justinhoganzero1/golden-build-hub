@@ -22,7 +22,10 @@ const say = (t: string) => {
 
 export default function FitnessCoachPage() {
   const [ex, setEx] = useState<Exercise>("squat");
-  const [look, setLook] = useState<"normal" | "fit">("normal");
+  const [look, setLook] = useState<"normal" | "fit">("fit");
+  // Template prompt: zoomed in on Oracle asking what to do; returns after each how-to video.
+  const [prompt, setPrompt] = useState<string | null>("What would you like to do?");
+  useEffect(() => { const t = window.setTimeout(() => say("What would you like to do?"), 600); return () => clearTimeout(t); }, []);
   const [running, setRunning] = useState(false);
   const [reps, setReps] = useState(0);
   const [tip, setTip] = useState<string | null>(null);
@@ -54,12 +57,28 @@ export default function FitnessCoachPage() {
   const talkTimers = useRef<number[]>([]);
   const clearTalk = () => { talkTimers.current.forEach(clearTimeout); talkTimers.current = []; };
   useEffect(() => () => clearTalk(), []);
-  function showHow() {
+  function showHow(pick: Exercise = ex) {
+    setEx(pick); setPrompt(null); const exNow = pick;
     clearTalk(); setTutorialKey((k) => k + 1); setMonitor("back");
     body.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     talkTimers.current.push(window.setTimeout(() => setMonitor("zoom"), 1200));
-    COMMENTARY[ex].forEach((line, i) => talkTimers.current.push(window.setTimeout(() => say(line), 1600 + i * 6500)));
+    COMMENTARY[exNow].forEach((line, i) => talkTimers.current.push(window.setTimeout(() => say(line), 1600 + i * 6500)));
   }
+  // When the YouTube clip ends, zoom back to Oracle and ask what's next.
+  const monitorRef = useRef(monitor); monitorRef.current = monitor;
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (!/youtube\.com$/.test(new URL(e.origin || "http://x").hostname)) return;
+      let d: { event?: string; info?: unknown } | null = null;
+      try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
+      const st = d?.event === "onStateChange" ? d.info : d?.event === "infoDelivery" ? (d.info as { playerState?: number } | null)?.playerState : undefined;
+      if (st === 0 && monitorRef.current !== "off") {
+        clearTalk(); setMonitor("off"); setPrompt("OK, what's next?"); say("OK, what's next?");
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
   function closeHow() { clearTalk(); try { speechSynthesis.cancel(); } catch { /* none */ } setMonitor("off"); }
 
   async function ask() {
@@ -152,7 +171,7 @@ export default function FitnessCoachPage() {
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border">
           <div ref={body} className="relative h-[420px] overflow-hidden">
             {look === "fit" && !answering
-              ? <video src={idleClip.url} poster={outfit} autoPlay muted loop playsInline aria-label="Oracle waiting in her workout outfit" className="w-full h-full object-cover object-top" />
+              ? <video src={idleClip.url} poster={outfit} autoPlay muted loop playsInline aria-label="Oracle waiting in her workout outfit" className={`w-full h-full object-cover object-top transition-transform duration-700 ${prompt ? "scale-125" : ""}`} />
               : <img src={look === "fit" ? outfit : portrait} alt={answering ? "Oracle answering you" : "Oracle"} className="w-full h-full object-cover object-top" />}
             {/* Studio monitor: all clips stay cued muted; the chosen one shows and zooms in. */}
             <div data-testid="fitness-monitor" data-state={monitor}
@@ -161,10 +180,20 @@ export default function FitnessCoachPage() {
                 const id = EXERCISES[k].youtube;
                 const live = monitor !== "off" && k === ex;
                 return <iframe key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+                  onLoad={(e) => { try { e.currentTarget.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: k }), "*"); } catch { /* none */ } }}
                   className={`absolute inset-0 w-full h-full ${live && monitor === "zoom" ? "" : "pointer-events-none"} ${live ? "" : "invisible"}`}
-                  src={`https://www.youtube.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=1&fs=1&loop=1&playlist=${id}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
+                  src={`https://www.youtube.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=1&fs=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
               })}
             </div>
+            {prompt && monitor === "off" && !answering && (
+              <div data-testid="fitness-prompt" className="absolute inset-x-3 bottom-3 z-10 rounded-xl bg-background/85 backdrop-blur border border-border p-3 space-y-2">
+                <p className="font-semibold">{prompt}</p>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(EXERCISES) as Exercise[]).map((k) => <Button key={k} size="sm" variant="outline" onClick={() => showHow(k)}>Learn {EXERCISES[k].label}</Button>)}
+                  <Button size="sm" onClick={() => { setPrompt(null); start(); }}>Start workout</Button>
+                </div>
+              </div>
+            )}
             {monitor !== "off" && <Button size="sm" variant="secondary" className="absolute bottom-3 left-3 z-10" onClick={closeHow}>Back to Oracle</Button>}
             {monitor === "zoom" && <Button size="sm" variant="secondary" className="absolute bottom-3 right-3 z-10" asChild><a href={`https://www.youtube.com/watch?v=${EXERCISES[ex].youtube}`} target="_blank" rel="noopener noreferrer">Full screen on YouTube</a></Button>}
           </div>
@@ -180,7 +209,7 @@ export default function FitnessCoachPage() {
         {(Object.keys(EXERCISES) as Exercise[]).map((k) => (
           <Button key={k} variant={k === ex ? "default" : "outline"} disabled={running} onClick={() => setEx(k)}>{EXERCISES[k].label}</Button>
         ))}
-        <Button variant="secondary" onClick={showHow}>Show me how</Button>
+        <Button variant="secondary" onClick={() => showHow()}>Show me how</Button>
         {running ? <Button variant="destructive" onClick={finish}>Finish workout</Button> : <Button onClick={start}>Start workout</Button>}
       </div>
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); ask(); }}>
