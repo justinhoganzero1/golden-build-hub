@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { parseExerciseRequest } from "@/lib/exerciseRequest";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import outfit from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
@@ -79,11 +80,20 @@ export default function FitnessCoachPage() {
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, []);
+  // Opened from Oracle chat with ?show=<exercise>: play that how-to straight away.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const want = params.get("show") as Exercise | null;
+    if (want && want in EXERCISES) { const t = window.setTimeout(() => showHow(want), 700); setParams({}, { replace: true }); return () => clearTimeout(t); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   function closeHow() { clearTalk(); try { speechSynthesis.cancel(); } catch { /* none */ } setMonitor("off"); }
 
   async function ask() {
     const text = question.trim();
     if (!text || answering) return;
+    const wanted = parseExerciseRequest(text);
+    if (wanted && wanted in EXERCISES) { setQuestion(""); showHow(wanted); return; }
     closeHow(); setQuestion(""); setAnswer(""); setAnswering(true); setTutorialKey((k) => k + 1); // reload stops the video
     try {
       const { data } = await supabase.auth.getSession();

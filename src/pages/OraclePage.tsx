@@ -47,6 +47,7 @@ import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitP
 import standbyLoop from "@/assets/avatars/oracle-studio-standby-seamless.webm.asset.json";
 import studioPortraitUrl from "@/assets/avatars/oracle-studio-portrait.jpg";
 import fitnessStudioUrl from "@/assets/fitness/fitness-studio-empty.jpg";
+import { parseExerciseRequest } from "@/lib/exerciseRequest";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
 import OracleAccountMenu from "@/components/oracle/OracleAccountMenu";
 import OracleResponseFeedback from "@/components/oracle/OracleResponseFeedback";
@@ -2030,6 +2031,18 @@ const OraclePage = () => {
         { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
         { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content: reply }]);
       if (!isMuted) speakAsAgent(reply, oracleName);
+      return;
+    }
+    // "Show me a video of star jumps": open the gym and play that how-to on the monitor.
+    const exerciseWanted = isIntroTrigger ? null : parseExerciseRequest(text);
+    if (exerciseWanted) {
+      setShowChat(true);
+      const reply = "Let's do it! Heading to the gym — watch the monitor behind me.";
+      setMessages(prev => [...prev,
+        { id: crypto.randomUUID(), role: "user", sender: "user", emoji: "👤", color: "#FFAA00", content: text },
+        { id: crypto.randomUUID(), role: "assistant", sender: oracleName, emoji: "", color: "#FFD700", content: reply }]);
+      if (!isMuted) speakAsAgent(reply, oracleName);
+      setTimeout(() => navigate(`/fitness-coach?show=${exerciseWanted}`), 900);
       return;
     }
     // Outfit changes asked for in the chat ("wear a red dress", "wear this").
