@@ -160,12 +160,13 @@ export default function FitnessCoachPage() {
               {(Object.keys(EXERCISES) as Exercise[]).map((k) => {
                 const id = EXERCISES[k].youtube;
                 const live = monitor !== "off" && k === ex;
-                return <iframe key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media"
-                  className={`absolute inset-0 w-full h-full pointer-events-none ${live ? "" : "invisible"}`}
-                  src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=0&loop=1&playlist=${id}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
+                return <iframe key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen
+                  className={`absolute inset-0 w-full h-full ${live && monitor === "zoom" ? "" : "pointer-events-none"} ${live ? "" : "invisible"}`}
+                  src={`https://www.youtube.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=1&fs=1&loop=1&playlist=${id}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
               })}
             </div>
             {monitor !== "off" && <Button size="sm" variant="secondary" className="absolute bottom-3 left-3 z-10" onClick={closeHow}>Back to Oracle</Button>}
+            {monitor === "zoom" && <Button size="sm" variant="secondary" className="absolute bottom-3 right-3 z-10" asChild><a href={`https://www.youtube.com/watch?v=${EXERCISES[ex].youtube}`} target="_blank" rel="noopener noreferrer">Full screen on YouTube</a></Button>}
           </div>
         </section>
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border relative">
