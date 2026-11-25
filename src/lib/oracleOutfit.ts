@@ -67,6 +67,10 @@ export function parseOutfitCommand(text: string): OutfitCommand | null {
     || /\b(?:change|go|switch|get)\s+(?:yourself\s+)?back\b/i.test(t)
     || /\b(?:default|normal|usual|original|business|office|work)\s+(?:outfit|clothes|look|attire|suit|mode|self)\b/i.test(t) && /\b(?:back|wear|put|change|switch|go|return|into)\b/i.test(t)
     || /\b(?:take\s+off|get\s+out\s+of)\s+(?:the\s+|your\s+|that\s+)?(?:fitness|workout|gym|active|exercise|sports?)/i.test(t)) return { kind: "reset" };
+  // Broad catch (typos included): a fitness word plus any clothing/changing word means the free gym outfit.
+  const FIT = /\b(fit+n?e+s+\w*|work\s*-?\s*out\w*|gym\w*|ex+c?ercis\w*|active\s*-?\s*wear|activ\w*|athlet\w*|sport\w*|yoga|running|training|trainer|instructor)\b/i;
+  const WEARISH = /\b(cloth\w*|clothes|gear|outfit\w*|kit|wear\w*|attire|leggings|uniform|dress\w*|change\w*|chang\w*|put\w*|switch\w*|into|mode|look)\b/i;
+  if (FIT.test(t) && WEARISH.test(t) && !/\b(take\s+off|get\s+out\s+of|back)\b/i.test(t)) return { kind: "fitness" };
   // Any request naming gym/active wear uses the free bundled outfit, never a paid picture edit.
   if (/\b(fitness|workout|work\s*out|gym|exercise|training|active|athletic|sports?|yoga|running)\s*-?\s*(gear|outfit|clothes|kit|wear|set|attire|leggings|stuff)\b/i.test(t) && /\b(wear|put|change|dress|get|switch|into|on)\b/i.test(t)) return { kind: "fitness" };
   // Workout gear: free, uses the bundled fluro-green fitness outfit.
