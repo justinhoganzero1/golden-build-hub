@@ -120,8 +120,14 @@ const ChatHistoryImportPage = () => {
 
         <div className="rounded-lg border border-border/70 bg-background/40 p-3 text-sm">
           <p className="font-semibold text-foreground">1. ChatGPT</p>
-          <p className="mt-1 text-muted-foreground">In ChatGPT open <b>Settings → Data controls → Export data</b> and confirm. OpenAI emails you a ZIP file (can take a few hours).</p>
-          <button type="button" className="mt-1 inline-flex items-center gap-1 text-xs text-primary underline" onClick={() => openOutside("https://chatgpt.com/#settings/DataControls")}>Open ChatGPT settings<ExternalLink className="h-3 w-3" /></button>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-muted-foreground">
+            <li>Open the ChatGPT side menu. Tap your round initials or profile picture near the bottom (for example, JH).</li>
+            <li>Tap <b>Settings</b>, then <b>Data controls</b>.</li>
+            <li>Tap <b>Export data</b>, then <b>Confirm export</b>.</li>
+            <li>Open the email from OpenAI and tap its download link. The export can take up to 7 days; the link expires after 24 hours.</li>
+            <li>Save the ZIP in Downloads. Leave it zipped, then choose it below.</li>
+          </ol>
+          <Button type="button" variant="link" size="sm" className="px-0" onClick={() => openOutside("https://chatgpt.com/#settings/DataControls")}>Open ChatGPT settings<ExternalLink className="h-3 w-3" /></Button>
           {counts.chatgpt ? <p className="mt-2 flex items-center gap-1 text-xs text-primary"><CheckCircle2 className="h-3.5 w-3.5" />{counts.chatgpt.toLocaleString()} ChatGPT messages remembered</p> : null}
         </div>
 

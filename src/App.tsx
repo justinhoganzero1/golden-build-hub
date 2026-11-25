@@ -289,6 +289,7 @@ const AiKeySetupPage = lazy(() => import("./pages/AiKeySetupPage"));
 const ChatGptViewerPage = lazy(() => import("./pages/ChatGptViewerPage"));
 const ChromeExtensionPage = lazy(() => import("./pages/ChromeExtensionPage"));
 const ChatHistoryImportPage = lazy(() => import("./pages/ChatHistoryImportPage"));
+const PluginsHubPage = lazy(() => import("./pages/PluginsHubPage"));
 const ClaimsAssistantPage = lazy(loaders["/claims-assistant"]);
 const PersonalVaultPage = lazy(loaders["/personal-vault"]);
 const ClaimsAppPage = lazy(loaders["/claims-app"]);
@@ -506,6 +507,7 @@ const OracleApp = () => (
                   <Route path="/trial-card" element={<RequireAuth><ErrorBoundary pageName="Free Trial"><TrialCardPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/ai-key-setup" element={<RequireAuth><ErrorBoundary pageName="Google Key Setup"><AiKeySetupPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/memory-import" element={<RequireAuth><ErrorBoundary pageName="Import Past Chats"><ChatHistoryImportPage /></ErrorBoundary></RequireAuth>} />
+                  <Route path="/plugins" element={<RequireAuth><ErrorBoundary pageName="Plugins Hub"><PluginsHubPage /></ErrorBoundary></RequireAuth>} />
                   <Route path="/web-wrapper" element={<Navigate to="/dashboard" replace />} />
                   
                   <Route path="/claims-assistant" element={<RequireAuth><ErrorBoundary pageName="Claims Assistant"><ClaimsAssistantPage /></ErrorBoundary></RequireAuth>} />

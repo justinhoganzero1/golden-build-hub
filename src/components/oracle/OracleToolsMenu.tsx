@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, Search, ChevronUp } from "lucide-react";
+import { LayoutGrid, Search, ChevronUp, Puzzle, Star } from "lucide-react";
+import { useOraclePlugins } from "@/hooks/useOraclePlugins";
+import { ORACLE_PLUGINS } from "@/lib/oraclePlugins";
 import { ROUTE_REGISTRY } from "@/lib/oracleControl";
 import { isAdminOnlyPath } from "@/lib/oracleAdminRoutes";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -23,6 +25,7 @@ export default function OracleToolsMenu({ children }: { children?: ReactNode }) 
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
   const { isAdmin } = useIsAdmin();
+  const { ids } = useOraclePlugins();
   // Owner-only pages (admin editor, owner dashboard) stay out of the list
   // until the owner is signed in — normal members never see them offered.
   const tools = allTools.filter(t => isAdmin || !isAdminOnlyPath(t.path));
@@ -40,6 +43,11 @@ export default function OracleToolsMenu({ children }: { children?: ReactNode }) 
       </Button>
     {open && <div id="oracle-tools-panel" role="dialog" aria-label="All Oracle tools" className="absolute bottom-full left-0 mb-3 z-50 w-[min(360px,calc(100vw-32px))] max-h-[min(480px,55dvh)] overflow-y-auto rounded-lg border border-border bg-popover text-popover-foreground p-3 shadow-lg">
       <div className="flex items-center justify-between mb-2"><h2 className="text-sm font-semibold">All Oracle tools</h2><ChevronUp className="h-4 w-4" /></div>
+      <Button type="button" variant="outline" className="mb-3 w-full justify-start" onClick={() => { setOpen(false); navigate("/plugins", { state: { oracleWorkspace: true } }); }}><Puzzle className="h-4 w-4" />Plugins &amp; Tools</Button>
+      {!query && ids.length > 0 && <div className="mb-3">
+        <h3 className="mb-2 flex items-center gap-1 text-xs text-primary"><Star className="h-3 w-3" />My favourites</h3>
+        <div className="flex flex-wrap gap-1.5">{ORACLE_PLUGINS.filter(p => ids.includes(p.id)).map(plugin => <Button key={plugin.id} type="button" size="sm" variant="secondary" className="h-auto min-h-9 whitespace-normal text-left" onClick={() => { setOpen(false); navigate(plugin.path, { state: { oracleWorkspace: true } }); }}>{plugin.name}</Button>)}</div>
+      </div>}
       {children && <div className="flex flex-wrap items-center gap-2 mb-3">{children}</div>}
       <label className="flex items-center gap-2 rounded-lg bg-muted border border-border px-2 mb-2">
         <Search className="w-4 h-4 shrink-0" />

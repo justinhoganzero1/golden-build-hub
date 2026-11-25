@@ -1,4 +1,9 @@
 # Roadmap
+## Plugins Hub and history instructions
+- [x] Add searchable Plugins Hub and unlimited account-scoped favourites in Oracle's tools menu (device-saved; outside-service plugins not yet connected).
+- [x] Add phone-specific ChatGPT export steps matching Juzzy's screenshot.
+- [x] Verify favourites, search, and tool opening while signed in.
+
 - [x] New pay structure (Free / Plus / Pro / Founder) — products, plan checks, monthly credit, pricing page, badges, Oracle upgrade card, tests
 - [ ] New-look presenter video (v3): same host, new app screens, feature list, "created by this app" line, no names — waiting on Juzzy's go-ahead to animate
 - [x] Ad v3: monitor screens are the exact real app pages (composited) — stitched 52s video
