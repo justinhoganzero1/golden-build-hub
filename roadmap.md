@@ -1,4 +1,8 @@
 # Roadmap
+## Individual tool hooks (2026-11-25)
+- [x] Add 40 public tool hooks with honest plan prices and sign-in links.
+- [x] Verify phone/desktop display, all 40 expand, and App Builder opens sign-up; 3 tests pass.
+- [ ] Request publication of the hooks and existing browser trial button.
 ## Fitness video requests
 - [x] Find suitable exercise videos on command and cache public metadata templates across users.
 - [x] Play muted videos on the studio monitor with honest metadata commentary and return to Oracle.

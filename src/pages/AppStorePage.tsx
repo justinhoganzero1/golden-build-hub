@@ -30,6 +30,7 @@ import listeningClip from "@/assets/avatars/oracle-office-listening-smooth.webm"
 import greetingClip from "@/assets/avatars/oracle-clip-greeting.webm";
 import adVideo from "@/assets/videos/oracle-lunar-ad2c-web.mp4.asset.json";
 import adPoster from "@/assets/videos/oracle-lunar-ad2c-poster.jpg.asset.json";
+import PublicToolHooks from "@/components/PublicToolHooks";
 
 /**
  * Public front door laid out like an app-store listing. Visitors install the
@@ -310,6 +311,8 @@ export default function AppStorePage({ extra }: { extra?: ReactNode } = {}) {
           </section>
 
           {/* About */}
+          <PublicToolHooks signedIn={!!user} />
+
           <section className="mt-8">
             <button type="button" onClick={() => setAboutOpen((v) => !v)} className="flex w-full items-center justify-between text-left">
               <h2 className="text-lg font-semibold">About this app</h2>
