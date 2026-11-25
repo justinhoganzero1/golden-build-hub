@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
-import fitnessIdleClip from "@/assets/fitness/fitness-idle-glance.mp4.asset.json";
+import fitnessIdleClip from "@/assets/fitness/fitness-idle-seamless.mp4.asset.json";
 // Same filmed clips as always, with the office background swapped for the gold studio.
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import blushOverlay from "@/assets/avatars/oracle-blush.png";
 import blushClipOverlay from "@/assets/avatars/oracle-blush-clip.png";
 // Smooth single-take shot locked to the canonical portrait (same face across the angle drift).
-import listeningClip from "@/assets/avatars/oracle-studio-office-listening-smooth.webm.asset.json";
+import listeningClip from "@/assets/avatars/oracle-studio-listening-seamless.webm.asset.json";
 import greetingClip from "@/assets/avatars/oracle-studio-clip-greeting.webm.asset.json";
 import thinkingClip from "@/assets/avatars/oracle-studio-clip-thinking.webm.asset.json";
 import talkingClipUrl from "@/assets/avatars/oracle-clip-talking.webm";

@@ -44,7 +44,7 @@ import { loadLook, saveLook, lookPersona, type OracleLook } from "@/lib/oracleLo
 import { embarrassedLine, freshSoundState, humanSoundUrl, loadSoundPrefs, nextSoundState, pickHumanSound, planMidReplyBreaths, playHumanSound, saveSoundPrefs, wantsNervousGiggle, type HumanSoundPrefs } from "@/lib/oracleHumanSounds";
 import { Switch } from "@/components/ui/switch";
 import { loadOutfit, saveOutfit, parseOutfitCommand, requestOutfitImage, outfitPrompt, toSmallDataUrl, OutfitError, isStandby, type OracleOutfit } from "@/lib/oracleOutfit";
-import standbyLoop from "@/assets/avatars/oracle-studio-standby.webm.asset.json";
+import standbyLoop from "@/assets/avatars/oracle-studio-standby-seamless.webm.asset.json";
 import studioPortraitUrl from "@/assets/avatars/oracle-studio-portrait.jpg";
 import fitnessStudioUrl from "@/assets/fitness/fitness-studio-empty.jpg";
 import fitnessOutfitUrl from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
