@@ -9,6 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { talkingPose, poseTransform } from "@/lib/talkingMotion";
 import { EXERCISES, Exercise, formTip, jointAngle, stepReps, RepState } from "@/lib/fitnessForm";
 
+// Oracle's spoken commentary over the muted how-to clip (free device voice).
+const COMMENTARY: Record<Exercise, string[]> = {
+  squat: ["Watch the monitor. Feet about shoulder width apart.", "See how the hips go back first, like sitting into a chair.", "Chest stays up, knees follow the toes.", "Push through the heels to stand tall. Your turn when you're ready."],
+  pushup: ["Watch the monitor. Hands just wider than your shoulders.", "Body in one straight line, from head to heels.", "Lower your chest nice and slow, elbows angled back.", "Press the floor away. Drop to your knees if you need to, that's fine."],
+  jumping_jack: ["Watch the monitor. Start tall, arms by your sides.", "Jump the feet out as the arms swing overhead.", "Land softly on the balls of your feet.", "Keep a steady rhythm and keep breathing. Your turn when you're ready."],
+};
+
 const say = (t: string) => {
   try { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } catch { /* no device voice */ }
 };
@@ -41,10 +48,24 @@ export default function FitnessCoachPage() {
     return () => { cancelAnimationFrame(f); el.style.transform = ""; };
   }, [answering]);
 
+  // How-to monitor: every clip is cued (loaded, muted) in the background, then the
+  // monitor behind Oracle zooms in to fill her window while she commentates.
+  const [monitor, setMonitor] = useState<"off" | "back" | "zoom">("off");
+  const talkTimers = useRef<number[]>([]);
+  const clearTalk = () => { talkTimers.current.forEach(clearTimeout); talkTimers.current = []; };
+  useEffect(() => () => clearTalk(), []);
+  function showHow() {
+    clearTalk(); setTutorialKey((k) => k + 1); setMonitor("back");
+    body.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    talkTimers.current.push(window.setTimeout(() => setMonitor("zoom"), 1200));
+    COMMENTARY[ex].forEach((line, i) => talkTimers.current.push(window.setTimeout(() => say(line), 1600 + i * 6500)));
+  }
+  function closeHow() { clearTalk(); try { speechSynthesis.cancel(); } catch { /* none */ } setMonitor("off"); }
+
   async function ask() {
     const text = question.trim();
     if (!text || answering) return;
-    setQuestion(""); setAnswer(""); setAnswering(true); setTutorialKey((k) => k + 1); // reload stops the video
+    closeHow(); setQuestion(""); setAnswer(""); setAnswering(true); setTutorialKey((k) => k + 1); // reload stops the video
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -120,7 +141,6 @@ export default function FitnessCoachPage() {
     setTimeout(() => setLook("normal"), 2000);
   }
 
-  const info = EXERCISES[ex];
   return (
     <main className="min-h-screen bg-cover bg-center bg-fixed text-foreground" style={{ backgroundImage: `linear-gradient(hsl(var(--background) / .55), hsl(var(--background) / .8)), url(${studio})` }}>
      <div className="p-4 max-w-5xl mx-auto space-y-4">
@@ -130,10 +150,22 @@ export default function FitnessCoachPage() {
       </header>
       <div className="grid md:grid-cols-2 gap-4">
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border">
-          <div ref={body} className="h-[420px] origin-[50%_65%] will-change-transform">
+          <div ref={body} className="relative h-[420px] overflow-hidden">
             {look === "fit" && !answering
               ? <video src={idleClip.url} poster={outfit} autoPlay muted loop playsInline aria-label="Oracle waiting in her workout outfit" className="w-full h-full object-cover object-top" />
               : <img src={look === "fit" ? outfit : portrait} alt={answering ? "Oracle answering you" : "Oracle"} className="w-full h-full object-cover object-top" />}
+            {/* Studio monitor: all clips stay cued muted; the chosen one shows and zooms in. */}
+            <div data-testid="fitness-monitor" data-state={monitor}
+              className={`absolute transition-all duration-1000 ease-in-out rounded-lg overflow-hidden border-4 border-border bg-background shadow-2xl ${monitor === "zoom" ? "inset-0 rounded-none border-0" : "top-4 right-4 w-[42%] aspect-video"} ${monitor === "off" ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+              {(Object.keys(EXERCISES) as Exercise[]).map((k) => {
+                const id = EXERCISES[k].youtube;
+                const live = monitor !== "off" && k === ex;
+                return <iframe key={k + (live ? tutorialKey : "cued")} title={`${EXERCISES[k].label} how-to`} allow="autoplay; encrypted-media"
+                  className={`absolute inset-0 w-full h-full pointer-events-none ${live ? "" : "invisible"}`}
+                  src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=${live ? 1 : 0}&mute=1&controls=0&loop=1&playlist=${id}&cc_load_policy=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0`} />;
+              })}
+            </div>
+            {monitor !== "off" && <Button size="sm" variant="secondary" className="absolute bottom-3 left-3 z-10" onClick={closeHow}>Back to Oracle</Button>}
           </div>
         </section>
         <section className="rounded-2xl overflow-hidden bg-card/60 backdrop-blur border border-border relative">
@@ -147,6 +179,7 @@ export default function FitnessCoachPage() {
         {(Object.keys(EXERCISES) as Exercise[]).map((k) => (
           <Button key={k} variant={k === ex ? "default" : "outline"} disabled={running} onClick={() => setEx(k)}>{EXERCISES[k].label}</Button>
         ))}
+        <Button variant="secondary" onClick={showHow}>Show me how</Button>
         {running ? <Button variant="destructive" onClick={finish}>Finish workout</Button> : <Button onClick={start}>Start workout</Button>}
       </div>
       <form className="space-y-2" onSubmit={(e) => { e.preventDefault(); ask(); }}>
@@ -156,12 +189,6 @@ export default function FitnessCoachPage() {
         </div>
         {answer && <p className="rounded-xl bg-card/80 backdrop-blur border border-border px-3 py-2 text-sm">{answer}</p>}
       </form>
-      <section className="space-y-2">
-        <h2 className="font-semibold">How to do {info.label.toLowerCase()} properly</h2>
-        <div className="aspect-video rounded-2xl overflow-hidden border border-border">
-          <iframe key={tutorialKey} className="w-full h-full" src={`https://www.youtube-nocookie.com/embed/${info.youtube}?cc_load_policy=0`} title={`${info.label} tutorial`} allow="encrypted-media; picture-in-picture" allowFullScreen />
-        </div>
-      </section>
      </div>
     </main>
   );
