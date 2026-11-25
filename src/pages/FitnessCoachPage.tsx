@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import portrait from "@/assets/avatars/oracle-studio-portrait.jpg";
 import outfit from "@/assets/fitness/oracle-fitness-outfit-green.jpg";
-import idleClip from "@/assets/fitness/fitness-idle-seamless.mp4.asset.json";
+import idleClip from "@/assets/fitness/fitness-idle-long.mp4.asset.json";
 import studio from "@/assets/fitness/fitness-studio-empty.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { talkingPose, poseTransform } from "@/lib/talkingMotion";
