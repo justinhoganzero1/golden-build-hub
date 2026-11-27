@@ -1,4 +1,8 @@
 # Roadmap
+## Personal plugins and AI connections (2026-11-27)
+- [ ] Add encrypted account-only custom API/webhook and remote MCP connections, with explicit approval before external calls.
+- [ ] Connect personal Gemini, OpenAI and Claude keys to working chat without member fallback to owner funds.
+- [ ] Test validation, isolation, discovery, execution, provider routing and phone/desktop flows; record unavailable credentials honestly.
 ## Individual tool hooks (2026-11-25)
 - [x] Add 40 public tool hooks with honest plan prices and sign-in links.
 - [x] Verify phone/desktop display, all 40 expand, and App Builder opens sign-up; 3 tests pass.

@@ -316,6 +316,13 @@
       "when": 1795583890271,
       "tag": "0044_fitness_video_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795746178273,
+      "tag": "0045_personal_plugins_secure_connections",
+      "breakpoints": true
     }
   ]
 }

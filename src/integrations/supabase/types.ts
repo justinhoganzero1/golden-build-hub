@@ -3556,6 +3556,86 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_plugin_runs: {
+        Row: {
+          created_at: string
+          id: string
+          plugin_id: string
+          result: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          plugin_id: string
+          result?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plugin_id?: string
+          result?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_plugin_runs_plugin_id_fkey"
+            columns: ["plugin_id"]
+            isOneToOne: false
+            referencedRelation: "personal_plugins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_plugins: {
+        Row: {
+          auth_header: string
+          auth_method: string
+          created_at: string
+          description: string
+          enabled: boolean
+          endpoint_ciphertext: string
+          id: string
+          key_ciphertext: string | null
+          kind: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth_header?: string
+          auth_method?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          endpoint_ciphertext: string
+          id?: string
+          key_ciphertext?: string | null
+          kind: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth_header?: string
+          auth_method?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          endpoint_ciphertext?: string
+          id?: string
+          key_ciphertext?: string | null
+          kind?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       photography_templates: {
         Row: {
           created_at: string
@@ -6316,20 +6396,26 @@ export type Database = {
       }
       user_ai_keys: {
         Row: {
+          claude_key: string | null
           gemini_key: string | null
           openai_key: string | null
+          preferred_provider: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          claude_key?: string | null
           gemini_key?: string | null
           openai_key?: string | null
+          preferred_provider?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          claude_key?: string | null
           gemini_key?: string | null
           openai_key?: string | null
+          preferred_provider?: string
           updated_at?: string
           user_id?: string
         }
